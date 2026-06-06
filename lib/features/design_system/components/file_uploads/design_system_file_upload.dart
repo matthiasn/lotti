@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
@@ -101,9 +102,9 @@ class _DesignSystemFileUploadDropZoneState
         child: GestureDetector(
           onTap: widget.onTap,
           child: CustomPaint(
-            painter: _DashedBorderPainter(
+            painter: DashedBorderPainter(
               color: borderColor,
-              borderRadius: spec.borderRadius,
+              radius: spec.borderRadius,
               strokeWidth: spec.borderWidth,
               dashLength: spec.dashLength,
               dashGap: spec.dashGap,
@@ -326,60 +327,6 @@ class DesignSystemFileUploadItem extends StatelessWidget {
       ),
     };
   }
-}
-
-// ──────────────────────────────────────────────────────────────
-// Dashed border painter
-// ──────────────────────────────────────────────────────────────
-
-class _DashedBorderPainter extends CustomPainter {
-  _DashedBorderPainter({
-    required this.color,
-    required this.borderRadius,
-    required this.strokeWidth,
-    required this.dashLength,
-    required this.dashGap,
-  });
-
-  final Color color;
-  final double borderRadius;
-  final double strokeWidth;
-  final double dashLength;
-  final double dashGap;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..strokeWidth = strokeWidth
-      ..style = PaintingStyle.stroke;
-
-    final rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      Radius.circular(borderRadius),
-    );
-
-    final path = Path()..addRRect(rrect);
-    final metrics = path.computeMetrics();
-
-    for (final metric in metrics) {
-      var distance = 0.0;
-      while (distance < metric.length) {
-        final end = (distance + dashLength).clamp(0.0, metric.length);
-        final segment = metric.extractPath(distance, end);
-        canvas.drawPath(segment, paint);
-        distance += dashLength + dashGap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) =>
-      color != oldDelegate.color ||
-      borderRadius != oldDelegate.borderRadius ||
-      strokeWidth != oldDelegate.strokeWidth ||
-      dashLength != oldDelegate.dashLength ||
-      dashGap != oldDelegate.dashGap;
 }
 
 // ──────────────────────────────────────────────────────────────

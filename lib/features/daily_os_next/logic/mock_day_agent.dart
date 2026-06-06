@@ -654,6 +654,41 @@ class MockDayAgent implements DayAgentInterface {
   }
 
   @override
+  Future<DraftPlan> renameBlock({
+    required DraftPlan plan,
+    required String blockId,
+    required String title,
+  }) async {
+    await Future<void>.delayed(triageLatency);
+    final trimmedTitle = title.trim();
+    if (trimmedTitle.isEmpty) {
+      throw StateError('Block title must not be blank.');
+    }
+    final block = plan.blocks.where((b) => b.id == blockId).firstOrNull;
+    if (block == null) {
+      throw StateError('No block $blockId on the plan for ${plan.dayDate}.');
+    }
+    if (block.taskId != null && block.taskId!.isNotEmpty) {
+      throw StateError(
+        'Block $blockId is task-linked — rename the task instead.',
+      );
+    }
+    return plan.copyWith(
+      blocks: [
+        for (final b in plan.blocks)
+          if (b.id == blockId) b.copyWith(title: trimmedTitle) else b,
+      ],
+      agendaItems: [
+        for (final item in plan.agendaItems)
+          if (item.taskId == null && item.linkedBlockIds.contains(blockId))
+            item.copyWith(title: trimmedTitle)
+          else
+            item,
+      ],
+    );
+  }
+
+  @override
   Future<
     ({
       List<CompletedItem> completed,

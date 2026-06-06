@@ -3122,6 +3122,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextAgendaCapacityNearFull => 'CASI LLENO';
 
   @override
+  String get dailyOsNextAgendaCapacityNoPlan => 'AÚN SIN PLAN';
+
+  @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
     return 'de $capacity';
   }
@@ -3130,7 +3133,16 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextAgendaCapacityOver => 'SOBRECARGADO';
 
   @override
-  String get dailyOsNextAgendaEmpty => 'Nada que hacer hoy.';
+  String get dailyOsNextAgendaNoPlanBody =>
+      'Tu tiempo registrado está aquí de todos modos: habla un check-in y prepararé un día a tu alrededor.';
+
+  @override
+  String dailyOsNextAgendaNoPlanSummary(String duration) {
+    return '$duration registrado hasta ahora. Habla un check-in y prepararé un día a tu alrededor.';
+  }
+
+  @override
+  String get dailyOsNextAgendaNoPlanTitle => 'Aún no hay plan para hoy.';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Hecho';
@@ -3147,6 +3159,17 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String dailyOsNextAgendaSummary(String scheduled, String capacity) {
     return '$scheduled de $capacity comprometidos';
+  }
+
+  @override
+  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      completedCount,
+      locale: localeName,
+      other: '$completedCount hechas',
+      one: '1 hecha',
+    );
+    return 'Registrado · $duration · $_temp0';
   }
 
   @override
@@ -3264,19 +3287,29 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextCommitDraftHeadline => 'Tu día, en borrador.';
+  String get dailyOsNextCommitDraftOverline => 'TU DÍA, EN BORRADOR';
 
   @override
-  String get dailyOsNextCommitDraftOverline => 'HOY';
+  String get dailyOsNextCommitExplainer =>
+      'Confirma para pasar el día de borrador a comprometido.';
+
+  @override
+  String get dailyOsNextCommitFinalStepEyebrow => 'ÚLTIMO PASO';
 
   @override
   String get dailyOsNextCommitHeadline => 'Hazlo tuyo.';
 
   @override
-  String get dailyOsNextCommitHoldHint => 'MANTÉN';
+  String get dailyOsNextCommitHoldHelper => 'Mantén un segundo para confirmar';
 
   @override
-  String get dailyOsNextCommitHoldLabel => 'Confirmar hoy';
+  String get dailyOsNextCommitHoldWordDone => 'Comprometido';
+
+  @override
+  String get dailyOsNextCommitHoldWordHolding => 'Sigue así';
+
+  @override
+  String get dailyOsNextCommitHoldWordIdle => 'Mantén';
 
   @override
   String get dailyOsNextCommitLockingIn => 'Fijando…';
@@ -3287,7 +3320,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextCommitSubCaption =>
-      'Confirmar pasa el día de borrador a comprometido. Aún puedes hablarme, pero la estructura queda fija.';
+      'Después aún puedes hablar conmigo, pero la estructura se queda.';
 
   @override
   String get dailyOsNextCommitTitle => 'Confirmar';
@@ -3297,6 +3330,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextDayBack => 'Atrás';
+
+  @override
+  String get dailyOsNextDayCheckInCta => 'Hablar un check-in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -3352,6 +3388,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextDraftingReasoningOverline => '✦ RAZONAMIENTO';
 
   @override
+  String get dailyOsNextEditTitleHint => 'Editar título';
+
+  @override
   String dailyOsNextEstimateMinutes(int minutes) {
     return '${minutes}m';
   }
@@ -3371,7 +3410,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String dailyOsNextGreetingHiName(String name) {
-    return 'Hola $name,';
+    return 'Hola $name 👋';
   }
 
   @override
@@ -3471,6 +3510,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextRefineTitle => 'Refinar el plan';
 
   @override
+  String get dailyOsNextRenameFailed =>
+      'No se pudo renombrar: inténtalo de nuevo.';
+
+  @override
   String get dailyOsNextShutdownCarryoverDrop => 'Descartar';
 
   @override
@@ -3543,6 +3586,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextShutdownTomorrowOverline => '✦ PARA MAÑANA';
+
+  @override
+  String get dailyOsNextStandaloneTag => 'Bloque de tiempo';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {
@@ -3628,8 +3674,21 @@ class AppLocalizationsEs extends AppLocalizations {
       'Desliza para ver lo real · pellizca verticalmente para zoom';
 
   @override
-  String get dailyOsNextTimeSpentEmpty =>
-      'Aún no hay tiempo registrado para este día.';
+  String get dailyOsNextTimelineTracked => 'registrado';
+
+  @override
+  String dailyOsNextTimeSpentEarlierSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count sesiones anteriores',
+      one: '1 sesión anterior',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentShowLess => 'Mostrar menos';
 
   @override
   String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
@@ -3639,11 +3698,14 @@ class AppLocalizationsEs extends AppLocalizations {
       other: '$completedCount hechas',
       one: '1 hecha',
     );
-    return '$duration registrado · $_temp0';
+    return '$duration · $_temp0';
   }
 
   @override
-  String get dailyOsNextTimeSpentTitle => 'TIEMPO USADO';
+  String get dailyOsNextTimeSpentTitle => 'HOY HASTA AHORA';
+
+  @override
+  String get dailyOsNextTimeSpentTitlePast => 'TIEMPO REGISTRADO';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Aplazado';

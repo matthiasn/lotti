@@ -5,8 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/link_badge.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../widget_test_utils.dart';
@@ -161,11 +164,119 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tap(find.text('Open task'));
+      // Title and link badge both carry the task name for a linked
+      // item — tap the card title (first match).
+      await tester.tap(find.text('Open task').first);
       await tester.pump();
 
       expect(tapped, isTrue);
     });
+
+    testWidgets(
+      'task-linked items show a link badge that opens the task; '
+      'standalone items show the neutral time-block tag',
+      (tester) async {
+        var opened = 0;
+        await tester.pumpWidget(
+          _wrap(
+            Material(
+              child: Column(
+                children: [
+                  AgendaCard(
+                    index: 1,
+                    item: const AgendaItem(
+                      id: 'a1',
+                      title: 'Linked item',
+                      category: _category,
+                      linkedBlockIds: ['b1'],
+                      taskId: 'task-1',
+                    ),
+                    displayTitle: 'Live task name',
+                    onTap: () => opened++,
+                  ),
+                  const AgendaCard(
+                    index: 2,
+                    item: AgendaItem(
+                      id: 'a2',
+                      title: 'Standalone item',
+                      category: _category,
+                      linkedBlockIds: ['b2'],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Link badge carries the live task name and opens the task.
+        expect(find.byType(LinkBadge), findsOneWidget);
+        expect(find.text('Live task name'), findsOneWidget);
+        await tester.tap(find.byType(LinkBadge));
+        await tester.pump();
+        expect(opened, 1);
+
+        // Standalone item carries the neutral tag instead.
+        expect(find.byType(StandaloneTag), findsOneWidget);
+        final messages = tester.element(find.byType(StandaloneTag)).messages;
+        expect(find.text(messages.dailyOsNextStandaloneTag), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'standalone titles are click-to-edit and submit the new title; '
+      'task-linked titles stay read-only',
+      (tester) async {
+        final renames = <String>[];
+        await tester.pumpWidget(
+          _wrap(
+            Material(
+              child: Column(
+                children: [
+                  AgendaCard(
+                    index: 1,
+                    item: const AgendaItem(
+                      id: 'a1',
+                      title: 'Standalone item',
+                      category: _category,
+                      linkedBlockIds: ['b1'],
+                    ),
+                    onRename: renames.add,
+                  ),
+                  AgendaCard(
+                    index: 2,
+                    item: const AgendaItem(
+                      id: 'a2',
+                      title: 'Linked item',
+                      category: _category,
+                      linkedBlockIds: ['b2'],
+                      taskId: 'task-2',
+                    ),
+                    onRename: renames.add,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Only the standalone item is editable.
+        expect(find.byType(EditableTitle), findsOneWidget);
+
+        await tester.tap(find.text('Standalone item'));
+        await tester.pump();
+        await tester.enterText(
+          find.byKey(const Key('daily_os_editable_title_field')),
+          'Renamed standalone',
+        );
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pump();
+
+        expect(renames, ['Renamed standalone']);
+      },
+    );
 
     testWidgets('wraps long titles on phone layouts instead of ellipsizing', (
       tester,

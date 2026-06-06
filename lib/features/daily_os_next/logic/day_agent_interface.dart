@@ -131,6 +131,16 @@ abstract class DayAgentInterface {
   /// re-proposals unless the user invokes Refine).
   Future<DraftPlan> commitDay(DraftPlan plan);
 
+  /// Renames a **standalone** block (no backing task) in place —
+  /// the inline title-edit affordance on Agenda cards and Day blocks.
+  /// Task-linked titles are edited on the task itself, never here;
+  /// implementations reject task-linked [blockId]s.
+  Future<DraftPlan> renameBlock({
+    required DraftPlan plan,
+    required String blockId,
+    required String title,
+  });
+
   /// Tool: `surface_shutdown_data`. Returns the three lists the
   /// Shutdown screen needs: what completed today, what carries
   /// forward, and the metrics card payload. Bundled because they

@@ -455,6 +455,68 @@ class DayAgentPlanService {
     return committedPlan;
   }
 
+  /// Rename a **standalone** planned block in place — the inline
+  /// title-edit affordance on Agenda cards and Day blocks (handoff v2
+  /// item 3). Task-linked blocks take their titles from the task and
+  /// are rejected here; rename the task instead.
+  ///
+  /// Throws [DayAgentCaptureException] when no plan exists, the agent
+  /// does not own it, the block is unknown, or the block is
+  /// task-linked.
+  Future<DayPlanEntity> renameBlock({
+    required String agentId,
+    required String dayId,
+    required String blockId,
+    required String title,
+  }) async {
+    final trimmedTitle = title.trim();
+    if (trimmedTitle.isEmpty) {
+      throw const DayAgentCaptureException(
+        'block title must not be blank',
+      );
+    }
+    await _requireIdentity(agentId);
+    final plan = await draftPlanForDay(agentId: agentId, dayId: dayId);
+    if (plan == null) {
+      throw DayAgentCaptureException(
+        'no plan for $dayId; call draft_day_plan first',
+      );
+    }
+    final block = plan.data.plannedBlocks
+        .where((candidate) => candidate.id == blockId)
+        .firstOrNull;
+    if (block == null) {
+      throw DayAgentCaptureException(
+        'no block $blockId on the plan for $dayId',
+      );
+    }
+    if (block.taskId != null && block.taskId!.isNotEmpty) {
+      throw DayAgentCaptureException(
+        'block $blockId is task-linked — rename the task instead',
+      );
+    }
+
+    final now = clock.now();
+    final renamedBlocks = [
+      for (final candidate in plan.data.plannedBlocks)
+        if (candidate.id == blockId)
+          candidate.copyWith(title: trimmedTitle)
+        else
+          candidate,
+    ];
+    final renamedPlan = plan.copyWith(
+      data: plan.data.copyWith(plannedBlocks: renamedBlocks),
+      updatedAt: now,
+    );
+
+    await syncService.upsertEntity(renamedPlan);
+    onPersistedStateChanged
+      ?..call(agentId)
+      ..call(dayId)
+      ..call(renamedPlan.id);
+    return renamedPlan;
+  }
+
   /// Revert a committed day plan back to draft so the user can edit it again.
   ///
   /// Mirrors [commitDay] in reverse: flips `DayPlanStatus.committed` →

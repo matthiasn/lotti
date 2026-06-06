@@ -3,10 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -14,21 +18,48 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 
 /// Intent-first projection of the [DraftPlan]. One [AgendaCard] per
-/// task, top stat strip with capacity meter + summary + category mix.
+/// task, top stat strip with capacity donut + summary + category mix.
+///
+/// With no plan ([hasPlan] false) the strip stays honest — "No plan
+/// yet" eyebrow, tracked-time summary, neutral donut — and the body
+/// shows a dashed hint card plus the [TimeSpentCard] instead of a dead
+/// empty state (handoff v2 item 2).
 class AgendaView extends StatelessWidget {
-  const AgendaView({required this.draft, super.key});
+  const AgendaView({
+    required this.draft,
+    this.actualBlocks = const [],
+    this.hasPlan = true,
+    this.onRenameItem,
+    super.key,
+  });
 
   final DraftPlan draft;
+
+  /// Recorded sessions for the day — feeds the honest empty strip and
+  /// the empty-state [TimeSpentCard].
+  final List<TimeBlock> actualBlocks;
+
+  /// False when the day has no drafted plan (the [draft] is a
+  /// synthetic empty aggregate so the surface can still render).
+  final bool hasPlan;
+
+  /// Inline rename for standalone agenda items (handoff v2 item 3).
+  final void Function(AgendaItem item, String title)? onRenameItem;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final onRenameItem = this.onRenameItem;
     return SingleChildScrollView(
       padding: EdgeInsets.all(tokens.spacing.step6),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _StatStrip(draft: draft),
+          _StatStrip(
+            draft: draft,
+            actualBlocks: actualBlocks,
+            hasPlan: hasPlan,
+          ),
           SizedBox(height: tokens.spacing.step4),
           for (final (index, item) in draft.agendaItems.indexed) ...[
             _LiveAgendaCard(
@@ -36,10 +67,16 @@ class AgendaView extends StatelessWidget {
               item: item,
               whyReason: _whyReasonFor(item),
               onTap: _taskTapFor(item),
+              onRename: onRenameItem == null
+                  ? null
+                  : (title) => onRenameItem(item, title),
             ),
             SizedBox(height: tokens.spacing.step3),
           ],
-          if (draft.agendaItems.isEmpty) const _AgendaEmptyState(),
+          // "No plan yet" copy only when there genuinely is no plan;
+          // a real plan with zero agenda items keeps just the strip.
+          if (draft.agendaItems.isEmpty && !hasPlan)
+            _AgendaEmptyState(actualBlocks: actualBlocks),
         ],
       ),
     );
@@ -71,12 +108,14 @@ class _LiveAgendaCard extends ConsumerWidget {
     required this.item,
     required this.whyReason,
     required this.onTap,
+    required this.onRename,
   });
 
   final int index;
   final AgendaItem item;
   final String? whyReason;
   final VoidCallback? onTap;
+  final ValueChanged<String>? onRename;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -94,6 +133,7 @@ class _LiveAgendaCard extends ConsumerWidget {
       coverArtId: coverArtId == null || coverArtId.isEmpty ? null : coverArtId,
       coverArtCropX: task?.data.coverArtCropX ?? 0.5,
       onTap: onTap,
+      onRename: onRename,
     );
   }
 
@@ -104,24 +144,40 @@ class _LiveAgendaCard extends ConsumerWidget {
 }
 
 class _StatStrip extends StatelessWidget {
-  const _StatStrip({required this.draft});
+  const _StatStrip({
+    required this.draft,
+    required this.actualBlocks,
+    required this.hasPlan,
+  });
 
   final DraftPlan draft;
+  final List<TimeBlock> actualBlocks;
+  final bool hasPlan;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final hasCategoryMix = draft.blocks.any(
-      (block) => block.state != TimeBlockState.dropped,
+    final messages = context.messages;
+    final trackedMinutes = actualBlocks.totalMinutes;
+    final ratio = CapacityDonut.ratioFor(
+      draft.scheduledMinutes,
+      draft.capacityMinutes,
     );
-    final ratio = draft.capacityMinutes == 0
-        ? 0.0
-        : draft.scheduledMinutes / draft.capacityMinutes;
-    final overline = ratio < 0.9
-        ? context.messages.dailyOsNextAgendaCapacityComfortable
+    final overline = !hasPlan
+        ? messages.dailyOsNextAgendaCapacityNoPlan
+        : ratio < 0.9
+        ? messages.dailyOsNextAgendaCapacityComfortable
         : ratio <= 1.0
-        ? context.messages.dailyOsNextAgendaCapacityNearFull
-        : context.messages.dailyOsNextAgendaCapacityOver;
+        ? messages.dailyOsNextAgendaCapacityNearFull
+        : messages.dailyOsNextAgendaCapacityOver;
+    final summary = hasPlan
+        ? messages.dailyOsNextAgendaSummary(
+            formatMinutesCompact(draft.scheduledMinutes),
+            formatMinutesCompact(draft.capacityMinutes),
+          )
+        : messages.dailyOsNextAgendaNoPlanSummary(
+            formatMinutesCompact(trackedMinutes),
+          );
 
     return Container(
       decoration: BoxDecoration(
@@ -129,45 +185,68 @@ class _StatStrip extends StatelessWidget {
         borderRadius: BorderRadius.circular(tokens.radii.l),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
-      padding: EdgeInsets.all(tokens.spacing.step5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      padding: EdgeInsets.all(tokens.spacing.cardPadding),
+      child: Row(
         children: [
-          Text(
-            overline,
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step2),
-          Text(
-            context.messages.dailyOsNextAgendaSummary(
-              _formatHours(draft.scheduledMinutes),
-              _formatHours(draft.capacityMinutes),
-            ),
-            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          CapacityMeter(
-            scheduledMinutes: draft.scheduledMinutes,
+          CapacityDonut(
+            scheduledMinutes: hasPlan ? draft.scheduledMinutes : trackedMinutes,
             capacityMinutes: draft.capacityMinutes,
+            neutral: !hasPlan,
           ),
-          if (hasCategoryMix) ...[
-            SizedBox(height: tokens.spacing.step3),
-            _CategoryMix(draft: draft),
-          ],
+          SizedBox(width: tokens.spacing.step5),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(overline, style: calmEyebrowStyle(tokens)),
+                SizedBox(height: tokens.spacing.step2),
+                Text(
+                  summary,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step3),
+                if (hasPlan)
+                  _CategoryMix(draft: draft)
+                else
+                  _TrackedLegend(blocks: actualBlocks),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
+}
 
-  String _formatHours(int minutes) {
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    if (m == 0) return '${h}h';
-    return '${h}h ${m}m';
+/// Single neutral-teal legend chip for the no-plan strip: how much is
+/// tracked and how much of it is done.
+class _TrackedLegend extends StatelessWidget {
+  const _TrackedLegend({required this.blocks});
+
+  final List<TimeBlock> blocks;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DsPill(
+      variant: DsPillVariant.filled,
+      label: context.messages.dailyOsNextAgendaTrackedLegend(
+        formatMinutesCompact(blocks.totalMinutes),
+        blocks.completedCount,
+      ),
+      labelColor: tokens.colors.text.lowEmphasis,
+      leading: SizedBox.square(
+        dimension: tokens.spacing.step2,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: tokens.colors.interactive.enabled,
+            shape: BoxShape.circle,
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -215,7 +294,7 @@ class _CategoryLegend extends StatelessWidget {
     final color = categoryColorFromHex(category.colorHex);
     return DsPill(
       variant: DsPillVariant.filled,
-      label: '${category.name} · ${_formatDuration(minutes)}',
+      label: '${category.name} · ${formatMinutesCompact(minutes)}',
       labelColor: tokens.colors.text.lowEmphasis,
       leading: SizedBox.square(
         dimension: tokens.spacing.step2,
@@ -225,31 +304,58 @@ class _CategoryLegend extends StatelessWidget {
       ),
     );
   }
-
-  String _formatDuration(int minutes) {
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    if (h == 0) return '${m}m';
-    if (m == 0) return '${h}h';
-    return '${h}h ${m}m';
-  }
 }
 
+/// Dashed "No plan yet" hint card + the tracked-time card — the agenda
+/// tab is never a dead end on a day with recorded sessions.
 class _AgendaEmptyState extends StatelessWidget {
-  const _AgendaEmptyState();
+  const _AgendaEmptyState({required this.actualBlocks});
+
+  final List<TimeBlock> actualBlocks;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Padding(
-      padding: EdgeInsets.all(tokens.spacing.step6),
-      child: Text(
-        context.messages.dailyOsNextAgendaEmpty,
-        style: tokens.typography.styles.body.bodyMedium.copyWith(
-          color: tokens.colors.text.mediumEmphasis,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        DsDashedBorder(
+          color: tokens.colors.decorative.level02,
+          radius: tokens.radii.l,
+          child: Padding(
+            padding: EdgeInsets.all(tokens.spacing.step6),
+            child: Column(
+              children: [
+                Icon(
+                  Icons.wb_twilight_rounded,
+                  size: tokens.spacing.step6,
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+                SizedBox(height: tokens.spacing.step3),
+                Text(
+                  context.messages.dailyOsNextAgendaNoPlanTitle,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: tokens.spacing.step2),
+                Text(
+                  context.messages.dailyOsNextAgendaNoPlanBody,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
         ),
-        textAlign: TextAlign.center,
-      ),
+        if (actualBlocks.isNotEmpty) ...[
+          SizedBox(height: tokens.spacing.step5),
+          TimeSpentCard(blocks: actualBlocks),
+        ],
+      ],
     );
   }
 }

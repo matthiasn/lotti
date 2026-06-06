@@ -605,6 +605,122 @@ void main() {
     );
   });
 
+  group('RealDayAgent.renameBlock', () {
+    late _TestBench bench;
+
+    setUp(() => bench = _TestBench.create());
+
+    test(
+      'calls renameBlock on the plan service and projects the result',
+      () async {
+        const agentId = 'day-agent-001';
+        final dayDate = DateTime(_asOf.year, _asOf.month, _asOf.day);
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        when(
+          () => bench.planService.renameBlock(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+            blockId: any(named: 'blockId'),
+            title: any(named: 'title'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              AgentDomainEntity.dayPlan(
+                    id: 'day_agent_plan:${dayAgentIdForDate(dayDate)}',
+                    agentId: agentId,
+                    dayId: dayAgentIdForDate(dayDate),
+                    planDate: dayDate,
+                    data: DayPlanData(
+                      planDate: dayDate,
+                      status: const DayPlanStatus.draft(),
+                      plannedBlocks: [
+                        PlannedBlock(
+                          id: 'block_1',
+                          categoryId: 'life',
+                          startTime: dayDate.add(const Duration(hours: 12)),
+                          endTime: dayDate.add(const Duration(hours: 13)),
+                          title: 'Lunch with Sarah',
+                        ),
+                      ],
+                    ),
+                    scheduledMinutes: 60,
+                    createdAt: dayDate,
+                    updatedAt: dayDate,
+                    vectorClock: null,
+                  )
+                  as DayPlanEntity,
+        );
+        when(
+          () => bench.journalDb.getCategoryById(any()),
+        ).thenAnswer((_) async => null);
+
+        final plan = DraftPlan(
+          dayDate: dayDate,
+          blocks: const [],
+          bands: const [],
+          capacityMinutes: 480,
+          scheduledMinutes: 60,
+        );
+
+        final result = await bench.adapter.renameBlock(
+          plan: plan,
+          blockId: 'block_1',
+          title: 'Lunch with Sarah',
+        );
+
+        expect(result.blocks.single.title, 'Lunch with Sarah');
+        verify(
+          () => bench.planService.renameBlock(
+            agentId: agentId,
+            dayId: dayAgentIdForDate(dayDate),
+            blockId: 'block_1',
+            title: 'Lunch with Sarah',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'throws DayAgentInteractionException when no day-agent exists',
+      () async {
+        when(
+          () => bench.dayAgentService.getDayAgentForDate(any()),
+        ).thenAnswer((_) async => null);
+
+        final plan = DraftPlan(
+          dayDate: _asOf,
+          blocks: const [],
+          bands: const [],
+          capacityMinutes: 480,
+          scheduledMinutes: 0,
+        );
+
+        await expectLater(
+          bench.adapter.renameBlock(
+            plan: plan,
+            blockId: 'block_1',
+            title: 'Renamed',
+          ),
+          throwsA(isA<DayAgentInteractionException>()),
+        );
+        verifyNever(
+          () => bench.planService.renameBlock(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+            blockId: any(named: 'blockId'),
+            title: any(named: 'title'),
+          ),
+        );
+      },
+    );
+  });
+
   group('RealDayAgent.submitCapture', () {
     late _TestBench bench;
 

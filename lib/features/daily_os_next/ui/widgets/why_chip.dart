@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Small teal pill (`✦ why`) that opens a popover showing the verbatim
@@ -47,9 +48,7 @@ class WhyChip extends StatelessWidget {
             SizedBox(width: tokens.spacing.step1),
             Text(
               context.messages.dailyOsNextDayWhyChipLabel,
-              style: tokens.typography.styles.others.overline.copyWith(
-                color: teal,
-              ),
+              style: calmEyebrowStyle(tokens, color: teal),
             ),
           ],
         ),

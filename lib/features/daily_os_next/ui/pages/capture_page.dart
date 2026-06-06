@@ -8,13 +8,14 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
-import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
@@ -74,73 +75,116 @@ class CapturePage extends ConsumerWidget {
         child: Padding(
           key: const Key('daily_os_capture_bottom_nav_padding'),
           padding: EdgeInsets.only(bottom: bottomNavHeight),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final layout = CaptureLayoutMetrics.resolve(
-                tokens,
-                phase: state.phase,
-                viewportHeight: constraints.maxHeight,
-              );
-
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Column(
+            children: [
+              // "Today so far" pins to the top of the column; the
+              // greeting + orb stay centred in the remaining space
+              // below (handoff v2 item 1 — no clipping, intentional
+              // rhythm).
+              if (actualBlocks.isNotEmpty)
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.spacing.step5,
+                    tokens.spacing.step4,
+                    tokens.spacing.step5,
+                    0,
+                  ),
                   child: Center(
                     child: ConstrainedBox(
                       constraints: const BoxConstraints(maxWidth: 560),
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: tokens.spacing.step5,
-                          vertical: tokens.spacing.step6,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            if (actualBlocks.isNotEmpty) ...[
-                              _RecordedTimePreview(blocks: actualBlocks),
-                              SizedBox(height: tokens.spacing.step6),
-                            ],
-                            const _GreetingBlock(),
-                            SizedBox(height: tokens.spacing.step6),
-                            _Headline(forDate: forDate),
-                            _PastTrackingPrompt(forDate: forDate),
-                            SizedBox(height: tokens.spacing.step8),
-                            VoiceButton(
-                              phase: state.phase,
-                              dbfs: state.dbfs,
-                              semanticLabel: _voiceButtonLabel(
-                                context,
-                                state.phase,
-                              ),
-                              onTap: () => ref
-                                  .read(captureControllerProvider.notifier)
-                                  .toggle(),
-                            ),
-                            SizedBox(height: tokens.spacing.step5),
-                            _StateSlot(
-                              state: state,
-                              height: layout.stateSlotHeight,
-                              liveTranscriptLineCount:
-                                  layout.liveTranscriptLineCount,
-                              reviewTranscriptLineCount:
-                                  layout.reviewTranscriptLineCount,
-                            ),
-                            if (state.phase == CapturePhase.captured) ...[
-                              SizedBox(height: tokens.spacing.step6),
-                              _ReconcileCta(state: state, forDate: forDate),
-                            ],
-                          ],
-                        ),
+                      child: TimeSpentCard(
+                        blocks: actualBlocks,
+                        title: _timeSpentTitle(context),
                       ),
                     ),
                   ),
                 ),
-              );
-            },
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final layout = CaptureLayoutMetrics.resolve(
+                      tokens,
+                      phase: state.phase,
+                      viewportHeight: constraints.maxHeight,
+                    );
+
+                    return SingleChildScrollView(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight,
+                        ),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 560),
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: tokens.spacing.step5,
+                                vertical: tokens.spacing.step6,
+                              ),
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const _GreetingBlock(),
+                                  SizedBox(height: tokens.spacing.step6),
+                                  _Headline(forDate: forDate),
+                                  _PastTrackingPrompt(forDate: forDate),
+                                  SizedBox(height: tokens.spacing.step8),
+                                  VoiceButton(
+                                    phase: state.phase,
+                                    dbfs: state.dbfs,
+                                    semanticLabel: _voiceButtonLabel(
+                                      context,
+                                      state.phase,
+                                    ),
+                                    onTap: () => ref
+                                        .read(
+                                          captureControllerProvider.notifier,
+                                        )
+                                        .toggle(),
+                                  ),
+                                  SizedBox(height: tokens.spacing.step5),
+                                  _StateSlot(
+                                    state: state,
+                                    height: layout.stateSlotHeight,
+                                    liveTranscriptLineCount:
+                                        layout.liveTranscriptLineCount,
+                                    reviewTranscriptLineCount:
+                                        layout.reviewTranscriptLineCount,
+                                  ),
+                                  if (state.phase == CapturePhase.captured) ...[
+                                    SizedBox(height: tokens.spacing.step6),
+                                    _ReconcileCta(
+                                      state: state,
+                                      forDate: forDate,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
           ),
         ),
       ),
     );
+  }
+
+  /// "Today so far" for today; the date-neutral "Time spent" label for
+  /// any other day so the eyebrow never misleads.
+  String? _timeSpentTitle(BuildContext context) {
+    final date = forDate;
+    if (date == null) return null;
+    final now = clock.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final picked = DateTime(date.year, date.month, date.day);
+    if (picked.isAtSameMomentAs(today)) return null;
+    return context.messages.dailyOsNextTimeSpentTitlePast;
   }
 
   String _voiceButtonLabel(BuildContext context, CapturePhase phase) {
@@ -214,10 +258,10 @@ class CaptureLayoutMetrics {
 
   static double _fixedVerticalChrome(DsTokens tokens, CapturePhase phase) {
     final greetingHeight =
-        tokens.typography.lineHeight.subtitle1 +
+        _lineHeightOf(calmGreetingStyle(tokens)) +
         tokens.spacing.step2 +
-        tokens.typography.lineHeight.heading3;
-    final headlineHeight = tokens.typography.lineHeight.heading1 * 2;
+        _lineHeightOf(calmPageTitleStyle(tokens));
+    final headlineHeight = _lineHeightOf(calmHeroStyle(tokens)) * 2;
     final capturedActionsHeight = phase == CapturePhase.captured
         ? tokens.spacing.step6 + tokens.spacing.step9
         : 0;
@@ -231,6 +275,10 @@ class CaptureLayoutMetrics {
         tokens.spacing.step5 +
         capturedActionsHeight;
   }
+
+  /// Resolved line height of a concrete [TextStyle] in logical pixels.
+  static double _lineHeightOf(TextStyle style) =>
+      style.fontSize! * (style.height ?? 1.0);
 
   /// Upper clamp bound for the state slot.
   @visibleForTesting
@@ -305,131 +353,6 @@ class CaptureLayoutMetrics {
   }
 }
 
-class _RecordedTimePreview extends StatelessWidget {
-  const _RecordedTimePreview({required this.blocks});
-
-  final List<TimeBlock> blocks;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final totalMinutes = blocks.fold<int>(
-      0,
-      (sum, block) => sum + block.duration.inMinutes,
-    );
-    final completedTaskIds = blocks
-        .where((block) => block.state == TimeBlockState.completed)
-        .map((block) => block.taskId ?? block.id)
-        .toSet();
-
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.l),
-        border: Border.all(color: tokens.colors.decorative.level01),
-      ),
-      padding: EdgeInsets.all(tokens.spacing.step4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  messages.dailyOsNextTimeSpentTitle,
-                  style: tokens.typography.styles.others.overline.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              ),
-              Text(
-                messages.dailyOsNextTimeSpentSummary(
-                  _formatMinutes(totalMinutes),
-                  completedTaskIds.length,
-                ),
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          for (final block in blocks) ...[
-            _RecordedTimeRow(block: block),
-            if (block != blocks.last) SizedBox(height: tokens.spacing.step2),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _RecordedTimeRow extends StatelessWidget {
-  const _RecordedTimeRow({required this.block});
-
-  final TimeBlock block;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final color = categoryColorFromHex(block.category.colorHex);
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.only(top: tokens.spacing.step2),
-          child: SizedBox.square(
-            dimension: tokens.spacing.step2,
-            child: DecoratedBox(
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-            ),
-          ),
-        ),
-        SizedBox(width: tokens.spacing.step3),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                block.title,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-              SizedBox(height: tokens.spacing.step1),
-              Text(
-                _formatTimeRange(context, block),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-String _formatMinutes(int minutes) {
-  final hours = minutes ~/ 60;
-  final remainingMinutes = minutes % 60;
-  if (hours == 0) return '${remainingMinutes}m';
-  if (remainingMinutes == 0) return '${hours}h';
-  return '${hours}h ${remainingMinutes}m';
-}
-
-String _formatTimeRange(BuildContext context, TimeBlock block) {
-  final locale = Localizations.localeOf(context).toString();
-  final formatter = DateFormat.jm(locale);
-  return '${formatter.format(block.start)}-${formatter.format(block.end)}';
-}
-
 class _GreetingBlock extends ConsumerWidget {
   const _GreetingBlock();
 
@@ -445,22 +368,20 @@ class _GreetingBlock extends ConsumerWidget {
         : hour < 18
         ? context.messages.dailyOsNextGreetingAfternoon
         : context.messages.dailyOsNextGreetingEvening;
+    // Calm three-tier hierarchy: quiet greeting line over a 23/600
+    // page title — contrast carries the hierarchy, not size.
     return Column(
       children: [
         Text(
           userName.isEmpty
               ? context.messages.dailyOsNextGreetingHi
               : context.messages.dailyOsNextGreetingHiName(userName),
-          style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
+          style: calmGreetingStyle(tokens),
         ),
         SizedBox(height: tokens.spacing.step2),
         Text(
           greetingWord,
-          style: tokens.typography.styles.heading.heading3.copyWith(
-            color: tokens.colors.text.highEmphasis,
-          ),
+          style: calmPageTitleStyle(tokens),
         ),
       ],
     );
@@ -512,9 +433,9 @@ class _Headline extends StatelessWidget {
     return RichText(
       textAlign: TextAlign.center,
       text: TextSpan(
-        style: tokens.typography.styles.heading.heading1.copyWith(
-          color: tokens.colors.text.highEmphasis,
-        ),
+        // Calm hero — 34/500, the single large display line on this
+        // screen (was the louder 35/700 heading1).
+        style: calmHeroStyle(tokens),
         children: [
           TextSpan(
             text: '${context.messages.dailyOsNextCaptureHeadlineLead} ',
@@ -621,7 +542,8 @@ class _StateRow extends ConsumerWidget {
               SizedBox(height: tokens.spacing.step3),
               Text(
                 messages.dailyOsNextCaptureListening,
-                style: tokens.typography.styles.others.overline.copyWith(
+                style: calmEyebrowStyle(
+                  tokens,
                   color: tokens.colors.interactive.enabled,
                 ),
               ),
@@ -641,7 +563,8 @@ class _StateRow extends ConsumerWidget {
           children: [
             Text(
               messages.dailyOsNextCaptureListening,
-              style: tokens.typography.styles.others.overline.copyWith(
+              style: calmEyebrowStyle(
+                tokens,
                 color: tokens.colors.interactive.enabled,
               ),
             ),

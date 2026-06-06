@@ -54,6 +54,36 @@ final currentDraftPlanProvider = FutureProvider.autoDispose
       return agent.currentPlanForDate(date);
     });
 
+/// Local calendar days inside the family argument's month (any
+/// `DateTime` in the target month) that have a persisted, non-deleted
+/// day plan. Feeds the plan-day dots on the desktop sidebar's month
+/// calendar.
+///
+/// Plan entity ids are deterministic (`day_agent_plan:dayplan-<date>`),
+/// so a month resolves as one batched primary-key lookup.
+// ignore: specify_nonobvious_property_types
+final dailyOsPlanDaysProvider = FutureProvider.autoDispose
+    .family<Set<DateTime>, DateTime>((ref, month) async {
+      final agentRepository = ref.watch(agentRepositoryProvider);
+      // Any persisted day-agent entity change may add/remove a plan day.
+      ref.watch(agentUpdateStreamProvider(agentNotification));
+
+      final daysInMonth = DateTime(month.year, month.month + 1, 0).day;
+      final days = [
+        for (var day = 1; day <= daysInMonth; day++)
+          DateTime(month.year, month.month, day),
+      ];
+      final entities = await agentRepository.getEntitiesByIds([
+        for (final day in days) dayAgentPlanEntityId(dayAgentIdForDate(day)),
+      ]);
+      return {
+        for (final day in days)
+          if (entities[dayAgentPlanEntityId(dayAgentIdForDate(day))]
+              case final DayPlanEntity plan when plan.deletedAt == null)
+            day,
+      };
+    });
+
 /// One row in the Captures panel — a persisted capture paired with the
 /// `JournalAudio` it references (if any). Audio may be `null` when the
 /// capture was typed instead of spoken or when the journal entry has

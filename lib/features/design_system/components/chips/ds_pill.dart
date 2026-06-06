@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Visual variant for [DsPill]. Drives background, border, and label color.
@@ -80,11 +81,15 @@ class DsPill extends StatelessWidget {
         SizedBox(width: gap),
       ],
       if (label != null)
-        Text(
-          label!,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: labelStyle,
+        // Flexible so a host-bounded pill (e.g. a max-width link badge)
+        // ellipsizes the label instead of overflowing the row.
+        Flexible(
+          child: Text(
+            label!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: labelStyle,
+          ),
         ),
       if (trailing != null) ...[
         SizedBox(width: gap),
@@ -122,11 +127,9 @@ class DsPill extends StatelessWidget {
         ),
         child: content,
       ),
-      DsPillVariant.muted => CustomPaint(
-        painter: _DashedBorderPainter(
-          color: tokens.colors.decorative.level02,
-          radius: tokens.radii.badgesPills,
-        ),
+      DsPillVariant.muted => DsDashedBorder(
+        color: tokens.colors.decorative.level02,
+        radius: tokens.radii.badgesPills,
         child: content,
       ),
     };
@@ -178,55 +181,5 @@ class DsGhostChip extends StatelessWidget {
       trailing: label == null ? null : const SizedBox.shrink(),
       onTap: onTap,
     );
-  }
-}
-
-/// Paints a dashed 1px border along an inset `RRect` matching [radius]. Used
-/// by [DsPill] for the muted variant. The dash pattern is `[4, 3]` — a
-/// well-spaced rhythm that reads as "ghost" without looking dotty at 24px
-/// radius.
-class _DashedBorderPainter extends CustomPainter {
-  _DashedBorderPainter({required this.color, required this.radius});
-
-  final Color color;
-  final double radius;
-
-  static const double _stroke = 1;
-  static const double _dashOn = 4;
-  static const double _dashOff = 3;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(
-      _stroke / 2,
-      _stroke / 2,
-      size.width - _stroke,
-      size.height - _stroke,
-    );
-    final rrect = RRect.fromRectAndRadius(rect, Radius.circular(radius));
-    final path = Path()..addRRect(rrect);
-
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = _stroke;
-
-    for (final metric in path.computeMetrics()) {
-      var distance = 0.0;
-      final length = metric.length;
-      while (distance < length) {
-        final next = (distance + _dashOn).clamp(0.0, length);
-        canvas.drawPath(
-          metric.extractPath(distance, next),
-          paint,
-        );
-        distance = next + _dashOff;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedBorderPainter oldDelegate) {
-    return oldDelegate.color != color || oldDelegate.radius != radius;
   }
 }

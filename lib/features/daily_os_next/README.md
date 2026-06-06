@@ -77,17 +77,71 @@ Runtime behavior:
   `create_task_from_phrase`.
 - `submit_capture` persists a `CaptureEntity` and enqueues a manual wake with a
   `capture_submitted:<captureId>` trigger token.
-- `DailyOsNextRoot` owns the selected local plan date and keeps the date strip
-  visible on Capture and Day surfaces. Capture submissions use that selected
-  date for day-agent routing, Reconcile carries it into pending decisions, and
-  Drafting returns to the root after the plan persists so the date-aware shell
-  remains in control. Background agent or sync updates reload the current plan
-  stale-while-revalidate: the root keeps rendering the last Capture or Day
-  surface while the provider re-fetches, and only shows the loading shell for
-  the initial route load. The same Riverpod contract applies inside
-  Reconcile, Drafting, Shutdown, and the Day captures panel: if an `AsyncValue`
-  still has a previous value, the UI renders that value instead of replacing
-  the section or page with a spinner.
+- The selected local plan date lives in `dailyOsNextSelectedDateProvider`
+  (`state/selected_date_provider.dart`); `DailyOsNextRoot` watches it and keeps
+  the date strip visible on Capture and Day surfaces, while the desktop
+  sidebar's month calendar (shown beneath the active Daily OS nav row)
+  drives the same provider.
+  Capture submissions use that selected date for day-agent routing, Reconcile
+  carries it into pending decisions, and Drafting returns to the root after the
+  plan persists so the date-aware shell remains in control. Background agent or
+  sync updates reload the current plan stale-while-revalidate: the root keeps
+  rendering the last Capture or Day surface while the provider re-fetches, and
+  only shows the loading shell for the initial route load. The same Riverpod
+  contract applies inside Reconcile, Drafting, Shutdown, and the Day captures
+  panel: if an `AsyncValue` still has a previous value, the UI renders that
+  value instead of replacing the section or page with a spinner.
+- Routing on a day without a plan is tracked-time aware (design handoff v2,
+  item 2): when the day already has recorded sessions, the root mounts
+  `DayPage` in **empty mode** (`hasPlan: false` with a synthetic
+  `DraftPlan.emptyForDay`) so the timeline is visible without creating a plan
+  first. Empty mode lands on the Day view, renders an honest "No plan yet"
+  stat strip (neutral `CapacityDonut` over tracked minutes, tracked legend),
+  swaps the Refine/Commit footer for a single "Speak a check-in" CTA that
+  routes into Capture, and hides the delete-plan menu entry. A completely
+  empty day still lands directly on Capture.
+
+```mermaid
+stateDiagram-v2
+  [*] --> Loading: route enters date
+  Loading --> DayPlan: plan exists
+  Loading --> DayEmpty: no plan, tracked time
+  Loading --> Capture: no plan, nothing tracked
+  DayEmpty --> Capture: "Speak a check-in" CTA
+  Capture --> Reconcile: submit capture
+  Reconcile --> Drafting: build my day
+  Drafting --> DayPlan: plan persists
+  DayPlan --> Capture: plan deleted
+```
+
+- The "Today so far" tracked-time block is one shared widget,
+  `TimeSpentCard` (design handoff v2, item 1): calm eyebrow + right-aligned
+  mono summary (`4h 35m · 3 done`), one row per recorded session (category
+  dot, truncating title, mono clock range, green check when done), bounded to
+  3 rows on desktop / 2 on mobile with a ghost "N earlier sessions" expander
+  that keeps the most recent sessions visible. Capture pins it at the top of
+  its column (with a date-neutral title for non-today dates); the Agenda tab
+  reuses it as the empty-state body under a dashed "No plan yet" hint card.
+- Agenda items and Day blocks always show the task-linked vs standalone
+  distinction (design handoff v2, item 3): task-linked rows carry a blue
+  `LinkBadge` with the live task name (resolved via `taskLiveDataProvider`)
+  that opens the task, and task-linked Day blocks prefix an info-blue link
+  icon; standalone rows carry the neutral `StandaloneTag` ("Time block").
+  Standalone titles are click-to-edit through `EditableTitle` (pencil reveals
+  on hover, Enter/blur saves, Esc cancels); the edit persists through
+  `DayAgentInterface.renameBlock` → `DayAgentPlanService.renameBlock`, which
+  rejects task-linked blocks (rename the task instead) and rewrites the
+  `DayPlanEntity` block title in place. Agenda items derive from blocks, so
+  the agenda title follows the renamed block on the next projection.
+- Typography follows the calm system (design handoff v2, item 6) through the
+  design-system helpers in
+  `lib/features/design_system/theme/typography_helpers.dart`:
+  `calmEyebrowStyle` (11/600/0.04em) for every overline,
+  `calmPageTitleStyle` (23/600) for greetings/page titles, `calmHeroStyle`
+  (34/500) for the Capture headline, `calmDisplayStyle` (26/600) for the
+  Commit lead-in and LockInScene captions, and `calmGreetingStyle` (12/500)
+  for quiet helper lines. No daily-os-next surface uses the legacy
+  12/700/+8-tracking overline token directly.
 - `DailyOsPreferencesController` persists Daily OS personalization in
   `SettingsDb`. The user's display name is edited from Settings > Advanced >
   About and read by the Capture greeting. Category exclusions are edited from
@@ -110,10 +164,16 @@ Runtime behavior:
   shader voice affordance. `VoiceButton` mounts the AI tension-loop shader only
   during `listening`, wraps it around the fixed-size record button, and removes
   the shader subtree for idle, transcribing, captured, and error phases.
-- Agenda and Commit surfaces use a linear capacity meter. UI projections derive
-  scheduled minutes from the non-dropped blocks they render. Buffers count
-  because they reserve real time; dropped blocks do not. This keeps stale
-  persisted totals from making the capacity meter disagree with the agenda rows.
+- Agenda and Commit surfaces use the `CapacityDonut` ring (86 px on the Agenda
+  stat strip, 62 px on the Commit recap) per the design handoff: teal under
+  90% load, warning amber at 90–100%, error red above 100% with the
+  over-amount drawn as a half-alpha arc past the clamped end, and a
+  decimal-hours center label over an `of Nh` eyebrow. The honest no-plan strip
+  passes `neutral: true` so tracked hours never read as a false "Near full".
+  UI projections derive scheduled minutes from the non-dropped blocks they
+  render. Buffers count because they reserve real time; dropped blocks do not.
+  This keeps stale persisted totals from making the capacity reading disagree
+  with the agenda rows.
 - Sticky action bars on Day, Reconcile, and Shutdown use
   `DesignSystemGlassStrip`, the same hairline, blur, and footer gradient used
   by the task details action bar. The page-level buttons keep their own layout,
@@ -168,8 +228,12 @@ Runtime behavior:
   pager with an Actual peek; desktop-width layouts default to side-by-side.
   Two-finger vertical pinch and trackpad pinch zoom both lanes together, while
   the toolbar/horizontal pinch toggles paged versus side-by-side comparison.
-  The summary card above the tracks groups actual minutes by category and
-  counts completed task blocks. `DayBlock` opens `/tasks/<taskId>` for any
+  Blocks in the Actual lane render in the **tracked** treatment from the
+  handoff (v2 item 2): neutral fill and left border, a small category dot, a
+  green check when done, and a mono `HH:mm–HH:mm · tracked` subtitle — never
+  the dashed drafted outline, never a WhyChip. Drafted plan blocks carry a
+  dashed `DsDashedBorder` outline (a design-system primitive) so the whole frame reads provisional;
+  committed blocks render solid. `DayBlock` opens `/tasks/<taskId>` for any
   planned or actual block whose `TimeBlock.taskId` is present; standalone
   calendar and buffer blocks stay inert.
 - `surface_pending_decisions` intentionally limits overdue carryover to the
@@ -293,8 +357,18 @@ flowchart LR
   DayView --> Folds["folded idle regions"]
   DayView --> Paged["compact plan-first pager"]
   DayView --> Both["desktop side-by-side comparison"]
-  Actual --> Summary["time-spent summary by category + completed tasks"]
+  Actual --> Tracked["tracked block treatment + TimeSpentCard"]
 ```
+
+While the Daily OS tab is active, its desktop sidebar row expands into a
+month calendar (`SidebarMonthCalendar` in the design system, wrapped by
+`DailyOsSidebarCalendar` and mounted through the destination's
+`expandedChildBuilder` — the same slot the Tasks row uses for saved
+filters): today is highlighted teal, days with a persisted plan carry a
+dot (`dailyOsPlanDaysProvider` — one batched `getEntitiesByIds` lookup
+over the month's deterministic `day_agent_plan:<dayId>` ids), and tapping
+a day selects it via `dailyOsNextSelectedDateProvider`, which the already
+visible Daily OS surface reacts to directly.
 
 ## Testing Strategy
 

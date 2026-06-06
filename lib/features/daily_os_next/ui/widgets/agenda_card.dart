@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/link_badge.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -13,7 +15,9 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 ///
 /// The row keeps the category stripe and order number visible while using a
 /// compact task-list rhythm: title first, then reason, estimate, and state
-/// metadata as DS pills.
+/// metadata as DS pills. Task-linked items carry a [LinkBadge] that opens
+/// the task; standalone items carry a [StandaloneTag] and a click-to-edit
+/// title (handoff v2 item 3).
 class AgendaCard extends StatelessWidget {
   const AgendaCard({
     required this.index,
@@ -23,11 +27,16 @@ class AgendaCard extends StatelessWidget {
     this.coverArtId,
     this.coverArtCropX = 0.5,
     this.onTap,
+    this.onRename,
     super.key,
   });
 
   final int index;
   final AgendaItem item;
+
+  /// Live title of the linked task, shown on the [LinkBadge] so a task
+  /// renamed elsewhere stays recognisable. The card title itself stays
+  /// on [AgendaItem.title] — the agenda intent line.
   final String? displayTitle;
 
   /// Reason for the first block linked to this agenda item, surfaced
@@ -42,6 +51,11 @@ class AgendaCard extends StatelessWidget {
 
   /// Opens the backing task when `item.taskId` is available.
   final VoidCallback? onTap;
+
+  /// Inline rename for **standalone** items (no backing task). When
+  /// provided and the item has no task, the title becomes click-to-edit.
+  /// Task-linked titles stay read-only here — they're edited on the task.
+  final ValueChanged<String>? onRename;
 
   @override
   Widget build(BuildContext context) {
@@ -84,6 +98,8 @@ class AgendaCard extends StatelessWidget {
                     whyReason: whyReason,
                     coverArtId: coverArtId,
                     coverArtCropX: coverArtCropX,
+                    onOpenTask: onTap,
+                    onRename: onRename,
                   ),
                   if (progress != null) ...[
                     SizedBox(height: tokens.spacing.step4),
@@ -120,6 +136,8 @@ class _AgendaCardTop extends StatelessWidget {
     required this.whyReason,
     required this.coverArtId,
     required this.coverArtCropX,
+    required this.onOpenTask,
+    required this.onRename,
   });
 
   final int index;
@@ -129,6 +147,8 @@ class _AgendaCardTop extends StatelessWidget {
   final String? whyReason;
   final String? coverArtId;
   final double coverArtCropX;
+  final VoidCallback? onOpenTask;
+  final ValueChanged<String>? onRename;
 
   @override
   Widget build(BuildContext context) {
@@ -148,6 +168,8 @@ class _AgendaCardTop extends StatelessWidget {
             item: item,
             displayTitle: displayTitle,
             whyReason: whyReason,
+            onOpenTask: onOpenTask,
+            onRename: onRename,
           ),
         ),
       ],
@@ -160,29 +182,43 @@ class _AgendaContent extends StatelessWidget {
     required this.item,
     required this.displayTitle,
     required this.whyReason,
+    required this.onOpenTask,
+    required this.onRename,
   });
 
   final AgendaItem item;
   final String? displayTitle;
   final String? whyReason;
+  final VoidCallback? onOpenTask;
+  final ValueChanged<String>? onRename;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final isDesktop = isDesktopLayout(context);
+    final isTaskLinked = item.taskId != null && item.taskId!.isNotEmpty;
     final hasMeta =
         whyReason != null ||
         item.totalEstimateMinutes != null ||
         item.state != AgendaItemState.open;
-    final title = Text(
-      displayTitle ?? item.title,
-      style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-        color: tokens.colors.text.highEmphasis,
-      ),
-      maxLines: isDesktop ? 2 : 3,
-      overflow: TextOverflow.fade,
-      softWrap: true,
+    final titleStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
+      color: tokens.colors.text.highEmphasis,
     );
+    // Standalone titles are click-to-edit; task-linked titles are
+    // edited on the task itself (handoff v2 item 3).
+    final title = !isTaskLinked && onRename != null
+        ? EditableTitle(
+            value: item.title,
+            onSubmitted: onRename!,
+            style: titleStyle,
+          )
+        : Text(
+            item.title,
+            style: titleStyle,
+            maxLines: isDesktop ? 2 : 3,
+            overflow: TextOverflow.fade,
+            softWrap: true,
+          );
     final meta = _AgendaMetaRow(item: item, whyReason: whyReason);
 
     return Column(
@@ -204,6 +240,17 @@ class _AgendaContent extends StatelessWidget {
             meta,
           ],
         ],
+        SizedBox(height: tokens.spacing.step3),
+        // The task-linked / standalone distinction is always visible:
+        // a blue link badge that opens the task, or a neutral
+        // "Time block" tag.
+        if (isTaskLinked)
+          LinkBadge(
+            label: displayTitle ?? item.title,
+            onTap: onOpenTask,
+          )
+        else
+          const StandaloneTag(),
         if (item.outcome != null) ...[
           SizedBox(height: tokens.spacing.step3),
           Text(

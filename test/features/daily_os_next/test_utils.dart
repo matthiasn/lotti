@@ -14,6 +14,7 @@ class RecordingDayAgent implements DayAgentInterface {
     this.acceptedPlan,
     this.proposeError,
     this.proposeGate,
+    this.renameError,
     this.submitResult = const CaptureId('cap'),
     this.draftPlanBuilder,
   });
@@ -28,6 +29,12 @@ class RecordingDayAgent implements DayAgentInterface {
 
   /// When set, [proposePlanDiff] throws this error (after [proposeGate]).
   final Error? proposeError;
+
+  /// When set, [renameBlock] throws this error.
+  final Error? renameError;
+
+  /// `(blockId, title)` pairs received by [renameBlock].
+  final List<(String, String)> renamedBlocks = [];
 
   /// When set, [proposePlanDiff] blocks on this future before returning,
   /// keeping callers pinned in their "thinking" phase so tests can observe
@@ -128,6 +135,23 @@ class RecordingDayAgent implements DayAgentInterface {
     capturedPlan = plan;
     commitCount++;
     return plan.copyWith(state: DayState.committed);
+  }
+
+  @override
+  Future<DraftPlan> renameBlock({
+    required DraftPlan plan,
+    required String blockId,
+    required String title,
+  }) async {
+    renamedBlocks.add((blockId, title));
+    final error = renameError;
+    if (error != null) throw error;
+    return plan.copyWith(
+      blocks: [
+        for (final block in plan.blocks)
+          if (block.id == blockId) block.copyWith(title: title) else block,
+      ],
+    );
   }
 
   // ---- Benign default stubs ----

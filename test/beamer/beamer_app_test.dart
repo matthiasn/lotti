@@ -20,6 +20,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     as ai_repo;
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
@@ -762,6 +763,70 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
     });
+
+    testWidgets(
+      'Daily OS month calendar renders under its sidebar row only while '
+      'the Daily OS tab is active',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        Future<void> pumpWithActiveIndex(int index) async {
+          final mockNavService = MockNavService();
+          await _stubNavService(
+            mockNavService,
+            indexStream: Stream.value(index),
+            isProjectsEnabled: () => true,
+            isDailyOsEnabled: () => true,
+            isHabitsEnabled: () => true,
+            isDashboardsEnabled: () => true,
+          );
+          await _registerAppScreenGetIt(mockNavService);
+          addTearDown(tearDownTestGetIt);
+
+          await _pumpAppScreen(
+            tester,
+            navService: mockNavService,
+            viewportSize: _desktopViewportSize,
+          );
+        }
+
+        // Tasks active (index 0): no calendar in the sidebar.
+        await pumpWithActiveIndex(0);
+        expect(find.byType(DailyOsSidebarCalendar), findsNothing);
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        await tearDownTestGetIt();
+
+        // Daily OS active (index 2 with projects enabled): the calendar
+        // renders as the destination's expanded subtree.
+        await pumpWithActiveIndex(2);
+        expect(find.byType(DailyOsSidebarCalendar), findsOneWidget);
+        // It sits under the Daily OS row, above Habits.
+        final calendarY = tester
+            .getTopLeft(find.byType(DailyOsSidebarCalendar))
+            .dy;
+        final sidebar = find.byType(DesktopNavigationSidebar);
+        final dailyOsRowY = tester
+            .getCenter(
+              find.descendant(of: sidebar, matching: find.text('DailyOS')),
+            )
+            .dy;
+        final habitsRowY = tester
+            .getCenter(
+              find.descendant(of: sidebar, matching: find.text('Habits')),
+            )
+            .dy;
+        expect(calendarY, greaterThan(dailyOsRowY));
+        expect(calendarY, lessThan(habitsRowY));
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
 
     testWidgets('Tasks sidebar item has no trailing count badge', (
       tester,

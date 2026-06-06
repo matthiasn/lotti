@@ -5220,6 +5220,12 @@ abstract class AppLocalizations {
   /// **'NEAR FULL'**
   String get dailyOsNextAgendaCapacityNearFull;
 
+  /// No description provided for @dailyOsNextAgendaCapacityNoPlan.
+  ///
+  /// In en, this message translates to:
+  /// **'NO PLAN YET'**
+  String get dailyOsNextAgendaCapacityNoPlan;
+
   /// No description provided for @dailyOsNextAgendaCapacityOf.
   ///
   /// In en, this message translates to:
@@ -5232,11 +5238,23 @@ abstract class AppLocalizations {
   /// **'OVER CAPACITY'**
   String get dailyOsNextAgendaCapacityOver;
 
-  /// No description provided for @dailyOsNextAgendaEmpty.
+  /// No description provided for @dailyOsNextAgendaNoPlanBody.
   ///
   /// In en, this message translates to:
-  /// **'Nothing to do today.'**
-  String get dailyOsNextAgendaEmpty;
+  /// **'Your tracked time is here either way — speak a check-in and I\'ll draft a day around it.'**
+  String get dailyOsNextAgendaNoPlanBody;
+
+  /// No description provided for @dailyOsNextAgendaNoPlanSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} tracked so far. Speak a check-in and I\'ll draft a day around it.'**
+  String dailyOsNextAgendaNoPlanSummary(String duration);
+
+  /// No description provided for @dailyOsNextAgendaNoPlanTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No plan yet for today.'**
+  String get dailyOsNextAgendaNoPlanTitle;
 
   /// No description provided for @dailyOsNextAgendaStateDone.
   ///
@@ -5267,6 +5285,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{scheduled} of {capacity} committed'**
   String dailyOsNextAgendaSummary(String scheduled, String capacity);
+
+  /// No description provided for @dailyOsNextAgendaTrackedLegend.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked · {duration} · {completedCount} done'**
+  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount);
 
   /// No description provided for @dailyOsNextCaptureCaptured.
   ///
@@ -5460,17 +5484,23 @@ abstract class AppLocalizations {
   /// **'{scheduled} of {capacity} committed. Comfortable margin — you can absorb one surprise.'**
   String dailyOsNextCommitCapacityNote(String scheduled, String capacity);
 
-  /// No description provided for @dailyOsNextCommitDraftHeadline.
-  ///
-  /// In en, this message translates to:
-  /// **'Your day, drafted.'**
-  String get dailyOsNextCommitDraftHeadline;
-
   /// No description provided for @dailyOsNextCommitDraftOverline.
   ///
   /// In en, this message translates to:
-  /// **'TODAY'**
+  /// **'YOUR DAY, DRAFTED'**
   String get dailyOsNextCommitDraftOverline;
+
+  /// No description provided for @dailyOsNextCommitExplainer.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign off to move today from draft to committed.'**
+  String get dailyOsNextCommitExplainer;
+
+  /// No description provided for @dailyOsNextCommitFinalStepEyebrow.
+  ///
+  /// In en, this message translates to:
+  /// **'FINAL STEP'**
+  String get dailyOsNextCommitFinalStepEyebrow;
 
   /// No description provided for @dailyOsNextCommitHeadline.
   ///
@@ -5478,17 +5508,29 @@ abstract class AppLocalizations {
   /// **'Make it yours.'**
   String get dailyOsNextCommitHeadline;
 
-  /// No description provided for @dailyOsNextCommitHoldHint.
+  /// No description provided for @dailyOsNextCommitHoldHelper.
   ///
   /// In en, this message translates to:
-  /// **'HOLD'**
-  String get dailyOsNextCommitHoldHint;
+  /// **'Hold for a second to sign off'**
+  String get dailyOsNextCommitHoldHelper;
 
-  /// No description provided for @dailyOsNextCommitHoldLabel.
+  /// No description provided for @dailyOsNextCommitHoldWordDone.
   ///
   /// In en, this message translates to:
-  /// **'Commit today'**
-  String get dailyOsNextCommitHoldLabel;
+  /// **'Committed'**
+  String get dailyOsNextCommitHoldWordDone;
+
+  /// No description provided for @dailyOsNextCommitHoldWordHolding.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep holding'**
+  String get dailyOsNextCommitHoldWordHolding;
+
+  /// No description provided for @dailyOsNextCommitHoldWordIdle.
+  ///
+  /// In en, this message translates to:
+  /// **'Hold'**
+  String get dailyOsNextCommitHoldWordIdle;
 
   /// No description provided for @dailyOsNextCommitLockingIn.
   ///
@@ -5505,7 +5547,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextCommitSubCaption.
   ///
   /// In en, this message translates to:
-  /// **'Signing off shifts the day from draft to committed. You can still talk to me — but the bones stay put.'**
+  /// **'You can still talk to me afterward — but the bones stay put.'**
   String get dailyOsNextCommitSubCaption;
 
   /// No description provided for @dailyOsNextCommitTitle.
@@ -5525,6 +5567,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Back'**
   String get dailyOsNextDayBack;
+
+  /// No description provided for @dailyOsNextDayCheckInCta.
+  ///
+  /// In en, this message translates to:
+  /// **'Speak a check-in'**
+  String get dailyOsNextDayCheckInCta;
 
   /// No description provided for @dailyOsNextDayDeleteDialogBody.
   ///
@@ -5628,6 +5676,12 @@ abstract class AppLocalizations {
   /// **'✦ REASONING'**
   String get dailyOsNextDraftingReasoningOverline;
 
+  /// No description provided for @dailyOsNextEditTitleHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit title'**
+  String get dailyOsNextEditTitleHint;
+
   /// No description provided for @dailyOsNextEstimateMinutes.
   ///
   /// In en, this message translates to:
@@ -5661,7 +5715,7 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextGreetingHiName.
   ///
   /// In en, this message translates to:
-  /// **'Hi {name},'**
+  /// **'Hi {name} 👋'**
   String dailyOsNextGreetingHiName(String name);
 
   /// No description provided for @dailyOsNextGreetingMorning.
@@ -5844,6 +5898,12 @@ abstract class AppLocalizations {
   /// **'Refine the plan'**
   String get dailyOsNextRefineTitle;
 
+  /// No description provided for @dailyOsNextRenameFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t rename — try again.'**
+  String get dailyOsNextRenameFailed;
+
   /// No description provided for @dailyOsNextShutdownCarryoverDrop.
   ///
   /// In en, this message translates to:
@@ -5976,6 +6036,12 @@ abstract class AppLocalizations {
   /// **'✦ FOR TOMORROW'**
   String get dailyOsNextShutdownTomorrowOverline;
 
+  /// No description provided for @dailyOsNextStandaloneTag.
+  ///
+  /// In en, this message translates to:
+  /// **'Time block'**
+  String get dailyOsNextStandaloneTag;
+
   /// No description provided for @dailyOsNextStateDueOnDate.
   ///
   /// In en, this message translates to:
@@ -6078,23 +6144,41 @@ abstract class AppLocalizations {
   /// **'Swipe for actual · pinch vertically to zoom'**
   String get dailyOsNextTimelineSwipeHint;
 
-  /// No description provided for @dailyOsNextTimeSpentEmpty.
+  /// No description provided for @dailyOsNextTimelineTracked.
   ///
   /// In en, this message translates to:
-  /// **'No recorded time for this day yet.'**
-  String get dailyOsNextTimeSpentEmpty;
+  /// **'tracked'**
+  String get dailyOsNextTimelineTracked;
+
+  /// No description provided for @dailyOsNextTimeSpentEarlierSessions.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{1 earlier session} other{{count} earlier sessions}}'**
+  String dailyOsNextTimeSpentEarlierSessions(int count);
+
+  /// No description provided for @dailyOsNextTimeSpentShowLess.
+  ///
+  /// In en, this message translates to:
+  /// **'Show less'**
+  String get dailyOsNextTimeSpentShowLess;
 
   /// No description provided for @dailyOsNextTimeSpentSummary.
   ///
   /// In en, this message translates to:
-  /// **'{duration} recorded · {completedCount} done'**
+  /// **'{duration} · {completedCount} done'**
   String dailyOsNextTimeSpentSummary(String duration, int completedCount);
 
   /// No description provided for @dailyOsNextTimeSpentTitle.
   ///
   /// In en, this message translates to:
-  /// **'TIME SPENT'**
+  /// **'TODAY SO FAR'**
   String get dailyOsNextTimeSpentTitle;
+
+  /// No description provided for @dailyOsNextTimeSpentTitlePast.
+  ///
+  /// In en, this message translates to:
+  /// **'TIME SPENT'**
+  String get dailyOsNextTimeSpentTitlePast;
 
   /// No description provided for @dailyOsNextTriageConfirmDefer.
   ///

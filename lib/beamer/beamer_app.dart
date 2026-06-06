@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
@@ -552,6 +553,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         label: context.messages.navTabTitleCalendar,
         iconBuilder: ({required active}) =>
             Icon(active ? Icons.today_rounded : Icons.today_outlined),
+        // Month calendar (design handoff sidebar spec) renders beneath
+        // the row only while Daily OS is the active tab — same slot the
+        // Tasks destination uses for its saved-filters tree.
+        expandedChildBuilder: () => const DailyOsSidebarCalendar(),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.habits,

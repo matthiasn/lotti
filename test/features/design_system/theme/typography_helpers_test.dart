@@ -91,4 +91,96 @@ void main() {
       tags: 'glados',
     );
   });
+
+  group('calm typography', () {
+    test('eyebrow is 11/600 with 0.04em tracking and low-emphasis default', () {
+      const tokens = dsTokensDark;
+      final style = calmEyebrowStyle(tokens);
+
+      expect(style.fontSize, 11);
+      expect(style.fontWeight, FontWeight.w600);
+      expect(style.letterSpacing, closeTo(11 * 0.04, 1e-9));
+      expect(style.color, tokens.colors.text.lowEmphasis);
+      expect(
+        style.fontFamily,
+        tokens.typography.styles.others.overline.fontFamily,
+      );
+    });
+
+    test('page title is 23/600 with -0.015em tracking', () {
+      const tokens = dsTokensLight;
+      final style = calmPageTitleStyle(tokens);
+
+      expect(style.fontSize, 23);
+      expect(style.fontWeight, FontWeight.w600);
+      expect(style.letterSpacing, closeTo(23 * -0.015, 1e-9));
+      expect(style.color, tokens.colors.text.highEmphasis);
+    });
+
+    test('hero is 34/500 with -0.02em tracking', () {
+      const tokens = dsTokensLight;
+      final style = calmHeroStyle(tokens);
+
+      expect(style.fontSize, 34);
+      expect(style.fontWeight, FontWeight.w500);
+      expect(style.letterSpacing, closeTo(34 * -0.02, 1e-9));
+      expect(style.color, tokens.colors.text.highEmphasis);
+    });
+
+    test('display moment is 26/600 with -0.02em tracking', () {
+      const tokens = dsTokensDark;
+      final style = calmDisplayStyle(tokens);
+
+      expect(style.fontSize, 26);
+      expect(style.fontWeight, FontWeight.w600);
+      expect(style.letterSpacing, closeTo(26 * -0.02, 1e-9));
+      expect(style.color, tokens.colors.text.highEmphasis);
+    });
+
+    test('greeting is 12/500 with low-emphasis default', () {
+      const tokens = dsTokensLight;
+      final style = calmGreetingStyle(tokens);
+
+      expect(style.fontSize, tokens.typography.styles.others.caption.fontSize);
+      expect(style.fontWeight, FontWeight.w500);
+      expect(style.color, tokens.colors.text.lowEmphasis);
+    });
+
+    glados.Glados2(
+      glados.any.dsTokens,
+      glados.any.maybeColor,
+      glados.ExploreConfig(numRuns: 80),
+    ).test(
+      'calm invariants hold for both themes: no style exceeds 600 weight, '
+      'eyebrow tracking stays tight, and the color override always wins',
+      (tokens, color) {
+        final styles = [
+          calmEyebrowStyle(tokens, color: color),
+          calmPageTitleStyle(tokens, color: color),
+          calmHeroStyle(tokens, color: color),
+          calmDisplayStyle(tokens, color: color),
+          calmGreetingStyle(tokens, color: color),
+        ];
+
+        for (final style in styles) {
+          // Calm rule: one title weight (600), never 700.
+          expect(
+            style.fontWeight!.value,
+            lessThanOrEqualTo(FontWeight.w600.value),
+            reason: 'calm styles never use 700 weight',
+          );
+          if (color != null) {
+            expect(style.color, color);
+          }
+        }
+
+        // Eyebrows must not inherit the legacy +8 tracking.
+        expect(
+          calmEyebrowStyle(tokens, color: color).letterSpacing,
+          lessThan(1),
+        );
+      },
+      tags: 'glados',
+    );
+  });
 }

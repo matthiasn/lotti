@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/hold_to_confirm.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/lock_in_scene.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -91,8 +91,18 @@ void main() {
 
       final messages = tester.element(find.byType(CommitPage)).messages;
       expect(find.text(messages.dailyOsNextCommitTitle), findsOneWidget);
+      // Three-tier lead-in: eyebrow, display title, explainer
+      // (handoff v2 item 4).
+      expect(
+        find.text(messages.dailyOsNextCommitFinalStepEyebrow),
+        findsOneWidget,
+      );
       expect(find.text(messages.dailyOsNextCommitHeadline), findsOneWidget);
+      expect(find.text(messages.dailyOsNextCommitExplainer), findsOneWidget);
       expect(find.text(messages.dailyOsNextCommitSubCaption), findsOneWidget);
+      // Helper line under the hold circle + single-word circle label.
+      expect(find.text(messages.dailyOsNextCommitHoldHelper), findsOneWidget);
+      expect(find.text(messages.dailyOsNextCommitHoldWordIdle), findsOneWidget);
       expect(find.byType(HoldToConfirm), findsOneWidget);
       expect(find.byType(LockInScene), findsNothing);
     });
@@ -122,12 +132,15 @@ void main() {
       );
     });
 
-    testWidgets('capacity meter and note reflect the draft', (tester) async {
+    testWidgets('capacity donut and note reflect the draft', (tester) async {
       _setSurface(tester, const Size(1280, 1200));
       await tester.pumpWidget(_wrap(CommitPage(draft: _planWithItems())));
       await tester.pump();
 
-      expect(find.byType(CapacityMeter), findsOneWidget);
+      final donut = tester.widget<CapacityDonut>(find.byType(CapacityDonut));
+      expect(donut.scheduledMinutes, 180);
+      expect(donut.capacityMinutes, 240);
+      expect(donut.size, 62);
       final messages = tester.element(find.byType(CommitPage)).messages;
       expect(
         find.text(messages.dailyOsNextCommitCapacityNote('3h', '4h')),

@@ -9,6 +9,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task agents now maintain their own day-planning attention requests during
   normal wakes, resolving stale requests when tasks are done or no longer need
   scheduled time.
+- While the Daily OS tab is active, its desktop sidebar entry expands into a
+  month calendar: today is highlighted, days with a Daily OS plan carry a
+  dot, and tapping a day jumps straight to it.
+- Daily OS Next: a day with tracked time but no plan now opens on the Day
+  timeline so recorded sessions are visible without drafting a plan first,
+  with an honest "No plan yet" capacity strip and a "Speak a check-in" button
+  into Capture.
+- Daily OS Next: a bounded "Today so far" card shows the day's recorded
+  sessions on the Capture screen and on the empty Agenda tab, collapsing older
+  sessions behind an "N earlier sessions" expander.
+- Daily OS Next: agenda items and day blocks now show whether they are backed
+  by a task (blue link badge that opens the task) or are standalone time
+  blocks, and standalone titles can be renamed inline (click to edit, Enter or
+  blur saves, Esc cancels).
+
+### Changed
+- Daily OS Next visuals now follow the latest design handoff: a capacity donut
+  replaces the linear meter on the Agenda and Commit surfaces, recorded
+  sessions render in a neutral "tracked" treatment with mono time ranges,
+  drafted blocks carry a dashed outline, the commit sign-off uses the
+  "Final step / Make it yours." composition with a smaller single-word hold
+  button, and typography across the feature is calmer (lighter overlines and
+  headers).
 
 ### Fixed
 - Slow-query logging now starts from persisted logging settings during startup,

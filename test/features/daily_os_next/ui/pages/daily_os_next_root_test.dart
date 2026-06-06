@@ -98,6 +98,9 @@ void main() {
         await tester.tap(find.byIcon(Icons.chevron_right_rounded));
         await tester.pump();
         await tester.pump();
+        // Third frame: the tracked-time projection resolves before the
+        // root chooses between Capture and the empty Day surface.
+        await tester.pump();
 
         expect(find.text('May 27, 2026'), findsOneWidget);
         expect(requestedDates, contains(DateTime(2026, 5, 27)));
@@ -105,7 +108,8 @@ void main() {
     });
 
     testWidgets(
-      'no-plan capture path still surfaces already recorded time',
+      'a no-plan day with tracked time lands on the empty Day surface; '
+      'the check-in CTA routes into Capture with the tracked card',
       (tester) async {
         final actualBlock = TimeBlock(
           id: 'actual:entry-1',
@@ -139,10 +143,29 @@ void main() {
           await tester.pump();
           await tester.pump();
 
-          final messages = tester.element(find.byType(CapturePage)).messages;
+          // Recorded time is visible without creating a plan first
+          // (handoff v2 item 2): the Day surface mounts in empty mode
+          // with the tracked session on the timeline.
+          final messages = tester.element(find.byType(DayPage)).messages;
+          expect(find.byType(DayPage), findsOneWidget);
+          expect(find.byType(CapturePage), findsNothing);
+          expect(find.text('Client follow-up'), findsOneWidget);
+          // Honest "No plan yet" footer CTA instead of Refine/Commit.
+          final cta = find.byKey(const Key('daily_os_day_check_in_cta'));
+          expect(cta, findsOneWidget);
+          expect(find.text(messages.dailyOsNextDayRefineCta), findsNothing);
+
+          // The CTA drops into Capture; the tracked card rides along.
+          await tester.tap(cta);
+          await tester.pump();
+          await tester.pump();
+
           expect(find.byType(CapturePage), findsOneWidget);
           expect(find.byType(DayPage), findsNothing);
-          expect(find.text(messages.dailyOsNextTimeSpentTitle), findsOneWidget);
+          expect(
+            find.text(messages.dailyOsNextTimeSpentTitle),
+            findsOneWidget,
+          );
           expect(find.text('Client follow-up'), findsOneWidget);
         });
       },
@@ -349,6 +372,7 @@ void main() {
           await tester.tap(find.byIcon(Icons.chevron_left_rounded));
           await tester.pump();
           await tester.pump();
+          await tester.pump();
 
           expect(find.text('May 25, 2026'), findsOneWidget);
           expect(requestedDates, contains(DateTime(2026, 5, 25)));
@@ -425,10 +449,12 @@ void main() {
           await tester.tap(find.byIcon(Icons.chevron_right_rounded));
           await tester.pump();
           await tester.pump();
+          await tester.pump();
           expect(find.text('May 27, 2026'), findsOneWidget);
 
           // Long-press the date label → snaps back to "Today".
           await tester.longPress(find.text('May 27, 2026'));
+          await tester.pump();
           await tester.pump();
           await tester.pump();
 

@@ -1327,6 +1327,7 @@
   "dailyOsNearLimit": "Blízko limitu",
   "dailyOsNextAgendaCapacityComfortable": "POHODOVÉ",
   "dailyOsNextAgendaCapacityNearFull": "TÉMĚŘ PLNÉ",
+  "dailyOsNextAgendaCapacityNoPlan": "ZATÍM ŽÁDNÝ PLÁN",
   "dailyOsNextAgendaCapacityOf": "z {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1337,7 +1338,9 @@
     }
   },
   "dailyOsNextAgendaCapacityOver": "PŘEPLNĚNO",
-  "dailyOsNextAgendaEmpty": "Dnes není co dělat.",
+  "dailyOsNextAgendaNoPlanBody": "Tvůj zaznamenaný čas tu je tak jako tak — namluv check-in a já kolem něj navrhnu den.",
+  "dailyOsNextAgendaNoPlanSummary": "{duration} zatím zaznamenáno. Namluv check-in a já kolem toho navrhnu den.",
+  "dailyOsNextAgendaNoPlanTitle": "Na dnešek zatím žádný plán.",
   "dailyOsNextAgendaStateDone": "Hotovo",
   "dailyOsNextAgendaStateInProgress": "Probíhá",
   "dailyOsNextAgendaStateOpen": "Otevřené",
@@ -1355,6 +1358,7 @@
       }
     }
   },
+  "dailyOsNextAgendaTrackedLegend": "Zaznamenáno · {duration} · {completedCount} hotovo",
   "dailyOsNextCaptureCaptured": "Rozumím.",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Přístup k mikrofonu byl odepřen.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "Žádná aktivní relace v reálném čase.",
@@ -1399,17 +1403,21 @@
       }
     }
   },
-  "dailyOsNextCommitDraftHeadline": "Tvůj den, jako návrh.",
-  "dailyOsNextCommitDraftOverline": "DNES",
+  "dailyOsNextCommitDraftOverline": "TVŮJ DEN, NAVRŽENÝ",
+  "dailyOsNextCommitExplainer": "Podpisem přepneš dnešek z návrhu na závazný.",
+  "dailyOsNextCommitFinalStepEyebrow": "POSLEDNÍ KROK",
   "dailyOsNextCommitHeadline": "Udělej ho svým.",
-  "dailyOsNextCommitHoldHint": "DRŽ",
-  "dailyOsNextCommitHoldLabel": "Potvrdit dnešek",
+  "dailyOsNextCommitHoldHelper": "Podrž vteřinu pro podpis",
+  "dailyOsNextCommitHoldWordDone": "Závazné",
+  "dailyOsNextCommitHoldWordHolding": "Drž dál",
+  "dailyOsNextCommitHoldWordIdle": "Podrž",
   "dailyOsNextCommitLockingIn": "Zamykám…",
   "dailyOsNextCommitShepherdSubline": "Já provedu — práci uděláš ty.",
-  "dailyOsNextCommitSubCaption": "Potvrzením přejdeš z návrhu k závazku. Mluvit můžeš dál, ale kostra zůstává.",
+  "dailyOsNextCommitSubCaption": "I potom se mnou můžeš mluvit — ale kostra zůstává.",
   "dailyOsNextCommitTitle": "Uzamknout",
   "dailyOsNextCommitTodayIsYours": "Den je tvůj.",
   "dailyOsNextDayBack": "Zpět",
+  "dailyOsNextDayCheckInCta": "Namluvit check-in",
   "dailyOsNextDayDeleteDialogBody": "Naplánované bloky pro tento den budou odstraněny. Tvoje záznamy a jejich audio nahrávky zůstávají v tvém deníku.",
   "dailyOsNextDayDeleteDialogCancel": "Zrušit",
   "dailyOsNextDayDeleteDialogConfirm": "Smazat",
@@ -1427,6 +1435,7 @@
   "dailyOsNextDraftingNudgeAccept": "Ano, chraň ranní hodiny",
   "dailyOsNextDraftingNudgeDecline": "Dnes ne",
   "dailyOsNextDraftingReasoningOverline": "✦ ÚVAHA",
+  "dailyOsNextEditTitleHint": "Upravit název",
   "dailyOsNextEstimateMinutes": "{minutes}m",
   "@dailyOsNextEstimateMinutes": {
     "placeholders": {
@@ -1440,7 +1449,7 @@
   "dailyOsNextGreetingAfternoon": "Dobré odpoledne.",
   "dailyOsNextGreetingEvening": "Dobrý večer.",
   "dailyOsNextGreetingHi": "Ahoj 👋",
-  "dailyOsNextGreetingHiName": "Ahoj {name},",
+  "dailyOsNextGreetingHiName": "Ahoj {name} 👋",
   "dailyOsNextGreetingMorning": "Dobré ráno.",
   "dailyOsNextParsedCardBreakLinkTooltip": "Odpojit",
   "dailyOsNextPlanViewAgenda": "Agenda",
@@ -1479,6 +1488,7 @@
   "dailyOsNextRefineStatusListening": "Poslouchám…",
   "dailyOsNextRefineStatusThinking": "✦ Přepracovávám plán…",
   "dailyOsNextRefineTitle": "Upravit plán",
+  "dailyOsNextRenameFailed": "Přejmenování se nepovedlo — zkus to znovu.",
   "dailyOsNextShutdownCarryoverDrop": "Zahodit",
   "dailyOsNextShutdownCarryoverDropped": "Zahozeno",
   "dailyOsNextShutdownCarryoverOverline": "PŘEVÁDÍ SE",
@@ -1517,6 +1527,7 @@
   "dailyOsNextShutdownSaveAndClose": "Uložit a zavřít",
   "dailyOsNextShutdownTitle": "Uzavřít den",
   "dailyOsNextShutdownTomorrowOverline": "✦ NA ZÍTŘEK",
+  "dailyOsNextStandaloneTag": "Časový blok",
   "dailyOsNextStateDueOnDate": "Splatné {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {
@@ -1568,9 +1579,12 @@
   "dailyOsNextTimelineShowBoth": "Zobrazit plán a skutečnost společně",
   "dailyOsNextTimelineShowPaged": "Zobrazit plán a skutečnost posouváním",
   "dailyOsNextTimelineSwipeHint": "Přejeď na skutečnost · svislým štípnutím přiblížíš",
-  "dailyOsNextTimeSpentEmpty": "Pro tento den zatím není zaznamenaný žádný čas.",
-  "dailyOsNextTimeSpentSummary": "{duration} zaznamenáno · {completedCount} hotovo",
-  "dailyOsNextTimeSpentTitle": "STRÁVENÝ ČAS",
+  "dailyOsNextTimelineTracked": "zaznamenáno",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 starší záznam} few{{count} starší záznamy} other{{count} starších záznamů}}",
+  "dailyOsNextTimeSpentShowLess": "Zobrazit méně",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} hotovo",
+  "dailyOsNextTimeSpentTitle": "DNES ZATÍM",
+  "dailyOsNextTimeSpentTitlePast": "STRÁVENÝ ČAS",
   "dailyOsNextTriageConfirmDefer": "Odloženo",
   "dailyOsNextTriageConfirmDone": "Označeno jako hotové",
   "dailyOsNextTriageConfirmDoNow": "Hotovo hned",

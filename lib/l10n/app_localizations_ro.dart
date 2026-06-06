@@ -3132,6 +3132,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextAgendaCapacityNearFull => 'APROAPE PLIN';
 
   @override
+  String get dailyOsNextAgendaCapacityNoPlan => 'ÎNCĂ FĂRĂ PLAN';
+
+  @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
     return 'din $capacity';
   }
@@ -3140,7 +3143,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextAgendaCapacityOver => 'PESTE CAPACITATE';
 
   @override
-  String get dailyOsNextAgendaEmpty => 'Nimic de făcut astăzi.';
+  String get dailyOsNextAgendaNoPlanBody =>
+      'Timpul dvs. înregistrat este oricum aici — rostiți un check-in și voi schița o zi în jurul lui.';
+
+  @override
+  String dailyOsNextAgendaNoPlanSummary(String duration) {
+    return '$duration înregistrat până acum. Rostiți un check-in și voi schița o zi în jurul lui.';
+  }
+
+  @override
+  String get dailyOsNextAgendaNoPlanTitle =>
+      'Încă nu există un plan pentru azi.';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Finalizat';
@@ -3157,6 +3170,18 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String dailyOsNextAgendaSummary(String scheduled, String capacity) {
     return '$scheduled din $capacity angajate';
+  }
+
+  @override
+  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      completedCount,
+      locale: localeName,
+      other: '$completedCount de finalizate',
+      few: '$completedCount finalizate',
+      one: '1 finalizată',
+    );
+    return 'Înregistrat · $duration · $_temp0';
   }
 
   @override
@@ -3274,19 +3299,30 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextCommitDraftHeadline => 'Ziua dvs., schiță.';
+  String get dailyOsNextCommitDraftOverline => 'ZIUA DVS., SCHIȚATĂ';
 
   @override
-  String get dailyOsNextCommitDraftOverline => 'ASTĂZI';
+  String get dailyOsNextCommitExplainer =>
+      'Confirmați pentru a trece ziua din schiță în angajament.';
+
+  @override
+  String get dailyOsNextCommitFinalStepEyebrow => 'ULTIMUL PAS';
 
   @override
   String get dailyOsNextCommitHeadline => 'Faceți-o a dvs.';
 
   @override
-  String get dailyOsNextCommitHoldHint => 'ȚINEȚI';
+  String get dailyOsNextCommitHoldHelper =>
+      'Țineți apăsat o secundă pentru a confirma';
 
   @override
-  String get dailyOsNextCommitHoldLabel => 'Confirmă astăzi';
+  String get dailyOsNextCommitHoldWordDone => 'Angajat';
+
+  @override
+  String get dailyOsNextCommitHoldWordHolding => 'Mențineți';
+
+  @override
+  String get dailyOsNextCommitHoldWordIdle => 'Țineți';
 
   @override
   String get dailyOsNextCommitLockingIn => 'Se fixează…';
@@ -3297,7 +3333,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextCommitSubCaption =>
-      'Confirmarea trece ziua din schiță în angajată. Puteți continua să-mi vorbiți — dar structura rămâne.';
+      'Puteți vorbi cu mine și după aceea — dar structura rămâne.';
 
   @override
   String get dailyOsNextCommitTitle => 'Fixați-o';
@@ -3307,6 +3343,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextDayBack => 'Înapoi';
+
+  @override
+  String get dailyOsNextDayCheckInCta => 'Rostiți un check-in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -3362,6 +3401,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextDraftingReasoningOverline => '✦ RAȚIONAMENT';
 
   @override
+  String get dailyOsNextEditTitleHint => 'Editați titlul';
+
+  @override
   String dailyOsNextEstimateMinutes(int minutes) {
     return '${minutes}m';
   }
@@ -3381,7 +3423,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String dailyOsNextGreetingHiName(String name) {
-    return 'Bună, $name,';
+    return 'Bună, $name 👋';
   }
 
   @override
@@ -3481,6 +3523,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextRefineTitle => 'Reglează planul';
 
   @override
+  String get dailyOsNextRenameFailed =>
+      'Redenumirea nu a reușit — încercați din nou.';
+
+  @override
   String get dailyOsNextShutdownCarryoverDrop => 'Renunță';
 
   @override
@@ -3552,6 +3598,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextShutdownTomorrowOverline => '✦ PENTRU MÂINE';
+
+  @override
+  String get dailyOsNextStandaloneTag => 'Bloc de timp';
 
   @override
   String dailyOsNextStateDueOnDate(String date) {
@@ -3638,16 +3687,40 @@ class AppLocalizationsRo extends AppLocalizations {
       'Glisați spre real · ciupiți vertical pentru zoom';
 
   @override
-  String get dailyOsNextTimeSpentEmpty =>
-      'Nu există încă timp înregistrat pentru această zi.';
+  String get dailyOsNextTimelineTracked => 'înregistrat';
 
   @override
-  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
-    return '$duration înregistrat · $completedCount finalizate';
+  String dailyOsNextTimeSpentEarlierSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de sesiuni anterioare',
+      few: '$count sesiuni anterioare',
+      one: '1 sesiune anterioară',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get dailyOsNextTimeSpentTitle => 'TIMP PETRECUT';
+  String get dailyOsNextTimeSpentShowLess => 'Afișează mai puțin';
+
+  @override
+  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      completedCount,
+      locale: localeName,
+      other: '$completedCount de finalizate',
+      few: '$completedCount finalizate',
+      one: '1 finalizată',
+    );
+    return '$duration · $_temp0';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentTitle => 'AZI PÂNĂ ACUM';
+
+  @override
+  String get dailyOsNextTimeSpentTitlePast => 'TIMP ÎNREGISTRAT';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Amânat';

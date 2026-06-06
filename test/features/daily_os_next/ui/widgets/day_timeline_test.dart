@@ -3,7 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
+import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -289,7 +291,7 @@ void main() {
       expect(find.text('09:15'), findsAtLeastNWidgets(1));
     });
 
-    testWidgets('renders actual timeline labels and time spent summary', (
+    testWidgets('renders plan and actual pane labels', (
       tester,
     ) async {
       tester.view
@@ -310,11 +312,6 @@ void main() {
       final messages = tester.element(find.byType(DayTimeline)).messages;
       expect(find.text(messages.dailyOsNextTimelinePlanned), findsOneWidget);
       expect(find.text(messages.dailyOsNextTimelineActual), findsOneWidget);
-      expect(find.text(messages.dailyOsNextTimeSpentTitle), findsOneWidget);
-      expect(
-        find.text(messages.dailyOsNextTimeSpentSummary('45m', 1)),
-        findsOneWidget,
-      );
     });
 
     testWidgets('wide layouts show plan and actual together by default', (
@@ -838,7 +835,8 @@ void main() {
     });
 
     testWidgets(
-      'TimeSpentSummary shows "Xh Ym" for durations spanning hours and minutes',
+      'tracked blocks render the neutral treatment: category dot, green '
+      'check when done, mono time range with a tracked suffix, no WhyChip',
       (tester) async {
         tester.view
           ..physicalSize = const Size(1280, 900)
@@ -846,20 +844,20 @@ void main() {
         addTearDown(tester.view.reset);
 
         final day = DateTime(2026, 5, 25);
-        // One completed block: 1h 30m → should display "1h 30m".
         await tester.pumpWidget(
           _wrap(
             DayTimeline(
               draft: _draftWithBlocks(blocks: const []),
               actualBlocks: [
                 TimeBlock(
-                  id: 'long-block',
-                  title: 'Long session',
+                  id: 'tracked-1',
+                  title: 'Recorded session',
                   start: day.add(const Duration(hours: 9)),
                   end: day.add(const Duration(hours: 10, minutes: 30)),
-                  type: TimeBlockType.ai,
+                  type: TimeBlockType.manual,
                   state: TimeBlockState.completed,
                   category: _work,
+                  reason: 'should never surface as a WhyChip',
                 ),
               ],
               clock: () => DateTime(2026, 5, 25, 9, 15),
@@ -870,133 +868,142 @@ void main() {
         await tester.pump();
 
         final messages = tester.element(find.byType(DayTimeline)).messages;
-        // Summary should show "1h 30m recorded · 1 done".
+        // "09:00–10:30 · tracked" subtitle suffix.
         expect(
-          find.text(messages.dailyOsNextTimeSpentSummary('1h 30m', 1)),
+          find.textContaining(messages.dailyOsNextTimelineTracked),
           findsOneWidget,
         );
+        // Done sessions get the green check.
+        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        // Tracked blocks never surface agent reasoning.
+        expect(find.byType(WhyChip), findsNothing);
+        // The subtitle is mono (Inconsolata) per the handoff.
+        final subtitle = tester.widget<Text>(
+          find.textContaining(messages.dailyOsNextTimelineTracked),
+        );
+        expect(subtitle.style?.fontFamily, 'Inconsolata');
       },
     );
 
     testWidgets(
-      'TimeSpentSummary shows "Xh" for whole-hour durations with no minutes',
+      'drafted plan blocks read provisional via a dashed outline; '
+      'committed blocks render solid',
       (tester) async {
         tester.view
           ..physicalSize = const Size(1280, 900)
           ..devicePixelRatio = 1.0;
         addTearDown(tester.view.reset);
 
-        final day = DateTime(2026, 5, 25);
         await tester.pumpWidget(
           _wrap(
             DayTimeline(
-              draft: _draftWithBlocks(blocks: const []),
-              actualBlocks: [
-                TimeBlock(
-                  id: 'exact-hour',
-                  title: 'Exact hour',
-                  start: day.add(const Duration(hours: 9)),
-                  end: day.add(const Duration(hours: 11)),
-                  type: TimeBlockType.ai,
-                  state: TimeBlockState.completed,
-                  category: _work,
-                ),
-              ],
-              clock: () => DateTime(2026, 5, 25, 9, 15),
-            ),
-            size: const Size(1280, 900),
-          ),
-        );
-        await tester.pump();
-
-        final messages = tester.element(find.byType(DayTimeline)).messages;
-        expect(
-          find.text(messages.dailyOsNextTimeSpentSummary('2h', 1)),
-          findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets(
-      'ActualCategoryBars shows "Xh Ym" per category for mixed durations',
-      (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 900)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
-
-        final day = DateTime(2026, 5, 25);
-        await tester.pumpWidget(
-          _wrap(
-            DayTimeline(
-              draft: _draftWithBlocks(blocks: const []),
-              actualBlocks: [
-                TimeBlock(
-                  id: 'cat-block-1',
-                  title: 'Cat block 1',
-                  start: day.add(const Duration(hours: 8)),
-                  end: day.add(const Duration(hours: 9, minutes: 15)),
-                  type: TimeBlockType.ai,
-                  state: TimeBlockState.completed,
-                  category: _work,
-                ),
-                TimeBlock(
-                  id: 'cat-block-2',
-                  title: 'Cat block 2',
-                  start: day.add(const Duration(hours: 9, minutes: 30)),
-                  end: day.add(const Duration(hours: 11, minutes: 30)),
-                  type: TimeBlockType.ai,
-                  state: TimeBlockState.completed,
-                  category: _work,
-                ),
-              ],
-              clock: () => DateTime(2026, 5, 25, 9, 15),
-            ),
-            size: const Size(1280, 900),
-          ),
-        );
-        await tester.pump();
-
-        // Total = 1h15m + 2h = 3h15m for _work category.
-        // ActualCategoryBars also formats per category → "3h 15m".
-        expect(find.text('3h 15m'), findsOneWidget);
-      },
-    );
-
-    testWidgets('ActualCategoryBars shows "Xh" for exact-hour category total', (
-      tester,
-    ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 900)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
-
-      final day = DateTime(2026, 5, 25);
-      await tester.pumpWidget(
-        _wrap(
-          DayTimeline(
-            draft: _draftWithBlocks(blocks: const []),
-            actualBlocks: [
-              TimeBlock(
-                id: 'exact-cat',
-                title: 'Exact hour cat',
-                start: day.add(const Duration(hours: 8)),
-                end: day.add(const Duration(hours: 10)),
-                type: TimeBlockType.ai,
-                state: TimeBlockState.completed,
-                category: _work,
+              draft: _draftWithBlocks(
+                blocks: [
+                  _timeBlock(
+                    id: 'drafted',
+                    title: 'Drafted block',
+                    startHour: 8,
+                    endHour: 9,
+                  ),
+                  TimeBlock(
+                    id: 'committed',
+                    title: 'Committed block',
+                    start: DateTime(2026, 5, 25, 10),
+                    end: DateTime(2026, 5, 25, 11),
+                    type: TimeBlockType.ai,
+                    state: TimeBlockState.committed,
+                    category: _work,
+                    reason: 'Window selected for focused work.',
+                  ),
+                ],
               ),
-            ],
-            clock: () => DateTime(2026, 5, 25, 9, 15),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(1280, 900),
           ),
-          size: const Size(1280, 900),
-        ),
-      );
-      await tester.pump();
+        );
+        await tester.pump();
 
-      // 2-hour block → "2h" in category bar.
-      expect(find.text('2h'), findsOneWidget);
-    });
+        // Exactly one block (the drafted one) carries the dashed border.
+        expect(
+          find.ancestor(
+            of: find.text('Drafted block'),
+            matching: find.byType(DsDashedBorder),
+          ),
+          findsOneWidget,
+        );
+        expect(
+          find.ancestor(
+            of: find.text('Committed block'),
+            matching: find.byType(DsDashedBorder),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'task-linked plan blocks show a link icon; standalone blocks are '
+      'inline-renamable when the timeline provides a rename callback',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1280, 900)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        final renames = <(String, String)>[];
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draftWithBlocks(
+                blocks: [
+                  TimeBlock(
+                    id: 'linked',
+                    title: 'Linked block',
+                    start: DateTime(2026, 5, 25, 8),
+                    end: DateTime(2026, 5, 25, 9, 30),
+                    type: TimeBlockType.ai,
+                    state: TimeBlockState.drafted,
+                    category: _work,
+                    taskId: 'task-1',
+                    reason: 'Backed by a task.',
+                  ),
+                  TimeBlock(
+                    id: 'standalone',
+                    title: 'Standalone block',
+                    start: DateTime(2026, 5, 25, 10),
+                    end: DateTime(2026, 5, 25, 11, 30),
+                    type: TimeBlockType.manual,
+                    state: TimeBlockState.drafted,
+                    category: _work,
+                  ),
+                ],
+              ),
+              onRenameBlock: (block, title) => renames.add((block.id, title)),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(1280, 900),
+          ),
+        );
+        await tester.pump();
+
+        // Task-linked block carries the small info link icon.
+        expect(find.byIcon(Icons.link_rounded), findsOneWidget);
+
+        // The standalone title is click-to-edit: tap, type, submit.
+        expect(find.byType(EditableTitle), findsOneWidget);
+        await tester.tap(find.text('Standalone block'));
+        await tester.pump();
+        await tester.enterText(
+          find.byKey(const Key('daily_os_editable_title_field')),
+          'Renamed block',
+        );
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pump();
+
+        expect(renames, [('standalone', 'Renamed block')]);
+      },
+    );
 
     testWidgets('EnergyBand low and secondWind levels render', (tester) async {
       tester.view
@@ -1092,31 +1099,6 @@ void main() {
           findsOneWidget,
         );
         expect(find.textContaining('Office'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'TimeSpentSummary shows empty state text when no actual blocks exist',
-      (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 900)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
-
-        await tester.pumpWidget(
-          _wrap(
-            DayTimeline(
-              draft: _draftWithBlocks(blocks: const []),
-              actualBlocks: const [],
-              clock: () => DateTime(2026, 5, 25, 9, 15),
-            ),
-            size: const Size(1280, 900),
-          ),
-        );
-        await tester.pump();
-
-        final messages = tester.element(find.byType(DayTimeline)).messages;
-        expect(find.text(messages.dailyOsNextTimeSpentEmpty), findsOneWidget);
       },
     );
 

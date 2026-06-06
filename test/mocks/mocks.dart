@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:beamer/beamer.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -615,6 +616,34 @@ class MockRealtimeTranscriptionService extends Mock
     implements RealtimeTranscriptionService {}
 
 class MockNavService extends Mock implements NavService {}
+
+/// Recording [BeamerDelegate] for navigation tests — captures every
+/// `beamToNamed` URI instead of routing anywhere.
+class RecordingBeamerDelegate extends BeamerDelegate {
+  RecordingBeamerDelegate()
+    : super(
+        locationBuilder: RoutesLocationBuilder(
+          routes: {'*': (_, _, _) => const SizedBox.shrink()},
+        ).call,
+      );
+
+  final List<String> beamed = <String>[];
+
+  @override
+  void beamToNamed(
+    String uri, {
+    Object? data,
+    Object? routeState,
+    bool beamBackOnPop = false,
+    bool popBeamLocationOnPop = false,
+    bool stacked = true,
+    bool replaceRouteInformation = false,
+    TransitionDelegate<dynamic>? transitionDelegate,
+    String? popToNamed,
+  }) {
+    beamed.add(uri);
+  }
+}
 
 /// Recording variant of [MockNavService]: captures beamToNamed paths so
 /// tests can assert navigation without stubbing.

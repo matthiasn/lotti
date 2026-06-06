@@ -2785,6 +2785,154 @@ void main() {
       );
     });
 
+    group('renameBlock', () {
+      DayPlanEntity seedRenamablePlan() => seedPlanEntity(
+        blocks: [
+          PlannedBlock(
+            id: 'block-standalone',
+            categoryId: 'life',
+            startTime: DateTime(2026, 5, 25, 12),
+            endTime: DateTime(2026, 5, 25, 13),
+            title: 'Lunch',
+          ),
+          PlannedBlock(
+            id: 'block-linked',
+            categoryId: 'work',
+            startTime: DateTime(2026, 5, 25, 9),
+            endTime: DateTime(2026, 5, 25, 10),
+            title: 'Prep demo',
+            reason: 'Morning focus.',
+            taskId: 'task-1',
+          ),
+        ],
+      );
+
+      test(
+        'renames a standalone block in place, persists, and notifies',
+        () async {
+          seedRenamablePlan();
+
+          final later = _now.add(const Duration(hours: 1));
+          final renamed = await withClock(Clock.fixed(later), () {
+            return createService().renameBlock(
+              agentId: _agentId,
+              dayId: _dayId,
+              blockId: 'block-standalone',
+              title: 'Lunch with Sarah',
+            );
+          });
+
+          final byId = {
+            for (final b in renamed.data.plannedBlocks) b.id: b,
+          };
+          expect(byId['block-standalone']!.title, 'Lunch with Sarah');
+          // Other blocks untouched.
+          expect(byId['block-linked']!.title, 'Prep demo');
+          expect(renamed.updatedAt, later);
+          expect(upsertedEntities.single, renamed);
+          expect(
+            notifications,
+            containsAll([_agentId, _dayId, renamed.id]),
+          );
+        },
+      );
+
+      test('rejects blank titles and persists trimmed ones', () async {
+        seedRenamablePlan();
+
+        await expectLater(
+          createService().renameBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'block-standalone',
+            title: '   ',
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('must not be blank'),
+            ),
+          ),
+        );
+        expect(upsertedEntities, isEmpty);
+
+        final renamed = await createService().renameBlock(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'block-standalone',
+          title: '  Lunch with Sarah  ',
+        );
+        expect(
+          renamed.data.plannedBlocks
+              .singleWhere((b) => b.id == 'block-standalone')
+              .title,
+          'Lunch with Sarah',
+        );
+      });
+
+      test('rejects task-linked blocks — rename the task instead', () async {
+        seedRenamablePlan();
+
+        await expectLater(
+          createService().renameBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'block-linked',
+            title: 'Renamed',
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('task-linked'),
+            ),
+          ),
+        );
+        expect(upsertedEntities, isEmpty);
+        expect(notifications, isEmpty);
+      });
+
+      test('rejects unknown block ids', () async {
+        seedRenamablePlan();
+
+        await expectLater(
+          createService().renameBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'nope',
+            title: 'Renamed',
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('no block'),
+            ),
+          ),
+        );
+        expect(upsertedEntities, isEmpty);
+      });
+
+      test('rejects when no plan exists for the day', () async {
+        await expectLater(
+          createService().renameBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'block-standalone',
+            title: 'Renamed',
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('no plan'),
+            ),
+          ),
+        );
+      });
+    });
+
     group('commitDay', () {
       const planEntityId = 'day_agent_plan:$_dayId';
 

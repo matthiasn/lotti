@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/speech/ui/widgets/audio_player.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -108,9 +109,7 @@ class _Header extends StatelessWidget {
             SizedBox(width: tokens.spacing.step3),
             Text(
               context.messages.dailyOsNextCapturesPanelTitle,
-              style: tokens.typography.styles.others.overline.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
+              style: calmEyebrowStyle(tokens),
             ),
             SizedBox(width: tokens.spacing.step2),
             Text(
@@ -152,9 +151,7 @@ class _CaptureRow extends StatelessWidget {
         children: [
           Text(
             _formatTime(capture.capturedAt),
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: tokens.colors.text.lowEmphasis,
-            ),
+            style: calmEyebrowStyle(tokens),
           ),
           SizedBox(height: tokens.spacing.step2),
           Text(

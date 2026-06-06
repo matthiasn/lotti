@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -24,30 +25,20 @@ class DailyOsNextRoot extends ConsumerStatefulWidget {
 }
 
 class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
-  late DateTime _selectedDate;
-
-  @override
-  void initState() {
-    super.initState();
-    final now = clock.now();
-    _selectedDate = DateTime(now.year, now.month, now.day);
-  }
+  /// Day for which the user tapped the empty Day surface's "Speak a
+  /// check-in" CTA — forces Capture for that day even though it has
+  /// tracked time. Comparing against the current selection (instead of
+  /// listening + resetting a flag) means no `setState` inside a
+  /// provider listener and an automatic reset on date change.
+  DateTime? _checkInDate;
 
   DateTime get _today {
     final now = clock.now();
     return DateTime(now.year, now.month, now.day);
   }
 
-  bool get _isToday => _selectedDate.isAtSameMomentAs(_today);
-
   void _shiftDay(int days) {
-    setState(() {
-      _selectedDate = DateTime(
-        _selectedDate.year,
-        _selectedDate.month,
-        _selectedDate.day + days,
-      );
-    });
+    ref.read(dailyOsNextSelectedDateProvider.notifier).shiftDays(days);
   }
 
   Future<void> _pickDate() async {
@@ -55,54 +46,69 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     // so the prev/next chevrons can never drift past `firstDate` or
     // `lastDate` and trip a `showDatePicker` assertion. Day arithmetic
     // via the `DateTime` constructor stays DST-safe.
+    final selected = ref.read(dailyOsNextSelectedDateProvider);
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: selected,
       firstDate: DateTime(
-        _selectedDate.year - 1,
-        _selectedDate.month,
-        _selectedDate.day,
+        selected.year - 1,
+        selected.month,
+        selected.day,
       ),
       lastDate: DateTime(
-        _selectedDate.year + 1,
-        _selectedDate.month,
-        _selectedDate.day,
+        selected.year + 1,
+        selected.month,
+        selected.day,
       ),
     );
     if (picked != null) {
-      setState(() {
-        _selectedDate = DateTime(picked.year, picked.month, picked.day);
-      });
+      ref.read(dailyOsNextSelectedDateProvider.notifier).select(picked);
     }
   }
 
   void _goToToday() {
-    setState(() => _selectedDate = _today);
+    ref.read(dailyOsNextSelectedDateProvider.notifier).goToToday();
   }
 
   @override
   Widget build(BuildContext context) {
-    final asyncPlan = ref.watch(currentDraftPlanProvider(_selectedDate));
+    // Day selection lives in a provider so the desktop sidebar's
+    // month calendar can drive it.
+    final selectedDate = ref.watch(dailyOsNextSelectedDateProvider);
+    final asyncPlan = ref.watch(currentDraftPlanProvider(selectedDate));
     if (asyncPlan.hasValue) {
       final plan = asyncPlan.requireValue;
-      if (plan != null) return _buildSurface(plan);
+      if (plan != null) return _buildSurface(selectedDate, plan);
 
+      // Wait for the tracked-time projection before choosing between
+      // Capture and the empty Day surface — rendering on a coerced
+      // empty list would flash Capture and then flip once the
+      // recorded sessions arrive. Errors fall through as "no tracked
+      // time" so a failing projection never blocks the ritual.
       final actualBlocks = ref.watch(
-        dailyOsActualTimeBlocksProvider(_selectedDate),
+        dailyOsActualTimeBlocksProvider(selectedDate),
       );
-      return _buildSurface(null, actualBlocks: actualBlocks.value ?? const []);
+      if (actualBlocks.isLoading && !actualBlocks.hasValue) {
+        return const _LoadingShell();
+      }
+      return _buildSurface(
+        selectedDate,
+        null,
+        actualBlocks: actualBlocks.value ?? const [],
+      );
     }
     if (asyncPlan.hasError) return _ErrorShell(error: '${asyncPlan.error}');
     return const _LoadingShell();
   }
 
   Widget _buildSurface(
+    DateTime selectedDate,
     DraftPlan? plan, {
     List<TimeBlock> actualBlocks = const [],
   }) {
     final strip = _DateStrip(
-      selected: _selectedDate,
-      isToday: _isToday,
+      selected: selectedDate,
+      isToday: selectedDate.isAtSameMomentAs(_today),
       onPrev: () => _shiftDay(-1),
       onNext: () => _shiftDay(1),
       onPick: _pickDate,
@@ -110,18 +116,31 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     );
     if (plan != null) {
       return DayPage(
-        key: ValueKey(_selectedDate.toIso8601String()),
+        key: ValueKey(selectedDate.toIso8601String()),
         draft: plan,
+        dateStrip: strip,
+      );
+    }
+    // No plan, but the day already has tracked time — land on the Day
+    // surface in its empty mode so the recorded sessions are visible
+    // on the timeline without creating a plan first (handoff v2 item
+    // 2). The footer CTA routes into Capture.
+    if (actualBlocks.isNotEmpty && _checkInDate != selectedDate) {
+      return DayPage(
+        key: ValueKey('empty-${selectedDate.toIso8601String()}'),
+        draft: DraftPlan.emptyForDay(selectedDate),
+        hasPlan: false,
+        onCheckIn: () => setState(() => _checkInDate = selectedDate),
         dateStrip: strip,
       );
     }
     // No plan for the selected date — drop into Capture so the
     // user can start one for that day. Capture is keyed on
-    // [_selectedDate] so the submitted capture lands on the
+    // [selectedDate] so the submitted capture lands on the
     // chosen day's day-agent.
     return CapturePage(
-      key: ValueKey('capture-${_selectedDate.toIso8601String()}'),
-      forDate: _selectedDate,
+      key: ValueKey('capture-${selectedDate.toIso8601String()}'),
+      forDate: selectedDate,
       actualBlocks: actualBlocks,
       dateStrip: strip,
     );

@@ -1,9 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart'
     hide dayAgentProvider;
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
@@ -102,6 +104,91 @@ void main() {
         expect(agent.requestedDates, [asOf]);
       },
     );
+  });
+
+  group('dailyOsPlanDaysProvider', () {
+    late MockAgentRepository agentRepository;
+
+    setUp(() {
+      agentRepository = MockAgentRepository();
+    });
+
+    ProviderContainer makeContainer() {
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(agentRepository),
+          silenceAgentUpdates,
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    DayPlanEntity makePlan(DateTime day, {DateTime? deletedAt}) {
+      final dayId = dayAgentIdForDate(day);
+      return AgentDomainEntity.dayPlan(
+            id: dayAgentPlanEntityId(dayId),
+            agentId: 'day-agent-001',
+            dayId: dayId,
+            planDate: day,
+            data: DayPlanData(
+              planDate: day,
+              status: const DayPlanStatus.draft(),
+            ),
+            createdAt: day,
+            updatedAt: day,
+            deletedAt: deletedAt,
+            vectorClock: null,
+          )
+          as DayPlanEntity;
+    }
+
+    test(
+      'requests one id per day of the month and returns only days with a '
+      'live plan',
+      () async {
+        final may13 = DateTime(2026, 5, 13);
+        final may20 = DateTime(2026, 5, 20);
+        when(() => agentRepository.getEntitiesByIds(any())).thenAnswer(
+          (invocation) async {
+            final ids =
+                invocation.positionalArguments.first as Iterable<String>;
+            // One deterministic id per day in May 2026.
+            expect(ids, hasLength(31));
+            expect(
+              ids,
+              contains(dayAgentPlanEntityId(dayAgentIdForDate(may13))),
+            );
+            return {
+              dayAgentPlanEntityId(dayAgentIdForDate(may13)): makePlan(may13),
+              // Soft-deleted plans must not produce a dot.
+              dayAgentPlanEntityId(dayAgentIdForDate(may20)): makePlan(
+                may20,
+                deletedAt: DateTime(2026, 5, 21),
+              ),
+            };
+          },
+        );
+
+        final days = await makeContainer().read(
+          dailyOsPlanDaysProvider(DateTime(2026, 5)).future,
+        );
+
+        expect(days, {may13});
+      },
+    );
+
+    test('returns the empty set when no plans exist in the month', () async {
+      when(
+        () => agentRepository.getEntitiesByIds(any()),
+      ).thenAnswer((_) async => const {});
+
+      final days = await makeContainer().read(
+        dailyOsPlanDaysProvider(DateTime(2026, 6)).future,
+      );
+
+      expect(days, isEmpty);
+    });
   });
 
   group('capturesForDateProvider', () {
