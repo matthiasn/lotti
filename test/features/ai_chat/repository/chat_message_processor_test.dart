@@ -13,6 +13,52 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 
+/// A streamed chunk carrying only [content].
+CreateChatCompletionStreamResponse _contentChunk(String content) {
+  return CreateChatCompletionStreamResponse(
+    id: 'response-1',
+    created: 0,
+    model: 'model',
+    choices: [
+      ChatCompletionStreamResponseChoice(
+        index: 0,
+        delta: ChatCompletionStreamResponseDelta(content: content),
+      ),
+    ],
+  );
+}
+
+/// A streamed chunk carrying a single tool-call delta.
+CreateChatCompletionStreamResponse _toolCallChunk({
+  required String arguments,
+  int index = 0,
+  String? id,
+  String? name,
+}) {
+  return CreateChatCompletionStreamResponse(
+    id: 'response-1',
+    created: 0,
+    model: 'model',
+    choices: [
+      ChatCompletionStreamResponseChoice(
+        index: 0,
+        delta: ChatCompletionStreamResponseDelta(
+          toolCalls: [
+            ChatCompletionStreamMessageToolCallChunk(
+              index: index,
+              id: id,
+              function: ChatCompletionStreamMessageFunctionCall(
+                name: name,
+                arguments: arguments,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
+  );
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(
@@ -528,32 +574,8 @@ void main() {
       test('processes stream with content only', () async {
         // Arrange
         final stream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            created: 0,
-            model: 'model',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Hello ',
-                ),
-              ),
-            ],
-          ),
-          const CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            created: 0,
-            model: 'model',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'world!',
-                ),
-              ),
-            ],
-          ),
+          _contentChunk('Hello '),
+          _contentChunk('world!'),
         ]);
 
         // Act
@@ -567,49 +589,15 @@ void main() {
       test('processes stream with tool calls and argument buffering', () async {
         // Arrange
         final stream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            created: 0,
-            model: 'model',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
-                      index: 0,
-                      id: 'tool_1',
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'get_task_summaries',
-                        arguments: '{"start_date": "2024-',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          _toolCallChunk(
+            id: 'tool_1',
+            name: 'get_task_summaries',
+            arguments: '{"start_date": "2024-',
           ),
-          const CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            created: 0,
-            model: 'model',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
-                      index: 0,
-                      id: 'tool_1',
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'get_task_summaries',
-                        arguments: '01-01T00:00:00.000Z"}',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          _toolCallChunk(
+            id: 'tool_1',
+            name: 'get_task_summaries',
+            arguments: '01-01T00:00:00.000Z"}',
           ),
         ]);
 
@@ -877,19 +865,7 @@ void main() {
         const systemMessage = 'You are a helpful assistant';
 
         final responseStream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
-            id: 'response-1',
-            created: 0,
-            model: 'model',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'No tasks found.',
-                ),
-              ),
-            ],
-          ),
+          _contentChunk('No tasks found.'),
         ]);
 
         when(
@@ -1247,8 +1223,16 @@ void main() {
         ).called(1);
       });
 
-      test('cache expires after 5 minutes', () async {
-        // Arrange
+      test('cache expires after the 5-minute TTL elapses', () async {
+        // Arrange — a processor with an injectable, mutable clock.
+        var now = DateTime(2024, 3, 15, 10);
+        final clockedProcessor = ChatMessageProcessor(
+          aiConfigRepository: mockAiConfigRepository,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          taskSummaryRepository: mockTaskSummaryRepository,
+          loggingService: mockDomainLogger,
+          now: () => now,
+        );
         when(
           () => mockAiConfigRepository.getConfigById('model-1'),
         ).thenAnswer((_) async => testModel);
@@ -1256,19 +1240,20 @@ void main() {
           () => mockAiConfigRepository.getConfigById(testProvider.id),
         ).thenAnswer((_) async => testProvider);
 
-        // Act - First call
-        await processor.getAiConfigurationForModel('model-1');
+        // First call populates the cache.
+        await clockedProcessor.getAiConfigurationForModel('model-1');
 
-        // Mock the passage of time (6 minutes)
-        // Since we can't easily mock DateTime.now(), we'll use clearConfigCache
-        // to simulate cache expiry
-        processor.clearConfigCache();
+        // Within the TTL the cache is served — no extra repo call.
+        now = now.add(
+          ChatMessageProcessor.configCacheDuration - const Duration(seconds: 1),
+        );
+        await clockedProcessor.getAiConfigurationForModel('model-1');
+        verify(() => mockAiConfigRepository.getConfigById('model-1')).called(1);
 
-        // Act - Second call after cache expiry
-        await processor.getAiConfigurationForModel('model-1');
-
-        // Assert - Repository should be called twice
-        verify(() => mockAiConfigRepository.getConfigById('model-1')).called(2);
+        // Once the TTL elapses, the next call refreshes from the repo.
+        now = now.add(const Duration(seconds: 2));
+        await clockedProcessor.getAiConfigurationForModel('model-1');
+        verify(() => mockAiConfigRepository.getConfigById('model-1')).called(1);
         verify(
           () => mockAiConfigRepository.getConfigById(testProvider.id),
         ).called(2);

@@ -14,13 +14,32 @@ import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/system_message_service.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+
+/// Shared stub for `CloudInferenceRepository.generate`; chain
+/// `.thenAnswer(...)` with the response stream the test needs.
+When<Stream<CreateChatCompletionStreamResponse>> _stubGenerate(
+  MockCloudInferenceRepository mock,
+) {
+  return when(
+    () => mock.generate(
+      any<String>(),
+      model: any<String>(named: 'model'),
+      temperature: any<double>(named: 'temperature'),
+      baseUrl: any<String>(named: 'baseUrl'),
+      apiKey: any<String>(named: 'apiKey'),
+      systemMessage: any<String>(named: 'systemMessage'),
+      provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+      tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+      geminiThinkingMode: any(named: 'geminiThinkingMode'),
+    ),
+  );
+}
 
 void main() {
   setUpAll(() {
@@ -194,18 +213,8 @@ void main() {
             () => mockAiConfigRepository.getConfigById('p'),
           ).thenAnswer((_) async => testProvider);
 
-          when(
-            () => mockCloudInferenceRepository.generate(
-              any<String>(),
-              model: any<String>(named: 'model'),
-              temperature: any<double>(named: 'temperature'),
-              baseUrl: any<String>(named: 'baseUrl'),
-              apiKey: any<String>(named: 'apiKey'),
-              systemMessage: any<String>(named: 'systemMessage'),
-              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-              geminiThinkingMode: any(named: 'geminiThinkingMode'),
-            ),
+          _stubGenerate(
+            mockCloudInferenceRepository,
           ).thenAnswer((_) => Stream.error(TimeoutException('timeout')));
 
           // Act/Assert
@@ -449,40 +458,6 @@ void main() {
       });
     });
 
-    group('system message', () {
-      test('_getSystemMessage contains today date and guidance', () async {
-        // Access via reflection through a sendMessage flow to capture the systemMessage argument
-        when(
-          () => mockAiConfigRepository.getConfigById(testModelId),
-        ).thenThrow(Exception('stop before network'));
-        try {
-          await repository
-              .sendMessage(
-                message: 'x',
-                conversationHistory: [],
-                categoryId: testCategoryId,
-                modelId: testModelId,
-              )
-              .first;
-        } catch (_) {}
-
-        final captured = verify(
-          () => mockDomainLogger.log(
-            LogDomain.chat,
-            'Starting chat message processing',
-            subDomain: 'sendMessage',
-          ),
-        ).callCount; // ensure path executed
-        expect(captured, greaterThan(0));
-
-        // We cannot directly get the private message here without refactor, but we can instantiate and
-        // call the private via a helper expectation: check formatting via prompt construction
-        final sys = repository
-            .toString(); // noop to use repository and avoid analyzer complaining
-        expect(sys, isA<String>());
-      });
-    });
-
     group('message management', () {
       test('saveMessage stores and returns message', () async {
         final message = ChatMessage.user('Test message');
@@ -664,18 +639,8 @@ void main() {
             ),
           ]);
 
-          when(
-            () => mockCloudInferenceRepository.generate(
-              any<String>(),
-              model: any<String>(named: 'model'),
-              temperature: any<double>(named: 'temperature'),
-              baseUrl: any<String>(named: 'baseUrl'),
-              apiKey: any<String>(named: 'apiKey'),
-              systemMessage: any<String>(named: 'systemMessage'),
-              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-              tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-              geminiThinkingMode: any(named: 'geminiThinkingMode'),
-            ),
+          _stubGenerate(
+            mockCloudInferenceRepository,
           ).thenAnswer((_) => responseStream);
 
           // Send message and collect results
@@ -764,19 +729,7 @@ void main() {
         ]);
 
         var callCount = 0;
-        when(
-          () => mockCloudInferenceRepository.generate(
-            any<String>(),
-            model: any<String>(named: 'model'),
-            temperature: any<double>(named: 'temperature'),
-            baseUrl: any<String>(named: 'baseUrl'),
-            apiKey: any<String>(named: 'apiKey'),
-            systemMessage: any<String>(named: 'systemMessage'),
-            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-            tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            geminiThinkingMode: any(named: 'geminiThinkingMode'),
-          ),
-        ).thenAnswer((_) {
+        _stubGenerate(mockCloudInferenceRepository).thenAnswer((_) {
           callCount++;
           return callCount == 1 ? initialStream : finalStream;
         });
@@ -871,18 +824,8 @@ void main() {
           ),
         ]);
 
-        when(
-          () => mockCloudInferenceRepository.generate(
-            any<String>(),
-            model: any<String>(named: 'model'),
-            temperature: any<double>(named: 'temperature'),
-            baseUrl: any<String>(named: 'baseUrl'),
-            apiKey: any<String>(named: 'apiKey'),
-            systemMessage: any<String>(named: 'systemMessage'),
-            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-            tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            geminiThinkingMode: any(named: 'geminiThinkingMode'),
-          ),
+        _stubGenerate(
+          mockCloudInferenceRepository,
         ).thenAnswer((_) => responseStream);
 
         // Send message and collect results
@@ -950,19 +893,7 @@ void main() {
         ]);
 
         var callCount = 0;
-        when(
-          () => mockCloudInferenceRepository.generate(
-            any<String>(),
-            model: any<String>(named: 'model'),
-            temperature: any<double>(named: 'temperature'),
-            baseUrl: any<String>(named: 'baseUrl'),
-            apiKey: any<String>(named: 'apiKey'),
-            systemMessage: any<String>(named: 'systemMessage'),
-            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-            tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            geminiThinkingMode: any(named: 'geminiThinkingMode'),
-          ),
-        ).thenAnswer((_) {
+        _stubGenerate(mockCloudInferenceRepository).thenAnswer((_) {
           callCount++;
           return callCount == 1 ? initialStream : finalStream;
         });
@@ -1060,18 +991,8 @@ void main() {
         ]);
 
         var call = 0;
-        when(
-          () => mockCloudInferenceRepository.generate(
-            any<String>(),
-            model: any<String>(named: 'model'),
-            temperature: any<double>(named: 'temperature'),
-            baseUrl: any<String>(named: 'baseUrl'),
-            apiKey: any<String>(named: 'apiKey'),
-            systemMessage: any<String>(named: 'systemMessage'),
-            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-            tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            geminiThinkingMode: any(named: 'geminiThinkingMode'),
-          ),
+        _stubGenerate(
+          mockCloudInferenceRepository,
         ).thenAnswer((_) => (++call == 1) ? initialStream : finalStream);
 
         // Tool call data
@@ -1132,18 +1053,8 @@ void main() {
           ),
         ]);
 
-        when(
-          () => mockCloudInferenceRepository.generate(
-            any<String>(),
-            model: any<String>(named: 'model'),
-            temperature: any<double>(named: 'temperature'),
-            baseUrl: any<String>(named: 'baseUrl'),
-            apiKey: any<String>(named: 'apiKey'),
-            systemMessage: any<String>(named: 'systemMessage'),
-            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-            tools: any<List<ChatCompletionTool>?>(named: 'tools'),
-            geminiThinkingMode: any(named: 'geminiThinkingMode'),
-          ),
+        _stubGenerate(
+          mockCloudInferenceRepository,
         ).thenAnswer((_) => responseStream);
 
         // Send message and collect results
@@ -1237,21 +1148,14 @@ void main() {
       late MockTaskSummaryRepository providerTaskSummaryRepo;
       late ProviderContainer container;
 
-      setUp(() {
+      setUp(() async {
         providerAiConfigRepo = MockAiConfigRepository();
         providerCloudInferenceRepo = MockCloudInferenceRepository();
         providerTaskSummaryRepo = MockTaskSummaryRepository();
 
-        // chatRepositoryProvider calls getIt<DomainLogger>() so we must
-        // register a real (or fake) one before reading the provider.
-        if (!getIt.isRegistered<LoggingService>()) {
-          getIt.registerSingleton<LoggingService>(LoggingService());
-        }
-        if (!getIt.isRegistered<DomainLogger>()) {
-          getIt.registerSingleton<DomainLogger>(
-            DomainLogger(loggingService: getIt<LoggingService>()),
-          );
-        }
+        // chatRepositoryProvider calls getIt<DomainLogger>(); the shared
+        // helper registers a real one (plus LoggingService).
+        await setUpTestGetIt();
 
         container = ProviderContainer(
           overrides: [
@@ -1271,12 +1175,7 @@ void main() {
 
       tearDown(() async {
         container.dispose();
-        if (getIt.isRegistered<DomainLogger>()) {
-          await getIt.unregister<DomainLogger>();
-        }
-        if (getIt.isRegistered<LoggingService>()) {
-          await getIt.unregister<LoggingService>();
-        }
+        await tearDownTestGetIt();
       });
 
       test(
