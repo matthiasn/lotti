@@ -596,7 +596,9 @@ void main() {
       },
     );
 
-    test('visibleProjectGroupsProvider filters by local text query', () async {
+    /// Container with the canonical snapshot loaded and the overview
+    /// provider kept alive for the test's lifetime.
+    Future<ProviderContainer> makeOverviewContainer() async {
       final snapshot = makeSnapshot();
       final scopedContainer = ProviderContainer(
         overrides: [
@@ -614,6 +616,11 @@ void main() {
       addTearDown(subscription.close);
 
       await scopedContainer.read(projectsOverviewProvider.future);
+      return scopedContainer;
+    }
+
+    test('visibleProjectGroupsProvider filters by local text query', () async {
+      final scopedContainer = await makeOverviewContainer();
       scopedContainer
         ..read(projectsFilterControllerProvider.notifier).setSearchMode(
           ProjectsSearchMode.localText,
@@ -634,23 +641,7 @@ void main() {
     test(
       'visibleProjectGroupsProvider filters by selected category ids',
       () async {
-        final snapshot = makeSnapshot();
-        final scopedContainer = ProviderContainer(
-          overrides: [
-            projectsOverviewProvider.overrideWith(
-              (ref) => Stream.value(snapshot),
-            ),
-          ],
-        );
-        addTearDown(scopedContainer.dispose);
-        final subscription = scopedContainer.listen(
-          projectsOverviewProvider,
-          (previous, next) {},
-          fireImmediately: true,
-        );
-        addTearDown(subscription.close);
-
-        await scopedContainer.read(projectsOverviewProvider.future);
+        final scopedContainer = await makeOverviewContainer();
         scopedContainer
             .read(projectsFilterControllerProvider.notifier)
             .setSelectedCategoryIds({workCategory.id});
@@ -668,22 +659,7 @@ void main() {
     test(
       'ProjectsFilterController.clear resets to default filter',
       () async {
-        final snapshot = makeSnapshot();
-        final scopedContainer = ProviderContainer(
-          overrides: [
-            projectsOverviewProvider.overrideWith(
-              (ref) => Stream.value(snapshot),
-            ),
-          ],
-        );
-        addTearDown(scopedContainer.dispose);
-        final subscription = scopedContainer.listen(
-          projectsOverviewProvider,
-          (previous, next) {},
-          fireImmediately: true,
-        );
-        addTearDown(subscription.close);
-        await scopedContainer.read(projectsOverviewProvider.future);
+        final scopedContainer = await makeOverviewContainer();
 
         // Apply a filter, then clear it
         scopedContainer

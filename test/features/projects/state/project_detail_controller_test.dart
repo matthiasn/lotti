@@ -364,5 +364,47 @@ void main() {
       final state = container.read(projectDetailControllerProvider(projectId));
       expect(state.hasChanges, isFalse);
     });
+
+    test(
+      'updateCategoryId and updateStatus are no-ops before a project loads',
+      () async {
+        // Project lookup returns null → the controller never has a pending
+        // project, so both mutators must early-return without state changes.
+        when(
+          () => mockRepo.getProjectById(projectId),
+        ).thenAnswer((_) async => null);
+        final container = ProviderContainer(
+          overrides: [projectRepositoryProvider.overrideWithValue(mockRepo)],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(
+          projectDetailControllerProvider(projectId),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+        await pumpEventQueue();
+
+        final notifier =
+            container.read(
+                projectDetailControllerProvider(projectId).notifier,
+              )
+              ..updateCategoryId('new-category-id')
+              ..updateStatus(
+                ProjectStatus.active(
+                  id: 'status-new',
+                  createdAt: DateTime(2026, 3, 15),
+                  utcOffset: 0,
+                ),
+              );
+
+        final state = container.read(
+          projectDetailControllerProvider(projectId),
+        );
+        expect(state.project, isNull);
+        expect(state.hasChanges, isFalse);
+        expect(notifier, isNotNull);
+      },
+    );
   });
 }
