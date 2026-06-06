@@ -57,7 +57,7 @@ void main() {
       );
 
       // Allow the async broadcast stream to deliver the event.
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'proposal-surface');
@@ -75,7 +75,7 @@ void main() {
         surfaceId: 'proposal-surface-2',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$2, 'proposal_rejected');
@@ -170,7 +170,7 @@ void main() {
         surfaceId: 'any-surface',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, isEmpty);
     });
@@ -191,7 +191,7 @@ void main() {
         surfaceId: 'proposal-surface-3',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       // No exception = pass.
     });
 
@@ -208,7 +208,7 @@ void main() {
         surfaceId: 'some-surface',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, isEmpty);
     });
@@ -225,7 +225,7 @@ void main() {
         sourceComponentId: '{"accuracy":5,"tooling":"bad","timeliness":2.2}',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'ratings-surface');
@@ -248,7 +248,7 @@ void main() {
         sourceComponentId: '{invalid-json',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, isEmpty);
     });
@@ -265,7 +265,7 @@ void main() {
         sourceComponentId: '{"value":"Yes, show the rating form."}',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'binary-choice-surface');
@@ -284,7 +284,7 @@ void main() {
         sourceComponentId: '{bad-json',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, isEmpty);
     });
@@ -308,7 +308,7 @@ void main() {
         surfaceId: 'soul-surface-1',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'soul-surface-1');
@@ -332,7 +332,7 @@ void main() {
         surfaceId: 'soul-surface-2',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$2, 'soul_proposal_rejected');
@@ -357,7 +357,7 @@ void main() {
         surfaceId: 'soul-surface-3',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       expect(events, isEmpty);
     });
   });
@@ -375,7 +375,7 @@ void main() {
         sourceComponentId: '{"value":"I prefer Option A — Warmer"}',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'ab-surface-1');
@@ -394,7 +394,7 @@ void main() {
         sourceComponentId: '{bad-json',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, isEmpty);
     });
@@ -411,7 +411,7 @@ void main() {
         sourceComponentId: '{"value":"  "}',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(events, isEmpty);
     });
@@ -431,7 +431,7 @@ void main() {
         sourceComponentId: '{"value":"I prefer Option B"}',
       );
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(recordedEvents, isEmpty);
     });

@@ -496,164 +496,84 @@ void main() {
   // ── ABComparisonCard didUpdateWidget ────────────────────────────────────
 
   group('ABComparisonCard didUpdateWidget', () {
-    testWidgets('resets state when optionA changes', (tester) async {
-      var callCount = 0;
+    final resetScenarios =
+        <
+          ({
+            String field,
+            Widget Function(ValueChanged<String> onSelect) before,
+            Widget Function(ValueChanged<String> onSelect) after,
+            String tap,
+            String? expectAfter,
+          })
+        >[
+          (
+            field: 'optionA',
+            before: (s) => _buildAbCard(optionA: 'Original A.', onSelect: s),
+            after: (s) => _buildAbCard(optionA: 'Changed A.', onSelect: s),
+            tap: 'Choose A',
+            expectAfter: 'Changed A.',
+          ),
+          (
+            field: 'optionB',
+            before: (s) => _buildAbCard(optionB: 'Original B.', onSelect: s),
+            after: (s) => _buildAbCard(optionB: 'Changed B.', onSelect: s),
+            tap: 'Choose B',
+            expectAfter: 'Changed B.',
+          ),
+          (
+            field: 'question',
+            before: (s) =>
+                _buildAbCard(question: 'Original question?', onSelect: s),
+            after: (s) =>
+                _buildAbCard(question: 'Changed question?', onSelect: s),
+            tap: 'Choose A',
+            expectAfter: 'Changed question?',
+          ),
+          (
+            field: 'labelA',
+            before: (s) => _buildAbCard(labelA: 'Old Label A', onSelect: s),
+            after: (s) => _buildAbCard(labelA: 'New Label A', onSelect: s),
+            tap: 'Choose A',
+            expectAfter: null,
+          ),
+          (
+            field: 'labelB',
+            before: (s) => _buildAbCard(labelB: 'Old Label B', onSelect: s),
+            after: (s) => _buildAbCard(labelB: 'New Label B', onSelect: s),
+            tap: 'Choose B',
+            expectAfter: null,
+          ),
+        ];
 
-      await tester.pumpWidget(
-        _buildAbCard(
-          optionA: 'Original A.',
-          onSelect: (_) => callCount++,
-        ),
-      );
-      await tester.pumpAndSettle();
+    for (final scenario in resetScenarios) {
+      testWidgets('resets state when ${scenario.field} changes', (
+        tester,
+      ) async {
+        var callCount = 0;
 
-      await tester.tap(find.text('Choose A'));
-      await tester.pumpAndSettle();
-      expect(callCount, 1);
+        await tester.pumpWidget(scenario.before((_) => callCount++));
+        await tester.pumpAndSettle();
 
-      // Rebuild with new optionA — should reset.
-      await tester.pumpWidget(
-        _buildAbCard(
-          optionA: 'Changed A.',
-          onSelect: (_) => callCount++,
-        ),
-      );
-      await tester.pumpAndSettle();
+        await tester.tap(find.text(scenario.tap));
+        await tester.pumpAndSettle();
+        expect(callCount, 1);
 
-      // Buttons must be re-enabled after reset.
-      final buttons = tester
-          .widgetList<DesignSystemButton>(find.byType(DesignSystemButton))
-          .toList();
-      for (final btn in buttons) {
-        expect(btn.onPressed, isNotNull);
-      }
-      expect(find.text('Changed A.'), findsOneWidget);
-    });
+        // Rebuild with the changed prop — the selection state must reset.
+        await tester.pumpWidget(scenario.after((_) => callCount++));
+        await tester.pumpAndSettle();
 
-    testWidgets('resets state when optionB changes', (tester) async {
-      var callCount = 0;
-
-      await tester.pumpWidget(
-        _buildAbCard(
-          optionB: 'Original B.',
-          onSelect: (_) => callCount++,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Choose B'));
-      await tester.pumpAndSettle();
-      expect(callCount, 1);
-
-      await tester.pumpWidget(
-        _buildAbCard(
-          optionB: 'Changed B.',
-          onSelect: (_) => callCount++,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final buttons = tester
-          .widgetList<DesignSystemButton>(find.byType(DesignSystemButton))
-          .toList();
-      for (final btn in buttons) {
-        expect(btn.onPressed, isNotNull);
-      }
-      expect(find.text('Changed B.'), findsOneWidget);
-    });
-
-    testWidgets('resets state when question changes', (tester) async {
-      var callCount = 0;
-
-      await tester.pumpWidget(
-        _buildAbCard(
-          question: 'Original question?',
-          onSelect: (_) => callCount++,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Choose A'));
-      await tester.pumpAndSettle();
-      expect(callCount, 1);
-
-      await tester.pumpWidget(
-        _buildAbCard(
-          question: 'New question?',
-          onSelect: (_) => callCount++,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final buttons = tester
-          .widgetList<DesignSystemButton>(find.byType(DesignSystemButton))
-          .toList();
-      for (final btn in buttons) {
-        expect(btn.onPressed, isNotNull);
-      }
-    });
-
-    testWidgets('resets state when labelA changes', (tester) async {
-      var callCount = 0;
-
-      await tester.pumpWidget(
-        _buildAbCard(
-          labelA: 'Old Label A',
-          onSelect: (_) => callCount++,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Choose A'));
-      await tester.pumpAndSettle();
-      expect(callCount, 1);
-
-      await tester.pumpWidget(
-        _buildAbCard(
-          labelA: 'New Label A',
-          onSelect: (_) => callCount++,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final buttons = tester
-          .widgetList<DesignSystemButton>(find.byType(DesignSystemButton))
-          .toList();
-      for (final btn in buttons) {
-        expect(btn.onPressed, isNotNull);
-      }
-    });
-
-    testWidgets('resets state when labelB changes', (tester) async {
-      var callCount = 0;
-
-      await tester.pumpWidget(
-        _buildAbCard(
-          labelB: 'Old Label B',
-          onSelect: (_) => callCount++,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Choose B'));
-      await tester.pumpAndSettle();
-      expect(callCount, 1);
-
-      await tester.pumpWidget(
-        _buildAbCard(
-          labelB: 'New Label B',
-          onSelect: (_) => callCount++,
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final buttons = tester
-          .widgetList<DesignSystemButton>(find.byType(DesignSystemButton))
-          .toList();
-      for (final btn in buttons) {
-        expect(btn.onPressed, isNotNull);
-      }
-    });
+        // Buttons must be re-enabled after the reset.
+        final buttons = tester
+            .widgetList<DesignSystemButton>(find.byType(DesignSystemButton))
+            .toList();
+        for (final btn in buttons) {
+          expect(btn.onPressed, isNotNull);
+        }
+        if (scenario.expectAfter != null) {
+          expect(find.text(scenario.expectAfter!), findsOneWidget);
+        }
+      });
+    }
 
     testWidgets('does NOT reset when identical props are re-supplied', (
       tester,

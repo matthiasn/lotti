@@ -102,6 +102,21 @@ void main() {
       expect(id, 'surface-unknown');
     });
 
+    test('falls back to EvolutionProposal for unsupported root types', () {
+      final id = bridge.handleToolCall({
+        'surfaceId': 'surf-unknown-root',
+        'rootType': 'TotallyUnknownType',
+        'data': <String, dynamic>{},
+      });
+
+      expect(id, 'surf-unknown-root');
+      // The surface was created and its root component silently fell back
+      // to the EvolutionProposal catalog item.
+      final surface = processor.registry.getSurface('surf-unknown-root');
+      expect(surface, isNotNull);
+      expect(surface!.components['root']!.type, 'EvolutionProposal');
+    });
+
     test('handles non-map data gracefully', () {
       // Simulate malformed LLM output where data is a string instead of map.
       final id = bridge.handleToolCall({
