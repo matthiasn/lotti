@@ -2977,6 +2977,113 @@ void main() {
       );
 
       test(
+        'successful auto-apply invalidates the metadata cache primed by an '
+        'earlier redundancy check',
+        () async {
+          // Wake order: (1) a redundancy check on update_task_estimate
+          // resolves and caches the snapshot, (2) a set_task_title
+          // auto-apply succeeds — which must invalidate that cache —
+          // (3) a second update_task_estimate must therefore re-resolve
+          // fresh metadata instead of reusing the pre-auto-apply snapshot.
+          var resolverCalls = 0;
+          final (:strategy, :builder) = _createStrategyWithMetadata(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveTaskMetadata: () async {
+              resolverCalls++;
+              return (
+                title: resolverCalls >= 3 ? 'Cache test' : null,
+                status: 'IN PROGRESS',
+                priority: 'P1',
+                // The estimate changes after the auto-apply: a stale cache
+                // would still say 240 and wrongly skip the third call.
+                estimateMinutes: resolverCalls >= 3 ? 999 : 240,
+                dueDate: '2026-03-15',
+                languageCode: 'en',
+              );
+            },
+          );
+
+          when(
+            () => mockExecutor.execute(
+              toolName: any(named: 'toolName'),
+              args: any(named: 'args'),
+              targetEntityId: any(named: 'targetEntityId'),
+              resolveCategoryId: any(named: 'resolveCategoryId'),
+              executeHandler: any(named: 'executeHandler'),
+              readVectorClock: any(named: 'readVectorClock'),
+            ),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: true,
+              output: 'Title applied immediately.',
+              mutatedEntityId: 'task-001',
+            ),
+          );
+
+          ChatCompletionMessageToolCall call(
+            String id,
+            String name,
+            Map<String, dynamic> args,
+          ) => ChatCompletionMessageToolCall(
+            id: id,
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: name,
+              arguments: jsonEncode(args),
+            ),
+          );
+
+          await strategy.processToolCalls(
+            toolCalls: [
+              // (1) Redundant against the cached 240-minute snapshot.
+              call('call-est-1', TaskAgentToolNames.updateTaskEstimate, {
+                'minutes': 240,
+              }),
+              // (2) Auto-applies (title empty) and invalidates the cache.
+              call('call-title', TaskAgentToolNames.setTaskTitle, {
+                'title': 'Cache test',
+              }),
+              // (3) Must re-resolve: against the fresh 999-minute snapshot
+              // this is NOT redundant and must be queued.
+              call('call-est-2', TaskAgentToolNames.updateTaskEstimate, {
+                'minutes': 240,
+              }),
+            ],
+            manager: mockManager,
+          );
+
+          // Redundancy check + always-fresh auto-apply check + post-
+          // invalidation redundancy re-check.
+          expect(resolverCalls, 3);
+
+          // First estimate proposal was suppressed as redundant.
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-est-1',
+              response: any(named: 'response', that: contains('Skipped')),
+            ),
+          ).called(1);
+
+          // Third proposal was queued, not skipped against stale metadata.
+          expect(builder.items, hasLength(1));
+          expect(
+            builder.items.single.toolName,
+            TaskAgentToolNames.updateTaskEstimate,
+          );
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-est-2',
+              response: any(
+                named: 'response',
+                that: isNot(contains('Skipped')),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
         'set_task_title stays deferred when no resolveTaskMetadata is wired',
         () async {
           final (:strategy, :builder) = _createStrategyWithMetadata(
