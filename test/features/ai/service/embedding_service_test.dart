@@ -493,6 +493,78 @@ void main() {
       });
     });
 
+    test('start is idempotent: a second start adds no extra subscription', () {
+      fakeAsync((async) {
+        final entry = JournalEntry(
+          meta: _meta(),
+          entryText: const EntryText(plainText: _longText),
+        );
+        stubEntity(entry);
+        stubEmbedding();
+
+        // Double start: if a second listener were registered, the batch
+        // below would be delivered twice and produce two embeddings.
+        service
+          ..start()
+          ..start();
+
+        sendAndProcess(async, {_entityId, textEntryNotification});
+
+        verify(
+          () => mockEmbeddingRepo.embed(
+            input: any(named: 'input'),
+            baseUrl: any(named: 'baseUrl'),
+          ),
+        ).called(1);
+
+        stopInZone(async);
+      });
+    });
+
+    test('stop waits for the in-flight embedding before returning', () async {
+      // Real-async on purpose: fakeAsync cannot resolve the broadcast
+      // cancel future stop() awaits (see the Glados driver note below), so
+      // this is the one place the in-flight handshake runs on real time.
+      final entry = JournalEntry(
+        meta: _meta(),
+        entryText: const EntryText(plainText: _longText),
+      );
+      stubEntity(entry);
+
+      final embedStarted = Completer<void>();
+      final embedGate = Completer<Float32List>();
+      when(
+        () => mockEmbeddingRepo.embed(
+          input: any(named: 'input'),
+          baseUrl: any(named: 'baseUrl'),
+          model: any(named: 'model'),
+        ),
+      ).thenAnswer((_) {
+        if (!embedStarted.isCompleted) embedStarted.complete();
+        return embedGate.future;
+      });
+
+      service.start();
+      updateNotifications.notify({_entityId, textEntryNotification});
+
+      // The embedding request is now in flight (_isProcessing = true).
+      await embedStarted.future;
+
+      var stopReturned = false;
+      final stopFuture = service.stop().then((_) => stopReturned = true);
+      await pumpEventQueue();
+      expect(
+        stopReturned,
+        isFalse,
+        reason: 'stop() must wait for the in-flight embedding',
+      );
+
+      // Release the gated embedding: stop() may now complete.
+      embedGate.complete(_fakeEmbedding());
+      await stopFuture;
+      expect(stopReturned, isTrue);
+    });
+
     test('skips when content hash matches (unchanged content)', () {
       fakeAsync((async) {
         final entry = JournalEntry(
