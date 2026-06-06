@@ -24,6 +24,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -5082,6 +5083,54 @@ void main() {
               mockConversationManager: mockConversationManager,
               mockJournalRepository: mockJournalRepository,
             );
+          },
+        );
+
+        test(
+          'deferred change set fires a task-suggestion notification when '
+          'NotificationRepository is registered',
+          () async {
+            // End-to-end through the wake: ChangeSetBuilder.build runs
+            // inside syncService.runInTransaction at step 10b and must fire
+            // the inbox row for the accumulated pending item. The builder-
+            // level path is covered in change_set_builder_test; this pins
+            // the workflow-level integration.
+            final notificationRepository = MockNotificationRepository();
+            getIt.registerSingleton<NotificationRepository>(
+              notificationRepository,
+            );
+            addTearDown(
+              () => getIt.unregister<NotificationRepository>(),
+            );
+            when(
+              () => notificationRepository.createTaskSuggestion(
+                linkedTaskId: any(named: 'linkedTaskId'),
+                suggestionCount: any(named: 'suggestionCount'),
+                title: any(named: 'title'),
+                body: any(named: 'body'),
+                scheduledFor: any(named: 'scheduledFor'),
+                category: any(named: 'category'),
+                idSeed: any(named: 'idSeed'),
+              ),
+            ).thenAnswer((_) async => null);
+
+            final result = await executeWithToolCallOnRealTask(
+              'update_task_estimate',
+              '{"minutes":60}',
+              task: taskForUpdates,
+            );
+
+            expect(result.success, isTrue);
+            verify(
+              () => notificationRepository.createTaskSuggestion(
+                linkedTaskId: taskId,
+                suggestionCount: 1,
+                title: any(named: 'title'),
+                body: any(named: 'body'),
+                category: any(named: 'category'),
+                idSeed: any(named: 'idSeed'),
+              ),
+            ).called(1);
           },
         );
       });
