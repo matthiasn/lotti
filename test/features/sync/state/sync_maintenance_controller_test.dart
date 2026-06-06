@@ -10,9 +10,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockSyncMaintenanceRepository extends Mock
-    implements SyncMaintenanceRepository {}
-
 const _generatedSyncStepOrder = <SyncStep>[
   SyncStep.measurables,
   SyncStep.labels,

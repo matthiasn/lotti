@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Generators for BackfillStatsState property tests
@@ -89,19 +90,22 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({'backfill_enabled': true});
-      await getIt.reset();
 
       mockSequenceService = MockSyncSequenceLogService();
       mockBackfillService = MockBackfillRequestService();
 
-      getIt
-        ..registerSingleton<SyncSequenceLogService>(mockSequenceService)
-        ..registerSingleton<BackfillRequestService>(mockBackfillService);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..registerSingleton<SyncSequenceLogService>(mockSequenceService)
+            ..registerSingleton<BackfillRequestService>(mockBackfillService);
+        },
+      );
     });
 
     tearDown(() async {
       container.dispose();
-      await getIt.reset();
+      await tearDownTestGetIt();
     });
 
     /// Creates the container, subscribes to the provider (keeping it alive for
@@ -683,6 +687,86 @@ void main() {
         });
       },
     );
+
+    group('cross-operation guards (exhaustive)', () {
+      test('every operation is a no-op while any other is in-flight', () {
+        fakeAsync((async) {
+          when(
+            () => mockSequenceService.getBackfillStats(),
+          ).thenAnswer((_) async => testStats);
+
+          // Gate every service mutation behind a never-completing future so
+          // whichever op starts first stays in-flight, and count invocations
+          // through the stubs (mocktail's verify() can't express "still 0").
+          final never = Completer<int>();
+          final calls = <String, int>{};
+          Future<int> gate(String name) {
+            calls[name] = (calls[name] ?? 0) + 1;
+            return never.future;
+          }
+
+          when(
+            () => mockBackfillService.processFullBackfill(),
+          ).thenAnswer((_) => gate('triggerFullBackfill'));
+          when(
+            () => mockBackfillService.processReRequest(),
+          ).thenAnswer((_) => gate('triggerReRequest'));
+          when(
+            () => mockSequenceService.resetUnresolvableEntries(),
+          ).thenAnswer((_) => gate('resetUnresolvable'));
+          when(
+            () => mockSequenceService.resetAllUnresolvableEntries(),
+          ).thenAnswer((_) => gate('resetAllUnresolvable'));
+          when(
+            () => mockSequenceService.retireAgedOutRequestedEntries(
+              amnestyWindow: any(named: 'amnestyWindow'),
+            ),
+          ).thenAnswer((_) => gate('retireStuckNow'));
+
+          final operations = <(String, void Function(BackfillStatsController))>[
+            ('triggerFullBackfill', (c) => c.triggerFullBackfill()),
+            ('triggerReRequest', (c) => c.triggerReRequest()),
+            ('resetUnresolvable', (c) => c.resetUnresolvable()),
+            ('resetAllUnresolvable', (c) => c.resetAllUnresolvable()),
+            ('retireStuckNow', (c) => c.retireStuckNow()),
+          ];
+
+          for (final (inFlightName, startInFlight) in operations) {
+            // Fresh controller and counters per in-flight scenario.
+            calls.clear();
+            createAndLoad(async);
+            final controller = container.read(
+              backfillStatsControllerProvider.notifier,
+            );
+
+            startInFlight(controller);
+            async.flushMicrotasks();
+            expect(
+              calls[inFlightName],
+              1,
+              reason: '$inFlightName should have started',
+            );
+
+            for (final (attemptName, attempt) in operations) {
+              attempt(controller);
+              async.flushMicrotasks();
+              expect(
+                calls[attemptName] ?? 0,
+                attemptName == inFlightName ? 1 : 0,
+                reason:
+                    '$attemptName must be a no-op while $inFlightName '
+                    'is in-flight',
+              );
+            }
+
+            container.dispose();
+          }
+
+          // Re-create so the group-level tearDown can dispose a container.
+          createAndLoad(async);
+        });
+      });
+    });
 
     group('auto-refresh timer dispose', () {
       test(

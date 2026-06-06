@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/state/provisioning_error.dart';
@@ -11,6 +12,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -54,7 +56,7 @@ void main() {
     registerFallbackValue(StackTrace.current);
   });
 
-  setUp(() {
+  setUp(() async {
     mockMatrixService = MockMatrixService();
 
     when(() => mockMatrixService.setConfig(any())).thenAnswer((_) async {});
@@ -97,10 +99,13 @@ void main() {
         subDomain: any<String>(named: 'subDomain'),
       ),
     ).thenAnswer((_) async {});
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    getIt.registerSingleton<DomainLogger>(mockLoggingService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockLoggingService);
+      },
+    );
 
     container = ProviderContainer(
       overrides: [
@@ -109,11 +114,9 @@ void main() {
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
     container.dispose();
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
+    await tearDownTestGetIt();
   });
 
   group('ProvisioningController', () {
@@ -366,6 +369,70 @@ void main() {
         );
       });
 
+      glados.Glados2<int, int>(
+        glados.IntAnys(glados.any).intInRange(0, 6),
+        glados.IntAnys(glados.any).intInRange(0, 1 << 12),
+        glados.ExploreConfig(numRuns: 160),
+      ).test(
+        'cross-field validation rejects exactly the corrupted field',
+        (corruption, seed) {
+          // Deterministic field corruption: 0 = valid bundle; 1-5 corrupt
+          // one validated field each. Padding stripping exercises
+          // _normalizeBase64 on every iteration.
+          final json = <String, dynamic>{
+            'v': corruption == 1 ? 3 + (seed % 7) : 2,
+            if (corruption != 2) 'kind': 'provisioned' else 'kind': seed,
+            'homeServer': corruption == 5
+                ? 'http://matrix-$seed.example.com'
+                : 'https://matrix-$seed.example.com',
+            'user': corruption == 3
+                ? 'alice$seed:example.com'
+                : '@alice$seed:example.com',
+            'password': 'secret-$seed',
+            'roomId': corruption == 4
+                ? 'room$seed:example.com'
+                : '!room$seed:example.com',
+          };
+          var encoded = encodeBundle(json);
+          if (seed.isEven) {
+            // _normalizeBase64 must re-pad stripped base64url input.
+            encoded = encoded.replaceAll('=', '');
+          }
+
+          final notifier = container.read(
+            provisioningControllerProvider.notifier,
+          );
+          if (corruption == 0) {
+            final bundle = notifier.decodeBundle(encoded);
+            expect(bundle.user, '@alice$seed:example.com');
+            expect(bundle.roomId, '!room$seed:example.com');
+            expect(bundle.homeServer, 'https://matrix-$seed.example.com');
+            return;
+          }
+
+          final expectedMessage = switch (corruption) {
+            1 => 'version',
+            2 => 'kind',
+            3 => 'MXID',
+            4 => 'room ID',
+            5 => 'https://',
+            _ => throw StateError('unreachable'),
+          };
+          expect(
+            () => notifier.decodeBundle(encoded),
+            throwsA(
+              isA<FormatException>().having(
+                (e) => e.message,
+                'message',
+                contains(expectedMessage),
+              ),
+            ),
+            reason: 'corruption=$corruption seed=$seed',
+          );
+        },
+        tags: 'glados',
+      );
+
       test('throws FormatException for unknown kind value', () {
         final unknownKind = encodeBundle({
           'v': 2,
@@ -488,6 +555,78 @@ void main() {
               },
             );
       });
+
+      test(
+        'restores the previous config and reconnects when login fails',
+        () async {
+          const oldConfig = MatrixConfig(
+            homeServer: 'https://old.example.com',
+            user: '@old:example.com',
+            password: 'old-secret',
+          );
+          when(
+            () => mockMatrixService.loadConfig(),
+          ).thenAnswer((_) async => oldConfig);
+          when(
+            () => mockMatrixService.getRoom(),
+          ).thenAnswer((_) async => '!old-room:example.com');
+          when(() => mockMatrixService.isLoggedIn()).thenReturn(true);
+          when(
+            () => mockMatrixService.login(waitForLifecycle: false),
+          ).thenAnswer((_) async => false);
+
+          await container
+              .read(provisioningControllerProvider.notifier)
+              .configureFromBundle(provisionedBundle);
+
+          // setConfig(new) → login fails → setConfig(old) → saveRoom(old)
+          // → reconnect login. The user keeps their previous session.
+          final configs = verify(
+            () => mockMatrixService.setConfig(captureAny()),
+          ).captured.cast<MatrixConfig>();
+          expect(configs, hasLength(2));
+          expect(configs.first.user, provisionedBundle.user);
+          expect(configs.last.user, '@old:example.com');
+          verify(
+            () => mockMatrixService.saveRoom('!old-room:example.com'),
+          ).called(1);
+          verify(
+            () => mockMatrixService.login(waitForLifecycle: false),
+          ).called(2);
+          verifyNever(() => mockMatrixService.deleteConfig());
+
+          container
+              .read(provisioningControllerProvider)
+              .maybeWhen(
+                error: (error) => expect(error, ProvisioningError.loginFailed),
+                orElse: () => fail('Expected error state'),
+              );
+        },
+      );
+
+      test(
+        'deletes the config when login fails with no previous session',
+        () async {
+          when(
+            () => mockMatrixService.loadConfig(),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockMatrixService.getRoom(),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockMatrixService.login(waitForLifecycle: false),
+          ).thenAnswer((_) async => false);
+
+          await container
+              .read(provisioningControllerProvider.notifier)
+              .configureFromBundle(provisionedBundle);
+
+          verify(() => mockMatrixService.deleteConfig()).called(1);
+          verify(
+            () => mockMatrixService.login(waitForLifecycle: false),
+          ).called(1);
+        },
+      );
 
       test('sets error state when joinRoom throws', () async {
         when(

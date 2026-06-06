@@ -114,10 +114,12 @@ import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
+import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
@@ -240,6 +242,12 @@ class MockSurfaceController extends Mock implements genui.SurfaceController {}
 class MockSurfaceContext extends Mock implements genui.SurfaceContext {}
 
 class MockMatrixClient extends Mock implements Client {}
+
+class MockSyncMaintenanceRepository extends Mock
+    implements SyncMaintenanceRepository {}
+
+class MockSyncedAudioInferenceDispatcher extends Mock
+    implements SyncedAudioInferenceDispatcher {}
 
 class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
 
