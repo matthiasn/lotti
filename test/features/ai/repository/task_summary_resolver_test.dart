@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../agents/test_data/entity_factories.dart';
 
 AgentLink _link({
   required String id,
@@ -433,4 +435,68 @@ void main() {
       expect(summary, 'legacy summary');
     });
   });
+
+  group('summaryFromReport properties', () {
+    glados.Glados(
+      glados.any.reportSummaryScenario,
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'tldr wins when non-blank, content is the fallback, blank -> null',
+      (scenario) {
+        final resolver = TaskSummaryResolver(null);
+        final report = makeTestReport(
+          id: 'r-prop',
+          agentId: 'agent-prop',
+          content: scenario.content,
+          tldr: scenario.tldr,
+          createdAt: DateTime(2026, 3, 15),
+        );
+
+        final summary = resolver.summaryFromReport(report);
+
+        final tldrTrimmed = scenario.tldr?.trim() ?? '';
+        final contentTrimmed = scenario.content.trim();
+        if (tldrTrimmed.isNotEmpty) {
+          expect(summary, tldrTrimmed, reason: '$scenario');
+        } else if (contentTrimmed.isNotEmpty) {
+          expect(summary, contentTrimmed, reason: '$scenario');
+        } else {
+          expect(summary, isNull, reason: '$scenario');
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+/// Deterministic (tldr, content) pair mixing blank/whitespace/real text.
+class _ReportSummaryScenario {
+  _ReportSummaryScenario(int tldrPick, int contentPick, int seed) {
+    String? pick(int n, {required bool nullable}) => switch (n % 5) {
+      0 => nullable ? null : '',
+      1 => '',
+      2 => '   \t ',
+      3 => ' summary $seed ',
+      _ => 'multi word text $seed',
+    };
+    tldr = pick(tldrPick, nullable: true);
+    content = pick(contentPick, nullable: false)!;
+  }
+
+  late final String? tldr;
+  late final String content;
+
+  @override
+  String toString() =>
+      '_ReportSummaryScenario(tldr: "$tldr", content: "$content")';
+}
+
+extension _AnyReportSummary on glados.Any {
+  glados.Generator<_ReportSummaryScenario> get reportSummaryScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 5),
+        glados.IntAnys(this).intInRange(0, 1 << 12),
+        _ReportSummaryScenario.new,
+      );
 }
