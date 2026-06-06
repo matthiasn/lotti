@@ -59,7 +59,7 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/.../project_status_chip_test.dart:28–96` — five nearly-identical `testWidgets` bodies that each pump the widget, check `find.text` + `find.byIcon`. These are textbook copy-paste permutations. Replace with a single parameterized loop over `ProjectStatusKind.values`, as already done in `project_health_indicator_test.dart`:
+- [x] **[HIGH]** `test/.../project_status_chip_test.dart:28–96` — five nearly-identical `testWidgets` bodies that each pump the widget, check `find.text` + `find.byIcon`. These are textbook copy-paste permutations. Replace with a single parameterized loop over `ProjectStatusKind.values`, as already done in `project_health_indicator_test.dart`:
   ```dart
   for (final (status, label, icon) in cases) {
     testWidgets('renders $label with icon', (tester) async { ... });
@@ -97,10 +97,11 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/features/projects/ui/widgets/project_status_attributes.dart` — **no test file exists**. The file exports three testable pure/context-dependent functions and data:
+- [x] **[HIGH]** `lib/features/projects/ui/widgets/project_status_attributes.dart` — **no test file exists**. The file exports three testable pure/context-dependent functions and data:
   - `projectStatusKindFromFilterId(String)` — the default-fallback branch (`_ => ProjectStatusKind.open`) for unknown IDs has no test.
   - `buildProjectStatus(ProjectStatusKind, DateTime)` — all five variants have no test.
   - `allProjectStatusKinds` — no coverage check.
+  **Note:** the filter-id mapping (incl. fallback + Glados properties) and `allProjectStatusKinds` were already covered; `buildProjectStatus` now has an enum-exhaustive variant/createdAt/utcOffset test.
 
 - [ ] **[HIGH]** `lib/features/projects/ui/widgets/projects_overview_list.dart` (75 lines) — **no test file exists**. This widget likely renders the list of project groups. Its empty-state, single-group, and multi-group rendering paths are not covered.
 

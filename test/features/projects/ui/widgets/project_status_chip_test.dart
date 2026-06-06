@@ -25,74 +25,38 @@ void main() {
       );
     }
 
-    testWidgets('renders Open status with correct label and icon', (
-      tester,
-    ) async {
-      final status = makeStatus(ProjectStatus.open);
-      await tester.pumpWidget(
-        makeTestableWidget(ProjectStatusChip(status: status)),
-      );
-      await tester.pump();
-
-      expect(find.text('Open'), findsOneWidget);
-      expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
-    });
-
-    testWidgets('renders Active status with correct label and icon', (
-      tester,
-    ) async {
-      final status = makeStatus(ProjectStatus.active);
-      await tester.pumpWidget(
-        makeTestableWidget(ProjectStatusChip(status: status)),
-      );
-      await tester.pump();
-
-      expect(find.text('Active'), findsOneWidget);
-      expect(find.byIcon(Icons.play_circle_outline), findsOneWidget);
-    });
-
-    testWidgets('renders On Hold status with correct label and icon', (
-      tester,
-    ) async {
-      final status = ProjectStatus.onHold(
+    // One parameterized body per status variant.
+    ProjectStatus statusFor(String label) => switch (label) {
+      'Open' => makeStatus(ProjectStatus.open),
+      'Active' => makeStatus(ProjectStatus.active),
+      'On Hold' => ProjectStatus.onHold(
         id: uuid.v1(),
         createdAt: now,
         utcOffset: 0,
         reason: 'blocked',
-      );
-      await tester.pumpWidget(
-        makeTestableWidget(ProjectStatusChip(status: status)),
-      );
-      await tester.pump();
+      ),
+      'Completed' => makeStatus(ProjectStatus.completed),
+      _ => makeStatus(ProjectStatus.archived),
+    };
 
-      expect(find.text('On Hold'), findsOneWidget);
-      expect(find.byIcon(Icons.pause_circle_outline), findsOneWidget);
-    });
+    for (final (label, icon) in [
+      ('Open', Icons.radio_button_unchecked),
+      ('Active', Icons.play_circle_outline),
+      ('On Hold', Icons.pause_circle_outline),
+      ('Completed', Icons.check_circle_outline),
+      ('Archived', Icons.archive_outlined),
+    ]) {
+      testWidgets('renders $label status with its label and icon', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          makeTestableWidget(ProjectStatusChip(status: statusFor(label))),
+        );
+        await tester.pump();
 
-    testWidgets('renders Completed status with correct label and icon', (
-      tester,
-    ) async {
-      final status = makeStatus(ProjectStatus.completed);
-      await tester.pumpWidget(
-        makeTestableWidget(ProjectStatusChip(status: status)),
-      );
-      await tester.pump();
-
-      expect(find.text('Completed'), findsOneWidget);
-      expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
-    });
-
-    testWidgets('renders Archived status with correct label and icon', (
-      tester,
-    ) async {
-      final status = makeStatus(ProjectStatus.archived);
-      await tester.pumpWidget(
-        makeTestableWidget(ProjectStatusChip(status: status)),
-      );
-      await tester.pump();
-
-      expect(find.text('Archived'), findsOneWidget);
-      expect(find.byIcon(Icons.archive_outlined), findsOneWidget);
-    });
+        expect(find.text(label), findsOneWidget);
+        expect(find.byIcon(icon), findsOneWidget);
+      });
+    }
   });
 }
