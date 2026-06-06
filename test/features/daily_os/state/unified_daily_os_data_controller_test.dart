@@ -22,8 +22,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockDayPlanRepository extends Mock implements DayPlanRepository {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -204,18 +202,24 @@ void main() {
     getIt.reset();
   });
 
+  /// Stubs the day-plan read and empty calendar entries — the baseline
+  /// repeated by most integration tests in this file.
+  void stubPlanAndEmptyEntries(DayPlanEntry? plan) {
+    when(
+      () => mockDayPlanRepository.getDayPlan(testDate),
+    ).thenAnswer((_) async => plan);
+    when(
+      () => mockDb.sortedCalendarEntries(
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
+  }
+
   group('UnifiedDailyOsDataController - Budget Progress', () {
     test('returns empty budgetProgress when no blocks defined', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
         unifiedDailyOsDataControllerProvider(date: testDate).future,
@@ -235,15 +239,7 @@ void main() {
           ),
         ],
       );
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
         unifiedDailyOsDataControllerProvider(date: testDate).future,
@@ -488,15 +484,7 @@ void main() {
           ),
         ],
       );
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
         unifiedDailyOsDataControllerProvider(date: testDate).future,
@@ -776,15 +764,7 @@ void main() {
           ),
         ],
       );
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
         unifiedDailyOsDataControllerProvider(date: testDate).future,
@@ -1162,15 +1142,7 @@ void main() {
   group('UnifiedDailyOsDataController - Day Bounds Calculation', () {
     test('returns default bounds when no slots', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
         unifiedDailyOsDataControllerProvider(date: testDate).future,
@@ -1191,15 +1163,7 @@ void main() {
           ),
         ],
       );
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
         unifiedDailyOsDataControllerProvider(date: testDate).future,
@@ -1248,15 +1212,7 @@ void main() {
           ),
         ],
       );
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
         unifiedDailyOsDataControllerProvider(date: testDate).future,
@@ -1276,15 +1232,7 @@ void main() {
           ),
         ],
       );
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
         unifiedDailyOsDataControllerProvider(date: testDate).future,
@@ -1333,15 +1281,7 @@ void main() {
           ),
         ],
       );
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
         unifiedDailyOsDataControllerProvider(date: testDate).future,
@@ -1390,15 +1330,7 @@ void main() {
           ),
         ],
       );
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       final result = await container.read(
         unifiedDailyOsDataControllerProvider(date: testDate).future,
@@ -2027,15 +1959,7 @@ void main() {
           ),
         ],
       );
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       // Task due today with no tracked time
       final dueTask = createDueTask(
@@ -2155,15 +2079,7 @@ void main() {
             ),
           ],
         );
-        when(
-          () => mockDayPlanRepository.getDayPlan(testDate),
-        ).thenAnswer((_) async => plan);
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubPlanAndEmptyEntries(plan);
 
         // Due task in a category WITHOUT a budget
         final dueTask = createDueTask(
@@ -2208,15 +2124,7 @@ void main() {
           ),
         ],
       );
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       // Task due today
       final dueTodayTask = createDueTask(
@@ -2251,15 +2159,7 @@ void main() {
 
     test('ignores due tasks without category', () async {
       final plan = createTestPlan(plannedBlocks: []);
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       // Due task with NULL category
       final dueTask = createDueTask(
@@ -2410,15 +2310,7 @@ void main() {
             ),
           ],
         );
-        when(
-          () => mockDayPlanRepository.getDayPlan(testDate),
-        ).thenAnswer((_) async => plan);
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubPlanAndEmptyEntries(plan);
 
         // Create tasks with different priorities
         final p3Task = createDueTask(
@@ -2495,15 +2387,7 @@ void main() {
           ),
         ],
       );
-      when(
-        () => mockDayPlanRepository.getDayPlan(testDate),
-      ).thenAnswer((_) async => plan);
-      when(
-        () => mockDb.sortedCalendarEntries(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubPlanAndEmptyEntries(plan);
 
       // P0 due today vs P3 overdue
       final p0DueToday = createDueTask(
@@ -2553,15 +2437,7 @@ void main() {
             ),
           ],
         );
-        when(
-          () => mockDayPlanRepository.getDayPlan(testDate),
-        ).thenAnswer((_) async => plan);
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubPlanAndEmptyEntries(plan);
 
         when(() => mockTimeService.linkedFrom).thenReturn(null);
 
@@ -2603,15 +2479,7 @@ void main() {
             ),
           ],
         );
-        when(
-          () => mockDayPlanRepository.getDayPlan(testDate),
-        ).thenAnswer((_) async => plan);
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubPlanAndEmptyEntries(plan);
 
         when(() => mockTimeService.linkedFrom).thenReturn(null);
 
@@ -2652,15 +2520,7 @@ void main() {
             ),
           ],
         );
-        when(
-          () => mockDayPlanRepository.getDayPlan(testDate),
-        ).thenAnswer((_) async => plan);
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubPlanAndEmptyEntries(plan);
 
         when(() => mockTimeService.linkedFrom).thenReturn(null);
 
@@ -2709,15 +2569,7 @@ void main() {
             ),
           ],
         );
-        when(
-          () => mockDayPlanRepository.getDayPlan(testDate),
-        ).thenAnswer((_) async => plan);
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubPlanAndEmptyEntries(plan);
 
         when(() => mockTimeService.linkedFrom).thenReturn(null);
 
@@ -2764,15 +2616,7 @@ void main() {
             ),
           ],
         );
-        when(
-          () => mockDayPlanRepository.getDayPlan(testDate),
-        ).thenAnswer((_) async => plan);
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubPlanAndEmptyEntries(plan);
 
         when(() => mockTimeService.linkedFrom).thenReturn(null);
 
@@ -2821,15 +2665,7 @@ void main() {
             ),
           ],
         );
-        when(
-          () => mockDayPlanRepository.getDayPlan(testDate),
-        ).thenAnswer((_) async => plan);
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubPlanAndEmptyEntries(plan);
 
         when(() => mockTimeService.linkedFrom).thenReturn(null);
 
@@ -2872,15 +2708,7 @@ void main() {
             ),
           ],
         );
-        when(
-          () => mockDayPlanRepository.getDayPlan(testDate),
-        ).thenAnswer((_) async => plan);
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubPlanAndEmptyEntries(plan);
 
         // linkedFrom task has the category
         final linkedTask = createTestTask(
@@ -3882,15 +3710,7 @@ void main() {
           ),
         );
 
-        when(
-          () => mockDayPlanRepository.getDayPlan(testDate),
-        ).thenAnswer((_) async => existingPlan);
-        when(
-          () => mockDb.sortedCalendarEntries(
-            rangeStart: any(named: 'rangeStart'),
-            rangeEnd: any(named: 'rangeEnd'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubPlanAndEmptyEntries(existingPlan);
 
         final result = await container.read(
           unifiedDailyOsDataControllerProvider(date: testDate).future,

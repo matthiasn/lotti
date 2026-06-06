@@ -75,6 +75,7 @@ import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
@@ -808,6 +809,8 @@ class MockChatRepository extends Mock implements ChatRepository {}
 class MockTaskSummaryRepository extends Mock implements TaskSummaryRepository {}
 
 class MockTaskSummaryResolver extends Mock implements TaskSummaryResolver {}
+
+class MockDayPlanRepository extends Mock implements DayPlanRepository {}
 
 class MockHabitsRepository extends Mock implements HabitsRepository {}
 
