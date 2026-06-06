@@ -49,6 +49,46 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
+  /// Stubs the JournalDb fetch for [ids] to return the serialized [items].
+  void stubItemFetch(List<String> ids, List<ChecklistItem> items) {
+    when(
+      () => mockJournalDb.entriesForIds(ids),
+    ).thenReturn(
+      MockSelectable<JournalDbEntity>(items.map(_createDbEntity).toList()),
+    );
+  }
+
+  /// Stubs the task lookup the handler performs before applying updates.
+  void stubTaskById() {
+    when(
+      () => mockJournalDb.journalEntityById(testTask.id),
+    ).thenAnswer((_) async => testTask);
+  }
+
+  /// Stubs a successful repository write for [checklistItemId].
+  void stubUpdateSuccess(String checklistItemId) {
+    when(
+      () => mockChecklistRepository.updateChecklistItem(
+        checklistItemId: checklistItemId,
+        data: any(named: 'data'),
+        taskId: testTask.id,
+      ),
+    ).thenAnswer((_) async => true);
+  }
+
+  /// Builds the canonical successful processFunctionCall result carrying
+  /// [items] for the handler's executeUpdates stage.
+  FunctionCallResult makeUpdateResult(List<Map<String, dynamic>> items) =>
+      FunctionCallResult(
+        success: true,
+        functionName: 'update_checklist_items',
+        arguments: '',
+        data: {
+          'items': items,
+          'taskId': testTask.id,
+        },
+      );
+
   group('LottiChecklistUpdateHandler', () {
     test('should have correct function name', () {
       expect(handler.functionName, 'update_checklist_items');
@@ -418,31 +458,13 @@ void main() {
           checkedBy: ChangeSource.agent,
         );
 
-        when(
-          () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
-        when(
-          () => mockJournalDb.journalEntityById(testTask.id),
-        ).thenAnswer((_) async => testTask);
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: any(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).thenAnswer((_) async => true);
+        stubItemFetch(['item-1'], [item]);
+        stubTaskById();
+        stubUpdateSuccess('item-1');
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': true},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isChecked': true},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -466,33 +488,13 @@ void main() {
             checkedAt: DateTime(2024, 1, 10),
           );
 
-          when(
-            () => mockJournalDb.entriesForIds(['item-1']),
-          ).thenReturn(
-            MockSelectable<JournalDbEntity>([_createDbEntity(item)]),
-          );
-          when(
-            () => mockJournalDb.journalEntityById(testTask.id),
-          ).thenAnswer((_) async => testTask);
-          when(
-            () => mockChecklistRepository.updateChecklistItem(
-              checklistItemId: 'item-1',
-              data: any(named: 'data'),
-              taskId: testTask.id,
-            ),
-          ).thenAnswer((_) async => true);
+          stubItemFetch(['item-1'], [item]);
+          stubTaskById();
+          stubUpdateSuccess('item-1');
 
-          final result = FunctionCallResult(
-            success: true,
-            functionName: 'update_checklist_items',
-            arguments: '',
-            data: {
-              'items': [
-                {'id': 'item-1', 'isArchived': true},
-              ],
-              'taskId': testTask.id,
-            },
-          );
+          final result = makeUpdateResult([
+            {'id': 'item-1', 'isArchived': true},
+          ]);
 
           final count = await handler.executeUpdates(result);
 
@@ -521,21 +523,11 @@ void main() {
           isArchived: true,
         );
 
-        when(
-          () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
+        stubItemFetch(['item-1'], [item]);
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isArchived': true},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isArchived': true},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -561,31 +553,13 @@ void main() {
           checkedAt: DateTime(2024, 1, 12),
         );
 
-        when(
-          () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
-        when(
-          () => mockJournalDb.journalEntityById(testTask.id),
-        ).thenAnswer((_) async => testTask);
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: any(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).thenAnswer((_) async => true);
+        stubItemFetch(['item-1'], [item]);
+        stubTaskById();
+        stubUpdateSuccess('item-1');
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': false, 'isArchived': true},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isChecked': false, 'isArchived': true},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -613,31 +587,13 @@ void main() {
           title: 'mac OS settings',
         );
 
-        when(
-          () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
-        when(
-          () => mockJournalDb.journalEntityById(testTask.id),
-        ).thenAnswer((_) async => testTask);
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: any(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).thenAnswer((_) async => true);
+        stubItemFetch(['item-1'], [item]);
+        stubTaskById();
+        stubUpdateSuccess('item-1');
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'title': 'macOS settings'},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'title': 'macOS settings'},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -645,21 +601,11 @@ void main() {
       });
 
       test('should skip non-existent item', () async {
-        when(
-          () => mockJournalDb.entriesForIds(['missing-item']),
-        ).thenReturn(MockSelectable<JournalDbEntity>([]));
+        stubItemFetch(['missing-item'], []);
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'missing-item', 'isChecked': true},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'missing-item', 'isChecked': true},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -683,21 +629,11 @@ void main() {
           linkedChecklists: ['other-checklist'], // Not checklist-1
         );
 
-        when(
-          () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
+        stubItemFetch(['item-1'], [item]);
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': true},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isChecked': true},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -715,21 +651,11 @@ void main() {
           isChecked: true, // Already checked
         );
 
-        when(
-          () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
+        stubItemFetch(['item-1'], [item]);
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': true}, // Same as current
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isChecked': true}, // Same as current
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -744,34 +670,14 @@ void main() {
           checkedBy: ChangeSource.agent,
         );
 
-        when(
-          () => mockJournalDb.entriesForIds(['valid-item', 'missing-item']),
-        ).thenReturn(
-          MockSelectable<JournalDbEntity>([_createDbEntity(validItem)]),
-        );
-        when(
-          () => mockJournalDb.journalEntityById(testTask.id),
-        ).thenAnswer((_) async => testTask);
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'valid-item',
-            data: any(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).thenAnswer((_) async => true);
+        stubItemFetch(['valid-item', 'missing-item'], [validItem]);
+        stubTaskById();
+        stubUpdateSuccess('valid-item');
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'valid-item', 'isChecked': true},
-              {'id': 'missing-item', 'isChecked': true},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'valid-item', 'isChecked': true},
+          {'id': 'missing-item', 'isChecked': true},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -844,31 +750,15 @@ void main() {
           checklistIds: ['checklist-1'],
         );
 
-        when(
-          () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
+        stubItemFetch(['item-1'], [item]);
         when(
           () => mockJournalDb.journalEntityById(testTask.id),
         ).thenAnswer((_) async => refreshedTask);
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: any(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).thenAnswer((_) async => true);
+        stubUpdateSuccess('item-1');
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': true},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isChecked': true},
+        ]);
 
         await handler.executeUpdates(result);
 
@@ -937,16 +827,9 @@ void main() {
 
     group('isDuplicate', () {
       test('should always return false', () {
-        const result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': true},
-            ],
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isChecked': true},
+        ]);
 
         expect(handler.isDuplicate(result), false);
       });
@@ -1001,31 +884,13 @@ void main() {
           checkedBy: ChangeSource.agent,
         );
 
-        when(
-          () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
-        when(
-          () => mockJournalDb.journalEntityById(testTask.id),
-        ).thenAnswer((_) async => testTask);
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: 'item-1',
-            data: any(named: 'data'),
-            taskId: testTask.id,
-          ),
-        ).thenAnswer((_) async => true);
+        stubItemFetch(['item-1'], [item]);
+        stubTaskById();
+        stubUpdateSuccess('item-1');
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': true, 'title': 'Updated'},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isChecked': true, 'title': 'Updated'},
+        ]);
 
         await handler.executeUpdates(result);
 
@@ -1131,12 +996,8 @@ void main() {
     group('sovereignty guard', () {
       /// Helper to set up mocks for a single checklist item entity.
       void stubSingleItem(ChecklistItem item) {
-        when(
-          () => mockJournalDb.entriesForIds([item.id]),
-        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
-        when(
-          () => mockJournalDb.journalEntityById(testTask.id),
-        ).thenAnswer((_) async => testTask);
+        stubItemFetch([item.id], [item]);
+        stubTaskById();
         when(
           () => mockChecklistRepository.updateChecklistItem(
             checklistItemId: item.id,
@@ -1163,17 +1024,9 @@ void main() {
           clock: () => DateTime(2026, 2, 28, 22, 35),
         );
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': false},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isChecked': false},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -1215,17 +1068,9 @@ void main() {
             clock: () => DateTime(2026, 2, 28, 22, 35),
           );
 
-          final result = FunctionCallResult(
-            success: true,
-            functionName: 'update_checklist_items',
-            arguments: '',
-            data: {
-              'items': [
-                {'id': 'item-1', 'isChecked': true},
-              ],
-              'taskId': testTask.id,
-            },
-          );
+          final result = makeUpdateResult([
+            {'id': 'item-1', 'isChecked': true},
+          ]);
 
           final count = await handler.executeUpdates(result);
 
@@ -1258,21 +1103,13 @@ void main() {
             clock: () => clockTime,
           );
 
-          final result = FunctionCallResult(
-            success: true,
-            functionName: 'update_checklist_items',
-            arguments: '',
-            data: {
-              'items': [
-                {
-                  'id': 'item-1',
-                  'isChecked': false,
-                  'reason': 'User said "deploy failed" in 22:30 recording',
-                },
-              ],
-              'taskId': testTask.id,
+          final result = makeUpdateResult([
+            {
+              'id': 'item-1',
+              'isChecked': false,
+              'reason': 'User said "deploy failed" in 22:30 recording',
             },
-          );
+          ]);
 
           final count = await handler.executeUpdates(result);
 
@@ -1312,17 +1149,9 @@ void main() {
           clock: () => clockTime,
         );
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': false},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isChecked': false},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -1363,21 +1192,13 @@ void main() {
             clock: () => DateTime(2026, 2, 28, 22, 35),
           );
 
-          final result = FunctionCallResult(
-            success: true,
-            functionName: 'update_checklist_items',
-            arguments: '',
-            data: {
-              'items': [
-                {
-                  'id': 'item-1',
-                  'isChecked': false,
-                  'title': 'macOS setup',
-                },
-              ],
-              'taskId': testTask.id,
+          final result = makeUpdateResult([
+            {
+              'id': 'item-1',
+              'isChecked': false,
+              'title': 'macOS setup',
             },
-          );
+          ]);
 
           final count = await handler.executeUpdates(result);
 
@@ -1423,17 +1244,9 @@ void main() {
           clock: () => DateTime(2026, 2, 28, 22, 35),
         );
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': false},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isChecked': false},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -1462,17 +1275,9 @@ void main() {
           clock: () => DateTime(2026, 2, 28, 22, 35),
         );
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': false, 'reason': '   '},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isChecked': false, 'reason': '   '},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -1502,17 +1307,9 @@ void main() {
           clock: () => DateTime(2026, 2, 28, 22, 35),
         );
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'title': 'macOS'},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'title': 'macOS'},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -1550,17 +1347,9 @@ void main() {
           clock: () => DateTime(2026, 2, 28, 22, 35),
         );
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {'id': 'item-1', 'isChecked': false, 'reason': 'not done'},
-            ],
-            'taskId': testTask.id,
-          },
-        );
+        final result = makeUpdateResult([
+          {'id': 'item-1', 'isChecked': false, 'reason': 'not done'},
+        ]);
 
         final count = await handler.executeUpdates(result);
 
@@ -1593,22 +1382,14 @@ void main() {
           clock: () => DateTime(2026, 2, 28, 22, 35),
         );
 
-        final result = FunctionCallResult(
-          success: true,
-          functionName: 'update_checklist_items',
-          arguments: '',
-          data: {
-            'items': [
-              {
-                'id': 'item-1',
-                'isChecked': false,
-                'title': 'macOS setup',
-                'reason': 'short',
-              },
-            ],
-            'taskId': testTask.id,
+        final result = makeUpdateResult([
+          {
+            'id': 'item-1',
+            'isChecked': false,
+            'title': 'macOS setup',
+            'reason': 'short',
           },
-        );
+        ]);
 
         final count = await handler.executeUpdates(result);
 
