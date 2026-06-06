@@ -78,7 +78,7 @@
 
 ## Generative (Glados) Testing Opportunities
 
-- [ ] **[HIGH]** `CategoryIconExtension.fromJson` / `toJson` roundtrip — `category_icon.dart:926-948`. The `toJson` → `fromJson` property (i.e., `fromJson(icon.toJson()) == icon` for all `CategoryIcon` values) is already exercised by an explicit loop in the test, but it is an ideal Glados property: generate arbitrary `String` inputs (including valid icon names, whitespace-padded strings, unknown strings, empty strings, camelCase variants), and assert `fromJson` returns a non-null value iff the trimmed input is an exact `.name` match. Also verify `fromJson(toJson(icon)) == icon` holds for all `CategoryIcon.values` as a roundtrip property. This replaces the hand-rolled loop with a shrinkable property.
+- [x] **[HIGH]** `CategoryIconExtension.fromJson` / `toJson` roundtrip — `category_icon.dart:926-948`. The `toJson` → `fromJson` property (i.e., `fromJson(icon.toJson()) == icon` for all `CategoryIcon` values) is already exercised by an explicit loop in the test, but it is an ideal Glados property: generate arbitrary `String` inputs (including valid icon names, whitespace-padded strings, unknown strings, empty strings, camelCase variants), and assert `fromJson` returns a non-null value iff the trimmed input is an exact `.name` match. Also verify `fromJson(toJson(icon)) == icon` holds for all `CategoryIcon.values` as a roundtrip property. This replaces the hand-rolled loop with a shrinkable property.
 
 - [x] **[HIGH]** `CategoryIconExtension.suggestFromName` — `category_icon.dart:693-922`. This function contains a 3-stage matching algorithm (exact enum name, exact display name, word-boundary prefix, keyword map with regex). The current tests cover ~25 hand-picked inputs but miss: (a) multi-word category names where multiple stages could match differently; (b) the 60% prefix length threshold boundary (names of length 3 vs. 4 at the `nameWord.length >= 4` guard); (c) strings that appear as substrings in multiple keyword entries; (d) inputs with embedded unicode/special chars. A Glados test can generate `String?` inputs and assert structural invariants (non-null result only when at least one matching rule fires, null result for empty/whitespace, result is always a valid `CategoryIcon`). Add a custom `_AnyIconName on Any` generator that mixes enum names, display name words, keyword map keys, and random tokens.
 
@@ -88,7 +88,7 @@
 
 ## Coverage / Missing-Behavior Gaps
 
-- [ ] **[HIGH]** `lib/features/categories/state/categories_list_controller.dart` (10 lines) — no test file exists. The file is small but it's the Riverpod provider that feeds the categories list page; its absence from the test suite means list-watching behavior (e.g., stream subscription lifecycle, error propagation) is untested at the unit level.
+- [x] **[HIGH]** `lib/features/categories/state/categories_list_controller.dart` (10 lines) — no test file exists. The file is small but it's the Riverpod provider that feeds the categories list page; its absence from the test suite means list-watching behavior (e.g., stream subscription lifecycle, error propagation) is untested at the unit level.
 
 - [x] **[HIGH]** `lib/features/categories/ui/widgets/category_color_icon.dart` (51 lines) — no test file exists. This widget renders the colored circle icon used throughout the app. Missing coverage of: rendering with valid hex color, fallback for null/empty color, luminance-based text color selection (dark vs. light background).
 
