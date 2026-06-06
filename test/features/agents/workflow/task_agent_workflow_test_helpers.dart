@@ -21,9 +21,14 @@ import '../../../mocks/mocks.dart';
 /// ConversationRepository is a Riverpod notifier, so we extend it directly and
 /// override the methods the workflow calls rather than using `Mock`.
 class MockConversationRepository extends ConversationRepository {
-  MockConversationRepository(this._mockManager);
+  MockConversationRepository(this._mockManager, {this.onSystemMessage});
 
   final MockConversationManager _mockManager;
+
+  /// Optional callback capturing the system message passed to
+  /// [createConversation] (used by the project-agent workflow tests).
+  final void Function(String? systemMessage)? onSystemMessage;
+
   final List<String> deletedConversationIds = [];
 
   /// Delegate for sendMessage — set in tests to control behavior.
@@ -62,6 +67,7 @@ class MockConversationRepository extends ConversationRepository {
     String? systemMessage,
     int maxTurns = 20,
   }) {
+    onSystemMessage?.call(systemMessage);
     return 'test-conv-id';
   }
 

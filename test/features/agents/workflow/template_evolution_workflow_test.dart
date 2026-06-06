@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -118,6 +120,50 @@ class _TestableEvolutionStrategy extends EvolutionStrategy {
   PendingSoulProposal? get latestSoulProposal => _soulProposalOverridden
       ? _overriddenSoulProposal
       : super.latestSoulProposal;
+}
+
+/// Stubs `AgentTemplateService.createVersion` (any-matcher form) to return
+/// [version] — shared by the approval-path tests.
+void _stubCreateVersion(
+  MockAgentTemplateService service,
+  AgentTemplateVersionEntity version,
+) {
+  when(
+    () => service.createVersion(
+      templateId: any(named: 'templateId'),
+      directives: any(named: 'directives'),
+      authoredBy: any(named: 'authoredBy'),
+      generalDirective: any(named: 'generalDirective'),
+      reportDirective: any(named: 'reportDirective'),
+    ),
+  ).thenAnswer((_) async => version);
+}
+
+/// Builds an [EvolutionStrategy] that has accumulated one
+/// `propose_directives` proposal, plus the conversation manager that fed it.
+Future<({EvolutionStrategy strategy, ConversationManager manager})>
+_strategyWithProposal({
+  String generalDirective = 'New text',
+  String reportDirective = '',
+  String rationale = 'R',
+}) async {
+  final strategy = EvolutionStrategy();
+  final manager = ConversationManager(conversationId: 'conv-1')..initialize();
+  final toolCall = ChatCompletionMessageToolCall(
+    id: 'call-1',
+    type: ChatCompletionMessageToolCallType.function,
+    function: ChatCompletionMessageFunctionCall(
+      name: 'propose_directives',
+      arguments: jsonEncode({
+        'general_directive': generalDirective,
+        'report_directive': reportDirective,
+        'rationale': rationale,
+      }),
+    ),
+  );
+  manager.addAssistantMessage(toolCalls: [toolCall]);
+  await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
+  return (strategy: strategy, manager: manager);
 }
 
 void main() {
@@ -502,20 +548,10 @@ void main() {
 
   group('getCurrentProposal', () {
     test('returns proposal when one exists', () async {
-      final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
-        id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"New approach","report_directive":"","rationale":"Data-driven"}',
-        ),
+      final (:strategy, :manager) = await _strategyWithProposal(
+        generalDirective: 'New approach',
+        rationale: 'Data-driven',
       );
-      manager.addAssistantMessage(toolCalls: [toolCall]);
-      await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
 
       final workflow = TemplateEvolutionWorkflow(
         conversationRepository: _TestConversationRepository(),
@@ -642,15 +678,7 @@ void main() {
         authoredBy: 'evolution_agent',
       );
 
-      when(
-        () => mockTemplateService.createVersion(
-          templateId: any(named: 'templateId'),
-          directives: any(named: 'directives'),
-          authoredBy: any(named: 'authoredBy'),
-          generalDirective: any(named: 'generalDirective'),
-          reportDirective: any(named: 'reportDirective'),
-        ),
-      ).thenAnswer((_) async => newVersion);
+      _stubCreateVersion(mockTemplateService, newVersion);
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
       when(
         () => mockRepository.getEntity(any()),
@@ -837,20 +865,7 @@ void main() {
       ).thenThrow(StateError('Template not found'));
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
 
-      final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
-        id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"New text","report_directive":"","rationale":"R"}',
-        ),
-      );
-      manager.addAssistantMessage(toolCalls: [toolCall]);
-      await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
+      final (:strategy, :manager) = await _strategyWithProposal();
 
       final workflow = TemplateEvolutionWorkflow(
         conversationRepository: _TestConversationRepository(),
@@ -908,23 +923,7 @@ void main() {
           () => mockRepository.getEntity(any()),
         ).thenAnswer((_) async => null);
 
-        final strategy = EvolutionStrategy();
-        final manager = ConversationManager(conversationId: 'conv-1')
-          ..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
-          id: 'call-1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            arguments:
-                '{"general_directive":"New text","report_directive":"","rationale":"R"}',
-          ),
-        );
-        manager.addAssistantMessage(toolCalls: [toolCall]);
-        await strategy.processToolCalls(
-          toolCalls: [toolCall],
-          manager: manager,
-        );
+        final (:strategy, :manager) = await _strategyWithProposal();
 
         final workflow = TemplateEvolutionWorkflow(
           conversationRepository: _TestConversationRepository(),
@@ -958,33 +957,14 @@ void main() {
         directives: 'Updated directives',
       );
 
-      when(
-        () => mockTemplateService.createVersion(
-          templateId: any(named: 'templateId'),
-          directives: any(named: 'directives'),
-          authoredBy: any(named: 'authoredBy'),
-          generalDirective: any(named: 'generalDirective'),
-          reportDirective: any(named: 'reportDirective'),
-        ),
-      ).thenAnswer((_) async => newVersion);
+      _stubCreateVersion(mockTemplateService, newVersion);
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
       // Session entity not found in DB.
       when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
 
-      final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
-        id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"Updated directives","report_directive":"","rationale":"R"}',
-        ),
+      final (:strategy, :manager) = await _strategyWithProposal(
+        generalDirective: 'Updated directives',
       );
-      manager.addAssistantMessage(toolCalls: [toolCall]);
-      await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
 
       final convRepo = _TestConversationRepository();
       final workflow = TemplateEvolutionWorkflow(
@@ -1020,15 +1000,7 @@ void main() {
           directives: 'Updated directives',
         );
 
-        when(
-          () => mockTemplateService.createVersion(
-            templateId: any(named: 'templateId'),
-            directives: any(named: 'directives'),
-            authoredBy: any(named: 'authoredBy'),
-            generalDirective: any(named: 'generalDirective'),
-            reportDirective: any(named: 'reportDirective'),
-          ),
-        ).thenAnswer((_) async => newVersion);
+        _stubCreateVersion(mockTemplateService, newVersion);
         when(
           () => mockSyncService.upsertEntity(any()),
         ).thenAnswer((_) async {});
@@ -1042,22 +1014,8 @@ void main() {
           ),
         ).thenThrow(StateError('cleanup failed'));
 
-        final strategy = EvolutionStrategy();
-        final manager = ConversationManager(conversationId: 'conv-1')
-          ..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
-          id: 'call-1',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_directives',
-            arguments:
-                '{"general_directive":"Updated directives","report_directive":"","rationale":"R"}',
-          ),
-        );
-        manager.addAssistantMessage(toolCalls: [toolCall]);
-        await strategy.processToolCalls(
-          toolCalls: [toolCall],
-          manager: manager,
+        final (:strategy, :manager) = await _strategyWithProposal(
+          generalDirective: 'Updated directives',
         );
 
         final workflow = TemplateEvolutionWorkflow(
@@ -1097,15 +1055,7 @@ void main() {
         directives: 'Improved directives',
       );
 
-      when(
-        () => mockTemplateService.createVersion(
-          templateId: any(named: 'templateId'),
-          directives: any(named: 'directives'),
-          authoredBy: any(named: 'authoredBy'),
-          generalDirective: any(named: 'generalDirective'),
-          reportDirective: any(named: 'reportDirective'),
-        ),
-      ).thenAnswer((_) async => newVersion);
+      _stubCreateVersion(mockTemplateService, newVersion);
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
       when(
         () => mockRepository.getEntity(any()),
@@ -2100,15 +2050,7 @@ void main() {
         authoredBy: 'evolution_agent',
       );
 
-      when(
-        () => mockTemplateService.createVersion(
-          templateId: any(named: 'templateId'),
-          directives: any(named: 'directives'),
-          authoredBy: any(named: 'authoredBy'),
-          generalDirective: any(named: 'generalDirective'),
-          reportDirective: any(named: 'reportDirective'),
-        ),
-      ).thenAnswer((_) async => newVersion);
+      _stubCreateVersion(mockTemplateService, newVersion);
 
       // Track all successfully upserted entities across both attempts.
       final allUpserted = <AgentDomainEntity>[];
@@ -2353,15 +2295,7 @@ void main() {
           directives: 'Good directives',
         );
 
-        when(
-          () => mockTemplateService.createVersion(
-            templateId: any(named: 'templateId'),
-            directives: any(named: 'directives'),
-            authoredBy: any(named: 'authoredBy'),
-            generalDirective: any(named: 'generalDirective'),
-            reportDirective: any(named: 'reportDirective'),
-          ),
-        ).thenAnswer((_) async => newVersion);
+        _stubCreateVersion(mockTemplateService, newVersion);
         when(
           () => mockRepository.getEntity(any()),
         ).thenAnswer((_) async => makeTestEvolutionSession());
@@ -2478,15 +2412,7 @@ void main() {
           directives: 'Some directives',
         );
 
-        when(
-          () => mockTemplateService.createVersion(
-            templateId: any(named: 'templateId'),
-            directives: any(named: 'directives'),
-            authoredBy: any(named: 'authoredBy'),
-            generalDirective: any(named: 'generalDirective'),
-            reportDirective: any(named: 'reportDirective'),
-          ),
-        ).thenAnswer((_) async => newVersion);
+        _stubCreateVersion(mockTemplateService, newVersion);
         when(
           () => mockRepository.getEntity(any()),
         ).thenAnswer((_) async => makeTestEvolutionSession());
@@ -2940,15 +2866,7 @@ void main() {
         version: 2,
         directives: 'Improved',
       );
-      when(
-        () => mockTemplateService.createVersion(
-          templateId: any(named: 'templateId'),
-          directives: any(named: 'directives'),
-          authoredBy: any(named: 'authoredBy'),
-          generalDirective: any(named: 'generalDirective'),
-          reportDirective: any(named: 'reportDirective'),
-        ),
-      ).thenAnswer((_) async => newVersion);
+      _stubCreateVersion(mockTemplateService, newVersion);
       when(
         () => mockRepository.getEntity(any()),
       ).thenAnswer((_) async => makeTestEvolutionSession());
@@ -3258,15 +3176,7 @@ void main() {
         authoredBy: 'evolution_agent',
       );
 
-      when(
-        () => mockTemplateService.createVersion(
-          templateId: any(named: 'templateId'),
-          directives: any(named: 'directives'),
-          authoredBy: any(named: 'authoredBy'),
-          generalDirective: any(named: 'generalDirective'),
-          reportDirective: any(named: 'reportDirective'),
-        ),
-      ).thenAnswer((_) async => newVersion);
+      _stubCreateVersion(mockTemplateService, newVersion);
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
       when(
         () => mockRepository.getEntity(any()),
@@ -3276,20 +3186,9 @@ void main() {
       String? callbackSessionId;
 
       final convRepo = _TestConversationRepository();
-      final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
-        id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"New directives","report_directive":"","rationale":"R"}',
-        ),
+      final (:strategy, :manager) = await _strategyWithProposal(
+        generalDirective: 'New directives',
       );
-      manager.addAssistantMessage(toolCalls: [toolCall]);
-      await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
 
       final workflow = TemplateEvolutionWorkflow(
         conversationRepository: convRepo,
@@ -3331,20 +3230,9 @@ void main() {
 
       var callbackFired = false;
 
-      final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
-        id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"X","report_directive":"","rationale":"R"}',
-        ),
+      final (:strategy, :manager) = await _strategyWithProposal(
+        generalDirective: 'X',
       );
-      manager.addAssistantMessage(toolCalls: [toolCall]);
-      await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
 
       final workflow = TemplateEvolutionWorkflow(
         conversationRepository: _TestConversationRepository(),
@@ -3379,35 +3267,16 @@ void main() {
         authoredBy: 'evolution_agent',
       );
 
-      when(
-        () => mockTemplateService.createVersion(
-          templateId: any(named: 'templateId'),
-          directives: any(named: 'directives'),
-          authoredBy: any(named: 'authoredBy'),
-          generalDirective: any(named: 'generalDirective'),
-          reportDirective: any(named: 'reportDirective'),
-        ),
-      ).thenAnswer((_) async => newVersion);
+      _stubCreateVersion(mockTemplateService, newVersion);
       when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
       when(
         () => mockRepository.getEntity(any()),
       ).thenAnswer((_) async => makeTestEvolutionSession());
 
       final convRepo = _TestConversationRepository();
-      final strategy = EvolutionStrategy();
-      final manager = ConversationManager(conversationId: 'conv-1')
-        ..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
-        id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_directives',
-          arguments:
-              '{"general_directive":"New directives","report_directive":"","rationale":"R"}',
-        ),
+      final (:strategy, :manager) = await _strategyWithProposal(
+        generalDirective: 'New directives',
       );
-      manager.addAssistantMessage(toolCalls: [toolCall]);
-      await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
 
       final workflow = TemplateEvolutionWorkflow(
         conversationRepository: convRepo,
@@ -5248,15 +5117,7 @@ void main() {
           reportDirective: '',
         );
 
-        when(
-          () => mockTemplateService.createVersion(
-            templateId: any(named: 'templateId'),
-            directives: any(named: 'directives'),
-            authoredBy: any(named: 'authoredBy'),
-            generalDirective: any(named: 'generalDirective'),
-            reportDirective: any(named: 'reportDirective'),
-          ),
-        ).thenAnswer((_) async => newVersion);
+        _stubCreateVersion(mockTemplateService, newVersion);
         when(
           () => mockSyncService.upsertEntity(any()),
         ).thenAnswer((_) async {});
@@ -5368,15 +5229,7 @@ void main() {
           authoredBy: 'evolution_agent',
         );
 
-        when(
-          () => mockTemplateService.createVersion(
-            templateId: any(named: 'templateId'),
-            directives: any(named: 'directives'),
-            authoredBy: any(named: 'authoredBy'),
-            generalDirective: any(named: 'generalDirective'),
-            reportDirective: any(named: 'reportDirective'),
-          ),
-        ).thenAnswer((_) async => newVersion);
+        _stubCreateVersion(mockTemplateService, newVersion);
         when(
           () => mockSyncService.upsertEntity(any()),
         ).thenAnswer((_) async {});
