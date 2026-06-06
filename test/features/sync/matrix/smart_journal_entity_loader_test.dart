@@ -20,6 +20,20 @@ import 'package:path/path.dart' as path;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+
+/// Wires the `ev.room → room.client → client.database` purge chain with
+/// fresh mocks and returns the database so tests can stub/verify
+/// `deleteFile`.
+MockMatrixDatabase _buildPurgeChain(MockEvent ev) {
+  final room = MockRoom();
+  final client = MockMatrixClient();
+  final database = MockMatrixDatabase();
+  when(() => ev.room).thenReturn(room);
+  when(() => room.client).thenReturn(client);
+  when(() => client.database).thenReturn(database);
+  return database;
+}
 
 void main() {
   String stripLeadingSlashes(String s) =>
@@ -33,22 +47,34 @@ void main() {
   });
 
   group('SmartJournalEntityLoader media ensure', () {
+    late Directory rootTempDir;
     late Directory tempDir;
+    var caseIndex = 0;
+
+    // One real temp directory per suite run; each test gets its own cheap
+    // subdirectory instead of a createTemp + recursive delete round trip.
+    setUpAll(() async {
+      rootTempDir = await Directory.systemTemp.createTemp('smart_loader_test');
+    });
+
+    tearDownAll(() async {
+      if (rootTempDir.existsSync()) {
+        rootTempDir.deleteSync(recursive: true);
+      }
+    });
 
     setUp(() async {
       loggingService = MockDomainLogger();
-      await getIt.reset();
-      getIt.allowReassignment = true;
-      tempDir = await Directory.systemTemp.createTemp('smart_loader_test');
-      getIt.registerSingleton<Directory>(tempDir);
+      tempDir = Directory(path.join(rootTempDir.path, 'case_${caseIndex++}'))
+        ..createSync();
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<Directory>(tempDir);
+        },
+      );
     });
 
-    tearDown(() async {
-      await getIt.reset();
-      if (tempDir.existsSync()) {
-        tempDir.deleteSync(recursive: true);
-      }
-    });
+    tearDown(tearDownTestGetIt);
 
     test(
       'fetches JSON when no VC and file missing via AttachmentIndex',
@@ -293,16 +319,11 @@ void main() {
       );
       final index = AttachmentIndex();
       final ev = MockEvent();
-      final room = MockRoom();
-      final client = MockMatrixClient();
-      final database = MockMatrixDatabase();
       final mediaUri = Uri.parse('mxc://server/img-empty-retry');
       when(() => ev.eventId).thenReturn('evt-img-empty-retry');
       when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
       when(() => ev.content).thenReturn({'relativePath': relMedia});
-      when(() => ev.room).thenReturn(room);
-      when(() => room.client).thenReturn(client);
-      when(() => client.database).thenReturn(database);
+      final database = _buildPurgeChain(ev);
       when(ev.attachmentOrThumbnailMxcUrl).thenReturn(mediaUri);
       when(() => database.deleteFile(mediaUri)).thenAnswer((_) async => true);
       var downloads = 0;
@@ -369,16 +390,11 @@ void main() {
         final relMedia = getRelativeImagePath(image);
         final index = AttachmentIndex();
         final ev = MockEvent();
-        final room = MockRoom();
-        final client = MockMatrixClient();
-        final database = MockMatrixDatabase();
         final mediaUri = Uri.parse('mxc://server/img-delete-throws');
         when(() => ev.eventId).thenReturn('evt-img-delete-throws');
         when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
         when(() => ev.content).thenReturn({'relativePath': relMedia});
-        when(() => ev.room).thenReturn(room);
-        when(() => room.client).thenReturn(client);
-        when(() => client.database).thenReturn(database);
+        final database = _buildPurgeChain(ev);
         when(ev.attachmentOrThumbnailMxcUrl).thenReturn(mediaUri);
         when(
           () => database.deleteFile(mediaUri),
@@ -445,16 +461,11 @@ void main() {
         final relMedia = getRelativeImagePath(image);
         final index = AttachmentIndex();
         final ev = MockEvent();
-        final room = MockRoom();
-        final client = MockMatrixClient();
-        final database = MockMatrixDatabase();
         final mediaUri = Uri.parse('mxc://server/img-empty-twice');
         when(() => ev.eventId).thenReturn('evt-img-empty-twice');
         when(() => ev.attachmentMimetype).thenReturn('image/jpeg');
         when(() => ev.content).thenReturn({'relativePath': relMedia});
-        when(() => ev.room).thenReturn(room);
-        when(() => room.client).thenReturn(client);
-        when(() => client.database).thenReturn(database);
+        final database = _buildPurgeChain(ev);
         when(ev.attachmentOrThumbnailMxcUrl).thenReturn(mediaUri);
         when(
           () => database.deleteFile(mediaUri),
@@ -868,12 +879,7 @@ void main() {
       when(() => ev.eventId).thenReturn('evt-stale');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
       when(() => ev.content).thenReturn({'relativePath': relJson});
-      final room = MockRoom();
-      final client = MockMatrixClient();
-      final database = MockMatrixDatabase();
-      when(() => ev.room).thenReturn(room);
-      when(() => room.client).thenReturn(client);
-      when(() => client.database).thenReturn(database);
+      final database = _buildPurgeChain(ev);
       final descriptorUri = Uri.parse('mxc://server/file');
       when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
       when(
@@ -966,13 +972,8 @@ void main() {
       when(() => ev.eventId).thenReturn('evt-empty-first');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
       when(() => ev.content).thenReturn({'relativePath': relJson});
-      final room = MockRoom();
-      final client = MockMatrixClient();
-      final database = MockMatrixDatabase();
       final descriptorUri = Uri.parse('mxc://server/empty-first');
-      when(() => ev.room).thenReturn(room);
-      when(() => room.client).thenReturn(client);
-      when(() => client.database).thenReturn(database);
+      final database = _buildPurgeChain(ev);
       when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
       when(
         () => database.deleteFile(descriptorUri),
@@ -1035,12 +1036,7 @@ void main() {
       when(() => ev.eventId).thenReturn('evt-staler');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
       when(() => ev.content).thenReturn({'relativePath': relJson});
-      final room = MockRoom();
-      final client = MockMatrixClient();
-      final database = MockMatrixDatabase();
-      when(() => ev.room).thenReturn(room);
-      when(() => room.client).thenReturn(client);
-      when(() => client.database).thenReturn(database);
+      final database = _buildPurgeChain(ev);
       final descriptorUri = Uri.parse('mxc://server/old');
       when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
       when(
@@ -1108,12 +1104,7 @@ void main() {
       when(() => ev.eventId).thenReturn('evt-stale-loop');
       when(() => ev.attachmentMimetype).thenReturn('application/json');
       when(() => ev.content).thenReturn({'relativePath': relJson});
-      final room = MockRoom();
-      final client = MockMatrixClient();
-      final database = MockMatrixDatabase();
-      when(() => ev.room).thenReturn(room);
-      when(() => room.client).thenReturn(client);
-      when(() => client.database).thenReturn(database);
+      final database = _buildPurgeChain(ev);
       final descriptorUri = Uri.parse('mxc://server/always-stale');
       when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
       when(
@@ -1200,12 +1191,7 @@ void main() {
           when(() => ev.eventId).thenReturn('evt-reset');
           when(() => ev.attachmentMimetype).thenReturn('application/json');
           when(() => ev.content).thenReturn({'relativePath': relJson});
-          final room = MockRoom();
-          final client = MockMatrixClient();
-          final database = MockMatrixDatabase();
-          when(() => ev.room).thenReturn(room);
-          when(() => room.client).thenReturn(client);
-          when(() => client.database).thenReturn(database);
+          final database = _buildPurgeChain(ev);
           final descriptorUri = Uri.parse('mxc://server/reset');
           when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
           when(
@@ -1404,12 +1390,7 @@ void main() {
         when(() => ev.eventId).thenReturn('evt-no-mxc');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
         when(() => ev.content).thenReturn({'relativePath': relJson});
-        final room = MockRoom();
-        final client = MockMatrixClient();
-        final database = MockMatrixDatabase();
-        when(() => ev.room).thenReturn(room);
-        when(() => room.client).thenReturn(client);
-        when(() => client.database).thenReturn(database);
+        final database = _buildPurgeChain(ev);
         when(ev.attachmentOrThumbnailMxcUrl).thenReturn(null);
         when(
           () => loggingService.log(
@@ -1472,12 +1453,7 @@ void main() {
         when(() => ev.eventId).thenReturn('evt-delete-error');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
         when(() => ev.content).thenReturn({'relativePath': relJson});
-        final room = MockRoom();
-        final client = MockMatrixClient();
-        final database = MockMatrixDatabase();
-        when(() => ev.room).thenReturn(room);
-        when(() => room.client).thenReturn(client);
-        when(() => client.database).thenReturn(database);
+        final database = _buildPurgeChain(ev);
         final descriptorUri = Uri.parse('mxc://server/delete-error');
         when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
         when(
@@ -1686,12 +1662,7 @@ void main() {
         when(() => ev.eventId).thenReturn('evt-empty-second');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
         when(() => ev.content).thenReturn({'relativePath': relJson});
-        final room = MockRoom();
-        final client = MockMatrixClient();
-        final database = MockMatrixDatabase();
-        when(() => ev.room).thenReturn(room);
-        when(() => room.client).thenReturn(client);
-        when(() => client.database).thenReturn(database);
+        final database = _buildPurgeChain(ev);
         final descriptorUri = Uri.parse('mxc://server/empty-second');
         when(ev.attachmentOrThumbnailMxcUrl).thenReturn(descriptorUri);
         when(
@@ -1759,12 +1730,7 @@ void main() {
         when(() => ev.eventId).thenReturn('evt-invalid-json');
         when(() => ev.attachmentMimetype).thenReturn('application/json');
         when(() => ev.content).thenReturn({'relativePath': relJson});
-        final room = MockRoom();
-        final client = MockMatrixClient();
-        final database = MockMatrixDatabase();
-        when(() => ev.room).thenReturn(room);
-        when(() => room.client).thenReturn(client);
-        when(() => client.database).thenReturn(database);
+        final database = _buildPurgeChain(ev);
         when(
           ev.attachmentOrThumbnailMxcUrl,
         ).thenReturn(Uri.parse('mxc://server/invalid-json'));
