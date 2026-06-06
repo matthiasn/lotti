@@ -109,6 +109,13 @@ class AttentionRequestHandler {
         errorMessage: 'Invalid attention request deadline',
       );
     }
+    if (latest != null && due != null && latest.isAfter(due)) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: latestEnd cannot be after the deadline.',
+        errorMessage: 'Invalid attention request window and deadline',
+      );
+    }
 
     final explicitScopeKind = _optionalEnum(
       args,
@@ -149,15 +156,20 @@ class AttentionRequestHandler {
           ),
         )
         .toList(growable: false);
-    final stale = [
+    // Keep at most one canonical active claim per task. When the incoming
+    // request matches an existing claim, retain the first match and supersede
+    // every other claim — both stale variants and any pre-existing duplicate
+    // equivalent claims, so duplicates can't accumulate.
+    final canonical = matching.isEmpty ? null : matching.first;
+    final claimsToSupersede = [
       for (final claim in existing)
-        if (!matching.any((candidate) => candidate.id == claim.id)) claim,
+        if (canonical == null || claim.id != canonical.id) claim,
     ];
 
-    if (matching.isNotEmpty) {
-      if (stale.isNotEmpty) {
+    if (canonical != null) {
+      if (claimsToSupersede.isNotEmpty) {
         await syncService.runInTransaction(() async {
-          for (final claim in stale) {
+          for (final claim in claimsToSupersede) {
             await _supersede(claim.id, now);
           }
         });
@@ -165,8 +177,7 @@ class AttentionRequestHandler {
       return ToolExecutionResult(
         success: true,
         output:
-            'Attention request already active for this task: '
-            '${matching.first.id}',
+            'Attention request already active for this task: ${canonical.id}',
       );
     }
 
@@ -201,7 +212,7 @@ class AttentionRequestHandler {
     );
 
     await syncService.runInTransaction(() async {
-      for (final claim in stale) {
+      for (final claim in claimsToSupersede) {
         await _supersede(claim.id, now);
       }
       await syncService.upsertEntity(request);
@@ -264,11 +275,23 @@ class AttentionRequestHandler {
         claim.urgency == urgency &&
         claim.energyFit == energyFit &&
         claim.scopeKind == scopeKind &&
-        claim.earliestStart == earliestStart &&
-        claim.latestEnd == latestEnd &&
-        claim.deadline == deadline &&
-        claim.nextReviewAt == nextReviewAt &&
+        _isSameMoment(claim.earliestStart, earliestStart) &&
+        _isSameMoment(claim.latestEnd, latestEnd) &&
+        _isSameMoment(claim.deadline, deadline) &&
+        _isSameMoment(claim.nextReviewAt, nextReviewAt) &&
         claim.rationale == rationale;
+  }
+
+  /// Compares two optional [DateTime] values by the instant they represent.
+  ///
+  /// Uses [DateTime.isAtSameMomentAs] rather than `==` because the stored
+  /// claim is typically read back as UTC while a freshly parsed request value
+  /// may be local; `==` also compares the `isUtc` flag and would report a
+  /// false mismatch for the same moment, causing duplicate requests.
+  static bool _isSameMoment(DateTime? a, DateTime? b) {
+    if (a == null && b == null) return true;
+    if (a == null || b == null) return false;
+    return a.isAtSameMomentAs(b);
   }
 
   static _Parsed<int> _requiredInt(

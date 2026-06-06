@@ -1836,7 +1836,8 @@ to keep the user-facing suggestion list clean and trustworthy:
             'These active requests are already visible to the day planner. '
             'Do not call `request_attention` again for an equivalent ask; '
             'call it only when the task now needs a materially different '
-            'amount, window, urgency, or rationale.',
+            'ask (for example amount, impact, urgency, energy fit, scope, '
+            'timing window, review time, or rationale).',
           )
           ..writeln()
           ..writeln('```json')

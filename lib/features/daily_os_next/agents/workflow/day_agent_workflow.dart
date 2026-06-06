@@ -761,7 +761,9 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       final start = DateTime(planDate.year, planDate.month, planDate.day);
       return await agentRepository.getAttentionPlanningInputsForWindow(
         start: start,
-        end: start.add(const Duration(days: 1)),
+        // Use day + 1 (not Duration(days: 1)) so the window stays at local
+        // midnight across DST transitions, where a day may be 23 or 25 hours.
+        end: DateTime(start.year, start.month, start.day + 1),
       );
     } catch (e, s) {
       _logError(
