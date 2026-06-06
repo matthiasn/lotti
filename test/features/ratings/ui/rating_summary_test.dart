@@ -39,7 +39,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final l10n = AppLocalizations.of(
         tester.element(find.byType(RatingSummary)),
@@ -64,14 +64,14 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(LinearProgressIndicator), findsNWidgets(3));
     });
 
     testWidgets('renders challenge-skill text from catalog', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final l10n = AppLocalizations.of(
         tester.element(find.byType(RatingSummary)),
@@ -107,7 +107,7 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(entry: entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final l10n = AppLocalizations.of(
         tester.element(find.byType(RatingSummary)),
@@ -139,7 +139,7 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(entry: entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final l10n = AppLocalizations.of(
         tester.element(find.byType(RatingSummary)),
@@ -153,7 +153,7 @@ void main() {
 
     testWidgets('renders note text when present', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Great session!'), findsOneWidget);
     });
@@ -179,14 +179,14 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(entry: entryWithoutNote));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Great session!'), findsNothing);
     });
 
     testWidgets('renders edit button with icon', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(Icons.edit_outlined), findsOneWidget);
       expect(find.byType(IconButton), findsOneWidget);
@@ -194,7 +194,7 @@ void main() {
 
     testWidgets('edit button has correct tooltip', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final l10n = AppLocalizations.of(
         tester.element(find.byType(RatingSummary)),
@@ -233,7 +233,7 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(entry: entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should use stored question, not catalog fallback
       expect(find.text('Custom stored question'), findsOneWidget);
@@ -265,7 +265,7 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(entry: entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should use stored optionLabels
       expect(find.text('Perfect'), findsOneWidget);
@@ -294,7 +294,7 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(entry: entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Falls back to dimension key as label
       expect(find.text('unknown_dimension'), findsOneWidget);
@@ -334,7 +334,7 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(entry: entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Stored questions are displayed
       expect(find.text('How grateful do you feel?'), findsOneWidget);
@@ -373,7 +373,7 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(entry: entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Value 0.37 doesn't match any of [0.0, 0.5, 1.0], falls back to %
       expect(find.text('37%'), findsOneWidget);
@@ -406,7 +406,7 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(entry: entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Falls back to progress bar rendering
       expect(find.text('Ambiguous dimension'), findsOneWidget);
@@ -443,7 +443,7 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(entry: entry));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // With stored optionValues, 0.2 matches index 1 → "Moderate"
       expect(find.text('Moderate'), findsOneWidget);
