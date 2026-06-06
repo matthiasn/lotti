@@ -264,6 +264,22 @@ void main() {
     when(() => mockTimeService.updateCurrent(any())).thenReturn(null);
   });
 
+  /// Stubs an active running timer (default [makeRunningTimer]) linked from
+  /// [linkedFrom] (default: the source task under test).
+  void stubActiveTimer({JournalEntity? timer, JournalEntity? linkedFrom}) {
+    when(
+      () => mockTimeService.getCurrent(),
+    ).thenReturn(timer ?? makeRunningTimer());
+    when(
+      () => mockTimeService.linkedFrom,
+    ).thenReturn(linkedFrom ?? makeSourceTask());
+  }
+
+  /// Stubs the time service with no active timer.
+  void stubNoTimer() {
+    when(() => mockTimeService.getCurrent()).thenReturn(null);
+  }
+
   tearDown(tearDownTestGetIt);
 
   group('RunningTimerUpdateHandler', () {
@@ -305,7 +321,7 @@ void main() {
     });
 
     test('returns failure when no timer is active', () async {
-      when(() => mockTimeService.getCurrent()).thenReturn(null);
+      stubNoTimer();
 
       final result = await handler.handle(
         sourceTaskId,
@@ -320,8 +336,7 @@ void main() {
     });
 
     test('returns failure when timerId does not match active timer', () async {
-      when(() => mockTimeService.getCurrent()).thenReturn(makeRunningTimer());
-      when(() => mockTimeService.linkedFrom).thenReturn(makeSourceTask());
+      stubActiveTimer();
 
       final result = await handler.handle(
         sourceTaskId,
@@ -338,10 +353,7 @@ void main() {
     test(
       'returns failure when active timer belongs to a different task',
       () async {
-        when(() => mockTimeService.getCurrent()).thenReturn(makeRunningTimer());
-        when(
-          () => mockTimeService.linkedFrom,
-        ).thenReturn(makeSourceTask(id: otherTaskId));
+        stubActiveTimer(linkedFrom: makeSourceTask(id: otherTaskId));
 
         final result = await handler.handle(
           sourceTaskId,
@@ -366,10 +378,7 @@ void main() {
         // on the source-task mismatch and produce a generic message — it
         // must NOT fall through to the timerId comparison branch, which
         // would otherwise echo task B's real timer id back to the caller.
-        when(() => mockTimeService.getCurrent()).thenReturn(makeRunningTimer());
-        when(
-          () => mockTimeService.linkedFrom,
-        ).thenReturn(makeSourceTask(id: otherTaskId));
+        stubActiveTimer(linkedFrom: makeSourceTask(id: otherTaskId));
 
         final result = await handler.handle(
           sourceTaskId,
@@ -409,8 +418,7 @@ void main() {
             dataTypeId: 'type-1',
           ),
         );
-        when(() => mockTimeService.getCurrent()).thenReturn(notAJournalEntry);
-        when(() => mockTimeService.linkedFrom).thenReturn(makeSourceTask());
+        stubActiveTimer(timer: notAJournalEntry);
 
         final result = await handler.handle(
           sourceTaskId,
@@ -564,8 +572,7 @@ void main() {
     test(
       'returns failure when persistence layer reports failure',
       () async {
-        when(() => mockTimeService.getCurrent()).thenReturn(makeRunningTimer());
-        when(() => mockTimeService.linkedFrom).thenReturn(makeSourceTask());
+        stubActiveTimer();
         when(
           () => mockPersistenceLogic.updateJournalEntityText(
             any(),
@@ -594,8 +601,7 @@ void main() {
       'persists update with [generated] marker, current dateTo, and refreshes '
       'TimeService snapshot on success',
       () async {
-        when(() => mockTimeService.getCurrent()).thenReturn(makeRunningTimer());
-        when(() => mockTimeService.linkedFrom).thenReturn(makeSourceTask());
+        stubActiveTimer();
         when(
           () => mockPersistenceLogic.updateJournalEntityText(
             any(),
@@ -651,8 +657,7 @@ void main() {
     );
 
     test('logs the update on success', () async {
-      when(() => mockTimeService.getCurrent()).thenReturn(makeRunningTimer());
-      when(() => mockTimeService.linkedFrom).thenReturn(makeSourceTask());
+      stubActiveTimer();
       when(
         () => mockPersistenceLogic.updateJournalEntityText(any(), any(), any()),
       ).thenAnswer((_) async => true);

@@ -11,6 +11,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 /// Creates a follow-up task linked to the source task.
@@ -72,7 +73,7 @@ class FollowUpTaskHandler {
 
     // Parse optional fields.
     final rawPriority = args['priority'];
-    final priority = _parsePriority(rawPriority);
+    final priority = parsePriority(rawPriority);
     if (rawPriority != null && priority == null) {
       return const ToolExecutionResult(
         success: false,
@@ -194,7 +195,8 @@ class FollowUpTaskHandler {
   /// Parses a priority string. Returns `null` if the value is present but
   /// not a recognized priority string (caller should reject).
   /// Absent/null values return `p2Medium` as default.
-  static TaskPriority? _parsePriority(Object? value) {
+  @visibleForTesting
+  static TaskPriority? parsePriority(Object? value) {
     if (value == null) return TaskPriority.p2Medium;
     if (value is! String) return null;
     final parsed = taskPriorityFromString(value);
