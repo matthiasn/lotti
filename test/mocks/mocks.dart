@@ -249,6 +249,12 @@ class MockSurfaceContext extends Mock implements genui.SurfaceContext {}
 
 class MockMatrixClient extends Mock implements Client {}
 
+class MockLoginResponse extends Mock implements LoginResponse {}
+
+class MockMatrixFile extends Mock implements MatrixFile {}
+
+class MockGetVersionsResponse extends Mock implements GetVersionsResponse {}
+
 class MockSyncMaintenanceRepository extends Mock
     implements SyncMaintenanceRepository {}
 
