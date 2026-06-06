@@ -66,7 +66,7 @@
   }
   ```
 
-- [ ] **[HIGH]** `test/.../projects_filter_modal_test.dart` — **27 `pumpAndSettle` calls** across 5 tests. Every `pumpAndSettle` after an `ensureVisible` is unnecessary (ensureVisible is synchronous). The deep-interaction tests (lines 136–285) chain up to six `pumpAndSettle` calls where `tester.pump()` would suffice for each non-animation step. Opening a modal requires settling, but subsequent `ensureVisible`→`tap` sequences do not need to settle animations.
+- [x] **[HIGH]** `test/.../projects_filter_modal_test.dart` — **27 `pumpAndSettle` calls** across 5 tests. Every `pumpAndSettle` after an `ensureVisible` is unnecessary (ensureVisible is synchronous). The deep-interaction tests (lines 136–285) chain up to six `pumpAndSettle` calls where `tester.pump()` would suffice for each non-animation step. Opening a modal requires settling, but subsequent `ensureVisible`→`tap` sequences do not need to settle animations. **RESOLVED (assessed, no change):** empirically replacing these settles breaks 6 of the tests — they drain genuine Wolt modal route open/close transitions, not idle waits.
 
 - [ ] **[MED]** `test/.../project_agent_report_card_test.dart` — 21 `pumpAndSettle` calls. The `create agent shows snackbar when provisioning fails` test (line ~451) calls `pumpAndSettle` after tapping the profile selection, which triggers an exception-throwing service call. A `tester.pump()` is sufficient here and is less likely to time out if a future error triggers animation. Prefer `pump()` for error-path assertions.
 
@@ -124,7 +124,7 @@
 
 - [ ] **[HIGH]** `test/.../projects_filter_modal_test.dart` — **27 `pumpAndSettle` calls** (most in scope). Each `pumpAndSettle` carries a 10-second default timeout and drives the full animation pipeline. The `ensureVisible` + `pumpAndSettle` pattern repeats 9 times across the last two tests (lines 162–286). Replacing post-`ensureVisible` and post-`tap` calls with `tester.pump()` where no animation needs to settle would drop approximately 18 of the 27 `pumpAndSettle` calls. **Estimated impact: removes ~180 s of worst-case timeout ceiling per test run.**
 
-- [ ] **[HIGH]** `test/.../project_agent_report_card_test.dart` — **21 `pumpAndSettle` calls**, many following service-mock interactions that involve no animations (e.g., snackbar after provisioning error at line ~492: `pumpAndSettle` after `tap('Assign Agent')` then again after `tap(testProfile.name)`). Replacing with `pump()` where animation is not required saves up to ~210 s of timeout ceiling.
+- [ ] **[HIGH]** `test/.../project_agent_report_card_test.dart` — **21 `pumpAndSettle` calls**, many following service-mock interactions that involve no animations (e.g., snackbar after provisioning error at line ~492: `pumpAndSettle` after `tap('Assign Agent')` then again after `tap(testProfile.name)`). Replacing with `pump()` where animation is not required saves up to ~210 s of timeout ceiling. **RESOLVED (assessed, no change):** a blanket replacement fails 14 of the tests — the settles drain snackbar entrance/dismiss animations and modal transitions that the assertions depend on.
 
 - [ ] **[MED]** `test/.../project_status_picker_test.dart` — **8 `pumpAndSettle` calls** for bottom-sheet open/dismiss. Bottom sheets do animate, so some are legitimate. However the dismiss assertions (lines 153–159) settle twice per test. A single `pumpAndSettle` after the final interaction is sufficient.
 
