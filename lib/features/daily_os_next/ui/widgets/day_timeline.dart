@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline_folding.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
@@ -134,7 +135,7 @@ class _DayTimelineState extends State<DayTimeline> {
     final tokens = context.designTokens;
     final hours = widget.endHour - widget.startHour;
     final actualBlocks = widget.actualBlocks ?? widget.draft.actualBlocks;
-    final foldingState = _TimelineFoldingState.fromBlocks(
+    final foldingState = TimelineFoldingState.fromBlocks(
       blocks: [...widget.draft.blocks, ...actualBlocks],
       dayDate: widget.draft.dayDate,
       startHour: widget.startHour,
@@ -501,227 +502,6 @@ class _DayTimelineState extends State<DayTimeline> {
 
 enum _TimelineComparisonMode { paged, both }
 
-class _TimelineFoldingState {
-  _TimelineFoldingState({
-    required this.startHour,
-    required this.endHour,
-    required this.segments,
-  });
-  factory _TimelineFoldingState.fromBlocks({
-    required List<TimeBlock> blocks,
-    required DateTime dayDate,
-    required int startHour,
-    required int endHour,
-    required Set<int> expandedRegionStarts,
-    required double collapsedHourHeight,
-  }) {
-    final occupiedHours = <int>{};
-    final dayStart = DateTime(dayDate.year, dayDate.month, dayDate.day);
-    final dayEnd = dayStart.add(const Duration(days: 1));
-
-    for (final block in blocks) {
-      final effectiveStart = block.start.isBefore(dayStart)
-          ? dayStart
-          : block.start;
-      final effectiveEnd = block.end.isAfter(dayEnd) ? dayEnd : block.end;
-      if (!effectiveStart.isBefore(effectiveEnd)) continue;
-
-      final start = effectiveStart.hour;
-      final end = effectiveEnd == dayEnd
-          ? 24
-          : effectiveEnd.hour + (effectiveEnd.minute > 0 ? 1 : 0);
-      if (start >= endHour || end <= startHour) continue;
-
-      final clampedStart = start.clamp(startHour, endHour - 1);
-      final clampedEnd = end.clamp(startHour + 1, endHour);
-      for (var hour = clampedStart; hour < clampedEnd; hour++) {
-        occupiedHours.add(hour);
-      }
-    }
-
-    if (occupiedHours.isEmpty) {
-      return _TimelineFoldingState(
-        startHour: startHour,
-        endHour: endHour,
-        segments: [
-          _TimelineVisibleRegion(startHour: startHour, endHour: endHour),
-        ],
-      );
-    }
-
-    final sortedHours = occupiedHours.toList()..sort();
-    final clusters = <_TimelineVisibleRegion>[];
-    var clusterStart = sortedHours.first;
-    var clusterEnd = clusterStart + 1;
-
-    for (var i = 1; i < sortedHours.length; i++) {
-      final hour = sortedHours[i];
-      if (hour <= clusterEnd) {
-        clusterEnd = hour + 1;
-        continue;
-      }
-
-      final gap = hour - clusterEnd;
-      if (gap >= _gapThresholdHours) {
-        clusters.add(
-          _TimelineVisibleRegion(startHour: clusterStart, endHour: clusterEnd),
-        );
-        clusterStart = hour;
-      }
-      clusterEnd = hour + 1;
-    }
-    clusters.add(
-      _TimelineVisibleRegion(startHour: clusterStart, endHour: clusterEnd),
-    );
-
-    if (clusters.first.startHour - startHour < _gapThresholdHours) {
-      clusters[0] = _TimelineVisibleRegion(
-        startHour: startHour,
-        endHour: clusters.first.endHour,
-      );
-    }
-
-    final lastCluster = clusters.last;
-    if (endHour - lastCluster.endHour < _gapThresholdHours) {
-      clusters[clusters.length - 1] = _TimelineVisibleRegion(
-        startHour: lastCluster.startHour,
-        endHour: endHour,
-      );
-    }
-
-    final segments = <_TimelineRegion>[];
-    var cursor = startHour;
-    for (final cluster in clusters) {
-      if (cluster.startHour - cursor >= _gapThresholdHours) {
-        segments.add(
-          _TimelineFoldRegion(
-            startHour: cursor,
-            endHour: cluster.startHour,
-            isExpanded: expandedRegionStarts.contains(cursor),
-            collapsedHourHeight: collapsedHourHeight,
-          ),
-        );
-      }
-      segments.add(cluster);
-      cursor = cluster.endHour;
-    }
-
-    if (endHour - cursor >= _gapThresholdHours) {
-      segments.add(
-        _TimelineFoldRegion(
-          startHour: cursor,
-          endHour: endHour,
-          isExpanded: expandedRegionStarts.contains(cursor),
-          collapsedHourHeight: collapsedHourHeight,
-        ),
-      );
-    }
-
-    return _TimelineFoldingState(
-      startHour: startHour,
-      endHour: endHour,
-      segments: segments,
-    );
-  }
-
-  static const _gapThresholdHours = 4;
-  final int startHour;
-  final int endHour;
-  final List<_TimelineRegion> segments;
-
-  Iterable<_TimelineFoldRegion> get compressedRegions =>
-      segments.whereType<_TimelineFoldRegion>();
-
-  List<int> get visibleHourLabels {
-    final labels = <int>{};
-    for (final segment in segments) {
-      if (segment is _TimelineFoldRegion && !segment.isExpanded) continue;
-      for (var hour = segment.startHour; hour <= segment.endHour; hour++) {
-        labels.add(hour);
-      }
-    }
-    return labels.toList()..sort();
-  }
-
-  double totalHeight(double pxPerMinute) {
-    return segments.fold<double>(
-      0,
-      (height, segment) => height + segment.height(pxPerMinute),
-    );
-  }
-
-  double positionForDate(
-    DateTime date, {
-    required DateTime windowStart,
-    required double pxPerMinute,
-  }) {
-    final rawHour = startHour + date.difference(windowStart).inMinutes / 60.0;
-    return positionForHourValue(
-      rawHour.clamp(startHour.toDouble(), endHour.toDouble()),
-      pxPerMinute,
-    );
-  }
-
-  double positionForHour(int hour, double pxPerMinute) {
-    return positionForHourValue(hour.toDouble(), pxPerMinute);
-  }
-
-  double positionForHourValue(double hourValue, double pxPerMinute) {
-    var position = 0.0;
-    for (final segment in segments) {
-      if (hourValue <= segment.startHour) return position;
-      if (hourValue <= segment.endHour) {
-        final hoursIntoSegment = hourValue - segment.startHour;
-        return position + segment.hourHeight(pxPerMinute) * hoursIntoSegment;
-      }
-      position += segment.height(pxPerMinute);
-    }
-    return position;
-  }
-}
-
-sealed class _TimelineRegion {
-  const _TimelineRegion({
-    required this.startHour,
-    required this.endHour,
-  });
-
-  final int startHour;
-  final int endHour;
-
-  int get hourCount => endHour - startHour;
-
-  double hourHeight(double pxPerMinute);
-
-  double height(double pxPerMinute) => hourCount * hourHeight(pxPerMinute);
-}
-
-class _TimelineVisibleRegion extends _TimelineRegion {
-  const _TimelineVisibleRegion({
-    required super.startHour,
-    required super.endHour,
-  });
-
-  @override
-  double hourHeight(double pxPerMinute) => 60 * pxPerMinute;
-}
-
-class _TimelineFoldRegion extends _TimelineRegion {
-  const _TimelineFoldRegion({
-    required super.startHour,
-    required super.endHour,
-    required this.isExpanded,
-    required this.collapsedHourHeight,
-  });
-
-  final bool isExpanded;
-  final double collapsedHourHeight;
-
-  @override
-  double hourHeight(double pxPerMinute) =>
-      isExpanded ? 60 * pxPerMinute : collapsedHourHeight;
-}
-
 class _TimelineToolbar extends StatelessWidget {
   const _TimelineToolbar({
     required this.mode,
@@ -795,7 +575,7 @@ class _TimelinePane extends StatelessWidget {
   final List<TimeBlock> blocks;
   final List<EnergyBand> bands;
   final Key paneKey;
-  final _TimelineFoldingState foldingState;
+  final TimelineFoldingState foldingState;
   final double labelHeight;
   final double totalHeight;
   final DateTime windowStart;
@@ -880,7 +660,7 @@ class _SharedHourRail extends StatelessWidget {
     required this.topInset,
   });
 
-  final _TimelineFoldingState foldingState;
+  final TimelineFoldingState foldingState;
   final double pxPerMinute;
   final DateTime? now;
   final DateTime windowStart;
@@ -919,7 +699,7 @@ class _SharedHourRail extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               for (final segment in foldingState.segments)
-                if (segment is _TimelineFoldRegion && !segment.isExpanded)
+                if (segment is TimelineFoldRegion && !segment.isExpanded)
                   Positioned(
                     top:
                         topInset +
@@ -1016,7 +796,7 @@ class _GridLines extends StatelessWidget {
     required this.pxPerMinute,
   });
 
-  final _TimelineFoldingState foldingState;
+  final TimelineFoldingState foldingState;
   final double pxPerMinute;
 
   @override
@@ -1048,7 +828,7 @@ class _FoldRegionLayer extends StatelessWidget {
     required this.onToggleFoldRegion,
   });
 
-  final _TimelineFoldingState foldingState;
+  final TimelineFoldingState foldingState;
   final double pxPerMinute;
   final ValueChanged<int> onToggleFoldRegion;
 
@@ -1084,7 +864,7 @@ class _FoldRegionToggle extends StatelessWidget {
     super.key,
   });
 
-  final _TimelineFoldRegion region;
+  final TimelineFoldRegion region;
   final double pxPerMinute;
   final VoidCallback onTap;
 
@@ -1178,7 +958,7 @@ class _FoldRegionToggle extends StatelessWidget {
     );
   }
 
-  String _formatFoldRange(_TimelineFoldRegion region) {
+  String _formatFoldRange(TimelineFoldRegion region) {
     String label(int hour, {required bool isRangeEnd}) {
       final displayHour = isRangeEnd && hour == 24 ? 24 : hour % 24;
       return '${displayHour.toString().padLeft(2, '0')}:00';
@@ -1195,7 +975,7 @@ class _CompressedFoldSurface extends StatelessWidget {
     required this.label,
   });
 
-  final _TimelineFoldRegion region;
+  final TimelineFoldRegion region;
   final String label;
 
   @override
@@ -1369,7 +1149,7 @@ class _EnergyBandBox extends StatelessWidget {
 
   final EnergyBand band;
   final DateTime windowStart;
-  final _TimelineFoldingState foldingState;
+  final TimelineFoldingState foldingState;
   final double pxPerMinute;
 
   @override
@@ -1430,7 +1210,7 @@ class _BlockPosition extends StatelessWidget {
 
   final TimeBlock block;
   final DateTime windowStart;
-  final _TimelineFoldingState foldingState;
+  final TimelineFoldingState foldingState;
   final double pxPerMinute;
   final bool tracked;
   final ValueChanged<String>? onRename;
@@ -1754,7 +1534,7 @@ class _NowLine extends StatelessWidget {
 
   final DateTime windowStart;
   final DateTime now;
-  final _TimelineFoldingState foldingState;
+  final TimelineFoldingState foldingState;
   final double pxPerMinute;
 
   @override
