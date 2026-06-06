@@ -120,7 +120,7 @@ The following are genuine candidates — pure logic with algebraic invariants an
 
 - [x] **[HIGH]** **`matrix_message_sender.dart` `_sendJournalEntityPayload` — audio/image attachment failure branch** (`lines 535–571`). The `journalAudio` and `journalImage` attachment send paths call `_sendFile` and set `attachmentsOk = attachmentsOk && sent`. If `sent == false` the method returns `null`. This path is not covered by any existing test — there is no test that simulates a file-upload failure for an audio or image attachment. The existing `sendJournalEntityPayloadForTesting` `@visibleForTesting` seam makes this straightforward to add.
 
-- [ ] **[HIGH]** **`matrix_message_sender.dart` `_sendJournalEntityPayload` — JSON-file read failure** (`lines 410–425`). The `try/catch` around `File(jsonFullPath).readAsBytes()` is not exercised by any test. Passing an invalid path (non-existent file) via `sendJournalEntityPayloadForTesting` would cover this branch.
+- [x] **[HIGH]** **`matrix_message_sender.dart` `_sendJournalEntityPayload` — JSON-file read failure** (`lines 410–425`). The `try/catch` around `File(jsonFullPath).readAsBytes()` is not exercised by any test. Passing an invalid path (non-existent file) via `sendJournalEntityPayloadForTesting` would cover this branch.
 
 - [x] **[HIGH]** **`matrix_message_sender.dart` outbox bundle — `gzipEncodeJson` failure path** (`lines 807–815`). The `catch` around the `gzipEncodeJson(manifest)` call logs and returns `null`. No test simulates an encode failure here (would require the gzip encoder to throw, which could be arranged by injecting a mock or wrapping).
 

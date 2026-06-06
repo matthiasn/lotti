@@ -2318,6 +2318,43 @@ void main() {
       ).called(greaterThanOrEqualTo(2));
     });
 
+    test(
+      'returns null and logs when the JSON payload file is unreadable',
+      () async {
+        // No file is created at the path: the readAsBytes try/catch fires.
+        final message =
+            SyncMessage.journalEntity(
+                  id: 'entry-missing',
+                  jsonPath: '/entries/does-not-exist.json',
+                  vectorClock: VectorClock({'device': 1}),
+                  status: SyncEntryStatus.initial,
+                )
+                as SyncJournalEntity;
+
+        final result = await sender.sendJournalEntityPayloadForTesting(
+          room: room,
+          message: message,
+        );
+
+        expect(result, isNull);
+        // Nothing was sent to the room.
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'sendMatrixMsg',
+          ),
+        ).called(1);
+      },
+    );
+
     test('propagates failure when attachment upload fails', () async {
       final responses = <String?>['json-id', null];
       when(
