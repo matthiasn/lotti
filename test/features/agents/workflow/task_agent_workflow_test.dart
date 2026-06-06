@@ -4660,14 +4660,19 @@ void main() {
         );
       }
 
-      test('set_task_title delegates to handler when title exists', () async {
-        // Handler receives the call — the workflow no longer hard-guards
-        // against existing titles (the prompt instructs the agent).
+      test('set_task_title is deferred when a title already exists', () async {
+        // The initial-title auto-apply only fires on an empty title; with a
+        // populated title the rename must flow through the confirmable
+        // proposal path (no immediate journal write).
         final result = await executeWithToolCallOnRealTask(
           'set_task_title',
           '{"title":"New Title"}',
         );
         expect(result.success, isTrue);
+        verifyToolWasDeferred(
+          mockConversationManager: mockConversationManager,
+          mockJournalRepository: mockJournalRepository,
+        );
       });
 
       test('set_task_title succeeds on empty title', () async {
@@ -4705,6 +4710,16 @@ void main() {
           task: taskNoTitle,
         );
         expect(result.success, isTrue);
+        // Empty title takes the initial-title auto-apply shortcut: the
+        // handler writes immediately instead of queuing a proposal.
+        final written =
+            verify(
+                  () => mockJournalRepository.updateJournalEntity(
+                    captureAny(),
+                  ),
+                ).captured.single
+                as Task;
+        expect(written.data.title, 'My New Task');
       });
 
       // ── Deferred tool calls ──────────────────────────────────────────
