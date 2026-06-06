@@ -103,9 +103,9 @@
   - `allProjectStatusKinds` — no coverage check.
   **Note:** the filter-id mapping (incl. fallback + Glados properties) and `allProjectStatusKinds` were already covered; `buildProjectStatus` now has an enum-exhaustive variant/createdAt/utcOffset test.
 
-- [ ] **[HIGH]** `lib/features/projects/ui/widgets/projects_overview_list.dart` (75 lines) — **no test file exists**. This widget likely renders the list of project groups. Its empty-state, single-group, and multi-group rendering paths are not covered.
+- [x] **[HIGH]** `lib/features/projects/ui/widgets/projects_overview_list.dart` (75 lines) — **no test file exists**. This widget likely renders the list of project groups. Its empty-state, single-group, and multi-group rendering paths are not covered.
 
-- [ ] **[HIGH]** `lib/features/projects/ui/widgets/project_tasks_panel.dart` — `ProjectTasksSliverPanel` has **zero test coverage**. The sliver variant uses `SliverMainAxisGroup` and `SliverList.builder` with the same divider logic as `ProjectTasksPanel`, but its empty-state, single-item, and multi-item paths are completely absent from `project_tasks_panel_test.dart`.
+- [x] **[HIGH]** `lib/features/projects/ui/widgets/project_tasks_panel.dart` — `ProjectTasksSliverPanel` has **zero test coverage**. The sliver variant uses `SliverMainAxisGroup` and `SliverList.builder` with the same divider logic as `ProjectTasksPanel`, but its empty-state, single-item, and multi-item paths are completely absent from `project_tasks_panel_test.dart`.
 
 - [ ] **[MED]** `lib/features/projects/ui/widgets/shared_widgets.dart:240` — `OutlinedMetaTag` has only incidental coverage through `project_mobile_detail_content_test.dart` (where it appears as a category placeholder). The `isPlaceholder = true` / `isPlaceholder = false` style distinction, and the `onTap` → InkWell branch, are not tested in `shared_widgets_test.dart` directly.
 
