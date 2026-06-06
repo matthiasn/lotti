@@ -163,6 +163,21 @@ class ChangeSetBuilder {
           'Proceed to the next tool or finish your analysis.';
     }
 
+    final displayKey = ChangeItem.displayDuplicateKeyFromParts(
+      toolName,
+      humanSummary,
+      args: args,
+    );
+    if (displayKey != null &&
+        _items.any(
+          (item) => ChangeItem.displayDuplicateKey(item) == displayKey,
+        )) {
+      return 'Already queued — this exact visible $toolName proposal was '
+          'already recorded. Do NOT call this tool again with the same '
+          'user-facing summary. Proceed to the next tool or finish your '
+          'analysis.';
+    }
+
     if (toolName == TaskAgentToolNames.updateRunningTimer) {
       final timerId = _runningTimerIdFromArgs(args);
       _items.removeWhere(
@@ -261,6 +276,10 @@ class ChangeSetBuilder {
     // dedup cannot collapse, because each row stays a distinct
     // ChangeItem at the persistence layer.
     final queuedFingerprints = _items.map(ChangeItem.fingerprint).toSet();
+    final queuedDisplayKeys = {
+      for (final item in _items)
+        if (ChangeItem.displayDuplicateKey(item) case final String key) key,
+    };
 
     var added = 0;
     var skipped = 0;
@@ -328,7 +347,7 @@ class ChangeSetBuilder {
           singularToolName,
           element,
         );
-        if (!queuedFingerprints.add(fingerprint)) {
+        if (queuedFingerprints.contains(fingerprint)) {
           redundant++;
           redundantDetails.add(
             'identical $singularToolName proposal already queued in this '
@@ -345,6 +364,22 @@ class ChangeSetBuilder {
                 summaryPrefix,
                 resolvedState: resolvedState,
               );
+        final displayKey = ChangeItem.displayDuplicateKeyFromParts(
+          singularToolName,
+          summary,
+          args: element,
+        );
+        if (displayKey != null && queuedDisplayKeys.contains(displayKey)) {
+          redundant++;
+          redundantDetails.add(
+            'identical visible $singularToolName proposal already queued in '
+            'this wake — skipped.',
+          );
+          continue;
+        }
+        queuedFingerprints.add(fingerprint);
+        if (displayKey != null) queuedDisplayKeys.add(displayKey);
+
         _items.add(
           ChangeItem(
             toolName: singularToolName,
@@ -405,6 +440,8 @@ class ChangeSetBuilder {
   /// persisted [ChangeDecisionEntity] records whose verdict was `rejected`.
   /// These are merged into the dedup set so that items the user rejected
   /// in a previous (now-resolved) change set are still blocked.
+  /// [rejectedDisplayKeys] applies the same sticky rejection rule to
+  /// verbatim user-facing summaries whose tool arguments changed shape.
   ///
   /// When existing pending change sets exist, all their items are
   /// consolidated into a single set together with the new items. Any
@@ -416,6 +453,7 @@ class ChangeSetBuilder {
     AgentSyncService syncService, {
     List<ChangeSetEntity> existingPendingSets = const [],
     Set<String> rejectedFingerprints = const {},
+    Set<String> rejectedDisplayKeys = const {},
   }) async {
     if (!hasItems) return null;
 
@@ -446,6 +484,7 @@ class ChangeSetBuilder {
       _items,
       existingItems,
       rejectedFingerprints: rejectedFingerprints,
+      rejectedDisplayKeys: rejectedDisplayKeys,
     );
     if (deduped.isEmpty) return null;
 
@@ -607,19 +646,34 @@ class ChangeSetBuilder {
   ///
   /// [rejectedFingerprints] are merged into the dedup set so that items
   /// rejected in previously-resolved change sets are still blocked.
+  /// [rejectedDisplayKeys] does the same for verbatim user-facing summaries.
   static List<ChangeItem> _deduplicateItems(
     List<ChangeItem> proposed,
     List<ChangeItem> existing, {
     Set<String> rejectedFingerprints = const {},
+    Set<String> rejectedDisplayKeys = const {},
   }) {
-    if (existing.isEmpty && rejectedFingerprints.isEmpty) return proposed;
+    if (existing.isEmpty &&
+        rejectedFingerprints.isEmpty &&
+        rejectedDisplayKeys.isEmpty) {
+      return proposed;
+    }
     final existingHashes = {
       ...existing.map(ChangeItem.fingerprint),
       ...rejectedFingerprints,
     };
-    return proposed
-        .where((item) => !existingHashes.contains(ChangeItem.fingerprint(item)))
-        .toList();
+    final existingDisplayKeys = {
+      ...rejectedDisplayKeys,
+      for (final item in existing)
+        if (ChangeItem.displayDuplicateKey(item) case final String key) key,
+    };
+    return proposed.where((item) {
+      if (existingHashes.contains(ChangeItem.fingerprint(item))) {
+        return false;
+      }
+      final displayKey = ChangeItem.displayDuplicateKey(item);
+      return displayKey == null || !existingDisplayKeys.contains(displayKey);
+    }).toList();
   }
 
   static ChangeSetEntity _retireConsolidatedSet(ChangeSetEntity set) {

@@ -3782,6 +3782,76 @@ void main() {
         );
 
         test(
+          'renders open proposal guard immediately before final instruction',
+          () async {
+            stubLedger(
+              ProposalLedger(
+                open: [
+                  openEntry(
+                    toolName: 'update_checklist_item',
+                    args: const {'id': 'item-1', 'isChecked': true},
+                    humanSummary: 'Check off: "Address review comments"',
+                  ),
+                ],
+                resolved: const [],
+              ),
+            );
+
+            final message = await executeAndCaptureMessage();
+
+            expect(message, isNotNull);
+            expect(message, contains('## Open Proposal Guard'));
+            expect(
+              message,
+              contains(
+                'Do not propose the same user-facing action again '
+                '(for `update_running_timer`, compare per `timerId`).',
+              ),
+            );
+            expect(
+              message,
+              contains(
+                'for `update_running_timer`, compare per `timerId`',
+              ),
+            );
+            expect(
+              message,
+              contains(
+                '`update_checklist_item`: '
+                'Check off: "Address review comments"',
+              ),
+            );
+
+            const guardHeader = '## Open Proposal Guard';
+            const finalInstruction =
+                'Analyze the current state and call tools if needed.';
+            final guardIndex = message!.indexOf(guardHeader);
+            final finalInstructionIndex = message.indexOf(finalInstruction);
+            expect(guardIndex, greaterThanOrEqualTo(0));
+            expect(finalInstructionIndex, greaterThan(guardIndex));
+            final expectedFingerprint = ChangeItem.fingerprintFromParts(
+              'update_checklist_item',
+              const {'id': 'item-1', 'isChecked': true},
+            );
+            final guardEntry =
+                '- [fp=$expectedFingerprint] `update_checklist_item`: '
+                'Check off: "Address review comments"';
+            final guardEntryIndex = message.indexOf(guardEntry, guardIndex);
+            expect(guardEntryIndex, greaterThan(guardIndex));
+            expect(finalInstructionIndex, greaterThan(guardEntryIndex));
+            expect(
+              message
+                  .substring(
+                    guardEntryIndex + guardEntry.length,
+                    finalInstructionIndex,
+                  )
+                  .trim(),
+              isEmpty,
+            );
+          },
+        );
+
+        test(
           'omits the Proposal Ledger section when the ledger is empty',
           () async {
             // Default stub is an empty ledger; do not override.
@@ -3789,6 +3859,7 @@ void main() {
 
             expect(message, isNotNull);
             expect(message, isNot(contains('## Proposal Ledger')));
+            expect(message, isNot(contains('## Open Proposal Guard')));
           },
         );
 
@@ -5136,6 +5207,97 @@ void main() {
             // Verify the resolver looked up the checklist item.
             verify(
               () => mockJournalDb.journalEntityById('cl-item-1'),
+            ).called(1);
+          },
+        );
+
+        test(
+          'update_checklist_items duplicate visible proposal is filtered by '
+          'the ledger at build time',
+          () async {
+            const summary = 'Check off: "Address CodeRabbit review comments"';
+            const existingItem = ChangeItem(
+              toolName: TaskAgentToolNames.updateChecklistItem,
+              args: {'id': 'cl-existing', 'isChecked': true},
+              humanSummary: summary,
+            );
+            final pendingSet = makeTestChangeSet(
+              id: 'cs-existing-visible-duplicate',
+              items: const [existingItem],
+            );
+            final newChecklistItem = JournalEntity.checklistItem(
+              meta: Metadata(
+                id: 'cl-new',
+                createdAt: DateTime(2024, 3, 15),
+                dateFrom: DateTime(2024, 3, 15),
+                dateTo: DateTime(2024, 3, 15),
+                updatedAt: DateTime(2024, 3, 15),
+              ),
+              data: const ChecklistItemData(
+                title: 'Address CodeRabbit review comments',
+                isChecked: false,
+                linkedChecklists: [],
+              ),
+            );
+            final upserts = <AgentDomainEntity>[];
+
+            when(
+              () => mockSyncService.repository,
+            ).thenReturn(mockAgentRepository);
+            when(
+              () => mockAgentRepository.getEntity(pendingSet.id),
+            ).thenAnswer((_) async => pendingSet);
+            when(
+              () => mockAgentRepository.getProposalLedger(
+                agentId,
+                taskId: any(named: 'taskId'),
+                changeSetFetchLimit: any(named: 'changeSetFetchLimit'),
+                resolvedLimit: any(named: 'resolvedLimit'),
+              ),
+            ).thenAnswer(
+              (_) async => ProposalLedger(
+                open: [
+                  LedgerEntry(
+                    changeSetId: pendingSet.id,
+                    itemIndex: 0,
+                    toolName: existingItem.toolName,
+                    args: existingItem.args,
+                    humanSummary: existingItem.humanSummary,
+                    fingerprint: ChangeItem.fingerprint(existingItem),
+                    status: ChangeItemStatus.pending,
+                    createdAt: pendingSet.createdAt,
+                  ),
+                ],
+                resolved: const [],
+                pendingSets: [pendingSet],
+              ),
+            );
+            when(
+              () => mockJournalDb.journalEntityById('cl-new'),
+            ).thenAnswer((_) async => newChecklistItem);
+            when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+              invocation,
+            ) async {
+              upserts.add(
+                invocation.positionalArguments.single as AgentDomainEntity,
+              );
+            });
+
+            final result = await executeWithToolCallOnRealTask(
+              TaskAgentToolNames.updateChecklistItems,
+              '{"items":[{"id":"cl-new","isChecked":true}]}',
+            );
+
+            expect(result.success, isTrue);
+            expect(
+              upserts.whereType<ChangeSetEntity>(),
+              isEmpty,
+              reason:
+                  'the duplicate visible proposal must not create or merge a '
+                  'change set',
+            );
+            verify(
+              () => mockJournalDb.journalEntityById('cl-new'),
             ).called(1);
           },
         );

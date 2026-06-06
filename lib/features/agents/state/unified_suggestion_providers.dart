@@ -85,6 +85,7 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
 
   final open = <PendingSuggestion>[];
   final seenFingerprints = <String>{};
+  final seenDisplayKeys = <String>{};
   for (final cs in ledger.pendingSets) {
     for (var i = 0; i < cs.items.length; i++) {
       final item = cs.items[i];
@@ -93,6 +94,8 @@ Future<UnifiedSuggestionList> unifiedSuggestionList(
       // Race-condition dedup: two wakes may have produced sets with the
       // exact same fingerprint before persistence-time dedup kicks in.
       if (!seenFingerprints.add(fingerprint)) continue;
+      final displayKey = ChangeItem.displayDuplicateKey(item);
+      if (displayKey != null && !seenDisplayKeys.add(displayKey)) continue;
       open.add(
         PendingSuggestion(
           changeSet: cs,

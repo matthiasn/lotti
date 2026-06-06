@@ -23,6 +23,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Label usage counts in the labels list no longer include deleted journal
   entries, and entries marked private only count while the "Show private
   entries" flag is enabled.
+- Task-agent suggestions now suppress verbatim duplicate proposals even when
+  their underlying tool arguments differ, so identical checklist suggestions
+  appear only once.
 
 ## [0.9.1014]
 ### Added
