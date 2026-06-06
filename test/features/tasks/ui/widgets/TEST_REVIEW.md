@@ -28,7 +28,7 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `lib/features/tasks/ui/widgets/task_detail_pane.dart` — **815 lines**, significantly over the ~500-line preference. The file contains 8 distinct private widget classes, all of which could be extracted:
+- [x] **[HIGH]** `lib/features/tasks/ui/widgets/task_detail_pane.dart` — **815 lines**, significantly over the ~500-line preference. The file contains 8 distinct private widget classes, all of which could be extracted: **RESOLVED:** the seven card classes moved to a `task_detail_cards.dart` part file (pane now 378 lines, cards 440) — privates and the single mirror test untouched; all 17 pane tests pass.
   - `_TaskDetailHeader` (line 216) — title block + metadata wrap
   - `_TaskDetailCardsColumn` (line 353) — ordered card stack
   - `_AiSummaryCard` (line 378) — branded AI section
@@ -39,7 +39,7 @@
 
   Natural split: extract the card classes (`_AiSummaryCard`, `_DescriptionCard`, `_TimeTrackerCard`, `_TimeEntryTile`, `_ChecklistCard`, `_AudioCard`, `_AudioEntryTile`) into `task_detail_cards.dart` (≈ 370 ln) and retain `TaskDetailPane`, `TaskShowcaseDetailContent`, `_TaskDetailHeader`, `_TaskDetailCardsColumn` in `task_detail_pane.dart` (≈ 445 ln).
 
-- [ ] **[HIGH]** `lib/features/tasks/ui/widgets/task_showcase_shared_widgets.dart` — **766 lines** for a shared-widget file. This file mixes many conceptually distinct atoms:
+- [x] **[HIGH]** `lib/features/tasks/ui/widgets/task_showcase_shared_widgets.dart` — **766 lines** for a shared-widget file. This file mixes many conceptually distinct atoms: **RESOLVED:** split into `task_showcase_chips.dart` (chips/glyphs/labels/pill, 285 ln) and `task_showcase_layout_widgets.dart` (card/banner/bars/waveform, 483 ln); `task_showcase_shared_widgets.dart` is now a two-line barrel so all 15 importers are untouched. All widget-dir tests (123) pass.
   - chip types: `TaskShowcaseCategoryChip`, `TaskShowcaseLabelChip`, `TaskShowcaseMetaChip` (lines 15–110)
   - section pill: `TaskShowcaseSectionPill` (≈ line 112)
   - status label: `TaskShowcaseStatusLabel`
