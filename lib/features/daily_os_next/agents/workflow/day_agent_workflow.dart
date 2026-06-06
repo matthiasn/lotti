@@ -228,6 +228,7 @@ class DayAgentWorkflow {
       dayId: dayId,
       triggerTokens: triggerTokens,
     );
+    final attentionPlanning = await _attentionPlanningContext(dayDate);
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
       dayId: dayId,
@@ -239,6 +240,7 @@ class DayAgentWorkflow {
       captureContext: captureContext,
       draftingContext: draftingContext,
       refineContext: refineContext,
+      attentionPlanning: attentionPlanning,
       compactedLog: memoryView.useCompactedLog ? memoryView.compactedLog : null,
     );
 
@@ -717,6 +719,7 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     required _CaptureContext? captureContext,
     required _DraftingContext? draftingContext,
     required _RefineContext? refineContext,
+    required AttentionPlanningInputs attentionPlanning,
     String? compactedLog,
   }) {
     final payload = <String, Object?>{
@@ -732,6 +735,8 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       if (captureContext != null) 'capture': captureContext.toJson(),
       if (draftingContext != null) 'drafting': draftingContext.toJson(),
       if (refineContext != null) 'refine': refineContext.toJson(),
+      if (!attentionPlanning.isEmpty)
+        'attentionPlanning': _attentionPlanningToJson(attentionPlanning),
       if (compactedLog == null)
         'recentObservations': [
           for (final observation in observations)
@@ -747,6 +752,90 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
       'currentLocalTime': now.toIso8601String(),
     };
     return const JsonEncoder.withIndent('  ').convert(payload);
+  }
+
+  Future<AttentionPlanningInputs> _attentionPlanningContext(
+    DateTime planDate,
+  ) async {
+    try {
+      final start = DateTime(planDate.year, planDate.month, planDate.day);
+      return await agentRepository.getAttentionPlanningInputsForWindow(
+        start: start,
+        // Use day + 1 (not Duration(days: 1)) so the window stays at local
+        // midnight across DST transitions, where a day may be 23 or 25 hours.
+        end: DateTime(start.year, start.month, start.day + 1),
+      );
+    } catch (e, s) {
+      _logError(
+        'failed to load attention planning context',
+        error: e,
+        stackTrace: s,
+      );
+      return const AttentionPlanningInputs.empty();
+    }
+  }
+
+  Map<String, Object?> _attentionPlanningToJson(
+    AttentionPlanningInputs inputs,
+  ) {
+    return {
+      'claims': [
+        for (final claim in inputs.claims)
+          {
+            'id': claim.id,
+            'agentId': claim.agentId,
+            'kind': claim.kind.name,
+            'title': claim.title,
+            'categoryId': claim.categoryId,
+            'requestedMinutes': claim.requestedMinutes,
+            'impact': claim.impact,
+            'urgency': claim.urgency,
+            'energyFit': claim.energyFit.name,
+            'scopeKind': claim.scopeKind.name,
+            'earliestStart': claim.earliestStart?.toIso8601String(),
+            'latestEnd': claim.latestEnd?.toIso8601String(),
+            'deadline': claim.deadline?.toIso8601String(),
+            'nextReviewAt': claim.nextReviewAt?.toIso8601String(),
+            'targetId': claim.targetId,
+            'targetKind': claim.targetKind,
+            'rationale': claim.rationale,
+            'evidenceRefs': [
+              for (final ref in claim.evidenceRefs)
+                {
+                  'kind': ref.kind.name,
+                  'id': ref.id,
+                  'label': ref.label,
+                },
+            ],
+          },
+      ],
+      'standingAgreements': [
+        for (final agreement in inputs.standingAgreements)
+          {
+            'id': agreement.id,
+            'agentId': agreement.agentId,
+            'title': agreement.title,
+            'scope': agreement.scope.name,
+            'cadence': agreement.cadence.name,
+            'status': agreement.status.name,
+            'enforcement': agreement.enforcement.name,
+            'approvalMode': agreement.approvalMode.name,
+            'categoryId': agreement.categoryId,
+            'targetId': agreement.targetId,
+            'targetKind': agreement.targetKind,
+            'minCount': agreement.minCount,
+            'maxCount': agreement.maxCount,
+            'minMinutes': agreement.minMinutes,
+            'maxMinutes': agreement.maxMinutes,
+            'preferredSessionMinutes': agreement.preferredSessionMinutes,
+            'priority': agreement.priority,
+            'canPreempt': agreement.canPreempt,
+            'activeFrom': agreement.activeFrom?.toIso8601String(),
+            'activeUntil': agreement.activeUntil?.toIso8601String(),
+            'rationale': agreement.rationale,
+          },
+      ],
+    };
   }
 
   Future<_CaptureContext?> _captureContext({

@@ -1347,6 +1347,181 @@ void main() {
         await db.close();
       },
     );
+
+    test(
+      'v13 to v14 adds active attention target lookup index',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        final rawDb = sqlite3.open(dbFile);
+
+        rawDb
+          ..execute('''
+            CREATE TABLE agent_entities (
+              id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              subtype TEXT,
+              thread_id TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE agent_links (
+              id TEXT NOT NULL PRIMARY KEY,
+              from_id TEXT NOT NULL,
+              to_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE attention_claim_index (
+              request_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              scope_kind TEXT NOT NULL,
+              visibility_start DATETIME NOT NULL,
+              visibility_end DATETIME NOT NULL,
+              deadline DATETIME,
+              next_review_at DATETIME,
+              target_id TEXT,
+              target_kind TEXT,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE standing_agreement_index (
+              agreement_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              scope TEXT NOT NULL,
+              cadence TEXT NOT NULL,
+              approval_mode TEXT NOT NULL,
+              enforcement TEXT NOT NULL,
+              active_from DATETIME NOT NULL,
+              active_until DATETIME NOT NULL,
+              priority INTEGER NOT NULL,
+              target_id TEXT,
+              target_kind TEXT,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE wake_run_log (
+              run_key TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              reason TEXT NOT NULL,
+              reason_id TEXT,
+              thread_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              logical_change_key TEXT,
+              created_at DATETIME NOT NULL,
+              started_at DATETIME,
+              completed_at DATETIME,
+              error_message TEXT,
+              template_id TEXT,
+              template_version_id TEXT,
+              resolved_model_id TEXT,
+              soul_id TEXT,
+              soul_version_id TEXT,
+              user_rating REAL,
+              rated_at DATETIME
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE saga_log (
+              operation_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              run_key TEXT NOT NULL,
+              phase TEXT NOT NULL,
+              status TEXT NOT NULL,
+              tool_name TEXT NOT NULL,
+              last_error TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL
+            )
+          ''')
+          ..execute('PRAGMA user_version = 13');
+        rawDb.dispose();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(
+          versionResult.first.read<int>('user_version'),
+          db.schemaVersion,
+        );
+
+        final indexes = await db.customSelect('''
+          SELECT name FROM sqlite_master
+          WHERE type = 'index'
+            AND tbl_name = 'attention_claim_index'
+          ORDER BY name
+        ''').get();
+        expect(
+          indexes.map((row) => row.read<String>('name')),
+          contains('idx_attention_claims_active_target'),
+        );
+
+        await db.customStatement('''
+          INSERT INTO attention_claim_index (
+            request_id,
+            agent_id,
+            status,
+            scope_kind,
+            visibility_start,
+            visibility_end,
+            target_id,
+            target_kind,
+            updated_at
+          )
+          VALUES (
+            'request-1',
+            'task-agent-1',
+            'open',
+            'dateRange',
+            '2026-05-27',
+            '2026-05-28',
+            'task-1',
+            'task',
+            '2026-05-27'
+          )
+        ''');
+
+        final plan = await db.customSelect('''
+          EXPLAIN QUERY PLAN
+          SELECT request_id
+          FROM attention_claim_index
+          WHERE target_kind = 'task'
+            AND target_id = 'task-1'
+            AND status = 'open'
+            AND deleted_at IS NULL
+        ''').get();
+        expect(
+          plan.map((row) => row.read<String>('detail')).join('\n'),
+          contains('idx_attention_claims_active_target'),
+        );
+
+        await db.close();
+      },
+    );
   });
 
   group('AgentDatabase fresh install', () {

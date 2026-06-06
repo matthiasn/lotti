@@ -734,6 +734,9 @@ The task wake prompt is assembled from:
 - prior observation messages
 - linked-task context
 - pending change sets for the same task
+- active `AttentionRequestEntity` claims for this task, loaded through
+  `AgentRepository.getAttentionClaimsForTarget(targetKind: 'task', ...)` so
+  the prompt never scans the append-only `agent_entities` source table
 - the active running timer, when one is running. If the timer's source task
   matches the wake's task, the agent gets full details (id, started, tracked
   range, elapsed minutes, current entry text) and is steered toward
@@ -761,10 +764,12 @@ external source URLs; internal task links belong inline in the report body.
 
 ### Tool Policy
 
-Task agents have two immediate local tools:
+Task agents have three immediate local tools:
 
 - `update_report`
 - `record_observations`
+- `request_attention` *(writes an evidence-backed `AttentionRequestEntity`
+  into the synced agent log; it does not mutate the task or calendar directly)*
 
 The current deferred task tools are:
 
@@ -788,10 +793,12 @@ The current deferred task tools are:
   timer when one is running for this task; user-gated; replaces entry text
   outright)*
 
-There are no other immediate task-mutating tools today. Non-local task writes
-go through `AgentToolExecutor`, which enforces the agent's allowed category set,
-captures post-write vector clocks, and persists audit messages for tool actions
-and tool results.
+There are no other immediate task-mutating tools today. `request_attention`
+is intentionally immediate because it writes an auditable claim for the day
+planner, not a user-visible task/calendar mutation. Non-local task writes go
+through `AgentToolExecutor`, which enforces the agent's allowed category set,
+captures post-write vector clocks when a journal entity changes, and persists
+audit messages for tool actions and tool results.
 
 `ChangeSetBuilder` is responsible for the deferred path. It:
 

@@ -163,6 +163,8 @@ ChangeSetConfirmationService changeSetConfirmationService(Ref ref) {
       domainLogger: logger,
       taskAgentService: ref.watch(taskAgentServiceProvider),
       projectRepository: ref.watch(projectRepositoryProvider),
+      agentRepository: ref.watch(agentRepositoryProvider),
+      syncService: ref.watch(agentSyncServiceProvider),
     ).dispatch,
     labelsRepository: labelsRepository,
     domainLogger: logger,

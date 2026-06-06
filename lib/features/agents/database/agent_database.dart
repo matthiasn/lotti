@@ -30,7 +30,7 @@ class AgentDatabase extends _$AgentDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 13;
+  int get schemaVersion => 14;
 
   @override
   MigrationStrategy get migration {
@@ -342,6 +342,18 @@ class AgentDatabase extends _$AgentDatabase {
             'ON standing_agreement_index(status, scope, active_from, '
             'active_until, priority DESC, updated_at DESC, agreement_id) '
             'WHERE deleted_at IS NULL',
+          );
+          await customStatement('ANALYZE');
+        }
+        if (from < 14) {
+          await customStatement(
+            'CREATE INDEX IF NOT EXISTS '
+            'idx_attention_claims_active_target '
+            'ON attention_claim_index(target_kind, target_id, status, '
+            'updated_at DESC, request_id) '
+            'WHERE deleted_at IS NULL '
+            'AND target_kind IS NOT NULL '
+            'AND target_id IS NOT NULL',
           );
           await customStatement('ANALYZE');
         }

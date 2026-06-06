@@ -28,8 +28,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 18 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(18));
+    test('contains exactly 19 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(19));
     });
 
     test('all tools have non-empty name and description', () {
@@ -538,6 +538,67 @@ void main() {
         expect(required, isNot(contains('reason')));
       });
     });
+
+    group('request_attention', () {
+      late AgentToolDefinition tool;
+
+      setUp(() {
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == TaskAgentToolNames.requestAttention,
+        );
+      });
+
+      test('has correct name and planner-facing description', () {
+        expect(tool.name, equals(TaskAgentToolNames.requestAttention));
+        expect(tool.description, contains('day planner'));
+        expect(tool.description, contains('Attention Requests'));
+      });
+
+      test('requires bounded claim fields', () {
+        final required = tool.parameters['required'] as List;
+        expect(
+          required,
+          containsAll([
+            'requestedMinutes',
+            'impact',
+            'urgency',
+            'energyFit',
+            'rationale',
+          ]),
+        );
+
+        final properties = tool.parameters['properties'] as Map;
+        final minutes = properties['requestedMinutes'] as Map;
+        expect(minutes['type'], equals('integer'));
+        expect(minutes['minimum'], equals(1));
+        expect(minutes['maximum'], equals(1440));
+        final impact = properties['impact'] as Map;
+        expect(impact['minimum'], equals(1));
+        expect(impact['maximum'], equals(5));
+        final urgency = properties['urgency'] as Map;
+        expect(urgency['minimum'], equals(1));
+        expect(urgency['maximum'], equals(5));
+      });
+
+      test('declares energy and scope enums', () {
+        final properties = tool.parameters['properties'] as Map;
+        expect(
+          (properties['energyFit'] as Map)['enum'],
+          equals(['low', 'neutral', 'high']),
+        );
+        expect(
+          (properties['scopeKind'] as Map)['enum'],
+          equals(['day', 'dateRange', 'deadline', 'recurrence']),
+        );
+      });
+
+      test('is immediate, not a user-confirmed deferred tool', () {
+        expect(
+          AgentToolRegistry.deferredTools,
+          isNot(contains(TaskAgentToolNames.requestAttention)),
+        );
+      });
+    });
   });
 
   group('AgentToolDefinition.enabled field', () {
@@ -603,6 +664,10 @@ void main() {
       expect(
         AgentToolRegistry.deferredTools,
         isNot(contains(TaskAgentToolNames.getRelatedTaskDetails)),
+      );
+      expect(
+        AgentToolRegistry.deferredTools,
+        isNot(contains(TaskAgentToolNames.requestAttention)),
       );
     });
   });

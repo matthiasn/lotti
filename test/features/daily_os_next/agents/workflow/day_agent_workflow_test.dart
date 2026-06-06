@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -256,6 +258,12 @@ void main() {
       () => repository.getEntitiesByAgentId(agentId, type: any(named: 'type')),
     ).thenAnswer((_) async => const <AgentDomainEntity>[]);
     when(
+      () => repository.getAttentionPlanningInputsForWindow(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer((_) async => const AttentionPlanningInputs.empty());
+    when(
       () => repository.updateWakeRunTemplate(
         any(),
         any(),
@@ -424,6 +432,150 @@ void main() {
           .map((p) => p.content)
           .where((c) => c['promptFormat'] == 'v2');
       expect(v2Records, isEmpty);
+    });
+
+    test('renders attention-planning claims and standing agreements into the '
+        'sent prompt', () async {
+      when(() => syncService.repository).thenReturn(repository);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+      ).thenAnswer((_) async => []);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+      ).thenAnswer((_) async => []);
+      when(() => repository.getLinksFrom(agentId)).thenAnswer((_) async => []);
+
+      final claim =
+          AgentDomainEntity.attentionRequest(
+                id: 'attn-claim-1',
+                agentId: 'task-agent-7',
+                kind: AttentionRequestKind.task,
+                title: 'Finish tax packet',
+                categoryId: 'work',
+                requestedMinutes: 90,
+                impact: 5,
+                urgency: 4,
+                energyFit: AttentionEnergyFit.high,
+                evidenceRefs: const [
+                  AttentionEvidenceRef(
+                    kind: AttentionEvidenceKind.task,
+                    id: 'task-9',
+                    label: 'Tax packet',
+                  ),
+                ],
+                scopeKind: AttentionClaimScopeKind.dateRange,
+                earliestStart: DateTime.utc(2026, 5, 25, 9),
+                latestEnd: DateTime.utc(2026, 5, 25, 17),
+                deadline: DateTime.utc(2026, 5, 26, 12),
+                targetId: 'task-9',
+                targetKind: 'task',
+                rationale: 'Due soon and still needs a focused block.',
+                createdAt: DateTime.utc(2026, 5, 24, 8),
+                vectorClock: null,
+              )
+              as AttentionRequestEntity;
+      final agreement =
+          AgentDomainEntity.standingAgreement(
+                id: 'agreement-1',
+                agentId: 'soul-agent-2',
+                title: 'Exercise three times a week',
+                scope: StandingAgreementScope.fitness,
+                cadence: StandingAgreementCadence.weekly,
+                categoryId: 'health',
+                minCount: 3,
+                priority: 2,
+                rationale: 'Keep weekly movement consistent.',
+                createdAt: DateTime.utc(2026, 5, 1, 8),
+                updatedAt: DateTime.utc(2026, 5, 1, 8),
+                vectorClock: null,
+              )
+              as StandingAgreementEntity;
+      when(
+        () => repository.getAttentionPlanningInputsForWindow(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer(
+        (_) async => AttentionPlanningInputs(
+          claims: [claim],
+          standingAgreements: [agreement],
+        ),
+      );
+
+      final result = await execute(workflow(), triggerTokens: {dayId});
+      expect(result.success, isTrue);
+
+      final attentionPlanning =
+          (jsonDecode(conversationRepository.lastUserMessage!)
+                  as Map<String, dynamic>)['attentionPlanning']
+              as Map;
+      final claims = attentionPlanning['claims'] as List;
+      expect(claims, hasLength(1));
+      final renderedClaim = claims.single as Map;
+      expect(renderedClaim['id'], 'attn-claim-1');
+      expect(renderedClaim['kind'], 'task');
+      expect(renderedClaim['requestedMinutes'], 90);
+      expect(renderedClaim['energyFit'], 'high');
+      expect(renderedClaim['scopeKind'], 'dateRange');
+      expect(renderedClaim['earliestStart'], '2026-05-25T09:00:00.000Z');
+      expect(renderedClaim['deadline'], '2026-05-26T12:00:00.000Z');
+      expect(
+        (renderedClaim['evidenceRefs'] as List).single,
+        {'kind': 'task', 'id': 'task-9', 'label': 'Tax packet'},
+      );
+
+      final agreements = attentionPlanning['standingAgreements'] as List;
+      expect(agreements, hasLength(1));
+      final renderedAgreement = agreements.single as Map;
+      expect(renderedAgreement['id'], 'agreement-1');
+      expect(renderedAgreement['scope'], 'fitness');
+      expect(renderedAgreement['cadence'], 'weekly');
+      expect(renderedAgreement['enforcement'], 'target');
+      expect(renderedAgreement['approvalMode'], 'ask');
+      expect(renderedAgreement['minCount'], 3);
+      expect(renderedAgreement['priority'], 2);
+      expect(
+        renderedAgreement['rationale'],
+        'Keep weekly movement consistent.',
+      );
+    });
+
+    test('absorbs a failure loading attention-planning inputs', () async {
+      when(() => syncService.repository).thenReturn(repository);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+      ).thenAnswer((_) async => []);
+      when(
+        () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+      ).thenAnswer((_) async => []);
+      when(() => repository.getLinksFrom(agentId)).thenAnswer((_) async => []);
+      when(
+        () => repository.getAttentionPlanningInputsForWindow(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenThrow(StateError('attention window unavailable'));
+
+      final result = await execute(workflow(), triggerTokens: {dayId});
+
+      // The throwing load path is actually exercised: if the workflow stopped
+      // calling getAttentionPlanningInputsForWindow, this test would no longer
+      // be proving the failure is absorbed.
+      verify(
+        () => repository.getAttentionPlanningInputsForWindow(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).called(1);
+
+      // The load failure degrades to empty inputs, so the section is omitted
+      // entirely (it is only rendered when non-empty) and the wake still
+      // succeeds rather than propagating the error.
+      expect(result.success, isTrue);
+      final userPayload =
+          jsonDecode(conversationRepository.lastUserMessage!)
+              as Map<String, dynamic>;
+      expect(userPayload.containsKey('attentionPlanning'), isFalse);
     });
 
     test(

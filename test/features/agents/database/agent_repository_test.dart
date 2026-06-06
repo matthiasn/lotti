@@ -2061,6 +2061,8 @@ void main() {
     DateTime? latestEnd,
     DateTime? deadline,
     DateTime? nextReviewAt,
+    String? targetId = 'task-1',
+    String? targetKind = 'task',
     DateTime? createdAt,
     DateTime? deletedAt,
   }) {
@@ -2089,8 +2091,8 @@ void main() {
           latestEnd: latestEnd,
           deadline: deadline,
           nextReviewAt: nextReviewAt,
-          targetId: 'task-1',
-          targetKind: 'task',
+          targetId: targetId,
+          targetKind: targetKind,
           createdAt: createdAt ?? testDate,
           vectorClock: const VectorClock({'node-1': 10}),
           deletedAt: deletedAt,
@@ -3904,6 +3906,87 @@ void main() {
     );
 
     test(
+      'returns active claims for a concrete target without scanning sources',
+      () async {
+        final matchingClaim = makeAttentionClaim(
+          id: 'attention-claim-target',
+          targetId: 'task-target',
+          nextReviewAt: DateTime(2026, 5, 27, 8),
+        );
+        final otherTaskClaim = makeAttentionClaim(
+          id: 'attention-claim-other-task',
+          targetId: 'task-other',
+        );
+        final untargetedClaim = makeAttentionClaim(
+          id: 'attention-claim-untargeted',
+          targetId: null,
+          targetKind: null,
+        );
+        final declinedClaim = makeAttentionClaim(
+          id: 'attention-claim-target-declined',
+          targetId: 'task-target',
+          createdAt: testDate.add(const Duration(minutes: 1)),
+        );
+
+        await repo.upsertEntity(otherTaskClaim);
+        await repo.upsertEntity(untargetedClaim);
+        await repo.upsertEntity(matchingClaim);
+        await repo.upsertEntity(declinedClaim);
+        await repo.upsertEntity(
+          makeAttentionDisposition(
+            id: 'attention-disposition-target-declined',
+            requestId: declinedClaim.id,
+            status: AttentionClaimStatus.declined,
+            createdAt: testDate.add(const Duration(minutes: 2)),
+          ),
+        );
+
+        final activeClaims = await repo.getAttentionClaimsForTarget(
+          targetKind: 'task',
+          targetId: 'task-target',
+        );
+        expect(activeClaims.map((item) => item.id), [matchingClaim.id]);
+
+        final declinedClaims = await repo.getAttentionClaimsForTarget(
+          targetKind: 'task',
+          targetId: 'task-target',
+          statuses: const {AttentionClaimStatus.declined},
+        );
+        expect(declinedClaims.map((item) => item.id), [declinedClaim.id]);
+
+        final plan = await db
+            .customSelect(
+              '''
+              EXPLAIN QUERY PLAN
+              SELECT request_id
+              FROM attention_claim_index
+              WHERE target_kind = ?
+                AND target_id = ?
+                AND status IN (?)
+                AND deleted_at IS NULL
+              ORDER BY next_review_at IS NULL,
+                next_review_at ASC,
+                deadline IS NULL,
+                deadline ASC,
+                updated_at DESC,
+                request_id ASC
+              LIMIT ?
+            ''',
+              variables: [
+                Variable.withString('task'),
+                Variable.withString('task-target'),
+                Variable.withString(AttentionClaimStatus.open.name),
+                Variable.withInt(50),
+              ],
+              readsFrom: {db.attentionClaimIndex},
+            )
+            .get();
+        final detail = plan.map((row) => row.read<String>('detail')).join('\n');
+        expect(detail, contains('idx_attention_claims_active_target'));
+      },
+    );
+
+    test(
       'rebuilds the local projection from source entities for repair',
       () async {
         final claim = makeAttentionClaim(
@@ -3935,6 +4018,39 @@ void main() {
           end: DateTime(2026, 5, 28),
         );
         expect(rebuiltClaims.map((item) => item.id), [claim.id]);
+      },
+    );
+  });
+
+  group('getAttentionPlanningInputsForWindow', () {
+    test(
+      'returns visible claims and standing agreements for planner context',
+      () async {
+        final claim = makeAttentionClaim(
+          id: 'attention-claim-planner-context',
+          targetId: 'task-planner',
+          rangeStart: DateTime(2026, 5, 27),
+          rangeEnd: DateTime(2026, 5, 28),
+        );
+        final agreement = makeStandingAgreement(
+          id: 'standing-agreement-planner-context',
+          activeFrom: DateTime(2026, 5),
+          activeUntil: DateTime(2026, 6),
+        );
+
+        await repo.upsertEntity(claim);
+        await repo.upsertEntity(agreement);
+
+        final inputs = await repo.getAttentionPlanningInputsForWindow(
+          start: DateTime(2026, 5, 27),
+          end: DateTime(2026, 5, 28),
+        );
+
+        expect(inputs.isEmpty, isFalse);
+        expect(inputs.claims.map((item) => item.id), [claim.id]);
+        expect(inputs.standingAgreements.map((item) => item.id), [
+          agreement.id,
+        ]);
       },
     );
   });

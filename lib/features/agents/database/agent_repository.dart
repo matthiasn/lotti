@@ -12,6 +12,23 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:sqlite3/sqlite3.dart' show SqliteException;
 
+/// Indexed attention-planning inputs for one planner window.
+class AttentionPlanningInputs {
+  const AttentionPlanningInputs({
+    required this.claims,
+    required this.standingAgreements,
+  });
+
+  const AttentionPlanningInputs.empty()
+    : claims = const [],
+      standingAgreements = const [];
+
+  final List<AttentionRequestEntity> claims;
+  final List<StandingAgreementEntity> standingAgreements;
+
+  bool get isEmpty => claims.isEmpty && standingAgreements.isEmpty;
+}
+
 /// Typed CRUD repository wrapping [AgentDatabase] and [AgentDbConversions].
 ///
 /// All entity reads go through [AgentDbConversions.fromEntityRow] and all
@@ -268,6 +285,114 @@ class AgentRepository {
         if (entitiesById[requestId] case final AttentionRequestEntity request)
           request,
     ];
+  }
+
+  /// Fetch active attention claims for a source target, e.g. a task agent
+  /// checking whether it already requested focus time for its task.
+  ///
+  /// Uses `attention_claim_index(target_kind, target_id, status, ...)`; it does
+  /// not scan `agent_entities` or deserialize source rows to discover matches.
+  Future<List<AttentionRequestEntity>> getAttentionClaimsForTarget({
+    required String targetKind,
+    required String targetId,
+    Set<AttentionClaimStatus> statuses = const {
+      AttentionClaimStatus.open,
+      AttentionClaimStatus.proposed,
+      AttentionClaimStatus.partiallySatisfied,
+      AttentionClaimStatus.deferred,
+    },
+    int limit = 50,
+  }) async {
+    if (targetKind.trim().isEmpty ||
+        targetId.trim().isEmpty ||
+        statuses.isEmpty ||
+        limit <= 0) {
+      return const [];
+    }
+
+    final orderedStatuses = statuses.toList(growable: false)
+      ..sort((a, b) => a.name.compareTo(b.name));
+    final statusPlaceholders = List.filled(
+      orderedStatuses.length,
+      '?',
+    ).join(', ');
+    final rows = await _db
+        .customSelect(
+          '''
+            SELECT request_id
+            FROM attention_claim_index
+            WHERE target_kind = ?
+              AND target_id = ?
+              AND status IN ($statusPlaceholders)
+              AND deleted_at IS NULL
+            ORDER BY next_review_at IS NULL,
+              next_review_at ASC,
+              deadline IS NULL,
+              deadline ASC,
+              updated_at DESC,
+              request_id ASC
+            LIMIT ?
+          ''',
+          variables: [
+            Variable.withString(targetKind),
+            Variable.withString(targetId),
+            ...orderedStatuses.map(
+              (status) => Variable.withString(status.name),
+            ),
+            Variable.withInt(limit),
+          ],
+          readsFrom: {_db.attentionClaimIndex},
+        )
+        .get();
+
+    final requestIds = [
+      for (final row in rows) row.read<String>('request_id'),
+    ];
+    final entitiesById = await getEntitiesByIds(requestIds);
+    return [
+      for (final requestId in requestIds)
+        if (entitiesById[requestId] case final AttentionRequestEntity request)
+          request,
+    ];
+  }
+
+  /// Fetch the claim and standing-agreement inputs a day planner needs for a
+  /// window. Both reads use projection indexes rather than source-table scans.
+  Future<AttentionPlanningInputs> getAttentionPlanningInputsForWindow({
+    required DateTime start,
+    required DateTime end,
+    Set<AttentionClaimStatus> claimStatuses = const {
+      AttentionClaimStatus.open,
+      AttentionClaimStatus.proposed,
+      AttentionClaimStatus.partiallySatisfied,
+      AttentionClaimStatus.deferred,
+    },
+    Set<StandingAgreementStatus> agreementStatuses = const {
+      StandingAgreementStatus.active,
+    },
+    Set<StandingAgreementScope>? agreementScopes,
+    int claimLimit = 200,
+    int agreementLimit = 200,
+  }) async {
+    final (claims, standingAgreements) = await (
+      getAttentionClaimsForWindow(
+        start: start,
+        end: end,
+        statuses: claimStatuses,
+        limit: claimLimit,
+      ),
+      getStandingAgreementsForWindow(
+        start: start,
+        end: end,
+        statuses: agreementStatuses,
+        scopes: agreementScopes,
+        limit: agreementLimit,
+      ),
+    ).wait;
+    return AttentionPlanningInputs(
+      claims: claims,
+      standingAgreements: standingAgreements,
+    );
   }
 
   /// Fetch standing agreements visible to a planning window via the local

@@ -409,6 +409,7 @@ class TaskAgentWorkflow {
       _log('task not found in journal — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'Task not found');
     }
+    final taskAttentionClaims = await _attentionClaimsForTask(taskId);
 
     // 5. Assemble conversation context (the ledger was fetched before
     // compaction, which consumes its resolved entries as decision events).
@@ -425,6 +426,7 @@ class TaskAgentWorkflow {
       triggerTokens: triggerTokens,
       taskId: taskId,
       ledger: ledger,
+      attentionClaims: taskAttentionClaims,
       timeService: getIt<TimeService>(),
       // Only attach the compacted log when we're actually using it (the inline
       // log was dropped); otherwise the full inline log already carries it.
@@ -542,6 +544,9 @@ class TaskAgentWorkflow {
         timeService: getIt<TimeService>(),
         taskAgentService: taskAgentService,
         projectRepository: projectRepository,
+        agentRepository: agentRepository,
+        syncService: syncService,
+        requestingAgentId: agentId,
       );
 
       final changeSetBuilder = ChangeSetBuilder(
@@ -1574,6 +1579,7 @@ to keep the user-facing suggestion list clean and trustworthy:
     required Set<String> triggerTokens,
     required String taskId,
     ProposalLedger ledger = const ProposalLedger.empty(),
+    List<AttentionRequestEntity> attentionClaims = const [],
     TimeService? timeService,
     String? compactedTaskLog,
   }) async {
@@ -1699,6 +1705,11 @@ to keep the user-facing suggestion list clean and trustworthy:
       );
     }
 
+    final attentionSection = _formatTaskAttentionRequests(attentionClaims);
+    if (attentionSection.isNotEmpty) {
+      buffer.write(attentionSection);
+    }
+
     if (journalObservations.isNotEmpty) {
       // Cap to most recent 20 to prevent unbounded context growth.
       // journalObservations is ordered newest-first from the DB query.
@@ -1778,6 +1789,62 @@ to keep the user-facing suggestion list clean and trustworthy:
     );
 
     return (text: buffer.toString(), logStart: logStart, logEnd: logEnd);
+  }
+
+  Future<List<AttentionRequestEntity>> _attentionClaimsForTask(
+    String taskId,
+  ) async {
+    try {
+      return await agentRepository.getAttentionClaimsForTarget(
+        targetKind: 'task',
+        targetId: taskId,
+        limit: 20,
+      );
+    } catch (e, s) {
+      _logError(
+        'failed to load task attention requests',
+        error: e,
+        stackTrace: s,
+      );
+      return const [];
+    }
+  }
+
+  String _formatTaskAttentionRequests(List<AttentionRequestEntity> claims) {
+    if (claims.isEmpty) return '';
+    final rows = [
+      for (final claim in claims)
+        {
+          'id': claim.id,
+          'title': claim.title,
+          'requestedMinutes': claim.requestedMinutes,
+          'impact': claim.impact,
+          'urgency': claim.urgency,
+          'energyFit': claim.energyFit.name,
+          'scopeKind': claim.scopeKind.name,
+          'earliestStart': claim.earliestStart?.toIso8601String(),
+          'latestEnd': claim.latestEnd?.toIso8601String(),
+          'deadline': claim.deadline?.toIso8601String(),
+          'nextReviewAt': claim.nextReviewAt?.toIso8601String(),
+          'rationale': claim.rationale,
+        },
+    ];
+    return (StringBuffer()
+          ..writeln('## Attention Requests For This Task')
+          ..writeln()
+          ..writeln(
+            'These active requests are already visible to the day planner. '
+            'Do not call `request_attention` again for an equivalent ask; '
+            'call it only when the task now needs a materially different '
+            'ask (for example amount, impact, urgency, energy fit, scope, '
+            'timing window, review time, or rationale).',
+          )
+          ..writeln()
+          ..writeln('```json')
+          ..writeln(const JsonEncoder.withIndent('  ').convert(rows))
+          ..writeln('```')
+          ..writeln())
+        .toString();
   }
 
   /// Formats the [ProposalLedger] into a single markdown section the agent
