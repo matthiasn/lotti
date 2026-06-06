@@ -190,4 +190,49 @@ void main() {
       tags: 'glados',
     );
   });
+
+  group('checklistItemsToEmojiList', () {
+    test('uses emoji checkboxes and preserves order', () {
+      final list = checklistItemsToEmojiList([
+        makeItem(id: '1', title: 'First', isChecked: false),
+        makeItem(id: '2', title: 'Second', isChecked: true),
+      ]);
+
+      expect(list, '⬜ First\n✅ Second');
+    });
+
+    Glados(any.checklistRows, ExploreConfig(numRuns: 160)).test(
+      'matches the generated emoji export model',
+      (rows) {
+        final items = <ChecklistItem?>[
+          for (final row in rows)
+            switch (row.kind) {
+              _GeneratedChecklistRowKind.nullRow => null,
+              _GeneratedChecklistRowKind.active => makeItem(
+                id: row.id,
+                title: row.rawTitle,
+                isChecked: row.checked,
+              ),
+              _GeneratedChecklistRowKind.deleted => makeItem(
+                id: row.id,
+                title: row.rawTitle,
+                isChecked: row.checked,
+                deletedAt: DateTime(2024),
+              ),
+            },
+        ];
+
+        // Null and deleted rows are excluded; titles share the Markdown
+        // path's sanitization; boxes map checked -> ✅, unchecked -> ⬜.
+        final expectedLines = [
+          for (final row in rows)
+            if (row.kind == _GeneratedChecklistRowKind.active)
+              '${row.checked ? '✅' : '⬜'} ${row.sanitizedTitle}',
+        ];
+
+        expect(checklistItemsToEmojiList(items), expectedLines.join('\n'));
+      },
+      tags: 'glados',
+    );
+  });
 }
