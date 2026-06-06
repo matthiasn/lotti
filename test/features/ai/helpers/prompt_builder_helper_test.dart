@@ -1,12 +1,16 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
-import 'package:lotti/features/agents/model/agent_link.dart' as agent_link_model;
+import 'package:lotti/features/agents/model/agent_link.dart'
+    as agent_link_model;
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
@@ -33,8 +37,40 @@ class _EmptyAgentRepository extends Fake implements AgentRepository {
   Future<List<agent_link_model.AgentLink>> getLinksTo(
     String toId, {
     String? type,
-  }) async =>
-      [];
+  }) async => [];
+}
+
+/// File-level factory for the boilerplate-heavy [AiConfigPrompt] blocks.
+/// Only the parts that vary between tests are parameters; everything else
+/// is a fixed default.
+AiConfigPrompt _makePromptConfig({
+  String id = 'prompt',
+  String name = 'Test Prompt',
+  String systemMessage = 'System message',
+  String userMessage = 'User message',
+  String defaultModelId = 'model-1',
+  List<String> modelIds = const ['model-1'],
+  DateTime? createdAt,
+  bool useReasoning = false,
+  List<InputDataType> requiredInputData = const [],
+  AiResponseType aiResponseType = AiResponseType.audioTranscription,
+  String? preconfiguredPromptId,
+  bool trackPreconfigured = false,
+}) {
+  return AiConfigPrompt(
+    id: id,
+    name: name,
+    systemMessage: systemMessage,
+    userMessage: userMessage,
+    defaultModelId: defaultModelId,
+    modelIds: modelIds,
+    createdAt: createdAt ?? DateTime(2025),
+    useReasoning: useReasoning,
+    requiredInputData: requiredInputData,
+    aiResponseType: aiResponseType,
+    preconfiguredPromptId: preconfiguredPromptId,
+    trackPreconfigured: trackPreconfigured,
+  );
 }
 
 void main() {
@@ -87,15 +123,11 @@ void main() {
     group('getEffectiveMessage', () {
       test('should return base message when tracking is disabled', () {
         // Arrange
-        final promptConfig = AiConfigPrompt(
+        final promptConfig = _makePromptConfig(
           id: 'test-prompt',
-          name: 'Test Prompt',
           systemMessage: 'Custom system message',
           userMessage: 'Custom user message',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
           createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
           requiredInputData: [InputDataType.images],
           aiResponseType: AiResponseType.imageAnalysis,
           preconfiguredPromptId: 'image_analysis',
@@ -118,15 +150,11 @@ void main() {
 
       test('should return preconfigured message when tracking is enabled', () {
         // Arrange
-        final promptConfig = AiConfigPrompt(
+        final promptConfig = _makePromptConfig(
           id: 'test-prompt',
-          name: 'Test Prompt',
           systemMessage: 'Custom system message',
           userMessage: 'Custom user message',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
           createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
           requiredInputData: [InputDataType.task],
           aiResponseType: AiResponseType.imagePromptGeneration,
           trackPreconfigured: true,
@@ -151,15 +179,11 @@ void main() {
 
       test('should return base message when preconfiguredPromptId is null', () {
         // Arrange
-        final promptConfig = AiConfigPrompt(
+        final promptConfig = _makePromptConfig(
           id: 'test-prompt',
-          name: 'Test Prompt',
           systemMessage: 'Custom system message',
           userMessage: 'Custom user message',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
           createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
           requiredInputData: [InputDataType.task],
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
@@ -180,15 +204,11 @@ void main() {
         'should return base message when preconfigured prompt not found',
         () {
           // Arrange
-          final promptConfig = AiConfigPrompt(
+          final promptConfig = _makePromptConfig(
             id: 'test-prompt',
-            name: 'Test Prompt',
             systemMessage: 'Custom system message',
             userMessage: 'Custom user message',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 15),
-            useReasoning: false,
             requiredInputData: [InputDataType.task],
             // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
@@ -236,15 +256,11 @@ void main() {
             entryText: const EntryText(plainText: 'Test task'),
           );
 
-          final promptConfig = AiConfigPrompt(
+          final promptConfig = _makePromptConfig(
             id: 'test-prompt',
-            name: 'Test Prompt',
             systemMessage: 'System',
             userMessage: 'Process this task: {{task}}',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 15),
-            useReasoning: false,
             requiredInputData: [InputDataType.task],
             // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
@@ -296,15 +312,13 @@ void main() {
             entryText: const EntryText(plainText: 'Test task'),
           );
 
-          final promptConfig = AiConfigPrompt(
+          final promptConfig = _makePromptConfig(
             id: 'test-prompt',
-            name: 'Test Prompt',
             systemMessage: 'System',
-            userMessage: 'Summarize this task', // No {{task}} placeholder
+            userMessage: 'Summarize this task',
+            // No {{task}} placeholder
             defaultModelId: 'model-1',
-            modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 15),
-            useReasoning: false,
             requiredInputData: [InputDataType.task],
             // ignore: deprecated_member_use_from_same_package
             aiResponseType: AiResponseType.taskSummary,
@@ -351,16 +365,12 @@ void main() {
           entryText: const EntryText(plainText: 'Test task'),
         );
 
-        final promptConfig = AiConfigPrompt(
+        final promptConfig = _makePromptConfig(
           id: 'test-prompt',
-          name: 'Test Prompt',
           systemMessage: 'System',
           userMessage: 'Simple prompt',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
           createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
-          requiredInputData: [], // No task data required
+          // No task data required
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -405,15 +415,11 @@ void main() {
           entryText: const EntryText(plainText: 'Test task'),
         );
 
-        final promptConfig = AiConfigPrompt(
+        final promptConfig = _makePromptConfig(
           id: 'test-prompt',
-          name: 'Test Prompt',
           systemMessage: 'System',
           userMessage: 'Process this task: {{task}}',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
           createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
           requiredInputData: [InputDataType.task],
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
@@ -461,15 +467,11 @@ void main() {
             entryText: const EntryText(plainText: 'Test task'),
           );
 
-          final promptConfig = AiConfigPrompt(
+          final promptConfig = _makePromptConfig(
             id: 'test-prompt',
-            name: 'Test Prompt',
             systemMessage: 'Custom system',
             userMessage: 'Custom user message',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
             createdAt: testDate,
-            useReasoning: false,
             requiredInputData: [InputDataType.task],
             aiResponseType: AiResponseType.imagePromptGeneration,
             trackPreconfigured: true,
@@ -525,15 +527,11 @@ void main() {
           entryText: const EntryText(plainText: 'Test task'),
         );
 
-        final promptConfig = AiConfigPrompt(
+        final promptConfig = _makePromptConfig(
           id: 'test-prompt',
-          name: 'Test Prompt',
           systemMessage: 'System',
           userMessage: 'Task: {{task}}\nLinked: {{linked_tasks}}',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
           createdAt: testDate,
-          useReasoning: false,
           requiredInputData: [InputDataType.task],
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
@@ -580,15 +578,11 @@ void main() {
             entryText: const EntryText(plainText: 'Test image'),
           );
 
-          final promptConfig = AiConfigPrompt(
+          final promptConfig = _makePromptConfig(
             id: 'test-prompt',
-            name: 'Test Prompt',
             systemMessage: 'System',
             userMessage: 'Analyze this image',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 15),
-            useReasoning: false,
             requiredInputData: [InputDataType.images],
             aiResponseType: AiResponseType.imageAnalysis,
           );
@@ -635,16 +629,13 @@ void main() {
           entryText: const EntryText(plainText: 'Test task'),
         );
 
-        final promptConfig = AiConfigPrompt(
+        final promptConfig = _makePromptConfig(
           id: 'test-prompt',
-          name: 'Test Prompt',
           systemMessage: 'System',
-          userMessage: '', // Empty message
+          userMessage: '',
+          // Empty message
           defaultModelId: 'model-1',
-          modelIds: ['model-1'],
           createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
-          requiredInputData: [],
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -684,15 +675,11 @@ void main() {
           entryText: const EntryText(plainText: 'Test task'),
         );
 
-        final promptConfig = AiConfigPrompt(
+        final promptConfig = _makePromptConfig(
           id: 'test-prompt',
-          name: 'Test Prompt',
           systemMessage: 'System',
           userMessage: 'First: {{task}}, Second: {{task}}',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
           createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
           requiredInputData: [InputDataType.task],
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
@@ -762,15 +749,11 @@ void main() {
             entryText: const EntryText(plainText: 'Test task'),
           );
 
-          final promptConfig = AiConfigPrompt(
+          final promptConfig = _makePromptConfig(
             id: 'test-prompt',
-            name: 'Test Prompt',
             systemMessage: 'System',
             userMessage: 'Analyze this image: {{task}}',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
             createdAt: DateTime(2024, 3, 15),
-            useReasoning: false,
             requiredInputData: [InputDataType.images],
             aiResponseType: AiResponseType.imageAnalysis,
           );
@@ -859,15 +842,12 @@ void main() {
             ),
           );
 
-          final promptConfig = AiConfigPrompt(
+          final promptConfig = _makePromptConfig(
             id: 'test-prompt',
             name: 'Image Analysis with Context',
             systemMessage: 'System',
             userMessage: 'Analyze image with context: {{linked_tasks}}',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
             createdAt: DateTime(2025, 1, 1),
-            useReasoning: false,
             requiredInputData: [InputDataType.images],
             aiResponseType: AiResponseType.imageAnalysis,
           );
@@ -958,17 +938,13 @@ void main() {
             ),
           );
 
-          final promptConfig = AiConfigPrompt(
+          final promptConfig = _makePromptConfig(
             id: 'test-prompt',
             name: 'Audio Transcription with Context',
             systemMessage: 'System',
             userMessage: 'Transcribe audio with context: {{linked_tasks}}',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
             createdAt: DateTime(2025, 1, 1),
-            useReasoning: false,
             requiredInputData: [InputDataType.audioFiles],
-            aiResponseType: AiResponseType.audioTranscription,
           );
 
           // Create a builder with journal repository
@@ -1033,15 +1009,12 @@ void main() {
             ),
           );
 
-          final promptConfig = AiConfigPrompt(
+          final promptConfig = _makePromptConfig(
             id: 'test-prompt',
             name: 'Image Analysis',
             systemMessage: 'System',
             userMessage: 'Context: {{linked_tasks}}',
-            defaultModelId: 'model-1',
-            modelIds: ['model-1'],
             createdAt: DateTime(2025, 1, 1),
-            useReasoning: false,
             requiredInputData: [InputDataType.images],
             aiResponseType: AiResponseType.imageAnalysis,
           );
@@ -1107,15 +1080,11 @@ void main() {
           ),
         );
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Image Analysis',
           systemMessage: 'System',
           userMessage: '{{languageCode}}\n\nAnalyze the image.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
           createdAt: DateTime(2025, 1, 1),
-          useReasoning: false,
           requiredInputData: const [InputDataType.images],
           aiResponseType: AiResponseType.imageAnalysis,
         );
@@ -1179,15 +1148,11 @@ void main() {
           () => mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'),
         ).thenAnswer((_) async => [linkedTask]);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Image Analysis',
           systemMessage: 'System',
           userMessage: '{{languageCode}}\n\nAnalyze the image.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
           createdAt: DateTime(2025, 1, 1),
-          useReasoning: false,
           requiredInputData: const [InputDataType.images],
           aiResponseType: AiResponseType.imageAnalysis,
         );
@@ -1226,15 +1191,11 @@ void main() {
             ),
           );
 
-          final config = AiConfigPrompt(
-            id: 'prompt',
+          final config = _makePromptConfig(
             name: 'Image Analysis',
             systemMessage: 'System',
             userMessage: '{{languageCode}}\n\nAnalyze the image.',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
             createdAt: DateTime(2025, 1, 1),
-            useReasoning: false,
             requiredInputData: const [InputDataType.images],
             aiResponseType: AiResponseType.imageAnalysis,
           );
@@ -1280,15 +1241,11 @@ void main() {
                 mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'),
           ).thenAnswer((_) async => []);
 
-          final config = AiConfigPrompt(
-            id: 'prompt',
+          final config = _makePromptConfig(
             name: 'Image Analysis',
             systemMessage: 'System',
             userMessage: '{{languageCode}}\n\nAnalyze the image.',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
             createdAt: DateTime(2025, 1, 1),
-            useReasoning: false,
             requiredInputData: const [InputDataType.images],
             aiResponseType: AiResponseType.imageAnalysis,
           );
@@ -1333,15 +1290,11 @@ void main() {
           () => mockJournalRepository.getLinkedEntities(linkedTo: 'image-123'),
         ).thenThrow(Exception('Database error'));
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Image Analysis',
           systemMessage: 'System',
           userMessage: '{{languageCode}}\n\nAnalyze the image.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
           createdAt: DateTime(2025, 1, 1),
-          useReasoning: false,
           requiredInputData: const [InputDataType.images],
           aiResponseType: AiResponseType.imageAnalysis,
         );
@@ -1364,17 +1317,13 @@ void main() {
 
       // Helper that builds the standard audioTranscription promptConfig with
       // the {{correction_examples}} placeholder in the user message.
-      AiConfigPrompt correctionExamplesConfig() => AiConfigPrompt(
+      AiConfigPrompt correctionExamplesConfig() => _makePromptConfig(
         id: 'transcription-prompt',
         name: 'Transcription',
         systemMessage: 'System',
         userMessage: 'Transcribe: {{correction_examples}}',
-        defaultModelId: 'model-1',
-        modelIds: const ['model-1'],
         createdAt: DateTime(2024, 3, 15),
-        useReasoning: false,
         requiredInputData: const [InputDataType.audioFiles],
-        aiResponseType: AiResponseType.audioTranscription,
       );
 
       // Helper that builds a Task with the given categoryId set.
@@ -1829,17 +1778,13 @@ void main() {
             // No entryText so _resolveEntryText falls through to reduce path
           );
 
-          final config = AiConfigPrompt(
+          final config = _makePromptConfig(
             id: 'audio-prompt',
             name: 'Audio Prompt',
             systemMessage: 'System',
             userMessage: 'Content: {{audioTranscript}}',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
             createdAt: DateTime(2024, 3, 15),
-            useReasoning: false,
             requiredInputData: const [InputDataType.audioFiles],
-            aiResponseType: AiResponseType.audioTranscription,
           );
 
           final result = await promptBuilder.buildPromptWithData(
@@ -1883,17 +1828,13 @@ void main() {
             ),
           );
 
-          final config = AiConfigPrompt(
+          final config = _makePromptConfig(
             id: 'audio-prompt',
             name: 'Audio Prompt',
             systemMessage: 'System',
             userMessage: 'Content: {{audioTranscript}}',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
             createdAt: DateTime(2024, 3, 15),
-            useReasoning: false,
             requiredInputData: const [InputDataType.audioFiles],
-            aiResponseType: AiResponseType.audioTranscription,
           );
 
           final result = await promptBuilder.buildPromptWithData(
@@ -1914,17 +1855,13 @@ void main() {
       // catch in buildPromptWithData. _findLinkedTask (called before the inner
       // try) is the throwing point: it awaits journalRepository.getLinkedEntities.
 
-      AiConfigPrompt correctionExamplesConfig() => AiConfigPrompt(
+      AiConfigPrompt correctionExamplesConfig() => _makePromptConfig(
         id: 'transcription-prompt',
         name: 'Transcription',
         systemMessage: 'System',
         userMessage: 'Transcribe: {{correction_examples}}',
-        defaultModelId: 'model-1',
-        modelIds: const ['model-1'],
         createdAt: DateTime(2024, 3, 15),
-        useReasoning: false,
         requiredInputData: const [InputDataType.audioFiles],
-        aiResponseType: AiResponseType.audioTranscription,
       );
 
       JournalAudio audioEntity(String id) => JournalAudio(
@@ -2162,17 +2099,19 @@ void main() {
       ),
     );
 
-    setUp(() {
+    setUp(() async {
       mockAiInputRepositoryAT = MockAiInputRepository();
       mockJournalRepositoryAT = MockJournalRepository();
       mockLabelsRepositoryAT = MockLabelsRepository();
       mockEntitiesCacheServiceAT = MockEntitiesCacheService();
 
-      // Register mock EntitiesCacheService
-      if (getIt.isRegistered<EntitiesCacheService>()) {
-        getIt.unregister<EntitiesCacheService>();
-      }
-      getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheServiceAT);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<EntitiesCacheService>(
+            mockEntitiesCacheServiceAT,
+          );
+        },
+      );
 
       // Default stubs
       when(
@@ -2197,22 +2136,13 @@ void main() {
       );
     });
 
-    tearDown(() async {
-      if (getIt.isRegistered<EntitiesCacheService>()) {
-        getIt.unregister<EntitiesCacheService>();
-      }
-    });
+    tearDown(tearDownTestGetIt);
 
     group('buildPromptWithData - {{audioTranscript}}', () {
       test('injects original transcript for audio entry', () async {
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Generate Prompt',
-          systemMessage: 'System message',
           userMessage: 'Audio: {{audioTranscript}}\n\nGenerate a prompt.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
           useReasoning: true,
           requiredInputData: const [InputDataType.audioFiles],
           aiResponseType: AiResponseType.promptGeneration,
@@ -2232,14 +2162,9 @@ void main() {
       test(
         'uses edited text over original transcript when available',
         () async {
-          final config = AiConfigPrompt(
-            id: 'prompt',
+          final config = _makePromptConfig(
             name: 'Generate Prompt',
-            systemMessage: 'System message',
             userMessage: 'Audio: {{audioTranscript}}',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
-            createdAt: DateTime(2025),
             useReasoning: true,
             requiredInputData: const [InputDataType.audioFiles],
             aiResponseType: AiResponseType.promptGeneration,
@@ -2258,14 +2183,9 @@ void main() {
       );
 
       test('returns fallback message when no transcript available', () async {
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Generate Prompt',
-          systemMessage: 'System message',
           userMessage: 'Audio: {{audioTranscript}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
           useReasoning: true,
           requiredInputData: const [InputDataType.audioFiles],
           aiResponseType: AiResponseType.promptGeneration,
@@ -2281,14 +2201,9 @@ void main() {
       });
 
       test('returns error message for non-audio entity', () async {
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Generate Prompt',
-          systemMessage: 'System message',
           userMessage: 'Audio: {{audioTranscript}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
           useReasoning: true,
           requiredInputData: const [InputDataType.audioFiles],
           aiResponseType: AiResponseType.promptGeneration,
@@ -2307,14 +2222,9 @@ void main() {
       });
 
       test('returns error message for task entity', () async {
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Generate Prompt',
-          systemMessage: 'System message',
           userMessage: 'Audio: {{audioTranscript}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
           useReasoning: true,
           requiredInputData: const [InputDataType.audioFiles],
           aiResponseType: AiResponseType.promptGeneration,
@@ -2332,16 +2242,9 @@ void main() {
       test(
         'leaves prompt unchanged if audioTranscript placeholder not present',
         () async {
-          final config = AiConfigPrompt(
-            id: 'prompt',
+          final config = _makePromptConfig(
             name: 'Image Analysis',
-            systemMessage: 'System message',
             userMessage: 'Analyze this image.',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
-            createdAt: DateTime(2025),
-            useReasoning: false,
-            requiredInputData: const [],
             aiResponseType: AiResponseType.imageAnalysis,
           );
 
@@ -2461,17 +2364,19 @@ void main() {
       );
     }
 
-    setUp(() {
+    setUp(() async {
       mockAiInputRepositoryCTS = MockAiInputRepository();
       mockJournalRepositoryCTS = MockJournalRepository();
       mockLabelsRepositoryCTS = MockLabelsRepository();
       mockEntitiesCacheServiceCTS = MockEntitiesCacheService();
 
-      // Register mock EntitiesCacheService
-      if (getIt.isRegistered<EntitiesCacheService>()) {
-        getIt.unregister<EntitiesCacheService>();
-      }
-      getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheServiceCTS);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<EntitiesCacheService>(
+            mockEntitiesCacheServiceCTS,
+          );
+        },
+      );
 
       // Default stubs
       when(
@@ -2496,11 +2401,7 @@ void main() {
       );
     });
 
-    tearDown(() async {
-      if (getIt.isRegistered<EntitiesCacheService>()) {
-        getIt.unregister<EntitiesCacheService>();
-      }
-    });
+    tearDown(tearDownTestGetIt);
 
     group('buildPromptWithData - {{current_task_summary}}', () {
       test('injects latest task summary for task entity', () async {
@@ -2516,19 +2417,13 @@ void main() {
         );
 
         when(
-          () => mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'task-1'),
+          () =>
+              mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'task-1'),
         ).thenAnswer((_) async => [summary1, summary2]);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Generate Image',
-          systemMessage: 'System message',
           userMessage: 'Summary: {{current_task_summary}}\n\nGenerate image.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
           aiResponseType: AiResponseType.imageGeneration,
         );
 
@@ -2548,19 +2443,13 @@ void main() {
 
       test('returns fallback when no task summary exists', () async {
         when(
-          () => mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'task-1'),
+          () =>
+              mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'task-1'),
         ).thenAnswer((_) async => []);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Generate Image',
-          systemMessage: 'System message',
           userMessage: 'Summary: {{current_task_summary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
           aiResponseType: AiResponseType.imageGeneration,
         );
 
@@ -2584,23 +2473,19 @@ void main() {
 
           // Audio links TO task-1 (via getLinkedEntities)
           when(
-            () => mockJournalRepositoryCTS.getLinkedEntities(linkedTo: 'audio-1'),
+            () =>
+                mockJournalRepositoryCTS.getLinkedEntities(linkedTo: 'audio-1'),
           ).thenAnswer((_) async => [testTaskCTS]);
           // Task-1 has linked summaries
           when(
-            () => mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'task-1'),
+            () => mockJournalRepositoryCTS.getLinkedToEntities(
+              linkedTo: 'task-1',
+            ),
           ).thenAnswer((_) async => [summary]);
 
-          final config = AiConfigPrompt(
-            id: 'prompt',
+          final config = _makePromptConfig(
             name: 'Generate Image',
-            systemMessage: 'System message',
             userMessage: 'Summary: {{current_task_summary}}',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
-            createdAt: DateTime(2025),
-            useReasoning: false,
-            requiredInputData: const [],
             aiResponseType: AiResponseType.imageGeneration,
           );
 
@@ -2611,6 +2496,53 @@ void main() {
 
           expect(result, isNotNull);
           expect(result, contains('Task summary for linked task'));
+        },
+      );
+
+      test(
+        'falls back to getLinkedToEntities when getLinkedEntities has no task',
+        () async {
+          final summary = buildTaskSummary(
+            id: 'summary-1',
+            response: 'Summary via fallback direction',
+            dateFrom: DateTime(2025),
+          );
+
+          // Audio does not link TO any task (preferred direction empty)...
+          when(
+            () =>
+                mockJournalRepositoryCTS.getLinkedEntities(linkedTo: 'audio-1'),
+          ).thenAnswer((_) async => []);
+          // ...but the task links TO the audio (task → entry fallback).
+          when(
+            () => mockJournalRepositoryCTS.getLinkedToEntities(
+              linkedTo: 'audio-1',
+            ),
+          ).thenAnswer((_) async => [testTaskCTS]);
+          when(
+            () => mockJournalRepositoryCTS.getLinkedToEntities(
+              linkedTo: 'task-1',
+            ),
+          ).thenAnswer((_) async => [summary]);
+
+          final config = _makePromptConfig(
+            name: 'Generate Image',
+            userMessage: 'Summary: {{current_task_summary}}',
+            aiResponseType: AiResponseType.imageGeneration,
+          );
+
+          final result = await promptBuilderCTS.buildPromptWithData(
+            promptConfig: config,
+            entity: testAudioCTS,
+          );
+
+          expect(result, isNotNull);
+          expect(result, contains('Summary via fallback direction'));
+          verify(
+            () => mockJournalRepositoryCTS.getLinkedToEntities(
+              linkedTo: 'audio-1',
+            ),
+          ).called(1);
         },
       );
 
@@ -2625,16 +2557,9 @@ void main() {
               mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'audio-1'),
         ).thenAnswer((_) async => []);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Generate Image',
-          systemMessage: 'System message',
           userMessage: 'Summary: {{current_task_summary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
           aiResponseType: AiResponseType.imageGeneration,
         );
 
@@ -2658,23 +2583,19 @@ void main() {
 
           // Image links TO task-1 (via getLinkedEntities)
           when(
-            () => mockJournalRepositoryCTS.getLinkedEntities(linkedTo: 'image-1'),
+            () =>
+                mockJournalRepositoryCTS.getLinkedEntities(linkedTo: 'image-1'),
           ).thenAnswer((_) async => [testTaskCTS]);
           // Task-1 has linked summaries
           when(
-            () => mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'task-1'),
+            () => mockJournalRepositoryCTS.getLinkedToEntities(
+              linkedTo: 'task-1',
+            ),
           ).thenAnswer((_) async => [summary]);
 
-          final config = AiConfigPrompt(
-            id: 'prompt',
+          final config = _makePromptConfig(
             name: 'Generate Image',
-            systemMessage: 'System message',
             userMessage: 'Summary: {{current_task_summary}}',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
-            createdAt: DateTime(2025),
-            useReasoning: false,
-            requiredInputData: const [],
             aiResponseType: AiResponseType.imageGeneration,
           );
 
@@ -2710,19 +2631,13 @@ void main() {
         );
 
         when(
-          () => mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'task-1'),
+          () =>
+              mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'task-1'),
         ).thenAnswer((_) async => [transcriptionResponse]);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Generate Image',
-          systemMessage: 'System message',
           userMessage: 'Summary: {{current_task_summary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
           aiResponseType: AiResponseType.imageGeneration,
         );
 
@@ -2755,21 +2670,15 @@ void main() {
 
         // Return in mixed order to test sorting
         when(
-          () => mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'task-1'),
+          () =>
+              mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'task-1'),
         ).thenAnswer(
           (_) async => [middleSummary, oldSummary, newestSummary],
         );
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Generate Image',
-          systemMessage: 'System message',
           userMessage: 'Summary: {{current_task_summary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
           aiResponseType: AiResponseType.imageGeneration,
         );
 
@@ -2785,16 +2694,9 @@ void main() {
       });
 
       test('leaves prompt unchanged if placeholder not present', () async {
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Simple Prompt',
-          systemMessage: 'System message',
           userMessage: 'Generate something without task summary.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
           aiResponseType: AiResponseType.imageGeneration,
         );
 
@@ -2815,19 +2717,13 @@ void main() {
 
       test('handles error gracefully and returns fallback', () async {
         when(
-          () => mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'task-1'),
+          () =>
+              mockJournalRepositoryCTS.getLinkedToEntities(linkedTo: 'task-1'),
         ).thenThrow(Exception('Database error'));
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Generate Image',
-          systemMessage: 'System message',
           userMessage: 'Summary: {{current_task_summary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
           aiResponseType: AiResponseType.imageGeneration,
         );
 
@@ -2921,17 +2817,19 @@ void main() {
       ),
     );
 
-    setUp(() {
+    setUp(() async {
       mockAiInputRepositorySD = MockAiInputRepository();
       mockJournalRepositorySD = MockJournalRepository();
       mockLabelsRepositorySD = MockLabelsRepository();
       mockEntitiesCacheServiceSD = MockEntitiesCacheService();
 
-      // Register mock EntitiesCacheService
-      if (getIt.isRegistered<EntitiesCacheService>()) {
-        getIt.unregister<EntitiesCacheService>();
-      }
-      getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheServiceSD);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<EntitiesCacheService>(
+            mockEntitiesCacheServiceSD,
+          );
+        },
+      );
 
       // Default stubs
       when(
@@ -2956,11 +2854,7 @@ void main() {
       );
     });
 
-    tearDown(() async {
-      if (getIt.isRegistered<EntitiesCacheService>()) {
-        getIt.unregister<EntitiesCacheService>();
-      }
-    });
+    tearDown(tearDownTestGetIt);
 
     group('buildSystemMessageWithData', () {
       // Note: {{speech_dictionary}} is intentionally NOT supported in system
@@ -2971,18 +2865,12 @@ void main() {
         'does not process speech_dictionary placeholder in system message',
         () async {
           // Speech dictionary is only supported in user messages for efficiency
-          final config = AiConfigPrompt(
-            id: 'prompt',
+          final config = _makePromptConfig(
             name: 'Audio Transcription',
             systemMessage:
                 'You are a transcription assistant.\n\n{{speech_dictionary}}',
             userMessage: 'Transcribe the audio.',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
-            createdAt: DateTime(2025),
-            useReasoning: false,
             requiredInputData: const [InputDataType.audioFiles],
-            aiResponseType: AiResponseType.audioTranscription,
           );
 
           final result = await promptBuilderSD.buildSystemMessageWithData(
@@ -3003,16 +2891,10 @@ void main() {
       );
 
       test('returns system message unchanged', () async {
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Simple Prompt',
           systemMessage: 'You are a helpful assistant.',
           userMessage: 'Do something.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -3024,6 +2906,31 @@ void main() {
 
         expect(result, equals('You are a helpful assistant.'));
       });
+
+      test('ignores the {{task}} placeholder and the entity', () async {
+        // buildSystemMessageWithData delegates to getEffectiveMessage and
+        // never resolves entity data, so {{task}} stays verbatim.
+        final config = _makePromptConfig(
+          name: 'Task Prompt',
+          systemMessage: 'Context: {{task}}',
+          userMessage: 'Summarize.',
+          requiredInputData: const [InputDataType.task],
+          // ignore: deprecated_member_use_from_same_package
+          aiResponseType: AiResponseType.taskSummary,
+        );
+
+        final result = await promptBuilderSD.buildSystemMessageWithData(
+          promptConfig: config,
+          entity: testTaskSD,
+        );
+
+        expect(result, equals('Context: {{task}}'));
+        verifyNever(
+          () => mockAiInputRepositorySD.buildTaskDetailsJson(
+            id: any<String>(named: 'id'),
+          ),
+        );
+      });
     });
 
     group('buildPromptWithData - speech_dictionary in user message', () {
@@ -3032,17 +2939,9 @@ void main() {
           () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
         ).thenReturn(testCategorySD);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Audio Transcription',
-          systemMessage: 'System message',
           userMessage: '{{speech_dictionary}}\n\nTranscribe this audio.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final result = await promptBuilderSD.buildPromptWithData(
@@ -3074,17 +2973,9 @@ void main() {
             () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
           ).thenReturn(testCategorySD);
 
-          final config = AiConfigPrompt(
-            id: 'prompt',
+          final config = _makePromptConfig(
             name: 'Audio Transcription',
-            systemMessage: 'System message',
             userMessage: '{{speech_dictionary}}\n\nTranscribe this audio.',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
-            createdAt: DateTime(2025),
-            useReasoning: false,
-            requiredInputData: const [],
-            aiResponseType: AiResponseType.audioTranscription,
           );
 
           final result = await promptBuilderSD.buildPromptWithData(
@@ -3112,16 +3003,9 @@ void main() {
             () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
           ).thenReturn(testCategorySD);
 
-          final config = AiConfigPrompt(
-            id: 'prompt',
+          final config = _makePromptConfig(
             name: 'Image Analysis',
-            systemMessage: 'System message',
             userMessage: '{{speech_dictionary}}\n\nAnalyze this image.',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
-            createdAt: DateTime(2025),
-            useReasoning: false,
-            requiredInputData: const [],
             aiResponseType: AiResponseType.imageAnalysis,
           );
 
@@ -3144,17 +3028,9 @@ void main() {
           () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
         ).thenThrow(Exception('Cache service error'));
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Audio Transcription',
-          systemMessage: 'System message',
           userMessage: '{{speech_dictionary}}\n\nTranscribe.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final result = await promptBuilderSD.buildPromptWithData(
@@ -3174,17 +3050,9 @@ void main() {
           ),
         ).thenAnswer((_) async => []);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Audio Transcription',
-          systemMessage: 'System message',
           userMessage: '{{speech_dictionary}}\n\nTranscribe this audio.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final result = await promptBuilderSD.buildPromptWithData(
@@ -3209,17 +3077,9 @@ void main() {
           ),
         );
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Audio Transcription',
-          systemMessage: 'System message',
           userMessage: '{{speech_dictionary}}\n\nTranscribe.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final result = await promptBuilderSD.buildPromptWithData(
@@ -3238,17 +3098,9 @@ void main() {
           () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
         ).thenReturn(null);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Audio Transcription',
-          systemMessage: 'System message',
           userMessage: '{{speech_dictionary}}\n\nTranscribe.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final result = await promptBuilderSD.buildPromptWithData(
@@ -3289,17 +3141,10 @@ void main() {
           () => mockEntitiesCacheServiceSD.getCategoryById('category-many'),
         ).thenReturn(categoryWithManyTerms);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Audio Transcription',
           systemMessage: 'You are a transcription assistant.',
           userMessage: '{{speech_dictionary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final result = await promptBuilderSD.buildPromptWithData(
@@ -3342,17 +3187,10 @@ void main() {
           () => mockEntitiesCacheServiceSD.getCategoryById('category-one'),
         ).thenReturn(categoryWithOneTerm);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Audio Transcription',
           systemMessage: 'You are a transcription assistant.',
           userMessage: '{{speech_dictionary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final result = await promptBuilderSD.buildPromptWithData(
@@ -3385,17 +3223,10 @@ void main() {
           () => mockEntitiesCacheServiceSD.getCategoryById('category-empty'),
         ).thenReturn(categoryWithEmptyList);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Audio Transcription',
           systemMessage: 'You are a transcription assistant.',
           userMessage: '{{speech_dictionary}}\n\nTranscribe.',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final result = await promptBuilderSD.buildPromptWithData(
@@ -3418,17 +3249,10 @@ void main() {
             getIt.unregister<EntitiesCacheService>();
           }
 
-          final config = AiConfigPrompt(
-            id: 'prompt',
+          final config = _makePromptConfig(
             name: 'Audio Transcription',
             systemMessage: 'You are a transcription assistant.',
             userMessage: '{{speech_dictionary}}\n\nTranscribe.',
-            defaultModelId: 'model-1',
-            modelIds: const ['model-1'],
-            createdAt: DateTime(2025),
-            useReasoning: false,
-            requiredInputData: const [],
-            aiResponseType: AiResponseType.audioTranscription,
           );
 
           final result = await promptBuilderSD.buildPromptWithData(
@@ -3460,17 +3284,10 @@ void main() {
           () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
         ).thenReturn(categoryWithQuotes);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Audio Transcription',
           systemMessage: 'You are a transcription assistant.',
           userMessage: '{{speech_dictionary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final result = await promptBuilderSD.buildPromptWithData(
@@ -3500,17 +3317,10 @@ void main() {
           () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
         ).thenReturn(categoryWithBackslash);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Audio Transcription',
           systemMessage: 'You are a transcription assistant.',
           userMessage: '{{speech_dictionary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final result = await promptBuilderSD.buildPromptWithData(
@@ -3539,17 +3349,10 @@ void main() {
           () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
         ).thenReturn(categoryWithNewline);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Audio Transcription',
           systemMessage: 'You are a transcription assistant.',
           userMessage: '{{speech_dictionary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final result = await promptBuilderSD.buildPromptWithData(
@@ -3568,17 +3371,10 @@ void main() {
           () => mockEntitiesCacheServiceSD.getCategoryById('category-1'),
         ).thenReturn(testCategorySD);
 
-        final config = AiConfigPrompt(
-          id: 'prompt',
+        final config = _makePromptConfig(
           name: 'Audio Transcription',
           systemMessage: 'You are a transcription assistant.',
           userMessage: '{{speech_dictionary}}',
-          defaultModelId: 'model-1',
-          modelIds: const ['model-1'],
-          createdAt: DateTime(2025),
-          useReasoning: false,
-          requiredInputData: const [],
-          aiResponseType: AiResponseType.audioTranscription,
         );
 
         final result = await promptBuilderSD.buildPromptWithData(
@@ -3591,5 +3387,184 @@ void main() {
         expect(result, contains('macOS'));
       });
     });
+  });
+
+  group('placeholder escaping properties', () {
+    late MockEntitiesCacheService cacheService;
+    late PromptBuilderHelper builder;
+
+    setUp(() async {
+      cacheService = MockEntitiesCacheService();
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<EntitiesCacheService>(cacheService);
+        },
+      );
+      final aiInput = MockAiInputRepository();
+      when(
+        () => aiInput.buildTaskDetailsJson(id: any<String>(named: 'id')),
+      ).thenAnswer((_) async => null);
+      builder = PromptBuilderHelper(
+        aiInputRepository: aiInput,
+        journalRepository: MockJournalRepository(),
+        taskSummaryResolver: MockTaskSummaryResolver(),
+      );
+    });
+
+    tearDown(tearDownTestGetIt);
+
+    Task taskWithCategory(String categoryId) => Task(
+      data: TaskData(
+        title: 'Escaping Task',
+        checklistIds: const [],
+        status: TaskStatus.open(
+          id: 'status',
+          createdAt: DateTime(2025),
+          utcOffset: 0,
+        ),
+        statusHistory: const [],
+        dateFrom: DateTime(2025),
+        dateTo: DateTime(2025),
+      ),
+      meta: Metadata(
+        id: 'task-escaping',
+        createdAt: DateTime(2025),
+        dateFrom: DateTime(2025),
+        dateTo: DateTime(2025),
+        updatedAt: DateTime(2025),
+        categoryId: categoryId,
+      ),
+    );
+
+    /// Deterministic string mixing quotes, backslashes, and newlines.
+    String nastyString(int seed) {
+      const fragments = [
+        'plain',
+        '"',
+        r'\',
+        '\n',
+        'mixed "x"',
+        r'pa\th',
+        'multi\nline',
+        'tail',
+      ];
+      final length = (seed % 3) + 1;
+      final buffer = StringBuffer();
+      var s = seed;
+      for (var i = 0; i < length; i++) {
+        buffer.write(fragments[s % fragments.length]);
+        s = s ~/ fragments.length + 17 * i + 1;
+      }
+      return buffer.toString();
+    }
+
+    glados.Glados<List<int>>(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        6,
+        glados.IntAnys(glados.any).intInRange(0, 1 << 16),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'speech dictionary terms survive escaping as parseable JSON',
+      (seeds) async {
+        final terms = [for (final s in seeds) nastyString(s)];
+        when(() => cacheService.getCategoryById('cat-esc')).thenReturn(
+          CategoryTestUtils.createTestCategory(
+            id: 'cat-esc',
+            name: 'Escaping',
+            speechDictionary: terms,
+          ),
+        );
+
+        final result = await builder.buildPromptWithData(
+          promptConfig: _makePromptConfig(
+            userMessage: '{{speech_dictionary}}\n\nTranscribe.',
+          ),
+          entity: taskWithCategory('cat-esc'),
+        );
+
+        // The injected list must be a single well-formed JSON array that
+        // round-trips back to the exact input terms.
+        final match = RegExp(
+          r'Required spellings: (\[.*\])',
+        ).firstMatch(result!);
+        expect(match, isNotNull, reason: 'terms: $terms');
+        final decoded = jsonDecode(match!.group(1)!) as List<dynamic>;
+        expect(decoded, terms);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<List<int>>(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        5,
+        glados.IntAnys(glados.any).intInRange(0, 1 << 16),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'correction examples keep the line shape with quotes escaped',
+      (seeds) async {
+        // Correction-example escaping only handles double quotes, so the
+        // generated before/after strings stay free of backslashes/newlines.
+        String quoted(int seed) {
+          const fragments = ['fix', '"', 'a "b"', 'said "hi"', 'tail'];
+          return List.generate(
+            (seed % 2) + 1,
+            (i) => fragments[(seed >> (3 * i)) % fragments.length],
+          ).join(' ');
+        }
+
+        final examples = [
+          for (final (i, s) in seeds.indexed)
+            ChecklistCorrectionExample(
+              before: quoted(s),
+              after: quoted(s >> 4),
+              capturedAt: DateTime(2024, 1, 1 + i),
+            ),
+        ];
+        when(() => cacheService.getCategoryById('cat-esc')).thenReturn(
+          CategoryTestUtils.createTestCategory(
+            id: 'cat-esc',
+            name: 'Escaping',
+            correctionExamples: examples,
+          ),
+        );
+
+        final result = await builder.buildPromptWithData(
+          promptConfig: _makePromptConfig(
+            userMessage: 'Transcribe: {{correction_examples}}',
+            requiredInputData: const [InputDataType.audioFiles],
+          ),
+          entity: taskWithCategory('cat-esc'),
+        );
+
+        // Every injected example line must keep the "- "before" → "after""
+        // shape, and unescaping the quotes must recover the original pair.
+        final lines = result!
+            .split('\n')
+            .where((l) => l.startsWith('- "'))
+            .toList();
+        expect(lines, hasLength(examples.length));
+        final lineShape = RegExp(r'^- "(.*)" → "(.*)"$');
+        final recovered = <(String, String)>[
+          for (final line in lines)
+            () {
+              final m = lineShape.firstMatch(line);
+              expect(m, isNotNull, reason: line);
+              return (
+                m!.group(1)!.replaceAll(r'\"', '"'),
+                m.group(2)!.replaceAll(r'\"', '"'),
+              );
+            }(),
+        ];
+        expect(
+          recovered.toSet(),
+          {for (final e in examples) (e.before, e.after)},
+        );
+      },
+      tags: 'glados',
+    );
   });
 }
