@@ -112,26 +112,4 @@ void main() {
       expect(profile.displayName, 'My Studio Mac');
     });
   });
-
-  group('defaultSyncNodeCapabilityProbe (production entry)', () {
-    test(
-      'returns a SyncNodeProfile with the host id and a non-null platform — '
-      'exercising the production wrapper that calls the real Ollama probe',
-      () async {
-        // The wrapper uses the live Ollama probe (HTTP to 127.0.0.1:11434).
-        // We can't control that, but we can assert the wrapper produces a
-        // well-shaped profile regardless of the probe outcome.
-        final profile = await defaultSyncNodeCapabilityProbe(
-          hostId: 'h-prod',
-          now: now,
-          displayName: 'Probe Test',
-        );
-
-        expect(profile.hostId, 'h-prod');
-        expect(profile.displayName, 'Probe Test');
-        // Capability set is platform-dependent but must be a list.
-        expect(profile.capabilities, isA<List<NodeCapability>>());
-      },
-    );
-  });
 }

@@ -22,7 +22,7 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `test/features/sync/services/synced_audio_inference_dispatcher_test.dart` is **1011 lines**, exceeding the 1000-line limit. Split into two files along the natural seam between example-based and Glados tests:
+- [x] **[HIGH]** `test/features/sync/services/synced_audio_inference_dispatcher_test.dart` is **1011 lines**, exceeding the 1000-line limit. Split into two files along the natural seam between example-based and Glados tests: **RESOLVED (assessed, no change):** an example/Glados split would put two test files on one source file, which AGENTS.md forbids ("One test file per source file"). The Glados blocks are tag-filterable (`tags: 'glados'`) for runner-level isolation.
   - `synced_audio_inference_dispatcher_test.dart` — all named-guard `test()` blocks plus the `_Bench` class, `_makeAudio`, `_makeTask`, and `stubHappyPath` helper (approx. lines 1–823, ~700 lines)
   - `synced_audio_inference_dispatcher_generated_test.dart` — the Glados group plus the `_GeneratedDispatcherScenario`, `_VectorClockShape`, `_PinnedHostShape`, and `_AnyDispatcherScenario` types (approx. lines 824–1011, ~190 lines)
   Both split files import the shared `_Bench` class — move it to a private `_bench.dart` helper file, or keep it in the main file and import it in the generated test file.
@@ -31,7 +31,7 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `synced_audio_inference_listener_test.dart` line 12: defines `class _MockDispatcher extends Mock implements SyncedAudioInferenceDispatcher {}` inline. Per AGENTS.md, mocks must live in `test/mocks/mocks.dart`. Add `MockSyncedAudioInferenceDispatcher` there and replace the inline definition with an import.
+- [x] **[HIGH]** `synced_audio_inference_listener_test.dart` line 12: defines `class _MockDispatcher extends Mock implements SyncedAudioInferenceDispatcher {}` inline. Per AGENTS.md, mocks must live in `test/mocks/mocks.dart`. Add `MockSyncedAudioInferenceDispatcher` there and replace the inline definition with an import. **RESOLVED:** the inline `_MockDispatcher` is deleted; the file imports the central `MockSyncedAudioInferenceDispatcher` from `test/mocks/mocks.dart`.
 
 - [ ] **[MED]** `synced_audio_inference_dispatcher_test.dart` lines 654–688: the `'maybeDispatch swallows an outer throw'` test constructs a second `_Bench` instance (`bench2`) inline with a `MockDomainLogger`. This pattern appears again at lines 773–821. These two tests each repeat the full `MockDomainLogger` stub setup (~15 lines each). Extract a `_makeBenchWithLogger()` factory that returns a `({_Bench bench, MockDomainLogger logger})` record, reducing each test to setup + assertion only.
 
@@ -63,7 +63,7 @@
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `sync_node_capability_probe_test.dart` line 116: `defaultSyncNodeCapabilityProbe` makes a real HTTP call to Ollama. On CI machines without Ollama, this call will timeout (~1–5 seconds). Either skip the test or replace with the injectable `ollamaProbe` parameter — this is a 1–5 second per-run penalty in standard CI.
+- [x] **[HIGH]** `sync_node_capability_probe_test.dart` line 116: `defaultSyncNodeCapabilityProbe` makes a real HTTP call to Ollama. On CI machines without Ollama, this call will timeout (~1–5 seconds). Either skip the test or replace with the injectable `ollamaProbe` parameter — this is a 1–5 second per-run penalty in standard CI. **RESOLVED:** the production-wrapper test group is removed — it performed real HTTP to `127.0.0.1:11434`, making it nondeterministic and slow on CI. `defaultSyncNodeCapabilityProbe` is a one-line delegation to `makeDefaultSyncNodeCapabilityProbe()`, whose behavior (capability gating, display-name precedence, platform fields) is fully covered with the injectable stubbed `ollamaProbe`.
 
 - [ ] **[MED]** `synced_audio_inference_dispatcher_test.dart` Glados at line 824: `numRuns: 120` at ~8 mock-stub interactions per run = ~960 mock interactions. This is already in the CI Glados lane (correctly tagged `'glados'`), so it does not slow the standard lane. No change needed.
 

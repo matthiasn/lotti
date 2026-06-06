@@ -9,7 +9,7 @@ import 'package:lotti/features/sync/services/synced_audio_inference_listener.dar
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
-class _MockDispatcher extends Mock implements SyncedAudioInferenceDispatcher {}
+import '../../../mocks/mocks.dart';
 
 void main() {
   setUpAll(() {
@@ -17,12 +17,12 @@ void main() {
   });
 
   late UpdateNotifications notifications;
-  late _MockDispatcher dispatcher;
+  late MockSyncedAudioInferenceDispatcher dispatcher;
   late SyncedAudioInferenceListener listener;
 
   setUp(() {
     notifications = UpdateNotifications();
-    dispatcher = _MockDispatcher();
+    dispatcher = MockSyncedAudioInferenceDispatcher();
     when(() => dispatcher.maybeDispatch(any())).thenAnswer((_) async {});
     listener = SyncedAudioInferenceListener(
       updateNotifications: notifications,
@@ -154,7 +154,7 @@ void main() {
     () {
       fakeAsync((async) {
         final source = StreamController<Set<String>>.broadcast();
-        final orderedDispatcher = _MockDispatcher();
+        final orderedDispatcher = MockSyncedAudioInferenceDispatcher();
         final inFlight = <String>{};
         final concurrentCalls = <String>[];
         when(() => orderedDispatcher.maybeDispatch(any())).thenAnswer(
@@ -206,7 +206,7 @@ void main() {
       // UpdateNotifications (which doesn't expose addError).
       fakeAsync((async) {
         final errorSource = StreamController<Set<String>>.broadcast();
-        final errorDispatcher = _MockDispatcher();
+        final errorDispatcher = MockSyncedAudioInferenceDispatcher();
         when(() => errorDispatcher.maybeDispatch(any())).thenAnswer(
           (_) async {},
         );
