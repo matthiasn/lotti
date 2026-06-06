@@ -75,6 +75,45 @@ void main() {
       ).thenReturn(result);
     }
 
+    /// Verifies a single [mockOps.nearestNeighborSearch] call and returns
+    /// the captured arguments for assertion.
+    ({
+      int maxResults,
+      int? limit,
+      String? entityTypeFilter,
+      List<String>? categoryIds,
+    })
+    verifyNearestNeighborSearchArgs() {
+      final captured = verify(
+        () => mockOps.nearestNeighborSearch(
+          queryVector: any(named: 'queryVector'),
+          maxResults: captureAny(named: 'maxResults'),
+          limit: captureAny(named: 'limit'),
+          entityTypeFilter: captureAny(named: 'entityTypeFilter'),
+          categoryIds: captureAny(named: 'categoryIds'),
+        ),
+      ).captured;
+      return (
+        maxResults: captured[0] as int,
+        limit: captured[1] as int?,
+        entityTypeFilter: captured[2] as String?,
+        categoryIds: captured[3] as List<String>?,
+      );
+    }
+
+    /// Asserts that [mockOps.nearestNeighborSearch] was never called.
+    void verifyNeverNearestNeighborSearch() {
+      verifyNever(
+        () => mockOps.nearestNeighborSearch(
+          queryVector: any(named: 'queryVector'),
+          maxResults: any(named: 'maxResults'),
+          limit: any(named: 'limit'),
+          entityTypeFilter: any(named: 'entityTypeFilter'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      );
+    }
+
     /// Stubs [mockOps.runInWriteTransaction] to immediately invoke the action.
     void stubWriteTransaction() {
       when(() => mockOps.runInWriteTransaction(any())).thenAnswer(
@@ -298,15 +337,7 @@ void main() {
       test('returns empty list when k <= 0', () {
         final results = store.search(queryVector: validVector(), k: 0);
         expect(results, isEmpty);
-        verifyNever(
-          () => mockOps.nearestNeighborSearch(
-            queryVector: any(named: 'queryVector'),
-            maxResults: any(named: 'maxResults'),
-            limit: any(named: 'limit'),
-            entityTypeFilter: any(named: 'entityTypeFilter'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        );
+        verifyNeverNearestNeighborSearch();
       });
 
       test('returns empty list when k is negative', () {
@@ -331,19 +362,11 @@ void main() {
           entityTypeFilter: 'journalEntry',
         );
 
-        final captured = verify(
-          () => mockOps.nearestNeighborSearch(
-            queryVector: any(named: 'queryVector'),
-            maxResults: captureAny(named: 'maxResults'),
-            limit: captureAny(named: 'limit'),
-            entityTypeFilter: captureAny(named: 'entityTypeFilter'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).captured;
+        final args = verifyNearestNeighborSearchArgs();
 
-        expect(captured[0], 15); // maxResults = k * 3
-        expect(captured[1], 5); // limit = k
-        expect(captured[2], 'journalEntry');
+        expect(args.maxResults, 15); // maxResults = k * 3
+        expect(args.limit, 5); // limit = k
+        expect(args.entityTypeFilter, 'journalEntry');
       });
 
       test('uses k*3 maxResults when category filter is applied', () {
@@ -355,20 +378,12 @@ void main() {
           categoryIds: {'work', 'home'},
         );
 
-        final captured = verify(
-          () => mockOps.nearestNeighborSearch(
-            queryVector: any(named: 'queryVector'),
-            maxResults: captureAny(named: 'maxResults'),
-            limit: captureAny(named: 'limit'),
-            entityTypeFilter: any(named: 'entityTypeFilter'),
-            categoryIds: captureAny(named: 'categoryIds'),
-          ),
-        ).captured;
+        final args = verifyNearestNeighborSearchArgs();
 
-        expect(captured[0], 30); // maxResults = k * 3
-        expect(captured[1], 10); // limit = k (default)
+        expect(args.maxResults, 30); // maxResults = k * 3
+        expect(args.limit, 10); // limit = k (default)
         expect(
-          captured[2] as List<String>,
+          args.categoryIds,
           containsAll(<String>['work', 'home']),
         );
       });
@@ -382,18 +397,10 @@ void main() {
           categoryIds: {},
         );
 
-        final captured = verify(
-          () => mockOps.nearestNeighborSearch(
-            queryVector: any(named: 'queryVector'),
-            maxResults: captureAny(named: 'maxResults'),
-            limit: any(named: 'limit'),
-            entityTypeFilter: any(named: 'entityTypeFilter'),
-            categoryIds: captureAny(named: 'categoryIds'),
-          ),
-        ).captured;
+        final args = verifyNearestNeighborSearchArgs();
 
-        expect(captured[0], 10); // no filter, so maxResults = k
-        expect(captured[1], isNull); // categoryIds passed as null
+        expect(args.maxResults, 10); // no filter, so maxResults = k
+        expect(args.categoryIds, isNull); // categoryIds passed as null
       });
 
       test('returns empty list when ops returns no hits', () {

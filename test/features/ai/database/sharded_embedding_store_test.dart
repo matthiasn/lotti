@@ -25,23 +25,31 @@ extension _AnySanitize on glados.Any {
 
 void main() {
   group('ShardedEmbeddingStore', () {
+    late Directory rootTempDir;
     late Directory tempDir;
     late Map<String, MockObjectBoxOps> mockOpsMap;
     late ShardedEmbeddingStore store;
+    var testCaseIndex = 0;
 
     final testDate = DateTime.utc(2024, 3, 15);
 
-    setUpAll(registerAllFallbackValues);
-
-    setUp(() async {
-      tempDir = await Directory.systemTemp.createTemp('sharded_test_');
-      mockOpsMap = {};
+    // One real temp directory per suite run; each test works in its own
+    // subdirectory so filesystem I/O stays at a single createTemp call.
+    setUpAll(() async {
+      registerAllFallbackValues();
+      rootTempDir = await Directory.systemTemp.createTemp('sharded_test_');
     });
 
-    tearDown(() async {
-      if (tempDir.existsSync()) {
-        await tempDir.delete(recursive: true);
+    tearDownAll(() async {
+      if (rootTempDir.existsSync()) {
+        await rootTempDir.delete(recursive: true);
       }
+    });
+
+    setUp(() {
+      tempDir = Directory(p.join(rootTempDir.path, 'case_${testCaseIndex++}'))
+        ..createSync();
+      mockOpsMap = {};
     });
 
     Float32List validVector() => Float32List(kEmbeddingDimensions);
@@ -71,6 +79,23 @@ void main() {
       );
     }
 
+    /// Stubs the shard's nearestNeighborSearch (full named-arg match) to
+    /// return [hits].
+    void stubNearestNeighborSearch(
+      MockObjectBoxOps ops, [
+      List<EmbeddingSearchHit> hits = const [],
+    ]) {
+      when(
+        () => ops.nearestNeighborSearch(
+          queryVector: any(named: 'queryVector'),
+          maxResults: any(named: 'maxResults'),
+          limit: any(named: 'limit'),
+          entityTypeFilter: any(named: 'entityTypeFilter'),
+          categoryIds: any(named: 'categoryIds'),
+        ),
+      ).thenReturn(hits);
+    }
+
     MockObjectBoxOps createMockOps(String directory) {
       final mock = MockObjectBoxOps();
 
@@ -89,15 +114,7 @@ void main() {
         final action = invocation.positionalArguments[0] as void Function();
         action();
       });
-      when(
-        () => mock.nearestNeighborSearch(
-          queryVector: any(named: 'queryVector'),
-          maxResults: any(named: 'maxResults'),
-          limit: any(named: 'limit'),
-          entityTypeFilter: any(named: 'entityTypeFilter'),
-          categoryIds: any(named: 'categoryIds'),
-        ),
-      ).thenReturn([]);
+      stubNearestNeighborSearch(mock);
 
       mockOpsMap[directory] = mock;
       return mock;
@@ -151,15 +168,7 @@ void main() {
           final shardA = getShardOps('cat-a');
           final shardB = getShardOps('cat-b');
 
-          when(
-            () => shardA.nearestNeighborSearch(
-              queryVector: any(named: 'queryVector'),
-              maxResults: any(named: 'maxResults'),
-              limit: any(named: 'limit'),
-              entityTypeFilter: any(named: 'entityTypeFilter'),
-              categoryIds: any(named: 'categoryIds'),
-            ),
-          ).thenReturn([
+          stubNearestNeighborSearch(shardA, [
             EmbeddingSearchHit(
               object: makeEntity(entityId: 'a-1'),
               score: 0.3,
@@ -170,15 +179,7 @@ void main() {
             ),
           ]);
 
-          when(
-            () => shardB.nearestNeighborSearch(
-              queryVector: any(named: 'queryVector'),
-              maxResults: any(named: 'maxResults'),
-              limit: any(named: 'limit'),
-              entityTypeFilter: any(named: 'entityTypeFilter'),
-              categoryIds: any(named: 'categoryIds'),
-            ),
-          ).thenReturn([
+          stubNearestNeighborSearch(shardB, [
             EmbeddingSearchHit(
               object: makeEntity(entityId: 'b-1'),
               score: 0.2,
@@ -209,15 +210,7 @@ void main() {
         await openStoreWithShards(['cat-a']);
 
         final shardA = getShardOps('cat-a');
-        when(
-          () => shardA.nearestNeighborSearch(
-            queryVector: any(named: 'queryVector'),
-            maxResults: any(named: 'maxResults'),
-            limit: any(named: 'limit'),
-            entityTypeFilter: any(named: 'entityTypeFilter'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenReturn([
+        stubNearestNeighborSearch(shardA, [
           EmbeddingSearchHit(
             object: makeEntity(entityId: 'close'),
             score: 0.3,
@@ -317,15 +310,7 @@ void main() {
           final shardB = getShardOps('cat-b');
           final shardC = getShardOps('cat-c');
 
-          when(
-            () => shardA.nearestNeighborSearch(
-              queryVector: any(named: 'queryVector'),
-              maxResults: any(named: 'maxResults'),
-              limit: any(named: 'limit'),
-              entityTypeFilter: any(named: 'entityTypeFilter'),
-              categoryIds: any(named: 'categoryIds'),
-            ),
-          ).thenReturn([
+          stubNearestNeighborSearch(shardA, [
             EmbeddingSearchHit(
               object: makeEntity(entityId: 'a-1'),
               score: 0.1,
@@ -432,15 +417,7 @@ void main() {
         await openStoreWithShards(['cat-a'], distanceCutoff: 0.4);
 
         final shardA = getShardOps('cat-a');
-        when(
-          () => shardA.nearestNeighborSearch(
-            queryVector: any(named: 'queryVector'),
-            maxResults: any(named: 'maxResults'),
-            limit: any(named: 'limit'),
-            entityTypeFilter: any(named: 'entityTypeFilter'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenReturn([
+        stubNearestNeighborSearch(shardA, [
           EmbeddingSearchHit(
             object: makeEntity(entityId: 'close'),
             score: 0.3,
