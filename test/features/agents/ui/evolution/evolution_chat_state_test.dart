@@ -90,6 +90,17 @@ void main() {
     ).thenAnswer((_) async {});
   }
 
+  /// Stubs the failed session start: startSession resolves null and no
+  /// active session exists.
+  void stubNullStart() {
+    when(
+      () => mockWorkflow.startSession(templateId: kTestTemplateId),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
+    ).thenReturn(null);
+  }
+
   group('EvolutionChatState', () {
     group('build', () {
       test('starts session and returns data with opening message', () async {
@@ -114,13 +125,7 @@ void main() {
       });
 
       test('returns error state when startSession returns null', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => null);
-
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(null);
+        stubNullStart();
 
         container = createContainer();
         final data = await withClock(
@@ -151,7 +156,6 @@ void main() {
           ).thenReturn(
             makeSession(),
           );
-
           when(
             () => mockWorkflow.abandonSession(sessionId: 'session-1'),
           ).thenAnswer((_) async {});
@@ -215,13 +219,9 @@ void main() {
               },
             });
 
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Here is my proposal rationale.');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
+          stubSuccessfulStart(
+            response: 'Here is my proposal rationale.',
+            session: ActiveEvolutionSession(
               sessionId: 'session-1',
               templateId: kTestTemplateId,
               conversationId: 'conv-1',
@@ -241,9 +241,6 @@ void main() {
               rationale: 'Because this is better.',
             ),
           );
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
 
           container = createContainer();
           final data = await withClock(
@@ -356,12 +353,9 @@ void main() {
             eventHandler: GenUiEventHandler(processor: processor)..listen(),
           );
 
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Hello!');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(session);
+          stubSuccessfulStart(
+            session: session,
+          );
           when(
             () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
           ).thenAnswer((_) {
@@ -455,9 +449,6 @@ void main() {
               sessionId: 'session-1',
             ),
           ).thenAnswer((_) async => approvedVersion);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
 
           container = createContainer();
           await withClock(
@@ -534,9 +525,6 @@ void main() {
               sessionId: 'session-1',
             ),
           ).thenAnswer((_) async => approvedVersion);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
 
           container = createContainer();
           await withClock(
@@ -663,9 +651,6 @@ void main() {
               sessionId: 'session-1',
             ),
           ).thenAnswer((_) async => null);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
 
           container = createContainer();
           await withClock(
@@ -718,10 +703,6 @@ void main() {
           () => mockWorkflow.rejectProposal(sessionId: 'session-1'),
         ).thenReturn(null);
 
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
-
         container = createContainer();
         await withClock(
           testClock,
@@ -770,13 +751,9 @@ void main() {
             },
           });
 
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Here are your metrics.');
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(
-          ActiveEvolutionSession(
+        stubSuccessfulStart(
+          response: 'Here are your metrics.',
+          session: ActiveEvolutionSession(
             sessionId: 'session-1',
             templateId: kTestTemplateId,
             conversationId: 'conv-1',
@@ -787,12 +764,6 @@ void main() {
             eventHandler: GenUiEventHandler(processor: processor)..listen(),
           ),
         );
-        when(
-          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-        ).thenReturn(null);
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
 
         container = createContainer();
         final data = await withClock(
@@ -828,18 +799,9 @@ void main() {
           eventHandler: GenUiEventHandler(processor: processor)..listen(),
         );
 
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => 'Hello!');
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(session);
-        when(
-          () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-        ).thenReturn(null);
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
+        stubSuccessfulStart(
+          session: session,
+        );
         when(
           () => mockWorkflow.sendMessage(
             sessionId: 'session-1',
@@ -906,13 +868,9 @@ void main() {
             rationale: 'better performance',
           );
 
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Here is my proposal.');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
+          stubSuccessfulStart(
+            response: 'Here is my proposal.',
+            session: ActiveEvolutionSession(
               sessionId: 'session-1',
               templateId: kTestTemplateId,
               conversationId: 'conv-1',
@@ -929,9 +887,6 @@ void main() {
           when(
             () => mockWorkflow.rejectProposal(sessionId: 'session-1'),
           ).thenReturn(null);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
 
           container = createContainer();
           await withClock(
@@ -979,13 +934,9 @@ void main() {
             content: '## Recap\n\nShort end-of-session recap.',
           );
 
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Here is my proposal.');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
+          stubSuccessfulStart(
+            response: 'Here is my proposal.',
+            session: ActiveEvolutionSession(
               sessionId: 'session-1',
               templateId: kTestTemplateId,
               conversationId: 'conv-1',
@@ -1007,9 +958,6 @@ void main() {
               sessionId: 'session-1',
             ),
           ).thenAnswer((_) async => approvedVersion);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
 
           container = createContainer();
           await withClock(
@@ -1058,13 +1006,9 @@ void main() {
             ..listen();
           final soulVersion = makeTestSoulDocumentVersion(version: 4);
 
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Review the soul proposal.');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
+          stubSuccessfulStart(
+            response: 'Review the soul proposal.',
+            session: ActiveEvolutionSession(
               sessionId: 'session-1',
               templateId: kTestTemplateId,
               conversationId: 'conv-1',
@@ -1076,14 +1020,8 @@ void main() {
             ),
           );
           when(
-            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-          ).thenReturn(null);
-          when(
             () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
           ).thenAnswer((_) async => soulVersion);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
 
           container = createContainer();
           await withClock(
@@ -1126,13 +1064,9 @@ void main() {
           final eventHandler = GenUiEventHandler(processor: processor)
             ..listen();
 
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Review the soul proposal.');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
+          stubSuccessfulStart(
+            response: 'Review the soul proposal.',
+            session: ActiveEvolutionSession(
               sessionId: 'session-1',
               templateId: kTestTemplateId,
               conversationId: 'conv-1',
@@ -1144,14 +1078,8 @@ void main() {
             ),
           );
           when(
-            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-          ).thenReturn(null);
-          when(
             () => mockWorkflow.rejectSoulProposal(sessionId: 'session-1'),
           ).thenReturn(null);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
 
           container = createContainer();
           await withClock(
@@ -1193,13 +1121,9 @@ void main() {
           final eventHandler = GenUiEventHandler(processor: processor)
             ..listen();
 
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Review the soul proposal.');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
+          stubSuccessfulStart(
+            response: 'Review the soul proposal.',
+            session: ActiveEvolutionSession(
               sessionId: 'session-1',
               templateId: kTestTemplateId,
               conversationId: 'conv-1',
@@ -1210,13 +1134,6 @@ void main() {
               eventHandler: eventHandler,
             ),
           );
-          when(
-            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-          ).thenReturn(null);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
-
           container = createContainer();
           await withClock(
             testClock,
@@ -1255,13 +1172,9 @@ void main() {
           final eventHandler = GenUiEventHandler(processor: processor)
             ..listen();
 
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Let us rate categories.');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
+          stubSuccessfulStart(
+            response: 'Let us rate categories.',
+            session: ActiveEvolutionSession(
               sessionId: 'session-1',
               templateId: kTestTemplateId,
               conversationId: 'conv-1',
@@ -1272,12 +1185,6 @@ void main() {
               eventHandler: eventHandler,
             ),
           );
-          when(
-            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-          ).thenReturn(null);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
           when(
             () => mockWorkflow.sendMessage(
               sessionId: 'session-1',
@@ -1320,13 +1227,9 @@ void main() {
           final eventHandler = GenUiEventHandler(processor: processor)
             ..listen();
 
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Want to rate me?');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(
-            ActiveEvolutionSession(
+          stubSuccessfulStart(
+            response: 'Want to rate me?',
+            session: ActiveEvolutionSession(
               sessionId: 'session-1',
               templateId: kTestTemplateId,
               conversationId: 'conv-1',
@@ -1337,12 +1240,6 @@ void main() {
               eventHandler: eventHandler,
             ),
           );
-          when(
-            () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
-          ).thenReturn(null);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
           when(
             () => mockWorkflow.sendMessage(
               sessionId: 'session-1',
@@ -1527,12 +1424,9 @@ void main() {
             eventHandler: GenUiEventHandler(processor: processor)..listen(),
           );
 
-          when(
-            () => mockWorkflow.startSession(templateId: kTestTemplateId),
-          ).thenAnswer((_) async => 'Hello!');
-          when(
-            () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-          ).thenReturn(session);
+          stubSuccessfulStart(
+            session: session,
+          );
           when(
             () => mockWorkflow.getCurrentProposal(sessionId: 'session-1'),
           ).thenAnswer((_) {
@@ -1614,9 +1508,6 @@ void main() {
         when(
           () => mockWorkflow.approveProposal(sessionId: 'session-1'),
         ).thenAnswer((_) async => null);
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
 
         container = createContainer();
         await withClock(
@@ -1654,9 +1545,6 @@ void main() {
         when(
           () => mockWorkflow.approveProposal(sessionId: 'session-1'),
         ).thenThrow(Exception('approve failed'));
-        when(
-          () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-        ).thenAnswer((_) async {});
 
         container = createContainer();
         await withClock(
@@ -1681,12 +1569,7 @@ void main() {
       });
 
       test('returns false when sessionId is null', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(null);
+        stubNullStart();
 
         container = createContainer();
         await withClock(
@@ -1744,12 +1627,7 @@ void main() {
       });
 
       test('does nothing when sessionId is null', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(null);
+        stubNullStart();
 
         container = createContainer();
         await withClock(
@@ -1782,12 +1660,7 @@ void main() {
 
     group('rejectProposal - edge cases', () {
       test('does nothing when sessionId is null', () async {
-        when(
-          () => mockWorkflow.startSession(templateId: kTestTemplateId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-        ).thenReturn(null);
+        stubNullStart();
 
         container = createContainer();
         await withClock(
@@ -1841,10 +1714,6 @@ void main() {
         () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
       ).thenAnswer((_) async => soulVersion);
 
-      when(
-        () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-      ).thenAnswer((_) async {});
-
       container = createContainer();
       await withClock(
         testClock,
@@ -1883,10 +1752,6 @@ void main() {
         () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
       ).thenAnswer((_) async => null);
 
-      when(
-        () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-      ).thenAnswer((_) async {});
-
       container = createContainer();
       await withClock(
         testClock,
@@ -1921,10 +1786,6 @@ void main() {
         () => mockWorkflow.approveSoulProposal(sessionId: 'session-1'),
       ).thenThrow(Exception('Soul service error'));
 
-      when(
-        () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-      ).thenAnswer((_) async {});
-
       container = createContainer();
       await withClock(
         testClock,
@@ -1949,13 +1810,7 @@ void main() {
     });
 
     test('no-op when session data is null', () async {
-      when(
-        () => mockWorkflow.startSession(templateId: kTestTemplateId),
-      ).thenAnswer((_) async => null);
-
-      when(
-        () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-      ).thenReturn(null);
+      stubNullStart();
 
       container = createContainer();
       await withClock(
@@ -1987,10 +1842,6 @@ void main() {
       when(
         () => mockWorkflow.rejectSoulProposal(sessionId: 'session-1'),
       ).thenReturn(null);
-
-      when(
-        () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-      ).thenAnswer((_) async {});
 
       container = createContainer();
       await withClock(
@@ -2024,13 +1875,7 @@ void main() {
     });
 
     test('no-op when session data is null', () async {
-      when(
-        () => mockWorkflow.startSession(templateId: kTestTemplateId),
-      ).thenAnswer((_) async => null);
-
-      when(
-        () => mockWorkflow.getActiveSessionForTemplate(kTestTemplateId),
-      ).thenReturn(null);
+      stubNullStart();
 
       container = createContainer();
       await withClock(
