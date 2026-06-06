@@ -192,14 +192,14 @@ already covered). No new Glados tests recommended.
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/features/agents/ui/agent_badge_widgets.dart:1` — **no test file**.
+- [x] **[HIGH]** `lib/features/agents/ui/agent_badge_widgets.dart:1` — **no test file**.
   `AgentBadge` (pure presentational) and `AgentLifecycleBadge` with its 4-case
   `switch` are completely untested. Add
   `test/features/agents/ui/agent_badge_widgets_test.dart` verifying:
   - Each `AgentLifecycle` value renders the correct localized label.
   - Badge color/border is set (presence of `Container` with `BoxDecoration`).
 
-- [ ] **[HIGH]** `lib/features/agents/ui/agent_palette.dart:1` — **no test file**.
+- [x] **[HIGH]** `lib/features/agents/ui/agent_palette.dart:1` — **no test file**.
   `agentCardDarkGradient` is a pure function; it should have a trivial unit test
   verifying it returns a `LinearGradient` with two non-null colors. `AgentPalette`
   constants need no test, but the function is a gap.
