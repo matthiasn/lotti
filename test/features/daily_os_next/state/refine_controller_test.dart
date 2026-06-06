@@ -595,18 +595,25 @@ void main() {
   });
 }
 
-class _RecordingRefineAgent extends MockDayAgent {
+/// Base for the scripted agents below: zero latencies and a fixed clock so
+/// each subclass only overrides the method under test.
+class _ZeroLatencyAgent extends MockDayAgent {
+  _ZeroLatencyAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        draftLatency: Duration.zero,
+        summarizeLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+}
+
+class _RecordingRefineAgent extends _ZeroLatencyAgent {
   _RecordingRefineAgent({
     required this.updatedPlan,
     required this.livePlanAfterReject,
-  }) : super(
-         parseLatency: Duration.zero,
-         pendingLatency: Duration.zero,
-         triageLatency: Duration.zero,
-         draftLatency: Duration.zero,
-         summarizeLatency: Duration.zero,
-         clock: () => DateTime(2026, 5, 25, 9),
-       );
+  });
 
   final DraftPlan updatedPlan;
   final DraftPlan livePlanAfterReject;
@@ -671,17 +678,7 @@ class _RecordingRefineAgent extends MockDayAgent {
   }
 }
 
-class _ThrowingRefineAgent extends MockDayAgent {
-  _ThrowingRefineAgent()
-    : super(
-        parseLatency: Duration.zero,
-        pendingLatency: Duration.zero,
-        triageLatency: Duration.zero,
-        draftLatency: Duration.zero,
-        summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
-      );
-
+class _ThrowingRefineAgent extends _ZeroLatencyAgent {
   @override
   Future<PlanDiff> proposePlanDiff({
     required DraftPlan currentPlan,
@@ -692,17 +689,7 @@ class _ThrowingRefineAgent extends MockDayAgent {
   }
 }
 
-class _EmptyDiffRefineAgent extends MockDayAgent {
-  _EmptyDiffRefineAgent()
-    : super(
-        parseLatency: Duration.zero,
-        pendingLatency: Duration.zero,
-        triageLatency: Duration.zero,
-        draftLatency: Duration.zero,
-        summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
-      );
-
+class _EmptyDiffRefineAgent extends _ZeroLatencyAgent {
   @override
   Future<PlanDiff> proposePlanDiff({
     required DraftPlan currentPlan,
@@ -720,17 +707,7 @@ class _EmptyDiffRefineAgent extends MockDayAgent {
 
 /// Holds `proposePlanDiff` until [complete] is called, so tests can assert
 /// behaviour in the `thinking` phase before the future resolves.
-class _HoldingRefineAgent extends MockDayAgent {
-  _HoldingRefineAgent()
-    : super(
-        parseLatency: Duration.zero,
-        pendingLatency: Duration.zero,
-        triageLatency: Duration.zero,
-        draftLatency: Duration.zero,
-        summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
-      );
-
+class _HoldingRefineAgent extends _ZeroLatencyAgent {
   final _completer = Completer<PlanDiff>();
 
   // Captured on the first proposePlanDiff call so complete() can echo
@@ -765,17 +742,7 @@ class _HoldingRefineAgent extends MockDayAgent {
 /// Delegates `proposePlanDiff` to the scripted [MockDayAgent] but throws
 /// from `acceptDiff`, simulating an agent failure during individual-change
 /// acceptance.
-class _ThrowingAcceptAgent extends MockDayAgent {
-  _ThrowingAcceptAgent()
-    : super(
-        parseLatency: Duration.zero,
-        pendingLatency: Duration.zero,
-        triageLatency: Duration.zero,
-        draftLatency: Duration.zero,
-        summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
-      );
-
+class _ThrowingAcceptAgent extends _ZeroLatencyAgent {
   @override
   Future<DraftPlan> acceptDiff(
     PlanDiff diff, {
@@ -787,17 +754,7 @@ class _ThrowingAcceptAgent extends MockDayAgent {
 
 /// Delegates `proposePlanDiff` to the scripted [MockDayAgent] but throws
 /// from `revertDiff`, simulating an agent failure during change rejection.
-class _ThrowingRevertAgent extends MockDayAgent {
-  _ThrowingRevertAgent()
-    : super(
-        parseLatency: Duration.zero,
-        pendingLatency: Duration.zero,
-        triageLatency: Duration.zero,
-        draftLatency: Duration.zero,
-        summarizeLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
-      );
-
+class _ThrowingRevertAgent extends _ZeroLatencyAgent {
   @override
   Future<DraftPlan> revertDiff({
     required PlanDiff diff,
