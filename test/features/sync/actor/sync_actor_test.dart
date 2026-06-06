@@ -9,11 +9,8 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/actor/outbound_queue.dart';
 import 'package:lotti/features/sync/actor/sync_actor.dart';
-import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:matrix/encryption.dart';
-import 'package:matrix/encryption/cross_signing.dart';
-import 'package:matrix/encryption/key_verification_manager.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart'
     as matrix_cached;
@@ -25,21 +22,6 @@ abstract interface class CachedStreamController<T> {
   T? get value;
   Stream<T> get stream;
 }
-
-class MockClient extends Mock implements Client {}
-
-class MockMatrixSdkGateway extends Mock implements MatrixSdkGateway {}
-
-class MockKeyVerification extends Mock implements KeyVerification {}
-
-class MockSyncUpdate extends Mock implements SyncUpdate {}
-
-class MockEncryption extends Mock implements Encryption {}
-
-class MockCrossSigning extends Mock implements CrossSigning {}
-
-class MockKeyVerificationManager extends Mock
-    implements KeyVerificationManager {}
 
 class MockLoginStateController extends Mock
     implements CachedStreamController<LoginState> {}
@@ -92,7 +74,7 @@ class _ScriptedOutboundQueue extends OutboundQueue {
 /// The [onGatewayCreated] callback receives the mock gateway after creation,
 /// allowing tests to set up stubs before commands use it.
 SyncActorCommandHandler createTestHandler({
-  void Function(MockMatrixSdkGateway gateway, MockClient client)?
+  void Function(MockMatrixSdkGateway gateway, MockMatrixClient client)?
   onGatewayCreated,
   SyncDatabase Function(String dbRootPath)? syncDatabaseFactory,
   void Function(SyncDatabase db)? onSyncDatabaseCreated,
@@ -112,7 +94,7 @@ SyncActorCommandHandler createTestHandler({
   OutboundQueueFactory? outboundQueueFactory,
 }) {
   late MockMatrixSdkGateway mockGateway;
-  final mockClient = MockClient();
+  final mockClient = MockMatrixClient();
   final defaultLoginStateController = MockLoginStateController();
   final defaultSyncUpdateStreamController =
       StreamController<SyncUpdate>.broadcast();
@@ -938,8 +920,8 @@ void main() {
           _initPayload(eventPort: eventPort.sendPort),
         );
 
-        // Allow event to propagate
-        await Future<void>.delayed(Duration.zero);
+        // Allow event to propagate (microtask yield, no timer)
+        await pumpEventQueue();
 
         expect(events, isNotEmpty);
         expect(events.last['event'], 'ready');
@@ -1177,6 +1159,25 @@ void main() {
           expect(responseMap['errorCode'], 'MISSING_PARAMETER');
         },
       );
+
+      test(
+        'silently ignores a non-Map message and keeps serving commands',
+        () async {
+          final readyPort = ReceivePort();
+          syncActorEntrypoint(readyPort.sendPort, vodInitializer: () async {});
+          final commandPort = (await readyPort.first) as SendPort
+            // Non-Map payload: the entrypoint must drop it without replying
+            // or crashing the message loop.
+            ..send('not-a-map');
+          await pumpEventQueue();
+
+          // The loop is still alive: a follow-up stop command round-trips.
+          final stopResponse = await sendCommand(commandPort, _cmd('stop'));
+          expect(stopResponse['ok'], isTrue);
+
+          readyPort.close();
+        },
+      );
     });
   });
 
@@ -1309,7 +1310,7 @@ void main() {
   group('sendText', () {
     test('delegates while idle without pausing sync', () async {
       late MockMatrixSdkGateway gateway;
-      late MockClient client;
+      late MockMatrixClient client;
 
       handler = createTestHandler(
         onGatewayCreated: (g, c) {
@@ -1343,6 +1344,54 @@ void main() {
       expect(response['eventId'], r'$idleEvent');
       verifyNever(() => client.abortSync());
     });
+
+    test(
+      'pauses sync (abortSync) and resumes when sent while syncing',
+      () async {
+        late MockMatrixSdkGateway gateway;
+        late MockMatrixClient client;
+
+        handler = createTestHandler(
+          onGatewayCreated: (g, c) {
+            gateway = g;
+            client = c;
+          },
+        );
+        await handler.handleCommand(_initPayload());
+        expect(handler.state, SyncActorState.syncing);
+
+        when(
+          () => gateway.sendText(
+            roomId: any(named: 'roomId'),
+            message: any(named: 'message'),
+            messageType: any(named: 'messageType'),
+            displayPendingEvent: false,
+          ),
+        ).thenAnswer((_) async => r'$syncingEvent');
+
+        final response = await handler.handleCommand(
+          _cmd('sendText', {
+            'roomId': '!room:localhost',
+            'message': 'hello while syncing',
+            'requestId': 'syncing-send',
+          }),
+        );
+
+        expect(response['ok'], isTrue);
+        expect(response['eventId'], r'$syncingEvent');
+        // The transient pause must abort the in-flight sync before sending …
+        verify(() => client.abortSync()).called(1);
+        // … and turn background sync back on afterwards (still syncing).
+        // (init also toggles backgroundSync, so assert at-least-once here.)
+        verify(
+          () => client.backgroundSync = false,
+        ).called(greaterThanOrEqualTo(1));
+        verify(
+          () => client.backgroundSync = true,
+        ).called(greaterThanOrEqualTo(1));
+        expect(handler.state, SyncActorState.syncing);
+      },
+    );
 
     test('delegates to gateway and returns eventId', () async {
       late MockMatrixSdkGateway gateway;
@@ -1482,7 +1531,7 @@ void main() {
     test(
       'startVerification returns started false when no peer device',
       () async {
-        late MockClient client;
+        late MockMatrixClient client;
         handler = createTestHandler(
           onGatewayCreated: (g, c) {
             client = c;
@@ -2084,7 +2133,7 @@ void main() {
         },
       );
       await handler.handleCommand(_initPayload());
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       final response = await handler.handleCommand(_cmd('acceptVerification'));
 
       expect(response['ok'], isTrue);
@@ -2110,7 +2159,7 @@ void main() {
         },
       );
       await handler.handleCommand(_initPayload());
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       final response = await handler.handleCommand(_cmd('acceptVerification'));
 
       expect(response['ok'], isFalse);
@@ -2199,7 +2248,7 @@ void main() {
         },
       );
       await handler.handleCommand(_initPayload());
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       final response = await handler.handleCommand(
         _cmd('acceptSas', {'requestId': 'accept-sas-fail'}),
       );
@@ -2225,7 +2274,7 @@ void main() {
         },
       );
       await handler.handleCommand(_initPayload());
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       final response = await handler.handleCommand(_cmd('cancelVerification'));
       final state = await handler.handleCommand(_cmd('getVerificationState'));
 
@@ -2259,7 +2308,7 @@ void main() {
         },
       );
       await handler.handleCommand(_initPayload());
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       final response = await handler.handleCommand(
         _cmd('cancelVerification', {'requestId': 'cancel-verification-fail'}),

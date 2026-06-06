@@ -4,7 +4,7 @@ import 'package:lotti/features/sync/actor/verification_handler.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:mocktail/mocktail.dart';
 
-class MockKeyVerification extends Mock implements KeyVerification {}
+import '../../../mocks/mocks.dart';
 
 enum _GeneratedVerificationDirection {
   incoming,

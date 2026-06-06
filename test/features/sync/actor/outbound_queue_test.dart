@@ -5,7 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/actor/outbound_queue.dart';
-import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -13,12 +12,6 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockMatrixSdkGateway extends Mock implements MatrixSdkGateway {}
-
-class MockClient extends Mock implements Client {}
-
-class MockStateEvent extends Mock implements StrippedStateEvent {}
 
 OutboxCompanion _buildOutbox({
   required String subject,
@@ -253,14 +246,14 @@ MockRoom _generatedRoom({
     );
   } else {
     when(() => room.getState(lottiSyncRoomStateType)).thenReturn(
-      isSyncMarked ? MockStateEvent() : null,
+      isSyncMarked ? MockStrippedStateEvent() : null,
     );
   }
   return room;
 }
 
 void _stubGeneratedRooms({
-  required MockClient client,
+  required MockMatrixClient client,
   required _GeneratedOutboundRoomMode roomMode,
 }) {
   final rooms = switch (roomMode) {
@@ -328,14 +321,14 @@ void main() {
   group('OutboundQueue', () {
     late SyncDatabase db;
     late MockMatrixSdkGateway gateway;
-    late MockClient client;
+    late MockMatrixClient client;
     late MockRoom room;
     final events = <Map<String, Object?>>[];
 
     setUp(() {
       db = SyncDatabase(inMemoryDatabase: true);
       gateway = MockMatrixSdkGateway();
-      client = MockClient();
+      client = MockMatrixClient();
       room = MockRoom();
       events.clear();
 
@@ -351,7 +344,7 @@ void main() {
     test('drains one queued row and marks it sent', () async {
       when(
         () => room.getState(lottiSyncRoomStateType),
-      ).thenReturn(MockStateEvent());
+      ).thenReturn(MockStrippedStateEvent());
       when(() => client.rooms).thenReturn([room]);
       when(
         () => gateway.sendText(
@@ -409,7 +402,7 @@ void main() {
       var attempt = 0;
       when(
         () => room.getState(lottiSyncRoomStateType),
-      ).thenReturn(MockStateEvent());
+      ).thenReturn(MockStrippedStateEvent());
       when(() => client.rooms).thenReturn([room]);
       when(
         () => gateway.sendText(
@@ -466,7 +459,7 @@ void main() {
     test('does not drain when disconnected', () async {
       when(
         () => room.getState(lottiSyncRoomStateType),
-      ).thenReturn(MockStateEvent());
+      ).thenReturn(MockStrippedStateEvent());
       when(() => client.rooms).thenReturn([room]);
       await db.addOutboxItem(
         _buildOutbox(
@@ -567,7 +560,7 @@ void main() {
       final syncRoom = MockRoom();
       when(() => syncRoom.id).thenReturn('!sync-room:localhost');
       when(() => syncRoom.getState(lottiSyncRoomStateType)).thenReturn(
-        MockStateEvent(),
+        MockStrippedStateEvent(),
       );
       when(() => client.rooms).thenReturn([room, syncRoom]);
       when(() => room.getState(lottiSyncRoomStateType)).thenReturn(null);
@@ -615,10 +608,10 @@ void main() {
         when(() => syncRoom.id).thenReturn('!sync-room-1:localhost');
         when(() => competingRoom.id).thenReturn('!sync-room-2:localhost');
         when(() => syncRoom.getState(lottiSyncRoomStateType)).thenReturn(
-          MockStateEvent(),
+          MockStrippedStateEvent(),
         );
         when(() => competingRoom.getState(lottiSyncRoomStateType)).thenReturn(
-          MockStateEvent(),
+          MockStrippedStateEvent(),
         );
         when(() => client.rooms).thenReturn([syncRoom, competingRoom]);
 
@@ -657,7 +650,7 @@ void main() {
       (scenario) async {
         final localDb = SyncDatabase(inMemoryDatabase: true);
         final localGateway = MockMatrixSdkGateway();
-        final localClient = MockClient();
+        final localClient = MockMatrixClient();
         final generatedEvents = <Map<String, Object?>>[];
         late OutboundQueue queue;
 

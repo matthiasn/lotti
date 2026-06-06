@@ -98,6 +98,7 @@ import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
+import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
@@ -147,6 +148,8 @@ import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
 import 'package:matrix/encryption.dart';
+import 'package:matrix/encryption/cross_signing.dart';
+import 'package:matrix/encryption/key_verification_manager.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:media_kit/media_kit.dart';
@@ -284,6 +287,19 @@ class MockMatrixDatabase extends Mock implements DatabaseApi {}
 class MockDeviceKeys extends Mock implements DeviceKeys {}
 
 class MockDeviceKeysList extends Mock implements DeviceKeysList {}
+
+class MockMatrixSdkGateway extends Mock implements MatrixSdkGateway {}
+
+class MockSyncUpdate extends Mock implements SyncUpdate {}
+
+class MockEncryption extends Mock implements Encryption {}
+
+class MockCrossSigning extends Mock implements CrossSigning {}
+
+class MockKeyVerificationManager extends Mock
+    implements KeyVerificationManager {}
+
+class MockStrippedStateEvent extends Mock implements StrippedStateEvent {}
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   @override
