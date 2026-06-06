@@ -118,7 +118,8 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     return journalRepo;
   }
 
@@ -413,11 +414,13 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Collapse for task-a.
       await tester.tap(find.text('Linked Tasks'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Task A linked'), findsNothing);
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
 
@@ -455,7 +458,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // didUpdateWidget should have reset _expanded back to true for task-b.
       expect(find.text('Task B linked'), findsOneWidget);
@@ -473,13 +477,15 @@ void main() {
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
 
       await tester.tap(find.text('Linked Tasks'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Outgoing Task'), findsNothing);
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
 
       await tester.tap(find.text('Linked Tasks'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Outgoing Task'), findsOneWidget);
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
@@ -497,7 +503,8 @@ void main() {
         );
 
         await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Link existing task...'), findsOneWidget);
         expect(find.text('Create new linked task...'), findsOneWidget);
@@ -517,9 +524,11 @@ void main() {
       expect(find.byIcon(Icons.close_rounded), findsNothing);
 
       await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Manage links...'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Chevron replaced by the unlink X.
       expect(find.byIcon(Icons.arrow_forward_ios), findsNothing);
@@ -527,9 +536,11 @@ void main() {
 
       // Toggling again returns to browse mode.
       await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Done'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.arrow_forward_ios), findsOneWidget);
       expect(find.byIcon(Icons.close_rounded), findsNothing);
@@ -545,9 +556,11 @@ void main() {
         );
 
         await tester.tap(find.byIcon(Icons.more_vert));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Link existing task...'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Modal renders the LinkTaskModal as a draggable bottom sheet.
         expect(find.byType(LinkTaskModal), findsOneWidget);
@@ -629,9 +642,11 @@ void main() {
 
     Future<void> tapCreateNewLinkedTask(WidgetTester tester) async {
       await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Create new linked task...'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     }
 
     testWidgets(
@@ -789,12 +804,14 @@ void main() {
       );
 
       await tester.tap(find.byIcon(Icons.close_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Confirmation dialog.
       expect(find.text('Unlink'), findsOneWidget);
       await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => repo.removeLink(fromId: 'task-main', toId: 'out-1'),
@@ -811,10 +828,12 @@ void main() {
       );
 
       await tester.tap(find.byIcon(Icons.close_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.widgetWithText(FilledButton, 'Unlink'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => repo.removeLink(fromId: 'in-1', toId: 'task-main'),
@@ -834,7 +853,8 @@ void main() {
         );
 
         await tester.tap(find.text('Outgoing Task'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         verify(() => mockNavService.pushDesktopTaskDetail('out-1')).called(1);
       },
@@ -851,9 +871,11 @@ void main() {
       );
 
       await tester.tap(find.byIcon(Icons.close_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.widgetWithText(TextButton, 'Cancel'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verifyNever(
         () => repo.removeLink(

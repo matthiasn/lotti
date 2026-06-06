@@ -55,7 +55,7 @@ No pure-logic functions in `linked_tasks_widget.dart` or `link_task_modal.dart` 
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `linked_tasks_widget_test.dart` — 45 `pumpAndSettle` calls. Most follow a single provider state change (tasks loaded from the fake controller) that resolves synchronously. Replacing these with `tester.pump()` would remove the 10-second hang risk on every call. `test/features/tasks/ui/linked_tasks/linked_tasks_widget_test.dart`.
+- [x] **[HIGH]** `linked_tasks_widget_test.dart` — 45 `pumpAndSettle` calls. Most follow a single provider state change (tasks loaded from the fake controller) that resolves synchronously. Replacing these with `tester.pump()` would remove the 10-second hang risk on every call. `test/features/tasks/ui/linked_tasks/linked_tasks_widget_test.dart`. **RESOLVED:** all 22 remaining settles replaced with bounded `pump()` + `pump(300ms)` pairs; full file passes. (The reported 45 predates earlier trims.)
 
 - [ ] **[MED]** `link_task_modal_test.dart` — 23 `pumpAndSettle` calls for a bottom-sheet modal. The `DraggableScrollableSheet` animation is bounded so `tester.pump(const Duration(milliseconds: 400))` would be a safer, faster substitute than unbounded settling.
 
