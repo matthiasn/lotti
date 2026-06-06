@@ -114,5 +114,100 @@ void main() {
         expect(result.last.name, 'Alpha');
       },
     );
+
+    AiConfigModel model({
+      required String id,
+      required String name,
+      String providerId = 'prov-x',
+      bool supportsFunctionCalling = true,
+      List<Modality> input = const [Modality.text],
+    }) => AiConfigModel(
+      id: id,
+      name: name,
+      providerModelId: id,
+      inferenceProviderId: providerId,
+      createdAt: DateTime(2024),
+      inputModalities: input,
+      outputModalities: const [Modality.text],
+      isReasoningModel: false,
+      supportsFunctionCalling: supportsFunctionCalling,
+    );
+
+    void stubConfigs({
+      List<AiConfig> models = const [],
+      List<AiConfig> providers = const [],
+    }) {
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => models);
+      when(
+        () => mockRepo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => providers);
+    }
+
+    test('returns an empty list when no models are configured', () async {
+      stubConfigs();
+
+      final result = await container.read(
+        eligibleChatModelsForCategoryProvider('cat').future,
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('returns an empty list when every model is ineligible', () async {
+      stubConfigs(
+        models: [
+          model(id: 'm1', name: 'NoFunc', supportsFunctionCalling: false),
+          model(id: 'm2', name: 'NoText', input: const [Modality.image]),
+        ],
+      );
+
+      final result = await container.read(
+        eligibleChatModelsForCategoryProvider('cat').future,
+      );
+
+      expect(result, isEmpty);
+    });
+
+    test('a single eligible model is returned as-is', () async {
+      stubConfigs(
+        models: [model(id: 'm1', name: 'Solo')],
+      );
+
+      final result = await container.read(
+        eligibleChatModelsForCategoryProvider('cat').future,
+      );
+
+      expect(result.map((m) => m.id), ['m1']);
+    });
+
+    test(
+      'a provider-lookup miss sorts under the empty provider name',
+      () async {
+        final knownProvider = AiConfigInferenceProvider(
+          id: 'prov-known',
+          name: 'Known Provider',
+          baseUrl: 'https://known',
+          apiKey: 'k',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        );
+        stubConfigs(
+          models: [
+            model(id: 'm-known', name: 'Known', providerId: knownProvider.id),
+            model(id: 'm-orphan', name: 'Orphan', providerId: 'prov-missing'),
+          ],
+          providers: [knownProvider],
+        );
+
+        final result = await container.read(
+          eligibleChatModelsForCategoryProvider('cat').future,
+        );
+
+        // The orphan's provider name falls back to '' which sorts first.
+        expect(result.map((m) => m.id), ['m-orphan', 'm-known']);
+      },
+    );
   });
 }
