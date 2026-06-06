@@ -778,6 +778,58 @@ void main() {
         await settleTimers(tester);
       },
     );
+
+    // Probe the exact grid breakpoint: the switch happens on the sliver's
+    // INNER cross-axis extent (surface width minus the step5=16 padding on
+    // both sides), so inner width 700 is surface 732.
+    for (final (surfaceWidth, expectTwoColumns) in [
+      (732.0, true), // inner 700 == breakpoint -> 2-column grid
+      (731.0, false), // inner 699 -> single column
+    ]) {
+      testWidgets(
+        'inner width ${surfaceWidth - 32} renders '
+        '${expectTwoColumns ? 2 : 1} column(s)',
+        (tester) async {
+          await tester.binding.setSurfaceSize(Size(surfaceWidth, 1600));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+
+          await pumpWith(
+            tester: tester,
+            providers: [
+              buildProvider(
+                id: 'p1',
+                type: InferenceProviderType.gemini,
+                name: 'Gemini A',
+              ),
+              buildProvider(
+                id: 'p2',
+                type: InferenceProviderType.openAi,
+                name: 'OpenAI A',
+              ),
+            ],
+            models: const <AiConfig>[],
+            profiles: const <AiConfig>[],
+          );
+
+          expect(find.byType(AiProviderCard), findsNWidgets(2));
+
+          // The 2-column branch pairs cards inside a
+          // Row(Expanded, SizedBox, Expanded) structure.
+          final pairedRow = find.ancestor(
+            of: find.byType(AiProviderCard).first,
+            matching: find.byWidgetPredicate(
+              (w) => w is Row && w.children.length == 3,
+            ),
+          );
+          expect(
+            pairedRow,
+            expectTwoColumns ? findsOneWidget : findsNothing,
+            reason: 'surface $surfaceWidth',
+          );
+          await settleTimers(tester);
+        },
+      );
+    }
   });
 
   group('AiSettingsPage — navigation', () {
