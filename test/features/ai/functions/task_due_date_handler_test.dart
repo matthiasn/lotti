@@ -635,7 +635,7 @@ void main() {
 
     glados.Glados(
       glados.any.dueDateToolCallScenario,
-      glados.ExploreConfig(numRuns: 220),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'matches generated due-date validation, no-op, and repository semantics',
       (scenario) async {

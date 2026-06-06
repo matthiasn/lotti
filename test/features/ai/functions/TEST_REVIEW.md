@@ -44,11 +44,11 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/features/ai/functions/lotti_checklist_update_handler_test.dart:19` — defines `class MockSelectable<T> extends Mock implements Selectable<T> {}` inline. `AGENTS.md` mandates that mock classes live in `test/mocks/mocks.dart`. This should be moved there. Additionally, `class TestDataFactory` (lines 24–98) duplicates fixture creation that should live in `test/features/ai/test_utils.dart` (which already has `AiTestDataFactory`).
+- [x] **[HIGH]** `test/features/ai/functions/lotti_checklist_update_handler_test.dart:19` — defines `class MockSelectable<T> extends Mock implements Selectable<T> {}` inline. `AGENTS.md` mandates that mock classes live in `test/mocks/mocks.dart`. This should be moved there. Additionally, `class TestDataFactory` (lines 24–98) duplicates fixture creation that should live in `test/features/ai/test_utils.dart` (which already has `AiTestDataFactory`).
 
-- [ ] **[HIGH]** `test/features/ai/functions/lotti_batch_checklist_handler_test.dart:19` — defines its own `class TestDataFactory` (lines 19–88) that is structurally identical to the `TestDataFactory` in `lotti_checklist_update_handler_test.dart`. Two separate inline factories for the same entity types (Task, ChecklistItem) violate DRY. Both should be consolidated into `test/features/ai/test_utils.dart`.
+- [x] **[HIGH]** `test/features/ai/functions/lotti_batch_checklist_handler_test.dart:19` — defines its own `class TestDataFactory` (lines 19–88) that is structurally identical to the `TestDataFactory` in `lotti_checklist_update_handler_test.dart`. Two separate inline factories for the same entity types (Task, ChecklistItem) violate DRY. Both should be consolidated into `test/features/ai/test_utils.dart`.
 
-- [ ] **[HIGH]** `test/features/ai/functions/lotti_checklist_update_handler_test.dart:121` and `test/features/ai/functions/lotti_batch_checklist_handler_test.dart:99` — both files use raw `getIt.registerSingleton<JournalDb>(mockJournalDb)` / `tearDown(getIt.reset)` instead of `setUpTestGetIt()` + `additionalSetup:`. This is explicitly prohibited by `AGENTS.md` ("Never write inline `getIt.isRegistered` / `getIt.unregister` / `getIt.registerSingleton` boilerplate").
+- [x] **[HIGH]** `test/features/ai/functions/lotti_checklist_update_handler_test.dart:121` and `test/features/ai/functions/lotti_batch_checklist_handler_test.dart:99` — both files use raw `getIt.registerSingleton<JournalDb>(mockJournalDb)` / `tearDown(getIt.reset)` instead of `setUpTestGetIt()` + `additionalSetup:`. This is explicitly prohibited by `AGENTS.md` ("Never write inline `getIt.isRegistered` / `getIt.unregister` / `getIt.registerSingleton` boilerplate").
 
 - [ ] **[MED]** `test/features/ai/functions/task_priority_handler_test.dart:1018–1115` — the `confidence and reason handling` group contains three separate tests for `high`, `medium`, and `low` confidence, each creating a task, creating a tool call, stubbing the repo, and asserting a single `result.confidence` value. These are copy-paste permutations of the same scenario. A single parameterized test would be cleaner:
   ```dart
@@ -70,7 +70,7 @@
   - Property: `∀ double d where round(d) ∈ [1,1440]: parseMinutes(d) == d.round()`
   - Property: `∀ v > 1440 || v <= 0: parseMinutes(v) == null`
 
-- [ ] **[HIGH]** `lib/features/ai/functions/lotti_checklist_update_handler.dart` (`processFunctionCall` validation — especially the `normalizeWhitespace` delegation and `minReasonLength` boundary) — `normalizeWhitespace` is a pure string transform. A round-trip Glados property `normalizeWhitespace(s)` contains no leading/trailing whitespace and no consecutive internal spaces is trivially expressible and covers an infinite input space not reachable by hand.
+- [x] **[HIGH]** `lib/features/ai/functions/lotti_checklist_update_handler.dart` (`processFunctionCall` validation — especially the `normalizeWhitespace` delegation and `minReasonLength` boundary) — `normalizeWhitespace` is a pure string transform. A round-trip Glados property `normalizeWhitespace(s)` contains no leading/trailing whitespace and no consecutive internal spaces is trivially expressible and covers an infinite input space not reachable by hand.
 
 - [ ] **[MED]** `lib/features/ai/functions/task_functions.dart` (`TaskFunctionArgs.normalizeToString`, `extractReasonAndConfidence`) — these are already tested with several hand-rolled cases in `task_functions_test.dart`. A Glados property `∀ String s: normalizeToString(s) == s` (identity for strings) and `∀ non-string v: normalizeToString(v) == v.toString()` would collapse the four current static tests into one property with broader coverage.
 
@@ -82,9 +82,9 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `test/features/ai/functions/lotti_checklist_update_handler_test.dart` — the `onTaskUpdated` callback path inside `executeUpdates` (impl line 416: `onTaskUpdated?.call(refreshedEntity)`) is tested only implicitly. There is no direct assertion that `onTaskUpdated` receives the *refreshed* entity (from `journalDb.journalEntityById`) rather than the locally-mutated copy. This is a subtle correctness property.
+- [x] **[HIGH]** `test/features/ai/functions/lotti_checklist_update_handler_test.dart` — the `onTaskUpdated` callback path inside `executeUpdates` (impl line 416: `onTaskUpdated?.call(refreshedEntity)`) is tested only implicitly. There is no direct assertion that `onTaskUpdated` receives the *refreshed* entity (from `journalDb.journalEntityById`) rather than the locally-mutated copy. This is a subtle correctness property.
 
-- [ ] **[HIGH]** `test/features/ai/functions/task_due_date_handler_test.dart` — the "no-op same date" branch (impl lines 222–240: `currentDue.dayAtMidnight == dueDate`) appears to have no dedicated test. The Glados scenario exercises it implicitly, but a named static test for this branch would document the `wasNoOp` / `wasSkipped` semantics clearly.
+- [x] **[HIGH]** `test/features/ai/functions/task_due_date_handler_test.dart` — the "no-op same date" branch (impl lines 222–240: `currentDue.dayAtMidnight == dueDate`) appears to have no dedicated test. The Glados scenario exercises it implicitly, but a named static test for this branch would document the `wasNoOp` / `wasSkipped` semantics clearly. **RESOLVED (already covered):** the group 'no-op when same due date' has a dedicated static test asserting `wasNoOp` for a matching current date.
 
 - [ ] **[MED]** `test/features/ai/functions/task_functions_test.dart` — `SetTaskLanguageResult.fromJson` round-trip is tested, but `unknownEnumValue` fallback (if `confidence` is an unrecognized string) is not. The impl uses `@JsonKey(unknownEnumValue: ...)` on `ChecklistCompletionSuggestion` but not on `SetTaskLanguageResult` / `LanguageDetectionConfidence`. The absence of a fallback annotation on `LanguageDetectionConfidence` means malformed AI output would throw rather than degrade gracefully — a gap worth testing.
 
@@ -96,7 +96,7 @@
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/features/ai/functions/task_due_date_handler_test.dart:638` — `glados.ExploreConfig(numRuns: 220)` is the only instance in this subdir that exceeds the recommended maximum (~200) from `test/README.md`. The date-handler scenario generator (`_GeneratedDueDateToolCallScenario`) has about the same combinatorial depth as the priority and estimate generators, which use 180 runs. Reducing to 150–180 would save ~20% on the property without meaningful regression risk.
+- [x] **[HIGH]** `test/features/ai/functions/task_due_date_handler_test.dart:638` — `glados.ExploreConfig(numRuns: 220)` is the only instance in this subdir that exceeds the recommended maximum (~200) from `test/README.md`. The date-handler scenario generator (`_GeneratedDueDateToolCallScenario`) has about the same combinatorial depth as the priority and estimate generators, which use 180 runs. Reducing to 150–180 would save ~20% on the property without meaningful regression risk.
 
 - [ ] **[MED]** `test/features/ai/functions/lotti_checklist_update_handler_test.dart` and `test/features/ai/functions/lotti_batch_checklist_handler_test.dart` — both setUp routines call raw `getIt.registerSingleton<JournalDb>` on every test and `tearDown(getIt.reset)` (full GetIt reset). A full `getIt.reset()` is the most expensive teardown option; using `setUpTestGetIt()` / `tearDownTestGetIt()` with scoped singletons would avoid the full global reset and reduce inter-test state contamination risk.
 

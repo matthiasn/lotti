@@ -1,104 +1,19 @@
 import 'dart:convert';
 
-import 'package:drift/drift.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_checklist_update_handler.dart';
-import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart' show setUpTestGetIt, tearDownTestGetIt;
+import '../test_utils.dart' show ChecklistTestDataFactory;
 
 // Mocks
-class MockSelectable<T> extends Mock implements Selectable<T> {}
-
-const _uuid = Uuid();
-
-// Test data factory
-class TestDataFactory {
-  static Task createTask({
-    String? id,
-    String? title,
-    List<String>? checklistIds,
-  }) {
-    final taskId = id ?? _uuid.v4();
-    return Task(
-      meta: Metadata(
-        id: taskId,
-        createdAt: DateTime(2024, 1, 15),
-        updatedAt: DateTime(2024, 1, 15),
-        dateFrom: DateTime(2024, 1, 15),
-        dateTo: DateTime(2024, 1, 15),
-        categoryId: 'test-category',
-      ),
-      data: TaskData(
-        title: title ?? 'Test Task',
-        checklistIds: checklistIds ?? [],
-        status: TaskStatus.open(
-          id: 'status-1',
-          createdAt: DateTime(2024, 1, 15),
-          utcOffset: 0,
-        ),
-        statusHistory: const [],
-        dateFrom: DateTime(2024, 1, 15),
-        dateTo: DateTime(2024, 1, 15),
-      ),
-    );
-  }
-
-  static ChecklistItem createChecklistItem({
-    String? id,
-    String? title,
-    bool isChecked = false,
-    bool isArchived = false,
-    List<String>? linkedChecklists,
-    ChangeSource checkedBy = ChangeSource.user,
-    DateTime? checkedAt,
-  }) {
-    final itemId = id ?? _uuid.v4();
-    return ChecklistItem(
-      meta: Metadata(
-        id: itemId,
-        createdAt: DateTime(2024, 1, 15),
-        updatedAt: DateTime(2024, 1, 15),
-        dateFrom: DateTime(2024, 1, 15),
-        dateTo: DateTime(2024, 1, 15),
-        categoryId: 'test-category',
-      ),
-      data: ChecklistItemData(
-        title: title ?? 'Test Item',
-        isChecked: isChecked,
-        isArchived: isArchived,
-        linkedChecklists: linkedChecklists ?? ['checklist-1'],
-        checkedBy: checkedBy,
-        checkedAt: checkedAt,
-      ),
-    );
-  }
-
-  static ChatCompletionMessageToolCall createToolCall({
-    String? id,
-    String? functionName,
-    String? arguments,
-  }) {
-    return ChatCompletionMessageToolCall(
-      id: id ?? 'tool-1',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: functionName ?? 'update_checklist_items',
-        arguments:
-            arguments ?? '{"items": [{"id": "item-1", "isChecked": true}]}',
-      ),
-    );
-  }
-}
-
 void main() {
   late MockChecklistRepository mockChecklistRepository;
   late MockJournalDb mockJournalDb;
@@ -115,14 +30,14 @@ void main() {
     );
   });
 
-  setUp(() {
+  setUp(() async {
     mockChecklistRepository = MockChecklistRepository();
-    mockJournalDb = MockJournalDb();
+    // Registers core services in GetIt; the handler resolves JournalDb
+    // through the locator.
+    final mocks = await setUpTestGetIt();
+    mockJournalDb = mocks.journalDb;
 
-    // Set up getIt
-    getIt.registerSingleton<JournalDb>(mockJournalDb);
-
-    testTask = TestDataFactory.createTask(
+    testTask = ChecklistTestDataFactory.createTask(
       checklistIds: ['checklist-1'],
     );
 
@@ -132,7 +47,7 @@ void main() {
     );
   });
 
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
 
   group('LottiChecklistUpdateHandler', () {
     test('should have correct function name', () {
@@ -141,7 +56,8 @@ void main() {
 
     group('processFunctionCall', () {
       test('should process valid update with isChecked: true', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "item-1", "isChecked": true}]}',
         );
 
@@ -158,7 +74,8 @@ void main() {
       test(
         'should process valid update with isChecked: false (unchecking)',
         () {
-          final toolCall = TestDataFactory.createToolCall(
+          final toolCall = ChecklistTestDataFactory.createToolCall(
+            functionName: 'update_checklist_items',
             arguments: '{"items": [{"id": "item-1", "isChecked": false}]}',
           );
 
@@ -172,7 +89,8 @@ void main() {
       );
 
       test('should process valid update with title only', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "item-1", "title": "Updated title"}]}',
         );
 
@@ -186,7 +104,8 @@ void main() {
       });
 
       test('should process valid update with both isChecked and title', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments:
               '{"items": [{"id": "item-1", "isChecked": true, "title": "macOS settings"}]}',
         );
@@ -201,7 +120,8 @@ void main() {
       });
 
       test('should normalize whitespace in title', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments:
               '{"items": [{"id": "item-1", "title": "  foo   bar  baz  "}]}',
         );
@@ -215,7 +135,8 @@ void main() {
       });
 
       test('should trim id whitespace', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "  item-1  ", "isChecked": true}]}',
         );
 
@@ -228,7 +149,8 @@ void main() {
       });
 
       test('should reject empty items array', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": []}',
         );
 
@@ -239,7 +161,8 @@ void main() {
       });
 
       test('should reject item without id', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"isChecked": true}]}',
         );
 
@@ -250,7 +173,8 @@ void main() {
       });
 
       test('should reject item with empty id', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "", "isChecked": true}]}',
         );
 
@@ -261,7 +185,8 @@ void main() {
       });
 
       test('should reject item with whitespace-only id', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "   ", "isChecked": true}]}',
         );
 
@@ -272,7 +197,8 @@ void main() {
       });
 
       test('should reject item without any update field', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "item-1"}]}',
         );
 
@@ -284,7 +210,8 @@ void main() {
 
       test('should reject title exceeding 400 chars after normalization', () {
         final longTitle = 'a' * 401;
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "item-1", "title": "$longTitle"}]}',
         );
 
@@ -296,7 +223,8 @@ void main() {
 
       test('should accept title exactly 400 chars', () {
         final exactTitle = 'a' * 400;
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "item-1", "title": "$exactTitle"}]}',
         );
 
@@ -306,7 +234,8 @@ void main() {
       });
 
       test('should reject empty title after normalization', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "item-1", "title": "   "}]}',
         );
 
@@ -317,7 +246,8 @@ void main() {
       });
 
       test('should reject invalid isChecked type', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "item-1", "isChecked": "yes"}]}',
         );
 
@@ -328,7 +258,8 @@ void main() {
       });
 
       test('should reject invalid title type', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "item-1", "title": 123}]}',
         );
 
@@ -339,7 +270,8 @@ void main() {
       });
 
       test('should reject non-object items', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": ["item-1", "item-2"]}',
         );
 
@@ -350,7 +282,8 @@ void main() {
       });
 
       test('should reject non-array items', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": "item-1"}',
         );
 
@@ -361,7 +294,8 @@ void main() {
       });
 
       test('should reject missing items field', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"wrong": "value"}',
         );
 
@@ -376,7 +310,8 @@ void main() {
           21,
           (i) => '{"id": "item-$i", "isChecked": true}',
         ).join(', ');
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [$items]}',
         );
 
@@ -391,7 +326,8 @@ void main() {
           20,
           (i) => '{"id": "item-$i", "isChecked": true}',
         ).join(', ');
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [$items]}',
         );
 
@@ -404,7 +340,8 @@ void main() {
       });
 
       test('should reject invalid JSON', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: 'invalid json',
         );
 
@@ -415,7 +352,7 @@ void main() {
       });
 
       test('should reject function name mismatch', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
           functionName: 'wrong_function',
           arguments: '{"items": [{"id": "item-1", "isChecked": true}]}',
         );
@@ -427,7 +364,8 @@ void main() {
       });
 
       test('should accept isArchived as the only update field', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "item-1", "isArchived": true}]}',
         );
 
@@ -440,7 +378,8 @@ void main() {
       });
 
       test('should reject invalid isArchived type', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '{"items": [{"id": "item-1", "isArchived": "yes"}]}',
         );
 
@@ -451,7 +390,8 @@ void main() {
       });
 
       test('should process multiple items', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: '''
             {"items": [
               {"id": "item-1", "isChecked": true},
@@ -472,19 +412,15 @@ void main() {
 
     group('executeUpdates', () {
       test('should update item isChecked status', () async {
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Buy groceries',
           checkedBy: ChangeSource.agent,
         );
 
-        final mockSelectable = MockSelectable<JournalDbEntity>();
         when(
           () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(mockSelectable);
-        when(mockSelectable.get).thenAnswer(
-          (_) async => [_createDbEntity(item)],
-        );
+        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
         when(
           () => mockJournalDb.journalEntityById(testTask.id),
         ).thenAnswer((_) async => testTask);
@@ -524,18 +460,16 @@ void main() {
       test(
         'archives an item without touching its checked provenance',
         () async {
-          final item = TestDataFactory.createChecklistItem(
+          final item = ChecklistTestDataFactory.createChecklistItem(
             id: 'item-1',
             title: 'Duplicate entry',
             checkedAt: DateTime(2024, 1, 10),
           );
 
-          final mockSelectable = MockSelectable<JournalDbEntity>();
           when(
             () => mockJournalDb.entriesForIds(['item-1']),
-          ).thenReturn(mockSelectable);
-          when(mockSelectable.get).thenAnswer(
-            (_) async => [_createDbEntity(item)],
+          ).thenReturn(
+            MockSelectable<JournalDbEntity>([_createDbEntity(item)]),
           );
           when(
             () => mockJournalDb.journalEntityById(testTask.id),
@@ -581,19 +515,15 @@ void main() {
       );
 
       test('skips an archival that matches the current state', () async {
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Already archived',
           isArchived: true,
         );
 
-        final mockSelectable = MockSelectable<JournalDbEntity>();
         when(
           () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(mockSelectable);
-        when(mockSelectable.get).thenAnswer(
-          (_) async => [_createDbEntity(item)],
-        );
+        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
 
         final result = FunctionCallResult(
           success: true,
@@ -624,20 +554,16 @@ void main() {
           'archival', () async {
         // User checked this item; the agent tries to uncheck it without a
         // reason AND archive it. The uncheck is blocked, the archive lands.
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'User-checked duplicate',
           isChecked: true,
           checkedAt: DateTime(2024, 1, 12),
         );
 
-        final mockSelectable = MockSelectable<JournalDbEntity>();
         when(
           () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(mockSelectable);
-        when(mockSelectable.get).thenAnswer(
-          (_) async => [_createDbEntity(item)],
-        );
+        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
         when(
           () => mockJournalDb.journalEntityById(testTask.id),
         ).thenAnswer((_) async => testTask);
@@ -682,18 +608,14 @@ void main() {
       });
 
       test('should update item title', () async {
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'mac OS settings',
         );
 
-        final mockSelectable = MockSelectable<JournalDbEntity>();
         when(
           () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(mockSelectable);
-        when(mockSelectable.get).thenAnswer(
-          (_) async => [_createDbEntity(item)],
-        );
+        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
         when(
           () => mockJournalDb.journalEntityById(testTask.id),
         ).thenAnswer((_) async => testTask);
@@ -723,11 +645,9 @@ void main() {
       });
 
       test('should skip non-existent item', () async {
-        final mockSelectable = MockSelectable<JournalDbEntity>();
         when(
           () => mockJournalDb.entriesForIds(['missing-item']),
-        ).thenReturn(mockSelectable);
-        when(mockSelectable.get).thenAnswer((_) async => []);
+        ).thenReturn(MockSelectable<JournalDbEntity>([]));
 
         final result = FunctionCallResult(
           success: true,
@@ -758,18 +678,14 @@ void main() {
       });
 
       test('should skip item not belonging to task', () async {
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           linkedChecklists: ['other-checklist'], // Not checklist-1
         );
 
-        final mockSelectable = MockSelectable<JournalDbEntity>();
         when(
           () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(mockSelectable);
-        when(mockSelectable.get).thenAnswer(
-          (_) async => [_createDbEntity(item)],
-        );
+        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
 
         final result = FunctionCallResult(
           success: true,
@@ -793,19 +709,15 @@ void main() {
       });
 
       test('should skip item with no actual changes', () async {
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Already correct',
           isChecked: true, // Already checked
         );
 
-        final mockSelectable = MockSelectable<JournalDbEntity>();
         when(
           () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(mockSelectable);
-        when(mockSelectable.get).thenAnswer(
-          (_) async => [_createDbEntity(item)],
-        );
+        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
 
         final result = FunctionCallResult(
           success: true,
@@ -826,18 +738,16 @@ void main() {
       });
 
       test('should handle mixed valid and invalid items', () async {
-        final validItem = TestDataFactory.createChecklistItem(
+        final validItem = ChecklistTestDataFactory.createChecklistItem(
           id: 'valid-item',
           title: 'Valid',
           checkedBy: ChangeSource.agent,
         );
 
-        final mockSelectable = MockSelectable<JournalDbEntity>();
         when(
           () => mockJournalDb.entriesForIds(['valid-item', 'missing-item']),
-        ).thenReturn(mockSelectable);
-        when(mockSelectable.get).thenAnswer(
-          (_) async => [_createDbEntity(validItem)],
+        ).thenReturn(
+          MockSelectable<JournalDbEntity>([_createDbEntity(validItem)]),
         );
         when(
           () => mockJournalDb.journalEntityById(testTask.id),
@@ -884,7 +794,7 @@ void main() {
       });
 
       test('should skip all items if task has no checklists', () async {
-        final taskWithoutChecklists = TestDataFactory.createTask(
+        final taskWithoutChecklists = ChecklistTestDataFactory.createTask(
           checklistIds: [],
         );
 
@@ -924,23 +834,19 @@ void main() {
           },
         );
 
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           checkedBy: ChangeSource.agent,
         );
 
-        final refreshedTask = TestDataFactory.createTask(
+        final refreshedTask = ChecklistTestDataFactory.createTask(
           id: testTask.id,
           checklistIds: ['checklist-1'],
         );
 
-        final mockSelectable = MockSelectable<JournalDbEntity>();
         when(
           () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(mockSelectable);
-        when(mockSelectable.get).thenAnswer(
-          (_) async => [_createDbEntity(item)],
-        );
+        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
         when(
           () => mockJournalDb.journalEntityById(testTask.id),
         ).thenAnswer((_) async => refreshedTask);
@@ -967,7 +873,10 @@ void main() {
         await handler.executeUpdates(result);
 
         expect(callbackInvoked, true);
-        expect(updatedTask, isA<Task>());
+        // The callback must receive the REFRESHED entity from the post-update
+        // journalEntityById read, not the handler's original (stale) task.
+        expect(identical(updatedTask, refreshedTask), isTrue);
+        expect(updatedTask!.data.checklistIds, ['checklist-1']);
       });
     });
 
@@ -1001,6 +910,29 @@ void main() {
           'foo bar baz',
         );
       });
+
+      glados.Glados(
+        glados.any.whitespaceNoisyString,
+        glados.ExploreConfig(numRuns: 150),
+      ).test(
+        'normalization is trimmed, single-spaced, idempotent and '
+        'character-preserving',
+        (input) {
+          final out = LottiChecklistUpdateHandler.normalizeWhitespace(input);
+
+          expect(out, out.trim(), reason: '"$input"');
+          expect(out.contains(RegExp(r'\s\s')), isFalse, reason: '"$out"');
+          // Idempotent.
+          expect(LottiChecklistUpdateHandler.normalizeWhitespace(out), out);
+          // Non-whitespace characters survive in order.
+          expect(
+            out.replaceAll(' ', ''),
+            input.replaceAll(RegExp(r'\s'), ''),
+            reason: '"$input"',
+          );
+        },
+        tags: 'glados',
+      );
     });
 
     group('isDuplicate', () {
@@ -1063,19 +995,15 @@ void main() {
 
     group('createToolResponse', () {
       test('should create JSON response for success', () async {
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Original',
           checkedBy: ChangeSource.agent,
         );
 
-        final mockSelectable = MockSelectable<JournalDbEntity>();
         when(
           () => mockJournalDb.entriesForIds(['item-1']),
-        ).thenReturn(mockSelectable);
-        when(mockSelectable.get).thenAnswer(
-          (_) async => [_createDbEntity(item)],
-        );
+        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
         when(
           () => mockJournalDb.journalEntityById(testTask.id),
         ).thenAnswer((_) async => testTask);
@@ -1126,7 +1054,8 @@ void main() {
 
     group('processFunctionCall — reason field', () {
       test('should pass through valid reason string', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: jsonEncode({
             'items': [
               {
@@ -1147,7 +1076,8 @@ void main() {
       });
 
       test('should strip whitespace-only reason', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: jsonEncode({
             'items': [
               {'id': 'item-1', 'isChecked': true, 'reason': '   '},
@@ -1164,7 +1094,8 @@ void main() {
       });
 
       test('should reject invalid reason type', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: jsonEncode({
             'items': [
               {'id': 'item-1', 'isChecked': true, 'reason': 123},
@@ -1179,7 +1110,8 @@ void main() {
       });
 
       test('should omit null reason from validated items', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'update_checklist_items',
           arguments: jsonEncode({
             'items': [
               {'id': 'item-1', 'isChecked': true},
@@ -1199,13 +1131,9 @@ void main() {
     group('sovereignty guard', () {
       /// Helper to set up mocks for a single checklist item entity.
       void stubSingleItem(ChecklistItem item) {
-        final mockSelectable = MockSelectable<JournalDbEntity>();
         when(
           () => mockJournalDb.entriesForIds([item.id]),
-        ).thenReturn(mockSelectable);
-        when(mockSelectable.get).thenAnswer(
-          (_) async => [_createDbEntity(item)],
-        );
+        ).thenReturn(MockSelectable<JournalDbEntity>([_createDbEntity(item)]));
         when(
           () => mockJournalDb.journalEntityById(testTask.id),
         ).thenAnswer((_) async => testTask);
@@ -1219,7 +1147,7 @@ void main() {
       }
 
       test('blocks isChecked change on user-set item without reason', () async {
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Write tests',
           isChecked: true,
@@ -1272,7 +1200,7 @@ void main() {
       test(
         'blocks user-unchecked item from being checked without reason',
         () async {
-          final item = TestDataFactory.createChecklistItem(
+          final item = ChecklistTestDataFactory.createChecklistItem(
             id: 'item-1',
             title: 'Not done yet',
             checkedBy:
@@ -1313,7 +1241,7 @@ void main() {
       test(
         'allows override of user-set item when reason is provided',
         () async {
-          final item = TestDataFactory.createChecklistItem(
+          final item = ChecklistTestDataFactory.createChecklistItem(
             id: 'item-1',
             title: 'Deploy to prod',
             isChecked: true,
@@ -1368,7 +1296,7 @@ void main() {
       );
 
       test('freely updates agent-set item without reason', () async {
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Auto-detected task',
           isChecked: true,
@@ -1419,7 +1347,7 @@ void main() {
       test(
         'allows title update but blocks isChecked on user-set item',
         () async {
-          final item = TestDataFactory.createChecklistItem(
+          final item = ChecklistTestDataFactory.createChecklistItem(
             id: 'item-1',
             title: 'mac OS setup',
             isChecked: true,
@@ -1481,7 +1409,7 @@ void main() {
 
       test('treats legacy item (default checkedBy) as user-set', () async {
         // Legacy items deserialize with checkedBy = user (the default)
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Old item',
           isChecked: true,
@@ -1518,7 +1446,7 @@ void main() {
       });
 
       test('treats empty reason as missing', () async {
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Task item',
           isChecked: true,
@@ -1558,7 +1486,7 @@ void main() {
 
       test('preserves user provenance on title-only update', () async {
         // Title-only updates should NOT change checkedBy/checkedAt
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'mac OS',
           isChecked: true,
@@ -1606,7 +1534,7 @@ void main() {
       });
 
       test('rejects short reason on user-set item', () async {
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'Task item',
           isChecked: true,
@@ -1649,7 +1577,7 @@ void main() {
       });
 
       test('rejects short reason but still applies title update', () async {
-        final item = TestDataFactory.createChecklistItem(
+        final item = ChecklistTestDataFactory.createChecklistItem(
           id: 'item-1',
           title: 'mac OS setup',
           isChecked: true,
@@ -1771,4 +1699,24 @@ JournalDbEntity _createDbEntity(ChecklistItem item) {
     flag: 0,
     category: item.meta.categoryId ?? '',
   );
+}
+
+extension _AnyWhitespaceNoisyString on glados.Any {
+  /// Strings mixing words with runs of spaces, tabs and newlines.
+  glados.Generator<String> get whitespaceNoisyString =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 1 << 16),
+        glados.IntAnys(this).intInRange(0, 12),
+        (int seed, int parts) {
+          const words = ['alpha', 'beta', 'gamma', '', 'd-e', 'f.g'];
+          const gaps = [' ', '  ', '\t', '\n', ' \t ', '\n\n', ''];
+          final buffer = StringBuffer(gaps[seed % gaps.length]);
+          for (var i = 0; i < parts; i++) {
+            buffer
+              ..write(words[(seed + i * 7) % words.length])
+              ..write(gaps[(seed + i * 5) % gaps.length]);
+          }
+          return buffer.toString();
+        },
+      );
 }

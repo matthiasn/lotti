@@ -2,82 +2,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/functions/function_handler.dart';
 import 'package:lotti/features/ai/functions/lotti_batch_checklist_handler.dart';
-import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart' show setUpTestGetIt, tearDownTestGetIt;
+import '../test_utils.dart' show ChecklistTestDataFactory;
 
 const _uuid = Uuid();
 
 // Test data factory
-class TestDataFactory {
-  static final _testDate = DateTime(2024, 3, 15);
-
-  static Task createTask({
-    String? id,
-    String? title,
-    List<String>? checklistIds,
-  }) {
-    final taskId = id ?? _uuid.v4();
-    return Task(
-      meta: Metadata(
-        id: taskId,
-        createdAt: _testDate,
-        updatedAt: _testDate,
-        dateFrom: _testDate,
-        dateTo: _testDate,
-        categoryId: 'test-category',
-      ),
-      data: TaskData(
-        title: title ?? 'Test Task',
-        checklistIds: checklistIds ?? [],
-        status: TaskStatus.open(
-          id: 'status-1',
-          createdAt: _testDate,
-          utcOffset: 0,
-        ),
-        statusHistory: const [],
-        dateFrom: _testDate,
-        dateTo: _testDate,
-      ),
-    );
-  }
-
-  static ChecklistItemData createChecklistItemData({
-    String? title,
-    bool isChecked = false,
-  }) {
-    return ChecklistItemData(
-      title: title ?? 'Test Item',
-      isChecked: isChecked,
-      linkedChecklists: [],
-    );
-  }
-
-  static ChatCompletionMessageToolCall createToolCall({
-    String? id,
-    String? functionName,
-    String? arguments,
-  }) {
-    return ChatCompletionMessageToolCall(
-      id: id ?? 'tool-1',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: functionName ?? 'add_multiple_checklist_items',
-        arguments:
-            arguments ??
-            '{"items": [{"title": "item1"}, {"title": "item2"}, {"title": "item3"}]}',
-      ),
-    );
-  }
-}
-
 void main() {
   late MockAutoChecklistService mockAutoChecklistService;
   late MockChecklistRepository mockChecklistRepository;
@@ -86,19 +22,19 @@ void main() {
   late Task testTask;
 
   setUpAll(() {
-    registerFallbackValue(TestDataFactory.createTask());
-    registerFallbackValue(TestDataFactory.createChecklistItemData());
+    registerFallbackValue(ChecklistTestDataFactory.createTask());
+    registerFallbackValue(ChecklistTestDataFactory.createChecklistItemData());
   });
 
-  setUp(() {
+  setUp(() async {
     mockAutoChecklistService = MockAutoChecklistService();
     mockChecklistRepository = MockChecklistRepository();
-    mockJournalDb = MockJournalDb();
+    // Registers core services in GetIt; the handler resolves JournalDb
+    // through the locator.
+    final mocks = await setUpTestGetIt();
+    mockJournalDb = mocks.journalDb;
 
-    // Set up getIt
-    getIt.registerSingleton<JournalDb>(mockJournalDb);
-
-    testTask = TestDataFactory.createTask();
+    testTask = ChecklistTestDataFactory.createTask();
 
     handler = LottiBatchChecklistHandler(
       task: testTask,
@@ -107,7 +43,7 @@ void main() {
     );
   });
 
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
 
   group('LottiBatchChecklistHandler', () {
     test('should have correct function name', () {
@@ -117,7 +53,7 @@ void main() {
     group('processFunctionCall', () {
       test('should fail when function name does not match', () {
         // Arrange
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
           id: 'mismatch-call',
           functionName: 'some_other_function',
           arguments: '{"items": [{"title": "item1"}]}',
@@ -140,7 +76,8 @@ void main() {
 
       test('should process array of item objects (required)', () {
         // Arrange
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'add_multiple_checklist_items',
           arguments:
               '{"items": [{"title": "cheese"}, {"title": "tomatoes, sliced"}, {"title": "pepperoni"}]}',
         );
@@ -161,7 +98,8 @@ void main() {
 
       test('should reject string fallback (comma-separated)', () {
         // Arrange
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'add_multiple_checklist_items',
           arguments: '{"items": "cheese, tomatoes, pepperoni"}',
         );
 
@@ -174,7 +112,8 @@ void main() {
       });
 
       test('should fail on empty array of items', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'add_multiple_checklist_items',
           arguments: '{"items": []}',
         );
 
@@ -187,7 +126,8 @@ void main() {
       });
 
       test('should accept array with non-object elements by rejecting them', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'add_multiple_checklist_items',
           arguments:
               '{"items": [123, true, null, {"title": "valid"}, {"title": "  "}]}',
         );
@@ -200,7 +140,8 @@ void main() {
       });
 
       test('should reject arrays of strings (invalid shape)', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'add_multiple_checklist_items',
           arguments: '{"items": ["a", "b"]}',
         );
         final result = handler.processFunctionCall(toolCall);
@@ -209,7 +150,8 @@ void main() {
       });
 
       test('should handle single-item array', () {
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'add_multiple_checklist_items',
           arguments: '{"items": [{"title": "single"}]}',
         );
         final result = handler.processFunctionCall(toolCall);
@@ -221,7 +163,8 @@ void main() {
 
       test('should trim whitespace from items', () {
         // Arrange
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'add_multiple_checklist_items',
           arguments:
               '{"items": [{"title": " cheese "}, {"title": "tomatoes"}, {"title": " pepperoni "}]}',
         );
@@ -242,7 +185,8 @@ void main() {
 
       test('should filter out empty items', () {
         // Arrange
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'add_multiple_checklist_items',
           arguments:
               '{"items": [{"title": ""}, {"title": "tomatoes"}, {"title": "  "}]}',
         );
@@ -259,7 +203,8 @@ void main() {
 
       test('should reject string value for items', () {
         // Arrange
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'add_multiple_checklist_items',
           arguments: '{"items": "cheese"}',
         );
 
@@ -276,7 +221,8 @@ void main() {
 
       test('should fail on empty items string', () {
         // Arrange
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'add_multiple_checklist_items',
           arguments: '{"items": ""}',
         );
 
@@ -293,7 +239,8 @@ void main() {
 
       test('should fail on missing items field', () {
         // Arrange
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'add_multiple_checklist_items',
           arguments: '{"wrong_field": "value"}',
         );
 
@@ -310,7 +257,8 @@ void main() {
 
       test('should fail on invalid JSON', () {
         // Arrange
-        final toolCall = TestDataFactory.createToolCall(
+        final toolCall = ChecklistTestDataFactory.createToolCall(
+          functionName: 'add_multiple_checklist_items',
           arguments: 'invalid json',
         );
 
@@ -524,7 +472,7 @@ void main() {
 
       test('should add items to existing checklist', () async {
         // Arrange
-        final taskWithChecklist = TestDataFactory.createTask(
+        final taskWithChecklist = ChecklistTestDataFactory.createTask(
           id: testTask.meta.id,
           checklistIds: ['checklist-1'],
         );
@@ -623,7 +571,7 @@ void main() {
         'createdItems should include isChecked state when provided',
         () async {
           // Arrange: existing checklist branch, with one item marked done
-          final taskWithChecklist = TestDataFactory.createTask(
+          final taskWithChecklist = ChecklistTestDataFactory.createTask(
             id: testTask.meta.id,
             checklistIds: ['checklist-1'],
           );
@@ -958,7 +906,7 @@ void main() {
           },
         );
 
-        final refreshedTask = TestDataFactory.createTask(
+        final refreshedTask = ChecklistTestDataFactory.createTask(
           id: testTask.meta.id,
           checklistIds: ['new-checklist'],
         );
@@ -1071,7 +1019,7 @@ void main() {
             onTaskUpdated: (_) => callbackInvoked = true,
           );
 
-          final taskWithChecklist = TestDataFactory.createTask(
+          final taskWithChecklist = ChecklistTestDataFactory.createTask(
             id: testTask.meta.id,
             checklistIds: ['checklist-1'],
           );
@@ -1314,7 +1262,7 @@ void main() {
 
     group('failedItems tracking', () {
       test('tracks failures when addItemToChecklist returns null', () async {
-        final taskWithChecklist = TestDataFactory.createTask(
+        final taskWithChecklist = ChecklistTestDataFactory.createTask(
           id: testTask.meta.id,
           checklistIds: ['checklist-1'],
         );
@@ -1423,7 +1371,7 @@ void main() {
       test(
         'createToolResponse includes failure details on partial failure',
         () async {
-          final taskWithChecklist = TestDataFactory.createTask(
+          final taskWithChecklist = ChecklistTestDataFactory.createTask(
             id: testTask.meta.id,
             checklistIds: ['checklist-1'],
           );
