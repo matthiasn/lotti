@@ -5,7 +5,7 @@ extension UnifiedAiToolCallProcessor on UnifiedAiInferenceRepository {
   /// Process various tool calls including checklist operations and language
   /// detection. Returns true if language was detected and set.
   @visibleForTesting
-  Future<bool> processToolCalls({
+  Future<bool> processToolCallsImpl({
     required List<ChatCompletionMessageToolCall> toolCalls,
     required Task task,
   }) async {

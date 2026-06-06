@@ -4,7 +4,7 @@ part of 'ollama_inference_repository.dart';
 /// matching the standalone `ollama_model_management_test.dart` mirror.
 extension OllamaModelManagement on OllamaInferenceRepository {
   /// Install a model in Ollama with progress tracking
-  Stream<OllamaPullProgress> installModel(
+  Stream<OllamaPullProgress> installModelImpl(
     String modelName,
     String baseUrl,
   ) async* {
@@ -93,7 +93,7 @@ extension OllamaModelManagement on OllamaInferenceRepository {
   }
 
   /// Warm up a model by sending a simple request to load it into memory
-  Future<void> warmUpModel(String modelName, String baseUrl) async {
+  Future<void> warmUpModelImpl(String modelName, String baseUrl) async {
     try {
       developer.log(
         'Warming up model: $modelName',

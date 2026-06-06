@@ -4,7 +4,7 @@ part of 'unified_ai_inference_repository.dart';
 /// entity/category context.
 extension UnifiedAiPromptContext on UnifiedAiInferenceRepository {
   /// Get all active prompts that match the current context
-  Future<List<AiConfigPrompt>> getActivePromptsForContext({
+  Future<List<AiConfigPrompt>> getActivePromptsForContextImpl({
     required JournalEntity entity,
   }) async {
     final allPrompts = await ref

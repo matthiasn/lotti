@@ -618,6 +618,37 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
       throw Exception('maxCompletionTokens must be positive');
     }
   }
+
+  /// Image analysis. Thin delegator to
+  /// [OllamaImageAnalysis.generateWithImagesImpl] so the method remains a
+  /// mockable class member.
+  Stream<CreateChatCompletionStreamResponse> generateWithImages({
+    required String prompt,
+    required String model,
+    required double temperature,
+    required List<String> images,
+    required AiConfigInferenceProvider provider,
+    int? maxCompletionTokens,
+    String? systemMessage,
+  }) => generateWithImagesImpl(
+    prompt: prompt,
+    model: model,
+    temperature: temperature,
+    images: images,
+    provider: provider,
+    maxCompletionTokens: maxCompletionTokens,
+    systemMessage: systemMessage,
+  );
+
+  /// Model installation. Thin delegator to
+  /// [OllamaModelManagement.installModelImpl] (mockable class member).
+  Stream<OllamaPullProgress> installModel(String modelName, String baseUrl) =>
+      installModelImpl(modelName, baseUrl);
+
+  /// Model warm-up. Thin delegator to
+  /// [OllamaModelManagement.warmUpModelImpl] (mockable class member).
+  Future<void> warmUpModel(String modelName, String baseUrl) =>
+      warmUpModelImpl(modelName, baseUrl);
 }
 
 /// Exception thrown when a model is not installed

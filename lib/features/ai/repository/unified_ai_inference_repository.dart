@@ -475,6 +475,22 @@ class UnifiedAiInferenceRepository {
       return '';
     }
   }
+
+  /// Active-prompt filtering for an entity context. Thin delegator to
+  /// [UnifiedAiPromptContext.getActivePromptsForContextImpl] so the method
+  /// remains a mockable class member.
+  Future<List<AiConfigPrompt>> getActivePromptsForContext({
+    required JournalEntity entity,
+  }) => getActivePromptsForContextImpl(entity: entity);
+
+  /// Tool-call dispatch. Thin delegator to
+  /// [UnifiedAiToolCallProcessor.processToolCallsImpl] (mockable class
+  /// member). Returns true if a language was detected and set.
+  @visibleForTesting
+  Future<bool> processToolCalls({
+    required List<ChatCompletionMessageToolCall> toolCalls,
+    required Task task,
+  }) => processToolCallsImpl(toolCalls: toolCalls, task: task);
 }
 
 @riverpod
