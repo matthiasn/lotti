@@ -77,6 +77,7 @@ CaptureController _stubCapture() {
 Widget _wrap(
   Widget child, {
   List<Override> overrides = const [],
+  List<TimeBlock> actualBlocks = const [],
   Size size = const Size(1400, 1200),
   MediaQueryData? mediaQueryData,
   ThemeData? theme,
@@ -88,7 +89,7 @@ Widget _wrap(
       // to SizedBox.shrink instead of touching the DB.
       capturesForDateProvider.overrideWith((ref, date) async => const []),
       dailyOsActualTimeBlocksProvider.overrideWith(
-        (ref, date) async => const [],
+        (ref, date) async => actualBlocks,
       ),
       // RefinePage builds a CaptureController; stub so it doesn't read
       // the realtime service providers during dispose.
@@ -164,6 +165,62 @@ void main() {
       expect(find.byType(AgendaView), findsOneWidget);
       expect(find.byType(DayTimeline), findsNothing);
     });
+
+    testWidgets(
+      'empty mode (no plan) lands on the Day view with the check-in CTA '
+      'instead of Refine/Commit, and hides the delete-plan menu entry',
+      (tester) async {
+        _setSurface(tester);
+        var checkIns = 0;
+        final tracked = TimeBlock(
+          id: 'tr1',
+          title: 'Recorded session',
+          start: DateTime(2026, 5, 26, 9),
+          end: DateTime(2026, 5, 26, 10),
+          type: TimeBlockType.manual,
+          state: TimeBlockState.completed,
+          category: _category,
+        );
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(
+              draft: DraftPlan.emptyForDay(DateTime(2026, 5, 26)),
+              hasPlan: false,
+              onCheckIn: () => checkIns++,
+            ),
+            actualBlocks: [tracked],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        // Lands on the Day projection so recorded time is visible.
+        expect(find.byType(DayTimeline), findsOneWidget);
+        expect(find.byType(AgendaView), findsNothing);
+        expect(find.text('Recorded session'), findsOneWidget);
+
+        // Footer carries the single check-in CTA, not Refine/Commit.
+        final messages = tester.element(find.byType(DayPage)).messages;
+        expect(find.text(messages.dailyOsNextDayRefineCta), findsNothing);
+        expect(find.text(messages.dailyOsNextDayLockInCta), findsNothing);
+        final cta = find.byKey(const Key('daily_os_day_check_in_cta'));
+        expect(cta, findsOneWidget);
+        await tester.tap(cta);
+        expect(checkIns, 1);
+
+        // The overflow menu offers no delete-plan entry without a plan.
+        await tester.tap(find.byIcon(Icons.more_vert_rounded));
+        await tester.pump();
+        expect(
+          find.text(messages.dailyOsNextDayMenuDeletePlan),
+          findsNothing,
+        );
+        expect(
+          find.text(messages.dailyOsNextDayMenuInspectAgent),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets('dateStrip widget replaces the default title', (tester) async {
       _setSurface(tester);

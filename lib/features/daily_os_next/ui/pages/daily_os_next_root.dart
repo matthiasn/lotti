@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -24,30 +25,20 @@ class DailyOsNextRoot extends ConsumerStatefulWidget {
 }
 
 class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
-  late DateTime _selectedDate;
+  /// Set when the user taps the empty Day surface's "Speak a check-in"
+  /// CTA — forces Capture even though the day has tracked time.
+  /// Cleared whenever the selected date changes.
+  bool _checkInRequested = false;
 
-  @override
-  void initState() {
-    super.initState();
-    final now = clock.now();
-    _selectedDate = DateTime(now.year, now.month, now.day);
-  }
+  DateTime get _selectedDate => ref.read(dailyOsNextSelectedDateProvider);
 
   DateTime get _today {
     final now = clock.now();
     return DateTime(now.year, now.month, now.day);
   }
 
-  bool get _isToday => _selectedDate.isAtSameMomentAs(_today);
-
   void _shiftDay(int days) {
-    setState(() {
-      _selectedDate = DateTime(
-        _selectedDate.year,
-        _selectedDate.month,
-        _selectedDate.day + days,
-      );
-    });
+    ref.read(dailyOsNextSelectedDateProvider.notifier).shiftDays(days);
   }
 
   Future<void> _pickDate() async {
@@ -55,40 +46,48 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     // so the prev/next chevrons can never drift past `firstDate` or
     // `lastDate` and trip a `showDatePicker` assertion. Day arithmetic
     // via the `DateTime` constructor stays DST-safe.
+    final selected = _selectedDate;
     final picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
+      initialDate: selected,
       firstDate: DateTime(
-        _selectedDate.year - 1,
-        _selectedDate.month,
-        _selectedDate.day,
+        selected.year - 1,
+        selected.month,
+        selected.day,
       ),
       lastDate: DateTime(
-        _selectedDate.year + 1,
-        _selectedDate.month,
-        _selectedDate.day,
+        selected.year + 1,
+        selected.month,
+        selected.day,
       ),
     );
     if (picked != null) {
-      setState(() {
-        _selectedDate = DateTime(picked.year, picked.month, picked.day);
-      });
+      ref.read(dailyOsNextSelectedDateProvider.notifier).select(picked);
     }
   }
 
   void _goToToday() {
-    setState(() => _selectedDate = _today);
+    ref.read(dailyOsNextSelectedDateProvider.notifier).goToToday();
   }
 
   @override
   Widget build(BuildContext context) {
-    final asyncPlan = ref.watch(currentDraftPlanProvider(_selectedDate));
+    // Day selection lives in a provider so the desktop sidebar's
+    // month calendar can drive it; the check-in override resets on
+    // every selection change.
+    ref.listen(dailyOsNextSelectedDateProvider, (previous, next) {
+      if (previous != next && _checkInRequested) {
+        setState(() => _checkInRequested = false);
+      }
+    });
+    final selectedDate = ref.watch(dailyOsNextSelectedDateProvider);
+    final asyncPlan = ref.watch(currentDraftPlanProvider(selectedDate));
     if (asyncPlan.hasValue) {
       final plan = asyncPlan.requireValue;
       if (plan != null) return _buildSurface(plan);
 
       final actualBlocks = ref.watch(
-        dailyOsActualTimeBlocksProvider(_selectedDate),
+        dailyOsActualTimeBlocksProvider(selectedDate),
       );
       return _buildSurface(null, actualBlocks: actualBlocks.value ?? const []);
     }
@@ -102,7 +101,7 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   }) {
     final strip = _DateStrip(
       selected: _selectedDate,
-      isToday: _isToday,
+      isToday: _selectedDate.isAtSameMomentAs(_today),
       onPrev: () => _shiftDay(-1),
       onNext: () => _shiftDay(1),
       onPick: _pickDate,
@@ -112,6 +111,19 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
       return DayPage(
         key: ValueKey(_selectedDate.toIso8601String()),
         draft: plan,
+        dateStrip: strip,
+      );
+    }
+    // No plan, but the day already has tracked time — land on the Day
+    // surface in its empty mode so the recorded sessions are visible
+    // on the timeline without creating a plan first (handoff v2 item
+    // 2). The footer CTA routes into Capture.
+    if (actualBlocks.isNotEmpty && !_checkInRequested) {
+      return DayPage(
+        key: ValueKey('empty-${_selectedDate.toIso8601String()}'),
+        draft: DraftPlan.emptyForDay(_selectedDate),
+        hasPlan: false,
+        onCheckIn: () => setState(() => _checkInRequested = true),
         dateStrip: strip,
       );
     }

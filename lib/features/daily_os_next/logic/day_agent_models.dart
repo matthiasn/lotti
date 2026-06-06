@@ -264,6 +264,36 @@ class TimeBlock {
   final String? location;
 
   Duration get duration => end.difference(start);
+
+  TimeBlock copyWith({
+    String? id,
+    String? title,
+    DateTime? start,
+    DateTime? end,
+    TimeBlockType? type,
+    TimeBlockState? state,
+    DayAgentCategory? category,
+    String? taskId,
+    String? reason,
+    int? sessionIndex,
+    int? sessionTotal,
+    String? location,
+  }) {
+    return TimeBlock(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      start: start ?? this.start,
+      end: end ?? this.end,
+      type: type ?? this.type,
+      state: state ?? this.state,
+      category: category ?? this.category,
+      taskId: taskId ?? this.taskId,
+      reason: reason ?? this.reason,
+      sessionIndex: sessionIndex ?? this.sessionIndex,
+      sessionTotal: sessionTotal ?? this.sessionTotal,
+      location: location ?? this.location,
+    );
+  }
 }
 
 /// A coloured energy band shown behind the Day timeline.
@@ -312,6 +342,22 @@ class DraftPlan {
     this.agendaItems = const [],
     this.state = DayState.drafted,
   });
+
+  /// Empty aggregate for a day with no drafted plan — lets the Day
+  /// surface render tracked time without a plan (handoff v2 item 2).
+  /// Capacity mirrors the day-agent config's 480-minute default.
+  factory DraftPlan.emptyForDay(
+    DateTime dayDate, {
+    int capacityMinutes = 480,
+  }) {
+    return DraftPlan(
+      dayDate: dayDate,
+      blocks: const [],
+      bands: const [],
+      capacityMinutes: capacityMinutes,
+      scheduledMinutes: 0,
+    );
+  }
 
   final DateTime dayDate;
   final List<TimeBlock> blocks;
@@ -391,6 +437,30 @@ class AgendaItem {
   final double? progress;
 
   final AgendaItemState state;
+
+  AgendaItem copyWith({
+    String? id,
+    String? title,
+    DayAgentCategory? category,
+    List<String>? linkedBlockIds,
+    String? taskId,
+    String? outcome,
+    int? totalEstimateMinutes,
+    double? progress,
+    AgendaItemState? state,
+  }) {
+    return AgendaItem(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      category: category ?? this.category,
+      linkedBlockIds: linkedBlockIds ?? this.linkedBlockIds,
+      taskId: taskId ?? this.taskId,
+      outcome: outcome ?? this.outcome,
+      totalEstimateMinutes: totalEstimateMinutes ?? this.totalEstimateMinutes,
+      progress: progress ?? this.progress,
+      state: state ?? this.state,
+    );
+  }
 }
 
 enum AgendaItemState {

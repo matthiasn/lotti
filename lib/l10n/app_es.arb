@@ -1518,6 +1518,7 @@
   "dailyOsNearLimit": "Cerca del límite",
   "dailyOsNextAgendaCapacityComfortable": "CÓMODO",
   "dailyOsNextAgendaCapacityNearFull": "CASI LLENO",
+  "dailyOsNextAgendaCapacityNoPlan": "AÚN SIN PLAN",
   "dailyOsNextAgendaCapacityOf": "de {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1528,7 +1529,9 @@
     }
   },
   "dailyOsNextAgendaCapacityOver": "SOBRECARGADO",
-  "dailyOsNextAgendaEmpty": "Nada que hacer hoy.",
+  "dailyOsNextAgendaNoPlanBody": "Tu tiempo registrado está aquí de todos modos: habla un check-in y prepararé un día a su alrededor.",
+  "dailyOsNextAgendaNoPlanSummary": "{duration} registrado hasta ahora. Habla un check-in y prepararé un día a su alrededor.",
+  "dailyOsNextAgendaNoPlanTitle": "Aún no hay plan para hoy.",
   "dailyOsNextAgendaStateDone": "Hecho",
   "dailyOsNextAgendaStateInProgress": "En curso",
   "dailyOsNextAgendaStateOpen": "Abierto",
@@ -1546,6 +1549,7 @@
       }
     }
   },
+  "dailyOsNextAgendaTrackedLegend": "Registrado · {duration} · {completedCount} hechas",
   "dailyOsNextCaptureCaptured": "Entendido.",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Se denegó el permiso del micrófono.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "No hay ninguna sesión en tiempo real activa.",
@@ -1590,17 +1594,21 @@
       }
     }
   },
-  "dailyOsNextCommitDraftHeadline": "Tu día, en borrador.",
-  "dailyOsNextCommitDraftOverline": "HOY",
+  "dailyOsNextCommitDraftOverline": "TU DÍA, EN BORRADOR",
+  "dailyOsNextCommitExplainer": "Confirma para pasar el día de borrador a comprometido.",
+  "dailyOsNextCommitFinalStepEyebrow": "ÚLTIMO PASO",
   "dailyOsNextCommitHeadline": "Hazlo tuyo.",
-  "dailyOsNextCommitHoldHint": "MANTÉN",
-  "dailyOsNextCommitHoldLabel": "Confirmar hoy",
+  "dailyOsNextCommitHoldHelper": "Mantén un segundo para confirmar",
+  "dailyOsNextCommitHoldWordDone": "Comprometido",
+  "dailyOsNextCommitHoldWordHolding": "Sigue así",
+  "dailyOsNextCommitHoldWordIdle": "Mantén",
   "dailyOsNextCommitLockingIn": "Fijando…",
   "dailyOsNextCommitShepherdSubline": "Yo lo guío — tú haces el trabajo.",
-  "dailyOsNextCommitSubCaption": "Confirmar pasa el día de borrador a comprometido. Aún puedes hablarme, pero la estructura queda fija.",
+  "dailyOsNextCommitSubCaption": "Después aún puedes hablar conmigo, pero la estructura se queda.",
   "dailyOsNextCommitTitle": "Confirmar",
   "dailyOsNextCommitTodayIsYours": "El día es tuyo.",
   "dailyOsNextDayBack": "Atrás",
+  "dailyOsNextDayCheckInCta": "Hablar un check-in",
   "dailyOsNextDayDeleteDialogBody": "Los bloques planificados para este día se eliminarán. Tus capturas y sus grabaciones de audio se quedan en tu diario.",
   "dailyOsNextDayDeleteDialogCancel": "Cancelar",
   "dailyOsNextDayDeleteDialogConfirm": "Eliminar",
@@ -1618,6 +1626,7 @@
   "dailyOsNextDraftingNudgeAccept": "Sí, protege las mañanas",
   "dailyOsNextDraftingNudgeDecline": "Hoy no",
   "dailyOsNextDraftingReasoningOverline": "✦ RAZONAMIENTO",
+  "dailyOsNextEditTitleHint": "Editar título",
   "dailyOsNextEstimateMinutes": "{minutes}m",
   "@dailyOsNextEstimateMinutes": {
     "placeholders": {
@@ -1631,7 +1640,7 @@
   "dailyOsNextGreetingAfternoon": "Buenas tardes.",
   "dailyOsNextGreetingEvening": "Buenas noches.",
   "dailyOsNextGreetingHi": "Hola 👋",
-  "dailyOsNextGreetingHiName": "Hola {name},",
+  "dailyOsNextGreetingHiName": "Hola {name} 👋",
   "dailyOsNextGreetingMorning": "Buenos días.",
   "dailyOsNextParsedCardBreakLinkTooltip": "Romper enlace",
   "dailyOsNextPlanViewAgenda": "Agenda",
@@ -1708,6 +1717,7 @@
   "dailyOsNextShutdownSaveAndClose": "Guardar y cerrar",
   "dailyOsNextShutdownTitle": "Cerrar el día",
   "dailyOsNextShutdownTomorrowOverline": "✦ PARA MAÑANA",
+  "dailyOsNextStandaloneTag": "Bloque de tiempo",
   "dailyOsNextStateDueOnDate": "Vence el {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {
@@ -1759,9 +1769,12 @@
   "dailyOsNextTimelineShowBoth": "Mostrar plan y real juntos",
   "dailyOsNextTimelineShowPaged": "Mostrar plan y real deslizable",
   "dailyOsNextTimelineSwipeHint": "Desliza para ver lo real · pellizca verticalmente para zoom",
-  "dailyOsNextTimeSpentEmpty": "Aún no hay tiempo registrado para este día.",
-  "dailyOsNextTimeSpentSummary": "{duration} registrado · {completedCount, plural, =1{1 hecha} other{{completedCount} hechas}}",
-  "dailyOsNextTimeSpentTitle": "TIEMPO USADO",
+  "dailyOsNextTimelineTracked": "registrado",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesión anterior} other{{count} sesiones anteriores}}",
+  "dailyOsNextTimeSpentShowLess": "Mostrar menos",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} hechas",
+  "dailyOsNextTimeSpentTitle": "HOY HASTA AHORA",
+  "dailyOsNextTimeSpentTitlePast": "TIEMPO REGISTRADO",
   "dailyOsNextTriageConfirmDefer": "Aplazado",
   "dailyOsNextTriageConfirmDone": "Marcado como hecho",
   "dailyOsNextTriageConfirmDoNow": "Hecho ya",

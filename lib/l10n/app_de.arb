@@ -1518,6 +1518,7 @@
   "dailyOsNearLimit": "Fast am Limit",
   "dailyOsNextAgendaCapacityComfortable": "ENTSPANNT",
   "dailyOsNextAgendaCapacityNearFull": "FAST VOLL",
+  "dailyOsNextAgendaCapacityNoPlan": "NOCH KEIN PLAN",
   "dailyOsNextAgendaCapacityOf": "von {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1528,7 +1529,9 @@
     }
   },
   "dailyOsNextAgendaCapacityOver": "ÜBERLASTET",
-  "dailyOsNextAgendaEmpty": "Heute ist nichts geplant.",
+  "dailyOsNextAgendaNoPlanBody": "Deine erfasste Zeit ist trotzdem hier — sprich ein Check-in ein und ich entwerfe einen Tag darum.",
+  "dailyOsNextAgendaNoPlanSummary": "Bisher {duration} erfasst. Sprich ein Check-in ein und ich entwerfe einen Tag darum.",
+  "dailyOsNextAgendaNoPlanTitle": "Noch kein Plan für heute.",
   "dailyOsNextAgendaStateDone": "Erledigt",
   "dailyOsNextAgendaStateInProgress": "In Arbeit",
   "dailyOsNextAgendaStateOpen": "Offen",
@@ -1546,6 +1549,7 @@
       }
     }
   },
+  "dailyOsNextAgendaTrackedLegend": "Erfasst · {duration} · {completedCount} erledigt",
   "dailyOsNextCaptureCaptured": "Hab's.",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Der Zugriff auf das Mikrofon wurde verweigert.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "Keine aktive Echtzeit-Sitzung.",
@@ -1590,17 +1594,21 @@
       }
     }
   },
-  "dailyOsNextCommitDraftHeadline": "Dein Tag, als Entwurf.",
-  "dailyOsNextCommitDraftOverline": "HEUTE",
+  "dailyOsNextCommitDraftOverline": "DEIN TAG, ENTWORFEN",
+  "dailyOsNextCommitExplainer": "Bestätige, um den Tag vom Entwurf in fest umzuwandeln.",
+  "dailyOsNextCommitFinalStepEyebrow": "LETZTER SCHRITT",
   "dailyOsNextCommitHeadline": "Mach ihn zu deinem.",
-  "dailyOsNextCommitHoldHint": "HALTEN",
-  "dailyOsNextCommitHoldLabel": "Heute festlegen",
+  "dailyOsNextCommitHoldHelper": "Eine Sekunde halten zum Bestätigen",
+  "dailyOsNextCommitHoldWordDone": "Festgelegt",
+  "dailyOsNextCommitHoldWordHolding": "Weiter halten",
+  "dailyOsNextCommitHoldWordIdle": "Halten",
   "dailyOsNextCommitLockingIn": "Wird festgemacht…",
   "dailyOsNextCommitShepherdSubline": "Ich begleite ihn — du machst die Arbeit.",
-  "dailyOsNextCommitSubCaption": "Mit dem Festlegen wechselst du vom Entwurf zum verbindlichen Tag. Sprechen kannst du weiterhin — aber das Gerüst bleibt.",
+  "dailyOsNextCommitSubCaption": "Du kannst danach weiter mit mir sprechen — aber das Gerüst bleibt stehen.",
   "dailyOsNextCommitTitle": "Festmachen",
   "dailyOsNextCommitTodayIsYours": "Der Tag gehört dir.",
   "dailyOsNextDayBack": "Zurück",
+  "dailyOsNextDayCheckInCta": "Check-in einsprechen",
   "dailyOsNextDayDeleteDialogBody": "Die geplanten Blöcke für diesen Tag werden entfernt. Deine Aufnahmen und ihre Audio-Dateien bleiben in deinem Journal.",
   "dailyOsNextDayDeleteDialogCancel": "Abbrechen",
   "dailyOsNextDayDeleteDialogConfirm": "Löschen",
@@ -1618,6 +1626,7 @@
   "dailyOsNextDraftingNudgeAccept": "Ja, Morgen schützen",
   "dailyOsNextDraftingNudgeDecline": "Heute nicht",
   "dailyOsNextDraftingReasoningOverline": "✦ ÜBERLEGUNG",
+  "dailyOsNextEditTitleHint": "Titel bearbeiten",
   "dailyOsNextEstimateMinutes": "{minutes}m",
   "@dailyOsNextEstimateMinutes": {
     "placeholders": {
@@ -1631,7 +1640,7 @@
   "dailyOsNextGreetingAfternoon": "Guten Tag.",
   "dailyOsNextGreetingEvening": "Guten Abend.",
   "dailyOsNextGreetingHi": "Hallo 👋",
-  "dailyOsNextGreetingHiName": "Hi {name},",
+  "dailyOsNextGreetingHiName": "Hi {name} 👋",
   "dailyOsNextGreetingMorning": "Guten Morgen.",
   "dailyOsNextParsedCardBreakLinkTooltip": "Verknüpfung lösen",
   "dailyOsNextPlanViewAgenda": "Agenda",
@@ -1708,6 +1717,7 @@
   "dailyOsNextShutdownSaveAndClose": "Speichern & schließen",
   "dailyOsNextShutdownTitle": "Tag abschließen",
   "dailyOsNextShutdownTomorrowOverline": "✦ FÜR MORGEN",
+  "dailyOsNextStandaloneTag": "Zeitblock",
   "dailyOsNextStateDueOnDate": "Fällig am {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {
@@ -1759,9 +1769,12 @@
   "dailyOsNextTimelineShowBoth": "Plan und Ist gemeinsam anzeigen",
   "dailyOsNextTimelineShowPaged": "Plan und Ist zum Wischen anzeigen",
   "dailyOsNextTimelineSwipeHint": "Wische zu Ist · vertikal kneifen zum Zoomen",
-  "dailyOsNextTimeSpentEmpty": "Für diesen Tag ist noch keine Zeit erfasst.",
-  "dailyOsNextTimeSpentSummary": "{duration} erfasst · {completedCount} erledigt",
-  "dailyOsNextTimeSpentTitle": "ZEITVERWENDUNG",
+  "dailyOsNextTimelineTracked": "erfasst",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 frühere Sitzung} other{{count} frühere Sitzungen}}",
+  "dailyOsNextTimeSpentShowLess": "Weniger anzeigen",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} erledigt",
+  "dailyOsNextTimeSpentTitle": "HEUTE BISHER",
+  "dailyOsNextTimeSpentTitlePast": "ERFASSTE ZEIT",
   "dailyOsNextTriageConfirmDefer": "Verschoben",
   "dailyOsNextTriageConfirmDone": "Erledigt markiert",
   "dailyOsNextTriageConfirmDoNow": "Sofort erledigt",

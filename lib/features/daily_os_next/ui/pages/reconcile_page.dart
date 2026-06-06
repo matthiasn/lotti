@@ -4,10 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/dashed_border.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
@@ -233,9 +235,7 @@ class _ColumnHeader extends StatelessWidget {
         Expanded(
           child: Text(
             overline,
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
+            style: calmEyebrowStyle(tokens),
           ),
         ),
         SizedBox(width: tokens.spacing.step2),
@@ -420,62 +420,4 @@ class _ReconcileFooter extends StatelessWidget {
             ),
     );
   }
-}
-
-/// Simple dashed border decoration — used for secondary hint cards.
-/// Inlined here rather than introducing a dependency on a 3rd-party
-/// package. Strokes follow the design system decorative level.
-class DottedBorder extends StatelessWidget {
-  const DottedBorder({
-    required this.child,
-    required this.color,
-    required this.radius,
-    super.key,
-  });
-
-  final Widget child;
-  final Color color;
-  final double radius;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(
-      painter: _DashedBorderPainter(color: color, radius: radius),
-      child: child,
-    );
-  }
-}
-
-class _DashedBorderPainter extends CustomPainter {
-  _DashedBorderPainter({required this.color, required this.radius});
-
-  final Color color;
-  final double radius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-    final rrect = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0.5, 0.5, size.width - 1, size.height - 1),
-      Radius.circular(radius),
-    );
-    final path = Path()..addRRect(rrect);
-    const dash = 4.0;
-    const gap = 3.0;
-    for (final metric in path.computeMetrics()) {
-      var distance = 0.0;
-      while (distance < metric.length) {
-        final next = (distance + dash).clamp(0.0, metric.length);
-        canvas.drawPath(metric.extractPath(distance, next), paint);
-        distance = next + gap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedBorderPainter old) =>
-      old.color != color || old.radius != radius;
 }

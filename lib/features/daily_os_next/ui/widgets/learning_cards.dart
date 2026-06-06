@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Right-column stack of learning cards on the Drafting screen.
@@ -47,9 +48,7 @@ class _StandardLearningCard extends StatelessWidget {
         children: [
           Text(
             card.overline,
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
+            style: calmEyebrowStyle(tokens),
           ),
           SizedBox(height: tokens.spacing.step2),
           Text(
@@ -140,9 +139,7 @@ class _GentleNudgeCard extends StatelessWidget {
         children: [
           Text(
             card.overline,
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: teal,
-            ),
+            style: calmEyebrowStyle(tokens, color: teal),
           ),
           SizedBox(height: tokens.spacing.step3),
           Text(

@@ -6,9 +6,12 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/dashed_border.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -29,6 +32,7 @@ class DayTimeline extends StatefulWidget {
     this.endHour = 24,
     this.pxPerMinute = 1.0,
     this.actualBlocks,
+    this.onRenameBlock,
     this.clock,
     super.key,
   });
@@ -41,6 +45,11 @@ class DayTimeline extends StatefulWidget {
   /// Recorded work sessions projected from the real journal. Falls back
   /// to [DraftPlan.actualBlocks] for tests and mock fixtures.
   final List<TimeBlock>? actualBlocks;
+
+  /// Inline rename for standalone planned blocks (handoff v2 item 3).
+  /// Only the plan pane offers editing; tracked blocks already
+  /// happened and stay read-only.
+  final void Function(TimeBlock block, String title)? onRenameBlock;
 
   /// Injected clock used by the now-line. Defaults to `DateTime.now`.
   /// Tests pass a fixed `DateTime` to render the line deterministically.
@@ -161,7 +170,6 @@ class _DayTimelineState extends State<DayTimeline> {
               mode: comparisonMode,
               onToggleMode: _toggleComparisonMode,
             ),
-            _TimeSpentSummary(blocks: _actualBlocksForSummary()),
             Expanded(
               child: Listener(
                 onPointerDown: _handlePointerDown,
@@ -215,6 +223,8 @@ class _DayTimelineState extends State<DayTimeline> {
                                           pxPerMinute: _pxPerMinute,
                                           now: nowInWindow ? _now : null,
                                           showBands: true,
+                                          tracked: false,
+                                          onRenameBlock: widget.onRenameBlock,
                                         ),
                                       ),
                                       SizedBox(width: tokens.spacing.step3),
@@ -235,6 +245,8 @@ class _DayTimelineState extends State<DayTimeline> {
                                           pxPerMinute: _pxPerMinute,
                                           now: nowInWindow ? _now : null,
                                           showBands: false,
+                                          tracked: true,
+                                          onRenameBlock: null,
                                         ),
                                       ),
                                     ],
@@ -263,6 +275,8 @@ class _DayTimelineState extends State<DayTimeline> {
                                           pxPerMinute: _pxPerMinute,
                                           now: nowInWindow ? _now : null,
                                           showBands: true,
+                                          tracked: false,
+                                          onRenameBlock: widget.onRenameBlock,
                                         ),
                                       ),
                                       Padding(
@@ -285,6 +299,8 @@ class _DayTimelineState extends State<DayTimeline> {
                                           pxPerMinute: _pxPerMinute,
                                           now: nowInWindow ? _now : null,
                                           showBands: false,
+                                          tracked: true,
+                                          onRenameBlock: null,
                                         ),
                                       ),
                                     ],
@@ -325,18 +341,6 @@ class _DayTimelineState extends State<DayTimeline> {
         );
       },
     );
-  }
-
-  List<TimeBlock> _actualBlocksForSummary() {
-    final actualBlocks = widget.actualBlocks ?? widget.draft.actualBlocks;
-    if (actualBlocks.isNotEmpty) return actualBlocks;
-    return widget.draft.blocks
-        .where(
-          (block) =>
-              block.state == TimeBlockState.completed ||
-              block.state == TimeBlockState.inProgress,
-        )
-        .toList();
   }
 
   void _toggleComparisonMode() {
@@ -770,156 +774,6 @@ class _TimelineToolbar extends StatelessWidget {
   }
 }
 
-class _TimeSpentSummary extends StatelessWidget {
-  const _TimeSpentSummary({required this.blocks});
-
-  final List<TimeBlock> blocks;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final messages = context.messages;
-    final totalMinutes = blocks.fold<int>(
-      0,
-      (sum, block) => sum + block.duration.inMinutes,
-    );
-    final completedTaskIds = blocks
-        .where((block) => block.state == TimeBlockState.completed)
-        .map((block) => block.taskId ?? block.id)
-        .toSet();
-
-    return Container(
-      margin: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step5,
-        vertical: tokens.spacing.step2,
-      ),
-      padding: EdgeInsets.all(tokens.spacing.step4),
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border.all(color: tokens.colors.decorative.level01),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  messages.dailyOsNextTimeSpentTitle,
-                  style: tokens.typography.styles.others.overline.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              ),
-              Text(
-                messages.dailyOsNextTimeSpentSummary(
-                  _formatMinutes(totalMinutes),
-                  completedTaskIds.length,
-                ),
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: tokens.spacing.step3),
-          if (blocks.isEmpty)
-            Text(
-              messages.dailyOsNextTimeSpentEmpty,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            )
-          else
-            _ActualCategoryBars(blocks: blocks),
-        ],
-      ),
-    );
-  }
-
-  String _formatMinutes(int minutes) {
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    if (h == 0) return '${m}m';
-    if (m == 0) return '${h}h';
-    return '${h}h ${m}m';
-  }
-}
-
-class _ActualCategoryBars extends StatelessWidget {
-  const _ActualCategoryBars({required this.blocks});
-
-  final List<TimeBlock> blocks;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final totals = <String, ({DayAgentCategory category, int minutes})>{};
-    for (final block in blocks) {
-      final existing = totals[block.category.id];
-      totals[block.category.id] = (
-        category: block.category,
-        minutes: (existing?.minutes ?? 0) + block.duration.inMinutes,
-      );
-    }
-    final entries = totals.values.toList()
-      ..sort((a, b) => b.minutes.compareTo(a.minutes));
-    final maxMinutes = entries.first.minutes == 0 ? 1 : entries.first.minutes;
-    return Column(
-      children: [
-        for (final entry in entries) ...[
-          Row(
-            children: [
-              SizedBox(
-                width: tokens.spacing.step9,
-                child: Text(
-                  entry.category.name,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(tokens.radii.xs),
-                  child: LinearProgressIndicator(
-                    minHeight: tokens.spacing.step2,
-                    value: entry.minutes / maxMinutes,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      categoryColorFromHex(entry.category.colorHex),
-                    ),
-                    backgroundColor: tokens.colors.background.level03,
-                  ),
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Text(
-                _formatMinutes(entry.minutes),
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ),
-            ],
-          ),
-          if (entry != entries.last) SizedBox(height: tokens.spacing.step2),
-        ],
-      ],
-    );
-  }
-
-  String _formatMinutes(int minutes) {
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    if (h == 0) return '${m}m';
-    if (m == 0) return '${h}h';
-    return '${h}h ${m}m';
-  }
-}
-
 class _TimelinePane extends StatelessWidget {
   const _TimelinePane({
     required this.label,
@@ -933,6 +787,8 @@ class _TimelinePane extends StatelessWidget {
     required this.pxPerMinute,
     required this.now,
     required this.showBands,
+    required this.tracked,
+    required this.onRenameBlock,
   });
 
   final String label;
@@ -946,6 +802,12 @@ class _TimelinePane extends StatelessWidget {
   final double pxPerMinute;
   final DateTime? now;
   final bool showBands;
+
+  /// True for the recorded-sessions pane — its blocks render in the
+  /// neutral "tracked" treatment (they already happened).
+  final bool tracked;
+
+  final void Function(TimeBlock block, String title)? onRenameBlock;
 
   @override
   Widget build(BuildContext context) {
@@ -961,9 +823,7 @@ class _TimelinePane extends StatelessWidget {
               alignment: Alignment.topLeft,
               child: Text(
                 label,
-                style: tokens.typography.styles.others.overline.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
+                style: calmEyebrowStyle(tokens),
               ),
             ),
           ),
@@ -990,6 +850,10 @@ class _TimelinePane extends StatelessWidget {
                     windowStart: windowStart,
                     foldingState: foldingState,
                     pxPerMinute: pxPerMinute,
+                    tracked: tracked,
+                    onRename: onRenameBlock == null
+                        ? null
+                        : (title) => onRenameBlock!(block, title),
                   ),
                 if (now != null)
                   _NowLine(
@@ -1560,12 +1424,16 @@ class _BlockPosition extends StatelessWidget {
     required this.windowStart,
     required this.foldingState,
     required this.pxPerMinute,
+    required this.tracked,
+    required this.onRename,
   });
 
   final TimeBlock block;
   final DateTime windowStart;
   final _TimelineFoldingState foldingState;
   final double pxPerMinute;
+  final bool tracked;
+  final ValueChanged<String>? onRename;
 
   @override
   Widget build(BuildContext context) {
@@ -1596,23 +1464,41 @@ class _BlockPosition extends StatelessWidget {
       child: DayBlock(
         key: Key('daily_os_day_block_${block.id}'),
         block: block,
+        tracked: tracked,
+        onRename: onRename,
       ),
     );
   }
 }
 
 /// A single placed block on the Day timeline.
+///
+/// Planned blocks carry their category color; [tracked] blocks (recorded
+/// sessions) render in the neutral treatment from handoff v2 item 2 —
+/// faint neutral fill, neutral left border, a small category dot, a green
+/// check when done, a mono time range, and a "· tracked" suffix. They
+/// never read as drafted: they already happened.
 class DayBlock extends StatelessWidget {
-  const DayBlock({required this.block, super.key});
+  const DayBlock({
+    required this.block,
+    this.tracked = false,
+    this.onRename,
+    super.key,
+  });
 
   final TimeBlock block;
+  final bool tracked;
+
+  /// Inline rename for standalone blocks. Ignored for task-linked,
+  /// calendar, buffer, and tracked blocks.
+  final ValueChanged<String>? onRename;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final category = _categoryColor();
     final isBuffer = block.type == TimeBlockType.buffer;
-    final isDrafted = block.state == TimeBlockState.drafted;
+    final isDrafted = !tracked && block.state == TimeBlockState.drafted;
     final taskId = block.taskId?.trim();
     final onTap = taskId == null || taskId.isEmpty
         ? null
@@ -1620,9 +1506,13 @@ class DayBlock extends StatelessWidget {
 
     final fill = isBuffer
         ? Colors.transparent
+        : tracked
+        ? tokens.colors.surface.enabled
         : category.withValues(alpha: 0.12);
     final leftStripeColor = isBuffer
         ? tokens.colors.text.lowEmphasis.withValues(alpha: 0.32)
+        : tracked
+        ? tokens.colors.decorative.level02
         : category;
 
     final borderRadius = BorderRadius.circular(tokens.radii.m);
@@ -1630,11 +1520,6 @@ class DayBlock extends StatelessWidget {
       decoration: BoxDecoration(
         color: fill,
         borderRadius: borderRadius,
-        border: isDrafted
-            ? Border.all(
-                color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.20),
-              )
-            : null,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1655,17 +1540,31 @@ class DayBlock extends StatelessWidget {
                 horizontal: tokens.spacing.step3,
                 vertical: tokens.spacing.step2,
               ),
-              child: _BlockContent(block: block),
+              child: _BlockContent(
+                block: block,
+                tracked: tracked,
+                onRename: onRename,
+              ),
             ),
           ),
         ],
       ),
     );
 
+    // Drafted blocks read provisional via a dashed outline; committed
+    // and tracked blocks read solid.
+    final outlined = isDrafted
+        ? DottedBorder(
+            color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.20),
+            radius: tokens.radii.m,
+            child: card,
+          )
+        : card;
+
     if (onTap == null) {
       return Material(
         type: MaterialType.transparency,
-        child: card,
+        child: outlined,
       );
     }
 
@@ -1676,7 +1575,7 @@ class DayBlock extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           borderRadius: borderRadius,
-          child: card,
+          child: outlined,
         ),
       ),
     );
@@ -1686,22 +1585,42 @@ class DayBlock extends StatelessWidget {
 }
 
 class _BlockContent extends StatelessWidget {
-  const _BlockContent({required this.block});
+  const _BlockContent({
+    required this.block,
+    required this.tracked,
+    required this.onRename,
+  });
 
   final TimeBlock block;
+  final bool tracked;
+  final ValueChanged<String>? onRename;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final category = categoryColorFromHex(block.category.colorHex);
     final isBuffer = block.type == TimeBlockType.buffer;
     final isCal = block.type == TimeBlockType.cal;
+    final isTaskLinked =
+        block.taskId != null && block.taskId!.trim().isNotEmpty;
+    final isDone = block.state == TimeBlockState.completed;
+    // Standalone ai/manual placements are click-to-edit; everything
+    // else (cal events, buffers, task-linked, tracked) is read-only.
+    final editable =
+        !tracked && !isBuffer && !isCal && !isTaskLinked && onRename != null;
+    final titleStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.highEmphasis,
+      fontWeight: FontWeight.w600,
+      fontStyle: isBuffer ? FontStyle.italic : FontStyle.normal,
+    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
         // Per the prototype: blocks shorter than 36 px collapse to the
         // title row only. The sub-title row would otherwise overflow
         // the block on 30-min cal events.
-        final showSubtitle = !isBuffer && constraints.maxHeight >= 36;
+        final compact = constraints.maxHeight < 36;
+        final showSubtitle = !isBuffer && !compact;
         final titleMaxLines = constraints.maxHeight >= 56 ? 2 : 1;
         return ClipRect(
           child: Column(
@@ -1711,6 +1630,21 @@ class _BlockContent extends StatelessWidget {
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (tracked) ...[
+                    Padding(
+                      padding: EdgeInsets.only(top: tokens.spacing.step1),
+                      child: SizedBox.square(
+                        dimension: tokens.spacing.step2,
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: category,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: tokens.spacing.step2),
+                  ],
                   if (isCal) ...[
                     Icon(
                       Icons.event_rounded,
@@ -1719,25 +1653,42 @@ class _BlockContent extends StatelessWidget {
                     ),
                     SizedBox(width: tokens.spacing.step1),
                   ],
-                  Expanded(
-                    child: Text(
-                      block.title,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                        fontWeight: FontWeight.w600,
-                        fontStyle: isBuffer
-                            ? FontStyle.italic
-                            : FontStyle.normal,
-                      ),
-                      maxLines: titleMaxLines,
-                      overflow: TextOverflow.fade,
-                      softWrap: true,
+                  if (!tracked && isTaskLinked) ...[
+                    Icon(
+                      Icons.link_rounded,
+                      size: 12,
+                      color: tokens.colors.alert.info.defaultColor,
                     ),
+                    SizedBox(width: tokens.spacing.step1),
+                  ],
+                  Expanded(
+                    child: editable && !compact
+                        ? EditableTitle(
+                            value: block.title,
+                            onSubmitted: onRename!,
+                            style: titleStyle,
+                          )
+                        : Text(
+                            block.title,
+                            style: titleStyle,
+                            maxLines: titleMaxLines,
+                            overflow: TextOverflow.fade,
+                            softWrap: true,
+                          ),
                   ),
+                  if (tracked && isDone && !compact) ...[
+                    SizedBox(width: tokens.spacing.step1),
+                    Icon(
+                      Icons.check_rounded,
+                      size: 12,
+                      color: tokens.colors.alert.success.defaultColor,
+                    ),
+                  ],
                 ],
               ),
               if (block.reason != null &&
                   block.type == TimeBlockType.ai &&
+                  !tracked &&
                   constraints.maxHeight >= 72) ...[
                 SizedBox(height: tokens.spacing.step1),
                 WhyChip(reason: block.reason!),
@@ -1747,10 +1698,15 @@ class _BlockContent extends StatelessWidget {
                   padding: EdgeInsets.only(top: tokens.spacing.step1),
                   child: Text(
                     _subTitle(context, block),
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
-                      fontSize: 10,
-                    ),
+                    style: tracked
+                        ? monoMetaStyle(
+                            tokens,
+                            tokens.colors,
+                          ).copyWith(fontSize: 10)
+                        : tokens.typography.styles.others.caption.copyWith(
+                            color: tokens.colors.text.lowEmphasis,
+                            fontSize: 10,
+                          ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -1773,6 +1729,7 @@ class _BlockContent extends StatelessWidget {
       );
     }
     if (block.location != null) parts.add(block.location!);
+    if (tracked) parts.add(context.messages.dailyOsNextTimelineTracked);
     return parts.join(' · ');
   }
 

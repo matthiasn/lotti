@@ -80,11 +80,15 @@ class DsPill extends StatelessWidget {
         SizedBox(width: gap),
       ],
       if (label != null)
-        Text(
-          label!,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: labelStyle,
+        // Flexible so a host-bounded pill (e.g. a max-width link badge)
+        // ellipsizes the label instead of overflowing the row.
+        Flexible(
+          child: Text(
+            label!,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: labelStyle,
+          ),
         ),
       if (trailing != null) ...[
         SizedBox(width: gap),

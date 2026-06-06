@@ -9,7 +9,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -85,7 +86,9 @@ void main() {
       await tester.pumpWidget(_wrap(AgendaView(draft: _draft(taskId: 't1'))));
       await tester.pump();
 
-      await tester.tap(find.text('Complete client animation'));
+      // The agenda title and the link badge both carry the item title
+      // when no live task title resolves; tap the card title.
+      await tester.tap(find.text('Complete client animation').first);
       await tester.pump();
 
       expect(openedPath, '/tasks/t1');
@@ -128,8 +131,10 @@ void main() {
       );
       await tester.pump();
 
+      // The live task name renders on the link badge; the card title
+      // keeps the agenda intent line.
       expect(find.text('Updated task title'), findsOneWidget);
-      expect(find.text('Complete client animation'), findsNothing);
+      expect(find.text('Complete client animation'), findsOneWidget);
 
       task = TestTaskFactory.create(
         id: 't1',
@@ -269,10 +274,10 @@ void main() {
         find.text(messages.dailyOsNextAgendaSummary('1h 30m', '4h')),
         findsOneWidget,
       );
-      expect(find.byType(CapacityMeter), findsOneWidget);
+      expect(find.byType(CapacityDonut), findsOneWidget);
     });
 
-    testWidgets('empty agenda items renders the empty-state message', (
+    testWidgets('empty agenda renders the dashed "No plan yet" hint card', (
       tester,
     ) async {
       final draft = DraftPlan(
@@ -286,9 +291,74 @@ void main() {
       await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
 
       final messages = tester.element(find.byType(AgendaView)).messages;
-      expect(find.text(messages.dailyOsNextAgendaEmpty), findsOneWidget);
+      expect(find.text(messages.dailyOsNextAgendaNoPlanTitle), findsOneWidget);
+      expect(find.text(messages.dailyOsNextAgendaNoPlanBody), findsOneWidget);
       expect(find.byType(AgendaCard), findsNothing);
+      // No tracked time -> no TimeSpentCard either.
+      expect(find.byType(TimeSpentCard), findsNothing);
     });
+
+    testWidgets(
+      'no-plan day stays honest: eyebrow, tracked summary, legend, and '
+      'the TimeSpentCard with the recorded sessions',
+      (tester) async {
+        final day = DateTime(2026, 5, 26);
+        final tracked = [
+          TimeBlock(
+            id: 'tr1',
+            title: 'Build attention framework',
+            start: DateTime(2026, 5, 26, 8, 30),
+            end: DateTime(2026, 5, 26, 10),
+            type: TimeBlockType.manual,
+            state: TimeBlockState.completed,
+            category: _category,
+            taskId: 'task-tr1',
+          ),
+          TimeBlock(
+            id: 'tr2',
+            title: 'UI improvements',
+            start: DateTime(2026, 5, 26, 10, 30),
+            end: DateTime(2026, 5, 26, 11, 35),
+            type: TimeBlockType.manual,
+            state: TimeBlockState.inProgress,
+            category: _category,
+          ),
+        ];
+        final draft = DraftPlan.emptyForDay(day);
+        await tester.pumpWidget(
+          _wrap(
+            AgendaView(
+              draft: draft,
+              actualBlocks: tracked,
+              hasPlan: false,
+            ),
+          ),
+        );
+
+        final messages = tester.element(find.byType(AgendaView)).messages;
+        // Honest eyebrow + tracked-time summary (1h 30m + 1h 5m = 2h 35m).
+        expect(
+          find.text(messages.dailyOsNextAgendaCapacityNoPlan),
+          findsOneWidget,
+        );
+        expect(
+          find.text(messages.dailyOsNextAgendaNoPlanSummary('2h 35m')),
+          findsOneWidget,
+        );
+        // Neutral donut + single tracked legend (1 completed session).
+        final donut = tester.widget<CapacityDonut>(find.byType(CapacityDonut));
+        expect(donut.neutral, isTrue);
+        expect(donut.scheduledMinutes, 155);
+        expect(
+          find.text(messages.dailyOsNextAgendaTrackedLegend('2h 35m', 1)),
+          findsOneWidget,
+        );
+        // The recorded sessions are listed in the TimeSpentCard.
+        expect(find.byType(TimeSpentCard), findsOneWidget);
+        expect(find.text('Build attention framework'), findsOneWidget);
+        expect(find.text('UI improvements'), findsOneWidget);
+      },
+    );
 
     testWidgets(
       'category mix renders one legend per used category, dropped blocks excluded',

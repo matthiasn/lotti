@@ -11,6 +11,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/transcript_editor.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
@@ -161,9 +162,7 @@ class _RefinementPanel extends ConsumerWidget {
         children: [
           Text(
             messages.dailyOsNextRefineOverline,
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: teal,
-            ),
+            style: calmEyebrowStyle(tokens, color: teal),
           ),
           SizedBox(height: tokens.spacing.step4),
           Center(

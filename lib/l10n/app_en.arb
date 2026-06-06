@@ -1714,6 +1714,7 @@
   "dailyOsNearLimit": "Near limit",
   "dailyOsNextAgendaCapacityComfortable": "COMFORTABLE",
   "dailyOsNextAgendaCapacityNearFull": "NEAR FULL",
+  "dailyOsNextAgendaCapacityNoPlan": "NO PLAN YET",
   "dailyOsNextAgendaCapacityOf": "of {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1724,7 +1725,17 @@
     }
   },
   "dailyOsNextAgendaCapacityOver": "OVER CAPACITY",
-  "dailyOsNextAgendaEmpty": "Nothing to do today.",
+  "dailyOsNextAgendaNoPlanBody": "Your tracked time is here either way — speak a check-in and I'll draft a day around it.",
+  "dailyOsNextAgendaNoPlanSummary": "{duration} tracked so far. Speak a check-in and I'll draft a day around it.",
+  "@dailyOsNextAgendaNoPlanSummary": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "4h 35m"
+      }
+    }
+  },
+  "dailyOsNextAgendaNoPlanTitle": "No plan yet for today.",
   "dailyOsNextAgendaStateDone": "Done",
   "dailyOsNextAgendaStateInProgress": "In progress",
   "dailyOsNextAgendaStateOpen": "Open",
@@ -1739,6 +1750,19 @@
       "capacity": {
         "type": "String",
         "example": "8h"
+      }
+    }
+  },
+  "dailyOsNextAgendaTrackedLegend": "Tracked · {duration} · {completedCount} done",
+  "@dailyOsNextAgendaTrackedLegend": {
+    "placeholders": {
+      "duration": {
+        "type": "String",
+        "example": "4h 35m"
+      },
+      "completedCount": {
+        "type": "int",
+        "example": "3"
       }
     }
   },
@@ -1800,17 +1824,21 @@
       }
     }
   },
-  "dailyOsNextCommitDraftHeadline": "Your day, drafted.",
-  "dailyOsNextCommitDraftOverline": "TODAY",
+  "dailyOsNextCommitDraftOverline": "YOUR DAY, DRAFTED",
+  "dailyOsNextCommitExplainer": "Sign off to move today from draft to committed.",
+  "dailyOsNextCommitFinalStepEyebrow": "FINAL STEP",
   "dailyOsNextCommitHeadline": "Make it yours.",
-  "dailyOsNextCommitHoldHint": "HOLD",
-  "dailyOsNextCommitHoldLabel": "Commit today",
+  "dailyOsNextCommitHoldHelper": "Hold for a second to sign off",
+  "dailyOsNextCommitHoldWordDone": "Committed",
+  "dailyOsNextCommitHoldWordHolding": "Keep holding",
+  "dailyOsNextCommitHoldWordIdle": "Hold",
   "dailyOsNextCommitLockingIn": "Locking in…",
   "dailyOsNextCommitShepherdSubline": "I'll shepherd it — you do the work.",
-  "dailyOsNextCommitSubCaption": "Signing off shifts the day from draft to committed. You can still talk to me — but the bones stay put.",
+  "dailyOsNextCommitSubCaption": "You can still talk to me afterward — but the bones stay put.",
   "dailyOsNextCommitTitle": "Lock it in",
   "dailyOsNextCommitTodayIsYours": "Today is yours.",
   "dailyOsNextDayBack": "Back",
+  "dailyOsNextDayCheckInCta": "Speak a check-in",
   "dailyOsNextDayDeleteDialogBody": "The drafted blocks for this day will be removed. Captures and their audio recordings stay in your journal.",
   "dailyOsNextDayDeleteDialogCancel": "Cancel",
   "dailyOsNextDayDeleteDialogConfirm": "Delete",
@@ -1828,6 +1856,7 @@
   "dailyOsNextDraftingNudgeAccept": "Yes, protect mornings",
   "dailyOsNextDraftingNudgeDecline": "Not today",
   "dailyOsNextDraftingReasoningOverline": "✦ REASONING",
+  "dailyOsNextEditTitleHint": "Edit title",
   "dailyOsNextEstimateMinutes": "{minutes}m",
   "@dailyOsNextEstimateMinutes": {
     "placeholders": {
@@ -1841,7 +1870,7 @@
   "dailyOsNextGreetingAfternoon": "Good afternoon.",
   "dailyOsNextGreetingEvening": "Good evening.",
   "dailyOsNextGreetingHi": "Hi 👋",
-  "dailyOsNextGreetingHiName": "Hi {name},",
+  "dailyOsNextGreetingHiName": "Hi {name} 👋",
   "@dailyOsNextGreetingHiName": {
     "placeholders": {
       "name": {
@@ -1925,6 +1954,7 @@
   "dailyOsNextShutdownSaveAndClose": "Save & close",
   "dailyOsNextShutdownTitle": "Close out the day",
   "dailyOsNextShutdownTomorrowOverline": "✦ FOR TOMORROW",
+  "dailyOsNextStandaloneTag": "Time block",
   "dailyOsNextStateDueOnDate": "Due {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {
@@ -1986,8 +2016,18 @@
   "dailyOsNextTimelineShowBoth": "Show plan and actual together",
   "dailyOsNextTimelineShowPaged": "Show swipeable plan and actual",
   "dailyOsNextTimelineSwipeHint": "Swipe for actual · pinch vertically to zoom",
-  "dailyOsNextTimeSpentEmpty": "No recorded time for this day yet.",
-  "dailyOsNextTimeSpentSummary": "{duration} recorded · {completedCount} done",
+  "dailyOsNextTimelineTracked": "tracked",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 earlier session} other{{count} earlier sessions}}",
+  "@dailyOsNextTimeSpentEarlierSessions": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "dailyOsNextTimeSpentShowLess": "Show less",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} done",
   "@dailyOsNextTimeSpentSummary": {
     "placeholders": {
       "duration": {
@@ -1998,7 +2038,8 @@
       }
     }
   },
-  "dailyOsNextTimeSpentTitle": "TIME SPENT",
+  "dailyOsNextTimeSpentTitle": "TODAY SO FAR",
+  "dailyOsNextTimeSpentTitlePast": "TIME SPENT",
   "dailyOsNextTriageConfirmDefer": "Deferred",
   "dailyOsNextTriageConfirmDone": "Marked done",
   "dailyOsNextTriageConfirmDoNow": "Done now",

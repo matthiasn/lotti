@@ -1518,6 +1518,7 @@
   "dailyOsNearLimit": "Proche de la limite",
   "dailyOsNextAgendaCapacityComfortable": "CONFORTABLE",
   "dailyOsNextAgendaCapacityNearFull": "PRESQUE PLEIN",
+  "dailyOsNextAgendaCapacityNoPlan": "PAS ENCORE DE PLAN",
   "dailyOsNextAgendaCapacityOf": "sur {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1528,7 +1529,9 @@
     }
   },
   "dailyOsNextAgendaCapacityOver": "SURCHARGE",
-  "dailyOsNextAgendaEmpty": "Rien à faire aujourd'hui.",
+  "dailyOsNextAgendaNoPlanBody": "Ton temps suivi est là quoi qu'il arrive — dicte un check-in et je construis ta journée autour.",
+  "dailyOsNextAgendaNoPlanSummary": "{duration} suivi pour l'instant. Dicte un check-in et je construis ta journée autour.",
+  "dailyOsNextAgendaNoPlanTitle": "Pas encore de plan pour aujourd'hui.",
   "dailyOsNextAgendaStateDone": "Fait",
   "dailyOsNextAgendaStateInProgress": "En cours",
   "dailyOsNextAgendaStateOpen": "Ouvert",
@@ -1546,6 +1549,7 @@
       }
     }
   },
+  "dailyOsNextAgendaTrackedLegend": "Suivi · {duration} · {completedCount} terminées",
   "dailyOsNextCaptureCaptured": "C'est noté.",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "L’autorisation du micro a été refusée.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "Aucune session en temps réel active.",
@@ -1590,17 +1594,21 @@
       }
     }
   },
-  "dailyOsNextCommitDraftHeadline": "Ta journée, en brouillon.",
-  "dailyOsNextCommitDraftOverline": "AUJOURD'HUI",
+  "dailyOsNextCommitDraftOverline": "TA JOURNÉE, EN BROUILLON",
+  "dailyOsNextCommitExplainer": "Valide pour faire passer la journée de brouillon à engagée.",
+  "dailyOsNextCommitFinalStepEyebrow": "DERNIÈRE ÉTAPE",
   "dailyOsNextCommitHeadline": "Rends-la tienne.",
-  "dailyOsNextCommitHoldHint": "MAINTIENS",
-  "dailyOsNextCommitHoldLabel": "Confirmer aujourd'hui",
+  "dailyOsNextCommitHoldHelper": "Maintiens une seconde pour valider",
+  "dailyOsNextCommitHoldWordDone": "Engagée",
+  "dailyOsNextCommitHoldWordHolding": "Continue",
+  "dailyOsNextCommitHoldWordIdle": "Maintiens",
   "dailyOsNextCommitLockingIn": "Verrouillage…",
   "dailyOsNextCommitShepherdSubline": "Je guide — toi tu fais le travail.",
-  "dailyOsNextCommitSubCaption": "Confirmer fait passer la journée du brouillon à l'engagement. Tu peux toujours me parler, mais l'ossature reste.",
+  "dailyOsNextCommitSubCaption": "Tu peux encore me parler ensuite — mais l'ossature ne bouge plus.",
   "dailyOsNextCommitTitle": "Verrouiller",
   "dailyOsNextCommitTodayIsYours": "La journée est à toi.",
   "dailyOsNextDayBack": "Retour",
+  "dailyOsNextDayCheckInCta": "Dicter un check-in",
   "dailyOsNextDayDeleteDialogBody": "Les blocs préparés pour cette journée seront supprimés. Tes captures et leurs enregistrements audio restent dans ton journal.",
   "dailyOsNextDayDeleteDialogCancel": "Annuler",
   "dailyOsNextDayDeleteDialogConfirm": "Supprimer",
@@ -1618,6 +1626,7 @@
   "dailyOsNextDraftingNudgeAccept": "Oui, protège les matinées",
   "dailyOsNextDraftingNudgeDecline": "Pas aujourd'hui",
   "dailyOsNextDraftingReasoningOverline": "✦ RAISONNEMENT",
+  "dailyOsNextEditTitleHint": "Modifier le titre",
   "dailyOsNextEstimateMinutes": "{minutes}m",
   "@dailyOsNextEstimateMinutes": {
     "placeholders": {
@@ -1631,7 +1640,7 @@
   "dailyOsNextGreetingAfternoon": "Bon après-midi.",
   "dailyOsNextGreetingEvening": "Bonsoir.",
   "dailyOsNextGreetingHi": "Salut 👋",
-  "dailyOsNextGreetingHiName": "Salut {name},",
+  "dailyOsNextGreetingHiName": "Salut {name} 👋",
   "dailyOsNextGreetingMorning": "Bonjour.",
   "dailyOsNextParsedCardBreakLinkTooltip": "Dissocier",
   "dailyOsNextPlanViewAgenda": "Agenda",
@@ -1708,6 +1717,7 @@
   "dailyOsNextShutdownSaveAndClose": "Enregistrer et fermer",
   "dailyOsNextShutdownTitle": "Clore la journée",
   "dailyOsNextShutdownTomorrowOverline": "✦ POUR DEMAIN",
+  "dailyOsNextStandaloneTag": "Bloc de temps",
   "dailyOsNextStateDueOnDate": "À rendre le {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {
@@ -1759,9 +1769,12 @@
   "dailyOsNextTimelineShowBoth": "Afficher plan et réel ensemble",
   "dailyOsNextTimelineShowPaged": "Afficher plan et réel en balayage",
   "dailyOsNextTimelineSwipeHint": "Balaye vers le réel · pince verticalement pour zoomer",
-  "dailyOsNextTimeSpentEmpty": "Aucun temps enregistré pour cette journée.",
-  "dailyOsNextTimeSpentSummary": "{duration} enregistré · {completedCount} fini",
-  "dailyOsNextTimeSpentTitle": "TEMPS PASSÉ",
+  "dailyOsNextTimelineTracked": "suivi",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 session précédente} other{{count} sessions précédentes}}",
+  "dailyOsNextTimeSpentShowLess": "Afficher moins",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} terminées",
+  "dailyOsNextTimeSpentTitle": "AUJOURD'HUI",
+  "dailyOsNextTimeSpentTitlePast": "TEMPS SUIVI",
   "dailyOsNextTriageConfirmDefer": "Reporté",
   "dailyOsNextTriageConfirmDone": "Marqué comme fait",
   "dailyOsNextTriageConfirmDoNow": "Fait tout de suite",

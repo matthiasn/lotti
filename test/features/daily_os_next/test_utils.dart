@@ -130,6 +130,20 @@ class RecordingDayAgent implements DayAgentInterface {
     return plan.copyWith(state: DayState.committed);
   }
 
+  @override
+  Future<DraftPlan> renameBlock({
+    required DraftPlan plan,
+    required String blockId,
+    required String title,
+  }) async {
+    return plan.copyWith(
+      blocks: [
+        for (final block in plan.blocks)
+          if (block.id == blockId) block.copyWith(title: title) else block,
+      ],
+    );
+  }
+
   // ---- Benign default stubs ----
 
   @override

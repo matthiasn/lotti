@@ -1518,6 +1518,7 @@
   "dailyOsNearLimit": "Aproape de limită",
   "dailyOsNextAgendaCapacityComfortable": "CONFORTABIL",
   "dailyOsNextAgendaCapacityNearFull": "APROAPE PLIN",
+  "dailyOsNextAgendaCapacityNoPlan": "ÎNCĂ FĂRĂ PLAN",
   "dailyOsNextAgendaCapacityOf": "din {capacity}",
   "@dailyOsNextAgendaCapacityOf": {
     "placeholders": {
@@ -1528,7 +1529,9 @@
     }
   },
   "dailyOsNextAgendaCapacityOver": "PESTE CAPACITATE",
-  "dailyOsNextAgendaEmpty": "Nimic de făcut astăzi.",
+  "dailyOsNextAgendaNoPlanBody": "Timpul dvs. înregistrat este oricum aici — rostiți un check-in și voi schița o zi în jurul lui.",
+  "dailyOsNextAgendaNoPlanSummary": "{duration} înregistrat până acum. Rostiți un check-in și voi schița o zi în jurul lui.",
+  "dailyOsNextAgendaNoPlanTitle": "Încă nu există un plan pentru azi.",
   "dailyOsNextAgendaStateDone": "Finalizat",
   "dailyOsNextAgendaStateInProgress": "În progres",
   "dailyOsNextAgendaStateOpen": "Deschis",
@@ -1546,6 +1549,7 @@
       }
     }
   },
+  "dailyOsNextAgendaTrackedLegend": "Înregistrat · {duration} · {completedCount} finalizate",
   "dailyOsNextCaptureCaptured": "Am înțeles.",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Permisiunea pentru microfon a fost refuzată.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "Nu există nicio sesiune în timp real activă.",
@@ -1590,17 +1594,21 @@
       }
     }
   },
-  "dailyOsNextCommitDraftHeadline": "Ziua dvs., schiță.",
-  "dailyOsNextCommitDraftOverline": "ASTĂZI",
+  "dailyOsNextCommitDraftOverline": "ZIUA DVS., SCHIȚATĂ",
+  "dailyOsNextCommitExplainer": "Confirmați pentru a trece ziua din schiță în angajament.",
+  "dailyOsNextCommitFinalStepEyebrow": "ULTIMUL PAS",
   "dailyOsNextCommitHeadline": "Faceți-o a dvs.",
-  "dailyOsNextCommitHoldHint": "ȚINEȚI",
-  "dailyOsNextCommitHoldLabel": "Confirmă astăzi",
+  "dailyOsNextCommitHoldHelper": "Țineți apăsat o secundă pentru a confirma",
+  "dailyOsNextCommitHoldWordDone": "Angajat",
+  "dailyOsNextCommitHoldWordHolding": "Mențineți",
+  "dailyOsNextCommitHoldWordIdle": "Țineți",
   "dailyOsNextCommitLockingIn": "Se fixează…",
   "dailyOsNextCommitShepherdSubline": "Vă însoțesc — munca o faceți dvs.",
-  "dailyOsNextCommitSubCaption": "Confirmarea trece ziua din schiță în angajată. Puteți continua să-mi vorbiți — dar structura rămâne.",
+  "dailyOsNextCommitSubCaption": "Puteți vorbi cu mine și după aceea — dar structura rămâne.",
   "dailyOsNextCommitTitle": "Fixați-o",
   "dailyOsNextCommitTodayIsYours": "Ziua este a dvs.",
   "dailyOsNextDayBack": "Înapoi",
+  "dailyOsNextDayCheckInCta": "Rostiți un check-in",
   "dailyOsNextDayDeleteDialogBody": "Blocurile schițate pentru această zi vor fi eliminate. Capturile dvs. și înregistrările audio rămân în jurnal.",
   "dailyOsNextDayDeleteDialogCancel": "Anulează",
   "dailyOsNextDayDeleteDialogConfirm": "Șterge",
@@ -1618,6 +1626,7 @@
   "dailyOsNextDraftingNudgeAccept": "Da, protejează dimineața",
   "dailyOsNextDraftingNudgeDecline": "Nu astăzi",
   "dailyOsNextDraftingReasoningOverline": "✦ RAȚIONAMENT",
+  "dailyOsNextEditTitleHint": "Editați titlul",
   "dailyOsNextEstimateMinutes": "{minutes}m",
   "@dailyOsNextEstimateMinutes": {
     "placeholders": {
@@ -1631,7 +1640,7 @@
   "dailyOsNextGreetingAfternoon": "Bună după-amiaza.",
   "dailyOsNextGreetingEvening": "Bună seara.",
   "dailyOsNextGreetingHi": "Salut 👋",
-  "dailyOsNextGreetingHiName": "Bună, {name},",
+  "dailyOsNextGreetingHiName": "Bună, {name} 👋",
   "dailyOsNextGreetingMorning": "Bună dimineața.",
   "dailyOsNextParsedCardBreakLinkTooltip": "Desface legătura",
   "dailyOsNextPlanViewAgenda": "Agenda",
@@ -1708,6 +1717,7 @@
   "dailyOsNextShutdownSaveAndClose": "Salvează și închide",
   "dailyOsNextShutdownTitle": "Închideți ziua",
   "dailyOsNextShutdownTomorrowOverline": "✦ PENTRU MÂINE",
+  "dailyOsNextStandaloneTag": "Bloc de timp",
   "dailyOsNextStateDueOnDate": "Scadent pe {date}",
   "@dailyOsNextStateDueOnDate": {
     "placeholders": {
@@ -1759,9 +1769,12 @@
   "dailyOsNextTimelineShowBoth": "Afișați planul și realul împreună",
   "dailyOsNextTimelineShowPaged": "Afișați planul și realul prin glisare",
   "dailyOsNextTimelineSwipeHint": "Glisați spre real · ciupiți vertical pentru zoom",
-  "dailyOsNextTimeSpentEmpty": "Nu există încă timp înregistrat pentru această zi.",
-  "dailyOsNextTimeSpentSummary": "{duration} înregistrat · {completedCount} finalizate",
-  "dailyOsNextTimeSpentTitle": "TIMP PETRECUT",
+  "dailyOsNextTimelineTracked": "înregistrat",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesiune anterioară} few{{count} sesiuni anterioare} other{{count} de sesiuni anterioare}}",
+  "dailyOsNextTimeSpentShowLess": "Afișează mai puțin",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} finalizate",
+  "dailyOsNextTimeSpentTitle": "AZI PÂNĂ ACUM",
+  "dailyOsNextTimeSpentTitlePast": "TIMP ÎNREGISTRAT",
   "dailyOsNextTriageConfirmDefer": "Amânat",
   "dailyOsNextTriageConfirmDone": "Marcat ca finalizat",
   "dailyOsNextTriageConfirmDoNow": "Făcut imediat",

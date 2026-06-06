@@ -3067,6 +3067,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextAgendaCapacityNearFull => 'NEAR FULL';
 
   @override
+  String get dailyOsNextAgendaCapacityNoPlan => 'NO PLAN YET';
+
+  @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
     return 'of $capacity';
   }
@@ -3075,7 +3078,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextAgendaCapacityOver => 'OVER CAPACITY';
 
   @override
-  String get dailyOsNextAgendaEmpty => 'Nothing to do today.';
+  String get dailyOsNextAgendaNoPlanBody =>
+      'Your tracked time is here either way — speak a check-in and I\'ll draft a day around it.';
+
+  @override
+  String dailyOsNextAgendaNoPlanSummary(String duration) {
+    return '$duration tracked so far. Speak a check-in and I\'ll draft a day around it.';
+  }
+
+  @override
+  String get dailyOsNextAgendaNoPlanTitle => 'No plan yet for today.';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Done';
@@ -3092,6 +3104,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String dailyOsNextAgendaSummary(String scheduled, String capacity) {
     return '$scheduled of $capacity committed';
+  }
+
+  @override
+  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
+    return 'Tracked · $duration · $completedCount done';
   }
 
   @override
@@ -3206,19 +3223,29 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextCommitDraftHeadline => 'Your day, drafted.';
+  String get dailyOsNextCommitDraftOverline => 'YOUR DAY, DRAFTED';
 
   @override
-  String get dailyOsNextCommitDraftOverline => 'TODAY';
+  String get dailyOsNextCommitExplainer =>
+      'Sign off to move today from draft to committed.';
+
+  @override
+  String get dailyOsNextCommitFinalStepEyebrow => 'FINAL STEP';
 
   @override
   String get dailyOsNextCommitHeadline => 'Make it yours.';
 
   @override
-  String get dailyOsNextCommitHoldHint => 'HOLD';
+  String get dailyOsNextCommitHoldHelper => 'Hold for a second to sign off';
 
   @override
-  String get dailyOsNextCommitHoldLabel => 'Commit today';
+  String get dailyOsNextCommitHoldWordDone => 'Committed';
+
+  @override
+  String get dailyOsNextCommitHoldWordHolding => 'Keep holding';
+
+  @override
+  String get dailyOsNextCommitHoldWordIdle => 'Hold';
 
   @override
   String get dailyOsNextCommitLockingIn => 'Locking in…';
@@ -3229,7 +3256,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextCommitSubCaption =>
-      'Signing off shifts the day from draft to committed. You can still talk to me — but the bones stay put.';
+      'You can still talk to me afterward — but the bones stay put.';
 
   @override
   String get dailyOsNextCommitTitle => 'Lock it in';
@@ -3239,6 +3266,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get dailyOsNextDayBack => 'Back';
+
+  @override
+  String get dailyOsNextDayCheckInCta => 'Speak a check-in';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -3294,6 +3324,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextDraftingReasoningOverline => '✦ REASONING';
 
   @override
+  String get dailyOsNextEditTitleHint => 'Edit title';
+
+  @override
   String dailyOsNextEstimateMinutes(int minutes) {
     return '${minutes}m';
   }
@@ -3313,7 +3346,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String dailyOsNextGreetingHiName(String name) {
-    return 'Hi $name,';
+    return 'Hi $name 👋';
   }
 
   @override
@@ -3486,6 +3519,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dailyOsNextShutdownTomorrowOverline => '✦ FOR TOMORROW';
 
   @override
+  String get dailyOsNextStandaloneTag => 'Time block';
+
+  @override
   String dailyOsNextStateDueOnDate(String date) {
     return 'Due $date';
   }
@@ -3569,15 +3605,32 @@ class AppLocalizationsEn extends AppLocalizations {
       'Swipe for actual · pinch vertically to zoom';
 
   @override
-  String get dailyOsNextTimeSpentEmpty => 'No recorded time for this day yet.';
+  String get dailyOsNextTimelineTracked => 'tracked';
 
   @override
-  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
-    return '$duration recorded · $completedCount done';
+  String dailyOsNextTimeSpentEarlierSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count earlier sessions',
+      one: '1 earlier session',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get dailyOsNextTimeSpentTitle => 'TIME SPENT';
+  String get dailyOsNextTimeSpentShowLess => 'Show less';
+
+  @override
+  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
+    return '$duration · $completedCount done';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentTitle => 'TODAY SO FAR';
+
+  @override
+  String get dailyOsNextTimeSpentTitlePast => 'TIME SPENT';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Deferred';

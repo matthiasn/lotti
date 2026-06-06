@@ -3111,6 +3111,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextAgendaCapacityNearFull => 'FAST VOLL';
 
   @override
+  String get dailyOsNextAgendaCapacityNoPlan => 'NOCH KEIN PLAN';
+
+  @override
   String dailyOsNextAgendaCapacityOf(String capacity) {
     return 'von $capacity';
   }
@@ -3119,7 +3122,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextAgendaCapacityOver => 'ÜBERLASTET';
 
   @override
-  String get dailyOsNextAgendaEmpty => 'Heute ist nichts geplant.';
+  String get dailyOsNextAgendaNoPlanBody =>
+      'Deine erfasste Zeit ist trotzdem hier — sprich ein Check-in ein und ich entwerfe einen Tag darum.';
+
+  @override
+  String dailyOsNextAgendaNoPlanSummary(String duration) {
+    return 'Bisher $duration erfasst. Sprich ein Check-in ein und ich entwerfe einen Tag darum.';
+  }
+
+  @override
+  String get dailyOsNextAgendaNoPlanTitle => 'Noch kein Plan für heute.';
 
   @override
   String get dailyOsNextAgendaStateDone => 'Erledigt';
@@ -3136,6 +3148,11 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String dailyOsNextAgendaSummary(String scheduled, String capacity) {
     return '$scheduled von $capacity verplant';
+  }
+
+  @override
+  String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
+    return 'Erfasst · $duration · $completedCount erledigt';
   }
 
   @override
@@ -3253,19 +3270,30 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
-  String get dailyOsNextCommitDraftHeadline => 'Dein Tag, als Entwurf.';
+  String get dailyOsNextCommitDraftOverline => 'DEIN TAG, ENTWORFEN';
 
   @override
-  String get dailyOsNextCommitDraftOverline => 'HEUTE';
+  String get dailyOsNextCommitExplainer =>
+      'Bestätige, um den Tag vom Entwurf in fest umzuwandeln.';
+
+  @override
+  String get dailyOsNextCommitFinalStepEyebrow => 'LETZTER SCHRITT';
 
   @override
   String get dailyOsNextCommitHeadline => 'Mach ihn zu deinem.';
 
   @override
-  String get dailyOsNextCommitHoldHint => 'HALTEN';
+  String get dailyOsNextCommitHoldHelper =>
+      'Eine Sekunde halten zum Bestätigen';
 
   @override
-  String get dailyOsNextCommitHoldLabel => 'Heute festlegen';
+  String get dailyOsNextCommitHoldWordDone => 'Festgelegt';
+
+  @override
+  String get dailyOsNextCommitHoldWordHolding => 'Weiter halten';
+
+  @override
+  String get dailyOsNextCommitHoldWordIdle => 'Halten';
 
   @override
   String get dailyOsNextCommitLockingIn => 'Wird festgemacht…';
@@ -3276,7 +3304,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextCommitSubCaption =>
-      'Mit dem Festlegen wechselst du vom Entwurf zum verbindlichen Tag. Sprechen kannst du weiterhin — aber das Gerüst bleibt.';
+      'Du kannst danach weiter mit mir sprechen — aber das Gerüst bleibt stehen.';
 
   @override
   String get dailyOsNextCommitTitle => 'Festmachen';
@@ -3286,6 +3314,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextDayBack => 'Zurück';
+
+  @override
+  String get dailyOsNextDayCheckInCta => 'Check-in einsprechen';
 
   @override
   String get dailyOsNextDayDeleteDialogBody =>
@@ -3341,6 +3372,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextDraftingReasoningOverline => '✦ ÜBERLEGUNG';
 
   @override
+  String get dailyOsNextEditTitleHint => 'Titel bearbeiten';
+
+  @override
   String dailyOsNextEstimateMinutes(int minutes) {
     return '${minutes}m';
   }
@@ -3360,7 +3394,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String dailyOsNextGreetingHiName(String name) {
-    return 'Hi $name,';
+    return 'Hi $name 👋';
   }
 
   @override
@@ -3533,6 +3567,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextShutdownTomorrowOverline => '✦ FÜR MORGEN';
 
   @override
+  String get dailyOsNextStandaloneTag => 'Zeitblock';
+
+  @override
   String dailyOsNextStateDueOnDate(String date) {
     return 'Fällig am $date';
   }
@@ -3617,16 +3654,32 @@ class AppLocalizationsDe extends AppLocalizations {
       'Wische zu Ist · vertikal kneifen zum Zoomen';
 
   @override
-  String get dailyOsNextTimeSpentEmpty =>
-      'Für diesen Tag ist noch keine Zeit erfasst.';
+  String get dailyOsNextTimelineTracked => 'erfasst';
 
   @override
-  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
-    return '$duration erfasst · $completedCount erledigt';
+  String dailyOsNextTimeSpentEarlierSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count frühere Sitzungen',
+      one: '1 frühere Sitzung',
+    );
+    return '$_temp0';
   }
 
   @override
-  String get dailyOsNextTimeSpentTitle => 'ZEITVERWENDUNG';
+  String get dailyOsNextTimeSpentShowLess => 'Weniger anzeigen';
+
+  @override
+  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
+    return '$duration · $completedCount erledigt';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentTitle => 'HEUTE BISHER';
+
+  @override
+  String get dailyOsNextTimeSpentTitlePast => 'ERFASSTE ZEIT';
 
   @override
   String get dailyOsNextTriageConfirmDefer => 'Verschoben';

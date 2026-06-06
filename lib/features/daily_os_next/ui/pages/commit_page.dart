@@ -3,10 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/capacity_meter.dart';
+import 'package:lotti/features/daily_os_next/ui/time_format.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/dashed_border.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/hold_to_confirm.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/lock_in_scene.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Sign-off page — the deliberate transition from "draft" to "my
@@ -116,18 +119,9 @@ class _DraftRecap extends StatelessWidget {
         children: [
           Text(
             context.messages.dailyOsNextCommitDraftOverline,
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
+            style: calmEyebrowStyle(tokens),
           ),
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            context.messages.dailyOsNextCommitDraftHeadline,
-            style: tokens.typography.styles.heading.heading3.copyWith(
-              color: tokens.colors.text.highEmphasis,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step5),
+          SizedBox(height: tokens.spacing.step4),
           for (final (index, item) in draft.agendaItems.indexed) ...[
             _RecapRow(index: index + 1, item: item),
             SizedBox(height: tokens.spacing.step3),
@@ -150,70 +144,76 @@ class _RecapRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final color = categoryColorFromHex(item.category.colorHex);
-    return Container(
-      decoration: BoxDecoration(
-        color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        border: Border(left: BorderSide(color: color, width: 3)),
-      ),
-      padding: EdgeInsets.all(tokens.spacing.step4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 24,
-            height: 24,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.16),
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              '$index',
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: color,
-                fontWeight: FontWeight.w700,
+    // Dashed outline = still a draft; the LockInScene settles these
+    // rows into solid surfaces after sign-off.
+    return DottedBorder(
+      color: tokens.colors.decorative.level02,
+      radius: tokens.radii.m,
+      child: Container(
+        decoration: BoxDecoration(
+          color: tokens.colors.background.level02,
+          borderRadius: BorderRadius.circular(tokens.radii.m),
+          border: Border(left: BorderSide(color: color, width: 3)),
+        ),
+        padding: EdgeInsets.all(tokens.spacing.step4),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: 24,
+              height: 24,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.16),
+                shape: BoxShape.circle,
               ),
-            ),
-          ),
-          SizedBox(width: tokens.spacing.step3),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: tokens.typography.styles.body.bodyMedium.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                    fontWeight: FontWeight.w600,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              child: Text(
+                '$index',
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: color,
+                  fontWeight: tokens.typography.weight.semiBold,
                 ),
-                if (item.outcome != null) ...[
-                  SizedBox(height: tokens.spacing.step1),
-                  Text(
-                    item.outcome!,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.mediumEmphasis,
-                    ),
-                  ),
-                ],
-              ],
+              ),
             ),
-          ),
-          if (item.totalEstimateMinutes != null) ...[
             SizedBox(width: tokens.spacing.step3),
-            Text(
-              context.messages.dailyOsNextEstimateMinutes(
-                item.totalEstimateMinutes!,
-              ),
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.lowEmphasis,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    item.title,
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                      fontWeight: tokens.typography.weight.semiBold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (item.outcome != null) ...[
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      item.outcome!,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
+            if (item.totalEstimateMinutes != null) ...[
+              SizedBox(width: tokens.spacing.step3),
+              Text(
+                context.messages.dailyOsNextEstimateMinutes(
+                  item.totalEstimateMinutes!,
+                ),
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ),
+            ],
           ],
-        ],
+        ),
       ),
     );
   }
@@ -231,36 +231,31 @@ class _CapacityRecap extends StatelessWidget {
       padding: EdgeInsets.all(tokens.spacing.step4),
       decoration: BoxDecoration(
         color: tokens.colors.background.level02,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
+        borderRadius: BorderRadius.circular(tokens.radii.l),
         border: Border.all(color: tokens.colors.decorative.level01),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      child: Row(
         children: [
-          CapacityMeter(
+          CapacityDonut(
             scheduledMinutes: draft.scheduledMinutes,
             capacityMinutes: draft.capacityMinutes,
+            size: 62,
           ),
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            context.messages.dailyOsNextCommitCapacityNote(
-              _formatHours(draft.scheduledMinutes),
-              _formatHours(draft.capacityMinutes),
-            ),
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
+          SizedBox(width: tokens.spacing.step4),
+          Expanded(
+            child: Text(
+              context.messages.dailyOsNextCommitCapacityNote(
+                formatMinutesCompact(draft.scheduledMinutes),
+                formatMinutesCompact(draft.capacityMinutes),
+              ),
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
+              ),
             ),
           ),
         ],
       ),
     );
-  }
-
-  String _formatHours(int minutes) {
-    final h = minutes ~/ 60;
-    final m = minutes % 60;
-    if (m == 0) return '${h}h';
-    return '${h}h ${m}m';
   }
 }
 
@@ -272,6 +267,7 @@ class _SignOffPad extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final messages = context.messages;
     final teal = tokens.colors.interactive.enabled;
     return Container(
       decoration: BoxDecoration(
@@ -288,21 +284,44 @@ class _SignOffPad extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text(
-              context.messages.dailyOsNextCommitHeadline,
-              style: tokens.typography.styles.heading.heading2.copyWith(
-                color: tokens.colors.text.highEmphasis,
+            // Three-tier lead-in: teal eyebrow → display title →
+            // one-line explainer (handoff v2 item 4).
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 300),
+              child: Column(
+                children: [
+                  Text(
+                    messages.dailyOsNextCommitFinalStepEyebrow,
+                    style: calmEyebrowStyle(tokens, color: teal),
+                  ),
+                  SizedBox(height: tokens.spacing.step2),
+                  Text(
+                    messages.dailyOsNextCommitHeadline,
+                    style: calmDisplayStyle(tokens),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: tokens.spacing.step2),
+                  Text(
+                    messages.dailyOsNextCommitExplainer,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
               ),
-              textAlign: TextAlign.center,
             ),
             SizedBox(height: tokens.spacing.step6),
             HoldToConfirm(onConfirmed: onConfirmed),
             SizedBox(height: tokens.spacing.step5),
-            Text(
-              context.messages.dailyOsNextCommitSubCaption,
-              textAlign: TextAlign.center,
-              style: tokens.typography.styles.body.bodySmall.copyWith(
-                color: tokens.colors.text.lowEmphasis,
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 260),
+              child: Text(
+                messages.dailyOsNextCommitSubCaption,
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
               ),
             ),
           ],

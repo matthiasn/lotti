@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_navigation_service.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_provider_selection_modal.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_navigation_tab_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
@@ -382,6 +383,22 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     final showSidebarWakeQueue =
         ref.watch(configFlagProvider(showSidebarWakeQueueFlag)).value ?? false;
 
+    // Month calendar under the nav items (design handoff sidebar spec) —
+    // only when the Daily OS tab exists, so tapping a day has a surface
+    // to land on.
+    var dailyOsIndex = -1;
+    for (var i = 0; i < destinations.length; i++) {
+      if (destinations[i].kind == _AppNavigationDestinationKind.dailyOs) {
+        dailyOsIndex = i;
+        break;
+      }
+    }
+    final sidebarCalendar = dailyOsIndex < 0
+        ? null
+        : DailyOsSidebarCalendar(
+            onOpenDay: (_) => navService.tapIndex(dailyOsIndex),
+          );
+
     return Scaffold(
       // Scaffold fills behind the outer ResizableDivider's 3 px reserved
       // SizedBox; without an explicit colour Flutter would paint the theme
@@ -426,6 +443,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             onToggleCollapsed: () => ref
                 .read(paneWidthControllerProvider.notifier)
                 .toggleSidebarCollapsed(),
+            belowDestinations: sidebarCalendar,
             aboveSettings: _DesktopSidebarAboveSettings(
               showWakeQueue: showSidebarWakeQueue,
             ),

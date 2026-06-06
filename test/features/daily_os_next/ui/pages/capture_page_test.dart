@@ -144,6 +144,47 @@ void main() {
       await harness.dispose();
     });
 
+    testWidgets(
+      'recorded time card swaps to the date-neutral eyebrow for a past date',
+      (tester) async {
+        final harness = _AudioHarness()..arm();
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await _pumpCapture(
+            tester,
+            harness: harness,
+            page: CapturePage(
+              forDate: DateTime(2026, 5, 24),
+              actualBlocks: [
+                TimeBlock(
+                  id: 'actual:entry-past',
+                  title: 'Past session',
+                  start: DateTime(2026, 5, 24, 9),
+                  end: DateTime(2026, 5, 24, 10),
+                  type: TimeBlockType.manual,
+                  state: TimeBlockState.completed,
+                  category: _category,
+                  taskId: 'task-1',
+                ),
+              ],
+            ),
+          );
+
+          final messages = tester.element(find.byType(CapturePage)).messages;
+          // "Today so far" would mislead on a past day.
+          expect(
+            find.text(messages.dailyOsNextTimeSpentTitlePast),
+            findsOneWidget,
+          );
+          expect(
+            find.text(messages.dailyOsNextTimeSpentTitle),
+            findsNothing,
+          );
+        });
+
+        await harness.dispose();
+      },
+    );
+
     testWidgets('type instead opens the editable transcript path', (
       tester,
     ) async {

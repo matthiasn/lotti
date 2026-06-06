@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Full-screen vignette that plays after the user finishes the
@@ -99,10 +100,9 @@ class _LockInSceneState extends State<LockInScene>
                         child: Text(
                           caption,
                           key: ValueKey(caption),
-                          style: tokens.typography.styles.heading.heading2
-                              .copyWith(
-                                color: tokens.colors.text.highEmphasis,
-                              ),
+                          // Calm display moment — 26/600 per the
+                          // handoff's LockInScene caption spec.
+                          style: calmDisplayStyle(tokens),
                         ),
                       ),
                       if (showSubline) ...[

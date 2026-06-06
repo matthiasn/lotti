@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/category_chip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// One row of the Reconcile screen's left column ("Here's what I heard").
@@ -110,9 +111,7 @@ class _KindBadge extends StatelessWidget {
           SizedBox(width: tokens.spacing.step2),
           Text(
             label,
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: color,
-            ),
+            style: calmEyebrowStyle(tokens, color: color),
           ),
         ],
       ),

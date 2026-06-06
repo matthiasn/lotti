@@ -137,9 +137,7 @@ class _SectionHeader extends StatelessWidget {
         SizedBox(width: tokens.spacing.step2),
         Text(
           label,
-          style: tokens.typography.styles.others.overline.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
+          style: calmEyebrowStyle(tokens),
         ),
         SizedBox(width: tokens.spacing.step2),
         Container(
@@ -521,9 +519,7 @@ class _MetricTile extends StatelessWidget {
       children: [
         Text(
           label,
-          style: tokens.typography.styles.others.overline.copyWith(
-            color: tokens.colors.text.mediumEmphasis,
-          ),
+          style: calmEyebrowStyle(tokens),
         ),
         SizedBox(height: tokens.spacing.step1),
         Text(
@@ -599,9 +595,7 @@ class _ReflectionCardState extends ConsumerState<_ReflectionCard> {
         children: [
           Text(
             messages.dailyOsNextShutdownReflectionOverline,
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: teal,
-            ),
+            style: calmEyebrowStyle(tokens, color: teal),
           ),
           SizedBox(height: tokens.spacing.step3),
           Text(
@@ -690,9 +684,7 @@ class _TomorrowNoteCard extends StatelessWidget {
         children: [
           Text(
             context.messages.dailyOsNextShutdownTomorrowOverline,
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
-            ),
+            style: calmEyebrowStyle(tokens),
           ),
           SizedBox(height: tokens.spacing.step3),
           Text(

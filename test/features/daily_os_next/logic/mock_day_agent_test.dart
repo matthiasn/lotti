@@ -243,6 +243,84 @@ void main() {
       );
     });
 
+    group('renameBlock', () {
+      test(
+        'renames a standalone block and its derived agenda item in place',
+        () async {
+          final plan = await agent.draftDayPlan(
+            captureId: const CaptureId('cap'),
+            decidedTaskIds: const ['t_deck_review'],
+            dayDate: DateTime(2026, 5, 25),
+          );
+          final standalone = plan.blocks.firstWhere(
+            (b) =>
+                (b.taskId == null || b.taskId!.isEmpty) &&
+                b.type != TimeBlockType.buffer,
+          );
+
+          final renamed = await agent.renameBlock(
+            plan: plan,
+            blockId: standalone.id,
+            title: 'Renamed standalone',
+          );
+
+          final block = renamed.blocks.singleWhere(
+            (b) => b.id == standalone.id,
+          );
+          expect(block.title, 'Renamed standalone');
+          // Untouched blocks keep their titles.
+          expect(
+            renamed.blocks.where((b) => b.title == 'Renamed standalone'),
+            hasLength(1),
+          );
+          // Standalone agenda items derived from the block follow along.
+          final agendaTitles = renamed.agendaItems
+              .where(
+                (item) =>
+                    item.taskId == null &&
+                    item.linkedBlockIds.contains(standalone.id),
+              )
+              .map((item) => item.title);
+          expect(agendaTitles, everyElement('Renamed standalone'));
+        },
+      );
+
+      test('rejects unknown block ids', () async {
+        final plan = await agent.draftDayPlan(
+          captureId: const CaptureId('cap'),
+          decidedTaskIds: const ['t_deck_review'],
+          dayDate: DateTime(2026, 5, 25),
+        );
+        expect(
+          () => agent.renameBlock(
+            plan: plan,
+            blockId: 'nope',
+            title: 'Renamed',
+          ),
+          throwsStateError,
+        );
+      });
+
+      test('rejects task-linked blocks — rename the task instead', () async {
+        final plan = await agent.draftDayPlan(
+          captureId: const CaptureId('cap'),
+          decidedTaskIds: const ['t_deck_review'],
+          dayDate: DateTime(2026, 5, 25),
+        );
+        final linked = plan.blocks.firstWhere(
+          (b) => b.taskId != null && b.taskId!.isNotEmpty,
+        );
+        expect(
+          () => agent.renameBlock(
+            plan: plan,
+            blockId: linked.id,
+            title: 'Renamed',
+          ),
+          throwsStateError,
+        );
+      });
+    });
+
     test(
       'commitDay flips drafted blocks to committed and the plan state',
       () async {
@@ -699,6 +777,20 @@ class _NullAgent implements DayAgentInterface {
   @override
   Future<DraftPlan> commitDay(DraftPlan plan) async =>
       plan.copyWith(state: DayState.committed);
+
+  @override
+  Future<DraftPlan> renameBlock({
+    required DraftPlan plan,
+    required String blockId,
+    required String title,
+  }) async {
+    return plan.copyWith(
+      blocks: [
+        for (final block in plan.blocks)
+          if (block.id == blockId) block.copyWith(title: title) else block,
+      ],
+    );
+  }
 
   @override
   Future<

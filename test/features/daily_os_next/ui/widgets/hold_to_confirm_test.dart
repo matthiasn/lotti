@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/hold_to_confirm.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -79,5 +80,58 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
       expect(fires, 0);
     });
+
+    testWidgets(
+      'circle word walks Hold → Keep holding → Committed, helper line '
+      'clears once committed',
+      (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            Material(
+              child: Center(
+                child: HoldToConfirm(
+                  onConfirmed: () {},
+                  holdDuration: const Duration(milliseconds: 200),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(HoldToConfirm)).messages;
+        // Idle: single word + helper line below the circle.
+        expect(
+          find.text(messages.dailyOsNextCommitHoldWordIdle),
+          findsOneWidget,
+        );
+        expect(
+          find.text(messages.dailyOsNextCommitHoldHelper),
+          findsOneWidget,
+        );
+
+        final gesture = await tester.startGesture(
+          tester.getCenter(find.byType(HoldToConfirm)),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(
+          find.text(messages.dailyOsNextCommitHoldWordHolding),
+          findsOneWidget,
+        );
+
+        await tester.pump(const Duration(milliseconds: 220));
+        await gesture.up();
+        await tester.pump();
+        expect(
+          find.text(messages.dailyOsNextCommitHoldWordDone),
+          findsOneWidget,
+        );
+        // Helper keeps its slot but empties so the layout doesn't jump.
+        expect(
+          find.text(messages.dailyOsNextCommitHoldHelper),
+          findsNothing,
+        );
+      },
+    );
   });
 }
