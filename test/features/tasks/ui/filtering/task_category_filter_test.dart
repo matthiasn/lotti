@@ -17,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../test_utils/fake_journal_page_controller.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   late FakeJournalPageController fakeController;
@@ -61,7 +62,7 @@ void main() {
     ),
   ];
 
-  setUp(() {
+  setUp(() async {
     TestWidgetsFlutterBinding.ensureInitialized();
 
     // Register a mock for the HapticFeedback service
@@ -95,12 +96,16 @@ void main() {
       () => mockEntitiesCacheService.sortedCategories,
     ).thenReturn(mockCategories);
 
-    // Mock the getIt instance
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<EntitiesCacheService>(
+          mockEntitiesCacheService,
+        );
+      },
+    );
   });
 
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
 
   Widget buildWithState(JournalPageState state) {
     fakeController = FakeJournalPageController(state);

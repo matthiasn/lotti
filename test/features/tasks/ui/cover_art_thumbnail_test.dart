@@ -6,17 +6,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/tasks/ui/cover_art_thumbnail.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -24,36 +22,25 @@ void main() {
   late Directory mockDocumentsDirectory;
 
   setUp(() async {
-    // Per-test GetIt scope, popped in tearDown.
-    getIt.pushNewScope();
-
     // Create a temp directory to simulate the documents directory
     mockDocumentsDirectory = Directory.systemTemp.createTempSync(
       'cover_art_thumbnail_test_',
     );
 
-    // Register temp directory for getDocumentsDirectory()
-    getIt.registerSingleton<Directory>(mockDocumentsDirectory);
-
-    // Register required mocks for EntryController
-    final mockEditorStateService = MockEditorStateService();
-    final mockPersistenceLogic = MockPersistenceLogic();
-    final mockJournalDb = MockJournalDb();
-    final mockUpdateNotifications = MockUpdateNotifications();
-
-    when(
-      () => mockUpdateNotifications.updateStream,
-    ).thenAnswer((_) => const Stream<Set<String>>.empty());
-
-    getIt
-      ..registerSingleton<EditorStateService>(mockEditorStateService)
-      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          // Register temp directory for getDocumentsDirectory()
+          ..registerSingleton<Directory>(mockDocumentsDirectory)
+          // Required mocks for EntryController
+          ..registerSingleton<EditorStateService>(MockEditorStateService())
+          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic());
+      },
+    );
   });
 
   tearDown(() async {
-    await getIt.popScope();
+    await tearDownTestGetIt();
     try {
       mockDocumentsDirectory.deleteSync(recursive: true);
     } catch (_) {
