@@ -10,6 +10,7 @@ import 'package:genui/genui.dart' as genui;
 import 'package:http/http.dart' as http;
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:location/location.dart' as location_pkg;
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -924,6 +925,8 @@ class FakeAiConfigInferenceProvider extends Fake
     implements AiConfigInferenceProvider {}
 
 class FakeChatSession extends Fake implements ChatSession {}
+
+class FakeChecklistData extends Fake implements ChecklistData {}
 
 class FakeChecklistItemData extends Fake implements ChecklistItemData {}
 

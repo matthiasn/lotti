@@ -143,6 +143,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeAiConfigModel());
   registerFallbackValue(FakeAiConfigInferenceProvider());
   registerFallbackValue(FakeChatSession());
+  registerFallbackValue(FakeChecklistData());
   registerFallbackValue(FakeChecklistItemData());
 
   // Agent domain entity fallbacks
