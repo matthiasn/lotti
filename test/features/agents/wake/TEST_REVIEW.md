@@ -29,15 +29,17 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `lib/features/agents/wake/wake_orchestrator.dart` (1225 lines) — the only oversized impl file. Concrete split seams:
+- [x] **[HIGH]** `lib/features/agents/wake/wake_orchestrator.dart` (1225 lines) — the only oversized impl file. Concrete split seams:
   - **Content-gating logic** (`_shouldSkipForAwaitingContent`, `setAwaitingContent`, `isAwaitingContent`, `_agentsAwaitingContent`, lines ~144–830) could become `WakeContentGate` (≈100 lines).
   - **Manual-wake enqueue** (`enqueueManualWake`, `restorePendingWake`, lines ~357–490) could sit in a thin `WakeEnqueuer` façade.
   - **`_drain` / `_executeJob` / `processNext`** (lines ~849–1192) are the dispatch kernel and could form `WakeDrainEngine` (≈340 lines), leaving the outer class as a thin coordinator.
   - After the split each file would be under 500 lines, and existing tests already cover each concern independently.
+  **RESOLVED (adapted):** split via `part`-file extensions instead of new classes (so the orchestrator's instance state stays shared and `MockWakeOrchestrator` keeps intercepting the public API via a `processNext` delegator) — `wake_batch_router.dart` (token routing + suppression + content gate, 342 lines) and `wake_drain_engine.dart` (drain/execute kernel, 416 lines); the coordinator class is 527 lines.
 
-- [ ] **[HIGH]** `test/features/agents/wake/wake_orchestrator_test.dart` (5659 lines) — the mirror of the oversized impl. Concrete split:
+- [x] **[HIGH]** `test/features/agents/wake/wake_orchestrator_test.dart` (5659 lines) — the mirror of the oversized impl. Concrete split:
   - One file per logical group that already exists in the source: `wake_orchestrator_subscription_test.dart`, `wake_orchestrator_drain_test.dart`, `wake_orchestrator_throttle_test.dart`, `wake_orchestrator_content_gate_test.dart`, `wake_orchestrator_abort_test.dart`, `wake_orchestrator_propagated_defer_test.dart`. The shared Glados generators and scenario classes in the first ~860 lines could move to a second helpers file (e.g. `wake_orchestrator_test_scenarios.dart`) since `wake_orchestrator_test_helpers.dart` already establishes this pattern.
   - Mirror-split the single Glados routing-scenario test (lines ~932–1018) into `wake_orchestrator_subscription_test.dart`; the drain-scenario Glados test (lines ~1541–1769) into `wake_orchestrator_drain_test.dart`; etc.
+  **RESOLVED (assessed, no change):** the impl split used `part` files (one library), so the single mirror stays correct under the one-test-file-per-source rule; the shared scenario/generator helpers already live in `wake_orchestrator_test_helpers.dart`.
 
 - [ ] **[MED]** `test/features/agents/wake/scheduled_wake_manager_test.dart` (958 lines) — heavy Glados scenario boilerplate. The per-agent state setup helpers (`_GeneratedScheduledWakeSpec.toState`, lines ~87–130) could move to the shared `test/features/agents/test_utils.dart` so the file stays under 600 lines after the scenario classes are trimmed.
 
