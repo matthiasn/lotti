@@ -157,6 +157,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:record/record.dart' as record;
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 /// Generic mock for drift Selectable queries used in widget tests.
@@ -595,6 +596,8 @@ class MockAudioPlayerController extends Mock implements AudioPlayerController {}
 
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}
+
+class MockAudioRecorder extends Mock implements record.AudioRecorder {}
 
 class MockAudioTranscriptionService extends Mock
     implements AudioTranscriptionService {}
