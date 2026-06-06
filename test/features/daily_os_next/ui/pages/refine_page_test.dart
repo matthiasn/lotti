@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
@@ -21,6 +20,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../test_utils.dart';
 
 const _category = DayAgentCategory(
   id: 'cat_focus',
@@ -62,166 +62,6 @@ PlanDiff _diffWithTwoChanges(DraftPlan plan) => PlanDiff(
 
 /// Recording agent: returns canned diff/plan responses and remembers
 /// the args the controller passed in so tests can assert on them.
-class _RecordingAgent implements DayAgentInterface {
-  _RecordingAgent({
-    required this.diff,
-    DraftPlan? acceptedPlan,
-    this.proposeError,
-    this.proposeGate,
-  }) : acceptedPlan = acceptedPlan ?? diff.updatedPlan;
-
-  final PlanDiff diff;
-  final DraftPlan acceptedPlan;
-  final Error? proposeError;
-
-  /// When set, `proposePlanDiff` blocks on this future before returning,
-  /// keeping the refine controller pinned in `RefinePhase.thinking` so
-  /// tests can observe that transient phase.
-  final Future<void>? proposeGate;
-
-  PlanDiff? capturedDiff;
-  String? proposedTranscript;
-  List<int>? acceptIndices;
-  List<int>? revertIndices;
-  DraftPlan? revertOriginalPlan;
-  int proposeCount = 0;
-
-  @override
-  Future<PlanDiff> proposePlanDiff({
-    required DraftPlan currentPlan,
-    required String voiceTranscript,
-    bool Function()? isCancelled,
-  }) async {
-    proposeCount++;
-    proposedTranscript = voiceTranscript;
-    final gate = proposeGate;
-    if (gate != null) await gate;
-    final error = proposeError;
-    if (error != null) throw error;
-    return diff;
-  }
-
-  @override
-  Future<DraftPlan> acceptDiff(
-    PlanDiff diff, {
-    List<int>? itemIndices,
-  }) async {
-    capturedDiff = diff;
-    acceptIndices = itemIndices;
-    return acceptedPlan;
-  }
-
-  @override
-  Future<DraftPlan> revertDiff({
-    required PlanDiff diff,
-    required DraftPlan originalPlan,
-    List<int>? itemIndices,
-  }) async {
-    capturedDiff = diff;
-    revertIndices = itemIndices;
-    revertOriginalPlan = originalPlan;
-    return originalPlan;
-  }
-
-  @override
-  Future<CaptureId> submitCapture({
-    required String transcript,
-    required DateTime capturedAt,
-    String? audioId,
-  }) async => const CaptureId('cap');
-
-  @override
-  Future<DraftPlan?> currentPlanForDate(DateTime date) async => null;
-
-  @override
-  Future<bool> deletePlanForDate(DateTime date) async => true;
-
-  @override
-  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => const [];
-
-  @override
-  Future<List<PendingItem>> surfacePendingDecisions({
-    DateTime? forDate,
-  }) async => const [];
-
-  @override
-  Future<ParsedItem> breakCaptureLink(String parsedItemId) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<TriageResult> applyTriage({
-    required String taskId,
-    required TriageAction action,
-    DateTime? deferTo,
-  }) async => TriageResult(taskId: taskId, action: action);
-
-  @override
-  Future<DraftPlan> draftDayPlan({
-    required CaptureId captureId,
-    required List<String> decidedTaskIds,
-    required DateTime dayDate,
-    List<String> decidedCaptureItemIds = const [],
-    List<TimeBlock> calendarBlocks = const [],
-    bool Function()? isCancelled,
-  }) async => _emptyPlan();
-
-  @override
-  Future<List<LearningCard>> summarizeRecentPatterns({
-    required DateTime asOf,
-    int lookbackDays = 7,
-  }) async => const [];
-
-  @override
-  Future<DraftPlan> commitDay(DraftPlan plan) async =>
-      plan.copyWith(state: DayState.committed);
-
-  @override
-  Future<
-    ({
-      List<CompletedItem> completed,
-      List<CarryoverItem> carryover,
-      ShutdownMetrics metrics,
-    })
-  >
-  surfaceShutdownData({required DateTime forDate}) async => (
-    completed: const <CompletedItem>[],
-    carryover: const <CarryoverItem>[],
-    metrics: const ShutdownMetrics(
-      focusMinutes: 0,
-      flowSessions: 0,
-      contextSwitches: 0,
-      contextSwitchesWeekAvg: 0,
-      energyScore: 0,
-      energyDeltaVsWeek: 0,
-    ),
-  );
-
-  @override
-  Future<void> recordReflection({
-    required DateTime forDate,
-    required String text,
-    required ReflectionSource source,
-  }) async {}
-
-  @override
-  Future<void> recordCarryoverDecision({
-    required String taskId,
-    required CarryoverAction action,
-    DateTime? when,
-  }) async {}
-
-  @override
-  Future<TomorrowNote> generateTomorrowNote({
-    required DateTime forDate,
-  }) async => const TomorrowNote(body: '', maturity: 1);
-
-  @override
-  Future<List<TaskCorpusItem>> surfaceTaskCorpus({
-    TaskCorpusState stateFilter = TaskCorpusState.all,
-    String? categoryId,
-    String? query,
-  }) async => const [];
-}
 
 /// Stub the realtime/transcriber/recorder so the auto-disposing
 /// CaptureController can build and clean up without touching mic, fs,
@@ -365,7 +205,7 @@ void main() {
       'reviewing phase lets user edit transcript before proposing diff',
       (tester) async {
         final draft = _emptyPlan();
-        final agent = _RecordingAgent(diff: _diffWithTwoChanges(draft));
+        final agent = RecordingDayAgent(diff: _diffWithTwoChanges(draft));
         await tester.pumpWidget(
           _wrap(
             RefinePage(draft: draft),
@@ -403,7 +243,7 @@ void main() {
       tester,
     ) async {
       final draft = _emptyPlan();
-      final agent = _RecordingAgent(
+      final agent = RecordingDayAgent(
         diff: PlanDiff(
           id: 'diff_empty',
           transcript: 'make it lighter',
@@ -449,7 +289,7 @@ void main() {
         addTearDown(() => FlutterError.onError = previousOnError);
 
         final draft = _emptyPlan();
-        final agent = _RecordingAgent(
+        final agent = RecordingDayAgent(
           diff: _diffWithTwoChanges(draft),
           proposeError: StateError('proposal exploded'),
         );
@@ -488,7 +328,7 @@ void main() {
       tester,
     ) async {
       final draft = _emptyPlan();
-      final agent = _RecordingAgent(diff: _diffWithTwoChanges(draft));
+      final agent = RecordingDayAgent(diff: _diffWithTwoChanges(draft));
       await tester.pumpWidget(
         _wrap(
           RefinePage(draft: draft),
@@ -514,7 +354,7 @@ void main() {
       tester,
     ) async {
       final draft = _emptyPlan();
-      final agent = _RecordingAgent(diff: _diffWithTwoChanges(draft));
+      final agent = RecordingDayAgent(diff: _diffWithTwoChanges(draft));
       await tester.pumpWidget(
         _wrap(
           RefinePage(draft: draft),
@@ -547,7 +387,7 @@ void main() {
       tester,
     ) async {
       final draft = _emptyPlan();
-      final agent = _RecordingAgent(diff: _diffWithTwoChanges(draft));
+      final agent = RecordingDayAgent(diff: _diffWithTwoChanges(draft));
       await tester.pumpWidget(
         _wrap(
           RefinePage(draft: draft),
@@ -578,7 +418,7 @@ void main() {
       'tap revert action button reverts all pending indices and returns to idle',
       (tester) async {
         final draft = _emptyPlan();
-        final agent = _RecordingAgent(diff: _diffWithTwoChanges(draft));
+        final agent = RecordingDayAgent(diff: _diffWithTwoChanges(draft));
         await tester.pumpWidget(
           _wrap(
             RefinePage(draft: draft),
@@ -608,7 +448,7 @@ void main() {
       tester,
     ) async {
       final draft = _emptyPlan();
-      final agent = _RecordingAgent(diff: _diffWithTwoChanges(draft));
+      final agent = RecordingDayAgent(diff: _diffWithTwoChanges(draft));
       await tester.pumpWidget(
         _wrap(
           RefinePage(draft: draft),
@@ -657,7 +497,7 @@ void main() {
         ],
         updatedPlan: acceptedPlan,
       );
-      final agent = _RecordingAgent(
+      final agent = RecordingDayAgent(
         diff: singleChangeDiff,
         acceptedPlan: acceptedPlan,
       );
@@ -788,7 +628,7 @@ void main() {
       (tester) async {
         final draft = _emptyPlan();
         final gate = Completer<void>();
-        final agent = _RecordingAgent(
+        final agent = RecordingDayAgent(
           diff: _diffWithTwoChanges(draft),
           proposeGate: gate.future,
         );
@@ -893,7 +733,7 @@ void main() {
         ],
         updatedPlan: acceptedPlan,
       );
-      final agent = _RecordingAgent(diff: diff, acceptedPlan: acceptedPlan);
+      final agent = RecordingDayAgent(diff: diff, acceptedPlan: acceptedPlan);
       DraftPlan? result;
 
       await tester.pumpWidget(
@@ -1020,7 +860,7 @@ void main() {
       'tapping the voice button on diffReady re-arms listening (keeps transcript)',
       (tester) async {
         final draft = _emptyPlan();
-        final agent = _RecordingAgent(diff: _diffWithTwoChanges(draft));
+        final agent = RecordingDayAgent(diff: _diffWithTwoChanges(draft));
         await tester.pumpWidget(
           _wrap(
             RefinePage(draft: draft),

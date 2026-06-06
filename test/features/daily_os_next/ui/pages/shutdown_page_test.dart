@@ -33,6 +33,26 @@ MockDayAgent _fastAgent() => MockDayAgent(
   clock: () => DateTime(2026, 5, 25, 9),
 );
 
+/// Agent whose tomorrow note is fully controlled by the test.
+class _TomorrowNoteAgent extends MockDayAgent {
+  _TomorrowNoteAgent(this.note)
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        draftLatency: Duration.zero,
+        summarizeLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  final TomorrowNote note;
+
+  @override
+  Future<TomorrowNote> generateTomorrowNote({
+    required DateTime forDate,
+  }) async => note;
+}
+
 void main() {
   group('ShutdownPage', () {
     testWidgets('renders completed + carryover + tomorrow content', (
@@ -488,5 +508,56 @@ void main() {
         expect(find.text('Finish the Onboarding doc'), findsOneWidget);
       },
     );
+  });
+
+  group('ShutdownPage tomorrow note card', () {
+    Future<void> pumpWithNote(WidgetTester tester, TomorrowNote note) async {
+      tester.view
+        ..physicalSize = const Size(1280, 1100)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        _wrap(
+          ShutdownPage(forDate: DateTime(2026, 5, 25)),
+          overrides: [
+            dayAgentProvider.overrideWithValue(_TomorrowNoteAgent(note)),
+          ],
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+    }
+
+    testWidgets('renders the overline title and the generated body', (
+      tester,
+    ) async {
+      await pumpWithNote(
+        tester,
+        const TomorrowNote(body: 'Pack slides for the standup.', maturity: 2),
+      );
+
+      final context = tester.element(find.byType(ShutdownPage));
+      expect(
+        find.text(context.messages.dailyOsNextShutdownTomorrowOverline),
+        findsOneWidget,
+      );
+      expect(find.text('Pack slides for the standup.'), findsOneWidget);
+    });
+
+    testWidgets('an empty note body still renders the titled card', (
+      tester,
+    ) async {
+      await pumpWithNote(tester, const TomorrowNote(body: '', maturity: 0));
+
+      // _TomorrowNoteCard has no dedicated empty-state branch (and no
+      // maturity indicator); an empty body renders as an empty Text under
+      // the overline title without erroring.
+      final context = tester.element(find.byType(ShutdownPage));
+      expect(
+        find.text(context.messages.dailyOsNextShutdownTomorrowOverline),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
   });
 }

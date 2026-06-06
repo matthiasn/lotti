@@ -122,26 +122,42 @@ void main() {
       final decoded = DayAgentLearningBullet.fromJson(
         jsonDecode(jsonEncode(bullet.toJson())) as Map<String, dynamic>,
       );
-      expect(decoded, bullet,
-          reason: 'text="${bullet.text}" tone=${bullet.tone}');
-      expect(decoded.hashCode, bullet.hashCode,
-          reason: 'text="${bullet.text}" tone=${bullet.tone}');
+      expect(
+        decoded,
+        bullet,
+        reason: 'text="${bullet.text}" tone=${bullet.tone}',
+      );
+      expect(
+        decoded.hashCode,
+        bullet.hashCode,
+        reason: 'text="${bullet.text}" tone=${bullet.tone}',
+      );
     }, tags: 'glados');
 
     glados.Glados<DayAgentLearningCard>(
       glados.any.learningCard,
       glados.ExploreConfig(numRuns: 120),
-    ).test('roundtrips generated cards (incl. bullet list) through JSON',
-        (card) {
-      final decoded = DayAgentLearningCard.fromJson(
-        jsonDecode(jsonEncode(card.toJson())) as Map<String, dynamic>,
-      );
-      expect(decoded, card,
-          reason: 'id=${card.id} kind=${card.kind} '
-              'bullets=${card.bullets.length}');
-      expect(decoded.hashCode, card.hashCode,
-          reason: 'id=${card.id} kind=${card.kind}');
-    }, tags: 'glados');
+    ).test(
+      'roundtrips generated cards (incl. bullet list) through JSON',
+      (card) {
+        final decoded = DayAgentLearningCard.fromJson(
+          jsonDecode(jsonEncode(card.toJson())) as Map<String, dynamic>,
+        );
+        expect(
+          decoded,
+          card,
+          reason:
+              'id=${card.id} kind=${card.kind} '
+              'bullets=${card.bullets.length}',
+        );
+        expect(
+          decoded.hashCode,
+          card.hashCode,
+          reason: 'id=${card.id} kind=${card.kind}',
+        );
+      },
+      tags: 'glados',
+    );
   });
 }
 
@@ -225,8 +241,7 @@ extension _AnyDayAgentPlanModels on glados.Any {
           String summary,
           List<DayAgentLearningBullet> bullets,
           String kind,
-        ) =>
-            DayAgentLearningCard(
+        ) => DayAgentLearningCard(
           id: id,
           overline: overline,
           summary: summary,
