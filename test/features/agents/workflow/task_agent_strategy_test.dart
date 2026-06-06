@@ -143,27 +143,39 @@ ChatCompletionMessageToolCall _toolCall({
 /// Creates a [TaskAgentStrategy] with an attached [ChangeSetBuilder] and
 /// optional [ResolveTaskMetadata] for metadata-redundancy tests.
 ///
+/// File-level strategy bench: builds a [TaskAgentStrategy] with fixed stub
+/// wiring, parameterized on only the parts individual tests vary.
+///
 /// Returns both the strategy and the builder so tests can inspect builder
-/// state after processing tool calls.
-({TaskAgentStrategy strategy, ChangeSetBuilder builder})
-_createStrategyWithMetadata({
+/// state after processing tool calls. Pass [withChangeSetBuilder]: false for
+/// tests that exercise the non-deferred wiring (the returned builder is then
+/// unused by the strategy).
+({TaskAgentStrategy strategy, ChangeSetBuilder builder}) _createStrategy({
   required MockAgentToolExecutor executor,
   required MockAgentSyncService syncService,
   ResolveTaskMetadata? resolveTaskMetadata,
   ChecklistItemStateResolver? checklistItemStateResolver,
+  Future<String?> Function(String requestedTaskId)? resolveRelatedTaskDetails,
+  Set<String> allowedRelatedTaskIds = const <String>{},
+  SuggestionRetractionService? retractionService,
+  ExecuteToolHandler? executeToolHandler,
+  ChangeSetBuilder? builder,
+  bool withChangeSetBuilder = true,
 }) {
   const agentId = 'agent-001';
   const taskId = 'task-001';
   const threadId = 'thread-001';
   const runKey = 'run-key-001';
 
-  final builder = ChangeSetBuilder(
-    agentId: agentId,
-    taskId: taskId,
-    threadId: threadId,
-    runKey: runKey,
-    checklistItemStateResolver: checklistItemStateResolver,
-  );
+  final csBuilder =
+      builder ??
+      ChangeSetBuilder(
+        agentId: agentId,
+        taskId: taskId,
+        threadId: threadId,
+        runKey: runKey,
+        checklistItemStateResolver: checklistItemStateResolver,
+      );
 
   final strategy = TaskAgentStrategy(
     executor: executor,
@@ -174,17 +186,21 @@ _createStrategyWithMetadata({
     taskId: taskId,
     resolveCategoryId: (_) async => 'cat-001',
     readVectorClock: (_) async => null,
-    executeToolHandler: (toolName, args, manager) async =>
-        const ToolExecutionResult(
+    executeToolHandler:
+        executeToolHandler ??
+        (toolName, args, manager) async => const ToolExecutionResult(
           success: true,
           output: 'done',
           mutatedEntityId: taskId,
         ),
-    changeSetBuilder: builder,
+    changeSetBuilder: withChangeSetBuilder ? csBuilder : null,
+    retractionService: retractionService,
     resolveTaskMetadata: resolveTaskMetadata,
+    resolveRelatedTaskDetails: resolveRelatedTaskDetails,
+    allowedRelatedTaskIds: allowedRelatedTaskIds,
   );
 
-  return (strategy: strategy, builder: builder);
+  return (strategy: strategy, builder: csBuilder);
 }
 
 void main() {
@@ -194,8 +210,6 @@ void main() {
   late TaskAgentStrategy strategy;
 
   const agentId = 'agent-001';
-  const threadId = 'thread-001';
-  const runKey = 'run-key-001';
   const taskId = 'task-001';
 
   setUp(() {
@@ -213,22 +227,17 @@ void main() {
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
 
-    strategy = TaskAgentStrategy(
+    strategy = _createStrategy(
       executor: mockExecutor,
       syncService: mockSyncService,
-      agentId: agentId,
-      threadId: threadId,
-      runKey: runKey,
-      taskId: taskId,
-      resolveCategoryId: (_) async => 'cat-001',
-      readVectorClock: (_) async => null,
+      withChangeSetBuilder: false,
       executeToolHandler: (toolName, args, manager) async =>
           const ToolExecutionResult(
             success: true,
             output: 'Tool executed successfully',
             mutatedEntityId: taskId,
           ),
-    );
+    ).strategy;
   });
 
   group('TaskAgentStrategy', () {
@@ -354,25 +363,15 @@ void main() {
       test(
         'handles get_related_task_details locally for allowlisted sibling tasks',
         () async {
-          final relatedStrategy = TaskAgentStrategy(
+          final relatedStrategy = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
-            agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
-            taskId: taskId,
-            resolveCategoryId: (_) async => 'cat-001',
-            readVectorClock: (_) async => null,
-            executeToolHandler: (toolName, args, manager) async =>
-                const ToolExecutionResult(
-                  success: true,
-                  output: 'executor should not run',
-                ),
+            withChangeSetBuilder: false,
             resolveRelatedTaskDetails: (requestedTaskId) async {
               return '{"task":{"id":"$requestedTaskId"}}';
             },
             allowedRelatedTaskIds: const {'task-002'},
-          );
+          ).strategy;
           final toolCalls = [
             ChatCompletionMessageToolCall(
               id: 'call-related',
@@ -409,20 +408,13 @@ void main() {
       );
 
       test('rejects get_related_task_details for the current task', () async {
-        final relatedStrategy = TaskAgentStrategy(
+        final relatedStrategy = _createStrategy(
           executor: mockExecutor,
           syncService: mockSyncService,
-          agentId: agentId,
-          threadId: threadId,
-          runKey: runKey,
-          taskId: taskId,
-          resolveCategoryId: (_) async => 'cat-001',
-          readVectorClock: (_) async => null,
-          executeToolHandler: (toolName, args, manager) async =>
-              const ToolExecutionResult(success: true, output: 'unused'),
+          withChangeSetBuilder: false,
           resolveRelatedTaskDetails: (_) async => '{"task":{"id":"unused"}}',
           allowedRelatedTaskIds: {taskId},
-        );
+        ).strategy;
         final toolCalls = [
           ChatCompletionMessageToolCall(
             id: 'call-current',
@@ -454,20 +446,13 @@ void main() {
       });
 
       test('rejects get_related_task_details outside the allowlist', () async {
-        final relatedStrategy = TaskAgentStrategy(
+        final relatedStrategy = _createStrategy(
           executor: mockExecutor,
           syncService: mockSyncService,
-          agentId: agentId,
-          threadId: threadId,
-          runKey: runKey,
-          taskId: taskId,
-          resolveCategoryId: (_) async => 'cat-001',
-          readVectorClock: (_) async => null,
-          executeToolHandler: (toolName, args, manager) async =>
-              const ToolExecutionResult(success: true, output: 'unused'),
+          withChangeSetBuilder: false,
           resolveRelatedTaskDetails: (_) async => '{"task":{"id":"unused"}}',
           allowedRelatedTaskIds: const {'task-002'},
-        );
+        ).strategy;
         final toolCalls = [
           ChatCompletionMessageToolCall(
             id: 'call-outside',
@@ -498,20 +483,13 @@ void main() {
       test(
         'returns tool error when related-task resolver returns null',
         () async {
-          final relatedStrategy = TaskAgentStrategy(
+          final relatedStrategy = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
-            agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
-            taskId: taskId,
-            resolveCategoryId: (_) async => 'cat-001',
-            readVectorClock: (_) async => null,
-            executeToolHandler: (toolName, args, manager) async =>
-                const ToolExecutionResult(success: true, output: 'unused'),
+            withChangeSetBuilder: false,
             resolveRelatedTaskDetails: (_) async => null,
             allowedRelatedTaskIds: const {'task-002'},
-          );
+          ).strategy;
           final toolCalls = [
             ChatCompletionMessageToolCall(
               id: 'call-null',
@@ -543,21 +521,14 @@ void main() {
       test(
         'returns tool error when related-task resolver throws',
         () async {
-          final throwingStrategy = TaskAgentStrategy(
+          final throwingStrategy = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
-            agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
-            taskId: taskId,
-            resolveCategoryId: (_) async => 'cat-001',
-            readVectorClock: (_) async => null,
-            executeToolHandler: (toolName, args, manager) async =>
-                const ToolExecutionResult(success: true, output: 'unused'),
+            withChangeSetBuilder: false,
             resolveRelatedTaskDetails: (_) async =>
                 throw Exception('DB connection lost'),
             allowedRelatedTaskIds: const {'task-002'},
-          );
+          ).strategy;
           final toolCalls = [
             ChatCompletionMessageToolCall(
               id: 'call-throw',
@@ -1755,30 +1726,18 @@ void main() {
       late TaskAgentStrategy deferredStrategy;
 
       setUp(() {
-        csBuilder = ChangeSetBuilder(
-          agentId: agentId,
-          taskId: taskId,
-          threadId: threadId,
-          runKey: runKey,
-        );
-
-        deferredStrategy = TaskAgentStrategy(
+        final bench = _createStrategy(
           executor: mockExecutor,
           syncService: mockSyncService,
-          agentId: agentId,
-          threadId: threadId,
-          runKey: runKey,
-          taskId: taskId,
-          resolveCategoryId: (_) async => 'cat-001',
-          readVectorClock: (_) async => null,
           executeToolHandler: (toolName, args, manager) async =>
               const ToolExecutionResult(
                 success: true,
                 output: 'Tool executed successfully',
                 mutatedEntityId: taskId,
               ),
-          changeSetBuilder: csBuilder,
         );
+        csBuilder = bench.builder;
+        deferredStrategy = bench.strategy;
       });
 
       test('routes deferred tools to change set builder', () async {
@@ -2439,7 +2398,7 @@ void main() {
       test(
         'suppresses redundant non-batch tool and feeds back to LLM',
         () async {
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
@@ -2474,7 +2433,7 @@ void main() {
       test(
         'keeps non-redundant non-batch tool when metadata differs',
         () async {
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
@@ -2523,7 +2482,7 @@ void main() {
                     languageCode: 'en',
                   )
                   as TaskMetadataSnapshot;
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async => emptyTitleSnapshot,
@@ -2601,7 +2560,7 @@ void main() {
                     languageCode: 'en',
                   )
                   as TaskMetadataSnapshot;
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async => blankTitleSnapshot,
@@ -2668,7 +2627,7 @@ void main() {
                     languageCode: 'en',
                   )
                   as TaskMetadataSnapshot;
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async => emptyTitleSnapshot,
@@ -2776,7 +2735,7 @@ void main() {
         'set_task_title policy fallback rechecks metadata before queuing',
         () async {
           var resolveCount = 0;
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async {
@@ -2847,7 +2806,7 @@ void main() {
       test(
         'set_task_title stays deferred when an existing title is present',
         () async {
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
@@ -2899,7 +2858,7 @@ void main() {
           // silently overwrite the title the executor just wrote.
           var autoApplied = 0;
           var currentTitle = '';
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async {
@@ -2986,7 +2945,7 @@ void main() {
           // (3) a second update_task_estimate must therefore re-resolve
           // fresh metadata instead of reusing the pre-auto-apply snapshot.
           var resolverCalls = 0;
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async {
@@ -3086,7 +3045,7 @@ void main() {
       test(
         'set_task_title stays deferred when no resolveTaskMetadata is wired',
         () async {
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             // resolveTaskMetadata intentionally omitted.
@@ -3129,7 +3088,7 @@ void main() {
       test(
         'set_task_title stays deferred when resolveTaskMetadata throws',
         () async {
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async => throw Exception('resolver down'),
@@ -3176,7 +3135,7 @@ void main() {
         () async {
           // Mirrors the non-Task-entity case where
           // ChangeProposalFilter.resolveTaskMetadata returns null.
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async => null,
@@ -3225,7 +3184,7 @@ void main() {
                     languageCode: null,
                   )
                   as TaskMetadataSnapshot;
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async => emptyLanguageSnapshot,
@@ -3293,7 +3252,7 @@ void main() {
       test(
         'set_task_language stays deferred when a language is already present',
         () async {
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async => kTestTaskMetadataSnapshot,
@@ -3343,7 +3302,7 @@ void main() {
           // deferred guard.
           var autoApplied = 0;
           var currentLanguage = '';
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async {
@@ -3425,7 +3384,7 @@ void main() {
       test(
         'set_task_language stays deferred when resolveTaskMetadata throws',
         () async {
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             resolveTaskMetadata: () async => throw Exception('resolver down'),
@@ -3462,7 +3421,7 @@ void main() {
       );
 
       test('keeps tool when resolver throws (conservative)', () async {
-        final (:strategy, :builder) = _createStrategyWithMetadata(
+        final (:strategy, :builder) = _createStrategy(
           executor: mockExecutor,
           syncService: mockSyncService,
           resolveTaskMetadata: () async => throw Exception('DB error'),
@@ -3499,7 +3458,7 @@ void main() {
       test(
         'redundant batch items include redundancy info in response',
         () async {
-          final (:strategy, :builder) = _createStrategyWithMetadata(
+          final (:strategy, :builder) = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
             checklistItemStateResolver: (id) async =>
@@ -3703,28 +3662,12 @@ void main() {
           final localExecutor = MockAgentToolExecutor();
           final localSyncService = MockAgentSyncService();
           final localManager = MockConversationManager();
-          final localBuilder = ChangeSetBuilder(
-            agentId: agentId,
-            taskId: taskId,
-            threadId: threadId,
-            runKey: runKey,
-          );
-          final localStrategy = TaskAgentStrategy(
+          final (
+            strategy: localStrategy,
+            builder: localBuilder,
+          ) = _createStrategy(
             executor: localExecutor,
             syncService: localSyncService,
-            agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
-            taskId: taskId,
-            resolveCategoryId: (_) async => 'cat-001',
-            readVectorClock: (_) async => null,
-            executeToolHandler: (toolName, args, manager) async =>
-                const ToolExecutionResult(
-                  success: true,
-                  output: 'Tool executed successfully',
-                  mutatedEntityId: taskId,
-                ),
-            changeSetBuilder: localBuilder,
           );
           when(
             () => localSyncService.upsertEntity(any()),
@@ -3811,23 +3754,12 @@ void main() {
             ],
           );
 
-          final retractionStrategy = TaskAgentStrategy(
+          final retractionStrategy = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
-            agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
-            taskId: taskId,
-            resolveCategoryId: (_) async => 'cat-001',
-            readVectorClock: (_) async => null,
-            executeToolHandler: (toolName, args, manager) async =>
-                const ToolExecutionResult(
-                  success: true,
-                  output: 'unused',
-                  mutatedEntityId: taskId,
-                ),
+            withChangeSetBuilder: false,
             retractionService: fakeService,
-          );
+          ).strategy;
 
           final toolCalls = [
             ChatCompletionMessageToolCall(
@@ -3907,19 +3839,12 @@ void main() {
             ],
           );
 
-          final retractionStrategy = TaskAgentStrategy(
+          final retractionStrategy = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
-            agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
-            taskId: taskId,
-            resolveCategoryId: (_) async => 'cat-001',
-            readVectorClock: (_) async => null,
-            executeToolHandler: (_, _, _) async =>
-                const ToolExecutionResult(success: true, output: 'unused'),
+            withChangeSetBuilder: false,
             retractionService: fakeService,
-          );
+          ).strategy;
 
           await retractionStrategy.processToolCalls(
             toolCalls: [
@@ -3971,19 +3896,12 @@ void main() {
             ],
           );
 
-          final retractionStrategy = TaskAgentStrategy(
+          final retractionStrategy = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
-            agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
-            taskId: taskId,
-            resolveCategoryId: (_) async => 'cat-001',
-            readVectorClock: (_) async => null,
-            executeToolHandler: (_, _, _) async =>
-                const ToolExecutionResult(success: true, output: 'unused'),
+            withChangeSetBuilder: false,
             retractionService: fakeService,
-          );
+          ).strategy;
 
           ChatCompletionMessageToolCall retractCall(String id) =>
               ChatCompletionMessageToolCall(
@@ -4027,19 +3945,12 @@ void main() {
           final fakeService = _FakeRetractionService(
             responses: (_) => const [],
           );
-          final retractionStrategy = TaskAgentStrategy(
+          final retractionStrategy = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
-            agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
-            taskId: taskId,
-            resolveCategoryId: (_) async => 'cat-001',
-            readVectorClock: (_) async => null,
-            executeToolHandler: (_, _, _) async =>
-                const ToolExecutionResult(success: true, output: 'unused'),
+            withChangeSetBuilder: false,
             retractionService: fakeService,
-          );
+          ).strategy;
 
           final toolCalls = [
             ChatCompletionMessageToolCall(
@@ -4084,19 +3995,12 @@ void main() {
                 ),
             ],
           );
-          final retractionStrategy = TaskAgentStrategy(
+          final retractionStrategy = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
-            agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
-            taskId: taskId,
-            resolveCategoryId: (_) async => 'cat-001',
-            readVectorClock: (_) async => null,
-            executeToolHandler: (_, _, _) async =>
-                const ToolExecutionResult(success: true, output: 'unused'),
+            withChangeSetBuilder: false,
             retractionService: fakeService,
-          );
+          ).strategy;
 
           final toolCalls = [
             ChatCompletionMessageToolCall(
@@ -4149,19 +4053,12 @@ void main() {
           final fakeService = _FakeRetractionService(
             responses: (_) => const [],
           );
-          final retractionStrategy = TaskAgentStrategy(
+          final retractionStrategy = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
-            agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
-            taskId: taskId,
-            resolveCategoryId: (_) async => 'cat-001',
-            readVectorClock: (_) async => null,
-            executeToolHandler: (_, _, _) async =>
-                const ToolExecutionResult(success: true, output: 'unused'),
+            withChangeSetBuilder: false,
             retractionService: fakeService,
-          );
+          ).strategy;
 
           final toolCalls = [
             ChatCompletionMessageToolCall(
@@ -4220,19 +4117,12 @@ void main() {
               ),
             ],
           );
-          final retractionStrategy = TaskAgentStrategy(
+          final retractionStrategy = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
-            agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
-            taskId: taskId,
-            resolveCategoryId: (_) async => 'cat-001',
-            readVectorClock: (_) async => null,
-            executeToolHandler: (_, _, _) async =>
-                const ToolExecutionResult(success: true, output: 'unused'),
+            withChangeSetBuilder: false,
             retractionService: fakeService,
-          );
+          ).strategy;
 
           final toolCalls = [
             ChatCompletionMessageToolCall(
@@ -4281,19 +4171,12 @@ void main() {
       test(
         'omitting the retraction service returns a wiring error to the LLM',
         () async {
-          final noServiceStrategy = TaskAgentStrategy(
+          // retractionService intentionally omitted.
+          final noServiceStrategy = _createStrategy(
             executor: mockExecutor,
             syncService: mockSyncService,
-            agentId: agentId,
-            threadId: threadId,
-            runKey: runKey,
-            taskId: taskId,
-            resolveCategoryId: (_) async => 'cat-001',
-            readVectorClock: (_) async => null,
-            executeToolHandler: (_, _, _) async =>
-                const ToolExecutionResult(success: true, output: 'unused'),
-            // retractionService intentionally omitted.
-          );
+            withChangeSetBuilder: false,
+          ).strategy;
 
           final toolCalls = [
             ChatCompletionMessageToolCall(
