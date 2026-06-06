@@ -405,6 +405,36 @@ void main() {
         });
       });
 
+      test(
+        'HTTP 400 throws immediately without retrying',
+        () async {
+          var sendCalls = 0;
+          when(() => mockHttpClient.send(any())).thenAnswer((_) async {
+            sendCalls++;
+            return http.StreamedResponse(
+              Stream.fromIterable([utf8.encode('Bad request')]),
+              400,
+            );
+          });
+
+          final transcriptionStream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+          );
+
+          await expectLater(
+            transcriptionStream.toList(),
+            throwsA(
+              isA<VoxtralInferenceException>()
+                  .having((e) => e.statusCode, 'statusCode', 400),
+            ),
+          );
+          // Client errors are not retryable: exactly one request was sent.
+          expect(sendCalls, 1);
+        },
+      );
+
       test('should handle malformed SSE data gracefully', () async {
         // Arrange - mix valid and invalid SSE events
         const sseData = '''

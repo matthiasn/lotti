@@ -62,6 +62,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
@@ -157,6 +158,7 @@ import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openai_dart/openai_dart.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:record/record.dart' as record;
@@ -968,6 +970,11 @@ class MockConversationStrategy extends Mock implements ConversationStrategy {}
 
 class MockOllamaInferenceRepository extends Mock
     implements OllamaInferenceRepository {}
+
+class MockOpenAIClient extends Mock implements OpenAIClient {}
+
+class MockGeminiInferenceRepository extends Mock
+    implements GeminiInferenceRepository {}
 
 class MockAgentToolExecutor extends Mock implements AgentToolExecutor {}
 

@@ -12,140 +12,7 @@ import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:openai_dart/openai_dart.dart';
 
-class _FakeStreamClient extends http.BaseClient {
-  _FakeStreamClient(this._statusCode, this._lines);
-
-  final int _statusCode;
-  final List<String> _lines;
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final data = _lines.map((l) => utf8.encode('$l\n') as List<int>);
-    final stream = Stream<List<int>>.fromIterable(data);
-    return http.StreamedResponse(
-      stream,
-      _statusCode,
-      headers: {
-        'content-type': 'application/json',
-      },
-    );
-  }
-}
-
-class _RoutingFakeClient extends http.BaseClient {
-  _RoutingFakeClient({
-    required this.streamLines,
-    required this.fallbackBody,
-  });
-
-  final List<String> streamLines;
-  final String fallbackBody;
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final path = request.url.path;
-    if (path.endsWith(':streamGenerateContent')) {
-      final data = streamLines.map((l) => utf8.encode('$l\n') as List<int>);
-      final stream = Stream<List<int>>.fromIterable(data);
-      return http.StreamedResponse(
-        stream,
-        200,
-        headers: {
-          'content-type': 'application/json',
-        },
-      );
-    } else if (path.endsWith(':generateContent')) {
-      final bytes = utf8.encode(fallbackBody);
-      final stream = Stream<List<int>>.fromIterable([bytes]);
-      return http.StreamedResponse(
-        stream,
-        200,
-        headers: {
-          'content-type': 'application/json',
-        },
-      );
-    }
-    // Default empty 404
-    return http.StreamedResponse(const Stream.empty(), 404);
-  }
-}
-
-class _RoutingErrorClient extends http.BaseClient {
-  _RoutingErrorClient({
-    required this.streamLines,
-  });
-
-  final List<String> streamLines;
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final path = request.url.path;
-    if (path.endsWith(':streamGenerateContent')) {
-      final data = streamLines.map((l) => utf8.encode('$l\n') as List<int>);
-      final stream = Stream<List<int>>.fromIterable(data);
-      return http.StreamedResponse(
-        stream,
-        200,
-        headers: {
-          'content-type': 'application/json',
-        },
-      );
-    } else if (path.endsWith(':generateContent')) {
-      final bytes = utf8.encode('{"error":"boom"}');
-      final stream = Stream<List<int>>.fromIterable([bytes]);
-      return http.StreamedResponse(
-        stream,
-        500,
-        headers: {
-          'content-type': 'application/json',
-        },
-      );
-    }
-    return http.StreamedResponse(const Stream.empty(), 404);
-  }
-}
-
-class _RoutingCountingClient extends http.BaseClient {
-  _RoutingCountingClient({
-    required this.streamLines,
-    required this.fallbackBody,
-  });
-
-  final List<String> streamLines;
-  final String fallbackBody;
-
-  int streamCalls = 0;
-  int fallbackCalls = 0;
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    final path = request.url.path;
-    if (path.endsWith(':streamGenerateContent')) {
-      streamCalls++;
-      final data = streamLines.map((l) => utf8.encode('$l\n') as List<int>);
-      final stream = Stream<List<int>>.fromIterable(data);
-      return http.StreamedResponse(
-        stream,
-        200,
-        headers: {
-          'content-type': 'application/json',
-        },
-      );
-    } else if (path.endsWith(':generateContent')) {
-      fallbackCalls++;
-      final bytes = utf8.encode(fallbackBody);
-      final stream = Stream<List<int>>.fromIterable([bytes]);
-      return http.StreamedResponse(
-        stream,
-        200,
-        headers: {
-          'content-type': 'application/json',
-        },
-      );
-    }
-    return http.StreamedResponse(const Stream.empty(), 404);
-  }
-}
+import 'gemini_test_clients.dart';
 
 void main() {
   group('GeminiInferenceRepository streaming', () {
@@ -166,7 +33,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [line]);
+      final client = FakeStreamClient(200, [line]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -219,7 +86,7 @@ void main() {
           ],
         });
 
-        final client = _FakeStreamClient(200, [malformed, valid]);
+        final client = FakeStreamClient(200, [malformed, valid]);
         final repo = GeminiInferenceRepository(httpClient: client);
 
         final provider = AiConfigInferenceProvider(
@@ -281,7 +148,7 @@ void main() {
         ],
       });
 
-      final client = _RoutingFakeClient(
+      final client = RoutingFakeClient(
         streamLines: [streamLine],
         fallbackBody: fallback,
       );
@@ -348,7 +215,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [line]);
+      final client = FakeStreamClient(200, [line]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -407,7 +274,7 @@ void main() {
           ],
         });
 
-        final client = _FakeStreamClient(200, [line]);
+        final client = FakeStreamClient(200, [line]);
         final repo = GeminiInferenceRepository(httpClient: client);
 
         final provider = AiConfigInferenceProvider(
@@ -476,7 +343,7 @@ void main() {
           ],
         });
 
-        final client = _RoutingFakeClient(
+        final client = RoutingFakeClient(
           streamLines: [streamLine],
           fallbackBody: fallback,
         );
@@ -514,7 +381,7 @@ void main() {
     );
 
     test('throws for non-2xx streaming status codes', () async {
-      final client = _FakeStreamClient(500, ['{"error":"x"}']);
+      final client = FakeStreamClient(500, ['{"error":"x"}']);
       final repo = GeminiInferenceRepository(httpClient: client);
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -555,7 +422,7 @@ void main() {
           ],
         });
 
-        final client = _FakeStreamClient(200, [line]);
+        final client = FakeStreamClient(200, [line]);
         final repo = GeminiInferenceRepository(httpClient: client);
 
         final provider = AiConfigInferenceProvider(
@@ -606,7 +473,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [line]);
+      final client = FakeStreamClient(200, [line]);
       final repo = GeminiInferenceRepository(httpClient: client);
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -652,7 +519,7 @@ void main() {
           })}';
 
       // Prepend an opening bracket to test array framing removal
-      final client = _FakeStreamClient(200, ['[', sse]);
+      final client = FakeStreamClient(200, ['[', sse]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -682,7 +549,7 @@ void main() {
       // Break the JSON across chunks outside of strings to simulate partial frames
       const part1 = '{"candidates":[{"content":{"parts":[';
       const part2 = '{"text":"Hello"}]}}]}';
-      final client = _FakeStreamClient(200, const [part1, part2]);
+      final client = FakeStreamClient(200, const [part1, part2]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -715,7 +582,7 @@ void main() {
           },
         ],
       });
-      final client = _RoutingErrorClient(streamLines: [emptyParts]);
+      final client = RoutingErrorClient(streamLines: [emptyParts]);
       final repo = GeminiInferenceRepository(httpClient: client);
       final provider = AiConfigInferenceProvider(
         id: 'prov',
@@ -762,7 +629,7 @@ void main() {
             },
           ],
         });
-        final client = _RoutingCountingClient(
+        final client = RoutingCountingClient(
           streamLines: [streamLine],
           fallbackBody: fallback,
         );
@@ -819,7 +686,7 @@ void main() {
         },
       });
 
-      final client = _RoutingFakeClient(
+      final client = RoutingFakeClient(
         streamLines: [streamLine],
         fallbackBody: fallback,
       );
@@ -873,7 +740,7 @@ void main() {
         },
       });
 
-      final client = _FakeStreamClient(200, [responseWithUsage]);
+      final client = FakeStreamClient(200, [responseWithUsage]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -944,7 +811,7 @@ void main() {
         },
       });
 
-      final client = _FakeStreamClient(200, [chunk1, chunk2]);
+      final client = FakeStreamClient(200, [chunk1, chunk2]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -990,7 +857,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [responseNoUsage]);
+      final client = FakeStreamClient(200, [responseNoUsage]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -1037,7 +904,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [responseWithFunctionCall]);
+      final client = FakeStreamClient(200, [responseWithFunctionCall]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -1092,7 +959,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [
+      final client = FakeStreamClient(200, [
         responseWithMultipleFunctionCalls,
       ]);
       final repo = GeminiInferenceRepository(httpClient: client);
@@ -1615,7 +1482,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [line]);
+      final client = FakeStreamClient(200, [line]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -1754,7 +1621,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [responseWithSignature]);
+      final client = FakeStreamClient(200, [responseWithSignature]);
       final repo = GeminiInferenceRepository(httpClient: client);
       final collector = ThoughtSignatureCollector();
 
@@ -1807,7 +1674,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [responseNoSignature]);
+      final client = FakeStreamClient(200, [responseNoSignature]);
       final repo = GeminiInferenceRepository(httpClient: client);
       final collector = ThoughtSignatureCollector();
 
@@ -1865,7 +1732,7 @@ void main() {
         ],
       });
 
-      final client = _RoutingFakeClient(
+      final client = RoutingFakeClient(
         streamLines: [streamLine],
         fallbackBody: fallback,
       );
@@ -2068,7 +1935,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [response]);
+      final client = FakeStreamClient(200, [response]);
       final repo = GeminiInferenceRepository(httpClient: client);
       final collector = ThoughtSignatureCollector();
 
@@ -2114,7 +1981,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [response]);
+      final client = FakeStreamClient(200, [response]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -2170,7 +2037,7 @@ void main() {
         },
       });
 
-      final client = _FakeStreamClient(200, [response]);
+      final client = FakeStreamClient(200, [response]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -2205,7 +2072,7 @@ void main() {
     });
 
     test('throws on non-2xx status in multi-turn mode', () async {
-      final client = _FakeStreamClient(500, ['{"error":"internal"}']);
+      final client = FakeStreamClient(500, ['{"error":"internal"}']);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -2248,7 +2115,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [response]);
+      final client = FakeStreamClient(200, [response]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -2294,7 +2161,7 @@ void main() {
         ],
       });
 
-      final client = _FakeStreamClient(200, [response]);
+      final client = FakeStreamClient(200, [response]);
       final repo = GeminiInferenceRepository(httpClient: client);
 
       final provider = AiConfigInferenceProvider(
@@ -2783,7 +2650,7 @@ void main() {
           ],
         });
 
-        final client = _FakeStreamClient(200, [line]);
+        final client = FakeStreamClient(200, [line]);
         final repo = GeminiInferenceRepository(httpClient: client);
         final provider = AiConfigInferenceProvider(
           id: 'prov',

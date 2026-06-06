@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
@@ -65,6 +66,47 @@ void main() {
         expect(result.length, kEmbeddingDimensions);
         expect(result[0], closeTo(0.42, 1e-5));
       });
+
+      // ── Property: parsed vector preserves every generated value ─────────
+      glados.Glados(
+        glados.IntAnys(glados.any).intInRange(1, 1 << 30),
+        glados.ExploreConfig(numRuns: 40),
+      ).test('embed preserves arbitrary vector values element-wise', (
+        seed,
+      ) async {
+        // Deterministic pseudo-random vector derived from the generated seed
+        // so each of the 1024 elements differs and round-trips exactly.
+        final values = List<double>.generate(
+          kEmbeddingDimensions,
+          (i) => ((seed + i * 2654435761) % 100000) / 1000 - 50,
+        );
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({
+              'model': model,
+              'embeddings': [values],
+            }),
+            200,
+          ),
+        );
+
+        final result = await repository.embed(input: 'x', baseUrl: baseUrl);
+
+        expect(result.length, kEmbeddingDimensions);
+        for (var i = 0; i < kEmbeddingDimensions; i++) {
+          expect(
+            result[i],
+            closeTo(values[i], 1e-4),
+            reason: 'element $i for seed $seed',
+          );
+        }
+      }, tags: 'glados');
 
       test('sends correct request body', () async {
         when(
