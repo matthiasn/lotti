@@ -28,10 +28,11 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `lib/features/agents/tools/agent_tool_registry.dart` — 904 lines. This is **the only file ≥ 1 000-line threshold** and crosses the soft 500-line advisory. It is almost entirely const data (tool definitions for task-agent, evolution-agent, and soul-evolution-agent, plus name-constant classes and set/map constants). Suggested split:
+- [x] **[HIGH]** `lib/features/agents/tools/agent_tool_registry.dart` — 904 lines. This is **the only file ≥ 1 000-line threshold** and crosses the soft 500-line advisory. It is almost entirely const data (tool definitions for task-agent, evolution-agent, and soul-evolution-agent, plus name-constant classes and set/map constants). Suggested split:
   - `agent_tool_registry.dart` — keep `AgentToolRegistry` class, `TaskAgentToolNames`, `deferredTools`, `explodedBatchTools`, `taskAgentTools` (≈ 750 lines of the current file).
   - `evolution_tool_registry.dart` — `EvolutionToolNames`, `evolutionAgentTools`, `soulEvolutionAgentTools`.
   - The test file at `test/features/agents/tools/agent_tool_registry_test.dart` should mirror the split.
+  **RESOLVED (adapted):** done with `part` files following the pre-existing `project_tool_definitions.dart` pattern — the task-agent and evolution tool lists moved to `task_agent_tool_definitions.dart` (789 lines) and `evolution_tool_definitions.dart` (144 lines) as private backing consts, with the class keeping typed `static const` aliases; `agent_tool_registry.dart` is down to 130 lines and the single mirror test (same library) is untouched.
 
 - [x] **[HIGH]** `test/features/agents/tools/checklist_migration_handler_test.dart` — 1 407 lines for a 182-line impl. Extract a `_TestBench` class holding mock setup, factory helpers (`makeChecklistItem`, `makeTask`), and `_generatedMetadata` utilities; this eliminates ≈200 lines of repeated boilerplate across the Glados and static test groups. **RESOLVED:** five shared stub helpers (`stubItemLookup`/`stubSourceTask`/`stubTargetTask`/`stubArchiveUpdate`/`stubAddItemToChecklist`) replace ~25 repeated stub blocks; the `makeChecklistItem`/`makeTask` factories already existed (1407 → 1273 lines).
 
