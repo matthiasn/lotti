@@ -68,12 +68,38 @@ void main() {
     SlowQueryLoggingGate.resetForTest();
 
     logging = getIt<LoggingService>();
-    logging.listenToConfigFlag();
-    // Allow the stream microtask to flip the internal flag
-    await Future<void>.delayed(Duration.zero);
+    await logging.listenToConfigFlag();
   });
 
   tearDown(SlowQueryLoggingGate.resetForTest);
+
+  /// Builds a [LoggingService] wired to two controllable config-flag streams so
+  /// tests can drive values, errors and `done` deterministically. Registers
+  /// teardown for the controllers and the service.
+  ({
+    LoggingService service,
+    StreamController<bool> logging,
+    StreamController<bool> slowQuery,
+  })
+  makeControlledService() {
+    final loggingController = StreamController<bool>();
+    final slowQueryController = StreamController<bool>();
+    addTearDown(loggingController.close);
+    addTearDown(slowQueryController.close);
+    when(
+      () => journalDb.watchConfigFlag(enableLoggingFlag),
+    ).thenAnswer((_) => loggingController.stream);
+    when(
+      () => journalDb.watchConfigFlag(logSlowQueriesFlag),
+    ).thenAnswer((_) => slowQueryController.stream);
+    final service = LoggingService();
+    addTearDown(service.dispose);
+    return (
+      service: service,
+      logging: loggingController,
+      slowQuery: slowQueryController,
+    );
+  }
 
   test('captureEvent writes to file when enabled', () {
     fakeAsync((async) {
@@ -240,7 +266,8 @@ void main() {
       getIt.registerSingleton<Directory>(invalidDir);
 
       // Create fresh service pointing to the invalid directory
-      final brokenLogging = LoggingService()..listenToConfigFlag();
+      final brokenLogging = LoggingService();
+      unawaited(brokenLogging.listenToConfigFlag());
 
       // Wait for stream microtask to enable logging
       async.flushMicrotasks();
@@ -268,7 +295,8 @@ void main() {
       getIt.registerSingleton<Directory>(invalidDir);
 
       // Create fresh service pointing to the invalid directory
-      final brokenLogging = LoggingService()..listenToConfigFlag();
+      final brokenLogging = LoggingService();
+      unawaited(brokenLogging.listenToConfigFlag());
 
       // Wait for stream microtask to enable logging
       async.flushMicrotasks();
@@ -346,7 +374,8 @@ void main() {
       () => journalDb.watchConfigFlag(logSlowQueriesFlag),
     ).thenAnswer((_) => slowQueryController.stream);
 
-    final svc = LoggingService()..listenToConfigFlag();
+    final svc = LoggingService();
+    unawaited(svc.listenToConfigFlag());
 
     // Initially disabled (isTestEnv = true means _enableLogging = false)
     svc.captureEvent('should be skipped', domain: 'TOGGLE');
@@ -395,7 +424,8 @@ void main() {
         () => journalDb.watchConfigFlag(logSlowQueriesFlag),
       ).thenAnswer((_) => slowQueryController.stream);
 
-      final svc = LoggingService()..listenToConfigFlag();
+      final svc = LoggingService();
+      unawaited(svc.listenToConfigFlag());
       expect(svc, isNotNull);
 
       loggingController.add(false);
@@ -414,6 +444,27 @@ void main() {
   );
 
   test(
+    'listenToConfigFlag completes after seeding initial slow query gate state',
+    () async {
+      when(
+        () => journalDb.watchConfigFlag(enableLoggingFlag),
+      ).thenAnswer((_) => Stream<bool>.value(true));
+      when(
+        () => journalDb.watchConfigFlag(logSlowQueriesFlag),
+      ).thenAnswer((_) => Stream<bool>.value(true));
+
+      SlowQueryLoggingGate.resetForTest();
+      final svc = LoggingService();
+      addTearDown(svc.dispose);
+
+      await svc.listenToConfigFlag();
+
+      expect(SlowQueryLoggingGate.isEnabled, isTrue);
+      expect(SlowQueryLoggingGate.captureFirstCallStack, isTrue);
+    },
+  );
+
+  test(
     'dispose cancels config-flag subscriptions so later events are ignored',
     () async {
       final loggingController = StreamController<bool>();
@@ -428,7 +479,8 @@ void main() {
         () => journalDb.watchConfigFlag(logSlowQueriesFlag),
       ).thenAnswer((_) => slowQueryController.stream);
 
-      final svc = LoggingService()..listenToConfigFlag();
+      final svc = LoggingService();
+      unawaited(svc.listenToConfigFlag());
 
       // Enable both flags so the slow-query gate is on, proving the
       // subscriptions are live before dispose.
@@ -462,6 +514,127 @@ void main() {
     // Both subscriptions are null; dispose must complete without throwing.
     await expectLater(svc.dispose(), completes);
   });
+
+  test(
+    'listenToConfigFlag cancels prior subscriptions when called again',
+    () async {
+      final logging1 = StreamController<bool>();
+      final slowQuery1 = StreamController<bool>();
+      final logging2 = StreamController<bool>();
+      final slowQuery2 = StreamController<bool>();
+      addTearDown(logging1.close);
+      addTearDown(slowQuery1.close);
+      addTearDown(logging2.close);
+      addTearDown(slowQuery2.close);
+
+      when(
+        () => journalDb.watchConfigFlag(enableLoggingFlag),
+      ).thenAnswer((_) => logging1.stream);
+      when(
+        () => journalDb.watchConfigFlag(logSlowQueriesFlag),
+      ).thenAnswer((_) => slowQuery1.stream);
+
+      final svc = LoggingService();
+      addTearDown(svc.dispose);
+
+      unawaited(svc.listenToConfigFlag());
+      logging1.add(true);
+      slowQuery1.add(true);
+      await Future<void>.delayed(Duration.zero);
+      expect(logging1.hasListener, isTrue);
+      expect(slowQuery1.hasListener, isTrue);
+
+      // Point the next call at fresh controllers, then re-invoke. The repeated
+      // call must cancel the prior subscriptions before creating new ones.
+      when(
+        () => journalDb.watchConfigFlag(enableLoggingFlag),
+      ).thenAnswer((_) => logging2.stream);
+      when(
+        () => journalDb.watchConfigFlag(logSlowQueriesFlag),
+      ).thenAnswer((_) => slowQuery2.stream);
+
+      unawaited(svc.listenToConfigFlag());
+      logging2.add(true);
+      slowQuery2.add(true);
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        logging1.hasListener,
+        isFalse,
+        reason: 'prior logging subscription must be cancelled',
+      );
+      expect(
+        slowQuery1.hasListener,
+        isFalse,
+        reason: 'prior slow-query subscription must be cancelled',
+      );
+      expect(
+        logging2.hasListener,
+        isTrue,
+        reason: 'new logging subscription must be live',
+      );
+      expect(
+        slowQuery2.hasListener,
+        isTrue,
+        reason: 'new slow-query subscription must be live',
+      );
+    },
+  );
+
+  test(
+    'listenToConfigFlag surfaces a logging-flag stream error',
+    () async {
+      final controlled = makeControlledService();
+      final ready = controlled.service.listenToConfigFlag();
+
+      final error = StateError('logging flag stream failed');
+      controlled.logging.addError(error);
+      // The slow-query side must still complete so Future.wait resolves and
+      // the logging error is the one propagated.
+      controlled.slowQuery.add(true);
+
+      await expectLater(ready, throwsA(same(error)));
+    },
+  );
+
+  test(
+    'listenToConfigFlag surfaces a slow-query-flag stream error',
+    () async {
+      final controlled = makeControlledService();
+      final ready = controlled.service.listenToConfigFlag();
+
+      controlled.logging.add(true);
+      final error = StateError('slow-query flag stream failed');
+      controlled.slowQuery.addError(error);
+
+      await expectLater(ready, throwsA(same(error)));
+    },
+  );
+
+  test(
+    'listenToConfigFlag ignores a stream error after the gate is seeded',
+    () async {
+      final controlled = makeControlledService();
+      final ready = controlled.service.listenToConfigFlag();
+
+      // Seed both flags so the gate turns on and both completers complete.
+      controlled.logging.add(true);
+      controlled.slowQuery.add(true);
+      await ready;
+      expect(SlowQueryLoggingGate.isEnabled, isTrue);
+
+      // A late error must be swallowed by the already-completed guard: it must
+      // neither throw an unhandled error nor disturb the seeded gate state.
+      controlled.slowQuery.addError(StateError('late stream error'));
+      await Future<void>.delayed(Duration.zero);
+
+      expect(
+        SlowQueryLoggingGate.isEnabled,
+        isTrue,
+        reason: 'late error must not disturb the already-seeded gate',
+      );
+    },
+  );
 
   test('captureException with null stackTrace handles gracefully', () {
     fakeAsync((async) {
@@ -555,8 +728,8 @@ void main() {
         () => bufferedJournalDb.watchConfigFlag(logSlowQueriesFlag),
       ).thenAnswer((_) => Stream<bool>.value(false));
 
-      bufferedLogging = getIt<LoggingService>()..listenToConfigFlag();
-      await Future<void>.delayed(Duration.zero);
+      bufferedLogging = getIt<LoggingService>();
+      await bufferedLogging.listenToConfigFlag();
     });
 
     File? findGeneralLog() => _findLogFile(bufferedTempDocs);

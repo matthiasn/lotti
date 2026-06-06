@@ -61,19 +61,75 @@ class LoggingService {
         _enableLogging && _enableSlowQueryLogging;
   }
 
-  void listenToConfigFlag() {
+  /// Starts config-flag listeners and completes after both initial values have
+  /// seeded the slow-query gate.
+  ///
+  /// Cancels any existing subscriptions first so a repeated call (e.g. hot
+  /// restart or test re-init) does not leak the previous listeners.
+  Future<void> listenToConfigFlag() async {
+    await _loggingFlagSubscription?.cancel();
+    await _slowQueryFlagSubscription?.cancel();
+
+    final loggingReady = Completer<void>();
+    final slowQueryReady = Completer<void>();
+    var hasLoggingValue = false;
+    var hasSlowQueryValue = false;
+
+    void completeReady(Completer<void> completer) {
+      if (!completer.isCompleted) {
+        completer.complete();
+      }
+    }
+
+    void completeReadyError(
+      Completer<void> completer,
+      Object error,
+      StackTrace stackTrace,
+    ) {
+      if (!completer.isCompleted) {
+        completer.completeError(error, stackTrace);
+      }
+    }
+
+    void syncGateWhenReady() {
+      if (hasLoggingValue && hasSlowQueryValue) {
+        _syncSlowQueryLoggingGate();
+      }
+    }
+
     _loggingFlagSubscription = getIt<JournalDb>()
         .watchConfigFlag(enableLoggingFlag)
-        .listen((value) {
-          _enableLogging = value;
-          _syncSlowQueryLoggingGate();
-        });
+        .listen(
+          (value) {
+            _enableLogging = value;
+            hasLoggingValue = true;
+            syncGateWhenReady();
+            completeReady(loggingReady);
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            completeReadyError(loggingReady, error, stackTrace);
+          },
+          onDone: () => completeReady(loggingReady),
+        );
     _slowQueryFlagSubscription = getIt<JournalDb>()
         .watchConfigFlag(logSlowQueriesFlag)
-        .listen((value) {
-          _enableSlowQueryLogging = value;
-          _syncSlowQueryLoggingGate();
-        });
+        .listen(
+          (value) {
+            _enableSlowQueryLogging = value;
+            hasSlowQueryValue = true;
+            syncGateWhenReady();
+            completeReady(slowQueryReady);
+          },
+          onError: (Object error, StackTrace stackTrace) {
+            completeReadyError(slowQueryReady, error, stackTrace);
+          },
+          onDone: () => completeReady(slowQueryReady),
+        );
+
+    await Future.wait(<Future<void>>[
+      loggingReady.future,
+      slowQueryReady.future,
+    ]);
   }
 
   Future<void> dispose() async {
