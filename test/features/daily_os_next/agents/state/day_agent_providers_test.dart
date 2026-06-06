@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -22,6 +23,14 @@ import '../../../agents/test_utils.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
 
+  /// Builds a [ProviderContainer] with [overrides], disposed automatically
+  /// at test teardown — shared by every provider-wiring test below.
+  ProviderContainer buildContainer(List<Override> overrides) {
+    final container = ProviderContainer(overrides: overrides);
+    addTearDown(container.dispose);
+    return container;
+  }
+
   group('dayAgentServiceProvider', () {
     test('wires dependencies and persisted-state notifications', () {
       final agentService = MockAgentService();
@@ -31,18 +40,15 @@ void main() {
       final templateService = MockAgentTemplateService();
       final domainLogger = MockDomainLogger();
       final notifications = MockUpdateNotifications();
-      final container = ProviderContainer(
-        overrides: [
-          agentServiceProvider.overrideWithValue(agentService),
-          agentRepositoryProvider.overrideWithValue(repository),
-          wakeOrchestratorProvider.overrideWithValue(orchestrator),
-          agentSyncServiceProvider.overrideWithValue(syncService),
-          agentTemplateServiceProvider.overrideWithValue(templateService),
-          domainLoggerProvider.overrideWithValue(domainLogger),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = buildContainer([
+        agentServiceProvider.overrideWithValue(agentService),
+        agentRepositoryProvider.overrideWithValue(repository),
+        wakeOrchestratorProvider.overrideWithValue(orchestrator),
+        agentSyncServiceProvider.overrideWithValue(syncService),
+        agentTemplateServiceProvider.overrideWithValue(templateService),
+        domainLoggerProvider.overrideWithValue(domainLogger),
+        updateNotificationsProvider.overrideWithValue(notifications),
+      ]);
 
       final service = container.read(dayAgentServiceProvider);
 
@@ -71,16 +77,13 @@ void main() {
       final journalDb = MockJournalDb();
       final domainLogger = MockDomainLogger();
       final notifications = MockUpdateNotifications();
-      final container = ProviderContainer(
-        overrides: [
-          agentRepositoryProvider.overrideWithValue(repository),
-          agentSyncServiceProvider.overrideWithValue(syncService),
-          journalDbProvider.overrideWithValue(journalDb),
-          domainLoggerProvider.overrideWithValue(domainLogger),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = buildContainer([
+        agentRepositoryProvider.overrideWithValue(repository),
+        agentSyncServiceProvider.overrideWithValue(syncService),
+        journalDbProvider.overrideWithValue(journalDb),
+        domainLoggerProvider.overrideWithValue(domainLogger),
+        updateNotificationsProvider.overrideWithValue(notifications),
+      ]);
 
       final service = container.read(dayAgentPlanServiceProvider);
 
@@ -119,18 +122,15 @@ void main() {
       );
       addTearDown(tearDownTestGetIt);
 
-      final container = ProviderContainer(
-        overrides: [
-          agentRepositoryProvider.overrideWithValue(repository),
-          agentSyncServiceProvider.overrideWithValue(syncService),
-          journalDbProvider.overrideWithValue(journalDb),
-          journalRepositoryProvider.overrideWithValue(journalRepository),
-          wakeOrchestratorProvider.overrideWithValue(orchestrator),
-          domainLoggerProvider.overrideWithValue(domainLogger),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = buildContainer([
+        agentRepositoryProvider.overrideWithValue(repository),
+        agentSyncServiceProvider.overrideWithValue(syncService),
+        journalDbProvider.overrideWithValue(journalDb),
+        journalRepositoryProvider.overrideWithValue(journalRepository),
+        wakeOrchestratorProvider.overrideWithValue(orchestrator),
+        domainLoggerProvider.overrideWithValue(domainLogger),
+        updateNotificationsProvider.overrideWithValue(notifications),
+      ]);
 
       final service = container.read(dayAgentCaptureServiceProvider);
 
@@ -166,13 +166,10 @@ void main() {
       when(
         () => service.getDayAgentForDate(requestedDate),
       ).thenAnswer((_) async => identity);
-      final container = ProviderContainer(
-        overrides: [
-          dayAgentServiceProvider.overrideWithValue(service),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = buildContainer([
+        dayAgentServiceProvider.overrideWithValue(service),
+        updateNotificationsProvider.overrideWithValue(notifications),
+      ]);
 
       final result = await container.read(
         dayAgentProvider(requestedDate).future,
@@ -219,13 +216,10 @@ void main() {
         when(
           () => captureService.parsedItemsForCapture('capture-001'),
         ).thenAnswer((_) async => [parsed]);
-        final container = ProviderContainer(
-          overrides: [
-            dayAgentCaptureServiceProvider.overrideWithValue(captureService),
-            updateNotificationsProvider.overrideWithValue(notifications),
-          ],
-        );
-        addTearDown(container.dispose);
+        final container = buildContainer([
+          dayAgentCaptureServiceProvider.overrideWithValue(captureService),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ]);
 
         final result = await container.read(
           parsedItemsForCaptureProvider('capture-001').future,
@@ -249,14 +243,11 @@ void main() {
       when(
         () => service.getDayAgentForDate(date),
       ).thenAnswer((_) async => null);
-      final container = ProviderContainer(
-        overrides: [
-          dayAgentServiceProvider.overrideWithValue(service),
-          dayAgentCaptureServiceProvider.overrideWithValue(captureService),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = buildContainer([
+        dayAgentServiceProvider.overrideWithValue(service),
+        dayAgentCaptureServiceProvider.overrideWithValue(captureService),
+        updateNotificationsProvider.overrideWithValue(notifications),
+      ]);
 
       final result = await container.read(
         pendingDecisionsForDateProvider(date).future,
@@ -297,14 +288,11 @@ void main() {
           dayId: 'dayplan-2026-05-25',
         ),
       ).thenAnswer((_) async => const [pending]);
-      final container = ProviderContainer(
-        overrides: [
-          dayAgentServiceProvider.overrideWithValue(service),
-          dayAgentCaptureServiceProvider.overrideWithValue(captureService),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = buildContainer([
+        dayAgentServiceProvider.overrideWithValue(service),
+        dayAgentCaptureServiceProvider.overrideWithValue(captureService),
+        updateNotificationsProvider.overrideWithValue(notifications),
+      ]);
 
       final result = await container.read(
         pendingDecisionsForDateProvider(date).future,
@@ -329,14 +317,11 @@ void main() {
       when(
         () => service.getDayAgentForDate(date),
       ).thenAnswer((_) async => null);
-      final container = ProviderContainer(
-        overrides: [
-          dayAgentServiceProvider.overrideWithValue(service),
-          dayAgentPlanServiceProvider.overrideWithValue(planService),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = buildContainer([
+        dayAgentServiceProvider.overrideWithValue(service),
+        dayAgentPlanServiceProvider.overrideWithValue(planService),
+        updateNotificationsProvider.overrideWithValue(notifications),
+      ]);
 
       final result = await container.read(
         draftedPlanForDateProvider(date).future,
@@ -385,14 +370,11 @@ void main() {
           dayId: 'dayplan-2026-05-25',
         ),
       ).thenAnswer((_) async => plan);
-      final container = ProviderContainer(
-        overrides: [
-          dayAgentServiceProvider.overrideWithValue(service),
-          dayAgentPlanServiceProvider.overrideWithValue(planService),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(container.dispose);
+      final container = buildContainer([
+        dayAgentServiceProvider.overrideWithValue(service),
+        dayAgentPlanServiceProvider.overrideWithValue(planService),
+        updateNotificationsProvider.overrideWithValue(notifications),
+      ]);
 
       final result = await container.read(
         draftedPlanForDateProvider(date).future,
