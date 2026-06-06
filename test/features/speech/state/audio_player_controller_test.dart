@@ -1205,77 +1205,86 @@ void main() {
   });
 
   group('AudioPlayerController - Error Handling', () {
-    // These tests use isolated containers to avoid corrupting shared mock state
-
-    test('play catches and logs exceptions', () async {
-      // Create isolated mocks for this test
-      final mockDomainLogger = MockDomainLogger();
-      final localPlayer = MockPlayer();
-      final localPlayerState = MockPlayerState();
-      final localPlayerStream = MockPlayerStream();
+    // Each test builds an isolated player/container via makeErrorContainer so
+    // a throwing stub cannot corrupt the shared mock state of other groups.
+    // The file-level tearDown's getIt.reset() restores GetIt afterwards.
+    ({MockDomainLogger logger, ProviderContainer container})
+    makeErrorContainer({
+      required void Function(MockPlayer player) configureThrow,
+    }) {
+      final logger = MockDomainLogger();
+      final player = MockPlayer();
+      final playerState = MockPlayerState();
+      final playerStream = MockPlayerStream();
       final localPositionController = StreamController<Duration>.broadcast();
       final localBufferController = StreamController<Duration>.broadcast();
       final localCompletedController = StreamController<bool>.broadcast();
 
-      // Setup isolated mocks
-      when(() => localPlayer.state).thenReturn(localPlayerState);
+      when(() => player.state).thenReturn(playerState);
+      when(() => playerState.duration).thenReturn(const Duration(minutes: 5));
+      when(() => player.stream).thenReturn(playerStream);
       when(
-        () => localPlayerState.duration,
-      ).thenReturn(const Duration(minutes: 5));
-      when(() => localPlayer.stream).thenReturn(localPlayerStream);
-      when(
-        () => localPlayerStream.position,
+        () => playerStream.position,
       ).thenAnswer((_) => localPositionController.stream);
       when(
-        () => localPlayerStream.buffer,
+        () => playerStream.buffer,
       ).thenAnswer((_) => localBufferController.stream);
       when(
-        () => localPlayerStream.completed,
+        () => playerStream.completed,
       ).thenAnswer((_) => localCompletedController.stream);
-      when(localPlayer.dispose).thenAnswer((_) async {});
-      when(() => localPlayer.setRate(any())).thenAnswer((_) async {});
-      when(localPlayer.play).thenThrow(Exception('Play failed'));
+      when(player.dispose).thenAnswer((_) async {});
+      when(() => player.setRate(any())).thenAnswer((_) async {});
+      configureThrow(player);
 
-      // Register local logging service
       if (getIt.isRegistered<DomainLogger>()) {
         getIt.unregister<DomainLogger>();
       }
-      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+      getIt.registerSingleton<DomainLogger>(logger);
 
-      final localContainer = ProviderContainer(
-        overrides: [
-          playerFactoryProvider.overrideWithValue(() => localPlayer),
-        ],
+      final errorContainer = ProviderContainer(
+        overrides: [playerFactoryProvider.overrideWithValue(() => player)],
       );
 
-      final controller = localContainer.read(
-        audioPlayerControllerProvider.notifier,
-      );
-      await controller.play();
+      addTearDown(() async {
+        errorContainer.dispose();
+        await localPositionController.close();
+        await localBufferController.close();
+        await localCompletedController.close();
+      });
 
+      return (logger: logger, container: errorContainer);
+    }
+
+    void verifyLoggedError(MockDomainLogger logger, String subDomain) {
       verify(
-        () => mockDomainLogger.error(
+        () => logger.error(
           LogDomain.speech,
           any<Object>(),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: 'play',
+          subDomain: subDomain,
         ),
       ).called(1);
+    }
 
-      await localPositionController.close();
-      await localBufferController.close();
-      await localCompletedController.close();
-      localContainer.dispose();
+    test('play catches and logs exceptions', () async {
+      final bench = makeErrorContainer(
+        configureThrow: (player) =>
+            when(player.play).thenThrow(Exception('Play failed')),
+      );
+
+      await bench.container.read(audioPlayerControllerProvider.notifier).play();
+
+      verifyLoggedError(bench.logger, 'play');
     });
 
     test(
       'ensurePlayer catches and logs exceptions when factory throws',
       () async {
-        final mockDomainLogger = MockDomainLogger();
+        final logger = MockDomainLogger();
         if (getIt.isRegistered<DomainLogger>()) {
           getIt.unregister<DomainLogger>();
         }
-        getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+        getIt.registerSingleton<DomainLogger>(logger);
 
         final errorContainer = ProviderContainer(
           overrides: [
@@ -1284,6 +1293,7 @@ void main() {
             }),
           ],
         );
+        addTearDown(errorContainer.dispose);
 
         // build() no longer eagerly creates the Player, so the throw happens
         // when we trigger lazy construction.
@@ -1291,245 +1301,56 @@ void main() {
             .read(audioPlayerControllerProvider.notifier)
             .ensurePlayerForTest();
 
-        verify(
-          () => mockDomainLogger.error(
-            LogDomain.speech,
-            any<Object>(),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-            subDomain: 'ensurePlayer',
-          ),
-        ).called(1);
-
-        errorContainer.dispose();
+        verifyLoggedError(logger, 'ensurePlayer');
       },
     );
 
     test('pause catches and logs exceptions', () async {
-      // Create isolated mocks for this test
-      final mockDomainLogger = MockDomainLogger();
-      final localPlayer = MockPlayer();
-      final localPlayerState = MockPlayerState();
-      final localPlayerStream = MockPlayerStream();
-      final localPositionController = StreamController<Duration>.broadcast();
-      final localBufferController = StreamController<Duration>.broadcast();
-      final localCompletedController = StreamController<bool>.broadcast();
-
-      // Setup isolated mocks
-      when(() => localPlayer.state).thenReturn(localPlayerState);
-      when(
-        () => localPlayerState.duration,
-      ).thenReturn(const Duration(minutes: 5));
-      when(() => localPlayer.stream).thenReturn(localPlayerStream);
-      when(
-        () => localPlayerStream.position,
-      ).thenAnswer((_) => localPositionController.stream);
-      when(
-        () => localPlayerStream.buffer,
-      ).thenAnswer((_) => localBufferController.stream);
-      when(
-        () => localPlayerStream.completed,
-      ).thenAnswer((_) => localCompletedController.stream);
-      when(localPlayer.dispose).thenAnswer((_) async {});
-      when(localPlayer.pause).thenThrow(Exception('Pause failed'));
-
-      // Register local logging service
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt.unregister<DomainLogger>();
-      }
-      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
-
-      final localContainer = ProviderContainer(
-        overrides: [
-          playerFactoryProvider.overrideWithValue(() => localPlayer),
-        ],
+      final bench = makeErrorContainer(
+        configureThrow: (player) =>
+            when(player.pause).thenThrow(Exception('Pause failed')),
       );
 
-      final controller = localContainer.read(
-        audioPlayerControllerProvider.notifier,
-      );
-      await controller.pause();
+      await bench.container
+          .read(audioPlayerControllerProvider.notifier)
+          .pause();
 
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.speech,
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: 'pause',
-        ),
-      ).called(1);
-
-      await localPositionController.close();
-      await localBufferController.close();
-      await localCompletedController.close();
-      localContainer.dispose();
+      verifyLoggedError(bench.logger, 'pause');
     });
 
     test('seek catches and logs exceptions', () async {
-      // Create isolated mocks for this test
-      final mockDomainLogger = MockDomainLogger();
-      final localPlayer = MockPlayer();
-      final localPlayerState = MockPlayerState();
-      final localPlayerStream = MockPlayerStream();
-      final localPositionController = StreamController<Duration>.broadcast();
-      final localBufferController = StreamController<Duration>.broadcast();
-      final localCompletedController = StreamController<bool>.broadcast();
-
-      // Setup isolated mocks
-      when(() => localPlayer.state).thenReturn(localPlayerState);
-      when(
-        () => localPlayerState.duration,
-      ).thenReturn(const Duration(minutes: 5));
-      when(() => localPlayer.stream).thenReturn(localPlayerStream);
-      when(
-        () => localPlayerStream.position,
-      ).thenAnswer((_) => localPositionController.stream);
-      when(
-        () => localPlayerStream.buffer,
-      ).thenAnswer((_) => localBufferController.stream);
-      when(
-        () => localPlayerStream.completed,
-      ).thenAnswer((_) => localCompletedController.stream);
-      when(localPlayer.dispose).thenAnswer((_) async {});
-      when(() => localPlayer.seek(any())).thenThrow(Exception('Seek failed'));
-
-      // Register local logging service
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt.unregister<DomainLogger>();
-      }
-      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
-
-      final localContainer = ProviderContainer(
-        overrides: [
-          playerFactoryProvider.overrideWithValue(() => localPlayer),
-        ],
+      final bench = makeErrorContainer(
+        configureThrow: (player) =>
+            when(() => player.seek(any())).thenThrow(Exception('Seek failed')),
       );
 
-      final controller = localContainer.read(
+      final controller = bench.container.read(
         audioPlayerControllerProvider.notifier,
       )..hasOpenAudioForTest = true;
       await controller.seek(const Duration(seconds: 30));
 
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.speech,
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: 'seek',
-        ),
-      ).called(1);
-
-      await localPositionController.close();
-      await localBufferController.close();
-      await localCompletedController.close();
-      localContainer.dispose();
+      verifyLoggedError(bench.logger, 'seek');
     });
 
     test('setSpeed catches and logs exceptions', () async {
-      // Create isolated mocks for this test
-      final mockDomainLogger = MockDomainLogger();
-      final localPlayer = MockPlayer();
-      final localPlayerState = MockPlayerState();
-      final localPlayerStream = MockPlayerStream();
-      final localPositionController = StreamController<Duration>.broadcast();
-      final localBufferController = StreamController<Duration>.broadcast();
-      final localCompletedController = StreamController<bool>.broadcast();
-
-      // Setup isolated mocks
-      when(() => localPlayer.state).thenReturn(localPlayerState);
-      when(
-        () => localPlayerState.duration,
-      ).thenReturn(const Duration(minutes: 5));
-      when(() => localPlayer.stream).thenReturn(localPlayerStream);
-      when(
-        () => localPlayerStream.position,
-      ).thenAnswer((_) => localPositionController.stream);
-      when(
-        () => localPlayerStream.buffer,
-      ).thenAnswer((_) => localBufferController.stream);
-      when(
-        () => localPlayerStream.completed,
-      ).thenAnswer((_) => localCompletedController.stream);
-      when(localPlayer.dispose).thenAnswer((_) async {});
-      when(
-        () => localPlayer.setRate(any()),
-      ).thenThrow(Exception('SetRate failed'));
-
-      // Register local logging service
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt.unregister<DomainLogger>();
-      }
-      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
-
-      final localContainer = ProviderContainer(
-        overrides: [
-          playerFactoryProvider.overrideWithValue(() => localPlayer),
-        ],
+      final bench = makeErrorContainer(
+        configureThrow: (player) => when(
+          () => player.setRate(any()),
+        ).thenThrow(Exception('SetRate failed')),
       );
 
-      final controller = localContainer.read(
-        audioPlayerControllerProvider.notifier,
-      );
-      await controller.setSpeed(1.5);
+      await bench.container
+          .read(audioPlayerControllerProvider.notifier)
+          .setSpeed(1.5);
 
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.speech,
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: 'setSpeed',
-        ),
-      ).called(1);
-
-      await localPositionController.close();
-      await localBufferController.close();
-      await localCompletedController.close();
-      localContainer.dispose();
+      verifyLoggedError(bench.logger, 'setSpeed');
     });
 
     test('setAudioNote catches and logs exceptions', () async {
-      // Create isolated mocks for this test
-      final mockDomainLogger = MockDomainLogger();
-      final localPlayer = MockPlayer();
-      final localPlayerState = MockPlayerState();
-      final localPlayerStream = MockPlayerStream();
-      final localPositionController = StreamController<Duration>.broadcast();
-      final localBufferController = StreamController<Duration>.broadcast();
-      final localCompletedController = StreamController<bool>.broadcast();
-
-      // Setup isolated mocks
-      when(() => localPlayer.state).thenReturn(localPlayerState);
-      when(
-        () => localPlayerState.duration,
-      ).thenReturn(const Duration(minutes: 5));
-      when(() => localPlayer.stream).thenReturn(localPlayerStream);
-      when(
-        () => localPlayerStream.position,
-      ).thenAnswer((_) => localPositionController.stream);
-      when(
-        () => localPlayerStream.buffer,
-      ).thenAnswer((_) => localBufferController.stream);
-      when(
-        () => localPlayerStream.completed,
-      ).thenAnswer((_) => localCompletedController.stream);
-      when(localPlayer.dispose).thenAnswer((_) async {});
-      when(
-        () => localPlayer.open(any(), play: any(named: 'play')),
-      ).thenThrow(Exception('Open failed'));
-
-      // Register local logging service
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt.unregister<DomainLogger>();
-      }
-      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
-
-      final localContainer = ProviderContainer(
-        overrides: [
-          playerFactoryProvider.overrideWithValue(() => localPlayer),
-        ],
-      );
-
-      final controller = localContainer.read(
-        audioPlayerControllerProvider.notifier,
+      final bench = makeErrorContainer(
+        configureThrow: (player) => when(
+          () => player.open(any(), play: any(named: 'play')),
+        ).thenThrow(Exception('Open failed')),
       );
 
       final audioNote = JournalAudio(
@@ -1549,21 +1370,11 @@ void main() {
         ),
       );
 
-      await controller.setAudioNote(audioNote);
+      await bench.container
+          .read(audioPlayerControllerProvider.notifier)
+          .setAudioNote(audioNote);
 
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.speech,
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: 'setAudioNote',
-        ),
-      ).called(1);
-
-      await localPositionController.close();
-      await localBufferController.close();
-      await localCompletedController.close();
-      localContainer.dispose();
+      verifyLoggedError(bench.logger, 'setAudioNote');
     });
   });
 

@@ -22,6 +22,7 @@ import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -122,6 +123,9 @@ void registerAllFallbackValues() {
   registerFallbackValue(LogDomain.general);
   registerFallbackValue(InsightLevel.info);
   registerFallbackValue(StackTrace.empty);
+
+  // AI skill types (for hasAutomatedSkillType stubs with `any()`)
+  registerFallbackValue(SkillType.transcription);
 
   // Fake classes from mocks.dart
   registerFallbackValue(FakeMetadata());
