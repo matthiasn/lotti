@@ -597,234 +597,237 @@ void main() {
     registerFallbackValue(<String>[]);
   });
 
-  test(
-    'batches agent state reads when building pending wake records',
-    () async {
-      final mockAgentService = MockAgentService();
-      final mockRepository = MockAgentRepository();
-      final notifications = UpdateNotifications();
-      final firstIdentity = makeTestIdentity(
-        agentId: 'agent-a',
-        displayName: 'First',
-      );
-      final secondIdentity = makeTestIdentity(
-        agentId: 'agent-b',
-        displayName: 'Second',
-      );
-      final firstState = makeTestState(
-        agentId: 'agent-a',
-        nextWakeAt: kAgentTestDate.add(const Duration(minutes: 5)),
-      );
-      final secondState = makeTestState(
-        agentId: 'agent-b',
-        nextWakeAt: kAgentTestDate.add(const Duration(minutes: 15)),
-        scheduledWakeAt: kAgentTestDate.add(const Duration(minutes: 10)),
-      );
-
-      when(
-        mockAgentService.listAgents,
-      ).thenAnswer((_) => Future.value([firstIdentity, secondIdentity]));
-      when(
-        () => mockRepository.getAgentStatesByAgentIds(any()),
-      ).thenAnswer(
-        (_) async => {
-          'agent-a': firstState,
-          'agent-b': secondState,
-        },
-      );
-
-      final container = ProviderContainer(
-        overrides: [
-          agentServiceProvider.overrideWithValue(mockAgentService),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(() {
-        notifications.dispose();
-        container.dispose();
-      });
-
-      final records = await container.read(pendingWakeRecordsProvider.future);
-
-      expect(records, hasLength(3));
-      expect(records.first.type, PendingWakeType.pending);
-      expect(records.first.agent.agentId, 'agent-a');
-      expect(records[1].type, PendingWakeType.scheduled);
-      expect(records[1].agent.agentId, 'agent-b');
-      expect(records[2].type, PendingWakeType.pending);
-      expect(records[2].agent.agentId, 'agent-b');
-      final capturedAgentIds =
-          verify(
-                () => mockRepository.getAgentStatesByAgentIds(captureAny()),
-              ).captured.single
-              as List<String>;
-      expect(capturedAgentIds, ['agent-a', 'agent-b']);
-      verifyNever(() => mockRepository.getAgentState(any()));
-    },
-  );
-
-  test(
-    'filters deleted and missing states when building pending wake records',
-    () async {
-      final mockAgentService = MockAgentService();
-      final mockRepository = MockAgentRepository();
-      final notifications = UpdateNotifications();
-      final activeIdentity = makeTestIdentity(
-        agentId: 'agent-a',
-        displayName: 'Active',
-      );
-      final deletedIdentity = makeTestIdentity(
-        agentId: 'agent-b',
-        displayName: 'Deleted',
-      );
-      final missingIdentity = makeTestIdentity(
-        agentId: 'agent-c',
-        displayName: 'Missing',
-      );
-      final deletedState =
-          makeTestState(
-            agentId: 'agent-b',
-            id: 'deleted-state',
-            nextWakeAt: kAgentTestDate.add(const Duration(minutes: 15)),
-          ).copyWith(
-            deletedAt: kAgentTestDate,
-          );
-      final activeState = makeTestState(
-        agentId: 'agent-a',
-        nextWakeAt: kAgentTestDate.add(const Duration(minutes: 5)),
-      );
-
-      when(
-        mockAgentService.listAgents,
-      ).thenAnswer(
-        (_) => Future.value([activeIdentity, deletedIdentity, missingIdentity]),
-      );
-      when(
-        () => mockRepository.getAgentStatesByAgentIds(any()),
-      ).thenAnswer(
-        (_) async => {
-          'agent-a': activeState,
-          'agent-b': deletedState,
-        },
-      );
-
-      final container = ProviderContainer(
-        overrides: [
-          agentServiceProvider.overrideWithValue(mockAgentService),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(() {
-        notifications.dispose();
-        container.dispose();
-      });
-
-      final records = await container.read(pendingWakeRecordsProvider.future);
-
-      expect(records, hasLength(1));
-      expect(records.single.agent.agentId, 'agent-a');
-    },
-  );
-
-  test(
-    'omits agents whose states have no pending or scheduled wakes',
-    () async {
-      final mockAgentService = MockAgentService();
-      final mockRepository = MockAgentRepository();
-      final notifications = UpdateNotifications();
-      final identity = makeTestIdentity(
-        agentId: 'agent-a',
-        displayName: 'Idle Agent',
-      );
-      final state = makeTestState(
-        agentId: 'agent-a',
-      );
-
-      when(
-        mockAgentService.listAgents,
-      ).thenAnswer((_) => Future.value([identity]));
-      when(
-        () => mockRepository.getAgentStatesByAgentIds(any()),
-      ).thenAnswer((_) async => {'agent-a': state});
-
-      final container = ProviderContainer(
-        overrides: [
-          agentServiceProvider.overrideWithValue(mockAgentService),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(() {
-        notifications.dispose();
-        container.dispose();
-      });
-
-      final records = await container.read(pendingWakeRecordsProvider.future);
-
-      expect(records, isEmpty);
-    },
-  );
-
-  glados.Glados(
-    glados.any.pendingWakeScenario,
-    glados.ExploreConfig(numRuns: 180),
-  ).test(
-    'matches generated pending wake record filtering and ordering',
-    (scenario) async {
-      final mockAgentService = MockAgentService();
-      final mockRepository = MockAgentRepository();
-      final notifications = UpdateNotifications();
-      final container = ProviderContainer(
-        overrides: [
-          agentServiceProvider.overrideWithValue(mockAgentService),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-
-      when(
-        mockAgentService.listAgents,
-      ).thenAnswer((_) async => scenario.identities);
-      when(
-        () => mockRepository.getAgentStatesByAgentIds(any()),
-      ).thenAnswer((_) async => scenario.statesByAgentId);
-
-      try {
-        final records = await container.read(
-          pendingWakeRecordsProvider.future,
+  group('pendingWakeRecordsProvider', () {
+    test(
+      'batches agent state reads when building pending wake records',
+      () async {
+        final mockAgentService = MockAgentService();
+        final mockRepository = MockAgentRepository();
+        final notifications = UpdateNotifications();
+        final firstIdentity = makeTestIdentity(
+          agentId: 'agent-a',
+          displayName: 'First',
         );
-        final actual = [
-          for (final record in records)
-            (
-              agentId: record.agent.agentId,
-              type: record.type,
-              dueAt: record.dueAt,
-              id: record.id,
-            ),
-        ];
+        final secondIdentity = makeTestIdentity(
+          agentId: 'agent-b',
+          displayName: 'Second',
+        );
+        final firstState = makeTestState(
+          agentId: 'agent-a',
+          nextWakeAt: kAgentTestDate.add(const Duration(minutes: 5)),
+        );
+        final secondState = makeTestState(
+          agentId: 'agent-b',
+          nextWakeAt: kAgentTestDate.add(const Duration(minutes: 15)),
+          scheduledWakeAt: kAgentTestDate.add(const Duration(minutes: 10)),
+        );
 
-        expect(actual, scenario.expectedRecords, reason: '$scenario');
+        when(
+          mockAgentService.listAgents,
+        ).thenAnswer((_) => Future.value([firstIdentity, secondIdentity]));
+        when(
+          () => mockRepository.getAgentStatesByAgentIds(any()),
+        ).thenAnswer(
+          (_) async => {
+            'agent-a': firstState,
+            'agent-b': secondState,
+          },
+        );
 
+        final container = ProviderContainer(
+          overrides: [
+            agentServiceProvider.overrideWithValue(mockAgentService),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(() {
+          notifications.dispose();
+          container.dispose();
+        });
+
+        final records = await container.read(pendingWakeRecordsProvider.future);
+
+        expect(records, hasLength(3));
+        expect(records.first.type, PendingWakeType.pending);
+        expect(records.first.agent.agentId, 'agent-a');
+        expect(records[1].type, PendingWakeType.scheduled);
+        expect(records[1].agent.agentId, 'agent-b');
+        expect(records[2].type, PendingWakeType.pending);
+        expect(records[2].agent.agentId, 'agent-b');
         final capturedAgentIds =
             verify(
                   () => mockRepository.getAgentStatesByAgentIds(captureAny()),
                 ).captured.single
                 as List<String>;
-        expect(
-          capturedAgentIds,
-          scenario.identities.map((identity) => identity.agentId).toList(),
-          reason: '$scenario',
-        );
+        expect(capturedAgentIds, ['agent-a', 'agent-b']);
         verifyNever(() => mockRepository.getAgentState(any()));
-      } finally {
-        container.dispose();
-        await notifications.dispose();
-      }
-    },
-    tags: 'glados',
-  );
+      },
+    );
+
+    test(
+      'filters deleted and missing states when building pending wake records',
+      () async {
+        final mockAgentService = MockAgentService();
+        final mockRepository = MockAgentRepository();
+        final notifications = UpdateNotifications();
+        final activeIdentity = makeTestIdentity(
+          agentId: 'agent-a',
+          displayName: 'Active',
+        );
+        final deletedIdentity = makeTestIdentity(
+          agentId: 'agent-b',
+          displayName: 'Deleted',
+        );
+        final missingIdentity = makeTestIdentity(
+          agentId: 'agent-c',
+          displayName: 'Missing',
+        );
+        final deletedState =
+            makeTestState(
+              agentId: 'agent-b',
+              id: 'deleted-state',
+              nextWakeAt: kAgentTestDate.add(const Duration(minutes: 15)),
+            ).copyWith(
+              deletedAt: kAgentTestDate,
+            );
+        final activeState = makeTestState(
+          agentId: 'agent-a',
+          nextWakeAt: kAgentTestDate.add(const Duration(minutes: 5)),
+        );
+
+        when(
+          mockAgentService.listAgents,
+        ).thenAnswer(
+          (_) =>
+              Future.value([activeIdentity, deletedIdentity, missingIdentity]),
+        );
+        when(
+          () => mockRepository.getAgentStatesByAgentIds(any()),
+        ).thenAnswer(
+          (_) async => {
+            'agent-a': activeState,
+            'agent-b': deletedState,
+          },
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            agentServiceProvider.overrideWithValue(mockAgentService),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(() {
+          notifications.dispose();
+          container.dispose();
+        });
+
+        final records = await container.read(pendingWakeRecordsProvider.future);
+
+        expect(records, hasLength(1));
+        expect(records.single.agent.agentId, 'agent-a');
+      },
+    );
+
+    test(
+      'omits agents whose states have no pending or scheduled wakes',
+      () async {
+        final mockAgentService = MockAgentService();
+        final mockRepository = MockAgentRepository();
+        final notifications = UpdateNotifications();
+        final identity = makeTestIdentity(
+          agentId: 'agent-a',
+          displayName: 'Idle Agent',
+        );
+        final state = makeTestState(
+          agentId: 'agent-a',
+        );
+
+        when(
+          mockAgentService.listAgents,
+        ).thenAnswer((_) => Future.value([identity]));
+        when(
+          () => mockRepository.getAgentStatesByAgentIds(any()),
+        ).thenAnswer((_) async => {'agent-a': state});
+
+        final container = ProviderContainer(
+          overrides: [
+            agentServiceProvider.overrideWithValue(mockAgentService),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(() {
+          notifications.dispose();
+          container.dispose();
+        });
+
+        final records = await container.read(pendingWakeRecordsProvider.future);
+
+        expect(records, isEmpty);
+      },
+    );
+
+    glados.Glados(
+      glados.any.pendingWakeScenario,
+      glados.ExploreConfig(numRuns: 180),
+    ).test(
+      'matches generated pending wake record filtering and ordering',
+      (scenario) async {
+        final mockAgentService = MockAgentService();
+        final mockRepository = MockAgentRepository();
+        final notifications = UpdateNotifications();
+        final container = ProviderContainer(
+          overrides: [
+            agentServiceProvider.overrideWithValue(mockAgentService),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+
+        when(
+          mockAgentService.listAgents,
+        ).thenAnswer((_) async => scenario.identities);
+        when(
+          () => mockRepository.getAgentStatesByAgentIds(any()),
+        ).thenAnswer((_) async => scenario.statesByAgentId);
+
+        try {
+          final records = await container.read(
+            pendingWakeRecordsProvider.future,
+          );
+          final actual = [
+            for (final record in records)
+              (
+                agentId: record.agent.agentId,
+                type: record.type,
+                dueAt: record.dueAt,
+                id: record.id,
+              ),
+          ];
+
+          expect(actual, scenario.expectedRecords, reason: '$scenario');
+
+          final capturedAgentIds =
+              verify(
+                    () => mockRepository.getAgentStatesByAgentIds(captureAny()),
+                  ).captured.single
+                  as List<String>;
+          expect(
+            capturedAgentIds,
+            scenario.identities.map((identity) => identity.agentId).toList(),
+            reason: '$scenario',
+          );
+          verifyNever(() => mockRepository.getAgentState(any()));
+        } finally {
+          container.dispose();
+          await notifications.dispose();
+        }
+      },
+      tags: 'glados',
+    );
+  });
 
   group('ongoingWakeRecordsProvider', () {
     test('returns empty when nothing is running', () async {
