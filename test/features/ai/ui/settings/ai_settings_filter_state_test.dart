@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 
@@ -215,4 +216,72 @@ void main() {
       expect(AiSettingsTab.values, contains(AiSettingsTab.profiles));
     });
   });
+
+  group('AiSettingsFilterStateX properties', () {
+    glados.Glados(
+      glados.any.filterStateScenario,
+      glados.ExploreConfig(numRuns: 150),
+    ).test('filter invariants hold for any generated state', (scenario) {
+      final state = scenario.state;
+
+      // resetModelFilters always clears the model filters and preserves
+      // the search query and active tab.
+      final reset = state.resetModelFilters();
+      expect(reset.hasModelFilters, isFalse, reason: '$state');
+      expect(reset.searchQuery, state.searchQuery);
+      expect(reset.activeTab, state.activeTab);
+
+      // hasActiveFilters can only be true on the models tab, and there it
+      // is exactly hasModelFilters.
+      if (state.hasActiveFilters) {
+        expect(state.activeTab, AiSettingsTab.models, reason: '$state');
+      }
+      if (state.activeTab == AiSettingsTab.models) {
+        expect(state.hasActiveFilters, state.hasModelFilters);
+      } else {
+        expect(state.hasActiveFilters, isFalse);
+      }
+
+      // resetCurrentTabFilters: identity on non-models tabs, equal to
+      // resetModelFilters on the models tab — and idempotent either way.
+      final tabReset = state.resetCurrentTabFilters();
+      if (state.activeTab == AiSettingsTab.models) {
+        expect(tabReset, state.resetModelFilters());
+      } else {
+        expect(tabReset, same(state));
+      }
+      expect(tabReset.resetCurrentTabFilters(), tabReset);
+    }, tags: 'glados');
+  });
+}
+
+/// Deterministic filter-state scenario derived from (seed, tab) ints.
+class _FilterStateScenario {
+  _FilterStateScenario(int seed, int tabIndex) {
+    final providers = <String>{
+      for (var i = 0; i < seed % 4; i++) 'provider-${(seed + i) % 7}',
+    };
+    final capabilities = <Modality>{
+      for (var i = 0; i < (seed ~/ 4) % (Modality.values.length + 1); i++)
+        Modality.values[(seed + i) % Modality.values.length],
+    };
+    state = AiSettingsFilterState(
+      searchQuery: seed.isEven ? '' : 'query-$seed',
+      selectedProviders: providers,
+      selectedCapabilities: capabilities,
+      reasoningFilter: seed % 3 == 0,
+      activeTab: AiSettingsTab.values[tabIndex % AiSettingsTab.values.length],
+    );
+  }
+
+  late final AiSettingsFilterState state;
+}
+
+extension _AnyFilterState on glados.Any {
+  glados.Generator<_FilterStateScenario> get filterStateScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 1 << 16),
+        glados.IntAnys(this).intInRange(0, 3),
+        _FilterStateScenario.new,
+      );
 }
