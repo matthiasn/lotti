@@ -17,6 +17,16 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
+/// Registers a stubbed [MockNavService] for tests that route desktop task
+/// detail through `getIt<NavService>()`; the file-level `tearDownTestGetIt`
+/// removes it again.
+MockNavService _registerNavService() {
+  final navService = MockNavService();
+  getIt.registerSingleton<NavService>(navService);
+  when(() => navService.pushDesktopTaskDetail(any())).thenAnswer((_) {});
+  return navService;
+}
+
 void main() {
   late MockNotificationRepository repository;
 
@@ -24,12 +34,13 @@ void main() {
     registerFallbackValue('');
   });
 
-  setUp(() {
+  setUp(() async {
     repository = MockNotificationRepository();
-    if (getIt.isRegistered<NotificationRepository>()) {
-      getIt.unregister<NotificationRepository>();
-    }
-    getIt.registerSingleton<NotificationRepository>(repository);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<NotificationRepository>(repository);
+      },
+    );
     when(() => repository.markSeen(any())).thenAnswer((_) async => null);
     when(() => repository.markActedOn(any())).thenAnswer((_) async => null);
     when(
@@ -41,11 +52,7 @@ void main() {
     ).thenAnswer((_) async => const []);
   });
 
-  tearDown(() {
-    if (getIt.isRegistered<NotificationRepository>()) {
-      getIt.unregister<NotificationRepository>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   group('resolvePopoverWidth', () {
     test('returns the preferred width on a roomy desktop window', () {
@@ -311,17 +318,7 @@ void main() {
       // Force desktop layout so `openLinkedTaskDetail` goes through
       // NavService (a registered mock) instead of pushing a MaterialPageRoute
       // for the still-missing TaskDetailsPage.
-      final navService = MockNavService();
-      if (getIt.isRegistered<NavService>()) getIt.unregister<NavService>();
-      getIt.registerSingleton<NavService>(navService);
-      addTearDown(() {
-        if (getIt.isRegistered<NavService>()) {
-          getIt.unregister<NavService>();
-        }
-      });
-      when(
-        () => navService.pushDesktopTaskDetail(any()),
-      ).thenAnswer((_) {});
+      final navService = _registerNavService();
 
       final entity = _makeNotification(
         id: 'act-on-me',
@@ -368,17 +365,7 @@ void main() {
   testWidgets(
     'tapping a non-suggestion row marks only that row seen',
     (tester) async {
-      final navService = MockNavService();
-      if (getIt.isRegistered<NavService>()) getIt.unregister<NavService>();
-      getIt.registerSingleton<NavService>(navService);
-      addTearDown(() {
-        if (getIt.isRegistered<NavService>()) {
-          getIt.unregister<NavService>();
-        }
-      });
-      when(
-        () => navService.pushDesktopTaskDetail(any()),
-      ).thenAnswer((_) {});
+      final navService = _registerNavService();
 
       final entity = _makeOverdueNotification(
         id: 'overdue-act-on-me',
@@ -426,17 +413,7 @@ void main() {
   testWidgets(
     'markSeen failure is reported and navigation still proceeds',
     (tester) async {
-      final navService = MockNavService();
-      if (getIt.isRegistered<NavService>()) getIt.unregister<NavService>();
-      getIt.registerSingleton<NavService>(navService);
-      addTearDown(() {
-        if (getIt.isRegistered<NavService>()) {
-          getIt.unregister<NavService>();
-        }
-      });
-      when(
-        () => navService.pushDesktopTaskDetail(any()),
-      ).thenAnswer((_) {});
+      final navService = _registerNavService();
 
       when(
         () => repository.markSeen(any()),
