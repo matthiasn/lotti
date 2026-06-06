@@ -53,15 +53,17 @@ void main() {
       mockJournalDb = MockJournalDb();
       mockPersistenceLogic = MockPersistenceLogic();
 
-      await getIt.reset();
-      getIt
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockJournalDb)
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+        },
+      );
     });
 
-    tearDown(() async {
-      await getIt.reset();
-    });
+    tearDown(tearDownTestGetIt);
     final testTranscript = AudioTranscript(
       created: DateTime(2025, 1, 21, 13, 9),
       library: 'Gemini',
@@ -102,7 +104,8 @@ void main() {
 
     testWidgets('renders correctly with transcript data', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(TranscriptListItem), findsOneWidget);
       expect(find.byType(ExpansionTile), findsOneWidget);
@@ -129,7 +132,8 @@ void main() {
 
     testWidgets('has correct horizontal padding', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final expansionTile = tester.widget<ExpansionTile>(
         find.byType(ExpansionTile),
@@ -143,7 +147,8 @@ void main() {
 
     testWidgets('trailing buttons have width constraint', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final expansionTile = tester.widget<ExpansionTile>(
         find.byType(ExpansionTile),
@@ -157,7 +162,8 @@ void main() {
 
     testWidgets('title uses Column layout structure', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final expansionTile = tester.widget<ExpansionTile>(
         find.byType(ExpansionTile),
@@ -176,7 +182,8 @@ void main() {
 
     testWidgets('displays processing time when available', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Check for processing time emoji and formatted time
       expect(find.textContaining('⏳'), findsOneWidget);
@@ -189,7 +196,8 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(testTranscriptNoProcessingTime),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Check that processing time is not shown
       expect(find.textContaining('⏳'), findsNothing);
@@ -199,7 +207,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Initially collapsed - should show down arrow
       expect(
@@ -238,7 +247,8 @@ void main() {
 
     testWidgets('delete button is hidden initially', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Find the Opacity widget containing the delete button
       final opacityFinder = find.ancestor(
@@ -254,7 +264,8 @@ void main() {
 
     testWidgets('delete button is visible when expanded', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Expand the tile
       await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
@@ -276,7 +287,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Find all IconButtons
       final iconButtons = tester.widgetList<IconButton>(
@@ -297,7 +309,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(makeTestableWidget(testTranscriptLongModel));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Find the Flexible widget containing the model text
       final flexibleFinder = find.descendant(
@@ -321,7 +334,8 @@ void main() {
 
     testWidgets('transcript content has correct padding', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Expand to show content
       await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
@@ -347,7 +361,8 @@ void main() {
 
     testWidgets('formats duration correctly', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscriptLongModel));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Check that the processing time is formatted as mm:ss
       expect(find.text('⏳01m30s'), findsOneWidget);
@@ -357,7 +372,8 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(testTranscriptNoProcessingTime),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Check that German language is displayed in uppercase
       expect(find.textContaining('Lang: DE'), findsOneWidget);
@@ -371,7 +387,8 @@ void main() {
 
     testWidgets('language and model info are on the same row', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final expansionTile = tester.widget<ExpansionTile>(
         find.byType(ExpansionTile),
@@ -403,7 +420,8 @@ void main() {
 
     testWidgets('transcript is selectable', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Expand to show content
       await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
@@ -415,7 +433,8 @@ void main() {
 
     testWidgets('timestamp is displayed correctly', (tester) async {
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Check that the date is formatted and displayed
       // Using a partial match since dfShorter format may vary
@@ -445,7 +464,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // All three transcripts should render
       expect(find.byType(TranscriptListItem), findsNWidgets(3));
@@ -514,7 +534,8 @@ void main() {
       });
 
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Expand to show delete button
       await tester.tap(find.byIcon(Icons.keyboard_double_arrow_down_outlined));
@@ -588,7 +609,8 @@ void main() {
       });
 
       await tester.pumpWidget(makeTestableWidget(testTranscript));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Delete button is hidden (opacity 0) but still in widget tree
       // Try to tap at the position where the delete button is
