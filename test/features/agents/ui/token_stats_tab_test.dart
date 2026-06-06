@@ -53,7 +53,8 @@ void main() {
   group('TokenStatsTab', () {
     testWidgets('shows daily usage heading', (tester) async {
       await tester.pumpWidget(_buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(TokenStatsTab));
       expect(
@@ -64,7 +65,8 @@ void main() {
 
     testWidgets('shows no-usage message when data is empty', (tester) async {
       await tester.pumpWidget(_buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(TokenStatsTab));
       expect(
@@ -101,7 +103,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(TokenStatsTab));
       // Above-average summary text should appear.
@@ -143,7 +146,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(TokenStatsTab));
       // Below-average summary text should appear.
@@ -185,7 +189,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // NumberFormat.compact() formats: 5000 → "5K", 15000 → "15K"
       expect(find.text('5K'), findsWidgets);
@@ -194,7 +199,8 @@ void main() {
 
     testWidgets('renders chart legend', (tester) async {
       await tester.pumpWidget(_buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(TokenStatsTab));
       expect(
@@ -226,7 +232,8 @@ void main() {
       ];
 
       await tester.pumpWidget(_buildSubject(breakdown: sources));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Research Agent'), findsOneWidget);
       expect(find.text('Summary Agent'), findsOneWidget);
@@ -248,7 +255,8 @@ void main() {
       ];
 
       await tester.pumpWidget(_buildSubject(breakdown: sources));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.error_rounded), findsOneWidget);
     });
@@ -269,14 +277,16 @@ void main() {
       ];
 
       await tester.pumpWidget(_buildSubject(breakdown: sources));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.error_rounded), findsNothing);
     });
 
     testWidgets('shows activity heading', (tester) async {
       await tester.pumpWidget(_buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(TokenStatsTab));
       expect(
@@ -304,10 +314,12 @@ void main() {
       ];
 
       await tester.pumpWidget(_buildSubject(breakdown: sources));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Nav Agent'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(navigatedPath, '/settings/agents/templates/tpl-nav');
     });
@@ -328,7 +340,8 @@ void main() {
       ];
 
       await tester.pumpWidget(_buildSubject(breakdown: sources));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(TokenStatsTab));
       // The activity description is a single text joining duration and
@@ -375,7 +388,8 @@ void main() {
           },
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('gemma4:26b'), findsOneWidget);
       expect(find.text('gemma4:e4b'), findsOneWidget);
@@ -400,7 +414,8 @@ void main() {
           byModel: {'models/only-one': singleModelDays},
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('only-one'), findsNothing);
     });
@@ -409,7 +424,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(_buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // 7D should be selected by default.
       expect(find.text('7D'), findsOneWidget);
@@ -417,7 +433,8 @@ void main() {
 
       // Tap 30D.
       await tester.tap(find.text('30D'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Both labels still visible (selector still rendered).
       expect(find.text('7D'), findsOneWidget);
@@ -450,7 +467,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Today is pre-selected, so the detail panel should show.
       final context = tester.element(find.byType(TokenStatsTab));
@@ -476,7 +494,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(_buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(TokenStatsTab));
       expect(
@@ -511,7 +530,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The detail panel is visible (today, March 15, is pre-selected).
       // The date label "Mar 15, Fri" (MMMEd) should appear in the detail.
@@ -522,7 +542,8 @@ void main() {
       final fridayLabel = find.text('F').last;
       await tester.ensureVisible(fridayLabel);
       await tester.tap(fridayLabel);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // After deselection the detail panel should be gone — no MMMEd date.
       expect(find.textContaining('Fri'), findsNothing);
@@ -553,11 +574,13 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Switch to 30D view.
       await tester.tap(find.text('30D'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // In 30-day mode, labels are date-day numbers. The first day
       // of our data is March 30 (i==0 → date = March 1+0 = March 1),
@@ -592,7 +615,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(TokenStatsTab));
       // tokensPerWake > 0 so tokens-per-wake metric shown.
@@ -641,7 +665,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Both model names should appear.
         expect(find.text('gemma4:test'), findsOneWidget);
@@ -653,12 +678,14 @@ void main() {
         expect(fridayLabels.evaluate().length, greaterThan(0));
         await tester.ensureVisible(fridayLabels.first);
         await tester.tap(fridayLabels.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tapping the same bar again should toggle _selectedIndex back to null.
         await tester.ensureVisible(fridayLabels.first);
         await tester.tap(fridayLabels.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Model card headers are still on-screen.
         expect(find.text('gemma4:test'), findsOneWidget);
@@ -669,7 +696,8 @@ void main() {
         if (sundayLabels.evaluate().isNotEmpty) {
           await tester.ensureVisible(sundayLabels.first);
           await tester.tap(sundayLabels.first);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // _SelectedDayDetail is shown: the input breakdown row appears.
           final context = tester.element(find.byType(TokenStatsTab));
@@ -701,10 +729,12 @@ void main() {
       ];
 
       await tester.pumpWidget(_buildSubject(breakdown: sources));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Instance Agent'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(navigatedPath, '/settings/agents/instances/inst-1');
     });
@@ -734,7 +764,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(TokenStatsTab));
       // tokensPerWake = 12000 ~/ 3 = 4000 → formatted as "4K".
@@ -778,7 +809,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The pre-selected day is today (March 15). Its detail panel is shown.
         expect(find.textContaining('Mar 15'), findsOneWidget);
@@ -791,7 +823,8 @@ void main() {
         final bars = _dayBarFinder();
         expect(bars, findsWidgets);
         await tester.tap(bars.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Selecting the first day (March 9) replaces the detail panel; its
         // date label appears and today's (March 15) is gone.
@@ -833,7 +866,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // A non-today, full-by-time bar uses BorderRadius.vertical(top: ...)
         // on its by-time container (line 625). The observable proof that this
@@ -843,7 +877,8 @@ void main() {
         expect(bars, findsWidgets);
         // bars.first is the left-most (oldest past day, total 10000).
         await tester.tap(bars.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final context = tester.element(find.byType(TokenStatsTab));
         // Detail panel for the selected past day shows its input breakdown
@@ -887,7 +922,8 @@ void main() {
             },
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('gemma4:test'), findsOneWidget);
         expect(find.text('gemma4:other'), findsOneWidget);
@@ -906,7 +942,8 @@ void main() {
         final bars = _dayBarFinder();
         expect(bars, findsWidgets);
         await tester.tap(bars.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The detail panel for the selected per-model day now shows.
         expect(
@@ -921,7 +958,8 @@ void main() {
         // Tapping the same bar again toggles _selectedIndex back to null and
         // the detail panel disappears.
         await tester.tap(bars.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(
           find.text(context.messages.agentStatsInputLabel),
           findsNothing,

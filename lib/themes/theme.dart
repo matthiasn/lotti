@@ -5,6 +5,9 @@ import 'package:lotti/features/theming/model/theme_definitions.dart';
 import 'package:lotti/themes/colors.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
+export 'package:lotti/themes/gradient_themes.dart';
+export 'package:lotti/themes/modal_theme.dart';
+
 const fontSizeSmall = 11.0;
 const fontSizeMedium = 15.0;
 const fontSizeMediumLarge = 20.0;
@@ -168,21 +171,6 @@ class AppTheme {
   static const double errorModalSpacingButton = 20;
 }
 
-// Gradient and shadow constants - tuned for polished, modern look
-class GradientConstants {
-  // Shadow alpha values for enhanced cards - much more subtle
-  static const double enhancedShadowLightAlpha = 0.06;
-  static const double enhancedShadowSecondaryLightAlpha = 0.03;
-  static const double enhancedShadowSecondaryDarkAlpha = 0.12;
-
-  // Shadow blur and spread values - reduced for cleaner look
-  static const double enhancedShadowBlurLight = 8;
-  static const double enhancedShadowSecondaryBlurLight = 16;
-  static const double enhancedShadowSecondaryBlurDark = 20;
-  static const double enhancedShadowOffsetY = 2;
-  static const double enhancedShadowSecondaryOffsetY = 4;
-}
-
 // Input and form styling constants
 class InputConstants {
   // Border radius values
@@ -209,18 +197,6 @@ class TypographyConstants {
   // Font weight adjustments
   static const FontWeight bodyFontWeight = FontWeight.w400;
   static const FontWeight lightFontWeight = FontWeight.w200;
-}
-
-// Modal-specific constants
-class ModalTheme {
-  static const double padding = 32;
-  static const double iconPadding = 16;
-  static const double iconSize = 48;
-  static const double spacing24 = 24;
-  static const double buttonHeight = 56;
-  static const double iconBorderRadiusExtra = 4;
-  static const double headlineLetterSpacing = -0.2;
-  static const double headlineLineHeight = 1.3;
 }
 
 const double inputBorderRadius = InputConstants.inputBorderRadius;
@@ -698,27 +674,4 @@ extension TextThemeExtension on TextStyle {
       FontFeature.tabularFigures(),
     ],
   );
-}
-
-/// Gradient themes for consistent card styling across the app
-class GradientThemes {
-  /// Creates a subtle top-left to bottom-right gradient for cards
-  static LinearGradient? cardGradient(BuildContext context) {
-    return ModernGradientThemes.cardGradient(context);
-  }
-
-  /// Creates a modern primary gradient
-  static LinearGradient primaryGradient(BuildContext context) {
-    return ModernGradientThemes.primaryGradient(context);
-  }
-
-  /// Creates a modern accent gradient
-  static LinearGradient accentGradient(BuildContext context) {
-    return ModernGradientThemes.accentGradient(context);
-  }
-
-  /// Creates a background gradient
-  static LinearGradient backgroundGradient(BuildContext context) {
-    return ModernGradientThemes.backgroundGradient(context);
-  }
 }

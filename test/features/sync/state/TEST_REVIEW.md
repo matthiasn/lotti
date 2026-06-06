@@ -31,9 +31,10 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `test/features/sync/state/backfill_stats_controller_test.dart` is **1,260 lines** — by far the largest test file in scope and more than 2.5× the ~500-line guideline. The controller has 6 async operations, each with 4–5 tests (success, in-flight flag, error, idempotence, cross-op guard), plus a large `auto-refresh timer` group and a `app visibility lifecycle` group. Split opportunities:
+- [x] **[HIGH]** `test/features/sync/state/backfill_stats_controller_test.dart` is **1,260 lines** — by far the largest test file in scope and more than 2.5× the ~500-line guideline. The controller has 6 async operations, each with 4–5 tests (success, in-flight flag, error, idempotence, cross-op guard), plus a large `auto-refresh timer` group and a `app visibility lifecycle` group. Split opportunities:
   - Extract the timer/lifecycle tests (~lines 586–977) to a `backfill_stats_controller_timer_test.dart` (covers `_startTimer`, `_loadStatsSilent`, `_silentRefreshInFlight`, `AppLifecycleListener`)
   - Keep the action tests (triggerFullBackfill, triggerReRequest, resetUnresolvable, retireStuckNow, resetAllUnresolvable) + `BackfillStatsState.copyWith` (~lines 82–585, 1146–end) in the main test file
+  **RESOLVED (assessed, no change):** the timer-file split would violate the one-test-file-per-source rule (`backfill_stats_controller.dart` is a single source). The file already parameterises where parameterisation is sound (the exhaustive cross-operation guard matrix); the per-operation groups assert operation-specific state fields and service calls, so they are distinct behaviors rather than copy-paste permutations.
 
 - [ ] **[MED]** `test/features/sync/state/provisioning_controller_test.dart` is **812 lines**. The `decodeBundle` validation group (~lines 120–400), the `configureFromBundle` flows (~lines 402–595), and the `retry`/`regenerateHandover` groups (~lines 596–812) are natural seams. Splitting into `provisioning_controller_decode_test.dart` and `provisioning_controller_configure_test.dart` would bring each under 500 lines.
 

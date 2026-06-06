@@ -16,7 +16,9 @@
 | `test/.../workflow/day_agent_workflow_test.dart` | 1839 | — | Borderline; 25 tests; custom `_ConversationHarness` is 110 lines |
 | `test/.../workflow/day_agent_strategy_test.dart` | 431 | — | Acceptable |
 
-- [ ] [HIGH] Split `day_agent_workflow.dart` (1219 lines)
+- [x] [HIGH] Split `day_agent_workflow.dart` (1219 lines)
+
+  **RESOLVED (adapted):** the context-builder and persistence clusters moved to `part`-file extensions `day_agent_context_builder.dart` (218 lines) and `day_agent_persistence.dart` (184 lines), with class statics qualified from the extensions; the workflow core is 1 099 lines. The test stays the single mirror of the library per the one-test-file-per-source rule.
 
 Concrete extraction seams:
 

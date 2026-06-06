@@ -113,12 +113,14 @@ void main() {
           EntryDetailHeader(entryId: testTextEntry.meta.id),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       final starIconActiveFinder = find.byIcon(Icons.star_rounded);
       expect(starIconActiveFinder, findsOneWidget);
 
       await tester.tap(starIconActiveFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     testWidgets('tap flagged icon', (WidgetTester tester) async {
@@ -137,14 +139,16 @@ void main() {
           EntryDetailHeader(entryId: testTextEntry.meta.id),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Now the flag icon should be visible
       final flagIconFinder = find.byIcon(Icons.flag);
       expect(flagIconFinder, findsOneWidget);
 
       await tester.tap(flagIconFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     testWidgets('tap private icon', (WidgetTester tester) async {
@@ -155,18 +159,21 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
       await tester.tap(moreHorizIconFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final lockIconFinder = find.byIcon(Icons.lock_open_rounded);
 
       expect(lockIconFinder, findsOneWidget);
 
       await tester.tap(lockIconFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     testWidgets('save button invisible when saved/clean', (
@@ -177,7 +184,8 @@ void main() {
           EntryDetailHeader(entryId: testTextEntry.meta.id),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final saveButtonFinder = find.text('SAVE');
       expect(saveButtonFinder, findsNothing);
@@ -197,11 +205,13 @@ void main() {
           EntryDetailHeader(entryId: testTextEntry.meta.id),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
       await tester.tap(moreHorizIconFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Map action should not be visible when there's no geolocation
       final mapIconOutlinedFinder = find.byIcon(Icons.map_outlined);
@@ -227,14 +237,16 @@ void main() {
           EntryDetailHeader(entryId: testTextEntry.meta.id),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
       await tester.tap(moreHorizIconFinder);
       // Give overlay animation an extra frame to complete to avoid
       // transient debugNeedsLayout during hit testing on fractional translations.
       await tester.pump(const Duration(milliseconds: 400));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The map action should be visible with the outlined icon initially
       final mapIconFinder = find.byIcon(Icons.map_outlined);
@@ -245,7 +257,8 @@ void main() {
       await tester.ensureVisible(mapIconFinder);
       await tester.pump();
       await tester.tap(mapIconFinder, warnIfMissed: false);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     testWidgets('map action not visible for Task entries', (
@@ -269,11 +282,13 @@ void main() {
           EntryDetailHeader(entryId: taskEntry.meta.id),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final moreHorizIconFinder = find.byIcon(Icons.more_horiz);
       await tester.tap(moreHorizIconFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Map action should not be visible for tasks even with geolocation
       final mapIconOutlinedFinder = find.byIcon(Icons.map_outlined);
@@ -290,7 +305,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final entryDateFromFinder = find.text(
         dfShorter.format(testTextEntry.meta.dateFrom),
@@ -322,7 +338,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byIcon(Icons.assistant_rounded), findsOneWidget);
       },
@@ -339,7 +356,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byIcon(Icons.assistant_rounded), findsNothing);
       },
@@ -425,7 +443,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byIcon(Icons.more_horiz), findsOneWidget);
           expect(find.byIcon(Icons.expand_more), findsNothing);
@@ -450,7 +469,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byIcon(Icons.expand_more), findsOneWidget);
           expect(find.byIcon(Icons.more_horiz), findsOneWidget);
@@ -478,7 +498,8 @@ void main() {
                 ),
               ),
             );
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
             expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
             // testAudioEntry has duration of 1 hour -> h:mm:ss format
@@ -505,7 +526,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byIcon(Icons.mic_rounded), findsNothing);
         });
@@ -532,7 +554,8 @@ void main() {
                 ),
               ),
             );
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
             expect(find.byIcon(Icons.description_outlined), findsOneWidget);
             expect(find.byIcon(Icons.expand_more), findsOneWidget);
@@ -558,7 +581,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byIcon(Icons.description_outlined), findsNothing);
           expect(find.byIcon(Icons.expand_more), findsOneWidget);
@@ -586,7 +610,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           final collapseArrow = find.byIcon(Icons.expand_more);
           expect(collapseArrow, findsOneWidget);
@@ -614,7 +639,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           final animatedRotation = tester.widget<AnimatedRotation>(
             find.byType(AnimatedRotation),
@@ -639,7 +665,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           final animatedRotation = tester.widget<AnimatedRotation>(
             find.byType(AnimatedRotation),
@@ -676,7 +703,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.text('2:34'), findsOneWidget);
         });
@@ -698,7 +726,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // 1 hour = 3600 seconds, triggers h:mm:ss format
           expect(find.text('1:00:00'), findsOneWidget);
@@ -730,7 +759,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // 59 min 59 sec stays in m:ss format
           expect(find.text('59:59'), findsOneWidget);
@@ -762,7 +792,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.text('1:00:00'), findsOneWidget);
         });
@@ -793,7 +824,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.text('0:00'), findsOneWidget);
         });
@@ -824,7 +856,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.text('1:05:30'), findsOneWidget);
         });
@@ -848,7 +881,8 @@ void main() {
                   ),
                 ),
               );
-              await tester.pumpAndSettle();
+              await tester.pump();
+              await tester.pump(const Duration(milliseconds: 300));
 
               expect(find.byIcon(Icons.more_horiz), findsOneWidget);
             }
@@ -874,7 +908,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byIcon(Icons.more_horiz), findsOneWidget);
           expect(find.byIcon(Icons.expand_more), findsOneWidget);
@@ -902,7 +937,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byType(EntryDatetimeWidget), findsOneWidget);
           // AI, flag, 3-dots all hidden when collapsed
@@ -932,7 +968,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byIcon(Icons.flag), findsOneWidget);
         });
@@ -1031,7 +1068,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Image thumbnail is wrapped in a 40x40 SizedBox inside ClipRRect
         final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));

@@ -22,7 +22,6 @@ import 'package:lotti/logic/services/geolocation_service.dart';
 import 'package:lotti/logic/services/metadata_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -57,15 +56,16 @@ void main() {
   // but navigation calls are not asserted as they are implementation details of the
   // create functions, not their core responsibility.
   group('Create Entry Tests - ', () {
-    setUpAll(() async {
-      await getIt.reset();
+    late SettingsDb settingsDb;
+    late JournalDb journalDb;
 
+    // Per-test fresh databases + GetIt registrations: no state accumulates
+    // across tests, so no test can depend on entries created by another.
+    setUp(() async {
       setFakeDocumentsPath();
 
-      getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
-
-      final settingsDb = SettingsDb(inMemoryDatabase: true);
-      final journalDb = JournalDb(inMemoryDatabase: true);
+      settingsDb = SettingsDb(inMemoryDatabase: true);
+      journalDb = JournalDb(inMemoryDatabase: true);
       await initConfigFlags(journalDb, inMemoryDatabase: true);
 
       when(mockNotificationService.updateBadge).thenAnswer((_) async {});
@@ -91,40 +91,48 @@ void main() {
 
       when(() => mockTimeService.start(any(), any())).thenAnswer((_) async {});
 
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<SettingsDb>(settingsDb)
-        ..registerSingleton<Fts5Db>(mockFts5Db)
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<JournalDb>(journalDb)
-        ..registerSingleton<LoggingService>(LoggingService())
-        ..registerSingleton<OutboxService>(mockOutboxService)
-        ..registerSingleton<NotificationService>(mockNotificationService)
-        ..registerSingleton<VectorClockService>(VectorClockService())
-        ..registerSingleton<MetadataService>(
-          MetadataService(
-            vectorClockService: getIt<VectorClockService>(),
-          ),
-        )
-        ..registerSingleton<GeolocationService>(mockGeolocationService)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<NavService>(mockNavService)
-        ..registerSingleton<EntitiesCacheService>(MockEntitiesCacheService())
-        ..registerSingleton<PersistenceLogic>(PersistenceLogic());
-      ensureDomainLoggerRegistered();
+      final documentsDirectory = await getApplicationDocumentsDirectory();
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<UpdateNotifications>()
+            ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+            ..registerSingleton<Directory>(documentsDirectory)
+            ..unregister<SettingsDb>()
+            ..registerSingleton<SettingsDb>(settingsDb)
+            ..registerSingleton<Fts5Db>(mockFts5Db)
+            ..registerSingleton<UserActivityService>(UserActivityService())
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(journalDb)
+            ..registerSingleton<OutboxService>(mockOutboxService)
+            ..registerSingleton<NotificationService>(mockNotificationService)
+            ..registerSingleton<VectorClockService>(VectorClockService())
+            ..registerSingleton<MetadataService>(
+              MetadataService(
+                vectorClockService: getIt<VectorClockService>(),
+              ),
+            )
+            ..registerSingleton<GeolocationService>(mockGeolocationService)
+            ..registerSingleton<TimeService>(mockTimeService)
+            ..registerSingleton<NavService>(mockNavService)
+            ..registerSingleton<EntitiesCacheService>(
+              MockEntitiesCacheService(),
+            )
+            ..registerSingleton<PersistenceLogic>(PersistenceLogic());
+        },
+      );
     });
 
-    tearDownAll(() async {
-      await getIt.reset();
-    });
-
-    tearDown(() {
+    tearDown(() async {
       clearInteractions(mockNotificationService);
       clearInteractions(mockUpdateNotifications);
       clearInteractions(mockFts5Db);
       clearInteractions(mockTimeService);
       clearInteractions(mockOutboxService);
       clearInteractions(mockNavService);
+      await tearDownTestGetIt();
+      await journalDb.close();
+      await settingsDb.close();
     });
 
     test('createTextEntry creates and stores a text entry', () async {

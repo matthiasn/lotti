@@ -45,6 +45,74 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
+  /// Stubs the task lookup the handler performs before creating items.
+  void stubTaskById() {
+    when(
+      () => mockJournalDb.journalEntityById(testTask.meta.id),
+    ).thenAnswer((_) async => testTask);
+  }
+
+  /// Stubs [MockChecklistRepository.addItemToChecklist] (any args) to echo
+  /// the requested title back as a fresh ChecklistItem, so every addition
+  /// counts as a success and fires the callback path.
+  void stubAddItemEcho() {
+    when(
+      () => mockChecklistRepository.addItemToChecklist(
+        checklistId: any(named: 'checklistId'),
+        title: any(named: 'title'),
+        isChecked: any(named: 'isChecked'),
+        categoryId: any(named: 'categoryId'),
+        checkedBy: any(named: 'checkedBy'),
+      ),
+    ).thenAnswer((invocation) async {
+      final title = invocation.namedArguments[#title] as String? ?? '';
+      return ChecklistItem(
+        meta: Metadata(
+          id: _uuid.v4(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          categoryId: 'test-category',
+        ),
+        data: ChecklistItemData(
+          title: title,
+          isChecked: false,
+          linkedChecklists: const [],
+        ),
+      );
+    });
+  }
+
+  /// Stubs the auto-create service to succeed with checklist 'new-checklist',
+  /// echoing the requested suggestions back as created items.
+  void stubAutoCreateChecklistEcho() {
+    when(
+      () => mockAutoChecklistService.autoCreateChecklist(
+        taskId: testTask.meta.id,
+        suggestions: any(named: 'suggestions'),
+        title: 'Todos',
+      ),
+    ).thenAnswer((invocation) async {
+      final suggestions =
+          invocation.namedArguments[#suggestions] as List<ChecklistItemData>;
+      return (
+        success: true,
+        checklistId: 'new-checklist',
+        createdItems: suggestions
+            .map(
+              (s) => (
+                id: _uuid.v4(),
+                title: s.title,
+                isChecked: s.isChecked,
+              ),
+            )
+            .toList(),
+        error: null,
+      );
+    });
+  }
+
   group('LottiBatchChecklistHandler', () {
     test('should have correct function name', () {
       expect(handler.functionName, 'add_multiple_checklist_items');
@@ -288,9 +356,7 @@ void main() {
           },
         );
 
-        when(
-          () => mockJournalDb.journalEntityById(testTask.meta.id),
-        ).thenAnswer((_) async => testTask);
+        stubTaskById();
         when(() => mockJournalDb.journalEntityById('new-checklist')).thenAnswer(
           (_) async => Checklist(
             meta: Metadata(
@@ -326,115 +392,10 @@ void main() {
             ),
           ),
         );
-        when(
-          () => mockAutoChecklistService.autoCreateChecklist(
-            taskId: testTask.meta.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'Todos',
-          ),
-        ).thenAnswer((invocation) async {
-          final suggestions =
-              invocation.namedArguments[#suggestions]
-                  as List<ChecklistItemData>;
-          return (
-            success: true,
-            checklistId: 'new-checklist',
-            createdItems: suggestions
-                .map(
-                  (s) => (
-                    id: _uuid.v4(),
-                    title: s.title,
-                    isChecked: s.isChecked,
-                  ),
-                )
-                .toList(),
-            error: null,
-          );
-        });
+        stubAutoCreateChecklistEcho();
 
         // Return a non-null item so successCount > 0 and callback is fired
-        when(
-          () => mockChecklistRepository.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-            checkedBy: any(named: 'checkedBy'),
-          ),
-        ).thenAnswer((invocation) async {
-          final title = invocation.namedArguments[#title] as String? ?? '';
-          return ChecklistItem(
-            meta: Metadata(
-              id: _uuid.v4(),
-              createdAt: DateTime(2024, 3, 15),
-              updatedAt: DateTime(2024, 3, 15),
-              dateFrom: DateTime(2024, 3, 15),
-              dateTo: DateTime(2024, 3, 15),
-              categoryId: 'test-category',
-            ),
-            data: ChecklistItemData(
-              title: title,
-              isChecked: false,
-              linkedChecklists: const [],
-            ),
-          );
-        });
-
-        // Return a non-null item so successCount > 0 and callback is fired
-        when(
-          () => mockChecklistRepository.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-            checkedBy: any(named: 'checkedBy'),
-          ),
-        ).thenAnswer((invocation) async {
-          final title = invocation.namedArguments[#title] as String? ?? '';
-          return ChecklistItem(
-            meta: Metadata(
-              id: _uuid.v4(),
-              createdAt: DateTime(2024, 3, 15),
-              updatedAt: DateTime(2024, 3, 15),
-              dateFrom: DateTime(2024, 3, 15),
-              dateTo: DateTime(2024, 3, 15),
-              categoryId: 'test-category',
-            ),
-            data: ChecklistItemData(
-              title: title,
-              isChecked: false,
-              linkedChecklists: const [],
-            ),
-          );
-        });
-
-        // Ensure adding items to existing checklist returns a non-null item
-        when(
-          () => mockChecklistRepository.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-            checkedBy: any(named: 'checkedBy'),
-          ),
-        ).thenAnswer((invocation) async {
-          final title = invocation.namedArguments[#title] as String? ?? '';
-          return ChecklistItem(
-            meta: Metadata(
-              id: _uuid.v4(),
-              createdAt: DateTime(2024, 3, 15),
-              updatedAt: DateTime(2024, 3, 15),
-              dateFrom: DateTime(2024, 3, 15),
-              dateTo: DateTime(2024, 3, 15),
-              categoryId: 'test-category',
-            ),
-            data: ChecklistItemData(
-              title: title,
-              isChecked: false,
-              linkedChecklists: const [],
-            ),
-          );
-        });
+        stubAddItemEcho();
 
         // Act
         final count = await handler.createBatchItems(result);
@@ -651,63 +612,12 @@ void main() {
 
         // existingDescriptions no longer used; duplicates are allowed
 
-        when(
-          () => mockJournalDb.journalEntityById(testTask.meta.id),
-        ).thenAnswer((_) async => testTask);
+        stubTaskById();
 
-        when(
-          () => mockAutoChecklistService.autoCreateChecklist(
-            taskId: testTask.meta.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'Todos',
-          ),
-        ).thenAnswer((invocation) async {
-          final suggestions =
-              invocation.namedArguments[#suggestions]
-                  as List<ChecklistItemData>;
-          return (
-            success: true,
-            checklistId: 'new-checklist',
-            createdItems: suggestions
-                .map(
-                  (s) => (
-                    id: _uuid.v4(),
-                    title: s.title,
-                    isChecked: s.isChecked,
-                  ),
-                )
-                .toList(),
-            error: null,
-          );
-        });
+        stubAutoCreateChecklistEcho();
 
         // Return a non-null item so successCount > 0 and callback is fired
-        when(
-          () => mockChecklistRepository.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-            checkedBy: any(named: 'checkedBy'),
-          ),
-        ).thenAnswer((invocation) async {
-          final title = invocation.namedArguments[#title] as String? ?? '';
-          return ChecklistItem(
-            meta: Metadata(
-              id: _uuid.v4(),
-              createdAt: DateTime(2024, 3, 15),
-              updatedAt: DateTime(2024, 3, 15),
-              dateFrom: DateTime(2024, 3, 15),
-              dateTo: DateTime(2024, 3, 15),
-              categoryId: 'test-category',
-            ),
-            data: ChecklistItemData(
-              title: title,
-              isChecked: false,
-              linkedChecklists: const [],
-            ),
-          );
-        });
+        stubAddItemEcho();
 
         // Act
         final count = await handler.createBatchItems(result);
@@ -750,35 +660,9 @@ void main() {
           },
         );
 
-        when(
-          () => mockJournalDb.journalEntityById(testTask.meta.id),
-        ).thenAnswer((_) async => testTask);
+        stubTaskById();
 
-        when(
-          () => mockAutoChecklistService.autoCreateChecklist(
-            taskId: testTask.meta.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'Todos',
-          ),
-        ).thenAnswer((invocation) async {
-          final suggestions =
-              invocation.namedArguments[#suggestions]
-                  as List<ChecklistItemData>;
-          return (
-            success: true,
-            checklistId: 'new-checklist',
-            createdItems: suggestions
-                .map(
-                  (s) => (
-                    id: _uuid.v4(),
-                    title: s.title,
-                    isChecked: s.isChecked,
-                  ),
-                )
-                .toList(),
-            error: null,
-          );
-        });
+        stubAutoCreateChecklistEcho();
 
         // Act
         final count = await handler.createBatchItems(result);
@@ -823,35 +707,9 @@ void main() {
 
         // existingDescriptions no longer used; duplicates are allowed
 
-        when(
-          () => mockJournalDb.journalEntityById(testTask.meta.id),
-        ).thenAnswer((_) async => testTask);
+        stubTaskById();
 
-        when(
-          () => mockAutoChecklistService.autoCreateChecklist(
-            taskId: testTask.meta.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'Todos',
-          ),
-        ).thenAnswer((invocation) async {
-          final suggestions =
-              invocation.namedArguments[#suggestions]
-                  as List<ChecklistItemData>;
-          return (
-            success: true,
-            checklistId: 'new-checklist',
-            createdItems: suggestions
-                .map(
-                  (s) => (
-                    id: _uuid.v4(),
-                    title: s.title,
-                    isChecked: s.isChecked,
-                  ),
-                )
-                .toList(),
-            error: null,
-          );
-        });
+        stubAutoCreateChecklistEcho();
 
         // Act
         final count = await handler.createBatchItems(result);
@@ -932,59 +790,10 @@ void main() {
           () => mockJournalDb.journalEntityById(testTask.meta.id),
         ).thenAnswer((_) async => refreshedTask);
 
-        when(
-          () => mockAutoChecklistService.autoCreateChecklist(
-            taskId: testTask.meta.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'Todos',
-          ),
-        ).thenAnswer((invocation) async {
-          final suggestions =
-              invocation.namedArguments[#suggestions]
-                  as List<ChecklistItemData>;
-          return (
-            success: true,
-            checklistId: 'new-checklist',
-            createdItems: suggestions
-                .map(
-                  (s) => (
-                    id: _uuid.v4(),
-                    title: s.title,
-                    isChecked: s.isChecked,
-                  ),
-                )
-                .toList(),
-            error: null,
-          );
-        });
+        stubAutoCreateChecklistEcho();
 
         // Ensure adding items to existing checklist returns a non-null item
-        when(
-          () => mockChecklistRepository.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-            checkedBy: any(named: 'checkedBy'),
-          ),
-        ).thenAnswer((invocation) async {
-          final title = invocation.namedArguments[#title] as String? ?? '';
-          return ChecklistItem(
-            meta: Metadata(
-              id: _uuid.v4(),
-              createdAt: DateTime(2024, 3, 15),
-              updatedAt: DateTime(2024, 3, 15),
-              dateFrom: DateTime(2024, 3, 15),
-              dateTo: DateTime(2024, 3, 15),
-              categoryId: 'test-category',
-            ),
-            data: ChecklistItemData(
-              title: title,
-              isChecked: false,
-              linkedChecklists: const [],
-            ),
-          );
-        });
+        stubAddItemEcho();
 
         // Act
         final createdCount = await handler.createBatchItems(result);
@@ -1203,34 +1012,8 @@ void main() {
           },
         );
 
-        when(
-          () => mockJournalDb.journalEntityById(testTask.meta.id),
-        ).thenAnswer((_) async => testTask);
-        when(
-          () => mockAutoChecklistService.autoCreateChecklist(
-            taskId: testTask.meta.id,
-            suggestions: any(named: 'suggestions'),
-            title: 'Todos',
-          ),
-        ).thenAnswer((invocation) async {
-          final suggestions =
-              invocation.namedArguments[#suggestions]
-                  as List<ChecklistItemData>;
-          return (
-            success: true,
-            checklistId: 'new-checklist',
-            createdItems: suggestions
-                .map(
-                  (s) => (
-                    id: _uuid.v4(),
-                    title: s.title,
-                    isChecked: s.isChecked,
-                  ),
-                )
-                .toList(),
-            error: null,
-          );
-        });
+        stubTaskById();
+        stubAutoCreateChecklistEcho();
 
         // Populate created details
         await handler.createBatchItems(result);
@@ -1340,9 +1123,7 @@ void main() {
           },
         );
 
-        when(
-          () => mockJournalDb.journalEntityById(testTask.meta.id),
-        ).thenAnswer((_) async => testTask);
+        stubTaskById();
 
         when(
           () => mockAutoChecklistService.autoCreateChecklist(
@@ -1451,9 +1232,7 @@ void main() {
             },
           );
 
-          when(
-            () => mockJournalDb.journalEntityById(testTask.meta.id),
-          ).thenAnswer((_) async => testTask);
+          stubTaskById();
 
           when(
             () => mockAutoChecklistService.autoCreateChecklist(

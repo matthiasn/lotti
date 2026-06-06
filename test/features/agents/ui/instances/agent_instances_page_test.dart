@@ -195,4 +195,44 @@ void main() {
       },
     );
   });
+
+  group('AgentInstancesPage — evolution session rows', () {
+    testWidgets(
+      'renders the localized session title with no template subtitle and '
+      'beams to the instance route',
+      (tester) async {
+        String? navigated;
+        beamToNamedOverride = (path) => navigated = path;
+
+        await pumpPage(
+          tester,
+          vms: [
+            _vm(
+              id: 'evo-7',
+              name: 'raw display name (must not render)',
+              type: InstanceType.evolution,
+              status: AgentLifecycle.active,
+              updatedAt: DateTime(2026, 5, 25, 9, 30),
+              sessionNumber: 7,
+              templateName: 'Some Template',
+            ),
+          ],
+        );
+
+        // Evolution rows use the localized session title, not displayName,
+        // and suppress the template-name subtitle.
+        expect(find.text('Evolution #7'), findsOneWidget);
+        expect(find.text('raw display name (must not render)'), findsNothing);
+        expect(find.text('Some Template'), findsNothing);
+
+        // Without a soul, the avatar leadings fall back to the '?' label
+        // (the row avatar plus grouped-header copies render several).
+        expect(find.text('?'), findsWidgets);
+
+        await tester.tap(find.text('Evolution #7'));
+        await tester.pumpAndSettle();
+        expect(navigated, '/settings/agents/instances/evo-7');
+      },
+    );
+  });
 }

@@ -207,6 +207,12 @@ void main() {
     // when testing the re-read behavior.
     when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
 
+    // Canonical happy-path stubs shared by most tests (mocktail last-wins
+    // lets individual tests re-stub failure paths).
+    when(
+      () => mockSyncService.upsertEntity(any()),
+    ).thenAnswer((_) async {});
+
     // Stub DomainLogger methods.
     when(
       () => mockDomainLogger.log(
@@ -341,10 +347,6 @@ void main() {
           ),
         );
 
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
-
         await withClock(testClock, () async {
           final result = await service.confirmItem(changeSet, 0);
 
@@ -404,9 +406,6 @@ void main() {
               errorMessage: 'Handler failed',
             ),
           );
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           await withClock(testClock, () async {
             final result = await service.confirmItem(changeSet, 0);
@@ -453,10 +452,6 @@ void main() {
               errorMessage: 'No active timer',
             ),
           );
-
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           await withClock(testClock, () async {
             final result = await service.confirmItem(changeSet, 0);
@@ -529,10 +524,6 @@ void main() {
             ),
           );
 
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
           await withClock(testClock, () async {
             final result = await service.confirmItem(changeSet, 0);
 
@@ -589,9 +580,6 @@ void main() {
                 errorMessage: failure,
               ),
             );
-            when(
-              () => mockSyncService.upsertEntity(any()),
-            ).thenAnswer((_) async {});
 
             await withClock(testClock, () async {
               final result = await service.confirmItem(changeSet, 0);
@@ -667,9 +655,6 @@ void main() {
               errorMessage: 'No active timer',
             ),
           );
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           await withClock(testClock, () async {
             final result = await service.confirmItem(changeSet, 0);
@@ -710,10 +695,6 @@ void main() {
           when(
             () => mockToolDispatcher.dispatch(any(), any(), any()),
           ).thenThrow(StateError('No active timer'));
-
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           await withClock(testClock, () async {
             final result = await service.confirmItem(changeSet, 0);
@@ -776,9 +757,6 @@ void main() {
             when(
               () => mockToolDispatcher.dispatch(any(), any(), any()),
             ).thenThrow(StateError(scenario.thrown));
-            when(
-              () => mockSyncService.upsertEntity(any()),
-            ).thenAnswer((_) async {});
 
             await withClock(testClock, () async {
               final result = await service.confirmItem(changeSet, 0);
@@ -851,9 +829,6 @@ void main() {
             output: 'Accepted 1 recommended next step(s)',
           ),
         );
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
 
         await withClock(testClock, () async {
           final result = await serviceWithCallback.confirmItem(changeSet, 0);
@@ -898,9 +873,6 @@ void main() {
               output: 'Estimate set to 45 minutes',
             ),
           );
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           await serviceWithCallback.confirmItem(changeSet, 0);
 
@@ -943,9 +915,6 @@ void main() {
               output: 'Estimate set to 45 minutes',
             ),
           );
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           final result = await serviceWithCallback.confirmItem(changeSet, 0);
 
@@ -1005,9 +974,6 @@ void main() {
               output: 'Accepted 1 recommended next step(s)',
             ),
           );
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           await withClock(testClock, () async {
             final result = await serviceWithCallback.confirmItem(changeSet, 0);
@@ -1066,10 +1032,6 @@ void main() {
               output: 'Created time entry',
             ),
           );
-
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           await withClock(testClock, () async {
             await service.confirmItem(changeSet, 0);
@@ -1159,9 +1121,6 @@ void main() {
             reads += 1;
             return reads == 1 ? changeSet : changedSet;
           });
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           await withClock(testClock, () async {
             final result = await service.confirmItem(changeSet, 1);
@@ -1208,10 +1167,6 @@ void main() {
           ),
         );
 
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
-
         await withClock(testClock, () async {
           await service.confirmItem(changeSet, 1);
 
@@ -1232,10 +1187,6 @@ void main() {
     group('rejectItem', () {
       test('persists rejected decision without tool dispatch', () async {
         final changeSet = makeChangeSetWith();
-
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
 
         await withClock(testClock, () async {
           final applied = await service.rejectItem(
@@ -1296,10 +1247,6 @@ void main() {
             },
           );
 
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
           final applied = await serviceWithCallback.rejectItem(
             changeSet,
             0,
@@ -1336,10 +1283,6 @@ void main() {
             output: 'Done',
           ),
         );
-
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
 
         // Sequential answers:
         // Call 1: confirmAll's _freshChangeSet — return original (both pending)
@@ -1393,10 +1336,6 @@ void main() {
             output: 'Done',
           ),
         );
-
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
 
         when(
           () => mockRepository.getEntity(changeSet.id),
@@ -1455,10 +1394,6 @@ void main() {
           ),
         );
 
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
-
         // getEntity returns null — confirmAll should still proceed
         // using the passed-in changeSet.
         when(
@@ -1503,10 +1438,6 @@ void main() {
               ),
             ],
           );
-
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           // First call: create_follow_up_task succeeds with actual ID.
           when(
@@ -1646,10 +1577,6 @@ void main() {
               ),
             ],
           );
-
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           when(
             () => mockToolDispatcher.dispatch(any(), any(), any()),
@@ -1815,10 +1742,6 @@ void main() {
           );
 
           when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
-          when(
             () => mockToolDispatcher.dispatch(
               'migrate_checklist_item',
               any(),
@@ -1911,9 +1834,6 @@ void main() {
             reads += 1;
             return reads == 1 ? changeSet : changedSet;
           });
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           await withClock(testClock, () async {
             final applied = await service.rejectItem(changeSet, 1);
@@ -1941,10 +1861,6 @@ void main() {
               ),
             ],
           );
-
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           when(
             () => mockLabelsRepository.suppressLabelOnTask(
@@ -1981,10 +1897,6 @@ void main() {
               ),
             ],
           );
-
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           await withClock(testClock, () async {
             await service.rejectItem(changeSet, 0);
@@ -2035,10 +1947,6 @@ void main() {
               ),
             ],
           );
-
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           // _freshChangeSet and _cascadeRejectMigrationItems both call
           // getEntity — return the change set (then progressively updated
@@ -2102,10 +2010,6 @@ void main() {
               ),
             ],
           );
-
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           when(
             () => mockRepository.getEntity(changeSet.id),
@@ -2275,10 +2179,6 @@ void main() {
           ),
         );
 
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
-
         await withClock(testClock, () async {
           await service.confirmItem(changeSet, 0);
 
@@ -2311,10 +2211,6 @@ void main() {
             errorMessage: 'Task lookup failed',
           ),
         );
-
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
 
         await withClock(testClock, () async {
           await service.confirmItem(changeSet, 0);
@@ -2350,10 +2246,6 @@ void main() {
               policyDenied: true,
             ),
           );
-
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           await withClock(testClock, () async {
             await service.confirmItem(changeSet, 0);
@@ -2403,10 +2295,6 @@ void main() {
       test('logs rejecting message', () async {
         final changeSet = makeChangeSetWith();
 
-        when(
-          () => mockSyncService.upsertEntity(any()),
-        ).thenAnswer((_) async {});
-
         await withClock(testClock, () async {
           await service.rejectItem(changeSet, 0);
 
@@ -2436,10 +2324,6 @@ void main() {
               ),
             ],
           );
-
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           when(
             () => mockToolDispatcher.dispatch(any(), any(), any()),
@@ -2492,10 +2376,6 @@ void main() {
           );
 
           when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
-
-          when(
             () => mockRepository.getEntity(changeSet.id),
           ).thenAnswer((_) async => changeSet);
 
@@ -2538,10 +2418,6 @@ void main() {
               ),
             ],
           );
-
-          when(
-            () => mockSyncService.upsertEntity(any()),
-          ).thenAnswer((_) async {});
 
           when(
             () => mockToolDispatcher.dispatch(any(), any(), any()),

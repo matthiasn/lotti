@@ -560,16 +560,19 @@ void main() {
           markdown: 'Test Entry',
         );
 
+        // Shared metadata builder — every fixture differs only in id.
+        Metadata meta(String id) => Metadata(
+          id: id,
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate.add(const Duration(hours: 1)),
+          categoryId: categoryId,
+        );
+
         // Create test event
         testEvent = JournalEvent(
-          meta: Metadata(
-            id: 'test-event-id',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate.add(const Duration(hours: 1)),
-            categoryId: categoryId,
-          ),
+          meta: meta('test-event-id'),
           data: const EventData(
             title: 'Test Event Title',
             status: EventStatus.tentative,
@@ -580,14 +583,7 @@ void main() {
 
         // Create test checklist
         testChecklist = Checklist(
-          meta: Metadata(
-            id: 'test-checklist-id',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate.add(const Duration(hours: 1)),
-            categoryId: categoryId,
-          ),
+          meta: meta('test-checklist-id'),
           data: const ChecklistData(
             title: 'Test Checklist',
             linkedChecklistItems: ['item1', 'item2'],
@@ -598,14 +594,7 @@ void main() {
 
         // Create test checklist item
         testChecklistItem = ChecklistItem(
-          meta: Metadata(
-            id: 'test-checklist-item-id',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate.add(const Duration(hours: 1)),
-            categoryId: categoryId,
-          ),
+          meta: meta('test-checklist-item-id'),
           data: const ChecklistItemData(
             title: 'Test Checklist Item',
             isChecked: true,
@@ -617,14 +606,7 @@ void main() {
 
         // Create unchecked checklist item
         testUncheckedChecklistItem = ChecklistItem(
-          meta: Metadata(
-            id: 'unchecked-item-id',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate.add(const Duration(hours: 1)),
-            categoryId: categoryId,
-          ),
+          meta: meta('unchecked-item-id'),
           data: const ChecklistItemData(
             title: 'Unchecked Item',
             isChecked: false,
@@ -636,14 +618,7 @@ void main() {
 
         // Create test survey
         testSurvey = SurveyEntry(
-          meta: Metadata(
-            id: 'test-survey-id',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate.add(const Duration(hours: 1)),
-            categoryId: categoryId,
-          ),
+          meta: meta('test-survey-id'),
           data: SurveyData(
             taskResult: RPTaskResult(identifier: 'panasSurveyTask'),
             scoreDefinitions: {
@@ -660,14 +635,7 @@ void main() {
 
         // Create test AI response
         testAiResponse = AiResponseEntry(
-          meta: Metadata(
-            id: 'test-ai-response-id',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate.add(const Duration(hours: 1)),
-            categoryId: categoryId,
-          ),
+          meta: meta('test-ai-response-id'),
           data: const AiResponseData(
             model: 'gpt-4',
             systemMessage: 'You are a helpful assistant',

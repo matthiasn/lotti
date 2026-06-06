@@ -30,6 +30,8 @@ import 'package:lotti/utils/consts.dart';
 
 part 'ai_summary_card/assign_agent_cta_part.dart';
 part 'ai_summary_card/proposal_kind_part.dart';
+part 'ai_summary_card/proposal_row_part.dart';
+part 'ai_summary_card/proposal_row_widgets_part.dart';
 part 'ai_summary_card/proposals_section_part.dart';
 part 'ai_summary_card/tldr_section_part.dart';
 

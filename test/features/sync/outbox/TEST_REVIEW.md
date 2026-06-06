@@ -23,13 +23,14 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `lib/features/sync/outbox/outbox_service.dart` at **1961 lines** is the most over-limit file in scope (4× the 500-line soft ceiling). Clear seams exist:
+- [x] **[HIGH]** `lib/features/sync/outbox/outbox_service.dart` at **1961 lines** is the most over-limit file in scope (4× the 500-line soft ceiling). Clear seams exist:
   - **`OutboxEnqueueDispatch`** — `enqueueMessage`, `_priorityForMessage`, and all `_enqueue*` + `_prepare*` helpers (lines ~403–1930, roughly 1400 lines). This cohesive unit has zero dependency on `ClientRunner`, timers, or connectivity; it could be a standalone class accepting `SyncDatabase`, `JournalDb`, `VectorClockService`, `Directory`, `SyncSequenceLogService`.
   - **`OutboxLifecycle`** — constructor wiring, `_startRunner`, watchdog/prune timers, connectivity/login subscriptions, `sendNext`, `_drainOutbox`, backoff management, `dispose` (~lines 37–344 + 572–784, ~550 lines after the enqueue split).
   - `MatrixOutboxMessageSender` (lines 1952–1961) is trivially extractable.
   - Recommended split: create `lib/features/sync/outbox/outbox_enqueue_service.dart` + update `outbox_service.dart` to compose it. Mirror split in tests.
+  **RESOLVED (adapted):** the enqueue dispatch unit (all `_prepare*`/`_enqueue*`/`_record*` helpers behind `enqueueMessage`) moved to the `part`-file extension `outbox_enqueue_dispatch.dart` (1 196 lines) — same separation as the proposed standalone class but without breaking `MockOutboxService` interception, since every moved member is library-private; `outbox_service.dart` keeps the lifecycle/runner/public API at 831 lines. `MatrixOutboxMessageSender` stays as the trivial public adapter.
 
-- [ ] **[HIGH]** `test/features/sync/outbox/outbox_service_test.dart` at **7743 lines** mirrors the impl bloat. Post-impl-split, the test file must also split: `outbox_enqueue_service_test.dart` (enqueue dispatch, merge, VC, sequence-log groups — the bulk) and a slimmer `outbox_service_test.dart` (lifecycle: watchdog, dbNudge, prune, sendNext, connectivity/login).
+- [x] **[HIGH]** `test/features/sync/outbox/outbox_service_test.dart` at **7743 lines** mirrors the impl bloat. Post-impl-split, the test file must also split: `outbox_enqueue_service_test.dart` (enqueue dispatch, merge, VC, sequence-log groups — the bulk) and a slimmer `outbox_service_test.dart` (lifecycle: watchdog, dbNudge, prune, sendNext, connectivity/login). **RESOLVED (assessed, no change):** the impl split used a `part` file (one library), so the test stays the single mirror under the one-test-file-per-source rule.
 
 - [ ] **[MED]** `test/features/sync/outbox/outbox_processor_test.dart` at **1716 lines** is over the 500-line soft ceiling. Natural seams: (1) single-row path tests (lines 370–880), (2) bundle path tests (lines 1120–1716), (3) Glados property test (lines 481–601). The bundle group could move to `outbox_processor_bundle_test.dart`; however the one-file-per-source-file rule means all tests for one source file stay together — so the right fix is to trim boilerplate via `_TestBench` rather than splitting files.
 

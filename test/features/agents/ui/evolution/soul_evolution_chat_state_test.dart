@@ -97,6 +97,17 @@ void main() {
     ).thenAnswer((_) async {});
   }
 
+  /// Stubs the failed session start: startSoulSession resolves null and no
+  /// active session exists.
+  void stubNullStart() {
+    when(
+      () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
+    ).thenAnswer((_) async => null);
+    when(
+      () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
+    ).thenReturn(null);
+  }
+
   group('SoulEvolutionChatState', () {
     group('build', () {
       test(
@@ -131,13 +142,7 @@ void main() {
       );
 
       test('returns error state when startSoulSession returns null', () async {
-        when(
-          () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
-        ).thenAnswer((_) async => null);
-
-        when(
-          () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-        ).thenReturn(null);
+        stubNullStart();
 
         container = createContainer();
         final data = await withClock(
@@ -326,12 +331,7 @@ void main() {
       );
 
       test('does nothing when sessionId is null', () async {
-        when(
-          () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-        ).thenReturn(null);
+        stubNullStart();
 
         container = createContainer();
         await withClock(
@@ -468,12 +468,7 @@ void main() {
       });
 
       test('returns false when sessionId is null', () async {
-        when(
-          () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-        ).thenReturn(null);
+        stubNullStart();
 
         container = createContainer();
         await withClock(
@@ -531,12 +526,7 @@ void main() {
       });
 
       test('does nothing when sessionId is null', () async {
-        when(
-          () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-        ).thenReturn(null);
+        stubNullStart();
 
         container = createContainer();
         await withClock(
@@ -604,12 +594,7 @@ void main() {
       });
 
       test('does nothing when sessionId is null', () async {
-        when(
-          () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-        ).thenReturn(null);
+        stubNullStart();
 
         container = createContainer();
         await withClock(
@@ -1137,15 +1122,10 @@ void main() {
             modelId: 'model-1',
           );
 
-          when(
-            () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
-          ).thenAnswer((_) async => 'Welcome!');
-          when(
-            () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-          ).thenReturn(sessionWithBridge);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
+          stubSuccessfulStart(
+            response: 'Welcome!',
+            session: sessionWithBridge,
+          );
 
           container = createContainer();
           final data = await withClock(
@@ -1201,15 +1181,7 @@ void main() {
             modelId: 'model-1',
           );
 
-          when(
-            () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
-          ).thenAnswer((_) async => 'Hello!');
-          when(
-            () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-          ).thenReturn(sessionWithBridge);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
+          stubSuccessfulStart(session: sessionWithBridge);
 
           container = createContainer();
           final data = await withClock(
@@ -1260,15 +1232,7 @@ void main() {
           final session = makeSessionWithEventHandler();
           final soulVersion = makeTestSoulDocumentVersion(version: 5);
 
-          when(
-            () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
-          ).thenAnswer((_) async => 'Hello!');
-          when(
-            () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-          ).thenReturn(session);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
+          stubSuccessfulStart(session: session);
           when(
             () => mockWorkflow.getCurrentRecap(sessionId: 'session-1'),
           ).thenReturn(null);
@@ -1341,15 +1305,7 @@ void main() {
         () async {
           final session = makeSessionWithEventHandler();
 
-          when(
-            () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
-          ).thenAnswer((_) async => 'Hello!');
-          when(
-            () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-          ).thenReturn(session);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
+          stubSuccessfulStart(session: session);
           when(
             () => mockWorkflow.rejectSoulProposal(sessionId: 'session-1'),
           ).thenReturn(null);
@@ -1392,15 +1348,7 @@ void main() {
         () async {
           final session = makeSessionWithEventHandler();
 
-          when(
-            () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
-          ).thenAnswer((_) async => 'Hello!');
-          when(
-            () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-          ).thenReturn(session);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
+          stubSuccessfulStart(session: session);
           when(
             () => mockWorkflow.getSession(any()),
           ).thenReturn(null);
@@ -1471,15 +1419,7 @@ void main() {
         () async {
           final session = makeSessionWithEventHandler();
 
-          when(
-            () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
-          ).thenAnswer((_) async => 'Hello!');
-          when(
-            () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-          ).thenReturn(session);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
+          stubSuccessfulStart(session: session);
           when(
             () => mockWorkflow.getSession(any()),
           ).thenReturn(null);
@@ -1542,15 +1482,7 @@ void main() {
         () async {
           final session = makeSessionWithEventHandler();
 
-          when(
-            () => mockWorkflow.startSoulSession(soulId: kTestSoulId),
-          ).thenAnswer((_) async => 'Hello!');
-          when(
-            () => mockWorkflow.getActiveSessionForSoul(kTestSoulId),
-          ).thenReturn(session);
-          when(
-            () => mockWorkflow.abandonSession(sessionId: 'session-1'),
-          ).thenAnswer((_) async {});
+          stubSuccessfulStart(session: session);
           when(
             () => mockWorkflow.getSession(any()),
           ).thenReturn(null);

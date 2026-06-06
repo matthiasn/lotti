@@ -29,11 +29,11 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `input_area.dart` at 512 lines is the most oversized widget file. Natural split seams:
+- [x] **[HIGH]** `input_area.dart` at 512 lines is the most oversized widget file. Natural split seams:
   - `_TranscriptionProgressIndicator` widget (processing + partial transcript UI) → `transcription_progress.dart` (~60 ln)
   - `ChatVoiceControls` widget (recording state, waveform, cancel/stop) → already partially split since `chat_voice_controls_test.dart` exists separately, but the impl is still in `input_area.dart`. Extract it fully.
   - Core `InputArea` (text field, send/mic/tune button selection) → `input_area.dart` (~300 ln)
-  - The test would mirror the split: `input_area_test.dart` (1138 ln) contains both `InputArea` and `ChatVoiceControls` tests, which already have a separate file (`chat_voice_controls_test.dart`). Consolidate and deduplicate.
+  - The test would mirror the split: `input_area_test.dart` (1138 ln) contains both `InputArea` and `ChatVoiceControls` tests, which already have a separate file (`chat_voice_controls_test.dart`). Consolidate and deduplicate. **RESOLVED (adapted):** `ChatVoiceControls`, `_RealtimeRecordingView`, and `_TranscriptionProgress` moved to the `part` file `chat_voice_controls.dart` (208 lines; `input_area.dart` down to 312), which makes the existing `chat_voice_controls_test.dart` the legitimate per-part mirror — `input_area_test.dart` contained no ChatVoiceControls tests, so there was no duplication to consolidate (that claim was stale).
 - [ ] **[MED]** `chat_interface_test.dart` at 722 lines is large for a 118-line widget. The test groups (empty state, error, streaming, model-selection, send-message, new-chat) could be split into `chat_interface_empty_state_test.dart` and `chat_interface_send_test.dart` but this would violate the one-file-per-source rule. More practical: extract the `_createSession` / `_stubRepository` / `_pumpChatInterface` helpers to a shared `test/features/ai_chat/ui/widgets/chat_interface_test_utils.dart`.
 - [ ] **[LOW]** `thinking_parser.dart` at 446 lines is near the 500-line boundary. No split needed yet.
 

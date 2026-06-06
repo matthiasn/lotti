@@ -18,7 +18,9 @@
 | `test/.../service/day_agent_capture_service_test.dart` | 2241 | — | Oversized; setUp block is 90+ lines |
 | `test/.../service/day_agent_service_test.dart` | 957 | — | Acceptable |
 
-- [ ] [HIGH] Split `day_agent_plan_service.dart` (1879 lines)
+- [x] [HIGH] Split `day_agent_plan_service.dart` (1879 lines)
+
+  **RESOLVED (adapted):** split via `part` files exactly along these seams — `day_agent_plan_parser.dart` (parsing layer as library-private top-level functions, 308 lines), `day_agent_plan_diff.dart` (diff machinery + `_DiffAction`/`_DiffChange`/`_BlockSnapshot`, 504 lines), `day_agent_plan_tool_dispatcher.dart` (tool dispatch extension, 138 lines); service class down to 950 lines.
 
 Concrete extraction seams (all clean compile-time boundaries):
 
@@ -49,7 +51,9 @@ Mirror-split the test file into at least 3 files matching the above seams. The
 current 4231-line test file is the largest in the codebase and already exceeds
 CI shard time budgets in proportion to the number of tests it contains.
 
-- [ ] [HIGH] Split `day_agent_capture_service.dart` (1043 lines)
+- [x] [HIGH] Split `day_agent_capture_service.dart` (1043 lines)
+
+  **RESOLVED (adapted):** the corpus snapshot/matching and triage paths moved to `part`-file extensions `day_agent_corpus_service.dart` (94 lines) and `day_agent_triage_service.dart` (64 lines), with thin class delegators so `MockDayAgentCaptureService` keeps intercepting the public methods; the capture + reconcile core is 940 lines.
 
 Extract the FTS matching + corpus-snapshot logic (`matchToCorpus`,
 `buildTaskCorpusSnapshot`, `_categoryFilterForHint`, `_maxCorpusTasks`,

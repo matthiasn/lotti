@@ -20,7 +20,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify leading icon
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
@@ -47,11 +49,14 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the item
       await tester.tap(find.byType(CreateMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify callback was triggered
       expect(tapped, isTrue);
@@ -73,11 +78,14 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the item
       await tester.tap(find.byType(CreateMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify callback was NOT triggered
       expect(tapped, isFalse);
@@ -106,7 +114,9 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Verify icon is rendered
         expect(find.byIcon(icon), findsOneWidget, reason: 'Icon for $title');
@@ -127,7 +137,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the leading icon
       final iconFinder = find.byIcon(Icons.event_rounded);
@@ -148,7 +160,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the trailing plus icon
       final iconFinder = find.byIcon(Icons.add);
@@ -169,7 +183,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the title text widget
       final textFinder = find.text('Task');
@@ -191,7 +207,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the leading icon
       final iconFinder = find.byIcon(Icons.event_rounded);
@@ -214,7 +232,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify Material widget exists for proper InkWell behavior
       expect(find.byType(Material), findsWidgets);
@@ -234,7 +254,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the Padding widget inside the InkWell
       final inkWellFinder = find.byType(InkWell);
@@ -263,7 +285,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the Row widget inside CreateMenuListItem
       final rowFinder = find.descendant(
@@ -290,7 +314,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find Expanded widget containing the title
       final expandedFinder = find.ancestor(
@@ -315,7 +341,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the title text widget
       final textFinder = find.text(longTitle);

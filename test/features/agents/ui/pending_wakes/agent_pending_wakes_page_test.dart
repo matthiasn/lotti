@@ -228,11 +228,10 @@ void main() {
         find.text(ctx.messages.agentPendingWakesGroupByType).last,
       );
       await tester.pumpAndSettle();
-      // The toolbar's Wrap can briefly emit a sub-pixel overflow
-      // when the popover-driven re-layout shrinks the search field;
-      // it's cosmetic and doesn't affect the group output we're
-      // asserting on. Drain the exception so the test isn't marked
-      // failed by the rendering library.
+      // The toolbar can briefly emit a transient 4.4px RenderFlex overflow
+      // while the popover-driven re-layout shrinks the search field; the
+      // settled frame is clean (verified: the other former drains in this
+      // file never fired). Drain the cosmetic mid-animation exception.
       tester.takeException();
 
       // Both type labels should now appear as group headers
@@ -423,7 +422,6 @@ void main() {
         // Dismiss popover by tapping outside.
         await tester.tapAt(const Offset(20, 20));
         await tester.pumpAndSettle();
-        tester.takeException();
 
         // Pending row must be filtered out, Scheduled stays.
         expect(find.text('Alpha'), findsNothing);
@@ -466,7 +464,6 @@ void main() {
           find.text(ctx.messages.agentPendingWakesSortDueLatest).last,
         );
         await tester.pumpAndSettle();
-        tester.takeException();
 
         // Beta (later) should now appear above Alpha. We compare the
         // vertical positions of the two row titles.
@@ -521,7 +518,6 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text(ctx.messages.agentInstancesSortName).last);
         await tester.pumpAndSettle();
-        tester.takeException();
 
         alphaY = tester.getTopLeft(find.text('Alpha')).dy;
         bravoY = tester.getTopLeft(find.text('Bravo')).dy;
@@ -584,7 +580,6 @@ void main() {
         await tester.pumpAndSettle();
         await tester.tap(find.text(ctx.messages.agentInstancesSortName).last);
         await tester.pumpAndSettle();
-        tester.takeException();
 
         // Both rows render identical "Twin" titles, so identify ordering by
         // tapping the topmost row and asserting it beams to a-id's route —

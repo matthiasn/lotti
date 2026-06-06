@@ -73,15 +73,18 @@ void main() {
 
     Future<void> openResetHints(WidgetTester tester) async {
       await tester.pumpWidget(const WidgetTestBench(child: MaintenancePage()));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final resetTitle = find.text('Reset In\u2011App Hints');
       expect(resetTitle, findsOneWidget);
       await tester.tap(resetTitle);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('CONFIRM'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     }
 
     testWidgets('shows SnackBar with count: 0', (tester) async {
@@ -138,7 +141,8 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(_constrainedMaintenancePage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Delete Logging Database'), findsNothing);
       expect(find.text('Delete Editor Database'), findsOneWidget);
@@ -161,10 +165,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(_constrainedMaintenancePage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Delete Editor Database'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.text('Are you sure you want to delete Editor Database?'),
@@ -180,13 +186,16 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidget(_constrainedMaintenancePage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Delete Editor Database'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('YES, DELETE DATABASE'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         verify(() => getIt<Maintenance>().deleteEditorDb()).called(1);
       },
@@ -198,10 +207,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(_constrainedMaintenancePage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Delete Agents Database'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.text('Are you sure you want to delete Agents Database?'),
@@ -226,10 +237,12 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidget(_constrainedMaintenancePage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Delete Agents Database'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('YES, DELETE DATABASE'));
         // One pump drives the modal dismiss and starts the async
@@ -247,13 +260,15 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const MaintenancePage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final purgeButton = find.text('Purge deleted items').first;
       expect(purgeButton, findsOneWidget);
       await tester.ensureVisible(purgeButton);
       await tester.tap(purgeButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Purge deleted items'), findsAtLeastNWidgets(1));
     });
@@ -264,13 +279,15 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const MaintenancePage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final recreateButton = find.text('Recreate full-text index').first;
       expect(recreateButton, findsOneWidget);
       await tester.ensureVisible(recreateButton);
       await tester.tap(recreateButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('YES, RECREATE INDEX'), findsAtLeastNWidgets(1));
     });
@@ -282,7 +299,8 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidget(_constrainedMaintenancePage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Generate Embeddings'), findsNothing);
       },
@@ -297,7 +315,8 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidget(_constrainedMaintenancePage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Generate Embeddings'), findsOneWidget);
         expect(
@@ -314,7 +333,8 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(_constrainedMaintenancePage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Re-index All Embeddings'), findsNothing);
     });
@@ -325,7 +345,8 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(_constrainedMaintenancePage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
       // 6 fixed items (EmbeddingStore not registered in this group)
@@ -344,7 +365,8 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidget(_constrainedMaintenancePage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expectDividersOnAllButLast(tester);
     });
 
@@ -366,7 +388,8 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidget(_constrainedMaintenancePage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Switch.onChanged closure on the tile flips the notifier.
         final initialSwitch = tester.widget<Switch>(find.byType(Switch));
@@ -380,7 +403,8 @@ void main() {
         // framework's invariant check happy.
         repaintRainbowEnabled.value = false;
         debugRepaintRainbowEnabled = false;
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Row's onTap closure also flips the notifier — exercise it via
         // the same direct-invocation pattern. The DesignSystemListItem
@@ -431,12 +455,14 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final resetButton = find.text('Reset Gemini Setup Dialog');
       await tester.ensureVisible(resetButton);
       await tester.tap(resetButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Confirmation dialog should be visible.
       expect(
@@ -445,7 +471,8 @@ void main() {
       );
 
       await tester.tap(find.text('CANCEL'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(fakeService.resetDismissalCallCount, 0);
     });
@@ -463,12 +490,14 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final resetButton = find.text('Reset Gemini Setup Dialog');
       await tester.ensureVisible(resetButton);
       await tester.tap(resetButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.text('This will show the Gemini setup dialog again. Continue?'),
@@ -477,7 +506,8 @@ void main() {
 
       // The confirm label for Gemini reset is "RESET" (uppercased from "Reset").
       await tester.tap(find.text('RESET'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(fakeService.resetDismissalCallCount, 1);
     });
@@ -512,12 +542,14 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const MaintenancePage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final generateButton = find.text('Generate Embeddings').first;
       await tester.ensureVisible(generateButton);
       await tester.tap(generateButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The backfill modal shows its confirmation message.
       expect(

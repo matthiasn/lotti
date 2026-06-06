@@ -117,7 +117,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       final card = tester.widget<Card>(find.byType(Card));
       expect(card.clipBehavior, equals(Clip.hardEdge));
@@ -141,12 +143,16 @@ void main() {
         ),
       );
 
+      // The toolbar build chain must fully settle before the divider
+      // button is hit-testable.
       await tester.pumpAndSettle();
 
       final dividerButton = find.byIcon(Icons.horizontal_rule);
       expect(dividerButton, findsOneWidget);
 
       await tester.tap(dividerButton);
+      // The Quill toolbar routes the tap through animations that need to
+      // fully drain before the document mutation lands.
       await tester.pumpAndSettle();
 
       final quillEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));
@@ -167,7 +173,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       final quillEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));
       final builders = quillEditor.config.embedBuilders;
@@ -195,7 +203,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       final quillEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));
 
@@ -214,7 +224,8 @@ void main() {
           showToolbar: false,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Get the first ScrollController reference
       final quillEditor1 = tester.widget<QuillEditor>(find.byType(QuillEditor));
@@ -228,7 +239,8 @@ void main() {
           showToolbar: true,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Get the new ScrollController reference - should be the same instance
       final quillEditor2 = tester.widget<QuillEditor>(find.byType(QuillEditor));
@@ -249,7 +261,8 @@ void main() {
           showToolbar: false,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Get the ScrollController reference before disposal
       final quillEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));

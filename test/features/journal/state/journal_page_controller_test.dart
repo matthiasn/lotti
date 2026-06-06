@@ -429,6 +429,7 @@ void main() {
               ids: any(named: 'ids'),
               limit: 50, // pageSize
               categoryIds: any(named: 'categoryIds'),
+              offset: any(named: 'offset'),
             ),
           ).called(greaterThan(0));
         });
@@ -451,6 +452,7 @@ void main() {
               priorities: any(named: 'priorities'),
               sortByDate: any(named: 'sortByDate'),
               limit: 50,
+              offset: any(named: 'offset'),
             ),
           ).called(greaterThan(0));
         });

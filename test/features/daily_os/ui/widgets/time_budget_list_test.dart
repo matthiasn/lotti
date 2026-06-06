@@ -135,7 +135,8 @@ void main() {
   group('TimeBudgetList', () {
     testWidgets('renders empty state when no budgets', (tester) async {
       await tester.pumpWidget(createTestWidget(budgets: []));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('No time budgets'), findsOneWidget);
       expect(find.text('Add Budget'), findsOneWidget);
@@ -147,7 +148,8 @@ void main() {
           budgets: [createProgress(id: 'b1', category: testCategory)],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(MdiIcons.chartDonut), findsOneWidget);
       expect(find.text('Time Budgets'), findsOneWidget);
@@ -162,7 +164,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Work'), findsOneWidget);
       expect(find.text('Exercise'), findsOneWidget);
@@ -184,7 +187,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // 2h recorded / 5h planned
       expect(find.text('2h / 5h'), findsOneWidget);
@@ -196,7 +200,8 @@ void main() {
           budgets: [createProgress(id: 'b1', category: testCategory)],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(TimeBudgetList), findsOneWidget);
     });
@@ -212,7 +217,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show "1h left" for under budget
       expect(find.text('1h left'), findsOneWidget);
@@ -232,7 +238,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show "+1h over" for over budget
       expect(find.text('+1h over'), findsOneWidget);
@@ -251,7 +258,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Time format appears in both summary and card
       expect(find.text('1h 15m / 3h 30m'), findsAtLeastNWidgets(1));
@@ -270,7 +278,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Time format appears in both summary and card
       expect(find.text('30m / 45m'), findsAtLeastNWidgets(1));
@@ -282,7 +291,8 @@ void main() {
           budgets: [createProgress(id: 'b1', category: testCategory)],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Header has an add block button, each card has a quick create task button
       expect(find.byIcon(Icons.add_circle_outline), findsAtLeast(2));
@@ -296,11 +306,13 @@ void main() {
           budgets: [createProgress(id: 'b1', category: testCategory)],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the add block button in the header (by tooltip)
       await tester.tap(find.byTooltip('Add Block'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The sheet should appear (or try to)
       // We just verify the tap doesn't crash
@@ -318,7 +330,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Both cards should render
       expect(find.text('Work'), findsOneWidget);

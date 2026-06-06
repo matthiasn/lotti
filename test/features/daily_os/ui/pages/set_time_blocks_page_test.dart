@@ -150,7 +150,8 @@ void main() {
         ],
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   group('SetTimeBlocksPage — layout', () {
@@ -225,7 +226,8 @@ void main() {
       await pumpPage(tester);
 
       await tester.tap(find.text('Work'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Add new time block'), findsOneWidget);
     });
@@ -235,12 +237,14 @@ void main() {
 
       // Expand
       await tester.tap(find.text('Work'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Add new time block'), findsOneWidget);
 
       // Collapse
       await tester.tap(find.text('Work'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Add new time block'), findsNothing);
     });
 
@@ -249,12 +253,14 @@ void main() {
 
       // Expand Work
       await tester.tap(find.text('Work'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Add new time block'), findsOneWidget);
 
       // Expand Study — should close Work
       await tester.tap(find.text('Study'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       // Still only one "Add new time block" visible
       expect(find.text('Add new time block'), findsOneWidget);
     });
@@ -336,7 +342,8 @@ void main() {
       await pumpPage(tester);
 
       await tester.tap(find.text('Work'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Add button present with pill shape
       expect(find.text('Add new time block'), findsOneWidget);
@@ -350,11 +357,13 @@ void main() {
 
         // Expand Work
         await tester.tap(find.text('Work'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Add a block
         await tester.tap(find.text('Add new time block'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Delete icon present
         expect(find.byIcon(Icons.delete_outline_rounded), findsOneWidget);
@@ -408,11 +417,13 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Navigate to the page under test.
       await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     }
 
     testWidgets(
@@ -479,7 +490,8 @@ void main() {
 
         // Tap save — should fail.
         await tester.tap(find.byType(FilledButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Page should NOT have popped.
         expect(find.text('Set time blocks'), findsOneWidget);
@@ -596,7 +608,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The label should contain the "Today" prefix.
       expect(
@@ -632,10 +645,12 @@ void main() {
 
       // Expand a category and add a block.
       await tester.tap(find.text('Work'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Add new time block'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Now the save button should be enabled.
       final enabledButton = tester.widget<FilledButton>(

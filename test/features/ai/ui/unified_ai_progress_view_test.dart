@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
         AiConfigByTypeController,
         aiConfigByIdProvider,
         aiConfigByTypeControllerProvider;
+import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/ai/ui/unified_ai_progress_view.dart';
@@ -140,84 +141,6 @@ void main() {
     );
   }
 
-  /// Pumps an [OllamaModelInstallDialog] with a real DS theme (so the success
-  /// toast can resolve design tokens), an immediate provider-type controller
-  /// supplying [providers], and the shared repository overrides. Used by the
-  /// `_installModel` end-to-end tests below which need `context.showToast` to
-  /// work.
-  Future<void> pumpInstallDialog(
-    WidgetTester tester, {
-    required String modelName,
-    required List<AiConfig> providers,
-    VoidCallback? onModelInstalled,
-  }) async {
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          unifiedAiInferenceRepositoryProvider.overrideWithValue(
-            mockRepository,
-          ),
-          cloudInferenceRepositoryProvider.overrideWithValue(
-            mockCloudRepository,
-          ),
-          categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
-          aiConfigByTypeControllerProvider(
-            configType: AiConfigType.inferenceProvider,
-          ).overrideWith(() => _ImmediateAiConfigByTypeController(providers)),
-        ],
-        child: MaterialApp(
-          theme: resolveTestTheme(),
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          // Push the dialog onto a base Scaffold route so _installModel's
-          // Navigator.of(context).pop() returns to the base (which hosts the
-          // ScaffoldMessenger the success toast attaches to) instead of
-          // emptying the navigator and tearing down the messenger.
-          home: Consumer(
-            builder: (context, ref, child) {
-              // Watch aiConfigByTypeControllerProvider here so it stays alive
-              // (it is autoDispose). Otherwise it can be torn down mid-load
-              // when _installModel reads its .future, surfacing a Riverpod
-              // "disposed during loading state" error instead of the real
-              // provider-lookup result.
-              ref.watch(
-                aiConfigByTypeControllerProvider(
-                  configType: AiConfigType.inferenceProvider,
-                ),
-              );
-              return child!;
-            },
-            child: Navigator(
-              onGenerateRoute: (_) => MaterialPageRoute<void>(
-                builder: (_) => Scaffold(
-                  body: Builder(
-                    builder: (context) {
-                      // Push the dialog as a second route after first frame.
-                      WidgetsBinding.instance.addPostFrameCallback((_) {
-                        Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => Scaffold(
-                              body: OllamaModelInstallDialog(
-                                modelName: modelName,
-                                onModelInstalled: onModelInstalled,
-                              ),
-                            ),
-                          ),
-                        );
-                      });
-                      return const SizedBox.shrink();
-                    },
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-  }
-
   group('UnifiedAiProgressContent - Basic UI States', () {
     const testEntityId = 'test-entity-1';
     const testPromptId = 'test-prompt-1';
@@ -286,7 +209,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Invalid prompt configuration'), findsOneWidget);
     });
@@ -319,7 +244,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Invalid prompt configuration'), findsOneWidget);
     });
@@ -360,7 +287,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Give some time for any async operations
       await tester.pump(const Duration(milliseconds: 100));
@@ -554,7 +483,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find and tap retry button if it exists
       final retryButton = find.text('Retry');
@@ -663,7 +594,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the widget handles the error properly
       expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
@@ -720,7 +653,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The dispose method should have cleaned up the subscription
       expect(find.byType(UnifiedAiProgressContent), findsNothing);
@@ -778,7 +713,8 @@ void main() {
       );
 
       // Use pumpAndSettle to let FutureBuilder complete
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
     });
@@ -818,7 +754,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
     });
@@ -858,61 +796,6 @@ void main() {
       await tester.pump();
 
       expect(find.byType(AiRunningAnimationWrapper), findsOneWidget);
-    });
-  });
-
-  group('OllamaModelInstallDialog', () {
-    testWidgets('displays model not installed message', (tester) async {
-      const modelName = 'llama2';
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          const OllamaModelInstallDialog(
-            modelName: modelName,
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Verify dialog title
-      expect(find.text('Model Not Installed'), findsOneWidget);
-
-      // Verify model name is displayed
-      expect(
-        find.textContaining('The model "llama2" is not installed'),
-        findsOneWidget,
-      );
-
-      // Verify command is displayed
-      expect(find.text('ollama pull llama2'), findsOneWidget);
-
-      // Verify buttons
-      expect(find.text('Cancel'), findsOneWidget);
-      expect(find.text('Install'), findsOneWidget);
-    });
-
-    testWidgets('cancel button closes dialog', (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(
-          Navigator(
-            onGenerateRoute: (_) => MaterialPageRoute(
-              builder: (_) => const OllamaModelInstallDialog(
-                modelName: 'test-model',
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Tap cancel
-      await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-
-      // Dialog should be closed
-      expect(find.byType(OllamaModelInstallDialog), findsNothing);
     });
   });
 
@@ -1020,7 +903,9 @@ Digital painting of a vibrant sunset over misty mountains, warm orange and purpl
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show copy button for image prompt generation
       expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
@@ -1081,7 +966,9 @@ Implement OAuth 2.0 authentication flow in Flutter using the oauth2 package.''',
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show copy button for prompt generation
       expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
@@ -1160,7 +1047,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.byIcon(Icons.copy_rounded));
         await tester.pump();
@@ -1223,7 +1112,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should show AiErrorDisplay with a retry button
         expect(find.byType(AiErrorDisplay), findsOneWidget);
@@ -1443,7 +1334,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // showExisting mode with ModelNotInstalledException → OllamaModelInstallDialog
         expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
@@ -1529,14 +1422,17 @@ Generate a widget that renders a login form.''',
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The string-based fallback dialog should be shown
       expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
 
       // Tap install to trigger the onModelInstalled callback path
       await tester.tap(find.text('Install'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // triggerNewInferenceProvider should have been called via onModelInstalled
       expect(triggerCalled, isTrue);
@@ -1544,252 +1440,6 @@ Generate a widget that renders a login form.''',
   });
 
   // ── OllamaModelInstallDialog – _installModel state branches ─────────────────
-
-  group('OllamaModelInstallDialog - _installModel error: no Ollama provider', () {
-    testWidgets(
-      'resets to install state when install fails (exercises lines 517-521, 548-566)',
-      (tester) async {
-        // thenThrow drives the catch block (lines 548-566) synchronously
-        // so pumpAndSettle completes the full async chain.
-        when(
-          () => mockCloudRepository.installModel(any(), any()),
-        ).thenThrow(Exception('Installation failed'));
-
-        final ollamaProvider = AiTestDataFactory.createTestProvider(
-          id: 'ollama-test',
-          name: 'Ollama',
-          type: InferenceProviderType.ollama,
-          baseUrl: 'http://localhost:11434/',
-        );
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              cloudInferenceRepositoryProvider.overrideWithValue(
-                mockCloudRepository,
-              ),
-              aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
-              ).overrideWith(
-                () => _ImmediateAiConfigByTypeController([ollamaProvider]),
-              ),
-            ],
-            child: const MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
-                body: OllamaModelInstallDialog(modelName: 'phi3'),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Tap install – "Installing model..." state is set first (line 497-500)
-        await tester.tap(find.text('Install'));
-        await tester.pump();
-        // _isInstalling = true: the installing state is active (lines 596-608)
-        expect(find.text('Installing model...'), findsOneWidget);
-
-        // pumpAndSettle drives the async chain: provider.future → installModel throws
-        // → catch (lines 548-566): strips 'Exception: ', sets _error, _isInstalling=false
-        await tester.pumpAndSettle();
-
-        // After error: _isInstalling=false so Install button is back (lines 620-628)
-        expect(find.text('Install'), findsOneWidget);
-        // "Installing model..." is gone
-        expect(find.text('Installing model...'), findsNothing);
-      },
-    );
-  });
-
-  group('OllamaModelInstallDialog - _installModel progress display', () {
-    testWidgets(
-      'shows installing UI with LinearProgressIndicator when install is in progress',
-      (tester) async {
-        // The installing UI (lines 596-608) is reachable immediately after
-        // _installModel sets _isInstalling=true (lines 497-500).
-        // We verify it by checking the state after a single pump.
-        when(
-          () => mockCloudRepository.installModel(any(), any()),
-        ).thenThrow(Exception('instant-error'));
-
-        final ollamaProvider = AiTestDataFactory.createTestProvider(
-          id: 'ollama-progress',
-          name: 'Ollama',
-          type: InferenceProviderType.ollama,
-          baseUrl: 'http://localhost:11434/',
-        );
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            const OllamaModelInstallDialog(modelName: 'llama3'),
-            overrides: [
-              aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
-              ).overrideWith(
-                () => _ImmediateAiConfigByTypeController([ollamaProvider]),
-              ),
-            ],
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Tap install – _installModel immediately sets _isInstalling=true via setState
-        await tester.tap(find.text('Install'));
-        // One pump delivers the setState to the widget tree
-        await tester.pump();
-
-        // Lines 597-603: installing state is shown
-        expect(find.text('Installing model...'), findsOneWidget);
-        expect(find.byType(LinearProgressIndicator), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'onModelInstalled callback fires after successful install (exercises 536-546)',
-      (tester) async {
-        // This test is similar to the string-fallback test but uses a direct
-        // OllamaModelInstallDialog so the onModelInstalled param is verifiable.
-        // The full _installModel success path is tested end-to-end via the
-        // "tapping install on string-fallback dialog triggers callback" test.
-        // Here we just verify the initial + installing states are consistent.
-        when(
-          () => mockCloudRepository.installModel(any(), any()),
-        ).thenThrow(Exception('fast-error'));
-
-        final ollamaProvider = AiTestDataFactory.createTestProvider(
-          id: 'ollama-success',
-          name: 'Ollama',
-          type: InferenceProviderType.ollama,
-          baseUrl: 'http://localhost:11434/',
-        );
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            const OllamaModelInstallDialog(modelName: 'llama3'),
-            overrides: [
-              aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
-              ).overrideWith(
-                () => _ImmediateAiConfigByTypeController([ollamaProvider]),
-              ),
-            ],
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Tap install – starts _installModel which sets _isInstalling=true
-        await tester.tap(find.text('Install'));
-        await tester.pump();
-        expect(find.text('Installing model...'), findsOneWidget);
-
-        // After pumpAndSettle, the async chain completes and Install button returns
-        await tester.pumpAndSettle();
-        expect(find.text('Install'), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      'resets to install state after install fails (exercises catch block)',
-      (tester) async {
-        final ollamaProvider = AiTestDataFactory.createTestProvider(
-          id: 'ollama-fail',
-          name: 'Ollama',
-          type: InferenceProviderType.ollama,
-          baseUrl: 'http://localhost:11434/',
-        );
-
-        // thenThrow makes _installModel's catch run synchronously via pumpAndSettle
-        when(
-          () => mockCloudRepository.installModel(any(), any()),
-        ).thenThrow(Exception('network timeout'));
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            const OllamaModelInstallDialog(modelName: 'mistral'),
-            overrides: [
-              aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
-              ).overrideWith(
-                () => _ImmediateAiConfigByTypeController([ollamaProvider]),
-              ),
-            ],
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Tap install to trigger the error path
-        await tester.tap(find.text('Install'));
-        await tester.pump();
-        // "Installing model..." is shown while async runs (lines 596-604)
-        expect(find.text('Installing model...'), findsOneWidget);
-
-        await tester.pumpAndSettle();
-
-        // After error: _isInstalling=false so Install button is shown again (lines 548-566)
-        expect(find.text('Install'), findsOneWidget);
-        expect(find.text('Installing model...'), findsNothing);
-      },
-    );
-  });
-
-  group('OllamaModelInstallDialog - Install re-attempt after error', () {
-    testWidgets(
-      'Install button is re-enabled after failed install enabling re-attempt',
-      (tester) async {
-        // This test verifies that after a failed install attempt:
-        // 1. The Install button reappears (_isInstalling reset to false)
-        // 2. Tapping it again starts a new _installModel call
-        final ollamaProvider = AiTestDataFactory.createTestProvider(
-          id: 'ollama-retry2',
-          name: 'Ollama',
-          type: InferenceProviderType.ollama,
-          baseUrl: 'http://localhost:11434/',
-        );
-
-        when(
-          () => mockCloudRepository.installModel(any(), any()),
-        ).thenThrow(Exception('fail'));
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            const OllamaModelInstallDialog(modelName: 'gemma'),
-            overrides: [
-              aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
-              ).overrideWith(
-                () => _ImmediateAiConfigByTypeController([ollamaProvider]),
-              ),
-            ],
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // First install attempt
-        await tester.tap(find.text('Install'));
-        await tester.pump();
-        // _isInstalling=true: Install button is hidden, "Installing model..." shows
-        expect(find.text('Install'), findsNothing);
-        expect(find.text('Installing model...'), findsOneWidget);
-
-        await tester.pumpAndSettle();
-        // After error: _isInstalling=false, Install button re-appears (lines 620-628)
-        expect(find.text('Install'), findsOneWidget);
-
-        // Second tap re-invokes _installModel (install button enables retry)
-        await tester.tap(find.text('Install'));
-        await tester.pump();
-        // _isInstalling=true again: showing "Installing model..."
-        expect(find.text('Installing model...'), findsOneWidget);
-      },
-    );
-  });
 
   group('UnifiedAiProgressContent - _handleRetry directly triggered', () {
     const entityId = 'direct-retry-entity';
@@ -1834,7 +1484,9 @@ Generate a widget that renders a login form.''',
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // AiErrorDisplay must be shown
       expect(find.byType(AiErrorDisplay), findsOneWidget);
@@ -1928,7 +1580,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // OllamaModelInstallDialog should appear for ModelNotInstalledException
         expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
@@ -1936,262 +1590,11 @@ Generate a widget that renders a login form.''',
 
         // Tap install → _installModel → onModelInstalled → _handleModelInstalled
         await tester.tap(find.text('Install'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // triggerNewInferenceProvider must have been called (lines 143-148)
         expect(triggerCalled, isTrue);
-      },
-    );
-  });
-
-  group('OllamaModelInstallDialog - Exception message stripping', () {
-    testWidgets(
-      'strips "Exception: " prefix from caught error (line 560)',
-      (tester) async {
-        final ollamaProvider = AiTestDataFactory.createTestProvider(
-          id: 'ollama-strip',
-          name: 'Ollama',
-          type: InferenceProviderType.ollama,
-          baseUrl: 'http://localhost:11434/',
-        );
-
-        // thenThrow: the Exception is caught by _installModel's catch block
-        // which strips 'Exception: ' before storing in _error (line 560)
-        when(
-          () => mockCloudRepository.installModel(any(), any()),
-        ).thenThrow(Exception('the actual error message'));
-
-        await tester.pumpWidget(
-          buildTestWidget(
-            const OllamaModelInstallDialog(modelName: 'codellama'),
-            overrides: [
-              aiConfigByTypeControllerProvider(
-                configType: AiConfigType.inferenceProvider,
-              ).overrideWith(
-                () => _ImmediateAiConfigByTypeController([ollamaProvider]),
-              ),
-            ],
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Tap install – _installModel is called, installModel throws, catch runs (line 560)
-        await tester.tap(find.text('Install'));
-        await tester.pump();
-        expect(find.text('Installing model...'), findsOneWidget);
-
-        await tester.pumpAndSettle();
-
-        // Error state: Install button is back (lines 620-628)
-        expect(find.text('Install'), findsOneWidget);
-        // Installing state is gone – error was handled (lines 548-566)
-        expect(find.text('Installing model...'), findsNothing);
-      },
-    );
-  });
-
-  // ── OllamaModelInstallDialog._installModel — end-to-end with finite streams ──
-  // These drive the real success/error branches of _installModel. The install
-  // stream is ALWAYS finite (Stream.fromIterable / Stream.error) so the
-  // `await for` loop completes and teardown never hits an open StreamController.
-  group('OllamaModelInstallDialog - _installModel finite-stream branches', () {
-    AiConfigInferenceProvider makeOllama() =>
-        AiTestDataFactory.createTestProvider(
-          id: 'ollama-e2e',
-          name: 'Ollama',
-          type: InferenceProviderType.ollama,
-          baseUrl: 'http://localhost:11434/',
-        );
-
-    testWidgets(
-      'success stream pops dialog, fires callback and shows success toast '
-      '(lines 510-515, 523-547, 607)',
-      (tester) async {
-        // Finite success stream: a mid-progress event (0.5 → renders the "%"
-        // text at line 607 during the rebuild) then a terminal success event.
-        when(() => mockCloudRepository.installModel(any(), any())).thenAnswer(
-          (_) => Stream.fromIterable(const [
-            OllamaPullProgress(status: 'downloading', progress: 0.5),
-            OllamaPullProgress(status: 'success', progress: 1),
-          ]),
-        );
-
-        var installedCallbackFired = false;
-
-        await pumpInstallDialog(
-          tester,
-          modelName: 'llama3',
-          providers: [makeOllama()],
-          onModelInstalled: () => installedCallbackFired = true,
-        );
-
-        await tester.tap(find.text('Install'));
-        // Drive the async chain in finite, bounded pumps (no pumpAndSettle so
-        // the success SnackBar is asserted while it is still on screen rather
-        // than after it has timed out and dismissed at 4s). Pump in small
-        // bounded steps until the dialog pops (stream completed → toast/pop),
-        // capped so a regression that never pops fails instead of hanging.
-        for (var i = 0; i < 20; i++) {
-          if (find.byType(OllamaModelInstallDialog).evaluate().isEmpty) break;
-          await tester.pump(const Duration(milliseconds: 50));
-        }
-        // Let the SnackBar entrance animation render its DesignSystemToast,
-        // staying well under the 4s auto-dismiss timeout.
-        await tester.pump(const Duration(milliseconds: 350));
-
-        // Dialog popped (line 545) once the stream completed.
-        expect(find.byType(OllamaModelInstallDialog), findsNothing);
-        // onModelInstalled callback ran (line 546).
-        expect(installedCallbackFired, isTrue);
-        // Success toast surfaced on the parent scaffold (lines 536-544).
-        final toast = tester.widget<DesignSystemToast>(
-          find.byType(DesignSystemToast),
-        );
-        expect(toast.tone, DesignSystemToastTone.success);
-      },
-    );
-
-    testWidgets(
-      'intermediate progress events update status text, bar value and '
-      'percentage (lines 530-533, 596-608)',
-      (tester) async {
-        // A StreamController lets us assert the UI between individual events,
-        // which Stream.fromIterable cannot (all events flush in one pump).
-        // It is closed within the test so the `await for` loop completes
-        // finitely, keeping the group's no-open-controllers guarantee.
-        final progressController = StreamController<OllamaPullProgress>();
-        when(
-          () => mockCloudRepository.installModel(any(), any()),
-        ).thenAnswer((_) => progressController.stream);
-
-        await pumpInstallDialog(
-          tester,
-          modelName: 'llama3',
-          providers: [makeOllama()],
-        );
-
-        await tester.tap(find.text('Install'));
-        // Bounded pumps until the installing UI shows: the provider .future
-        // read and the stream subscription need a few event-loop turns.
-        for (var i = 0; i < 20; i++) {
-          if (find.text('Installing model...').evaluate().isNotEmpty) break;
-          await tester.pump(const Duration(milliseconds: 50));
-        }
-        expect(find.text('Installing model...'), findsOneWidget);
-
-        // Manifest pull at progress 0: status renders, the bar is at 0, and
-        // the percentage line is suppressed by the `_progress > 0` guard.
-        progressController.add(
-          const OllamaPullProgress(status: 'pulling manifest', progress: 0),
-        );
-        await tester.pump();
-        await tester.pump();
-        expect(find.text('pulling manifest'), findsOneWidget);
-        expect(
-          tester
-              .widget<LinearProgressIndicator>(
-                find.byType(LinearProgressIndicator),
-              )
-              .value,
-          0,
-        );
-        expect(find.textContaining('%'), findsNothing);
-
-        // Mid-download event replaces the status and renders the percentage.
-        progressController.add(
-          const OllamaPullProgress(status: 'downloading', progress: 0.42),
-        );
-        await tester.pump();
-        await tester.pump();
-        expect(find.text('downloading'), findsOneWidget);
-        expect(find.text('pulling manifest'), findsNothing);
-        expect(
-          tester
-              .widget<LinearProgressIndicator>(
-                find.byType(LinearProgressIndicator),
-              )
-              .value,
-          closeTo(0.42, 1e-9),
-        );
-        expect(find.text('42.0%'), findsOneWidget);
-
-        // A later event overwrites the previous progress (toStringAsFixed(1)
-        // rounding at line 607: 0.875 → 87.5%).
-        progressController.add(
-          const OllamaPullProgress(
-            status: 'verifying sha256 digest',
-            progress: 0.875,
-          ),
-        );
-        await tester.pump();
-        await tester.pump();
-        expect(find.text('verifying sha256 digest'), findsOneWidget);
-        expect(find.text('87.5%'), findsOneWidget);
-        expect(find.text('42.0%'), findsNothing);
-
-        // Closing the stream completes the `await for` → success path pops
-        // the dialog (same bounded-pump pattern as the success test above).
-        await progressController.close();
-        for (var i = 0; i < 20; i++) {
-          if (find.byType(OllamaModelInstallDialog).evaluate().isEmpty) break;
-          await tester.pump(const Duration(milliseconds: 50));
-        }
-        expect(find.byType(OllamaModelInstallDialog), findsNothing);
-      },
-    );
-
-    testWidgets(
-      'no Ollama provider throws and renders the not-found error '
-      '(lines 517-521, 548-567)',
-      (tester) async {
-        // installModel must never be reached: firstOrNull is null because the
-        // supplied providers contain no Ollama provider.
-        await pumpInstallDialog(
-          tester,
-          modelName: 'phi3',
-          providers: const <AiConfig>[],
-        );
-
-        await tester.tap(find.text('Install'));
-        await tester.pumpAndSettle();
-
-        // The thrown Exception message (Exception: prefix stripped at line 560).
-        expect(
-          find.textContaining('Ollama provider not found'),
-          findsOneWidget,
-        );
-        // _isInstalling reset to false → Install button visible again.
-        expect(find.text('Install'), findsOneWidget);
-        expect(find.text('Installing model...'), findsNothing);
-        // installModel was never invoked because the provider lookup failed.
-        verifyNever(() => mockCloudRepository.installModel(any(), any()));
-      },
-    );
-
-    testWidgets(
-      'stream error is caught and rendered with stripped prefix '
-      '(lines 559-561)',
-      (tester) async {
-        // Finite error stream: the `await for` rethrows inside _installModel,
-        // hitting the catch block which strips the "Exception: " prefix.
-        when(() => mockCloudRepository.installModel(any(), any())).thenAnswer(
-          (_) => Stream<OllamaPullProgress>.error(Exception('boom')),
-        );
-
-        await pumpInstallDialog(
-          tester,
-          modelName: 'mistral',
-          providers: [makeOllama()],
-        );
-
-        await tester.tap(find.text('Install'));
-        await tester.pumpAndSettle();
-
-        // "Exception: " prefix stripped (line 560) → only "Error: boom" remains.
-        expect(find.text('Error: boom'), findsOneWidget);
-        // Install button is back (catch sets _isInstalling = false).
-        expect(find.text('Install'), findsOneWidget);
       },
     );
   });
@@ -2289,7 +1692,8 @@ Generate a widget that renders a login form.''',
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     }
 
     // Each error shape routes install completion through a different callback;
@@ -2334,7 +1738,8 @@ Generate a widget that renders a login form.''',
         expect(triggerCount, 1);
 
         await tester.tap(find.text('Install'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The successful install invoked onModelInstalled, which called
         // triggerNewInferenceProvider a second time.

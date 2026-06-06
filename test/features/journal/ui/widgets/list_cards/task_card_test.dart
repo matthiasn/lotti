@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -84,6 +85,26 @@ void main() {
     return Task(meta: meta, data: data);
   }
 
+  /// Pumps [card] inside the minimal ProviderScope/MaterialApp/Scaffold
+  /// shell shared by every test in this file, then settles the first frame.
+  Future<void> pumpTaskCard(
+    WidgetTester tester,
+    ModernTaskCard card, {
+    List<Override> overrides = const [],
+  }) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: overrides,
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(body: card),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 100));
+  }
+
   testWidgets('renders category icon after status chip', (tester) async {
     final task = buildTask();
 
@@ -97,15 +118,7 @@ void main() {
       ),
     );
     // Rebuild with the real widget under test to ensure ProviderScope is present
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: ModernTaskCard(task: task),
-          ),
-        ),
-      ),
-    );
+    await pumpTaskCard(tester, ModernTaskCard(task: task));
 
     // Find the Row that contains the chips (priority/status row)
     final rowFinder = find.byKey(const Key('task_status_row'));
@@ -125,15 +138,7 @@ void main() {
   ) async {
     final task = buildTask();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: ModernTaskCard(task: task),
-          ),
-        ),
-      ),
-    );
+    await pumpTaskCard(tester, ModernTaskCard(task: task));
 
     // Ensure ModernCardContent does not contain ModernIconContainer as a leading child
     expect(
@@ -148,15 +153,7 @@ void main() {
   testWidgets('inline category icon has compact 24x24 size', (tester) async {
     final task = buildTask();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: ModernTaskCard(task: task),
-          ),
-        ),
-      ),
-    );
+    await pumpTaskCard(tester, ModernTaskCard(task: task));
 
     final iconFinder = find.byType(CategoryIconCompact);
     expect(iconFinder, findsOneWidget);
@@ -171,18 +168,7 @@ void main() {
       data: buildTask().data.copyWith(due: now),
     );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: ModernTaskCard(task: task),
-          ),
-        ),
-      ),
-    );
-    await tester.pump(const Duration(milliseconds: 100));
+    await pumpTaskCard(tester, ModernTaskCard(task: task));
 
     // Due date branch should render an event icon
     expect(find.byIcon(Icons.event_rounded), findsOneWidget);
@@ -215,15 +201,7 @@ void main() {
     final meta = buildTask().meta.copyWith(labelIds: ['A', 'B']);
     final task = buildTask().copyWith(meta: meta);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: ModernTaskCard(task: task),
-          ),
-        ),
-      ),
-    );
+    await pumpTaskCard(tester, ModernTaskCard(task: task));
 
     // Two LabelChips should be rendered in the labels Wrap
     expect(find.byType(LabelChip), findsNWidgets(2));
@@ -261,15 +239,7 @@ void main() {
     final meta = buildTask().meta.copyWith(labelIds: ['public', 'private']);
     final task = buildTask().copyWith(meta: meta);
 
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: ModernTaskCard(task: task),
-          ),
-        ),
-      ),
-    );
+    await pumpTaskCard(tester, ModernTaskCard(task: task));
 
     // Only public label should be rendered
     expect(find.byType(LabelChip), findsOneWidget);
@@ -284,15 +254,7 @@ void main() {
       final meta = buildTask().meta;
       final data = buildTask().data.copyWith(status: status);
       final task = Task(meta: meta, data: data);
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
-            ),
-          ),
-        ),
-      );
+      await pumpTaskCard(tester, ModernTaskCard(task: task));
     }
 
     // Open
@@ -371,15 +333,7 @@ void main() {
       // buildTask() uses p3Low and groomed status, default MaterialApp is light
       final task = buildTask();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
-            ),
-          ),
-        ),
-      );
+      await pumpTaskCard(tester, ModernTaskCard(task: task));
 
       final rowFinder = find.byKey(const Key('task_status_row'));
       final row = tester.widget<Row>(rowFinder);
@@ -410,15 +364,7 @@ void main() {
           data: buildTask().data.copyWith(priority: entry.key),
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            child: MaterialApp(
-              home: Scaffold(
-                body: ModernTaskCard(task: task),
-              ),
-            ),
-          ),
-        );
+        await pumpTaskCard(tester, ModernTaskCard(task: task));
 
         final rowFinder = find.byKey(const Key('task_status_row'));
         final row = tester.widget<Row>(rowFinder);
@@ -443,15 +389,7 @@ void main() {
 
     final task = buildTask();
 
-    await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp(
-          home: Scaffold(
-            body: ModernTaskCard(task: task),
-          ),
-        ),
-      ),
-    );
+    await pumpTaskCard(tester, ModernTaskCard(task: task));
 
     // Act
     await tester.tap(find.text('Test Task Title'));
@@ -475,24 +413,18 @@ void main() {
       ),
     );
 
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          taskProgressControllerProvider(id: task.meta.id).overrideWith(
-            () => TestTaskProgressController(
-              progress: const Duration(minutes: 30),
-              estimate: const Duration(hours: 1),
-            ),
-          ),
-        ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: ModernTaskCard(task: task),
+    await pumpTaskCard(
+      tester,
+      ModernTaskCard(task: task),
+      overrides: [
+        taskProgressControllerProvider(id: task.meta.id).overrideWith(
+          () => TestTaskProgressController(
+            progress: const Duration(minutes: 30),
+            estimate: const Duration(hours: 1),
           ),
         ),
-      ),
+      ],
     );
-    await tester.pump(const Duration(milliseconds: 100));
 
     final progressFinder = find.byType(CompactTaskProgress);
     expect(progressFinder, findsOneWidget);
@@ -509,92 +441,35 @@ void main() {
     final taskDate = DateTime(2025, 11, 3, 12);
     final expectedTaskDateString = DateFormat.yMMMd().format(taskDate);
 
-    testWidgets('does not show creation date when showCreationDate is false', (
-      tester,
-    ) async {
-      final task = buildTask();
-
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(
-                task: task,
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // The formatted date should NOT be present
-      expect(find.text(expectedTaskDateString), findsNothing);
-    });
-
     testWidgets('shows creation date when showCreationDate is true', (
       tester,
     ) async {
       final task = buildTask();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(
-                task: task,
-                showCreationDate: true,
-              ),
-            ),
-          ),
+      await pumpTaskCard(
+        tester,
+        ModernTaskCard(
+          task: task,
+          showCreationDate: true,
         ),
       );
-      await tester.pump(const Duration(milliseconds: 100));
 
       // The formatted date should be present (from dateFrom in buildTask)
+      // and rendered inside the date row layout.
       expect(find.text(expectedTaskDateString), findsOneWidget);
-    });
-
-    testWidgets('creation date is in the date row', (tester) async {
-      final task = buildTask();
-
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(
-                task: task,
-                showCreationDate: true,
-              ),
-            ),
-          ),
+      expect(
+        find.ancestor(
+          of: find.text(expectedTaskDateString),
+          matching: find.byType(Row),
         ),
+        findsWidgets,
       );
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // Find the Row containing the date (date row layout)
-      final rowFinder = find.ancestor(
-        of: find.text(expectedTaskDateString),
-        matching: find.byType(Row),
-      );
-      expect(rowFinder, findsWidgets);
-
-      // Verify the date text is present
-      expect(find.text(expectedTaskDateString), findsOneWidget);
     });
 
     testWidgets('showCreationDate defaults to false', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
-            ),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
+      await pumpTaskCard(tester, ModernTaskCard(task: task));
 
       // Default should be false, so no date displayed
       expect(find.text(expectedTaskDateString), findsNothing);
@@ -626,19 +501,13 @@ void main() {
       );
       final task = Task(meta: meta, data: data);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(
-                task: task,
-                showCreationDate: true,
-              ),
-            ),
-          ),
+      await pumpTaskCard(
+        tester,
+        ModernTaskCard(
+          task: task,
+          showCreationDate: true,
         ),
       );
-      await tester.pump(const Duration(milliseconds: 100));
 
       // Format should match yMMMd format for the locale
       expect(find.text(expectedDateString), findsOneWidget);
@@ -654,19 +523,13 @@ void main() {
           data: buildTask().data.copyWith(due: dueDate),
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            child: MaterialApp(
-              home: Scaffold(
-                body: ModernTaskCard(
-                  task: task,
-                  showDueDate: false,
-                ),
-              ),
-            ),
+        await pumpTaskCard(
+          tester,
+          ModernTaskCard(
+            task: task,
+            showDueDate: false,
           ),
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         // Due date should not be shown in date row when showDueDate is false
         expect(find.text(DateFormat.MMMd().format(dueDate)), findsNothing);
@@ -681,20 +544,12 @@ void main() {
         data: buildTask().data.copyWith(due: dueDate),
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ModernTaskCard(
-                task: task,
-              ),
-            ),
-          ),
+      await pumpTaskCard(
+        tester,
+        ModernTaskCard(
+          task: task,
         ),
       );
-      await tester.pump(const Duration(milliseconds: 100));
 
       // Due date should be shown with event icon and "Due:" prefix
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
@@ -710,18 +565,7 @@ void main() {
         data: buildTask().data.copyWith(due: dueDate),
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
-            ),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
+      await pumpTaskCard(tester, ModernTaskCard(task: task));
 
       // Default should show due date with "Due:" prefix
       expect(
@@ -733,18 +577,12 @@ void main() {
     testWidgets('does not show due date row when due is null', (tester) async {
       final task = buildTask(); // No due date set
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(
-                task: task,
-              ),
-            ),
-          ),
+      await pumpTaskCard(
+        tester,
+        ModernTaskCard(
+          task: task,
         ),
       );
-      await tester.pump(const Duration(milliseconds: 100));
 
       // No event icon should be shown when there's no due date
       expect(find.byIcon(Icons.event_rounded), findsNothing);
@@ -773,21 +611,13 @@ void main() {
       );
       final task = Task(meta: meta, data: data);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ModernTaskCard(
-                task: task,
-                showCreationDate: true,
-              ),
-            ),
-          ),
+      await pumpTaskCard(
+        tester,
+        ModernTaskCard(
+          task: task,
+          showCreationDate: true,
         ),
       );
-      await tester.pump(const Duration(milliseconds: 100));
 
       // Verify both dates are present
       final creationDateText = DateFormat.yMMMd().format(creationDate);
@@ -803,91 +633,42 @@ void main() {
       expect(creationDateOffset.dx, lessThan(dueDateOffset.dx));
     });
 
-    testWidgets('hides due date when task status is Done', (tester) async {
-      final dueDate = DateTime(2025, 11, 10);
-      final now = DateTime(2025, 11, 3, 12);
-      final meta = Metadata(
-        id: 'task-done',
-        createdAt: now,
-        updatedAt: now,
-        dateFrom: now,
-        dateTo: now,
-      );
-      final data = TaskData(
-        status: TaskStatus.done(id: 's-done', createdAt: now, utcOffset: 0),
-        dateFrom: now,
-        dateTo: now,
-        statusHistory: const [],
-        title: 'Completed Task',
-        due: dueDate,
-      );
-      final task = Task(meta: meta, data: data);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
-            ),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // Due date should NOT be shown for completed tasks
-      expect(find.byIcon(Icons.event_rounded), findsNothing);
-      expect(
-        find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
-        findsNothing,
-      );
-    });
-
-    testWidgets('hides due date when task status is Rejected', (tester) async {
-      final dueDate = DateTime(2025, 11, 10);
-      final now = DateTime(2025, 11, 3, 12);
-      final meta = Metadata(
-        id: 'task-rejected',
-        createdAt: now,
-        updatedAt: now,
-        dateFrom: now,
-        dateTo: now,
-      );
-      final data = TaskData(
-        status: TaskStatus.rejected(
-          id: 's-rejected',
-          createdAt: now,
+    // Completed statuses hide the due date; parameterised to avoid
+    // copy-paste permutations (Done / Rejected share one body).
+    for (final (label, status) in [
+      (
+        'Done',
+        TaskStatus.done(
+          id: 's-done',
+          createdAt: DateTime(2025, 11, 3, 12),
           utcOffset: 0,
         ),
-        dateFrom: now,
-        dateTo: now,
-        statusHistory: const [],
-        title: 'Rejected Task',
-        due: dueDate,
-      );
-      final task = Task(meta: meta, data: data);
-
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
-            ),
-          ),
+      ),
+      (
+        'Rejected',
+        TaskStatus.rejected(
+          id: 's-rejected',
+          createdAt: DateTime(2025, 11, 3, 12),
+          utcOffset: 0,
         ),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
+      ),
+    ]) {
+      testWidgets('hides due date when task status is $label', (tester) async {
+        final dueDate = DateTime(2025, 11, 10);
+        final task = buildTask().copyWith(
+          data: buildTask().data.copyWith(status: status, due: dueDate),
+        );
 
-      // Due date should NOT be shown for rejected tasks
-      expect(find.byIcon(Icons.event_rounded), findsNothing);
-      expect(
-        find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
-        findsNothing,
-      );
-    });
+        await pumpTaskCard(tester, ModernTaskCard(task: task));
+
+        // Due date should NOT be shown for completed tasks
+        expect(find.byIcon(Icons.event_rounded), findsNothing);
+        expect(
+          find.text('Due: ${DateFormat.yMMMd().format(dueDate)}'),
+          findsNothing,
+        );
+      });
+    }
 
     testWidgets('shows due date for non-completed task statuses', (
       tester,
@@ -913,18 +694,7 @@ void main() {
       );
       final task = Task(meta: meta, data: data);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
-            ),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
+      await pumpTaskCard(tester, ModernTaskCard(task: task));
 
       // Due date SHOULD be shown for in-progress tasks
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
@@ -944,18 +714,7 @@ void main() {
         );
 
         await withClock(Clock(() => fakeNow), () async {
-          await tester.pumpWidget(
-            ProviderScope(
-              child: MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Scaffold(
-                  body: ModernTaskCard(task: task),
-                ),
-              ),
-            ),
-          );
-          await tester.pump(const Duration(milliseconds: 100));
+          await pumpTaskCard(tester, ModernTaskCard(task: task));
 
           // Initially shows absolute date
           final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
@@ -981,16 +740,7 @@ void main() {
     testWidgets('showCoverArt defaults to true', (tester) async {
       final task = buildTask();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
-            ),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
+      await pumpTaskCard(tester, ModernTaskCard(task: task));
 
       // With no cover art set, should render normally regardless of showCoverArt
       expect(find.text('Test Task Title'), findsOneWidget);
@@ -1001,16 +751,7 @@ void main() {
     ) async {
       final task = buildTask();
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
-            ),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
+      await pumpTaskCard(tester, ModernTaskCard(task: task));
 
       // Should not have CoverArtThumbnail since there's no coverArtId
       expect(find.text('Test Task Title'), findsOneWidget);
@@ -1024,19 +765,13 @@ void main() {
         data: buildTask().data.copyWith(coverArtId: 'image-123'),
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(
-                task: task,
-                showCoverArt: false,
-              ),
-            ),
-          ),
+      await pumpTaskCard(
+        tester,
+        ModernTaskCard(
+          task: task,
+          showCoverArt: false,
         ),
       );
-      await tester.pump(const Duration(milliseconds: 100));
 
       // Title should still be visible
       expect(find.text('Test Task Title'), findsOneWidget);
@@ -1077,21 +812,15 @@ void main() {
           ),
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              entryControllerProvider(id: 'image-123').overrideWith(
-                () => _FakeImageController(image),
-              ),
-            ],
-            child: MaterialApp(
-              home: Scaffold(
-                body: ModernTaskCard(task: task),
-              ),
+        await pumpTaskCard(
+          tester,
+          ModernTaskCard(task: task),
+          overrides: [
+            entryControllerProvider(id: 'image-123').overrideWith(
+              () => _FakeImageController(image),
             ),
-          ),
+          ],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         // Should have CoverArtThumbnail since showCoverArt defaults to true
         expect(find.byType(CoverArtThumbnail), findsOneWidget);
@@ -1120,21 +849,15 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            entryControllerProvider(id: 'image-123').overrideWith(
-              () => _FakeImageController(image),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
-            ),
+      await pumpTaskCard(
+        tester,
+        ModernTaskCard(task: task),
+        overrides: [
+          entryControllerProvider(id: 'image-123').overrideWith(
+            () => _FakeImageController(image),
           ),
-        ),
+        ],
       );
-      await tester.pump(const Duration(milliseconds: 100));
 
       // Title should still be visible
       expect(find.text('Test Task Title'), findsOneWidget);
@@ -1170,27 +893,21 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            entryControllerProvider(id: 'image-123').overrideWith(
-              () => _FakeImageController(image),
-            ),
-            taskProgressControllerProvider(id: task.meta.id).overrideWith(
-              () => TestTaskProgressController(
-                progress: const Duration(minutes: 30),
-                estimate: const Duration(hours: 1),
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
+      await pumpTaskCard(
+        tester,
+        ModernTaskCard(task: task),
+        overrides: [
+          entryControllerProvider(id: 'image-123').overrideWith(
+            () => _FakeImageController(image),
+          ),
+          taskProgressControllerProvider(id: task.meta.id).overrideWith(
+            () => TestTaskProgressController(
+              progress: const Duration(minutes: 30),
+              estimate: const Duration(hours: 1),
             ),
           ),
-        ),
+        ],
       );
-      await tester.pump(const Duration(milliseconds: 100));
 
       // CompactTaskProgress should be present
       expect(find.byType(CompactTaskProgress), findsOneWidget);
@@ -1238,21 +955,15 @@ void main() {
         data: buildTask().data.copyWith(coverArtId: 'image-123'),
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            entryControllerProvider(id: 'image-123').overrideWith(
-              () => _FakeImageController(image),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
-            ),
+      await pumpTaskCard(
+        tester,
+        ModernTaskCard(task: task),
+        overrides: [
+          entryControllerProvider(id: 'image-123').overrideWith(
+            () => _FakeImageController(image),
           ),
-        ),
+        ],
       );
-      await tester.pump(const Duration(milliseconds: 100));
 
       // Label should be present
       expect(find.byType(LabelChip), findsOneWidget);
@@ -1284,21 +995,15 @@ void main() {
         ),
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            entryControllerProvider(id: 'image-123').overrideWith(
-              () => _FakeImageController(image),
-            ),
-          ],
-          child: MaterialApp(
-            home: Scaffold(
-              body: ModernTaskCard(task: task),
-            ),
+      await pumpTaskCard(
+        tester,
+        ModernTaskCard(task: task),
+        overrides: [
+          entryControllerProvider(id: 'image-123').overrideWith(
+            () => _FakeImageController(image),
           ),
-        ),
+        ],
       );
-      await tester.pump(const Duration(milliseconds: 100));
 
       // CoverArtThumbnail should have the cropX value
       final thumbnailFinder = find.byType(CoverArtThumbnail);

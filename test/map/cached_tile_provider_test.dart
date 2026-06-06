@@ -112,9 +112,15 @@ void main() {
       expect(provider2, isNot(equals(provider3)));
     });
 
-    test('headers parameter is optional', () {
-      // Should not throw when creating without headers
-      expect(CachedTileProvider.new, returnsNormally);
+    test('omitted headers yield a provider with empty headers', () {
+      provider = CachedTileProvider();
+      const coordinates = TileCoordinates(0, 0, 1);
+
+      final imageProvider =
+          provider.getImage(coordinates, tileLayer)
+              as CachedNetworkImageProvider;
+
+      expect(imageProvider.headers ?? const <String, String>{}, isEmpty);
     });
 
     test('empty headers map is handled correctly', () {

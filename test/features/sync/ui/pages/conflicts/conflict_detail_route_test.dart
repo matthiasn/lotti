@@ -203,7 +203,8 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _desktopSize, conflictId: conflict.id);
       bench.unresolvedController.add(const <Conflict>[]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text(l10n.conflictDetailNotFoundTitle), findsOneWidget);
     });
 
@@ -220,7 +221,8 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _desktopSize, conflictId: conflict.id);
       bench.unresolvedController.addError(StateError('boom'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text(l10n.conflictDetailLoadErrorTitle), findsOneWidget);
       expect(find.textContaining('boom'), findsOneWidget);
     });
@@ -272,7 +274,8 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _mobileSize, conflictId: conflict.id);
       bench.unresolvedController.add([conflict]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       // The pill carries just '1' on phone widths — not the verbose
       // "1 entry · N fields differ" string.
       expect(find.text('1'), findsOneWidget);
@@ -299,7 +302,8 @@ void main() {
         addTearDown(bench.dispose);
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         // Title + word count differ.
         expect(
           find.textContaining(l10n.conflictHeaderPillEntries(1)),
@@ -327,7 +331,8 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _mobileSize, conflictId: conflict.id);
       bench.unresolvedController.add([conflict]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text(l10n.conflictPageLeadMobile), findsOneWidget);
       expect(find.text(l10n.conflictPageLeadDesktop), findsNothing);
     });
@@ -345,7 +350,8 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _desktopSize, conflictId: conflict.id);
       bench.unresolvedController.add([conflict]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text(l10n.conflictPageLeadDesktop), findsOneWidget);
     });
 
@@ -362,7 +368,8 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _desktopSize, conflictId: conflict.id);
       bench.unresolvedController.add([conflict]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(
         find.textContaining(l10n.entryTypeLabelJournalEntry),
         findsAtLeastNWidgets(1),
@@ -383,7 +390,8 @@ void main() {
         addTearDown(bench.dispose);
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(
           find.textContaining(l10n.conflictBannerFieldsDifferList('Title')),
           findsNothing,
@@ -412,7 +420,8 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _desktopSize, conflictId: conflict.id);
       bench.unresolvedController.add([conflict]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text(l10n.conflictSideThisDevice), findsOneWidget);
       expect(find.text(l10n.conflictSideFromSync), findsOneWidget);
     });
@@ -434,7 +443,8 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _desktopSize, conflictId: conflict.id);
       bench.unresolvedController.add([conflict]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       // Both clocks merge to {a: 13}, so both sides display vec 13 in
       // their card header on desktop.
       expect(find.textContaining('vec 13'), findsAtLeastNWidgets(1));
@@ -459,7 +469,8 @@ void main() {
         addTearDown(bench.dispose);
         await _pump(tester, size: _mobileSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         // Mobile renders vec in the meta row (no card-header inline form).
         expect(find.textContaining('vec 13'), findsAtLeastNWidgets(1));
       },
@@ -484,7 +495,8 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _desktopSize, conflictId: conflict.id);
       bench.unresolvedController.add([conflict]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       // Both sides format 42s as "0:42".
       expect(find.textContaining('0:42'), findsAtLeastNWidgets(1));
     });
@@ -502,7 +514,8 @@ void main() {
         addTearDown(bench.dispose);
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.text(l10n.conflictMetaLocalEdit), findsOneWidget);
         expect(find.text(l10n.conflictMetaViaSync), findsOneWidget);
       },
@@ -541,7 +554,8 @@ void main() {
         );
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         // Cache lookup must be hit at least twice (once per side).
         verify(
           () => bench.cache.getCategoryById('cat-1'),
@@ -570,7 +584,8 @@ void main() {
         addTearDown(bench.dispose);
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Initial state: footer reads back "pick a side" — Apply has no
         // onPressed callback so taps on it must NOT fire the resolve
@@ -578,7 +593,8 @@ void main() {
         // PersistenceLogic was never called.
         expect(find.text(l10n.conflictFooterHelperPickASide), findsOneWidget);
         await tester.tap(find.text(l10n.conflictApplyButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         verifyNever(
           () => bench.persistence.updateJournalEntity(any(), any()),
         );
@@ -588,7 +604,8 @@ void main() {
           find.byKey(const ValueKey('conflict-card-local')),
           warnIfMissed: false,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(
           find.text(l10n.conflictFooterHelperLocalSelected),
           findsOneWidget,
@@ -599,7 +616,8 @@ void main() {
           find.byKey(const ValueKey('conflict-card-remote')),
           warnIfMissed: false,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(
           find.text(l10n.conflictFooterHelperRemoteSelected),
           findsOneWidget,
@@ -627,15 +645,18 @@ void main() {
         addTearDown(bench.dispose);
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(
           find.byKey(const ValueKey('conflict-card-local')),
           warnIfMissed: false,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text(l10n.conflictApplyButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final captured = verify(
           () =>
@@ -660,15 +681,18 @@ void main() {
         addTearDown(bench.dispose);
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(
           find.byKey(const ValueKey('conflict-card-remote')),
           warnIfMissed: false,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text(l10n.conflictApplyButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final captured = verify(
           () =>
@@ -694,7 +718,8 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _mobileSize, conflictId: conflict.id);
       bench.unresolvedController.add([conflict]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text(l10n.conflictPickerUseThisDevice), findsOneWidget);
       expect(find.text(l10n.conflictPickerUseFromSync), findsOneWidget);
       // Edit & merge appears once — in the footer link, not in the picker row.
@@ -714,7 +739,8 @@ void main() {
         addTearDown(bench.dispose);
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.text(l10n.conflictPickerUseThisDevice), findsOneWidget);
         expect(find.text(l10n.conflictPickerUseFromSync), findsOneWidget);
         expect(find.text(l10n.conflictPickerEditMerge), findsOneWidget);
@@ -734,10 +760,12 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _desktopSize, conflictId: conflict.id);
       bench.unresolvedController.add([conflict]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text(l10n.conflictPickerUseFromSync));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(
         find.text(l10n.conflictFooterHelperRemoteSelected),
         findsOneWidget,
@@ -789,13 +817,15 @@ void main() {
 
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // On desktop, the "Edit & merge…" pill appears in the picker row.
         final editMergePill = find.text(l10n.conflictPickerEditMerge);
         await tester.ensureVisible(editMergePill);
         await tester.tap(editMergePill);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(
           capturedPath,
@@ -822,13 +852,15 @@ void main() {
 
         await _pump(tester, size: _mobileSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // On mobile, Edit & merge appears only in the footer as a text link.
         final editMergeLink = find.text(l10n.conflictPickerEditMerge);
         await tester.ensureVisible(editMergeLink);
         await tester.tap(editMergeLink);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(
           capturedPath,
@@ -857,16 +889,19 @@ void main() {
 
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Select local side, then tap Apply.
         await tester.tap(
           find.byKey(const ValueKey('conflict-card-local')),
           warnIfMissed: false,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text(l10n.conflictApplyButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // An error toast should appear with the failure title.
         expect(find.byType(DesignSystemToast), findsOneWidget);
@@ -902,7 +937,8 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _desktopSize, conflictId: conflict.id);
       bench.unresolvedController.add([conflict]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // e.g. "30 min ago"
       expect(
@@ -926,7 +962,8 @@ void main() {
       addTearDown(bench.dispose);
       await _pump(tester, size: _desktopSize, conflictId: conflict.id);
       bench.unresolvedController.add([conflict]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // e.g. "5 h ago"
       expect(
@@ -972,7 +1009,8 @@ void main() {
 
         await _pump(tester, size: _mobileSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The card eyebrows are present, confirming the picker scaffold rendered.
         expect(find.text(l10n.conflictSideThisDevice), findsOneWidget);
@@ -1209,7 +1247,8 @@ void main() {
 
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The entity-type label appears in the summary banner first line.
         expect(find.textContaining(label), findsAtLeastNWidgets(1));
@@ -1239,7 +1278,8 @@ void main() {
         addTearDown(bench.dispose);
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // "duration" should appear in the differs subline.
         expect(find.textContaining('duration'), findsOneWidget);
@@ -1267,7 +1307,8 @@ void main() {
         addTearDown(bench.dispose);
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // "category" should appear in the differs subline.
         expect(find.textContaining('category'), findsOneWidget);
@@ -1311,7 +1352,8 @@ void main() {
 
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Widget rendered with the picker scaffold — eyebrows should appear.
         expect(find.text(l10n.conflictSideThisDevice), findsOneWidget);

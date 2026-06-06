@@ -1198,14 +1198,16 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
 
         await tester.tap(find.byType(ActionMenuListItem));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Language modal is open. Arabic sorts first alphabetically when no
         // language is currently selected, so it's visible without scrolling.
         final arabic = find.text('Arabic');
         expect(arabic, findsOneWidget);
         await tester.tap(arabic);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(tracker.updateTaskLanguageCalls, equals(['ar']));
       },
@@ -1237,11 +1239,13 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
 
         await tester.tap(find.byType(ActionMenuListItem));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Clear'), findsOneWidget);
         await tester.tap(find.text('Clear'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(tracker.updateTaskLanguageCalls, equals([null]));
       },
@@ -1272,12 +1276,14 @@ void main() {
 
         expect(find.byType(ActionMenuListItem), findsOneWidget);
         await tester.tap(find.byType(ActionMenuListItem));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The confirmation modal is visible.
         expect(find.text('YES, DELETE THIS ENTRY'), findsOneWidget);
         await tester.tap(find.text('YES, DELETE THIS ENTRY'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(controller.deleteCalls, equals(1));
       },
@@ -1305,11 +1311,13 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
 
         await tester.tap(find.byType(ActionMenuListItem));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Dismiss modal by tapping the barrier.
         await tester.tapAt(const Offset(5, 5));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(controller.deleteCalls, equals(0));
       },
@@ -1379,11 +1387,13 @@ void main() {
         await tester.pump(const Duration(milliseconds: 350));
 
         await tester.tap(find.byType(ActionMenuListItem));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Dismiss without confirming.
         await tester.tapAt(const Offset(5, 5));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(controller.removeLinkCalls, isEmpty);
       },
@@ -2172,10 +2182,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Labels'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.widgetWithText(FilledButton, 'Apply'), findsOneWidget);
       });
@@ -2187,10 +2199,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Labels'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(TextField), findsOneWidget);
       });
@@ -2204,10 +2218,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Labels'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final content = tester.widget<LabelSelectionSliverContent>(
           find.byType(LabelSelectionSliverContent),
@@ -2224,10 +2240,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Labels'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final content = tester.widget<LabelSelectionSliverContent>(
           find.byType(LabelSelectionSliverContent),
@@ -2244,10 +2262,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Labels'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.widgetWithText(OutlinedButton, 'Cancel'), findsOneWidget);
       });
@@ -2265,16 +2285,19 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Labels'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Urgent'));
         await tester.pump();
 
         await tester.tap(find.widgetWithText(FilledButton, 'Apply'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         verify(
           () => repository.setLabels(
@@ -2299,13 +2322,16 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Labels'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.widgetWithText(FilledButton, 'Apply'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Failed to update labels'), findsWidgets);
         expect(find.widgetWithText(FilledButton, 'Apply'), findsOneWidget);
@@ -2326,10 +2352,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Labels'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final searchField = find.descendant(
           of: find.byType(TextField),
@@ -2348,10 +2376,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Labels'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final searchField = find.descendant(
           of: find.byType(TextField),
@@ -2376,10 +2406,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Labels'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final checkbox = tester.widget<CheckboxListTile>(
           find.ancestor(
@@ -2397,10 +2429,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Labels'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         var checkbox = tester.widget<CheckboxListTile>(
           find.ancestor(
@@ -2431,10 +2465,12 @@ void main() {
         await tester.pump();
 
         await tester.tap(find.text('Open Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Labels'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final content = tester.widget<LabelSelectionSliverContent>(
           find.byType(LabelSelectionSliverContent),
@@ -2655,7 +2691,8 @@ void main() {
 
       // The Quill editor schedules several follow-up frames before the
       // toolbar appears — a genuine settle case.
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(QuillSimpleToolbar), findsOneWidget);
     });

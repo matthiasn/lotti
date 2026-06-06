@@ -279,7 +279,7 @@ The seeded task-context skills (`Transcribe (Task Context)`, `Analyze Image (Tas
 
 ### Per-Invocation Model Overrides
 
-Skill types with a per-invocation override slot (today: transcription and image-analysis) open the same `InferenceModelPickerModal` before firing `triggerSkillProvider`, so the user can route a single voice note or photo to any modality-capable model without editing the inference profile. The flow is one parameterised path — the variant table `_modelOverrideConfigs` in `unified_ai_popup_menu.dart` plugs in the per-slot modality filter, profile-slot accessor, and l10n strings. Adding a third per-invocation override slot is a one-line entry in that map plus a corresponding `_resolveOverrideTarget` call on the runner.
+Skill types with a per-invocation override slot (today: transcription and image-analysis) open the same `InferenceModelPickerModal` before firing `triggerSkillProvider`, so the user can route a single voice note or photo to any modality-capable model without editing the inference profile. The flow is one parameterised path — the variant table `_modelOverrideConfigs` in `unified_ai_skills_modal.dart` plugs in the per-slot modality filter, profile-slot accessor, and l10n strings. Adding a third per-invocation override slot is a one-line entry in that map plus a corresponding `_resolveOverrideTarget` call on the runner.
 
 The user's choice threads through as the optional `overrideModelId` field on `TriggerSkillParams`. `SkillInferenceRunner` dispatches on `skill.skillType` and forwards `overrideModelId` to `runTranscription` or `runImageAnalysis`; each one calls its per-slot resolver (`_resolveTranscriptionTarget` / `_resolveImageAnalysisTarget`), which delegates to the shared `_resolveOverrideTarget` helper. Both resolvers return an `_InferenceTarget` record of `(AiConfigInferenceProvider?, String?)` — preferring the override when it resolves to a real `AiConfigModel` + parent `AiConfigInferenceProvider`, falling back to the profile slot (with a warning log keyed by `_OverrideSlotKind`) otherwise.
 
@@ -360,7 +360,10 @@ Implementation details that matter:
 ## AI Activity Visualization
 
 `ui/animation/ai_state_shader_animation.dart` contains the shader-based AI
-activity visualizations. Widgetbook remains the tuning surface via
+activity visualizations (shader routes, assets, and the program cache in the
+library file, with the voice and thinking widget/painter families in the
+`ai_voice_input_shader.dart` and `ai_thinking_line_shader.dart` part files).
+Widgetbook remains the tuning surface via
 `widgetbook/ai_shader_animations_widgetbook.dart`; production task details use
 the decoder-bars thinking shader in the task action bar while inference is
 running, and Daily OS Next uses the voice tension-loop shader around the record

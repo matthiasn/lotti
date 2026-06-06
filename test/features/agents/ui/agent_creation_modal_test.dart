@@ -102,10 +102,12 @@ void main() {
         resultNotifier: resultNotifier,
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.text('Open Modal'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final context = tester.element(find.byType(ElevatedButton));
 
@@ -143,10 +145,12 @@ void main() {
         templates: templates,
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.text('Open Modal'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final context = tester.element(find.byType(ElevatedButton));
     expect(find.text('Shepherd'), findsOneWidget);
@@ -167,10 +171,12 @@ void main() {
         templateCount: 1,
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.text('Open Modal'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final context = tester.element(find.byType(ElevatedButton));
 
@@ -225,14 +231,17 @@ void main() {
         templateCount: 1,
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.text('Open Modal'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Directly on profile page; select profile.
     await tester.tap(find.text('Solo'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(resultNotifier.value, isNotNull);
     expect(resultNotifier.value!.templateId, 'tpl-0');
@@ -249,10 +258,12 @@ void main() {
         templateCount: 1,
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.text('Open Modal'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final context = tester.element(find.byType(ElevatedButton));
     expect(
@@ -273,10 +284,12 @@ void main() {
         resultNotifier: resultNotifier,
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.text('Open Modal'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final context = tester.element(find.byType(ElevatedButton));
 
@@ -303,10 +316,12 @@ void main() {
         templateCount: 1,
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.text('Open Modal'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Test Prof'), findsOneWidget);
     expect(find.text('gemini-2.5-pro'), findsOneWidget);
@@ -322,10 +337,12 @@ void main() {
         templateCount: 0,
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.text('Open Modal'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Modal should not open; result stays null.
     expect(resultNotifier.value, isNull);
@@ -395,10 +412,12 @@ void main() {
           templateCount: 3,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Two dividers between three template rows.
       final dividersBefore = tester
@@ -415,7 +434,8 @@ void main() {
       addTearDown(gesture.removePointer);
       await gesture.addPointer(location: Offset.zero);
       await gesture.moveTo(tester.getCenter(find.text('Template 1')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final dividersAfter = tester
           .widgetList<Divider>(find.byType(Divider))
@@ -441,10 +461,12 @@ void main() {
           templateCount: 1,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Single template skips to profile page directly. Three profiles → 2
       // dividers, both opaque before hover.
@@ -462,7 +484,8 @@ void main() {
       addTearDown(gesture.removePointer);
       await gesture.addPointer(location: Offset.zero);
       await gesture.moveTo(tester.getCenter(find.text('Profile 1')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final dividersAfter = tester
           .widgetList<Divider>(find.byType(Divider))
@@ -472,7 +495,8 @@ void main() {
 
       // Pointer leaves — dividers return to default color.
       await gesture.moveTo(const Offset(-100, -100));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final dividersFinal = tester
           .widgetList<Divider>(find.byType(Divider))
@@ -500,10 +524,12 @@ void main() {
         templateCount: 1,
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.text('Open Modal'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // The trailing widget for desktop-only profiles is the desktop_windows
     // icon — verifies the trailing branch in _ProfileList.
@@ -536,10 +562,12 @@ void main() {
           templates: templates,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(ElevatedButton));
       // Both localized kind labels must appear — covers the templateImprover
@@ -587,7 +615,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Open Modal'));
       // Pump enough frames to complete the modal's opening animation without
@@ -661,10 +690,12 @@ void main() {
           templateCount: 3,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final gesture = await tester.createGesture(
         kind: PointerDeviceKind.mouse,
@@ -674,7 +705,8 @@ void main() {
 
       // Hover over Template 1 — dividers turn transparent.
       await gesture.moveTo(tester.getCenter(find.text('Template 1')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final dividersHovered = tester
           .widgetList<Divider>(find.byType(Divider))
@@ -684,7 +716,8 @@ void main() {
       // Move pointer away — covers the hover-exit branch (_hoveredId = null,
       // lines 141-142) in _TemplateSelectionPageState.
       await gesture.moveTo(const Offset(-200, -200));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final dividersOut = tester
           .widgetList<Divider>(find.byType(Divider))
@@ -736,10 +769,12 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Hover the top row 'Alpha' so _hoveredId = 'p-a'. The single divider
       // (between Alpha and Beta, index 0) turns transparent.
@@ -750,7 +785,8 @@ void main() {
       await gesture.addPointer(location: Offset.zero);
       final topRowCenter = tester.getCenter(find.text('Alpha'));
       await gesture.moveTo(topRowCenter);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final dividersHovered = tester
           .widgetList<Divider>(find.byType(Divider))
@@ -770,7 +806,8 @@ void main() {
         testInferenceProfile(id: 'p-b', name: 'Beta'),
         testInferenceProfile(id: 'p-c', name: 'Gamma'),
       ]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Alpha'), findsNothing);
       expect(find.text('Beta'), findsOneWidget);
@@ -781,7 +818,8 @@ void main() {
       // didUpdateWidget there is nothing else hovered — the divider returns to
       // its opaque default, proving no stale hover id survived the list change.
       await gesture.moveTo(const Offset(-300, -300));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final dividersAfterExit = tester
           .widgetList<Divider>(find.byType(Divider))
@@ -817,10 +855,12 @@ void main() {
           templateCount: 1,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The desktop-only profile is excluded by the `where` clause on line 207;
       // only the mobile-eligible profile remains. With a single visible profile
@@ -856,10 +896,12 @@ void main() {
           templateCount: 1,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(ElevatedButton));
       expect(find.text('Desktop Only'), findsNothing);

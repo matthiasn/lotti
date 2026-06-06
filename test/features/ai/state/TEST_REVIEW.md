@@ -40,12 +40,13 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `test/features/ai/state/unified_ai_controller_test.dart` — 2470 lines for a single test file far exceeds the ~500-line preferred size. The file covers four logically separate provider families that can be mirror-split to match the logical seams in the implementation:
+- [x] **[HIGH]** `test/features/ai/state/unified_ai_controller_test.dart` — 2470 lines for a single test file far exceeds the ~500-line preferred size. The file covers four logically separate provider families that can be mirror-split to match the logical seams in the implementation:
   - `unified_ai_controller_test.dart` — `UnifiedAiState` equality + `UnifiedAiController` (~lines 167–597)
   - `available_skills_for_entity_provider_test.dart` — `availableSkillsForEntityProvider` + `hasAvailableSkillsProvider` (~lines 599–1511)
   - `trigger_skill_provider_test.dart` — `triggerSkillProvider` (~lines 1513–2469)
   - `trigger_new_inference_provider_test.dart` — `triggerNewInferenceProvider` (~lines 686–947)
   The shared `_TestBench` / helper setup should be extracted into a file-local helper to stay DRY across the split files.
+  **RESOLVED (adapted):** the impl was split first so the test split honors the one-test-file-per-source rule — the four skill/trigger provider families moved to `lib/features/ai/state/skill_trigger_providers.dart` (304 lines; `unified_ai_controller.dart` now 343), and their test groups (hasAvailableSkills, availableSkillsForEntity, triggerSkill, triggerNewInference, linked-entity inference) moved to the new mirror `skill_trigger_providers_test.dart` (2 654 lines); `unified_ai_controller_test.dart` keeps the state-equality and controller groups (633 lines).
 
 - [x] **[HIGH]** `test/features/ai/state/settings/inference_model_form_controller_dirty_state_test.dart` (308 lines) and `test/features/ai/state/settings/inference_provider_form_controller_dirty_state_test.dart` (323 lines) both violate the one-test-file-per-source-file rule. Their tests must be merged back into their respective primary test files (`inference_model_form_controller_test.dart` and `inference_provider_form_controller_test.dart`).
 

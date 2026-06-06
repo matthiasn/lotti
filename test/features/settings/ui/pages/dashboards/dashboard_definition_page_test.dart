@@ -97,12 +97,14 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(
           find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(beamedTo, '/settings/dashboards');
       },
@@ -143,7 +145,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
       final descriptionFieldFinder = find.byKey(
@@ -187,7 +191,8 @@ void main() {
       expect(saveButtonFinder, findsOneWidget);
 
       await tester.tap(saveButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // save button calls mocked function
       verify(
@@ -228,7 +233,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
       final descriptionFieldFinder = find.byKey(
@@ -266,7 +273,8 @@ void main() {
       );
 
       await tester.tap(measurableFinder.first, warnIfMissed: false);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The aggregation type is not displayed as text in the current widget structure
       // and the save button may not be visible immediately
@@ -294,7 +302,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find and scroll to the delete button
       final deleteButtonFinder = find.byIcon(MdiIcons.trashCanOutline);
@@ -311,11 +321,14 @@ void main() {
         const Offset(0, 500), // Increased scroll offset to ensure visibility
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the delete button
       await tester.tap(firstDeleteButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // (Delete confirmation modal is not rendered in the test environment, so we do not assert on it here.)
     });
@@ -354,7 +367,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Make a change to trigger dirty state
       final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
@@ -374,11 +389,14 @@ void main() {
         const Offset(0, 500), // Increased scroll offset to ensure visibility
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the copy button
       await tester.tap(copyButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify that copy creates a new dashboard
       verify(
@@ -406,7 +424,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
       final descriptionFieldFinder = find.byKey(
@@ -427,7 +447,8 @@ void main() {
       expect(saveButtonFinder, findsOneWidget);
 
       await tester.tap(saveButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // save button calls mocked function
       verify(
@@ -454,7 +475,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(mockJournalDb.getAllDashboards).called(1);
 
@@ -484,7 +507,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // finds text in dashboard card
       expect(find.text(testDashboardDescription), findsOneWidget);
@@ -518,7 +543,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the category selector field
       final categoryFieldFinder = find.byKey(
@@ -541,11 +568,13 @@ void main() {
         find.byType(SingleChildScrollView),
         const Offset(0, -100),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the clear button to trigger setCategory(null)
       await tester.tap(clearCategoryButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify DevLogger.log was called for setCategory
       expect(
@@ -577,7 +606,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Save button must be hidden before any interaction.
         expect(find.byKey(const Key('dashboard_save')), findsNothing);
@@ -589,11 +619,13 @@ void main() {
           find.byType(SingleChildScrollView),
           const Offset(0, 200),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Open the habit-selection modal.
         await tester.tap(habitButtonFinder.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Select habitFlossing in the modal list.
         final habitItemFinder = find.widgetWithText(
@@ -602,13 +634,15 @@ void main() {
         );
         expect(habitItemFinder, findsOneWidget);
         await tester.tap(habitItemFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Confirm the selection.
         final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
         expect(addButtonFinder, findsOneWidget);
         await tester.tap(addButtonFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Dirty flag should now be set → save button visible.
         expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
@@ -632,7 +666,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byKey(const Key('dashboard_save')), findsNothing);
 
@@ -643,10 +678,12 @@ void main() {
           find.byType(SingleChildScrollView),
           const Offset(0, 200),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(measButtonFinder.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Select the first measurable (Water).
         final measItemFinder = find.widgetWithText(
@@ -655,12 +692,14 @@ void main() {
         );
         expect(measItemFinder, findsOneWidget);
         await tester.tap(measItemFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
         expect(addButtonFinder, findsOneWidget);
         await tester.tap(addButtonFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Item was added → dirty → save button visible.
         expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
@@ -684,7 +723,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byKey(const Key('dashboard_save')), findsNothing);
 
@@ -694,20 +734,24 @@ void main() {
           find.byType(SingleChildScrollView),
           const Offset(0, 200),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(surveyButtonFinder.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Pick the first survey item in the modal.
         final firstSurveyItem = find.byType(CheckboxListTile).first;
         await tester.tap(firstSurveyItem);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final addButtonFinder = find.widgetWithText(FilledButton, 'Add (1)');
         expect(addButtonFinder, findsOneWidget);
         await tester.tap(addButtonFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
       },
@@ -777,7 +821,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll to the delete icon button.
         final deleteButtonFinder = find.byIcon(MdiIcons.trashCanOutline);
@@ -786,10 +831,12 @@ void main() {
           find.byType(SingleChildScrollView),
           const Offset(0, 500),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(deleteButtonFinder.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The confirmation modal must be visible.
         expect(
@@ -801,7 +848,8 @@ void main() {
         final confirmFinder = find.text('YES, DELETE THIS DASHBOARD');
         expect(confirmFinder, findsOneWidget);
         await tester.tap(confirmFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Persistence mock must have been called.
         verify(
@@ -831,7 +879,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Clear the name field to make the form invalid.
         final nameFieldFinder = find.byKey(const Key('dashboard_name_field'));
@@ -843,7 +892,8 @@ void main() {
         expect(saveButtonFinder, findsOneWidget);
 
         await tester.tap(saveButtonFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Form is invalid → upsert must NOT be called.
         verifyNever(
@@ -864,7 +914,8 @@ void main() {
             EditDashboardPage(dashboardId: 'nonexistent-id'),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Stream fetches null → "Dashboard not found" scaffold.
         expect(find.text('Dashboard not found'), findsOneWidget);
@@ -883,7 +934,8 @@ void main() {
             EditDashboardPage(dashboardId: testDashboardConfig.id),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The DashboardDefinitionPage title text is rendered.
         expect(find.text(testDashboardName), findsOneWidget);
@@ -911,7 +963,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // No item cards and save button hidden before interaction.
         expect(find.byType(Dismissible), findsNothing);
@@ -931,7 +984,8 @@ void main() {
           ),
         );
         healthSelect.onConfirm([healthTypes['HealthDataType.WEIGHT']]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // onConfirmAddHealthType appended a health item → dirty → save shown.
         expect(find.byType(Dismissible), findsOneWidget);
@@ -939,7 +993,8 @@ void main() {
 
         // Saving persists exactly one DashboardHealthItem for the WEIGHT type.
         await tester.tap(find.byKey(const Key('dashboard_save')));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final healthItems = saved!.items.whereType<DashboardHealthItem>();
         expect(healthItems, hasLength(1));
@@ -969,7 +1024,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(Dismissible), findsNothing);
         expect(find.byKey(const Key('dashboard_save')), findsNothing);
@@ -990,14 +1046,16 @@ void main() {
               ),
             );
         workoutSelect.onConfirm([workoutType]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // onConfirmAddWorkoutType appended a workout item → dirty → save shown.
         expect(find.byType(Dismissible), findsOneWidget);
         expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
 
         await tester.tap(find.byKey(const Key('dashboard_save')));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Exactly one workout item was persisted, with the chosen workout type.
         final workoutItems = saved!.items
@@ -1036,7 +1094,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Initially nothing is dirty.
         expect(find.byKey(const Key('dashboard_save')), findsNothing);
@@ -1091,7 +1150,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Mark dirty so the copy persists a meaningful, valid dashboard.
         await tester.enterText(
@@ -1106,10 +1166,12 @@ void main() {
           find.byType(SingleChildScrollView),
           const Offset(0, 500),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(copyButtonFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // copyDashboard saved the dashboard and iterated its items without
         // throwing on the habit branch; the habit item is preserved.
@@ -1159,7 +1221,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final handle = tester.ensureSemantics();
 
@@ -1191,13 +1254,15 @@ void main() {
           SemanticsAction.customAction,
           moveUpId,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Reorder set dirty → save button visible.
         expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
 
         await tester.tap(find.byKey(const Key('dashboard_save')));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The persisted item order reflects the reorder: Body Fat Percentage
         // (BODY_FAT_PERCENTAGE) now precedes Weight (WEIGHT).
@@ -1251,7 +1316,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final handle = tester.ensureSemantics();
 
@@ -1282,13 +1348,15 @@ void main() {
           SemanticsAction.customAction,
           moveDownId,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Reorder set dirty → save button visible.
         expect(find.byKey(const Key('dashboard_save')), findsOneWidget);
 
         await tester.tap(find.byKey(const Key('dashboard_save')));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Moving the first item down by one with the newIndex - 1 adjustment is
         // an identity reorder: order is preserved but the branch ran.

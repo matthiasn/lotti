@@ -515,37 +515,6 @@ void main() {
 
     tearDown(getIt.reset);
 
-    test('isActiveTimer parameter defaults to false', () {
-      const widget = EntryDetailsWidget(
-        itemId: 'test-id',
-        showAiEntry: false,
-      );
-
-      expect(widget.isActiveTimer, isFalse);
-    });
-
-    test('isActiveTimer parameter can be set to true', () {
-      const widget = EntryDetailsWidget(
-        itemId: 'test-id',
-        showAiEntry: false,
-        isActiveTimer: true,
-      );
-
-      expect(widget.isActiveTimer, isTrue);
-    });
-
-    test('isActiveTimer and isHighlighted are independent', () {
-      const widget = EntryDetailsWidget(
-        itemId: 'test-id',
-        showAiEntry: false,
-        isActiveTimer: true,
-        isHighlighted: true,
-      );
-
-      expect(widget.isActiveTimer, isTrue);
-      expect(widget.isHighlighted, isTrue);
-    });
-
     testWidgets('timer highlight renders a static border overlay', (
       tester,
     ) async {

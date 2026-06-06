@@ -12,6 +12,9 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:sqlite3/sqlite3.dart' show SqliteException;
 
+part 'agent_attention_projection.dart';
+part 'agent_proposal_ledger.dart';
+
 /// Indexed attention-planning inputs for one planner window.
 class AttentionPlanningInputs {
   const AttentionPlanningInputs({
@@ -96,6 +99,15 @@ class AgentRepository {
   /// this app targets; chunking at 900 leaves headroom for extra predicates
   /// such as `type = ?`. A caller passing more ids than this is split into
   /// sequential queries and the result maps are merged.
+  static bool _affectsAttentionClaimProjection(AgentDomainEntity entity) {
+    return entity is AttentionRequestEntity ||
+        entity is AttentionClaimDispositionEntity;
+  }
+
+  static bool _affectsStandingAgreementProjection(AgentDomainEntity entity) {
+    return entity is StandingAgreementEntity;
+  }
+
   static const int _sqliteInClauseChunkSize = 900;
 
   static Iterable<List<T>> _sqliteInClauseChunks<T>(Iterable<T> values) sync* {
@@ -229,9 +241,7 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
-  /// Fetch attention claims visible to a time range via the local indexed
-  /// projection. This is the planner read path: it never scans
-  /// `agent_entities` or filters deserialized JSON to discover claims.
+  /// See [AgentAttentionProjection].
   Future<List<AttentionRequestEntity>> getAttentionClaimsForWindow({
     required DateTime start,
     required DateTime end,
@@ -242,56 +252,14 @@ class AgentRepository {
       AttentionClaimStatus.deferred,
     },
     int limit = 200,
-  }) async {
-    if (end.isBefore(start) || statuses.isEmpty || limit <= 0) {
-      return const [];
-    }
+  }) => getAttentionClaimsForWindowImpl(
+    start: start,
+    end: end,
+    statuses: statuses,
+    limit: limit,
+  );
 
-    final statusPlaceholders = List.filled(statuses.length, '?').join(', ');
-    final rows = await _db
-        .customSelect(
-          '''
-            SELECT request_id,
-              MIN(next_review_at) AS next_review_at,
-              MIN(deadline) AS deadline
-            FROM attention_claim_index
-            WHERE visibility_start < ?
-              AND visibility_end > ?
-              AND status IN ($statusPlaceholders)
-              AND deleted_at IS NULL
-            GROUP BY request_id
-            ORDER BY next_review_at IS NULL,
-              next_review_at ASC,
-              deadline IS NULL,
-              deadline ASC,
-              request_id ASC
-            LIMIT ?
-          ''',
-          variables: [
-            Variable.withDateTime(end),
-            Variable.withDateTime(start),
-            ...statuses.map((status) => Variable.withString(status.name)),
-            Variable.withInt(limit),
-          ],
-        )
-        .get();
-
-    final requestIds = [
-      for (final row in rows) row.read<String>('request_id'),
-    ];
-    final entitiesById = await getEntitiesByIds(requestIds);
-    return [
-      for (final requestId in requestIds)
-        if (entitiesById[requestId] case final AttentionRequestEntity request)
-          request,
-    ];
-  }
-
-  /// Fetch active attention claims for a source target, e.g. a task agent
-  /// checking whether it already requested focus time for its task.
-  ///
-  /// Uses `attention_claim_index(target_kind, target_id, status, ...)`; it does
-  /// not scan `agent_entities` or deserialize source rows to discover matches.
+  /// See [AgentAttentionProjection].
   Future<List<AttentionRequestEntity>> getAttentionClaimsForTarget({
     required String targetKind,
     required String targetId,
@@ -302,62 +270,14 @@ class AgentRepository {
       AttentionClaimStatus.deferred,
     },
     int limit = 50,
-  }) async {
-    if (targetKind.trim().isEmpty ||
-        targetId.trim().isEmpty ||
-        statuses.isEmpty ||
-        limit <= 0) {
-      return const [];
-    }
+  }) => getAttentionClaimsForTargetImpl(
+    targetKind: targetKind,
+    targetId: targetId,
+    statuses: statuses,
+    limit: limit,
+  );
 
-    final orderedStatuses = statuses.toList(growable: false)
-      ..sort((a, b) => a.name.compareTo(b.name));
-    final statusPlaceholders = List.filled(
-      orderedStatuses.length,
-      '?',
-    ).join(', ');
-    final rows = await _db
-        .customSelect(
-          '''
-            SELECT request_id
-            FROM attention_claim_index
-            WHERE target_kind = ?
-              AND target_id = ?
-              AND status IN ($statusPlaceholders)
-              AND deleted_at IS NULL
-            ORDER BY next_review_at IS NULL,
-              next_review_at ASC,
-              deadline IS NULL,
-              deadline ASC,
-              updated_at DESC,
-              request_id ASC
-            LIMIT ?
-          ''',
-          variables: [
-            Variable.withString(targetKind),
-            Variable.withString(targetId),
-            ...orderedStatuses.map(
-              (status) => Variable.withString(status.name),
-            ),
-            Variable.withInt(limit),
-          ],
-          readsFrom: {_db.attentionClaimIndex},
-        )
-        .get();
-
-    final requestIds = [
-      for (final row in rows) row.read<String>('request_id'),
-    ];
-    final entitiesById = await getEntitiesByIds(requestIds);
-    return [
-      for (final requestId in requestIds)
-        if (entitiesById[requestId] case final AttentionRequestEntity request)
-          request,
-    ];
-  }
-
-  /// Fetch the claim and standing-agreement inputs a day planner needs for a
-  /// window. Both reads use projection indexes rather than source-table scans.
+  /// See [AgentAttentionProjection].
   Future<AttentionPlanningInputs> getAttentionPlanningInputsForWindow({
     required DateTime start,
     required DateTime end,
@@ -373,35 +293,17 @@ class AgentRepository {
     Set<StandingAgreementScope>? agreementScopes,
     int claimLimit = 200,
     int agreementLimit = 200,
-  }) async {
-    final (claims, standingAgreements) = await (
-      getAttentionClaimsForWindow(
-        start: start,
-        end: end,
-        statuses: claimStatuses,
-        limit: claimLimit,
-      ),
-      getStandingAgreementsForWindow(
-        start: start,
-        end: end,
-        statuses: agreementStatuses,
-        scopes: agreementScopes,
-        limit: agreementLimit,
-      ),
-    ).wait;
-    return AttentionPlanningInputs(
-      claims: claims,
-      standingAgreements: standingAgreements,
-    );
-  }
+  }) => getAttentionPlanningInputsForWindowImpl(
+    start: start,
+    end: end,
+    claimStatuses: claimStatuses,
+    agreementStatuses: agreementStatuses,
+    agreementScopes: agreementScopes,
+    claimLimit: claimLimit,
+    agreementLimit: agreementLimit,
+  );
 
-  /// Fetch standing agreements visible to a planning window via the local
-  /// indexed projection.
-  ///
-  /// This is the planner read path for durable policies: it never scans
-  /// `agent_entities` or filters deserialized JSON to discover agreements.
-  /// The projection returns agreement ids, then the source rows are hydrated by
-  /// primary-key batch lookup so the synced log remains the source of truth.
+  /// See [AgentAttentionProjection].
   Future<List<StandingAgreementEntity>> getStandingAgreementsForWindow({
     required DateTime start,
     required DateTime end,
@@ -410,392 +312,21 @@ class AgentRepository {
     },
     Set<StandingAgreementScope>? scopes,
     int limit = 200,
-  }) async {
-    if (!end.isAfter(start) || statuses.isEmpty || limit <= 0) {
-      return const [];
-    }
-
-    final orderedStatuses = statuses.toList(growable: false)
-      ..sort((a, b) => a.name.compareTo(b.name));
-    final orderedScopes = scopes == null
-        ? null
-        : (scopes.toList(growable: false)
-            ..sort((a, b) => a.name.compareTo(b.name)));
-    if (orderedScopes != null && orderedScopes.isEmpty) {
-      return const [];
-    }
-
-    final statusPlaceholders = List.filled(
-      orderedStatuses.length,
-      '?',
-    ).join(', ');
-    final scopePlaceholders = orderedScopes == null
-        ? null
-        : List.filled(orderedScopes.length, '?').join(', ');
-    final scopePredicate = scopePlaceholders == null
-        ? ''
-        : 'AND scope IN ($scopePlaceholders)';
-
-    final rows = await _db
-        .customSelect(
-          '''
-            SELECT agreement_id
-            FROM standing_agreement_index
-            WHERE active_from < ?
-              AND active_until > ?
-              AND status IN ($statusPlaceholders)
-              $scopePredicate
-              AND deleted_at IS NULL
-            ORDER BY priority DESC,
-              updated_at DESC,
-              agreement_id ASC
-            LIMIT ?
-          ''',
-          variables: [
-            Variable.withDateTime(end),
-            Variable.withDateTime(start),
-            ...orderedStatuses.map(
-              (status) => Variable.withString(status.name),
-            ),
-            if (orderedScopes != null)
-              ...orderedScopes.map((scope) => Variable.withString(scope.name)),
-            Variable.withInt(limit),
-          ],
-          readsFrom: {_db.standingAgreementIndex},
-        )
-        .get();
-
-    final agreementIds = [
-      for (final row in rows) row.read<String>('agreement_id'),
-    ];
-    final entitiesById = await getEntitiesByIds(agreementIds);
-    return [
-      for (final agreementId in agreementIds)
-        if (entitiesById[agreementId] case final StandingAgreementEntity entity)
-          entity,
-    ];
-  }
-
-  /// Rebuild the local attention claim indexes from the synced source tables.
-  ///
-  /// This is for migrations, repair, and diagnostics. Planner reads must use
-  /// [getAttentionClaimsForWindow], not a source-table scan.
-  Future<void> rebuildAttentionClaimProjection() async {
-    await _db.transaction(() async {
-      await _db.customStatement('DELETE FROM attention_claim_index');
-      final rows = await _db
-          .customSelect(
-            '''
-              SELECT id
-              FROM agent_entities
-              WHERE type = ?
-                AND deleted_at IS NULL
-              ORDER BY created_at ASC, id ASC
-            ''',
-            variables: [
-              Variable.withString(AgentEntityTypes.attentionRequest),
-            ],
-            readsFrom: {_db.agentEntities},
-          )
-          .get();
-      for (final row in rows) {
-        await _refreshAttentionClaimProjection(row.read<String>('id'));
-      }
-    });
-  }
-
-  /// Rebuild the local standing agreement index from synced source rows.
-  ///
-  /// This is for migrations, repair, and diagnostics. Planner reads must use
-  /// [getStandingAgreementsForWindow], not a source-table scan.
-  Future<void> rebuildStandingAgreementProjection() async {
-    await _db.transaction(() async {
-      await _db.customStatement('DELETE FROM standing_agreement_index');
-      final rows = await _db
-          .customSelect(
-            '''
-              SELECT id
-              FROM agent_entities
-              WHERE type = ?
-                AND deleted_at IS NULL
-              ORDER BY created_at ASC, id ASC
-            ''',
-            variables: [
-              Variable.withString(AgentEntityTypes.standingAgreement),
-            ],
-            readsFrom: {_db.agentEntities},
-          )
-          .get();
-      for (final row in rows) {
-        await _refreshStandingAgreementProjection(row.read<String>('id'));
-      }
-    });
-  }
-
-  static bool _affectsAttentionClaimProjection(AgentDomainEntity entity) {
-    return entity is AttentionRequestEntity ||
-        entity is AttentionClaimDispositionEntity;
-  }
-
-  static bool _affectsStandingAgreementProjection(AgentDomainEntity entity) {
-    return entity is StandingAgreementEntity;
-  }
-
-  Future<void> _refreshAttentionClaimProjectionForEntity(
-    AgentDomainEntity entity,
-  ) async {
-    final requestId = switch (entity) {
-      AttentionRequestEntity() => entity.id,
-      AttentionClaimDispositionEntity() => entity.requestId,
-      _ => null,
-    };
-    if (requestId == null) return;
-    await _refreshAttentionClaimProjection(requestId);
-  }
-
-  Future<void> _refreshStandingAgreementProjectionForEntity(
-    AgentDomainEntity entity,
-  ) async {
-    if (entity is! StandingAgreementEntity) return;
-    await _refreshStandingAgreementProjection(entity.id);
-  }
-
-  Future<void> _refreshAttentionClaimProjection(String requestId) async {
-    final request = await _getAttentionRequestForProjection(requestId);
-    if (request == null) {
-      await _deleteAttentionClaimProjection(requestId);
-      return;
-    }
-
-    final disposition = await _latestAttentionClaimDisposition(requestId);
-    final status = _projectedAttentionClaimStatus(request, disposition);
-    final visibility = _claimVisibilityWindow(request);
-    final updatedAt = disposition?.createdAt ?? request.createdAt;
-    final nextReviewAt = disposition?.nextReviewAt ?? request.nextReviewAt;
-
-    await _db.customInsert(
-      '''
-        INSERT INTO attention_claim_index (
-          request_id,
-          agent_id,
-          status,
-          scope_kind,
-          visibility_start,
-          visibility_end,
-          deadline,
-          next_review_at,
-          target_id,
-          target_kind,
-          updated_at,
-          deleted_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(request_id) DO UPDATE SET
-          agent_id = excluded.agent_id,
-          status = excluded.status,
-          scope_kind = excluded.scope_kind,
-          visibility_start = excluded.visibility_start,
-          visibility_end = excluded.visibility_end,
-          deadline = excluded.deadline,
-          next_review_at = excluded.next_review_at,
-          target_id = excluded.target_id,
-          target_kind = excluded.target_kind,
-          updated_at = excluded.updated_at,
-          deleted_at = excluded.deleted_at
-      ''',
-      variables: [
-        Variable.withString(request.id),
-        Variable.withString(request.agentId),
-        Variable.withString(status.name),
-        Variable.withString(request.scopeKind.name),
-        Variable.withDateTime(visibility.start),
-        Variable.withDateTime(visibility.end),
-        _nullableDateTimeVariable(request.deadline),
-        _nullableDateTimeVariable(nextReviewAt),
-        _nullableStringVariable(request.targetId),
-        _nullableStringVariable(request.targetKind),
-        Variable.withDateTime(updatedAt),
-        _nullableDateTimeVariable(request.deletedAt),
-      ],
-      updates: {_db.attentionClaimIndex},
-    );
-  }
-
-  static Variable<DateTime> _nullableDateTimeVariable(DateTime? value) {
-    if (value == null) return const Variable<DateTime>(null);
-    return Variable.withDateTime(value);
-  }
-
-  static Variable<String> _nullableStringVariable(String? value) {
-    if (value == null) return const Variable<String>(null);
-    return Variable.withString(value);
-  }
-
-  Future<void> _deleteAttentionClaimProjection(String requestId) async {
-    await _db.customStatement(
-      'DELETE FROM attention_claim_index WHERE request_id = ?',
-      [requestId],
-    );
-  }
-
-  Future<void> _refreshStandingAgreementProjection(String agreementId) async {
-    final rows = await _db.getAgentEntityById(agreementId).get();
-    if (rows.isEmpty) {
-      await _deleteStandingAgreementProjection(agreementId);
-      return;
-    }
-
-    final entity = AgentDbConversions.fromEntityRow(rows.first);
-    if (entity is! StandingAgreementEntity) {
-      await _deleteStandingAgreementProjection(agreementId);
-      return;
-    }
-
-    final activeWindow = _standingAgreementActiveWindow(entity);
-    await _db.customInsert(
-      '''
-        INSERT INTO standing_agreement_index (
-          agreement_id,
-          agent_id,
-          status,
-          scope,
-          cadence,
-          approval_mode,
-          enforcement,
-          active_from,
-          active_until,
-          priority,
-          target_id,
-          target_kind,
-          updated_at,
-          deleted_at
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON CONFLICT(agreement_id) DO UPDATE SET
-          agent_id = excluded.agent_id,
-          status = excluded.status,
-          scope = excluded.scope,
-          cadence = excluded.cadence,
-          approval_mode = excluded.approval_mode,
-          enforcement = excluded.enforcement,
-          active_from = excluded.active_from,
-          active_until = excluded.active_until,
-          priority = excluded.priority,
-          target_id = excluded.target_id,
-          target_kind = excluded.target_kind,
-          updated_at = excluded.updated_at,
-          deleted_at = excluded.deleted_at
-      ''',
-      variables: [
-        Variable.withString(entity.id),
-        Variable.withString(entity.agentId),
-        Variable.withString(entity.status.name),
-        Variable.withString(entity.scope.name),
-        Variable.withString(entity.cadence.name),
-        Variable.withString(entity.approvalMode.name),
-        Variable.withString(entity.enforcement.name),
-        Variable.withDateTime(activeWindow.start),
-        Variable.withDateTime(activeWindow.end),
-        Variable.withInt(entity.priority),
-        _nullableStringVariable(entity.targetId),
-        _nullableStringVariable(entity.targetKind),
-        Variable.withDateTime(entity.updatedAt),
-        _nullableDateTimeVariable(entity.deletedAt),
-      ],
-      updates: {_db.standingAgreementIndex},
-    );
-  }
-
-  Future<void> _deleteStandingAgreementProjection(String agreementId) async {
-    await _db.customStatement(
-      'DELETE FROM standing_agreement_index WHERE agreement_id = ?',
-      [agreementId],
-    );
-  }
-
-  static final DateTime _openEndedStandingAgreementUntil = DateTime(
-    9999,
-    12,
-    31,
+  }) => getStandingAgreementsForWindowImpl(
+    start: start,
+    end: end,
+    statuses: statuses,
+    scopes: scopes,
+    limit: limit,
   );
 
-  static ({DateTime start, DateTime end}) _standingAgreementActiveWindow(
-    StandingAgreementEntity agreement,
-  ) {
-    final start = agreement.activeFrom ?? agreement.createdAt;
-    final end = agreement.activeUntil ?? _openEndedStandingAgreementUntil;
-    if (end.isAfter(start)) {
-      return (start: start, end: end);
-    }
-    return (start: start, end: start.add(const Duration(minutes: 1)));
-  }
+  /// See [AgentAttentionProjection].
+  Future<void> rebuildAttentionClaimProjection() =>
+      rebuildAttentionClaimProjectionImpl();
 
-  Future<AttentionRequestEntity?> _getAttentionRequestForProjection(
-    String requestId,
-  ) async {
-    final rows = await _db.getAgentEntityById(requestId).get();
-    if (rows.isEmpty) return null;
-    final entity = AgentDbConversions.fromEntityRow(rows.first);
-    return entity is AttentionRequestEntity ? entity : null;
-  }
-
-  Future<AttentionClaimDispositionEntity?> _latestAttentionClaimDisposition(
-    String requestId,
-  ) async {
-    final rows = await _db
-        .customSelect(
-          '''
-            SELECT *
-            FROM agent_entities
-            WHERE type = ?
-              AND subtype = ?
-              AND deleted_at IS NULL
-            ORDER BY created_at DESC, id DESC
-            LIMIT 1
-          ''',
-          variables: [
-            Variable.withString(AgentEntityTypes.attentionClaimDisposition),
-            Variable.withString(requestId),
-          ],
-          readsFrom: {_db.agentEntities},
-        )
-        .get();
-    if (rows.isEmpty) return null;
-    final row = await _db.agentEntities.mapFromRow(rows.first);
-    final entity = AgentDbConversions.fromEntityRow(row);
-    return entity is AttentionClaimDispositionEntity ? entity : null;
-  }
-
-  static AttentionClaimStatus _projectedAttentionClaimStatus(
-    AttentionRequestEntity request,
-    AttentionClaimDispositionEntity? disposition,
-  ) {
-    if (request.deletedAt != null) return AttentionClaimStatus.withdrawn;
-    if (disposition != null) return disposition.status;
-    return switch (request.status) {
-      AttentionRequestStatus.pending => AttentionClaimStatus.open,
-      AttentionRequestStatus.withdrawn => AttentionClaimStatus.withdrawn,
-      AttentionRequestStatus.awarded => AttentionClaimStatus.proposed,
-      AttentionRequestStatus.rejected => AttentionClaimStatus.declined,
-    };
-  }
-
-  static ({DateTime start, DateTime end}) _claimVisibilityWindow(
-    AttentionRequestEntity request,
-  ) {
-    final start =
-        request.rangeStart ?? request.earliestStart ?? request.createdAt;
-    final fallbackEnd = start.add(const Duration(days: 1));
-    final end =
-        request.rangeEnd ??
-        request.latestEnd ??
-        request.deadline ??
-        fallbackEnd;
-    if (end.isAfter(start)) {
-      return (start: start, end: end);
-    }
-    return (start: start, end: start.add(const Duration(minutes: 1)));
-  }
+  /// See [AgentAttentionProjection].
+  Future<void> rebuildStandingAgreementProjection() =>
+      rebuildStandingAgreementProjectionImpl();
 
   /// Fetch the latest [AgentStateEntity] for [agentId], or `null` if none
   /// exists.
@@ -1581,209 +1112,18 @@ class AgentRepository {
     return results.take(limit).toList();
   }
 
-  /// Build a [ProposalLedger] for [taskId] under [agentId] — every
-  /// [ChangeItem] the agent has ever produced for this task, annotated with
-  /// its current lifecycle status and (if resolved) who resolved it.
-  ///
-  /// The ledger feeds two consumers:
-  ///
-  ///  * the LLM prompt (`TaskAgentWorkflow._formatProposalLedger`), so the
-  ///    agent sees a single status-sorted view of its own history and can
-  ///    avoid duplicate proposals or explicitly retract stale ones;
-  ///  * the consolidated `AiSummaryCard` UI, which renders only open
-  ///    items and exposes resolved history in a collapsed history toggle
-  ///    plus an inline recent-activity footer.
-  ///
-  /// Open entries are extracted only from pending/partiallyResolved change
-  /// sets whose effective item status is still pending. Resolved entries come
-  /// from non-pending items and item-level [ChangeDecisionEntity] records, and
-  /// are capped at [resolvedLimit] most-recent decisions to keep the LLM
-  /// prompt bounded. Historical rows with a resolved parent but a stale
-  /// embedded pending item and no decision are filtered out entirely.
+  /// See [AgentProposalLedger].
   Future<ProposalLedger> getProposalLedger(
     String agentId, {
     required String taskId,
     int changeSetFetchLimit = 200,
     int resolvedLimit = 50,
-  }) async {
-    // Three independent table scans — run in parallel to keep wall-clock
-    // bounded on cold sqlite access. The dedicated pending query is what
-    // guarantees an old-but-still-open consolidated change set is never
-    // dropped by the recent-history cap: `getChangeSetsForAgent` is
-    // newest-first and would otherwise bury a long-lived open set past
-    // `changeSetFetchLimit` once enough resolved history accumulates.
-    final results = await Future.wait([
-      _db
-          .getPendingChangeSetsForAgent(
-            agentId,
-            changeSetFetchLimit * _overFetchMultiplier,
-          )
-          .get(),
-      _db.getChangeSetsForAgent(agentId, changeSetFetchLimit).get(),
-      _db
-          .getRecentDecisionsForAgent(
-            agentId,
-            resolvedLimit * _overFetchMultiplier,
-          )
-          .get(),
-    ]);
-    final pendingRows = results[0];
-    final recentRows = results[1];
-    final decisionRows = results[2];
-
-    final rawPendingSets = pendingRows
-        .map(AgentDbConversions.fromEntityRow)
-        .whereType<ChangeSetEntity>()
-        .where((cs) => cs.taskId == taskId)
-        .toList();
-    final recentSets = recentRows
-        .map(AgentDbConversions.fromEntityRow)
-        .whereType<ChangeSetEntity>()
-        .where((cs) => cs.taskId == taskId);
-
-    final setsById = <String, ChangeSetEntity>{
-      for (final cs in recentSets) cs.id: cs,
-      // Pending wins the union: its rows are freshly queried by status
-      // and may reflect state that newer resolved rows have not yet
-      // picked up if a confirmation landed between the two scans.
-      for (final cs in rawPendingSets) cs.id: cs,
-    };
-    final allSets = setsById.values.toList();
-
-    if (allSets.isEmpty) return const ProposalLedger.empty();
-
-    final decisions = decisionRows
-        .map(AgentDbConversions.fromEntityRow)
-        .whereType<ChangeDecisionEntity>()
-        .where((d) => d.taskId == taskId)
-        .toList();
-
-    final decisionByKey = <String, ChangeDecisionEntity>{};
-    for (final d in decisions) {
-      // Rows are newest-first. Keep the newest decision for each item;
-      // older retry/audit rows must not reopen a later rejection or
-      // retraction in the prompt ledger.
-      decisionByKey.putIfAbsent('${d.changeSetId}:${d.itemIndex}', () => d);
-    }
-
-    final open = <LedgerEntry>[];
-    final resolved = <LedgerEntry>[];
-    final pendingSetIds = {for (final cs in rawPendingSets) cs.id};
-    final sanitizedItemsBySetId = <String, List<ChangeItem>>{};
-
-    for (final set in allSets) {
-      final setIsActive = _isPendingLike(set.status);
-      final sanitizedItems = pendingSetIds.contains(set.id)
-          ? <ChangeItem>[]
-          : null;
-      for (var i = 0; i < set.items.length; i++) {
-        final item = set.items[i];
-        final decision = decisionByKey['${set.id}:$i'];
-        final effectiveStatus = _effectiveLedgerStatus(
-          setIsActive: setIsActive,
-          item: item,
-          decision: decision,
-        );
-        if (sanitizedItems != null) {
-          sanitizedItems.add(
-            effectiveStatus == item.status
-                ? item
-                : item.copyWith(status: effectiveStatus),
-          );
-        }
-        final isOpen =
-            setIsActive && effectiveStatus == ChangeItemStatus.pending;
-        final hasResolvedSignal =
-            effectiveStatus != ChangeItemStatus.pending || decision != null;
-        if (!isOpen && !hasResolvedSignal) {
-          // Historical consolidation bugs could leave a resolved/expired
-          // parent row with embedded pending items and no decision. Those
-          // rows are neither actionable nor useful history, so keep them
-          // out of the LLM prompt and UI activity strip.
-          continue;
-        }
-        final entry = LedgerEntry(
-          changeSetId: set.id,
-          itemIndex: i,
-          toolName: item.toolName,
-          args: item.args,
-          humanSummary: item.humanSummary,
-          fingerprint: ChangeItem.fingerprint(item),
-          status: effectiveStatus,
-          createdAt: set.createdAt,
-          resolvedAt: decision?.createdAt ?? set.resolvedAt,
-          resolvedBy: decision?.actor,
-          verdict: decision?.verdict,
-          reason: decision?.retractionReason ?? decision?.rejectionReason,
-          groupId: item.groupId,
-        );
-        if (isOpen) {
-          open.add(entry);
-        } else {
-          resolved.add(entry);
-        }
-      }
-      if (sanitizedItems != null) {
-        sanitizedItemsBySetId[set.id] = sanitizedItems;
-      }
-    }
-
-    open.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-    resolved.sort((a, b) {
-      final aResolved = a.resolvedAt ?? a.createdAt;
-      final bResolved = b.resolvedAt ?? b.createdAt;
-      return bResolved.compareTo(aResolved);
-    });
-
-    final sanitizedPendingSets = <ChangeSetEntity>[];
-    for (final set in rawPendingSets) {
-      final items = sanitizedItemsBySetId[set.id];
-      if (items == null) continue;
-      if (items.any((i) => i.status == ChangeItemStatus.pending)) {
-        sanitizedPendingSets.add(set.copyWith(items: items));
-      }
-    }
-
-    return ProposalLedger(
-      open: open,
-      resolved: resolved.take(resolvedLimit).toList(),
-      pendingSets: sanitizedPendingSets,
-    );
-  }
-
-  static bool _isPendingLike(ChangeSetStatus status) {
-    return status == ChangeSetStatus.pending ||
-        status == ChangeSetStatus.partiallyResolved;
-  }
-
-  static ChangeItemStatus _effectiveLedgerStatus({
-    required bool setIsActive,
-    required ChangeItem item,
-    required ChangeDecisionEntity? decision,
-  }) {
-    if (item.status != ChangeItemStatus.pending) return item.status;
-
-    final verdict = decision?.verdict;
-    if (verdict == null) return item.status;
-
-    // Confirmation decisions are written before dispatch. If dispatch later
-    // fails, the item is deliberately reverted to pending so the user can
-    // retry. Rejection, deferral, and retraction have no dispatch retry path,
-    // so their decisions close stale embedded pending items.
-    if (setIsActive && verdict == ChangeDecisionVerdict.confirmed) {
-      return item.status;
-    }
-    return _statusForDecision(verdict);
-  }
-
-  static ChangeItemStatus _statusForDecision(ChangeDecisionVerdict verdict) {
-    return switch (verdict) {
-      ChangeDecisionVerdict.confirmed => ChangeItemStatus.confirmed,
-      ChangeDecisionVerdict.rejected => ChangeItemStatus.rejected,
-      ChangeDecisionVerdict.deferred => ChangeItemStatus.deferred,
-      ChangeDecisionVerdict.retracted => ChangeItemStatus.retracted,
-    };
-  }
+  }) => getProposalLedgerImpl(
+    agentId,
+    taskId: taskId,
+    changeSetFetchLimit: changeSetFetchLimit,
+    resolvedLimit: resolvedLimit,
+  );
 
   /// Fetch change decisions across all instances of [templateId] created on
   /// or after [since].

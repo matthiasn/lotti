@@ -81,6 +81,17 @@ void main() {
       },
     );
 
+    // Error logging is exercised by several failure-path tests; the stub is
+    // identical everywhere so it lives here instead of 11 inline copies.
+    when(
+      () => mockDomainLogger.error(
+        any<LogDomain>(),
+        any(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) async => true);
+
     // Create ProviderContainer
     container = ProviderContainer();
     repository = ChecklistRepository();
@@ -308,15 +319,6 @@ void main() {
         () => mockJournalDb.journalEntityById(metadata.id),
       ).thenAnswer((_) async => checklist);
 
-      when(
-        () => mockDomainLogger.error(
-          any<LogDomain>(),
-          any(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: any(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async => true);
-
       // Act
       final result = await repository.createChecklist(
         taskId: taskId,
@@ -351,14 +353,6 @@ void main() {
       final exception = Exception('Test exception');
 
       when(() => mockJournalDb.journalEntityById(taskId)).thenThrow(exception);
-      when(
-        () => mockDomainLogger.error(
-          any<LogDomain>(),
-          any(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: any(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async => true);
 
       // Act
       final result = await repository.createChecklist(taskId: taskId);
@@ -430,14 +424,6 @@ void main() {
       final exception = Exception('Test exception');
 
       when(() => mockPersistenceLogic.createMetadata()).thenThrow(exception);
-      when(
-        () => mockDomainLogger.error(
-          any<LogDomain>(),
-          any(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: any(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async => true);
 
       // Act
       final result = await repository.createChecklistItem(
@@ -591,14 +577,6 @@ void main() {
       when(
         () => mockJournalDb.journalEntityById(entryId),
       ).thenAnswer((_) async => testTextEntry);
-      when(
-        () => mockDomainLogger.error(
-          any<LogDomain>(),
-          any(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: any(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async => true);
 
       // Act
       final result = await repository.updateChecklist(
@@ -633,14 +611,6 @@ void main() {
       when(
         () => mockJournalDb.journalEntityById(checklistId),
       ).thenThrow(exception);
-      when(
-        () => mockDomainLogger.error(
-          any<LogDomain>(),
-          any(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: any(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async => true);
 
       // Act
       final result = await repository.updateChecklist(
@@ -754,14 +724,6 @@ void main() {
       when(
         () => mockJournalDb.journalEntityById(entryId),
       ).thenAnswer((_) async => testTextEntry);
-      when(
-        () => mockDomainLogger.error(
-          any<LogDomain>(),
-          any(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: any(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async => true);
 
       // Act
       final result = await repository.updateChecklistItem(
@@ -797,14 +759,6 @@ void main() {
       when(
         () => mockJournalDb.journalEntityById(checklistItemId),
       ).thenThrow(exception);
-      when(
-        () => mockDomainLogger.error(
-          any<LogDomain>(),
-          any(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: any(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async => true);
 
       // Act
       final result = await repository.updateChecklistItem(
@@ -957,14 +911,6 @@ void main() {
       when(
         () => mockJournalDb.journalEntityById(checklistId),
       ).thenAnswer((_) async => null);
-      when(
-        () => mockDomainLogger.error(
-          any<LogDomain>(),
-          any(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: any(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async => true);
 
       // Act
       final result = await repository.addItemToChecklist(
@@ -1047,14 +993,6 @@ void main() {
       when(
         () => mockJournalDb.journalEntityById(checklistId),
       ).thenAnswer((_) async => task);
-      when(
-        () => mockDomainLogger.error(
-          any<LogDomain>(),
-          any(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: any(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async => true);
 
       // Act
       final result = await repository.addItemToChecklist(
@@ -1085,14 +1023,6 @@ void main() {
       final exception = Exception('Test exception');
 
       when(() => mockPersistenceLogic.createMetadata()).thenThrow(exception);
-      when(
-        () => mockDomainLogger.error(
-          any<LogDomain>(),
-          any(),
-          stackTrace: any(named: 'stackTrace'),
-          subDomain: any(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async => true);
 
       // Act
       final result = await repository.addItemToChecklist(
@@ -1271,15 +1201,6 @@ void main() {
       'malformed instead of propagating the throw — a corrupt persisted '
       'row should not poison the entire fetch',
       () async {
-        when(
-          () => mockDomainLogger.error(
-            any<LogDomain>(),
-            any(),
-            stackTrace: any(named: 'stackTrace'),
-            subDomain: any(named: 'subDomain'),
-          ),
-        ).thenAnswer((_) async => true);
-
         final corruptRow = JournalDbEntity(
           id: 'checklist-corrupt',
           createdAt: testDate,

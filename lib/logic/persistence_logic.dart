@@ -27,6 +27,10 @@ import 'package:lotti/utils/entry_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:uuid/uuid.dart';
 
+part 'persistence_create.dart';
+part 'persistence_definitions.dart';
+part 'persistence_update.dart';
+
 class PersistenceLogic {
   JournalDb get _journalDb => getIt<JournalDb>();
   MetadataService get _metadataService => getIt<MetadataService>();
@@ -132,291 +136,76 @@ class PersistenceLogic {
     clearLabelIds: clearLabelIds,
   );
 
-  Future<QuantitativeEntry?> createQuantitativeEntry(
-    QuantitativeData data,
-  ) async {
-    try {
-      final journalEntity = QuantitativeEntry(
-        data: data,
-        meta: await createMetadata(
-          dateFrom: data.dateFrom,
-          dateTo: data.dateTo,
-          uuidV5Input: json.encode(data),
-        ),
-      );
-      await createDbEntity(
-        journalEntity,
-        shouldAddGeolocation: false,
-      );
-      return journalEntity;
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'createQuantitativeEntry',
-      );
-    }
+  Future<QuantitativeEntry?> createQuantitativeEntry(QuantitativeData data) =>
+      createQuantitativeEntryImpl(data);
 
-    return null;
-  }
-
-  Future<WorkoutEntry?> createWorkoutEntry(WorkoutData data) async {
-    try {
-      final workout = WorkoutEntry(
-        data: data,
-        meta: await createMetadata(
-          dateFrom: data.dateFrom,
-          dateTo: data.dateTo,
-          uuidV5Input: data.id,
-        ),
-      );
-
-      await createDbEntity(
-        workout,
-        shouldAddGeolocation: false,
-      );
-
-      return workout;
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'createWorkoutEntry',
-      );
-    }
-
-    return null;
-  }
+  Future<WorkoutEntry?> createWorkoutEntry(WorkoutData data) =>
+      createWorkoutEntryImpl(data);
 
   Future<bool> createSurveyEntry({
     required SurveyData data,
     String? linkedId,
-  }) async {
-    try {
-      final journalEntity = JournalEntity.survey(
-        data: data,
-        meta: await createMetadata(
-          dateFrom: data.taskResult.startDate,
-          dateTo: data.taskResult.endDate,
-          uuidV5Input: json.encode(data),
-        ),
-      );
-
-      await createDbEntity(journalEntity, linkedId: linkedId);
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'createSurveyEntry',
-      );
-    }
-
-    return true;
-  }
+  }) => createSurveyEntryImpl(data: data, linkedId: linkedId);
 
   Future<MeasurementEntry?> createMeasurementEntry({
     required MeasurementData data,
     required bool private,
     String? linkedId,
     String? comment,
-  }) async {
-    try {
-      final measurementEntry = MeasurementEntry(
-        data: data,
-        meta: await createMetadata(
-          dateFrom: data.dateFrom,
-          dateTo: data.dateTo,
-          uuidV5Input: json.encode(data),
-          private: private,
-        ),
-        entryText: entryTextFromPlain(comment),
-      );
-
-      // clock.now() so tests can pin the "is this a live entry" gate with
-      // withClock instead of racing the wall clock.
-      final shouldAddGeolocation =
-          data.dateFrom.difference(clock.now()).inMinutes.abs() < 1 &&
-          data.dateTo.difference(clock.now()).inMinutes.abs() < 1;
-
-      await createDbEntity(
-        measurementEntry,
-        linkedId: linkedId,
-        shouldAddGeolocation: shouldAddGeolocation,
-      );
-
-      _updateNotifications.notify({measurementEntry.data.dataTypeId});
-
-      return measurementEntry;
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'createMeasurementEntry',
-      );
-    }
-
-    return null;
-  }
+  }) => createMeasurementEntryImpl(
+    data: data,
+    private: private,
+    linkedId: linkedId,
+    comment: comment,
+  );
 
   Future<HabitCompletionEntry?> createHabitCompletionEntry({
     required HabitCompletionData data,
     required HabitDefinition? habitDefinition,
     String? linkedId,
     String? comment,
-  }) async {
-    try {
-      final habitCompletionEntry = HabitCompletionEntry(
-        data: data,
-        meta: await createMetadata(
-          dateFrom: data.dateFrom,
-          dateTo: data.dateTo,
-          uuidV5Input: json.encode(data),
-          private: habitDefinition?.private,
-        ),
-        entryText: entryTextFromPlain(comment),
-      );
-
-      // clock.now() so tests can pin the "is this a live entry" gate with
-      // withClock instead of racing the wall clock.
-      final shouldAddGeolocation =
-          data.dateFrom.difference(clock.now()).inMinutes.abs() < 1 &&
-          data.dateTo.difference(clock.now()).inMinutes.abs() < 1;
-
-      final saved = await createDbEntity(
-        habitCompletionEntry,
-        linkedId: linkedId,
-        shouldAddGeolocation: shouldAddGeolocation,
-      );
-
-      if (saved != true) {
-        return null;
-      }
-
-      if (habitDefinition != null) {
-        await getIt<NotificationService>().scheduleHabitNotification(
-          habitDefinition,
-          daysToAdd: 1,
-        );
-      }
-
-      return habitCompletionEntry;
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'createMeasurementEntry',
-      );
-    }
-
-    return null;
-  }
+  }) => createHabitCompletionEntryImpl(
+    data: data,
+    habitDefinition: habitDefinition,
+    linkedId: linkedId,
+    comment: comment,
+  );
 
   Future<Task?> createTaskEntry({
     required TaskData data,
     required EntryText entryText,
     String? linkedId,
     String? categoryId,
-  }) async {
-    try {
-      final task = Task(
-        data: data,
-        entryText: entryText,
-        meta: await createMetadata(
-          dateFrom: data.dateFrom,
-          dateTo: data.dateTo,
-          uuidV5Input: json.encode(data),
-          categoryId: categoryId,
-          starred: false,
-        ),
-      );
-
-      await createDbEntity(task, linkedId: linkedId);
-
-      return task;
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'createTaskEntry',
-      );
-    }
-
-    return null;
-  }
+  }) => createTaskEntryImpl(
+    data: data,
+    entryText: entryText,
+    linkedId: linkedId,
+    categoryId: categoryId,
+  );
 
   Future<AiResponseEntry?> createAiResponseEntry({
     required AiResponseData data,
     DateTime? dateFrom,
     String? linkedId,
     String? categoryId,
-  }) async {
-    try {
-      final aiResponse = AiResponseEntry(
-        data: data,
-        meta: await createMetadata(
-          dateFrom: dateFrom ?? DateTime.now(),
-          dateTo: DateTime.now(),
-          uuidV5Input: json.encode(data),
-          categoryId: categoryId,
-          starred: false,
-        ),
-      );
-
-      await createDbEntity(aiResponse, linkedId: linkedId);
-
-      if (linkedId != null) {
-        _updateNotifications.notify({linkedId});
-      }
-
-      return aiResponse;
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'createAiResponseEntry',
-      );
-    }
-
-    return null;
-  }
+  }) => createAiResponseEntryImpl(
+    data: data,
+    dateFrom: dateFrom,
+    linkedId: linkedId,
+    categoryId: categoryId,
+  );
 
   Future<JournalEvent?> createEventEntry({
     required EventData data,
     required EntryText entryText,
     String? linkedId,
     String? categoryId,
-  }) async {
-    try {
-      final journalEvent = JournalEvent(
-        data: data,
-        entryText: entryText,
-        meta: await createMetadata(
-          starred: true,
-          categoryId: categoryId,
-        ),
-      );
-
-      await createDbEntity(journalEvent, linkedId: linkedId);
-
-      return journalEvent;
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'createEventEntry',
-      );
-    }
-
-    return null;
-  }
+  }) => createEventEntryImpl(
+    data: data,
+    entryText: entryText,
+    linkedId: linkedId,
+    categoryId: categoryId,
+  );
 
   Future<bool> createLink({
     required String fromId,
@@ -603,213 +392,41 @@ class PersistenceLogic {
     String journalEntityId,
     EntryText entryText,
     DateTime dateTo,
-  ) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      final newMeta = await updateMetadata(journalEntity.meta, dateTo: dateTo);
-
-      if (journalEntity is JournalEntry) {
-        await updateDbEntity(
-          journalEntity.copyWith(
-            meta: newMeta,
-            entryText: entryText,
-          ),
-        );
-      }
-
-      if (journalEntity is JournalAudio) {
-        await updateDbEntity(
-          journalEntity.copyWith(
-            meta: newMeta.copyWith(
-              flag: newMeta.flag == EntryFlag.import
-                  ? EntryFlag.none
-                  : newMeta.flag,
-            ),
-            entryText: entryText,
-          ),
-        );
-      }
-
-      if (journalEntity is JournalImage) {
-        await updateDbEntity(
-          journalEntity.copyWith(
-            meta: newMeta.copyWith(
-              flag: newMeta.flag == EntryFlag.import
-                  ? EntryFlag.none
-                  : newMeta.flag,
-            ),
-            entryText: entryText,
-          ),
-        );
-      }
-
-      if (journalEntity is MeasurementEntry) {
-        await updateDbEntity(
-          journalEntity.copyWith(
-            meta: newMeta,
-            entryText: entryText,
-          ),
-        );
-      }
-
-      if (journalEntity is HabitCompletionEntry) {
-        await updateDbEntity(
-          journalEntity.copyWith(
-            meta: newMeta,
-            entryText: entryText,
-          ),
-        );
-      }
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'updateJournalEntityText',
-      );
-      // Mirror updateJournalEntity's contract: a caught exception means the
-      // write did not commit, so callers must see a failure return rather
-      // than a silently-true result with a logged exception.
-      return false;
-    }
-    return true;
-  }
+  ) => updateJournalEntityTextImpl(journalEntityId, entryText, dateTo);
 
   Future<bool> updateJournalEntry({
     required String journalEntityId,
     EntryText? entryText,
     DateTime? dateFrom,
     DateTime? dateTo,
-  }) async {
-    if (entryText == null && dateFrom == null && dateTo == null) {
-      return false;
-    }
-
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity is! JournalEntry) {
-        return false;
-      }
-
-      final newMeta = await updateMetadata(
-        journalEntity.meta,
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-      );
-
-      final updated = journalEntity.copyWith(
-        meta: newMeta,
-        entryText: entryText ?? journalEntity.entryText,
-      );
-
-      return await updateDbEntity(updated) ?? false;
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'updateJournalEntry',
-      );
-      return false;
-    }
-  }
+  }) => updateJournalEntryImpl(
+    journalEntityId: journalEntityId,
+    entryText: entryText,
+    dateFrom: dateFrom,
+    dateTo: dateTo,
+  );
 
   Future<bool> updateTask({
     required String journalEntityId,
     required TaskData taskData,
     String? categoryId,
     EntryText? entryText,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      await journalEntity.maybeMap(
-        task: (Task task) async {
-          final priorityChanged = task.data.priority != taskData.priority;
-          await updateDbEntity(
-            task.copyWith(
-              meta: await updateMetadata(journalEntity.meta),
-              entryText: entryText ?? task.entryText,
-              data: taskData,
-            ),
-            beforeNotify: priorityChanged
-                ? () => _journalDb.updateTaskPriorityColumn(
-                    id: journalEntityId,
-                    priority: taskData.priority.short,
-                    rank: taskData.priority.rank,
-                  )
-                : null,
-          );
-        },
-        orElse: () async {
-          _loggingService.error(
-            LogDomain.persistence,
-            'not a task',
-            subDomain: 'updateTask',
-          );
-        },
-      );
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'updateTask',
-      );
-    }
-    return true;
-  }
+  }) => updateTaskImpl(
+    journalEntityId: journalEntityId,
+    taskData: taskData,
+    categoryId: categoryId,
+    entryText: entryText,
+  );
 
   Future<bool> updateEvent({
     required String journalEntityId,
     required EventData data,
     EntryText? entryText,
-  }) async {
-    try {
-      final journalEntity = await _journalDb.journalEntityById(journalEntityId);
-
-      if (journalEntity == null) {
-        return false;
-      }
-
-      await journalEntity.maybeMap(
-        event: (JournalEvent event) async {
-          await updateDbEntity(
-            event.copyWith(
-              meta: await updateMetadata(journalEntity.meta),
-              entryText: entryText,
-              data: data,
-            ),
-          );
-        },
-        orElse: () async {
-          _loggingService.error(
-            LogDomain.persistence,
-            'not an event',
-            subDomain: 'updateEvent',
-          );
-        },
-      );
-    } catch (exception, stackTrace) {
-      _loggingService.error(
-        LogDomain.persistence,
-        exception,
-        stackTrace: stackTrace,
-        subDomain: 'updateEvent',
-      );
-    }
-    return true;
-  }
+  }) => updateEventImpl(
+    journalEntityId: journalEntityId,
+    data: data,
+    entryText: entryText,
+  );
 
   /// Adds geolocation to a journal entry asynchronously.
   ///
@@ -1026,74 +643,15 @@ class PersistenceLogic {
     return null;
   }
 
-  Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) async {
-    final linesAffected = await _journalDb.upsertEntityDefinition(
-      entityDefinition,
-    );
-    final typeNotification = switch (entityDefinition) {
-      CategoryDefinition() => categoriesNotification,
-      HabitDefinition() => habitsNotification,
-      DashboardDefinition() => dashboardsNotification,
-      MeasurableDataType() => measurablesNotification,
-      LabelDefinition() => labelsNotification,
-    };
-    _updateNotifications.notify({entityDefinition.id, typeNotification});
-    await outboxService.enqueueMessage(
-      SyncMessage.entityDefinition(
-        entityDefinition: entityDefinition,
-        status: SyncEntryStatus.update,
-      ),
-    );
-    return linesAffected;
-  }
+  Future<int> upsertEntityDefinition(EntityDefinition entityDefinition) =>
+      upsertEntityDefinitionImpl(entityDefinition);
 
-  Future<int> upsertDashboardDefinition(DashboardDefinition dashboard) async {
-    final linesAffected = await _journalDb.upsertDashboardDefinition(dashboard);
-    _updateNotifications.notify({dashboard.id, dashboardsNotification});
-    await outboxService.enqueueMessage(
-      SyncMessage.entityDefinition(
-        entityDefinition: dashboard,
-        status: SyncEntryStatus.update,
-      ),
-    );
+  Future<int> upsertDashboardDefinition(DashboardDefinition dashboard) =>
+      upsertDashboardDefinitionImpl(dashboard);
 
-    if (dashboard.deletedAt != null) {
-      await getIt<NotificationService>().cancelNotification(
-        dashboard.id.hashCode,
-      );
-    }
+  Future<void> setConfigFlag(ConfigFlag configFlag) =>
+      setConfigFlagImpl(configFlag);
 
-    return linesAffected;
-  }
-
-  Future<void> setConfigFlag(ConfigFlag configFlag) async {
-    final previous = await _journalDb.getConfigFlagByName(configFlag.name);
-    await _journalDb.upsertConfigFlag(configFlag);
-    if (previous?.status != configFlag.status) {
-      await outboxService.enqueueMessage(
-        SyncMessage.configFlag(
-          name: configFlag.name,
-          description: configFlag.description,
-          status: configFlag.status,
-        ),
-      );
-    }
-    if (configFlag.name == 'private') {
-      _updateNotifications.notify({privateToggleNotification});
-    }
-  }
-
-  Future<int> deleteDashboardDefinition(DashboardDefinition dashboard) async {
-    final linesAffected = await upsertDashboardDefinition(
-      dashboard.copyWith(
-        deletedAt: DateTime.now(),
-      ),
-    );
-
-    await getIt<NotificationService>().cancelNotification(
-      dashboard.id.hashCode,
-    );
-
-    return linesAffected;
-  }
+  Future<int> deleteDashboardDefinition(DashboardDefinition dashboard) =>
+      deleteDashboardDefinitionImpl(dashboard);
 }

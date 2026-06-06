@@ -433,9 +433,9 @@ void main() {
 
     setUp(() {
       mockCache = MockEntitiesCacheService();
-      if (!getIt.isRegistered<EntitiesCacheService>()) {
-        getIt.registerSingleton<EntitiesCacheService>(mockCache);
-      }
+      // The file-level setUpTestGetIt has already reset GetIt, so this
+      // registration is always fresh — no conditional guard needed.
+      getIt.registerSingleton<EntitiesCacheService>(mockCache);
     });
 
     SavedTaskFilter viewWithCategories(Set<String> ids) => SavedTaskFilter(

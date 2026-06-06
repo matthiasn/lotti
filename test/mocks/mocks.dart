@@ -718,7 +718,12 @@ class MockTask extends Mock implements Task {
   final DateTime _date;
 
   @override
-  TaskData get data => _data!;
+  TaskData get data =>
+      _data ??
+      (throw StateError(
+        'MockTask.data was read but no TaskData was passed to the '
+        'constructor — provide one via MockTask(data: ...).',
+      ));
 
   @override
   Metadata get meta => Metadata(

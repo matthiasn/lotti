@@ -2771,4 +2771,140 @@ void main() {
       });
     });
   });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Transplanted from media_import_integration_test.dart (file dissolved per
+  // the one-test-file-per-source rule): scoped GetIt + fake documents dir.
+  group('importImageAssets — photo picker integration (scoped)', () {
+    late MockDomainLogger mockLoggingService;
+    late Directory tempDir;
+
+    setUpAll(() async {
+      getIt.pushNewScope();
+      setFakeDocumentsPath();
+
+      mockLoggingService = MockDomainLogger();
+
+      getIt
+        ..registerSingleton<Directory>(
+          await getApplicationDocumentsDirectory(),
+        )
+        ..registerSingleton<JournalDb>(MockJournalDb())
+        ..registerSingleton<Fts5Db>(MockFts5Db())
+        ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+        ..registerSingleton<VectorClockService>(MockVectorClockService())
+        ..registerSingleton<UpdateNotifications>(MockUpdateNotifications())
+        ..registerSingleton<NotificationService>(MockNotificationService())
+        ..registerSingleton<TimeService>(MockTimeService())
+        ..registerSingleton<DomainLogger>(mockLoggingService);
+
+      tempDir = await Directory.systemTemp.createTemp('lotti_test_');
+    });
+
+    tearDownAll(() async {
+      await getIt.resetScope();
+      await getIt.popScope();
+      if (tempDir.existsSync()) {
+        await tempDir.delete(recursive: true);
+      }
+    });
+
+    setUp(() {
+      when(
+        () => mockLoggingService.error(
+          any<LogDomain>(),
+          any<Object>(),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) async {});
+    });
+
+    group('importImageAssets - Photo Picker Integration', () {
+      setUp(() {
+        // Mock PhotoManager plugin method channel
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              (MethodCall methodCall) async {
+                if (methodCall.method == 'requestPermissionExtend') {
+                  // Return denied permission (0 = PermissionState.denied)
+                  return 0;
+                }
+                return null;
+              },
+            );
+
+        // Mock wechat_assets_picker plugin method channel
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('com.fluttercandies.wechat_assets_picker'),
+              (MethodCall methodCall) async {
+                // Return null for pickAssets (user cancelled)
+                return null;
+              },
+            );
+      });
+
+      tearDown(() {
+        // Clean up method channel handlers
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('com.fluttercandies/photo_manager'),
+              null,
+            );
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('com.fluttercandies.wechat_assets_picker'),
+              null,
+            );
+      });
+
+      testWidgets('returns early when permissions are not granted', (
+        tester,
+      ) async {
+        final context = MockBuildContext();
+        when(() => context.mounted).thenReturn(true);
+
+        await expectLater(
+          importImageAssets(context),
+          completes,
+        );
+      });
+
+      testWidgets('returns early when context is not mounted', (tester) async {
+        final context = MockBuildContext();
+        when(() => context.mounted).thenReturn(false);
+
+        await expectLater(
+          importImageAssets(context),
+          completes,
+        );
+      });
+
+      testWidgets('handles null assets list gracefully', (tester) async {
+        final context = MockBuildContext();
+        when(() => context.mounted).thenReturn(true);
+
+        await expectLater(
+          importImageAssets(context),
+          completes,
+        );
+      });
+
+      testWidgets('passes linkedId and categoryId parameters', (tester) async {
+        final context = MockBuildContext();
+        when(() => context.mounted).thenReturn(true);
+
+        await expectLater(
+          importImageAssets(
+            context,
+            linkedId: 'test-link',
+            categoryId: 'test-category',
+          ),
+          completes,
+        );
+      });
+    });
+  });
 }

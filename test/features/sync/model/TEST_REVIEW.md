@@ -24,7 +24,7 @@ and `lib/features/sync/models/` ↔ `test/features/sync/models/`
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `test/features/sync/model/sync_message_test.dart` is 723 lines and growing with each new `SyncMessage` variant. The file has clear natural seams: `SyncAgentEntity`, `SyncAgentLink`, `SyncAgentBundle`, `SyncThemingSelection`, `SyncSyncNodeProfile` are five independent variant groups. When the next variant is added this file will breach 900+ lines. Pre-emptively split into `sync_message_agent_entity_test.dart`, `sync_message_agent_link_test.dart`, `sync_message_theming_test.dart`, and `sync_message_agent_bundle_test.dart`, keeping `sync_message_test.dart` for cross-cutting concerns (unknown `runtimeType`, null-safety round-trips).
+- [x] **[HIGH]** `test/features/sync/model/sync_message_test.dart` is 723 lines and growing with each new `SyncMessage` variant. The file has clear natural seams: `SyncAgentEntity`, `SyncAgentLink`, `SyncAgentBundle`, `SyncThemingSelection`, `SyncSyncNodeProfile` are five independent variant groups. When the next variant is added this file will breach 900+ lines. Pre-emptively split into `sync_message_agent_entity_test.dart`, `sync_message_agent_link_test.dart`, `sync_message_theming_test.dart`, and `sync_message_agent_bundle_test.dart`, keeping `sync_message_test.dart` for cross-cutting concerns (unknown `runtimeType`, null-safety round-trips). **RESOLVED (assessed, no change):** all variants live in the single `sync_message.dart` source, so the pre-emptive split would violate the one-test-file-per-source rule; at 723 lines with one group per variant the file is within tolerances and stays the single mirror.
 
 ---
 

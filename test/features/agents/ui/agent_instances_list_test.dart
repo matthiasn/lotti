@@ -64,7 +64,8 @@ void main() {
         ],
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   group('AgentInstancesList — rendering', () {
@@ -171,7 +172,8 @@ void main() {
       );
 
       await tester.enterText(find.byType(TextField), 'alp');
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Alpha'), findsOneWidget);
       expect(find.text('Bravo'), findsNothing);
@@ -198,7 +200,8 @@ void main() {
       );
 
       await tester.enterText(find.byType(TextField), 'alp');
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('“alp”'), findsOneWidget);
     });
 
@@ -224,7 +227,8 @@ void main() {
       );
 
       await tester.enterText(find.byType(TextField), 'alp');
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Bravo'), findsNothing);
 
       await tester.tap(
@@ -235,7 +239,8 @@ void main() {
               .agentInstancesSearchClear,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Alpha'), findsOneWidget);
       expect(find.text('Bravo'), findsOneWidget);
@@ -260,7 +265,8 @@ void main() {
         );
 
         await tester.enterText(find.byType(TextField), 'no-such-thing');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final ctx = tester.element(find.byType(AgentInstancesList));
         expect(
@@ -275,7 +281,8 @@ void main() {
         );
         expect(clearAll, findsAtLeast(1));
         await tester.tap(clearAll.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.text('Alpha'), findsOneWidget);
       },
     );
@@ -370,7 +377,8 @@ void main() {
 
       expect(find.text('Task A'), findsOneWidget);
       await tester.tap(find.text('Laura'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Task A'), findsNothing);
     });
   });
@@ -396,7 +404,8 @@ void main() {
       );
 
       await tester.tap(find.text('Nav Agent'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(navigated, '/settings/agents/instances/agent-nav');
     });
   });
@@ -432,7 +441,8 @@ void main() {
         await tester.tap(
           find.text(ctx.messages.agentInstancesToolbarFilters),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Section header is visible.
         expect(
@@ -447,11 +457,13 @@ void main() {
         await tester.tap(
           find.text(ctx.messages.agentTemplateKindTaskAgent).last,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Dismiss popover so the chip below renders without the panel.
         await tester.tapAt(const Offset(20, 20));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Filtered list shows only the task agent.
         expect(find.text('Alpha'), findsOneWidget);
@@ -487,15 +499,18 @@ void main() {
         await tester.tap(
           find.text(ctx.messages.agentInstancesToolbarFilters),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Toggle a Type filter, then a Status filter.
         await tester.tap(
           find.text(ctx.messages.agentTemplateKindTaskAgent).last,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text(ctx.messages.agentLifecycleActive).last);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The Type section's "Clear" appears (it has a selection).
         // There may be two Clear links (Type + Status) — tap the first.
@@ -504,11 +519,13 @@ void main() {
         );
         expect(clears, findsAtLeast(1));
         await tester.tap(clears.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Dismiss popover and inspect chips.
         await tester.tapAt(const Offset(20, 20));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         // Status chip ("Active") still rendered; Task Agent chip gone.
         expect(
           find.text(ctx.messages.agentLifecycleActive),
@@ -548,7 +565,8 @@ void main() {
       await tester.tap(
         find.text(ctx.messages.agentInstancesToolbarFilters),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The Soul section header lights up only when at least one soul is
       // present in the data — sanity check it.
@@ -561,10 +579,12 @@ void main() {
 
       // Tap "Laura" row inside the popover.
       await tester.tap(find.text('Laura').last);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tapAt(const Offset(20, 20));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Alpha'), findsOneWidget);
       expect(find.text('Bravo'), findsNothing);
@@ -605,13 +625,15 @@ void main() {
       await tester.tap(
         find.textContaining(ctx.messages.agentInstancesToolbarGroupBy),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Pick "Type" from the menu (single-select; closes on tap).
       await tester.tap(
         find.text(ctx.messages.agentInstancesGroupByType).last,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Group headers now show the localized type label, not the raw
       // enum name.
@@ -652,11 +674,13 @@ void main() {
         await tester.tap(
           find.textContaining(ctx.messages.agentInstancesToolbarGroupBy),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(
           find.text(ctx.messages.agentInstancesGroupByStatus).last,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The Group by button now shows the Status label as its trailing
         // value (the switch arm covered by this test).
@@ -698,13 +722,16 @@ void main() {
         await tester.tap(
           find.text(ctx.messages.agentInstancesToolbarFilters),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Toggle a status, toggle a soul.
         await tester.tap(find.text(ctx.messages.agentLifecycleActive).last);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Laura').last);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Two "Clear" links appear (Status + Soul). Tap them in turn —
         // the first hits the Status onClear callback, the second hits
@@ -714,12 +741,14 @@ void main() {
         );
         expect(clears, findsNWidgets(2));
         await tester.tap(clears.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         clears = find.text(ctx.messages.agentInstancesFilterClearSection);
         expect(clears, findsOneWidget);
         await tester.tap(clears);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Both sections cleared → no Clear links left.
         expect(
@@ -758,11 +787,13 @@ void main() {
 
         final ctx = tester.element(find.byType(AgentInstancesList));
         await tester.tap(find.text(ctx.messages.agentInstancesSortRecent));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(
           find.text(ctx.messages.agentInstancesSortName).last,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Both rows render; confirm Alpha exists then Bravo (paint order).
         expect(find.text('Alpha'), findsOneWidget);
@@ -799,19 +830,24 @@ void main() {
         await tester.tap(
           find.text(ctx.messages.agentInstancesToolbarFilters),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(
           find.text(ctx.messages.agentTemplateKindTaskAgent).last,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Laura').last); // soul chip
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tapAt(const Offset(20, 20));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Search chip.
         await tester.enterText(find.byType(TextField), 'al');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Three remove icons (type, soul, search) plus their chip
         // labels are visible.
@@ -821,7 +857,8 @@ void main() {
         // finder between taps since each removal shrinks the chip row.
         while (find.byIcon(Icons.cancel_rounded).evaluate().isNotEmpty) {
           await tester.tap(find.byIcon(Icons.cancel_rounded).first);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
         }
 
         // No chips left → result count is back to the unfiltered form.
@@ -854,11 +891,14 @@ void main() {
       await tester.tap(
         find.text(ctx.messages.agentInstancesToolbarFilters),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text(ctx.messages.agentLifecycleActive).last);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tapAt(const Offset(20, 20));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // ActiveFilterChip uses Icons.cancel_rounded — find the chip by its
       // label and tap the chip itself (whole chip is the remove target).
@@ -867,7 +907,8 @@ void main() {
         findsOneWidget,
       );
       await tester.tap(find.byIcon(Icons.cancel_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // No more active filter → result count is the unfiltered form.
       expect(
@@ -905,7 +946,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final ctx = tester.element(find.byType(AgentInstancesList));
 
@@ -914,7 +956,8 @@ void main() {
 
         // Search field still works at narrow width.
         await tester.enterText(find.byType(TextField), 'zzz');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         // "1 vm total, 0 filtered" — counts diverge so the filtered form
         // renders.
         expect(
@@ -986,7 +1029,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final ctx = tester.element(find.byType(AgentInstancesList));
 
@@ -995,11 +1039,13 @@ void main() {
         await tester.tap(
           find.textContaining(ctx.messages.agentInstancesToolbarGroupBy),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(
           find.text(ctx.messages.agentInstancesGroupByType).last,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Task Iris'), findsOneWidget);
         expect(find.text('Iris template'), findsOneWidget);
@@ -1069,12 +1115,14 @@ void main() {
         );
 
         await tester.enterText(find.byType(TextField), 'alp');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         // Re-enter the same query — controller fires onChanged with the
         // unchanged value; the guard skips the rebuild path but the row
         // must still be there.
         await tester.enterText(find.byType(TextField), 'alp');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Alpha'), findsOneWidget);
       },

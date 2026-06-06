@@ -11,103 +11,10 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:meta/meta.dart';
 
+part 'sync_sequence_gap_materializer.dart';
+part 'sync_sequence_gap_model.dart';
+
 typedef _GapRange = ({String hostId, int startCounter, int endCounter});
-
-class _GapAccumulator {
-  final List<_GapRange> _ranges = [];
-  int _count = 0;
-
-  bool get isNotEmpty => _count > 0;
-  int get count => _count;
-
-  void addRange({
-    required String hostId,
-    required int startCounter,
-    required int endCounter,
-  }) {
-    if (endCounter < startCounter) return;
-    _ranges.add((
-      hostId: hostId,
-      startCounter: startCounter,
-      endCounter: endCounter,
-    ));
-    _count += endCounter - startCounter + 1;
-  }
-
-  List<({String hostId, int counter})> toGapList() => _GapEntriesView(_ranges);
-}
-
-class _GapEntriesView extends ListBase<({String hostId, int counter})> {
-  _GapEntriesView(List<_GapRange> ranges)
-    : _ranges = List.unmodifiable(ranges),
-      _rangeEnds = _buildRangeEnds(ranges),
-      _length = _computeLength(ranges);
-
-  final List<_GapRange> _ranges;
-  final List<int> _rangeEnds;
-  final int _length;
-
-  static List<int> _buildRangeEnds(List<_GapRange> ranges) {
-    final ends = <int>[];
-    var total = 0;
-    for (final range in ranges) {
-      total += range.endCounter - range.startCounter + 1;
-      ends.add(total);
-    }
-    return ends;
-  }
-
-  static int _computeLength(List<_GapRange> ranges) {
-    var total = 0;
-    for (final range in ranges) {
-      total += range.endCounter - range.startCounter + 1;
-    }
-    return total;
-  }
-
-  @override
-  int get length => _length;
-
-  @override
-  set length(int newLength) {
-    throw UnsupportedError('GapEntriesView is read-only');
-  }
-
-  @override
-  ({String hostId, int counter}) operator [](int index) {
-    RangeError.checkValidIndex(index, this, null, _length);
-    var low = 0;
-    var high = _rangeEnds.length - 1;
-    while (low < high) {
-      final mid = (low + high) >> 1;
-      if (index < _rangeEnds[mid]) {
-        high = mid;
-      } else {
-        low = mid + 1;
-      }
-    }
-
-    final rangeIndex = low;
-    final previousEnd = rangeIndex == 0 ? 0 : _rangeEnds[rangeIndex - 1];
-    final range = _ranges[rangeIndex];
-    return (
-      hostId: range.hostId,
-      counter: range.startCounter + index - previousEnd,
-    );
-  }
-
-  @override
-  void operator []=(int index, ({String hostId, int counter}) value) {
-    throw UnsupportedError('GapEntriesView is read-only');
-  }
-}
-
-// Delegates to [SyncSequenceStatusX.isResolved] (the single source of truth in
-// sync_db.dart) so the watermark "resolved" set is defined in exactly one place.
-bool _isResolvedSequenceStatusIndex(int status) =>
-    status >= 0 &&
-    status < SyncSequenceStatus.values.length &&
-    SyncSequenceStatus.values[status].isResolved;
 
 /// Service for managing the sync sequence log, which tracks received entries
 /// by (hostId, counter) pairs to detect gaps and enable backfill requests.
@@ -881,188 +788,6 @@ class SyncSequenceLogService {
     return gaps.toGapList();
   }
 
-  Future<int> _materializeLargeGap({
-    required String hostId,
-    required int startCounter,
-    required int endCounter,
-    required int gapSize,
-    required String originatingHostId,
-    required DateTime now,
-  }) async {
-    if (gapSize >= SyncTuning.extremeGapWarningSize) {
-      _trace(
-        'extremeGapDetected hostId=$hostId gapSize=$gapSize '
-        'start=$startCounter end=$endCounter '
-        'chunkSize=${SyncTuning.gapMaterializationChunkSize}',
-        subDomain: 'sequence.extremeGap',
-      );
-    }
-
-    var insertedCount = 0;
-    for (
-      var chunkStart = startCounter;
-      chunkStart <= endCounter;
-      chunkStart += SyncTuning.gapMaterializationChunkSize
-    ) {
-      final chunkEnd = math.min(
-        endCounter,
-        chunkStart + SyncTuning.gapMaterializationChunkSize - 1,
-      );
-      final existingCounters = await _syncDatabase.getCountersForHostInRange(
-        hostId,
-        chunkStart,
-        chunkEnd,
-      );
-      final missingEntries = <SyncSequenceLogCompanion>[];
-
-      for (var counter = chunkStart; counter <= chunkEnd; counter++) {
-        if (!existingCounters.contains(counter)) {
-          missingEntries.add(
-            SyncSequenceLogCompanion(
-              hostId: Value(hostId),
-              counter: Value(counter),
-              originatingHostId: Value(originatingHostId),
-              status: Value(SyncSequenceStatus.missing.index),
-              createdAt: Value(now),
-              updatedAt: Value(now),
-            ),
-          );
-        }
-      }
-
-      if (missingEntries.isNotEmpty) {
-        insertedCount += missingEntries.length;
-        await _syncDatabase.batchInsertSequenceEntries(missingEntries);
-      }
-    }
-
-    return insertedCount;
-  }
-
-  List<VectorClock> _filterCoveredVectorClocks(
-    List<VectorClock>? coveredVectorClocks,
-    VectorClock current,
-  ) {
-    if (coveredVectorClocks == null || coveredVectorClocks.isEmpty) {
-      return const [];
-    }
-    final filtered = <VectorClock>[];
-    for (final clock in coveredVectorClocks) {
-      final isCurrent =
-          VectorClock.compare(clock, current) == VclockStatus.equal;
-      if (!isCurrent) {
-        filtered.add(clock);
-      }
-    }
-    return filtered;
-  }
-
-  Future<List<({String hostId, int counter})>> recordReceivedEntryLink({
-    required String linkId,
-    required VectorClock vectorClock,
-    required String originatingHostId,
-    List<VectorClock>? coveredVectorClocks,
-  }) {
-    return recordReceivedEntry(
-      entryId: linkId,
-      vectorClock: vectorClock,
-      originatingHostId: originatingHostId,
-      coveredVectorClocks: coveredVectorClocks,
-      payloadType: SyncSequencePayloadType.entryLink,
-    );
-  }
-
-  /// Mark counters from covered vector clocks as received.
-  /// These are counters that were "spent" on superseded versions of the entry
-  /// before the final version was sent.
-  ///
-  /// This method inserts records for covered counters even if they don't exist
-  /// yet in the sequence log. This pre-emptively marks them as received before
-  /// gap detection can mark them as missing, preventing unnecessary backfill
-  /// requests for counters that were superseded before being sent.
-  Future<void> _markCoveredCountersAsReceived({
-    required List<VectorClock> coveredVectorClocks,
-    required String entryId,
-    required SyncSequencePayloadType payloadType,
-    required String myHost,
-  }) async {
-    final now = DateTime.now();
-    var markedCount = 0;
-    final affectedHosts = <String>{};
-
-    for (final coveredClock in coveredVectorClocks) {
-      for (final entry in coveredClock.vclock.entries) {
-        final hostId = entry.key;
-        final counter = entry.value;
-
-        // Skip our own host
-        if (hostId == myHost) continue;
-
-        // Check if this counter already exists in the sequence log
-        final existing = await _syncDatabase.getEntryByHostAndCounter(
-          hostId,
-          counter,
-        );
-
-        // Insert or update record for covered counter:
-        // - If doesn't exist: insert as received (pre-empt gap detection)
-        // - If exists with missing/requested: update to received
-        // - If exists with received/backfilled: skip (don't downgrade)
-        if (existing == null) {
-          // Counter doesn't exist - insert as received to pre-empt gap detection
-          await _syncDatabase.recordSequenceEntry(
-            SyncSequenceLogCompanion(
-              hostId: Value(hostId),
-              counter: Value(counter),
-              entryId: Value(entryId),
-              payloadType: Value(payloadType.index),
-              status: Value(SyncSequenceStatus.received.index),
-              createdAt: Value(now),
-              updatedAt: Value(now),
-            ),
-          );
-          markedCount++;
-          affectedHosts.add(hostId);
-        } else if (existing.status == SyncSequenceStatus.missing.index ||
-            existing.status == SyncSequenceStatus.requested.index) {
-          // Existing record with missing/requested - update to received
-          await _syncDatabase.recordSequenceEntry(
-            SyncSequenceLogCompanion(
-              hostId: Value(hostId),
-              counter: Value(counter),
-              entryId: Value(entryId),
-              payloadType: Value(payloadType.index),
-              status: Value(SyncSequenceStatus.received.index),
-              createdAt: Value(existing.createdAt),
-              updatedAt: Value(now),
-            ),
-          );
-          markedCount++;
-          affectedHosts.add(hostId);
-          if (existing.status == SyncSequenceStatus.requested.index) {
-            _trace(
-              'recordReceivedEntry: requestedResolved (covered) hostId=$hostId counter=$counter entryId=$entryId type=$payloadType',
-              subDomain: 'sequence.requestedResolved',
-            );
-          }
-        }
-        // If already received/backfilled, skip - don't downgrade status
-      }
-    }
-
-    if (markedCount > 0) {
-      // Invalidate the watermark cache for affected hosts so that subsequent
-      // gap detection in the same recordReceivedEntry call sees the updated
-      // contiguous watermark. Without this, the stale cached watermark causes
-      // repeated gap detection events for counters that were just resolved.
-      affectedHosts.forEach(_invalidateCacheForHost);
-      _trace(
-        'markCoveredCountersAsReceived: marked $markedCount counters as received for entry=$entryId',
-        subDomain: 'sequence.coveredClocks',
-      );
-    }
-  }
-
   /// Cheap existence probe for any actionable (`missing` or `requested`)
   /// sequence row. Used by the backfill request service to short-circuit
   /// the periodic timer body when nothing is missing — see
@@ -1819,5 +1544,20 @@ class SyncSequenceLogService {
     }
 
     return populated;
+  }
+
+  Future<List<({String hostId, int counter})>> recordReceivedEntryLink({
+    required String linkId,
+    required VectorClock vectorClock,
+    required String originatingHostId,
+    List<VectorClock>? coveredVectorClocks,
+  }) {
+    return recordReceivedEntry(
+      entryId: linkId,
+      vectorClock: vectorClock,
+      originatingHostId: originatingHostId,
+      coveredVectorClocks: coveredVectorClocks,
+      payloadType: SyncSequencePayloadType.entryLink,
+    );
   }
 }
