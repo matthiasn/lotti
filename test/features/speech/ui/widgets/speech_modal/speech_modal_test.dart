@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/language_dropdown.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/speech_modal.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
@@ -15,7 +16,7 @@ import '../../../../../widget_test_utils.dart';
 
 /// Records the language codes forwarded by the dropdown.
 class _LanguageRecordingEntryController extends FakeEntryController {
-  _LanguageRecordingEntryController(super.entity);
+  _LanguageRecordingEntryController(super._entity);
 
   final List<String> setLanguageCalls = [];
 
@@ -39,18 +40,18 @@ void main() {
 
   Future<_LanguageRecordingEntryController> pumpModal(
     WidgetTester tester, {
-    required dynamic entity,
+    required JournalEntity entity,
   }) async {
     final controller = _LanguageRecordingEntryController(entity);
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
           entryControllerProvider(
-            id: entity.meta.id as String,
+            id: entity.meta.id,
           ).overrideWith(() => controller),
         ],
         child: makeTestableWidgetWithScaffold(
-          SpeechModalContent(entryId: entity.meta.id as String),
+          SpeechModalContent(entryId: entity.meta.id),
         ),
       ),
     );
