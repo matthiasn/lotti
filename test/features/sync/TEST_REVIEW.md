@@ -58,7 +58,7 @@ This document also serves as the index for the sync feature's subdir-level test 
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `matrix_test.dart` provides no behavioral coverage of the barrel file. The `matrix.dart` barrel itself just re-exports types — the real behavior is in the exported files. This file could be deleted without any coverage loss.
+- [x] **[HIGH]** `matrix_test.dart` provides no behavioral coverage of the barrel file. The `matrix.dart` barrel itself just re-exports types — the real behavior is in the exported files. This file could be deleted without any coverage loss. **RESOLVED:** `matrix_test.dart` is deleted — it only asserted type literals were non-null, which any importing file already guarantees at compile time.
 
 - [ ] **[MED]** `client_runner_test.dart`: `ClientRunner.close()` is called after the queue drains in the third test, but there is no test for calling `close()` while items are still being processed (i.e., the callback is mid-execution when `close()` is called). This is a race condition that affects sync teardown. Add a test that enqueues work, starts processing (without completing), calls `close()`, and asserts no panic / clean exit.
 
