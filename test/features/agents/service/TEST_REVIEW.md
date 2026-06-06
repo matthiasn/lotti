@@ -26,21 +26,22 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `lib/features/agents/service/agent_template_service.dart` (973 lines) is at the hard 1000-line ceiling.  
+- [x] **[HIGH]** `lib/features/agents/service/agent_template_service.dart` (973 lines) is at the hard 1000-line ceiling.  
   Concrete split seams:
   - **Evolution sub-service** (~lines 594–703): `gatherEvolutionData`, `getRecentInstanceReports`, `getRecentInstanceObservations`, `getRecentEvolutionNotes`, `getEvolutionSessions`, `getEvolutionSessionRecaps`, `countChangesSince` — extract to `agent_template_evolution_service.dart`.
   - **Seeding sub-service** (~lines 734–972): `seedDefaults`, `seedDirectiveFields`, `seedDayAgentCaptureReconcileDirective` — extract to `agent_template_seed_service.dart`.
   - **Metrics sub-service** (~lines 527–592): `computeMetrics`, `getLifetimeWakeCount`, `getWakeRunsInWindow`, `getTokenUsageSince` — could merge into evolution service or stand alone as `agent_template_metrics_service.dart`.  
   Mirror-splitting the test (currently 4827 lines) is mandatory per the one-test-file-per-source-file rule once the impl is split.
+  **RESOLVED (assessed, no change):** the file is under the 1 000-line hard cap, and `MockAgentTemplateService` is stubbed across the suite, so every one of the ~14 moved publics would need a thin class delegator (extension methods cannot be mocked) — a lot of indirection for a file that is not yet over the limit. The seams above stand documented for when the file actually crosses the cap.
 
-- [ ] **[HIGH]** `test/features/agents/service/agent_template_service_test.dart` (4827 lines) is 5× over the ~500-line preference and must be split when the impl is split (see above). Each new impl file must get its own test file.
+- [x] **[HIGH]** `test/features/agents/service/agent_template_service_test.dart` (4827 lines) is 5× over the ~500-line preference and must be split when the impl is split (see above). Each new impl file must get its own test file. **RESOLVED (assessed, no change):** blocked on the impl split above, which was assessed as not yet warranted; the file remains the single mirror per the one-test-file-per-source rule. Note the suggested Glados `setUpAll` + `reset(mock)` speed-up is unsound per the fake-time/Glados policy in test/README.md — per-iteration mock construction is required when bodies verify per-iteration.
 
-- [ ] **[HIGH]** `test/features/agents/service/change_set_confirmation_service_test.dart` (2526 lines) is 5× over target.  
+- [x] **[HIGH]** `test/features/agents/service/change_set_confirmation_service_test.dart` (2526 lines) is 5× over target.  
   The impl (`change_set_confirmation_service.dart`, 740 lines) itself is a split candidate:
   - **Core confirm/reject flow** (lines 74–426): `confirmItem`, `rejectItem`, helper statics.
   - **Bulk/resolution helpers** (lines 427–505, 607–740): `confirmAll`, `_updateChangeSetItemStatus`, notification/logging helpers.
   - **Placeholder ID resolution** (lines 456–604): `_resolveArgsIfNeeded`, `_persistResolvedIdToSiblings`, `_cascadeRejectMigrationItems`, `_captureResolvedId`.
-  If the impl is kept as one file, the test groups (`confirmItem`, `rejectItem`, `confirmAll`, `placeholder ID resolution`, `domain logging`) could at minimum be moved into separate `part` test helpers via a `_TestBench` pattern — keeping the single test file but reducing noise per group.
+  If the impl is kept as one file, the test groups (`confirmItem`, `rejectItem`, `confirmAll`, `placeholder ID resolution`, `domain logging`) could at minimum be moved into separate `part` test helpers via a `_TestBench` pattern — keeping the single test file but reducing noise per group. **RESOLVED (adapted):** the impl stays one file (740 lines, under the cap); the shared mock harness was already consolidated in `setUp`, and the 35 verbatim `upsertEntity` no-op stubs were hoisted into it (file now 2 447 lines; failure-path tests re-stub via mocktail last-wins). The varied `dispatch` stubs are per-test behavior and stay local.
 
 - [ ] **[MED]** `test/features/agents/service/feedback_extraction_service_test.dart` (2191 lines) is 4× over target.  
   The impl (775 lines) has natural sub-concerns: decision extraction, observation classification, report/rating classification, evolution-session extraction, and the `extractForSoul` fan-out. These map to separable test groups that are currently all inline.
