@@ -222,8 +222,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Widget should still render correctly after id change
-      expect(find.byType(CardImageWidget), findsOneWidget);
+      // The watcher reset took effect: the rendered Image now points at the
+      // SECOND image's file, not the stale first path.
+      final image = tester.widget<Image>(find.byType(Image));
+      final provider = image.image;
+      final fileImage = provider is ResizeImage
+          ? provider.imageProvider as FileImage
+          : provider as FileImage;
+      expect(fileImage.file.path, filePath2);
+      expect(fileImage.file.path, isNot(filePath1));
     });
 
     testWidgets('does not reset watcher when other props change', (

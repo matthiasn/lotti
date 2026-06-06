@@ -62,11 +62,11 @@ Note: `journal_card_timer_text_test.dart` (38 lines) has no corresponding source
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `card_image_widget.dart` — `_CardImageWidgetState.didUpdateWidget` (line 27–31): this lifecycle method calls `resetFileWatcher()` when `journalImage.id` changes. There is **no test** for this path. The test file verifies rendering and watcher setup but never changes the `journalImage` prop mid-test to exercise the reset branch.
+- [x] **[HIGH]** `card_image_widget.dart` — `_CardImageWidgetState.didUpdateWidget` (line 27–31): this lifecycle method calls `resetFileWatcher()` when `journalImage.id` changes. There is **no test** for this path. The test file verifies rendering and watcher setup but never changes the `journalImage` prop mid-test to exercise the reset branch.
 
-- [ ] **[HIGH]** `card_image_widget.dart` — `fileExists == false` branch (line 45–47): returns `SizedBox.shrink()` when the image file does not exist on disk. `card_image_widget_test.dart` creates real temp files for all tests, so this branch is never exercised. A test with a non-existent file path should assert that `SizedBox.shrink()` renders.
+- [x] **[HIGH]** `card_image_widget.dart` — `fileExists == false` branch (line 45–47): returns `SizedBox.shrink()` when the image file does not exist on disk. `card_image_widget_test.dart` creates real temp files for all tests, so this branch is never exercised. A test with a non-existent file path should assert that `SizedBox.shrink()` renders.
 
-- [ ] **[HIGH]** `_DistanceBadge._colorForDistance` — three of four color branches are untested. Only the `d < 0.3` (green) branch has a test (`card_wrapper_widget_test.dart:381`). The `orange` (`0.3 ≤ d < 0.6`), `deepOrange` (`0.6 ≤ d < 0.8`), and `red` (`d ≥ 0.8`) branches have no coverage.
+- [x] **[HIGH]** `_DistanceBadge._colorForDistance` — three of four color branches are untested. Only the `d < 0.3` (green) branch has a test (`card_wrapper_widget_test.dart:381`). The `orange` (`0.3 ≤ d < 0.6`), `deepOrange` (`0.6 ≤ d < 0.8`), and `red` (`d ≥ 0.8`) branches have no coverage.
 
 - [ ] **[MED]** `ModernJournalCard._buildBody` switch — the `RatingEntry` branch (line 285–294 of `journal_card.dart`) renders a localized `'Session Rating'` label. `journal_card_test.dart:811–820` tests this with `testRatingEntry` — coverage exists but only for the label; the import of `testRatingEntry` from `test_data.dart` suggests the entry may have no category icon, so the `_shouldShowCategoryIcon()` filter is not exercised for this type.
 
