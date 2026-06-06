@@ -37,7 +37,7 @@
   - Keep FTUE category constants in the file they are consumed from (or a dedicated `ftue_constants.dart`).
   - Mirror-split test: `known_models_data_test.dart` (catalog assertions) + `known_models_lookup_test.dart` (Glados + finder tests).
 
-- [ ] **[HIGH]** `test/features/ai/util/ai_error_utils_test.dart` (1119 lines) is 3× the impl (362 lines). The test class hierarchy at the top (lines 11–77) is sound, but the test body from line 202 onward has ~28 nearly identical `when()` stub blocks. A shared `_stubGenerateText(repo)` helper extracting the 8-argument `when` stub (repeated in every `sendMessage` test) would cut ~300 lines.
+- [x] **[HIGH]** `test/features/ai/util/ai_error_utils_test.dart` (1119 lines) is 3× the impl (362 lines). The test class hierarchy at the top (lines 11–77) is sound, but the test body from line 202 onward has ~28 nearly identical `when()` stub blocks. A shared `_stubGenerateText(repo)` helper extracting the 8-argument `when` stub (repeated in every `sendMessage` test) would cut ~300 lines. **RESOLVED (stale):** the file no longer contains any `when()` stub blocks or mocks — it is now pure `categorizeError`/helper coverage, so there is no `_stubGenerateText` extraction left to do.
 
 - [ ] **[MED]** `test/features/ai/util/mlx_audio_channel_test.dart` (1077 lines) vs impl (552 lines). The test itself is fine in quality, but the `MlxAudioModelProgressStore` Riverpod Notifier lives in `mlx_audio_channel.dart`; the combined channel + progress store is 552 lines. Splitting `MlxAudioModelProgressStore` into its own file (e.g. `mlx_audio_model_progress_store.dart`) with a matching test file would keep both under 400 lines each.
 
@@ -61,9 +61,9 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[HIGH]** `lib/features/ai/util/provider_type_utils.dart` — `normalizeProviderType` is a pure, non-trivial normalization function already covered by Glados at 160 runs (`provider_type_utils_test.dart` lines 108–119). **No new gap here** — well-covered. ✓
+- [x] **[HIGH]** `lib/features/ai/util/provider_type_utils.dart` — `normalizeProviderType` is a pure, non-trivial normalization function already covered by Glados at 160 runs (`provider_type_utils_test.dart` lines 108–119). **No new gap here** — well-covered. ✓ **RESOLVED (already covered):** as the item itself notes — Glados at 160 runs, no gap.
 
-- [ ] **[HIGH]** `lib/features/ai/util/known_models.dart` — `generateModelId` (line 684) is covered by Glados at 160 runs. ✓  
+- [x] **[HIGH]** `lib/features/ai/util/known_models.dart` — `generateModelId` (line 684) is covered by Glados at 160 runs. ✓ **RESOLVED (already covered):** as the item itself notes — Glados at 160 runs, no gap.
   `toAiConfigModel` conversion is covered by Glados at 160 runs. ✓  
   `isMlxAudioQwenAsrModelId` is covered by Glados at 80 runs. ✓  
   **Uncovered by Glados:** `isMlxAudioSpeechToTextModel` — currently only three static fixture tests (lines 634–661). A Glados property over all `mlxAudioModels` cross-products would guarantee the audio/text modality invariant without per-model copies.
@@ -81,7 +81,7 @@
 
 - [x] **[HIGH]** `coverArtGenerationPrompt` in `preconfigured_prompts.dart` (lines 178–248) has **zero test coverage**. The prompt's composition requirements (16:9 aspect ratio, Dynamic Island safe zone, `useReasoning: false`), input data type, and AI response type are untested.
 
-- [ ] **[HIGH]** `lib/features/ai/util/known_models.dart` lines 91–100: `isMlxAudioSpeechToTextModel` only has three fixture tests in `known_models_test.dart` (lines 634–661). The function's logic depends on `inputModalities.contains(Modality.audio) && outputModalities.contains(Modality.text)`. Edge cases like audio-only input (Parakeet, line 163) and TTS-only output are implicitly covered by the three concrete cases but not by an exhaustive property.
+- [x] **[HIGH]** `lib/features/ai/util/known_models.dart` lines 91–100: `isMlxAudioSpeechToTextModel` only has three fixture tests in `known_models_test.dart` (lines 634–661). The function's logic depends on `inputModalities.contains(Modality.audio) && outputModalities.contains(Modality.text)`. Edge cases like audio-only input (Parakeet, line 163) and TTS-only output are implicitly covered by the three concrete cases but not by an exhaustive property. **RESOLVED:** new Glados2 property over generated input×output modality subsets (120 runs) pins `isMlxAudioSpeechToTextModel` to exactly the audio-in/text-out combinations.
 
 - [ ] **[MED]** `lib/features/ai/util/known_models.dart` — `KnownModel.toAiConfigModel` uses `DateTime.now()` at line 58. Tests via the Glados property (`known_models_test.dart` line 440) only assert `isA<DateTime>()` for `createdAt`. There is no test that verifies the other generated fields in isolation (non-Glados path); the existing static test at line 366 covers this adequately though.
 

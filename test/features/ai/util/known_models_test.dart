@@ -181,6 +181,18 @@ extension _AnyGeneratedKnownModelScenario on glados.Any {
   glados.Generator<_GeneratedKnownModelTokens> get knownModelTokens =>
       glados.AnyUtils(this).choose(_GeneratedKnownModelTokens.values);
 
+  glados.Generator<List<Modality>> get modalitySubset =>
+      glados.CombinableAny(this).combine3(
+        glados.any.bool,
+        glados.any.bool,
+        glados.any.bool,
+        (bool text, bool audio, bool image) => [
+          if (text) Modality.text,
+          if (audio) Modality.audio,
+          if (image) Modality.image,
+        ],
+      );
+
   glados.Generator<_GeneratedMlxQwenAsrIdShape> get mlxQwenAsrIdShape =>
       glados.AnyUtils(this).choose(_GeneratedMlxQwenAsrIdShape.values);
 
@@ -669,6 +681,36 @@ void main() {
         expect(isMlxAudioQwenAsrModelId(modelId), expected);
       }, tags: 'glados');
     });
+
+    glados.Glados2(
+      glados.any.modalitySubset,
+      glados.any.modalitySubset,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'isMlxAudioSpeechToTextModel holds exactly for audio-in/text-out '
+      'modality combinations',
+      (inputs, outputs) {
+        final model =
+            AiConfig.model(
+                  id: 'generated-model',
+                  name: 'Generated model',
+                  providerModelId: 'generated-model',
+                  inferenceProviderId: 'mlx-audio-provider',
+                  createdAt: DateTime(2024, 3, 15),
+                  inputModalities: inputs,
+                  outputModalities: outputs,
+                  isReasoningModel: false,
+                )
+                as AiConfigModel;
+
+        expect(
+          isMlxAudioSpeechToTextModel(model),
+          inputs.contains(Modality.audio) && outputs.contains(Modality.text),
+          reason: 'inputs=$inputs outputs=$outputs',
+        );
+      },
+      tags: 'glados',
+    );
 
     group('Ollama Models', () {
       test('Qwen 3.5 9B should be a multimodal reasoning model', () {
