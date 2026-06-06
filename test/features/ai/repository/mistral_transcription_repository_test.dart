@@ -12,56 +12,24 @@ import 'package:lotti/features/ai/state/consts.dart';
 void main() {
   group('MistralTranscriptionRepository', () {
     group('isMistralTranscriptionModel', () {
-      test('returns true for voxtral-small-2507', () {
-        expect(
-          MistralTranscriptionRepository.isMistralTranscriptionModel(
-            'voxtral-small-2507',
-          ),
-          isTrue,
-        );
-      });
-
-      test('returns true for voxtral-mini-latest', () {
-        expect(
-          MistralTranscriptionRepository.isMistralTranscriptionModel(
-            'voxtral-mini-latest',
-          ),
-          isTrue,
-        );
-      });
-
-      test('returns true for voxtral-mini-2507', () {
-        expect(
-          MistralTranscriptionRepository.isMistralTranscriptionModel(
-            'voxtral-mini-2507',
-          ),
-          isTrue,
-        );
-      });
-
-      test('returns false for mistral-small-2501', () {
-        expect(
-          MistralTranscriptionRepository.isMistralTranscriptionModel(
-            'mistral-small-2501',
-          ),
-          isFalse,
-        );
-      });
-
-      test('returns false for magistral-medium-2509', () {
-        expect(
-          MistralTranscriptionRepository.isMistralTranscriptionModel(
-            'magistral-medium-2509',
-          ),
-          isFalse,
-        );
-      });
-
-      test('returns false for empty string', () {
-        expect(
-          MistralTranscriptionRepository.isMistralTranscriptionModel(''),
-          isFalse,
-        );
+      test('classifies known model ids', () {
+        const cases = {
+          'voxtral-small-2507': true,
+          'voxtral-mini-latest': true,
+          'voxtral-mini-2507': true,
+          'mistral-small-2501': false,
+          'magistral-medium-2509': false,
+          '': false,
+        };
+        for (final entry in cases.entries) {
+          expect(
+            MistralTranscriptionRepository.isMistralTranscriptionModel(
+              entry.key,
+            ),
+            entry.value,
+            reason: '"${entry.key}"',
+          );
+        }
       });
     });
 
