@@ -4,7 +4,27 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/services/portals/screenshot_portal_service.dart';
 
-/// Comprehensive test suite for Flatpak security and permission boundaries
+/// Reads the checked-in Flatpak manifest so permission tests validate the
+/// real declaration instead of test-local constants.
+String _readManifest() =>
+    File('flatpak/com.matthiasn.lotti.flatpak-flutter.yml').readAsStringSync();
+
+/// The `finish-args` permission lines declared in the manifest.
+List<String> _manifestFinishArgs() => _readManifest()
+    .split('\n')
+    .map((line) => line.trim())
+    .where((line) => line.startsWith('- --'))
+    .map((line) => line.substring(2))
+    .toList();
+
+/// Comprehensive test suite for Flatpak security and permission boundaries.
+///
+/// Scope note: the portal D-Bus protocol (request/response signals,
+/// cancellation, timeouts) is unit-tested with mocked `DBusClient`s in
+/// `test/services/portals/`. End-to-end portal round-trips against a real
+/// `xdg-desktop-portal` daemon require Linux D-Bus session infrastructure
+/// and are deliberately out of scope for the unit suite — they would belong
+/// in `integration_test/` on a Linux runner.
 void main() {
   group('Flatpak Security and Sandboxing Tests', () {
     group('Environment Detection', () {
@@ -44,27 +64,25 @@ void main() {
     });
 
     group('Filesystem Permissions', () {
-      test('validates restricted filesystem access paths', () {
-        // These are the paths defined in the Flatpak manifest
-        const restrictedPaths = {
-          'xdg-documents/Lotti': 'create', // Can only create Lotti folder
-          'xdg-download/Lotti': 'create', // Can only create Lotti folder
-          'xdg-pictures': 'ro', // Read-only access
-        };
+      test('manifest declares only restricted filesystem access', () {
+        final filesystemArgs = _manifestFinishArgs()
+            .where((arg) => arg.startsWith('--filesystem='))
+            .toList();
 
-        // Verify each path has appropriate restrictions
-        for (final entry in restrictedPaths.entries) {
-          final path = entry.key;
-          final permission = entry.value;
+        // The three known grants, straight from the manifest.
+        expect(filesystemArgs, [
+          '--filesystem=xdg-documents/Lotti:create',
+          '--filesystem=xdg-pictures:ro',
+          '--filesystem=xdg-download/Lotti:create',
+        ]);
 
-          if (path.contains('Lotti')) {
-            // App-specific directories should be isolated
-            expect(path.endsWith('/Lotti'), isTrue);
-            expect(permission, equals('create'));
-          } else if (path == 'xdg-pictures') {
-            // Pictures should be read-only for importing
-            expect(permission, equals('ro'));
-          }
+        // Every grant must be read-only or scoped to the app folder.
+        for (final arg in filesystemArgs) {
+          expect(
+            arg.endsWith(':ro') || arg.contains('/Lotti'),
+            isTrue,
+            reason: '$arg widens filesystem access beyond the app scope',
+          );
         }
       });
 
@@ -166,20 +184,17 @@ void main() {
     });
 
     group('Runtime and Library Security', () {
-      test('uses Freedesktop runtime 24.08', () {
-        // This is specified in the Flatpak manifest
-        // The runtime provides security updates and sandboxing
+      test('manifest pins the Freedesktop platform runtime', () {
+        final manifest = _readManifest();
 
-        if (PortalService.isRunningInFlatpak) {
-          // Runtime version should be consistent
-          // We can't directly check this from within the app,
-          // but we document the expected version
-          const expectedRuntime = 'org.freedesktop.Platform';
-          const expectedVersion = '24.08';
-
-          expect(expectedRuntime, contains('freedesktop'));
-          expect(expectedVersion, equals('24.08'));
-        }
+        expect(manifest, contains('runtime: org.freedesktop.Platform'));
+        // The version is bumped routinely; assert the yearly .08 cadence
+        // rather than a hardcoded year that goes stale.
+        expect(
+          RegExp(r"runtime-version: '\d{2}\.08'").hasMatch(manifest),
+          isTrue,
+          reason: 'runtime-version must follow the YY.08 platform cadence',
+        );
       });
 
       test('wrapper script sets correct environment', () {
@@ -215,38 +230,14 @@ void main() {
     });
 
     group('Network and IPC Security', () {
-      test('network access is properly declared', () {
-        // The manifest includes --share=network
-        // This is required for the app's functionality
+      test('manifest declares the expected shares and sockets', () {
+        final args = _manifestFinishArgs();
 
-        // Network should be available but controlled
-        if (PortalService.isRunningInFlatpak) {
-          // The app has network access as declared
-          // This is a conscious security decision documented in the manifest
-          const hasNetwork = true; // From --share=network
-          expect(hasNetwork, isTrue);
-        }
-      });
-
-      test('IPC is shared for display server communication', () {
-        // The manifest includes --share=ipc
-        // Required for X11 and clipboard functionality
-
-        if (PortalService.isRunningInFlatpak) {
-          // IPC should be available for GUI functionality
-          const hasIPC = true; // From --share=ipc
-          expect(hasIPC, isTrue);
-        }
-      });
-
-      test('audio access uses PulseAudio socket', () {
-        // The manifest includes --socket=pulseaudio
-
-        if (PortalService.isRunningInFlatpak) {
-          // Audio should work through PulseAudio socket
-          const hasPulseAudio = true; // From --socket=pulseaudio
-          expect(hasPulseAudio, isTrue);
-        }
+        expect(args, contains('--share=network'));
+        expect(args, contains('--share=ipc'));
+        expect(args, contains('--socket=pulseaudio'));
+        expect(args, contains('--socket=wayland'));
+        expect(args, contains('--socket=fallback-x11'));
       });
     });
 
@@ -293,36 +284,27 @@ void main() {
         expect(portalBusName, equals('org.freedesktop.portal.Desktop'));
       });
 
-      test('principle of least privilege is followed', () {
-        // Verify the app only requests necessary permissions
+      test('principle of least privilege is followed in the manifest', () {
+        final args = _manifestFinishArgs();
 
-        // Document the permissions and their justifications:
-        const permissions = {
-          '--share=network': 'Required for journal sync and AI features',
-          '--share=ipc': 'Required for X11 and clipboard',
-          '--socket=fallback-x11': 'Display server access',
-          '--socket=wayland': 'Wayland display server',
-          '--socket=pulseaudio': 'Audio recording features',
-          '--device=dri': 'Hardware acceleration',
-          '--filesystem=xdg-documents/Lotti:create': 'Journal data storage',
-          '--filesystem=xdg-pictures:ro': 'Import images into journal',
-          '--filesystem=xdg-download/Lotti:create': 'Export journal data',
-        };
-
-        // Each permission should have a justification
-        for (final entry in permissions.entries) {
-          expect(entry.key, isNotEmpty);
-          expect(entry.value, isNotEmpty);
-
-          // Filesystem permissions should be restricted
-          if (entry.key.contains('filesystem')) {
-            // Should either be read-only or app-specific
-            expect(
-              entry.key.contains(':ro') || entry.key.contains('Lotti'),
-              isTrue,
-            );
-          }
-        }
+        // No blanket host or home filesystem access.
+        expect(
+          args.any(
+            (arg) =>
+                arg.startsWith('--filesystem=host') ||
+                arg.startsWith('--filesystem=home'),
+          ),
+          isFalse,
+          reason: 'manifest must not grant blanket filesystem access',
+        );
+        // No session/system bus talk-alls.
+        expect(
+          args.any((arg) => arg.contains('--talk-name=org.freedesktop.*')),
+          isFalse,
+        );
+        // Device access is limited to DRI (hardware acceleration).
+        final deviceArgs = args.where((a) => a.startsWith('--device='));
+        expect(deviceArgs, ['--device=dri']);
       });
 
       test('secure defaults are used', () {
