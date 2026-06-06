@@ -1318,8 +1318,14 @@ void main() {
   });
 
   group('cache pruning', () {
-    test('prunes oldest files when exceeding 1000 entries', () async {
-      populateCacheEntries(1009);
+    test('prunes oldest files when exceeding the cache limit', () async {
+      // Small injected limit: 19 files exercise the same pruning path the
+      // production 1000-entry limit does, without 1000+ file creations.
+      service = AudioWaveformService(
+        extractor: extractor.extract,
+        maxCacheEntries: 10,
+      );
+      populateCacheEntries(19);
       clearInteractions(mockDomainLogger);
       final audio = createAudio(
         duration: const Duration(seconds: 30),
@@ -1354,7 +1360,7 @@ void main() {
         p.join(tempDir.path, 'audio_waveforms'),
       ).listSync(recursive: true).whereType<File>().toList();
 
-      expect(allFiles.length, 1000);
+      expect(allFiles.length, 10);
 
       final remainingNames = allFiles
           .map((file) => p.basename(file.path))
@@ -1367,7 +1373,7 @@ void main() {
       verify(
         () => mockDomainLogger.log(
           LogDomain.speech,
-          'Pruned 10 waveform cache files (now 1000 entries)',
+          'Pruned 10 waveform cache files (now 10 entries)',
           subDomain: 'cache_prune',
         ),
       ).called(1);
