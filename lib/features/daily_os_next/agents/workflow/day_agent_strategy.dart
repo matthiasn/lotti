@@ -66,6 +66,7 @@ class DayAgentStrategy extends ConversationStrategy {
   final DomainLogger domainLogger;
 
   final _observations = <ObservationRecord>[];
+  var _didPersistCaptureParse = false;
   var _didPersistDraftDayPlan = false;
   String? _finalResponse;
 
@@ -77,6 +78,9 @@ class DayAgentStrategy extends ConversationStrategy {
 
   /// Whether this wake successfully persisted a plan via `draft_day_plan`.
   bool get didPersistDraftDayPlan => _didPersistDraftDayPlan;
+
+  /// Whether this wake successfully persisted parsed capture items.
+  bool get didPersistCaptureParse => _didPersistCaptureParse;
 
   /// Called by the workflow after the conversation loop finishes.
   void recordFinalResponse(String? content) {
@@ -121,6 +125,10 @@ class DayAgentStrategy extends ConversationStrategy {
 
       if (DayAgentToolNames.isWorkflowHandlerTool(toolName)) {
         final result = await executeToolHandler(toolName, args, manager);
+        if (toolName == DayAgentToolNames.parseCaptureToItems &&
+            _didPersistParsedItems(result)) {
+          _didPersistCaptureParse = true;
+        }
         if (toolName == DayAgentToolNames.draftDayPlan && result.success) {
           _didPersistDraftDayPlan = true;
         }
@@ -141,6 +149,18 @@ class DayAgentStrategy extends ConversationStrategy {
     }
 
     return ConversationAction.continueConversation;
+  }
+
+  bool _didPersistParsedItems(DayAgentToolResult result) {
+    if (!result.success) return false;
+    try {
+      final decoded = jsonDecode(result.output);
+      return decoded is Map &&
+          decoded['items'] is List &&
+          (decoded['items'] as List).isNotEmpty;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override

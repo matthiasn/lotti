@@ -234,6 +234,27 @@ void main() {
     ];
   }
 
+  void stubCaptureContext(
+    MockDayAgentCaptureService captureService, {
+    String captureId = 'capture-1',
+  }) {
+    when(() => captureService.getCapture(captureId)).thenAnswer(
+      (_) async => makeTestCapture(
+        id: captureId,
+        agentId: agentId,
+        transcript: 'Prep demo and buy milk',
+        capturedAt: DateTime(2026, 5, 25, 7, 45),
+        createdAt: DateTime(2026, 5, 25, 7, 45),
+      ),
+    );
+    when(
+      () => captureService.buildTaskCorpusSnapshot(
+        allowedCategoryIds: any(named: 'allowedCategoryIds'),
+        day: any(named: 'day'),
+      ),
+    ).thenAnswer((_) async => const []);
+  }
+
   setUp(() {
     repository = MockAgentRepository();
     aiConfigRepository = MockAiConfigRepository();
@@ -867,6 +888,40 @@ void main() {
           },
         ],
       );
+      when(
+        () => captureService.executeTool(
+          agentId: agentId,
+          threadId: threadId,
+          runKey: runKey,
+          toolName: DayAgentToolNames.parseCaptureToItems,
+          args: any(named: 'args'),
+        ),
+      ).thenAnswer(
+        (_) async => DayAgentDirectToolResult.success(
+          const {
+            'captureId': 'capture-1',
+            'items': [
+              {'id': 'parsed-1'},
+            ],
+          },
+        ),
+      );
+      conversationRepository.toolCalls = [
+        _toolCall(
+          name: DayAgentToolNames.parseCaptureToItems,
+          args: const {
+            'captureId': 'capture-1',
+            'items': [
+              {
+                'kind': 'newTask',
+                'title': 'Prep demo',
+                'categoryId': 'work',
+                'confidenceScore': 0.4,
+              },
+            ],
+          },
+        ),
+      ];
 
       final result = await execute(
         workflow(captureService: captureService),
@@ -892,6 +947,209 @@ void main() {
           'priority': 'P2',
         },
       ]);
+    });
+
+    group('capture wake parse enforcement', () {
+      test(
+        'forces parse_capture_to_items when a capture wake stops without '
+        'parsing',
+        () async {
+          final captureService = MockDayAgentCaptureService();
+          stubCaptureContext(captureService);
+          when(
+            () => captureService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.parseCaptureToItems,
+              args: any(named: 'args'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.success(
+              const {
+                'captureId': 'capture-1',
+                'items': [
+                  {'id': 'parsed-1'},
+                ],
+              },
+            ),
+          );
+          conversationRepository
+            ..toolCallsByInvocation = [
+              const <ChatCompletionMessageToolCall>[],
+              [
+                _toolCall(
+                  id: 'parse-call',
+                  name: DayAgentToolNames.parseCaptureToItems,
+                  args: const {
+                    'captureId': 'capture-1',
+                    'items': [
+                      {
+                        'kind': 'newTask',
+                        'title': 'Prep demo',
+                        'categoryId': 'work',
+                        'confidenceScore': 0.4,
+                      },
+                    ],
+                  },
+                ),
+              ],
+            ]
+            ..usageByInvocation = const [
+              InferenceUsage(inputTokens: 10, outputTokens: 5),
+              InferenceUsage(inputTokens: 3, outputTokens: 2),
+            ];
+
+          final result = await execute(
+            workflow(captureService: captureService),
+            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+          );
+
+          expect(result.success, isTrue);
+          expect(conversationRepository.sendMessageCalls, hasLength(2));
+          expect(
+            conversationRepository.sendMessageCalls.first.toolChoice,
+            isNull,
+          );
+
+          final retryCall = conversationRepository.sendMessageCalls[1];
+          expect(
+            retryCall.message,
+            contains('You did not call `parse_capture_to_items`'),
+          );
+          expect(retryCall.message, contains('capture `capture-1`'));
+          expect(
+            retryCall.tools.map((tool) => tool.function.name),
+            [DayAgentToolNames.parseCaptureToItems],
+          );
+          retryCall.toolChoice!.map(
+            mode: (_) => fail('Expected named tool choice, got mode.'),
+            tool: (named) {
+              expect(
+                named.value.function.name,
+                DayAgentToolNames.parseCaptureToItems,
+              );
+            },
+          );
+
+          final args =
+              verify(
+                    () => captureService.executeTool(
+                      agentId: agentId,
+                      threadId: threadId,
+                      runKey: runKey,
+                      toolName: DayAgentToolNames.parseCaptureToItems,
+                      args: captureAny(named: 'args'),
+                    ),
+                  ).captured.single
+                  as Map<String, dynamic>;
+          expect(args['captureId'], 'capture-1');
+          expect(args['items'], isA<List<Object?>>());
+
+          final usage = upsertedEntities
+              .whereType<WakeTokenUsageEntity>()
+              .single;
+          expect(usage.inputTokens, 13);
+          expect(usage.outputTokens, 7);
+        },
+      );
+
+      test(
+        'fails the wake when the forced retry still omits parsing',
+        () async {
+          final captureService = MockDayAgentCaptureService();
+          stubCaptureContext(captureService);
+          conversationRepository.toolCallsByInvocation = [
+            const <ChatCompletionMessageToolCall>[],
+            const <ChatCompletionMessageToolCall>[],
+          ];
+
+          final result = await execute(
+            workflow(captureService: captureService),
+            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, contains('parse_capture_to_items'));
+          expect(conversationRepository.sendMessageCalls, hasLength(2));
+          expect(
+            conversationRepository.sendMessageCalls[1].toolChoice,
+            isNotNull,
+          );
+          final failureState = upsertedEntities
+              .whereType<AgentStateEntity>()
+              .last;
+          expect(failureState.consecutiveFailureCount, 1);
+          verifyNever(
+            () => captureService.executeTool(
+              agentId: any(named: 'agentId'),
+              threadId: any(named: 'threadId'),
+              runKey: any(named: 'runKey'),
+              toolName: DayAgentToolNames.parseCaptureToItems,
+              args: any(named: 'args'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'fails the wake when parsing persists zero items',
+        () async {
+          final captureService = MockDayAgentCaptureService();
+          stubCaptureContext(captureService);
+          when(
+            () => captureService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.parseCaptureToItems,
+              args: any(named: 'args'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.success(
+              const {'captureId': 'capture-1', 'items': <Object?>[]},
+            ),
+          );
+          conversationRepository.toolCallsByInvocation = [
+            const <ChatCompletionMessageToolCall>[],
+            [
+              _toolCall(
+                id: 'parse-call',
+                name: DayAgentToolNames.parseCaptureToItems,
+                args: const {
+                  'captureId': 'capture-1',
+                  'items': [
+                    {
+                      'kind': 'newTask',
+                      'title': 'Home-only item',
+                      'categoryId': 'home',
+                      'confidenceScore': 0.4,
+                    },
+                  ],
+                },
+              ),
+            ],
+          ];
+
+          final result = await execute(
+            workflow(captureService: captureService),
+            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+          );
+
+          expect(result.success, isFalse);
+          expect(result.error, contains('parse_capture_to_items'));
+          expect(conversationRepository.sendMessageCalls, hasLength(2));
+          verify(
+            () => captureService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.parseCaptureToItems,
+              args: any(named: 'args'),
+            ),
+          ).called(1);
+        },
+      );
     });
 
     test(
