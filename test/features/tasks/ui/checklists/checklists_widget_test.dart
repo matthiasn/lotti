@@ -31,6 +31,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 
 class MockEntryController extends EntryController {
   MockEntryController({required this.mockEntry});
@@ -63,7 +64,6 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() async {
-    await getIt.reset();
     final mockUpdateNotifications = MockUpdateNotifications();
     final mockJournalDb = MockJournalDb();
     final mockPersistenceLogic = MockPersistenceLogic();
@@ -98,24 +98,37 @@ void main() {
       () => mockJournalDb.getConfigFlag(any()),
     ).thenAnswer((_) async => false);
 
-    getIt
-      ..registerSingleton<SettingsDb>(settingsDb)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-      ..registerSingleton<NavService>(mockNavService)
-      ..registerSingleton<NotificationService>(mockNotificationService)
-      ..registerSingleton<TimeService>(mockTimeService)
-      ..registerSingleton<LoggingService>(mockLoggingService)
-      ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
-      ..registerSingleton<SecureStorage>(mockSecureStorage)
-      ..registerSingleton<OutboxService>(MockOutboxService())
-      ..registerSingleton<VectorClockService>(VectorClockService())
-      ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
-      ..registerSingleton<EditorStateService>(mockEditorStateService);
+    // setUpTestGetIt registers stock JournalDb/SettingsDb/UpdateNotifications/
+    // LoggingService instances; swap in this file's stubbed ones and add the
+    // services the checklist widgets resolve on top.
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<SettingsDb>()
+          ..registerSingleton<SettingsDb>(settingsDb)
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockJournalDb)
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+          ..registerSingleton<NavService>(mockNavService)
+          ..registerSingleton<NotificationService>(mockNotificationService)
+          ..registerSingleton<TimeService>(mockTimeService)
+          ..unregister<LoggingService>()
+          ..registerSingleton<LoggingService>(mockLoggingService)
+          ..registerSingleton<SyncDatabase>(
+            SyncDatabase(inMemoryDatabase: true),
+          )
+          ..registerSingleton<SecureStorage>(mockSecureStorage)
+          ..registerSingleton<OutboxService>(MockOutboxService())
+          ..registerSingleton<VectorClockService>(VectorClockService())
+          ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
+          ..registerSingleton<EditorStateService>(mockEditorStateService);
+      },
+    );
   });
 
-  tearDownAll(getIt.reset);
+  tearDownAll(tearDownTestGetIt);
 
   group('ChecklistsWidget', () {
     late Task mockTask;
@@ -235,7 +248,9 @@ void main() {
 
     testWidgets('renders checklist cards (one per checklist)', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Debug: Check if ChecklistsWidget is rendered
       expect(find.byType(ChecklistsWidget), findsOneWidget);
@@ -258,7 +273,9 @@ void main() {
 
     testWidgets('hides menu button when only one checklist', (tester) async {
       await tester.pumpWidget(createTestWidget(checklistIds: ['checklist1']));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Checklists-level sort menu is hidden when there's only one checklist
       expect(find.byKey(const Key('checklists-menu')), findsNothing);
@@ -270,7 +287,9 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(createTestWidget(checklistIds: []));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 350));
 
       // No cards, no header text, no sort menu — the whole section collapses
       // so the empty state doesn't dangle in the layout. Adding the first
@@ -403,7 +422,9 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Test that ReorderableListView exists
       // Multiple instances may exist in the widget tree
@@ -437,18 +458,24 @@ void main() {
 
     testWidgets('can enter sorting mode via menu', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Open the checklists-level sort menu
       await tester.tap(find.byKey(const Key('checklists-menu')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Test that the menu contains the sort option
       expect(find.byIcon(Icons.sort), findsOneWidget);
 
       // Tap on sort option
       await tester.tap(find.byIcon(Icons.sort));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Test that the widget supports reordering
       // Multiple ReorderableListView widgets may exist in the tree
@@ -461,16 +488,22 @@ void main() {
       'shows Done button in sorting mode and tapping it exits sorting mode',
       (tester) async {
         await tester.pumpWidget(createTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Initially no FilledButton (the sorting-mode Done button) is shown
         expect(find.byType(FilledButton), findsNothing);
 
         // Enter sorting mode via the menu
         await tester.tap(find.byKey(const Key('checklists-menu')));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
         await tester.tap(find.byIcon(Icons.sort));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
 
         // The FilledButton "Done" is shown during sorting mode.
         // Note: "Done" text also appears in checklist filter tabs, so we find
@@ -479,7 +512,9 @@ void main() {
 
         // Tap the FilledButton to exit sorting mode (_exitSortingMode)
         await tester.tap(find.byType(FilledButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
 
         // FilledButton disappears after exiting sorting mode
         expect(find.byType(FilledButton), findsNothing);
@@ -510,13 +545,19 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Enter sorting mode so drag handles (and semantics) appear
         await tester.tap(find.byKey(const Key('checklists-menu')));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
         await tester.tap(find.byIcon(Icons.sort));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Use the "Move down" semantics action on the first checklist item.
         // Flutter's SliverReorderableList calls _handleReorderItem(0, 0+2=2).
@@ -535,7 +576,9 @@ void main() {
           SemanticsAction.customAction,
           moveDownId,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
 
         // The callback was invoked once — covering lines 101-112 (onReorderItem
         // body, setState, updateChecklistOrder call).
@@ -572,13 +615,19 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Enter sorting mode so the list becomes reorderable
         await tester.tap(find.byKey(const Key('checklists-menu')));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
         await tester.tap(find.byIcon(Icons.sort));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Use the "Move up" semantics action on the second checklist item.
         // _handleReorderItem(1, 0) → newIndex(0) <= oldIndex(1) → no adjustment
@@ -593,7 +642,9 @@ void main() {
           SemanticsAction.customAction,
           moveUpId,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
 
         // updateChecklistOrder should have been called with the reversed order
         expect(controller.updateChecklistOrderCalls, hasLength(1));

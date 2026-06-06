@@ -730,7 +730,7 @@ void main() {
           after: 'right',
           categoryId: 'cat-1',
           categoryName: 'Category',
-          createdAt: DateTime.now(),
+          createdAt: DateTime(2025, 3, 15),
         ),
       );
       await tester.pump();

@@ -34,7 +34,11 @@ AppPrefs makeSharedPrefsService() => AppPrefs(
   getString: (String key) async {
     if (isTestEnv) return null;
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(key);
+    // Use the untyped getter: getString() hard-casts the cached value, so a
+    // legacy bool stored under the same key would throw TypeError instead of
+    // letting callers fall through to their bool-migration paths.
+    final value = prefs.get(key);
+    return value is String ? value : null;
   },
   setString: ({required String key, required String value}) async {
     if (isTestEnv) return true;
