@@ -452,6 +452,7 @@ class _GeneratedChecklistUpdateScenario {
 
   _ExpectedChecklistUpdateBatch expected() {
     final queuedFingerprints = <String>{};
+    final queuedDisplayKeys = <String>{};
     final kept = <_ExpectedChecklistUpdateItem>[];
     var skipped = 0;
     var redundant = 0;
@@ -473,15 +474,28 @@ class _GeneratedChecklistUpdateScenario {
         TaskAgentToolNames.updateChecklistItem,
         value,
       );
-      if (!queuedFingerprints.add(fingerprint)) {
+      if (queuedFingerprints.contains(fingerprint)) {
         redundant++;
         continue;
       }
 
+      final summary = _summary(value, state);
+      final displayKey = ChangeItem.displayDuplicateKeyFromParts(
+        TaskAgentToolNames.updateChecklistItem,
+        summary,
+        args: value,
+      );
+      if (displayKey != null && queuedDisplayKeys.contains(displayKey)) {
+        redundant++;
+        continue;
+      }
+      queuedFingerprints.add(fingerprint);
+      if (displayKey != null) queuedDisplayKeys.add(displayKey);
+
       kept.add(
         _ExpectedChecklistUpdateItem(
           args: value,
-          summary: _summary(value, state),
+          summary: summary,
         ),
       );
     }
@@ -1122,6 +1136,36 @@ void main() {
         );
         expect(builder.items.first.args['summary'], 'Latest timer text');
         expect(builder.items.last.args['summary'], 'Other timer text');
+      },
+    );
+
+    test(
+      'keeps same-summary running timer updates for different timers',
+      () async {
+        final firstResult = await builder.addItem(
+          toolName: TaskAgentToolNames.updateRunningTimer,
+          args: const {
+            'timerId': 'timer-1',
+            'summary': 'Focus block',
+          },
+          humanSummary: 'Update running timer text: "Focus block"',
+        );
+        final secondResult = await builder.addItem(
+          toolName: TaskAgentToolNames.updateRunningTimer,
+          args: const {
+            'timerId': 'timer-2',
+            'summary': 'Focus block',
+          },
+          humanSummary: 'Update running timer text: "Focus block"',
+        );
+
+        expect(firstResult, isNull);
+        expect(secondResult, isNull);
+        expect(builder.items, hasLength(2));
+        expect(
+          builder.items.map((item) => item.args['timerId']),
+          ['timer-1', 'timer-2'],
+        );
       },
     );
   });
@@ -2207,6 +2251,115 @@ void main() {
         hasLength(1),
       );
     });
+
+    test(
+      'drops verbatim visible duplicates even when tool args differ',
+      () async {
+        await builder.addItem(
+          toolName: 'update_checklist_item',
+          args: {'id': 'new-item-id', 'isChecked': true},
+          humanSummary: 'Check off: "Address CodeRabbit review comments"',
+        );
+
+        final existingSet = makeTestChangeSet(
+          items: const [
+            ChangeItem(
+              toolName: 'update_checklist_item',
+              args: {'id': 'old-item-id', 'isChecked': true},
+              humanSummary: 'Check off: "Address CodeRabbit review comments"',
+            ),
+          ],
+        );
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [existingSet],
+        );
+
+        expect(
+          result,
+          isNull,
+          reason: 'verbatim duplicate suggestions must not be persisted',
+        );
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      },
+    );
+
+    test(
+      'sticky-rejects verbatim visible duplicates by rejectedDisplayKeys',
+      () async {
+        const summary = 'Check off: "Address CodeRabbit review comments"';
+        await builder.addItem(
+          toolName: 'update_checklist_item',
+          args: {'id': 'new-item-id', 'isChecked': true},
+          humanSummary: summary,
+        );
+
+        final rejectedDisplayKey = ChangeItem.displayDuplicateKeyFromParts(
+          'update_checklist_item',
+          summary,
+          args: {'id': 'rejected-item-id', 'isChecked': true},
+        );
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [],
+          rejectedDisplayKeys: {rejectedDisplayKey!},
+        );
+
+        expect(
+          result,
+          isNull,
+          reason:
+              'verbatim duplicate rejected suggestions must stay suppressed',
+        );
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      },
+    );
+
+    test(
+      'does not dedupe same-summary running timer updates for different timers',
+      () async {
+        await builder.addItem(
+          toolName: TaskAgentToolNames.updateRunningTimer,
+          args: const {
+            'timerId': 'timer-2',
+            'summary': 'Focus block',
+          },
+          humanSummary: 'Update running timer text: "Focus block"',
+        );
+
+        final existingSet = makeTestChangeSet(
+          items: const [
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateRunningTimer,
+              args: {
+                'timerId': 'timer-1',
+                'summary': 'Focus block',
+              },
+              humanSummary: 'Update running timer text: "Focus block"',
+            ),
+          ],
+        );
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [existingSet],
+        );
+
+        expect(result, isNotNull);
+        final timerItems = result!.items
+            .where(
+              (item) => item.toolName == TaskAgentToolNames.updateRunningTimer,
+            )
+            .toList();
+        expect(timerItems, hasLength(2));
+        expect(
+          timerItems.map((item) => item.args['timerId']),
+          ['timer-1', 'timer-2'],
+        );
+      },
+    );
 
     test('returns null when all items are duplicates', () async {
       await builder.addItem(

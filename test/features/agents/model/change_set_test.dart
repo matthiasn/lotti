@@ -95,6 +95,33 @@ extension _AnyChangeSetScenarios on glados.Any {
 
 void main() {
   group('ChangeItem', () {
+    test('displayDuplicateKey preserves running timer identity', () {
+      const firstTimer = ChangeItem(
+        toolName: 'update_running_timer',
+        args: {'timerId': 'timer-1'},
+        humanSummary: 'Update running timer text: "Focus block"',
+      );
+      const secondTimer = ChangeItem(
+        toolName: 'update_running_timer',
+        args: {'timerId': 'timer-2'},
+        humanSummary: '  Update   running timer text: "Focus block"  ',
+      );
+      const checklistItem = ChangeItem(
+        toolName: 'update_checklist_item',
+        args: {'id': 'checklist-1', 'isChecked': true},
+        humanSummary: '  Check off:   "Review comments"  ',
+      );
+
+      expect(
+        ChangeItem.displayDuplicateKey(firstTimer),
+        isNot(ChangeItem.displayDuplicateKey(secondTimer)),
+      );
+      expect(
+        ChangeItem.displayDuplicateKey(checklistItem),
+        'update_checklist_item:check off: "review comments"',
+      );
+    });
+
     glados.Glados(
       glados.any.changeItemStatuses,
       glados.ExploreConfig(numRuns: 160),

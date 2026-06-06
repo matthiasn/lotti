@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/decision_events.dart';
@@ -847,11 +848,23 @@ class TaskAgentWorkflow {
             .where((e) => e.verdict == ChangeDecisionVerdict.rejected)
             .map((e) => e.fingerprint)
             .toSet();
+        final rejectedDisplayKeys = {
+          for (final entry in ledger.resolved)
+            if (entry.verdict == ChangeDecisionVerdict.rejected)
+              if (ChangeItem.displayDuplicateKeyFromParts(
+                    entry.toolName,
+                    entry.humanSummary,
+                    args: entry.args,
+                  )
+                  case final String key)
+                key,
+        };
 
         await changeSetBuilder.build(
           syncService,
           existingPendingSets: pendingSets,
           rejectedFingerprints: rejectedFingerprints,
+          rejectedDisplayKeys: rejectedDisplayKeys,
         );
 
         // 11. Persist state.
@@ -1752,6 +1765,11 @@ to keep the user-facing suggestion list clean and trustworthy:
         ..writeln();
     }
 
+    final openProposalGuard = _formatOpenProposalGuard(ledger);
+    if (openProposalGuard.isNotEmpty) {
+      buffer.write(openProposalGuard);
+    }
+
     buffer.writeln(
       'Analyze the current state and call tools if needed. If the report '
       'would materially change, call `update_report` with the full updated '
@@ -1825,6 +1843,37 @@ to keep the user-facing suggestion list clean and trustworthy:
       }
       buffer.writeln();
     }
+
+    return buffer.toString();
+  }
+
+  /// Renders a compact, high-salience guard immediately before the final wake
+  /// instruction so OPEN proposals are treated as current work-cycle state,
+  /// not just historical context earlier in the prompt.
+  String _formatOpenProposalGuard(ProposalLedger ledger) {
+    if (ledger.open.isEmpty) return '';
+
+    final buffer = StringBuffer()
+      ..writeln('## Open Proposal Guard')
+      ..writeln()
+      ..writeln(
+        'Before proposing any change, compare it against these OPEN '
+        'proposals. Do not propose the same user-facing action again '
+        '(for `update_running_timer`, compare per `timerId`). If an OPEN '
+        'proposal is stale, call `retract_suggestions` with its fingerprint; '
+        'otherwise leave it open.',
+      )
+      ..writeln()
+      ..writeln(
+        ledger.open
+            .map(
+              (e) =>
+                  '- [fp=${e.fingerprint}] `${e.toolName}`: '
+                  '${e.humanSummary.trim()}',
+            )
+            .join('\n'),
+      )
+      ..writeln();
 
     return buffer.toString();
   }

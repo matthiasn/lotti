@@ -36,6 +36,8 @@ abstract class ChangeItem with _$ChangeItem {
       _$ChangeItemFromJson(json);
 
   static const _deepEquals = DeepCollectionEquality();
+  static final RegExp _whitespaceRegExp = RegExp(r'\s+');
+  static const _updateRunningTimerToolName = 'update_running_timer';
 
   /// Structural fingerprint from raw parts, without requiring a [ChangeItem].
   ///
@@ -52,6 +54,48 @@ abstract class ChangeItem with _$ChangeItem {
   /// same mutation are considered equal regardless of presentation.
   static String fingerprint(ChangeItem item) =>
       fingerprintFromParts(item.toolName, item.args);
+
+  /// User-visible duplicate key based on the mutation tool and the rendered
+  /// proposal text.
+  ///
+  /// Structural fingerprints catch identical tool arguments. This key catches
+  /// the companion case where different argument shapes render the exact same
+  /// suggestion to the user (for example two checklist item ids resolving to
+  /// `Check off: "Address CodeRabbit review comments"`).
+  static String? displayDuplicateKey(ChangeItem item) =>
+      displayDuplicateKeyFromParts(
+        item.toolName,
+        item.humanSummary,
+        args: item.args,
+      );
+
+  /// User-visible duplicate key from raw parts, without requiring a
+  /// [ChangeItem].
+  static String? displayDuplicateKeyFromParts(
+    String toolName,
+    String humanSummary, {
+    Map<String, dynamic>? args,
+  }) {
+    final normalizedSummary = humanSummary
+        .trim()
+        .replaceAll(_whitespaceRegExp, ' ')
+        .toLowerCase();
+    if (normalizedSummary.isEmpty) return null;
+
+    final buffer = StringBuffer('$toolName:$normalizedSummary');
+    if (toolName == _updateRunningTimerToolName) {
+      final timerId = _runningTimerIdFromArgs(args);
+      if (timerId != null) buffer.write('|timer:$timerId');
+    }
+    return buffer.toString();
+  }
+
+  static String? _runningTimerIdFromArgs(Map<String, dynamic>? args) {
+    final timerId = args?['timerId'];
+    if (timerId is! String) return null;
+    final trimmed = timerId.trim();
+    return trimmed.isEmpty ? null : trimmed;
+  }
 
   /// Derives the overall `ChangeSetStatus` from a list of item statuses.
   ///

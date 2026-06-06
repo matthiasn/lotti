@@ -288,12 +288,15 @@ class _GeneratedUnifiedSuggestionScenario {
 
   List<_GeneratedOpenSuggestionExpectation> get expectedOpen {
     final seen = <String>{};
+    final seenDisplayKeys = <String>{};
     final open = <_GeneratedOpenSuggestionExpectation>[];
     for (final changeSet in pendingSets) {
       for (final (itemIndex, item) in changeSet.items.indexed) {
         if (item.status != ChangeItemStatus.pending) continue;
         final fingerprint = ChangeItem.fingerprint(item);
         if (!seen.add(fingerprint)) continue;
+        final displayKey = ChangeItem.displayDuplicateKey(item);
+        if (displayKey != null && !seenDisplayKeys.add(displayKey)) continue;
         open.add(
           (
             changeSetId: changeSet.id,
@@ -721,6 +724,120 @@ void main() {
         // First occurrence wins; iteration order is by pendingSets input
         // order (newer first as supplied by the repository).
         expect(result.open.single.changeSet.id, 'cs-new');
+      },
+    );
+
+    test(
+      'deduplicates verbatim visible suggestions across change sets',
+      () async {
+        final agent = makeTestIdentity();
+        const summary = 'Check off: "Address CodeRabbit review comments"';
+        final earlier = makeTestChangeSet(
+          id: 'cs-old-visible',
+          agentId: agent.agentId,
+          taskId: 'task-abc',
+          createdAt: DateTime(2026, 4, 18, 9),
+          items: const [
+            ChangeItem(
+              toolName: 'update_checklist_item',
+              args: {'id': 'old-item-id', 'isChecked': true},
+              humanSummary: summary,
+            ),
+          ],
+        );
+        final newer = makeTestChangeSet(
+          id: 'cs-new-visible',
+          agentId: agent.agentId,
+          taskId: 'task-abc',
+          createdAt: DateTime(2026, 4, 18, 10),
+          items: const [
+            ChangeItem(
+              toolName: 'update_checklist_item',
+              args: {'id': 'new-item-id', 'isChecked': true},
+              humanSummary: summary,
+            ),
+          ],
+        );
+
+        final container = build(
+          agent: agent,
+          ledger: ProposalLedger(
+            open: const [],
+            resolved: const [],
+            pendingSets: [newer, earlier],
+          ),
+        );
+        final sub = container.listen(
+          unifiedSuggestionListProvider('task-abc'),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+
+        final result = await container.read(
+          unifiedSuggestionListProvider('task-abc').future,
+        );
+
+        expect(result.open, hasLength(1));
+        expect(result.open.single.changeSet.id, 'cs-new-visible');
+        expect(result.open.single.item.humanSummary, summary);
+      },
+    );
+
+    test(
+      'keeps same-summary running timer suggestions for different timers',
+      () async {
+        final agent = makeTestIdentity();
+        const summary = 'Update running timer text: "Focus block"';
+        final changeSet = makeTestChangeSet(
+          id: 'cs-running-visible',
+          agentId: agent.agentId,
+          taskId: 'task-abc',
+          createdAt: DateTime(2026, 4, 18, 10),
+          items: const [
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateRunningTimer,
+              args: {
+                'timerId': 'timer-1',
+                'summary': 'Focus block',
+              },
+              humanSummary: summary,
+            ),
+            ChangeItem(
+              toolName: TaskAgentToolNames.updateRunningTimer,
+              args: {
+                'timerId': 'timer-2',
+                'summary': 'Focus block',
+              },
+              humanSummary: summary,
+            ),
+          ],
+        );
+
+        final container = build(
+          agent: agent,
+          ledger: ProposalLedger(
+            open: const [],
+            resolved: const [],
+            pendingSets: [changeSet],
+          ),
+        );
+        final sub = container.listen(
+          unifiedSuggestionListProvider('task-abc'),
+          (_, _) {},
+        );
+        addTearDown(sub.close);
+
+        final result = await container.read(
+          unifiedSuggestionListProvider('task-abc').future,
+        );
+
+        expect(result.open, hasLength(2));
+        expect(
+          result.open
+              .map((suggestion) => suggestion.item.args['timerId'])
+              .toSet(),
+          {'timer-1', 'timer-2'},
+        );
       },
     );
 
