@@ -23,40 +23,110 @@ import '../../categories/test_utils.dart';
 
 final _asOf = DateTime(2026, 5, 25, 9);
 
+DayPlanEntity buildDayPlan({
+  required String agentId,
+  required String dayId,
+  DateTime? updatedAt,
+  List<PlannedBlock> blocks = const <PlannedBlock>[],
+  int capacityMinutes = 480,
+  int scheduledMinutes = 0,
+}) {
+  final timestamp = updatedAt ?? _asOf;
+  return AgentDomainEntity.dayPlan(
+        id: 'day_agent_plan:$dayId',
+        agentId: agentId,
+        dayId: dayId,
+        planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
+        data: DayPlanData(
+          planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
+          status: const DayPlanStatus.draft(),
+          plannedBlocks: blocks,
+        ),
+        capacityMinutes: capacityMinutes,
+        scheduledMinutes: scheduledMinutes,
+        createdAt: timestamp,
+        updatedAt: timestamp,
+        vectorClock: null,
+      )
+      as DayPlanEntity;
+}
+
+ChangeSetEntity buildChangeSet({
+  required String agentId,
+  String id = 'diff-001',
+  List<ChangeItem> items = const <ChangeItem>[],
+}) {
+  return AgentDomainEntity.changeSet(
+        id: id,
+        agentId: agentId,
+        taskId: 'day_agent_plan:${dayAgentIdForDate(_asOf)}',
+        threadId: 'thread-001',
+        runKey: 'run-001',
+        status: ChangeSetStatus.pending,
+        items: items,
+        createdAt: _asOf,
+        vectorClock: null,
+      )
+      as ChangeSetEntity;
+}
+
+PlanDiff buildDiff({String id = 'diff-001'}) => PlanDiff(
+  id: id,
+  transcript: 'move the gym',
+  changes: const <PlanDiffChange>[],
+  updatedPlan: DraftPlan(
+    dayDate: _asOf,
+    blocks: const <TimeBlock>[],
+    bands: const <EnergyBand>[],
+    capacityMinutes: 480,
+    scheduledMinutes: 0,
+  ),
+);
+
+/// Shared five-mock + adapter scaffolding used by every group in this file.
+class _TestBench {
+  _TestBench._({required this.fallback})
+    : captureService = MockDayAgentCaptureService(),
+      planService = MockDayAgentPlanService(),
+      dayAgentService = MockDayAgentService(),
+      journalDb = MockJournalDb();
+
+  factory _TestBench.create({MockDayAgent? fallback}) =>
+      _TestBench._(fallback: fallback ?? MockDayAgent());
+
+  final MockDayAgentCaptureService captureService;
+  final MockDayAgentPlanService planService;
+  final MockDayAgentService dayAgentService;
+  final MockJournalDb journalDb;
+  final MockDayAgent fallback;
+
+  late final RealDayAgent adapter = RealDayAgent(
+    captureService: captureService,
+    planService: planService,
+    dayAgentService: dayAgentService,
+    journalDb: journalDb,
+    mockFallback: fallback,
+  );
+}
+
 void main() {
   group('RealDayAgent.summarizeRecentPatterns', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
+    setUp(() => bench = _TestBench.create());
 
     test(
       'returns an empty list when no day-agent exists for the date',
       () async {
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => null,
         );
 
-        final cards = await adapter.summarizeRecentPatterns(asOf: _asOf);
+        final cards = await bench.adapter.summarizeRecentPatterns(asOf: _asOf);
 
         expect(cards, isEmpty);
         verifyNever(
-          () => planService.summarizeRecentPatterns(
+          () => bench.planService.summarizeRecentPatterns(
             agentId: any(named: 'agentId'),
             asOf: any(named: 'asOf'),
             lookbackDays: any(named: 'lookbackDays'),
@@ -67,7 +137,7 @@ void main() {
 
     test('projects backend cards onto UI LearningCard shape', () async {
       const agentId = 'day-agent-001';
-      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+      when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
         (_) async => makeTestIdentity(
           id: agentId,
           agentId: agentId,
@@ -75,7 +145,7 @@ void main() {
         ),
       );
       when(
-        () => planService.summarizeRecentPatterns(
+        () => bench.planService.summarizeRecentPatterns(
           agentId: agentId,
           asOf: _asOf,
         ),
@@ -107,7 +177,7 @@ void main() {
         ],
       );
 
-      final cards = await adapter.summarizeRecentPatterns(asOf: _asOf);
+      final cards = await bench.adapter.summarizeRecentPatterns(asOf: _asOf);
 
       expect(cards, hasLength(2));
       expect(cards[0].id, 'yesterday');
@@ -128,7 +198,7 @@ void main() {
 
     test('forwards a custom lookbackDays argument', () async {
       const agentId = 'day-agent-002';
-      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+      when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
         (_) async => makeTestIdentity(
           id: agentId,
           agentId: agentId,
@@ -136,17 +206,20 @@ void main() {
         ),
       );
       when(
-        () => planService.summarizeRecentPatterns(
+        () => bench.planService.summarizeRecentPatterns(
           agentId: any(named: 'agentId'),
           asOf: any(named: 'asOf'),
           lookbackDays: any(named: 'lookbackDays'),
         ),
       ).thenAnswer((_) async => const <DayAgentLearningCard>[]);
 
-      await adapter.summarizeRecentPatterns(asOf: _asOf, lookbackDays: 14);
+      await bench.adapter.summarizeRecentPatterns(
+        asOf: _asOf,
+        lookbackDays: 14,
+      );
 
       verify(
-        () => planService.summarizeRecentPatterns(
+        () => bench.planService.summarizeRecentPatterns(
           agentId: agentId,
           asOf: _asOf,
           lookbackDays: 14,
@@ -156,52 +229,9 @@ void main() {
   });
 
   group('RealDayAgent.draftDayPlan', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
-
-    DayPlanEntity buildDayPlan({
-      required String agentId,
-      required String dayId,
-      required DateTime updatedAt,
-      List<PlannedBlock> blocks = const <PlannedBlock>[],
-      int capacityMinutes = 480,
-      int scheduledMinutes = 240,
-    }) {
-      return AgentDomainEntity.dayPlan(
-            id: 'day_agent_plan:$dayId',
-            agentId: agentId,
-            dayId: dayId,
-            planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
-            data: DayPlanData(
-              planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
-              status: const DayPlanStatus.draft(),
-              plannedBlocks: blocks,
-            ),
-            capacityMinutes: capacityMinutes,
-            scheduledMinutes: scheduledMinutes,
-            createdAt: updatedAt,
-            updatedAt: updatedAt,
-            vectorClock: null,
-          )
-          as DayPlanEntity;
-    }
+    setUp(() => bench = _TestBench.create());
 
     test(
       'enqueues the drafting wake, awaits the persisted plan, '
@@ -212,7 +242,7 @@ void main() {
         final freshlyDraftedAt = _asOf.add(const Duration(seconds: 5));
         var draftPlanCalls = 0;
 
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -220,7 +250,7 @@ void main() {
           ),
         );
         when(
-          () => planService.draftPlanForDay(
+          () => bench.planService.draftPlanForDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
@@ -246,7 +276,7 @@ void main() {
           );
         });
         when(
-          () => dayAgentService.enqueueDraftingWake(
+          () => bench.dayAgentService.enqueueDraftingWake(
             dayDate: any(named: 'dayDate'),
             captureId: any(named: 'captureId'),
             decidedTaskIds: any(named: 'decidedTaskIds'),
@@ -254,7 +284,7 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
         when(
-          () => journalDb.getCategoryById(any()),
+          () => bench.journalDb.getCategoryById(any()),
         ).thenAnswer((_) async => null);
 
         // Drive the 500 ms poll loop with fake time so the test takes
@@ -262,7 +292,7 @@ void main() {
         late DraftPlan result;
         fakeAsync((async) {
           withClock(async.getClock(_asOf), () {
-            adapter
+            bench.adapter
                 .draftDayPlan(
                   captureId: const CaptureId('cap_1'),
                   decidedTaskIds: const ['t_1'],
@@ -295,7 +325,7 @@ void main() {
         expect(result.agendaItems.single.taskId, isNull);
 
         verify(
-          () => dayAgentService.enqueueDraftingWake(
+          () => bench.dayAgentService.enqueueDraftingWake(
             dayDate: _asOf,
             captureId: 'cap_1',
             decidedTaskIds: ['t_1'],
@@ -310,11 +340,11 @@ void main() {
       'the date',
       () async {
         when(
-          () => dayAgentService.getDayAgentForDate(any()),
+          () => bench.dayAgentService.getDayAgentForDate(any()),
         ).thenAnswer((_) async => null);
 
         await expectLater(
-          adapter.draftDayPlan(
+          bench.adapter.draftDayPlan(
             captureId: const CaptureId('cap_1'),
             decidedTaskIds: const [],
             dayDate: _asOf,
@@ -322,7 +352,7 @@ void main() {
           throwsA(isA<DayAgentInteractionException>()),
         );
         verifyNever(
-          () => dayAgentService.enqueueDraftingWake(
+          () => bench.dayAgentService.enqueueDraftingWake(
             dayDate: any(named: 'dayDate'),
             captureId: any(named: 'captureId'),
             decidedTaskIds: any(named: 'decidedTaskIds'),
@@ -337,7 +367,7 @@ void main() {
       'no agent',
       () async {
         const agentId = 'day-agent-001';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -345,13 +375,13 @@ void main() {
           ),
         );
         when(
-          () => planService.draftPlanForDay(
+          () => bench.planService.draftPlanForDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
         ).thenAnswer((_) async => null);
         when(
-          () => dayAgentService.enqueueDraftingWake(
+          () => bench.dayAgentService.enqueueDraftingWake(
             dayDate: any(named: 'dayDate'),
             captureId: any(named: 'captureId'),
             decidedTaskIds: any(named: 'decidedTaskIds'),
@@ -360,7 +390,7 @@ void main() {
         ).thenAnswer((_) async => false);
 
         await expectLater(
-          adapter.draftDayPlan(
+          bench.adapter.draftDayPlan(
             captureId: const CaptureId('cap_1'),
             decidedTaskIds: const [],
             dayDate: _asOf,
@@ -372,80 +402,14 @@ void main() {
   });
 
   group('RealDayAgent.resolveDiffItems', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
-
-    DayPlanEntity buildDayPlan({
-      required String agentId,
-      required String dayId,
-    }) {
-      return AgentDomainEntity.dayPlan(
-            id: 'day_agent_plan:$dayId',
-            agentId: agentId,
-            dayId: dayId,
-            planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
-            data: DayPlanData(
-              planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
-              status: const DayPlanStatus.draft(),
-            ),
-            createdAt: _asOf,
-            updatedAt: _asOf,
-            vectorClock: null,
-          )
-          as DayPlanEntity;
-    }
-
-    ChangeSetEntity buildChangeSet({required String agentId}) {
-      return AgentDomainEntity.changeSet(
-            id: 'diff-001',
-            agentId: agentId,
-            taskId: 'day_agent_plan:${dayAgentIdForDate(_asOf)}',
-            threadId: 'thread-001',
-            runKey: 'run-001',
-            status: ChangeSetStatus.pending,
-            items: const <ChangeItem>[],
-            createdAt: _asOf,
-            vectorClock: null,
-          )
-          as ChangeSetEntity;
-    }
-
-    PlanDiff buildDiff() {
-      return PlanDiff(
-        id: 'diff-001',
-        transcript: 'move the gym',
-        changes: const <PlanDiffChange>[],
-        updatedPlan: DraftPlan(
-          dayDate: _asOf,
-          blocks: const <TimeBlock>[],
-          bands: const <EnergyBand>[],
-          capacityMinutes: 480,
-          scheduledMinutes: 0,
-        ),
-      );
-    }
+    setUp(() => bench = _TestBench.create());
 
     test('acceptDiff forwards selected item indices', () async {
       const agentId = 'day-agent-001';
       final dayId = dayAgentIdForDate(_asOf);
-      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+      when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
         (_) async => makeTestIdentity(
           id: agentId,
           agentId: agentId,
@@ -453,24 +417,27 @@ void main() {
         ),
       );
       when(
-        () => planService.acceptPlanDiff(
+        () => bench.planService.acceptPlanDiff(
           agentId: any(named: 'agentId'),
           changeSetId: any(named: 'changeSetId'),
           itemIndices: any(named: 'itemIndices'),
         ),
       ).thenAnswer((_) async => buildChangeSet(agentId: agentId));
       when(
-        () => planService.draftPlanForDay(
+        () => bench.planService.draftPlanForDay(
           agentId: agentId,
           dayId: dayId,
         ),
       ).thenAnswer((_) async => buildDayPlan(agentId: agentId, dayId: dayId));
 
-      final result = await adapter.acceptDiff(buildDiff(), itemIndices: [1]);
+      final result = await bench.adapter.acceptDiff(
+        buildDiff(),
+        itemIndices: [1],
+      );
 
       final captured =
           verify(
-                () => planService.acceptPlanDiff(
+                () => bench.planService.acceptPlanDiff(
                   agentId: agentId,
                   changeSetId: 'diff-001',
                   itemIndices: captureAny(named: 'itemIndices'),
@@ -486,7 +453,7 @@ void main() {
       () async {
         const agentId = 'day-agent-001';
         final dayId = dayAgentIdForDate(_asOf);
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -494,20 +461,20 @@ void main() {
           ),
         );
         when(
-          () => planService.revertPlanDiff(
+          () => bench.planService.revertPlanDiff(
             agentId: any(named: 'agentId'),
             changeSetId: any(named: 'changeSetId'),
             itemIndices: any(named: 'itemIndices'),
           ),
         ).thenAnswer((_) async => buildChangeSet(agentId: agentId));
         when(
-          () => planService.draftPlanForDay(
+          () => bench.planService.draftPlanForDay(
             agentId: agentId,
             dayId: dayId,
           ),
         ).thenAnswer((_) async => buildDayPlan(agentId: agentId, dayId: dayId));
 
-        final result = await adapter.revertDiff(
+        final result = await bench.adapter.revertDiff(
           diff: buildDiff(),
           originalPlan: buildDiff().updatedPlan,
           itemIndices: [0],
@@ -515,7 +482,7 @@ void main() {
 
         final captured =
             verify(
-                  () => planService.revertPlanDiff(
+                  () => bench.planService.revertPlanDiff(
                     agentId: agentId,
                     changeSetId: 'diff-001',
                     itemIndices: captureAny(named: 'itemIndices'),
@@ -525,32 +492,17 @@ void main() {
         expect(captured, [0]);
         expect(result.dayDate, _asOf);
         verify(
-          () => planService.draftPlanForDay(agentId: agentId, dayId: dayId),
+          () =>
+              bench.planService.draftPlanForDay(agentId: agentId, dayId: dayId),
         ).called(1);
       },
     );
   });
 
   group('RealDayAgent.commitDay', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
+    setUp(() => bench = _TestBench.create());
 
     test(
       'calls commitDay on the plan service and projects the result',
@@ -558,7 +510,7 @@ void main() {
         const agentId = 'day-agent-001';
         final dayDate = DateTime(_asOf.year, _asOf.month, _asOf.day);
         final committedAt = dayDate.add(const Duration(hours: 9));
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -566,7 +518,7 @@ void main() {
           ),
         );
         when(
-          () => planService.commitDay(
+          () => bench.planService.commitDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
@@ -599,7 +551,7 @@ void main() {
                   as DayPlanEntity,
         );
         when(
-          () => journalDb.getCategoryById(any()),
+          () => bench.journalDb.getCategoryById(any()),
         ).thenAnswer((_) async => null);
 
         final plan = DraftPlan(
@@ -610,13 +562,13 @@ void main() {
           scheduledMinutes: 60,
         );
 
-        final result = await adapter.commitDay(plan);
+        final result = await bench.adapter.commitDay(plan);
 
         expect(result.state, DayState.committed);
         expect(result.blocks, hasLength(1));
         expect(result.blocks.single.state, TimeBlockState.committed);
         verify(
-          () => planService.commitDay(
+          () => bench.planService.commitDay(
             agentId: agentId,
             dayId: dayAgentIdForDate(dayDate),
           ),
@@ -628,7 +580,7 @@ void main() {
       'throws DayAgentInteractionException when no day-agent exists',
       () async {
         when(
-          () => dayAgentService.getDayAgentForDate(any()),
+          () => bench.dayAgentService.getDayAgentForDate(any()),
         ).thenAnswer((_) async => null);
 
         final plan = DraftPlan(
@@ -640,11 +592,11 @@ void main() {
         );
 
         await expectLater(
-          adapter.commitDay(plan),
+          bench.adapter.commitDay(plan),
           throwsA(isA<DayAgentInteractionException>()),
         );
         verifyNever(
-          () => planService.commitDay(
+          () => bench.planService.commitDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
@@ -654,25 +606,9 @@ void main() {
   });
 
   group('RealDayAgent.submitCapture', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
+    setUp(() => bench = _TestBench.create());
 
     CaptureEntity buildCapture(String id, String agentId) {
       return AgentDomainEntity.capture(
@@ -690,7 +626,7 @@ void main() {
       'reuses an existing day-agent and forwards transcript + audioId',
       () async {
         const agentId = 'day-agent-A';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -698,7 +634,7 @@ void main() {
           ),
         );
         when(
-          () => captureService.submitCapture(
+          () => bench.captureService.submitCapture(
             agentId: any(named: 'agentId'),
             transcript: any(named: 'transcript'),
             capturedAt: any(named: 'capturedAt'),
@@ -706,7 +642,7 @@ void main() {
           ),
         ).thenAnswer((_) async => buildCapture('cap-1', agentId));
 
-        final captureId = await adapter.submitCapture(
+        final captureId = await bench.adapter.submitCapture(
           transcript: 'hello world',
           capturedAt: _asOf,
           audioId: 'audio-1',
@@ -714,10 +650,10 @@ void main() {
 
         expect(captureId.value, 'cap-1');
         verifyNever(
-          () => dayAgentService.createDayAgent(date: any(named: 'date')),
+          () => bench.dayAgentService.createDayAgent(date: any(named: 'date')),
         );
         verify(
-          () => captureService.submitCapture(
+          () => bench.captureService.submitCapture(
             agentId: agentId,
             transcript: 'hello world',
             capturedAt: _asOf,
@@ -732,10 +668,10 @@ void main() {
       () async {
         const agentId = 'day-agent-B';
         when(
-          () => dayAgentService.getDayAgentForDate(any()),
+          () => bench.dayAgentService.getDayAgentForDate(any()),
         ).thenAnswer((_) async => null);
         when(
-          () => dayAgentService.createDayAgent(date: any(named: 'date')),
+          () => bench.dayAgentService.createDayAgent(date: any(named: 'date')),
         ).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
@@ -744,7 +680,7 @@ void main() {
           ),
         );
         when(
-          () => captureService.submitCapture(
+          () => bench.captureService.submitCapture(
             agentId: any(named: 'agentId'),
             transcript: any(named: 'transcript'),
             capturedAt: any(named: 'capturedAt'),
@@ -752,47 +688,33 @@ void main() {
           ),
         ).thenAnswer((_) async => buildCapture('cap-2', agentId));
 
-        final captureId = await adapter.submitCapture(
+        final captureId = await bench.adapter.submitCapture(
           transcript: 'first capture',
           capturedAt: _asOf,
         );
 
         expect(captureId.value, 'cap-2');
-        verify(() => dayAgentService.createDayAgent(date: _asOf)).called(1);
+        verify(
+          () => bench.dayAgentService.createDayAgent(date: _asOf),
+        ).called(1);
       },
     );
   });
 
   group('RealDayAgent.currentPlanForDate / deletePlanForDate', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
+    setUp(() => bench = _TestBench.create());
 
     test('currentPlanForDate returns null when no day-agent exists', () async {
       when(
-        () => dayAgentService.getDayAgentForDate(any()),
+        () => bench.dayAgentService.getDayAgentForDate(any()),
       ).thenAnswer((_) async => null);
 
-      final plan = await adapter.currentPlanForDate(_asOf);
+      final plan = await bench.adapter.currentPlanForDate(_asOf);
       expect(plan, isNull);
       verifyNever(
-        () => planService.draftPlanForDay(
+        () => bench.planService.draftPlanForDay(
           agentId: any(named: 'agentId'),
           dayId: any(named: 'dayId'),
         ),
@@ -803,7 +725,7 @@ void main() {
       'currentPlanForDate returns null when the plan service yields no plan',
       () async {
         const agentId = 'day-agent-C';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -811,13 +733,13 @@ void main() {
           ),
         );
         when(
-          () => planService.draftPlanForDay(
+          () => bench.planService.draftPlanForDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
         ).thenAnswer((_) async => null);
 
-        final plan = await adapter.currentPlanForDate(_asOf);
+        final plan = await bench.adapter.currentPlanForDate(_asOf);
         expect(plan, isNull);
       },
     );
@@ -828,7 +750,7 @@ void main() {
         const agentId = 'day-agent-D';
         final dayId = dayAgentIdForDate(_asOf);
         final dayDate = DateTime(_asOf.year, _asOf.month, _asOf.day);
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -836,7 +758,7 @@ void main() {
           ),
         );
         when(
-          () => planService.draftPlanForDay(
+          () => bench.planService.draftPlanForDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
@@ -858,7 +780,7 @@ void main() {
                   as DayPlanEntity,
         );
 
-        final plan = await adapter.currentPlanForDate(_asOf);
+        final plan = await bench.adapter.currentPlanForDate(_asOf);
         expect(plan, isNotNull);
         expect(plan!.dayDate, _asOf);
         expect(plan.state, DayState.drafted);
@@ -867,13 +789,13 @@ void main() {
 
     test('deletePlanForDate returns false when no day-agent exists', () async {
       when(
-        () => dayAgentService.getDayAgentForDate(any()),
+        () => bench.dayAgentService.getDayAgentForDate(any()),
       ).thenAnswer((_) async => null);
 
-      final removed = await adapter.deletePlanForDate(_asOf);
+      final removed = await bench.adapter.deletePlanForDate(_asOf);
       expect(removed, isFalse);
       verifyNever(
-        () => planService.deletePlanForDay(
+        () => bench.planService.deletePlanForDay(
           agentId: any(named: 'agentId'),
           dayId: any(named: 'dayId'),
         ),
@@ -882,7 +804,7 @@ void main() {
 
     test('deletePlanForDate delegates to the plan service', () async {
       const agentId = 'day-agent-E';
-      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+      when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
         (_) async => makeTestIdentity(
           id: agentId,
           agentId: agentId,
@@ -890,16 +812,16 @@ void main() {
         ),
       );
       when(
-        () => planService.deletePlanForDay(
+        () => bench.planService.deletePlanForDay(
           agentId: any(named: 'agentId'),
           dayId: any(named: 'dayId'),
         ),
       ).thenAnswer((_) async => true);
 
-      final removed = await adapter.deletePlanForDate(_asOf);
+      final removed = await bench.adapter.deletePlanForDate(_asOf);
       expect(removed, isTrue);
       verify(
-        () => planService.deletePlanForDay(
+        () => bench.planService.deletePlanForDay(
           agentId: agentId,
           dayId: dayAgentIdForDate(_asOf),
         ),
@@ -908,25 +830,9 @@ void main() {
   });
 
   group('RealDayAgent.parseCaptureToItems / projection helpers', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
+    setUp(() => bench = _TestBench.create());
 
     ParsedItemEntity buildParsedItem({
       String id = 'parsed-1',
@@ -962,7 +868,7 @@ void main() {
           color: '#FFAA00',
         );
         when(
-          () => captureService.parsedItemsForCapture(any()),
+          () => bench.captureService.parsedItemsForCapture(any()),
         ).thenAnswer(
           (_) async => [
             buildParsedItem(
@@ -973,13 +879,15 @@ void main() {
           ],
         );
         when(
-          () => journalDb.getCategoryById('cat-1'),
+          () => bench.journalDb.getCategoryById('cat-1'),
         ).thenAnswer((_) async => category);
         when(
-          () => journalDb.journalEntityById(testTask.meta.id),
+          () => bench.journalDb.journalEntityById(testTask.meta.id),
         ).thenAnswer((_) async => testTask);
 
-        final items = await adapter.parseCaptureToItems(const CaptureId('cap'));
+        final items = await bench.adapter.parseCaptureToItems(
+          const CaptureId('cap'),
+        );
         expect(items, hasLength(1));
         final item = items.single;
         expect(item.id, 'parsed-a');
@@ -996,12 +904,14 @@ void main() {
       'falls back to the uncategorised category when categoryId is empty',
       () async {
         when(
-          () => captureService.parsedItemsForCapture(any()),
+          () => bench.captureService.parsedItemsForCapture(any()),
         ).thenAnswer((_) async => [buildParsedItem()]);
 
-        final items = await adapter.parseCaptureToItems(const CaptureId('cap'));
+        final items = await bench.adapter.parseCaptureToItems(
+          const CaptureId('cap'),
+        );
         expect(items.single.category.id, 'unknown');
-        verifyNever(() => journalDb.getCategoryById(any()));
+        verifyNever(() => bench.journalDb.getCategoryById(any()));
       },
     );
 
@@ -1009,15 +919,17 @@ void main() {
       'falls back to the uncategorised id when the category row is missing',
       () async {
         when(
-          () => captureService.parsedItemsForCapture(any()),
+          () => bench.captureService.parsedItemsForCapture(any()),
         ).thenAnswer(
           (_) async => [buildParsedItem(categoryId: 'cat-missing')],
         );
         when(
-          () => journalDb.getCategoryById('cat-missing'),
+          () => bench.journalDb.getCategoryById('cat-missing'),
         ).thenAnswer((_) async => null);
 
-        final items = await adapter.parseCaptureToItems(const CaptureId('cap'));
+        final items = await bench.adapter.parseCaptureToItems(
+          const CaptureId('cap'),
+        );
         expect(items.single.category.id, 'cat-missing');
         // Uncategorised fallback colour preserved.
         expect(items.single.category.colorHex, '5ED4B7');
@@ -1032,7 +944,7 @@ void main() {
           name: 'Work',
         );
         when(
-          () => captureService.parsedItemsForCapture(any()),
+          () => bench.captureService.parsedItemsForCapture(any()),
         ).thenAnswer(
           (_) async => [
             buildParsedItem(id: 'p-1', categoryId: 'cat-1'),
@@ -1040,13 +952,13 @@ void main() {
           ],
         );
         when(
-          () => journalDb.getCategoryById('cat-1'),
+          () => bench.journalDb.getCategoryById('cat-1'),
         ).thenAnswer((_) async => category);
 
-        await adapter.parseCaptureToItems(const CaptureId('cap'));
-        await adapter.parseCaptureToItems(const CaptureId('cap'));
+        await bench.adapter.parseCaptureToItems(const CaptureId('cap'));
+        await bench.adapter.parseCaptureToItems(const CaptureId('cap'));
 
-        verify(() => journalDb.getCategoryById('cat-1')).called(1);
+        verify(() => bench.journalDb.getCategoryById('cat-1')).called(1);
       },
     );
 
@@ -1054,15 +966,17 @@ void main() {
       'leaves matchedTaskTitle null when the linked entity is not a task',
       () async {
         when(
-          () => captureService.parsedItemsForCapture(any()),
+          () => bench.captureService.parsedItemsForCapture(any()),
         ).thenAnswer(
           (_) async => [buildParsedItem(matchedTaskId: 'not-a-task')],
         );
         when(
-          () => journalDb.journalEntityById('not-a-task'),
+          () => bench.journalDb.journalEntityById('not-a-task'),
         ).thenAnswer((_) async => null);
 
-        final items = await adapter.parseCaptureToItems(const CaptureId('cap'));
+        final items = await bench.adapter.parseCaptureToItems(
+          const CaptureId('cap'),
+        );
         expect(items.single.matchedTaskTitle, isNull);
       },
     );
@@ -1071,7 +985,7 @@ void main() {
       'trims a too-long colour string to 6 chars and replaces blanks',
       () async {
         when(
-          () => captureService.parsedItemsForCapture(any()),
+          () => bench.captureService.parsedItemsForCapture(any()),
         ).thenAnswer(
           (_) async => [
             buildParsedItem(id: 'p-long', categoryId: 'cat-long'),
@@ -1079,7 +993,7 @@ void main() {
           ],
         );
         when(
-          () => journalDb.getCategoryById('cat-long'),
+          () => bench.journalDb.getCategoryById('cat-long'),
         ).thenAnswer(
           (_) async => CategoryTestUtils.createTestCategory(
             id: 'cat-long',
@@ -1088,7 +1002,7 @@ void main() {
           ),
         );
         when(
-          () => journalDb.getCategoryById('cat-empty'),
+          () => bench.journalDb.getCategoryById('cat-empty'),
         ).thenAnswer(
           (_) async => CategoryTestUtils.createTestCategory(
             id: 'cat-empty',
@@ -1097,7 +1011,9 @@ void main() {
           ),
         );
 
-        final items = await adapter.parseCaptureToItems(const CaptureId('cap'));
+        final items = await bench.adapter.parseCaptureToItems(
+          const CaptureId('cap'),
+        );
         expect(items[0].category.colorHex, 'ABCDEF');
         expect(items[1].category.colorHex, '5ED4B7');
       },
@@ -1105,35 +1021,19 @@ void main() {
   });
 
   group('RealDayAgent.surfacePendingDecisions', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
+    setUp(() => bench = _TestBench.create());
 
     test('returns empty when no day-agent exists for the date', () async {
       when(
-        () => dayAgentService.getDayAgentForDate(any()),
+        () => bench.dayAgentService.getDayAgentForDate(any()),
       ).thenAnswer((_) async => null);
 
-      final items = await adapter.surfacePendingDecisions(forDate: _asOf);
+      final items = await bench.adapter.surfacePendingDecisions(forDate: _asOf);
       expect(items, isEmpty);
       verifyNever(
-        () => captureService.surfacePendingDecisions(
+        () => bench.captureService.surfacePendingDecisions(
           agentId: any(named: 'agentId'),
           dayId: any(named: 'dayId'),
         ),
@@ -1144,7 +1044,7 @@ void main() {
       'projects all pending-kind enums into PendingItemReason values',
       () async {
         const agentId = 'agent-pending';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -1152,7 +1052,7 @@ void main() {
           ),
         );
         when(
-          () => captureService.surfacePendingDecisions(
+          () => bench.captureService.surfacePendingDecisions(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
@@ -1191,7 +1091,7 @@ void main() {
         );
 
         final items = await withClock(Clock.fixed(_asOf), () {
-          return adapter.surfacePendingDecisions(forDate: _asOf);
+          return bench.adapter.surfacePendingDecisions(forDate: _asOf);
         });
         expect(items.map((i) => i.reason), [
           PendingItemReason.overdue,
@@ -1213,7 +1113,7 @@ void main() {
       () async {
         const agentId = 'agent-future-pending';
         final selectedDate = DateTime(2026, 5, 30, 9);
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -1221,7 +1121,7 @@ void main() {
           ),
         );
         when(
-          () => captureService.surfacePendingDecisions(
+          () => bench.captureService.surfacePendingDecisions(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
@@ -1246,7 +1146,7 @@ void main() {
         );
 
         final items = await withClock(Clock.fixed(_asOf), () {
-          return adapter.surfacePendingDecisions(forDate: selectedDate);
+          return bench.adapter.surfacePendingDecisions(forDate: selectedDate);
         });
 
         expect(items[0].overdueByDays, 5);
@@ -1259,7 +1159,7 @@ void main() {
       'defaults forDate to clock.now and queries with that date',
       () async {
         const agentId = 'agent-default-date';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -1267,17 +1167,17 @@ void main() {
           ),
         );
         when(
-          () => captureService.surfacePendingDecisions(
+          () => bench.captureService.surfacePendingDecisions(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
         ).thenAnswer((_) async => const <DayAgentPendingItem>[]);
 
-        await adapter.surfacePendingDecisions();
+        await bench.adapter.surfacePendingDecisions();
 
-        verify(() => dayAgentService.getDayAgentForDate(any())).called(1);
+        verify(() => bench.dayAgentService.getDayAgentForDate(any())).called(1);
         verify(
-          () => captureService.surfacePendingDecisions(
+          () => bench.captureService.surfacePendingDecisions(
             agentId: agentId,
             dayId: any(named: 'dayId'),
           ),
@@ -1289,52 +1189,36 @@ void main() {
   group(
     'RealDayAgent.applyTriage / linkCapturePhraseToTask / breakCaptureLink',
     () {
-      late MockDayAgentCaptureService captureService;
-      late MockDayAgentPlanService planService;
-      late MockDayAgentService dayAgentService;
-      late MockJournalDb journalDb;
-      late RealDayAgent adapter;
+      late _TestBench bench;
 
-      setUp(() {
-        captureService = MockDayAgentCaptureService();
-        planService = MockDayAgentPlanService();
-        dayAgentService = MockDayAgentService();
-        journalDb = MockJournalDb();
-        adapter = RealDayAgent(
-          captureService: captureService,
-          planService: planService,
-          dayAgentService: dayAgentService,
-          journalDb: journalDb,
-          mockFallback: MockDayAgent(),
-        );
-      });
+      setUp(() => bench = _TestBench.create());
 
       test(
         'applyTriage forwards the action name and only includes deferTo when '
         'deferring',
         () async {
           when(
-            () => captureService.applyTriage(
+            () => bench.captureService.applyTriage(
               taskId: any(named: 'taskId'),
               action: any(named: 'action'),
               deferTo: any(named: 'deferTo'),
             ),
           ).thenAnswer((_) async => testTask);
 
-          final immediate = await adapter.applyTriage(
+          final immediate = await bench.adapter.applyTriage(
             taskId: 't-1',
             action: TriageAction.today,
           );
           expect(immediate.deferredTo, isNull);
           expect(immediate.action, TriageAction.today);
           verify(
-            () => captureService.applyTriage(
+            () => bench.captureService.applyTriage(
               taskId: 't-1',
               action: 'today',
             ),
           ).called(1);
 
-          final deferred = await adapter.applyTriage(
+          final deferred = await bench.adapter.applyTriage(
             taskId: 't-2',
             action: TriageAction.defer,
             deferTo: _asOf,
@@ -1342,7 +1226,7 @@ void main() {
           expect(deferred.deferredTo, _asOf);
           expect(deferred.action, TriageAction.defer);
           verify(
-            () => captureService.applyTriage(
+            () => bench.captureService.applyTriage(
               taskId: 't-2',
               action: 'defer',
               deferTo: _asOf,
@@ -1370,19 +1254,19 @@ void main() {
                   )
                   as ParsedItemEntity;
           when(
-            () => captureService.linkCapturePhraseToTask(
+            () => bench.captureService.linkCapturePhraseToTask(
               captureItemId: any(named: 'captureItemId'),
               taskId: any(named: 'taskId'),
             ),
           ).thenAnswer((_) async => updated);
           when(
-            () => journalDb.getCategoryById('cat-z'),
+            () => bench.journalDb.getCategoryById('cat-z'),
           ).thenAnswer((_) async => null);
           when(
-            () => journalDb.journalEntityById(testTask.meta.id),
+            () => bench.journalDb.journalEntityById(testTask.meta.id),
           ).thenAnswer((_) async => testTask);
 
-          final item = await adapter.linkCapturePhraseToTask(
+          final item = await bench.adapter.linkCapturePhraseToTask(
             parsedItemId: 'parsed-z',
             taskId: testTask.meta.id,
           );
@@ -1408,10 +1292,10 @@ void main() {
                 )
                 as ParsedItemEntity;
         when(
-          () => captureService.breakCaptureLink(any()),
+          () => bench.captureService.breakCaptureLink(any()),
         ).thenAnswer((_) async => updated);
 
-        final item = await adapter.breakCaptureLink('parsed-broken');
+        final item = await bench.adapter.breakCaptureLink('parsed-broken');
         expect(item.kind, ParsedItemKind.newTask);
         expect(item.matchedTaskId, isNull);
       });
@@ -1419,32 +1303,16 @@ void main() {
   );
 
   group('RealDayAgent.draftDayPlan poll timeout', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
+    setUp(() => bench = _TestBench.create());
 
     test(
       'throws DayAgentInteractionException when no new plan appears before '
       'the deadline',
       () async {
         const agentId = 'agent-timeout';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -1452,13 +1320,13 @@ void main() {
           ),
         );
         when(
-          () => planService.draftPlanForDay(
+          () => bench.planService.draftPlanForDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
         ).thenAnswer((_) async => null);
         when(
-          () => dayAgentService.enqueueDraftingWake(
+          () => bench.dayAgentService.enqueueDraftingWake(
             dayDate: any(named: 'dayDate'),
             captureId: any(named: 'captureId'),
             decidedTaskIds: any(named: 'decidedTaskIds'),
@@ -1478,7 +1346,7 @@ void main() {
         await expectLater(
           withClock(
             clock,
-            () => adapter.draftDayPlan(
+            () => bench.adapter.draftDayPlan(
               captureId: const CaptureId('cap'),
               decidedTaskIds: const [],
               dayDate: _asOf,
@@ -1492,25 +1360,9 @@ void main() {
   });
 
   group('RealDayAgent.proposePlanDiff', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
+    setUp(() => bench = _TestBench.create());
 
     DraftPlan buildCurrentPlan() {
       return DraftPlan(
@@ -1536,41 +1388,22 @@ void main() {
       );
     }
 
-    ChangeSetEntity buildChangeSet({
-      String id = 'diff-new',
-      String agentId = 'agent-prop',
-      List<ChangeItem> items = const [],
-    }) {
-      return AgentDomainEntity.changeSet(
-            id: id,
-            agentId: agentId,
-            taskId: 'day_agent_plan:${dayAgentIdForDate(_asOf)}',
-            threadId: 'thread',
-            runKey: 'run',
-            status: ChangeSetStatus.pending,
-            items: items,
-            createdAt: _asOf,
-            vectorClock: null,
-          )
-          as ChangeSetEntity;
-    }
-
     test(
       'throws when no day-agent exists for the plan date',
       () async {
         when(
-          () => dayAgentService.getDayAgentForDate(any()),
+          () => bench.dayAgentService.getDayAgentForDate(any()),
         ).thenAnswer((_) async => null);
 
         await expectLater(
-          adapter.proposePlanDiff(
+          bench.adapter.proposePlanDiff(
             currentPlan: buildCurrentPlan(),
             voiceTranscript: 'move it',
           ),
           throwsA(isA<DayAgentInteractionException>()),
         );
         verifyNever(
-          () => dayAgentService.enqueueRefineWake(
+          () => bench.dayAgentService.enqueueRefineWake(
             dayDate: any(named: 'dayDate'),
             transcript: any(named: 'transcript'),
           ),
@@ -1580,7 +1413,7 @@ void main() {
 
     test('throws when enqueueRefineWake reports no agent', () async {
       const agentId = 'agent-prop-1';
-      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+      when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
         (_) async => makeTestIdentity(
           id: agentId,
           agentId: agentId,
@@ -1588,20 +1421,20 @@ void main() {
         ),
       );
       when(
-        () => planService.pendingPlanDiffsForDay(
+        () => bench.planService.pendingPlanDiffsForDay(
           agentId: any(named: 'agentId'),
           dayId: any(named: 'dayId'),
         ),
       ).thenAnswer((_) async => const <ChangeSetEntity>[]);
       when(
-        () => dayAgentService.enqueueRefineWake(
+        () => bench.dayAgentService.enqueueRefineWake(
           dayDate: any(named: 'dayDate'),
           transcript: any(named: 'transcript'),
         ),
       ).thenAnswer((_) async => false);
 
       await expectLater(
-        adapter.proposePlanDiff(
+        bench.adapter.proposePlanDiff(
           currentPlan: buildCurrentPlan(),
           voiceTranscript: 'move it',
         ),
@@ -1613,7 +1446,7 @@ void main() {
       'returns a projected PlanDiff for the first new change set after enqueue',
       () {
         const agentId = 'agent-prop-2';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -1621,7 +1454,7 @@ void main() {
           ),
         );
         when(
-          () => journalDb.getCategoryById(any()),
+          () => bench.journalDb.getCategoryById(any()),
         ).thenAnswer((_) async => null);
         // First call (baseline) returns no diffs, subsequent calls return
         // a fresh diff.
@@ -1664,7 +1497,7 @@ void main() {
           ],
         );
         when(
-          () => planService.pendingPlanDiffsForDay(
+          () => bench.planService.pendingPlanDiffsForDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
@@ -1673,7 +1506,7 @@ void main() {
           return calls == 1 ? const <ChangeSetEntity>[] : [newDiff];
         });
         when(
-          () => dayAgentService.enqueueRefineWake(
+          () => bench.dayAgentService.enqueueRefineWake(
             dayDate: any(named: 'dayDate'),
             transcript: any(named: 'transcript'),
           ),
@@ -1685,7 +1518,7 @@ void main() {
         late PlanDiff diff;
         fakeAsync((async) {
           withClock(async.getClock(_asOf), () {
-            adapter
+            bench.adapter
                 .proposePlanDiff(
                   currentPlan: buildCurrentPlan(),
                   voiceTranscript: 'reshape the morning',
@@ -1726,7 +1559,7 @@ void main() {
       'throws on timeout when no new diff appears',
       () async {
         const agentId = 'agent-prop-timeout';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -1734,13 +1567,13 @@ void main() {
           ),
         );
         when(
-          () => planService.pendingPlanDiffsForDay(
+          () => bench.planService.pendingPlanDiffsForDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
         ).thenAnswer((_) async => const <ChangeSetEntity>[]);
         when(
-          () => dayAgentService.enqueueRefineWake(
+          () => bench.dayAgentService.enqueueRefineWake(
             dayDate: any(named: 'dayDate'),
             transcript: any(named: 'transcript'),
           ),
@@ -1755,7 +1588,7 @@ void main() {
         await expectLater(
           withClock(
             clock,
-            () => adapter.proposePlanDiff(
+            () => bench.adapter.proposePlanDiff(
               currentPlan: buildCurrentPlan(),
               voiceTranscript: 'no change comes',
             ),
@@ -1768,45 +1601,16 @@ void main() {
   });
 
   group('RealDayAgent.acceptDiff / revertDiff error branches', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
-
-    PlanDiff buildDiff() => PlanDiff(
-      id: 'diff',
-      transcript: 'tx',
-      changes: const [],
-      updatedPlan: DraftPlan(
-        dayDate: _asOf,
-        blocks: const [],
-        bands: const [],
-        capacityMinutes: 480,
-        scheduledMinutes: 0,
-      ),
-    );
+    setUp(() => bench = _TestBench.create());
 
     test('acceptDiff throws when no day-agent exists', () async {
       when(
-        () => dayAgentService.getDayAgentForDate(any()),
+        () => bench.dayAgentService.getDayAgentForDate(any()),
       ).thenAnswer((_) async => null);
       await expectLater(
-        adapter.acceptDiff(buildDiff()),
+        bench.adapter.acceptDiff(buildDiff()),
         throwsA(isA<DayAgentInteractionException>()),
       );
     });
@@ -1815,7 +1619,7 @@ void main() {
       'acceptDiff throws when the plan disappears after the accept',
       () async {
         const agentId = 'agent-accept';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -1823,7 +1627,7 @@ void main() {
           ),
         );
         when(
-          () => planService.acceptPlanDiff(
+          () => bench.planService.acceptPlanDiff(
             agentId: any(named: 'agentId'),
             changeSetId: any(named: 'changeSetId'),
             itemIndices: any(named: 'itemIndices'),
@@ -1844,14 +1648,14 @@ void main() {
                   as ChangeSetEntity,
         );
         when(
-          () => planService.draftPlanForDay(
+          () => bench.planService.draftPlanForDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
         ).thenAnswer((_) async => null);
 
         await expectLater(
-          adapter.acceptDiff(buildDiff()),
+          bench.adapter.acceptDiff(buildDiff()),
           throwsA(isA<DayAgentInteractionException>()),
         );
       },
@@ -1859,10 +1663,10 @@ void main() {
 
     test('revertDiff throws when no day-agent exists', () async {
       when(
-        () => dayAgentService.getDayAgentForDate(any()),
+        () => bench.dayAgentService.getDayAgentForDate(any()),
       ).thenAnswer((_) async => null);
       await expectLater(
-        adapter.revertDiff(
+        bench.adapter.revertDiff(
           diff: buildDiff(),
           originalPlan: buildDiff().updatedPlan,
         ),
@@ -1874,7 +1678,7 @@ void main() {
       'revertDiff throws when the plan disappears after the revert',
       () async {
         const agentId = 'agent-revert';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -1882,7 +1686,7 @@ void main() {
           ),
         );
         when(
-          () => planService.revertPlanDiff(
+          () => bench.planService.revertPlanDiff(
             agentId: any(named: 'agentId'),
             changeSetId: any(named: 'changeSetId'),
             itemIndices: any(named: 'itemIndices'),
@@ -1903,14 +1707,14 @@ void main() {
                   as ChangeSetEntity,
         );
         when(
-          () => planService.draftPlanForDay(
+          () => bench.planService.draftPlanForDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
         ).thenAnswer((_) async => null);
 
         await expectLater(
-          adapter.revertDiff(
+          bench.adapter.revertDiff(
             diff: buildDiff(),
             originalPlan: buildDiff().updatedPlan,
           ),
@@ -1921,25 +1725,9 @@ void main() {
   });
 
   group('RealDayAgent projection / agenda / state mapping', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
+    setUp(() => bench = _TestBench.create());
 
     DayPlanEntity buildPlanEntity({
       required String agentId,
@@ -1971,7 +1759,7 @@ void main() {
       'agenda items per taskId',
       () async {
         const agentId = 'agent-projection';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -1979,7 +1767,7 @@ void main() {
           ),
         );
         when(
-          () => journalDb.getCategoryById(any()),
+          () => bench.journalDb.getCategoryById(any()),
         ).thenAnswer((_) async => null);
 
         final blocks = [
@@ -2057,7 +1845,7 @@ void main() {
         );
 
         when(
-          () => planService.commitDay(
+          () => bench.planService.commitDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
@@ -2071,7 +1859,7 @@ void main() {
           scheduledMinutes: 0,
         );
 
-        final result = await adapter.commitDay(plan);
+        final result = await bench.adapter.commitDay(plan);
 
         expect(result.state, DayState.committed);
         expect(result.bands.map((b) => b.level), [
@@ -2121,7 +1909,7 @@ void main() {
 
     test('legacy "agreed" status collapses to DayState.committed', () async {
       const agentId = 'agent-agreed';
-      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+      when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
         (_) async => makeTestIdentity(
           id: agentId,
           agentId: agentId,
@@ -2129,7 +1917,7 @@ void main() {
         ),
       );
       when(
-        () => planService.commitDay(
+        () => bench.planService.commitDay(
           agentId: any(named: 'agentId'),
           dayId: any(named: 'dayId'),
         ),
@@ -2147,40 +1935,26 @@ void main() {
         capacityMinutes: 480,
         scheduledMinutes: 0,
       );
-      final result = await adapter.commitDay(plan);
+      final result = await bench.adapter.commitDay(plan);
       expect(result.state, DayState.committed);
     });
   });
 
   group('RealDayAgent helpers + mocked delegations', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late MockDayAgent fallback;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      fallback = MockDayAgent(
-        parseLatency: Duration.zero,
-        pendingLatency: Duration.zero,
-        triageLatency: Duration.zero,
-        draftLatency: Duration.zero,
-        summarizeLatency: Duration.zero,
-        clock: () => _asOf,
-      );
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: fallback,
-      );
-    });
+    setUp(
+      () => bench = _TestBench.create(
+        fallback: MockDayAgent(
+          parseLatency: Duration.zero,
+          pendingLatency: Duration.zero,
+          triageLatency: Duration.zero,
+          draftLatency: Duration.zero,
+          summarizeLatency: Duration.zero,
+          clock: () => _asOf,
+        ),
+      ),
+    );
 
     test(
       'mocked tools (shutdown / reflection / carryover / tomorrow / corpus) '
@@ -2188,23 +1962,25 @@ void main() {
       () async {
         final forDate = _asOf;
 
-        final shutdown = await adapter.surfaceShutdownData(forDate: forDate);
+        final shutdown = await bench.adapter.surfaceShutdownData(
+          forDate: forDate,
+        );
         expect(shutdown.completed, isA<List<CompletedItem>>());
 
-        await adapter.recordReflection(
+        await bench.adapter.recordReflection(
           forDate: forDate,
           text: 'looked back',
           source: ReflectionSource.typed,
         );
-        await adapter.recordCarryoverDecision(
+        await bench.adapter.recordCarryoverDecision(
           taskId: 'task-x',
           action: CarryoverAction.tomorrow,
         );
 
-        final note = await adapter.generateTomorrowNote(forDate: forDate);
+        final note = await bench.adapter.generateTomorrowNote(forDate: forDate);
         expect(note.body, isNotEmpty);
 
-        final corpus = await adapter.surfaceTaskCorpus();
+        final corpus = await bench.adapter.surfaceTaskCorpus();
         expect(corpus, isA<List<TaskCorpusItem>>());
       },
     );
@@ -2217,51 +1993,12 @@ void main() {
   });
 
   group('RealDayAgent.draftDayPlan cancellation + baseline supersede', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
-
-    DayPlanEntity buildDayPlan({
-      required String agentId,
-      required String dayId,
-      required DateTime updatedAt,
-      List<PlannedBlock> blocks = const <PlannedBlock>[],
-    }) {
-      return AgentDomainEntity.dayPlan(
-            id: 'day_agent_plan:$dayId',
-            agentId: agentId,
-            dayId: dayId,
-            planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
-            data: DayPlanData(
-              planDate: DateTime(_asOf.year, _asOf.month, _asOf.day),
-              status: const DayPlanStatus.draft(),
-              plannedBlocks: blocks,
-            ),
-            createdAt: updatedAt,
-            updatedAt: updatedAt,
-            vectorClock: null,
-          )
-          as DayPlanEntity;
-    }
+    setUp(() => bench = _TestBench.create());
 
     void stubIdentity(String agentId) {
-      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+      when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
         (_) async => makeTestIdentity(
           id: agentId,
           agentId: agentId,
@@ -2272,7 +2009,7 @@ void main() {
 
     void stubEnqueueOk() {
       when(
-        () => dayAgentService.enqueueDraftingWake(
+        () => bench.dayAgentService.enqueueDraftingWake(
           dayDate: any(named: 'dayDate'),
           captureId: any(named: 'captureId'),
           decidedTaskIds: any(named: 'decidedTaskIds'),
@@ -2291,7 +2028,7 @@ void main() {
         // Baseline read returns null; the loop should never reach a second
         // draftPlanForDay read because cancellation fires first.
         when(
-          () => planService.draftPlanForDay(
+          () => bench.planService.draftPlanForDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
@@ -2303,7 +2040,7 @@ void main() {
           withClock(fakeClock, () {
             unawaited(() async {
               try {
-                await adapter.draftDayPlan(
+                await bench.adapter.draftDayPlan(
                   captureId: const CaptureId('cap'),
                   decidedTaskIds: const [],
                   dayDate: _asOf,
@@ -2325,7 +2062,7 @@ void main() {
         // Only the baseline read happened — cancellation short-circuited the
         // loop before the post-delay read.
         verify(
-          () => planService.draftPlanForDay(
+          () => bench.planService.draftPlanForDay(
             agentId: agentId,
             dayId: dayAgentIdForDate(_asOf),
           ),
@@ -2341,7 +2078,7 @@ void main() {
         stubIdentity(agentId);
         stubEnqueueOk();
         when(
-          () => planService.draftPlanForDay(
+          () => bench.planService.draftPlanForDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
@@ -2354,7 +2091,7 @@ void main() {
           withClock(fakeClock, () {
             unawaited(() async {
               try {
-                await adapter.draftDayPlan(
+                await bench.adapter.draftDayPlan(
                   captureId: const CaptureId('cap'),
                   decidedTaskIds: const [],
                   dayDate: _asOf,
@@ -2396,12 +2133,12 @@ void main() {
         stubIdentity(agentId);
         stubEnqueueOk();
         when(
-          () => journalDb.getCategoryById(any()),
+          () => bench.journalDb.getCategoryById(any()),
         ).thenAnswer((_) async => null);
 
         var reads = 0;
         when(
-          () => planService.draftPlanForDay(
+          () => bench.planService.draftPlanForDay(
             agentId: any(named: 'agentId'),
             dayId: any(named: 'dayId'),
           ),
@@ -2431,7 +2168,7 @@ void main() {
         fakeAsync((async) {
           final fakeClock = async.getClock(_asOf);
           withClock(fakeClock, () {
-            adapter
+            bench.adapter
                 .draftDayPlan(
                   captureId: const CaptureId('cap'),
                   decidedTaskIds: const [],
@@ -2455,25 +2192,9 @@ void main() {
   });
 
   group('RealDayAgent.proposePlanDiff cancellation', () {
-    late MockDayAgentCaptureService captureService;
-    late MockDayAgentPlanService planService;
-    late MockDayAgentService dayAgentService;
-    late MockJournalDb journalDb;
-    late RealDayAgent adapter;
+    late _TestBench bench;
 
-    setUp(() {
-      captureService = MockDayAgentCaptureService();
-      planService = MockDayAgentPlanService();
-      dayAgentService = MockDayAgentService();
-      journalDb = MockJournalDb();
-      adapter = RealDayAgent(
-        captureService: captureService,
-        planService: planService,
-        dayAgentService: dayAgentService,
-        journalDb: journalDb,
-        mockFallback: MockDayAgent(),
-      );
-    });
+    setUp(() => bench = _TestBench.create());
 
     DraftPlan buildCurrentPlan() => DraftPlan(
       dayDate: _asOf,
@@ -2484,7 +2205,7 @@ void main() {
     );
 
     void stubReady(String agentId) {
-      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+      when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
         (_) async => makeTestIdentity(
           id: agentId,
           agentId: agentId,
@@ -2492,13 +2213,13 @@ void main() {
         ),
       );
       when(
-        () => planService.pendingPlanDiffsForDay(
+        () => bench.planService.pendingPlanDiffsForDay(
           agentId: any(named: 'agentId'),
           dayId: any(named: 'dayId'),
         ),
       ).thenAnswer((_) async => const <ChangeSetEntity>[]);
       when(
-        () => dayAgentService.enqueueRefineWake(
+        () => bench.dayAgentService.enqueueRefineWake(
           dayDate: any(named: 'dayDate'),
           transcript: any(named: 'transcript'),
         ),
@@ -2515,7 +2236,7 @@ void main() {
         withClock(fakeClock, () {
           unawaited(() async {
             try {
-              await adapter.proposePlanDiff(
+              await bench.adapter.proposePlanDiff(
                 currentPlan: buildCurrentPlan(),
                 voiceTranscript: 'move it',
                 isCancelled: () => true,
@@ -2535,7 +2256,7 @@ void main() {
       );
       // Only the baseline diff read happened before cancellation.
       verify(
-        () => planService.pendingPlanDiffsForDay(
+        () => bench.planService.pendingPlanDiffsForDay(
           agentId: agentId,
           dayId: dayAgentIdForDate(_asOf),
         ),
@@ -2553,7 +2274,7 @@ void main() {
         withClock(fakeClock, () {
           unawaited(() async {
             try {
-              await adapter.proposePlanDiff(
+              await bench.adapter.proposePlanDiff(
                 currentPlan: buildCurrentPlan(),
                 voiceTranscript: 'move it',
                 isCancelled: () {
