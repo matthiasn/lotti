@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
@@ -28,155 +29,13 @@ import 'package:record/record.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import '../../test_utils.dart';
 
 const _category = DayAgentCategory(
   id: 'cat-work',
   name: 'Work',
   colorHex: '5ED4B7',
 );
-
-class _RecordingAgent implements DayAgentInterface {
-  String? capturedTranscript;
-  String? capturedAudioId;
-  DateTime? capturedAt;
-  int submitCount = 0;
-
-  @override
-  Future<CaptureId> submitCapture({
-    required String transcript,
-    required DateTime capturedAt,
-    String? audioId,
-  }) async {
-    capturedTranscript = transcript;
-    capturedAudioId = audioId;
-    this.capturedAt = capturedAt;
-    submitCount++;
-    return const CaptureId('cap_recorded');
-  }
-
-  @override
-  Future<DraftPlan?> currentPlanForDate(DateTime date) async => null;
-
-  @override
-  Future<bool> deletePlanForDate(DateTime date) async => true;
-
-  @override
-  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => const [];
-
-  @override
-  Future<List<PendingItem>> surfacePendingDecisions({
-    DateTime? forDate,
-  }) async => const [];
-
-  @override
-  Future<ParsedItem> breakCaptureLink(String parsedItemId) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<TriageResult> applyTriage({
-    required String taskId,
-    required TriageAction action,
-    DateTime? deferTo,
-  }) async => TriageResult(taskId: taskId, action: action);
-
-  @override
-  Future<DraftPlan> draftDayPlan({
-    required CaptureId captureId,
-    required List<String> decidedTaskIds,
-    required DateTime dayDate,
-    List<String> decidedCaptureItemIds = const [],
-    List<TimeBlock> calendarBlocks = const [],
-    bool Function()? isCancelled,
-  }) async => DraftPlan(
-    dayDate: dayDate,
-    blocks: const [],
-    bands: const [],
-    capacityMinutes: 0,
-    scheduledMinutes: 0,
-  );
-
-  @override
-  Future<List<LearningCard>> summarizeRecentPatterns({
-    required DateTime asOf,
-    int lookbackDays = 7,
-  }) async => const [];
-
-  @override
-  Future<PlanDiff> proposePlanDiff({
-    required DraftPlan currentPlan,
-    required String voiceTranscript,
-    bool Function()? isCancelled,
-  }) async => PlanDiff(
-    id: 'rec',
-    transcript: voiceTranscript,
-    changes: const [],
-    updatedPlan: currentPlan,
-  );
-
-  @override
-  Future<DraftPlan> acceptDiff(
-    PlanDiff diff, {
-    List<int>? itemIndices,
-  }) async => diff.updatedPlan;
-
-  @override
-  Future<DraftPlan> revertDiff({
-    required PlanDiff diff,
-    required DraftPlan originalPlan,
-    List<int>? itemIndices,
-  }) async => originalPlan;
-
-  @override
-  Future<DraftPlan> commitDay(DraftPlan plan) async =>
-      plan.copyWith(state: DayState.committed);
-
-  @override
-  Future<
-    ({
-      List<CompletedItem> completed,
-      List<CarryoverItem> carryover,
-      ShutdownMetrics metrics,
-    })
-  >
-  surfaceShutdownData({required DateTime forDate}) async => (
-    completed: const <CompletedItem>[],
-    carryover: const <CarryoverItem>[],
-    metrics: const ShutdownMetrics(
-      focusMinutes: 0,
-      flowSessions: 0,
-      contextSwitches: 0,
-      contextSwitchesWeekAvg: 0,
-      energyScore: 0,
-      energyDeltaVsWeek: 0,
-    ),
-  );
-
-  @override
-  Future<void> recordReflection({
-    required DateTime forDate,
-    required String text,
-    required ReflectionSource source,
-  }) async {}
-
-  @override
-  Future<void> recordCarryoverDecision({
-    required String taskId,
-    required CarryoverAction action,
-    DateTime? when,
-  }) async {}
-
-  @override
-  Future<TomorrowNote> generateTomorrowNote({
-    required DateTime forDate,
-  }) async => const TomorrowNote(body: '', maturity: 1);
-
-  @override
-  Future<List<TaskCorpusItem>> surfaceTaskCorpus({
-    TaskCorpusState stateFilter = TaskCorpusState.all,
-    String? categoryId,
-    String? query,
-  }) async => const [];
-}
 
 Widget _wrap(
   Widget child, {
@@ -333,29 +192,29 @@ void main() {
     testWidgets(
       'after capture, the Reconcile CTA submits edited transcript + audioId',
       (tester) async {
-        final agent = _RecordingAgent();
-        final harness = _AudioHarness(transcript: 'hi there')..arm();
+        final agent = RecordingDayAgent();
+        // Pre-baked captured state: the idle→listening→captured chain is
+        // exercised by the CaptureController unit tests and the
+        // 'arms the listening phase' test; this test only verifies the
+        // page→agent submission wiring, so no real recording I/O is needed.
         await tester.pumpWidget(
           _wrap(
             const CapturePage(),
             overrides: [
               dayAgentProvider.overrideWithValue(agent),
-              captureControllerProvider.overrideWith(harness.controllerFactory),
+              captureControllerProvider.overrideWith(
+                _StubCaptureController.factory(
+                  const CaptureState(
+                    phase: CapturePhase.captured,
+                    transcript: 'hi there',
+                    amplitudes: [],
+                    audioId: 'audio_001',
+                  ),
+                ),
+              ),
             ],
           ),
         );
-        await tester.pump();
-
-        // Start listening: drive the controller's async chain (mock
-        // permission + startRecording + real Directory.create) to
-        // completion via a zero-delay `runAsync` — no fake `pump`
-        // frames can resolve the real filesystem call.
-        await tester.tap(find.byType(VoiceButton));
-        await tester.runAsync(() async {});
-        await tester.pump();
-        // Stop listening — triggers transcribe + persist.
-        await tester.tap(find.byType(VoiceButton));
-        await tester.runAsync(() async {});
         await tester.pump();
 
         final context = tester.element(find.byType(CapturePage));
@@ -390,8 +249,6 @@ void main() {
         expect(agent.submitCount, 1);
         expect(agent.capturedTranscript, 'complete client animation');
         expect(agent.capturedAudioId, 'audio_001');
-
-        await harness.dispose();
       },
     );
 
@@ -969,24 +826,24 @@ void main() {
     testWidgets('submits captures against the selected planning date', (
       tester,
     ) async {
-      final agent = _RecordingAgent();
-      final harness = _AudioHarness(transcript: 'plan tomorrow')..arm();
+      final agent = RecordingDayAgent();
       await tester.pumpWidget(
         _wrap(
           CapturePage(forDate: DateTime(2026, 5, 27)),
           overrides: [
             dayAgentProvider.overrideWithValue(agent),
-            captureControllerProvider.overrideWith(harness.controllerFactory),
+            captureControllerProvider.overrideWith(
+              _StubCaptureController.factory(
+                const CaptureState(
+                  phase: CapturePhase.captured,
+                  transcript: 'plan tomorrow',
+                  amplitudes: [],
+                ),
+              ),
+            ),
           ],
         ),
       );
-      await tester.pump();
-
-      await tester.tap(find.byType(VoiceButton));
-      await tester.runAsync(() async {});
-      await tester.pump();
-      await tester.tap(find.byType(VoiceButton));
-      await tester.runAsync(() async {});
       await tester.pump();
 
       final ctaFinder = find.text(
@@ -1003,8 +860,6 @@ void main() {
       expect(agent.capturedAt?.year, 2026);
       expect(agent.capturedAt?.month, 5);
       expect(agent.capturedAt?.day, 27);
-
-      await harness.dispose();
     });
 
     testWidgets(
@@ -1078,15 +933,23 @@ void main() {
     testWidgets(
       'submitting resets capture and dismisses spinner after Reconcile returns',
       (tester) async {
-        final agent = _RecordingAgent();
-        final harness = _AudioHarness(transcript: 'hello world')..arm();
+        final agent = RecordingDayAgent();
         await tester.pumpWidget(
           _wrap(
             const CapturePage(),
             overrides: [
               dayAgentProvider.overrideWithValue(agent),
+              // Pre-baked captured state — reset() and _submitting are
+              // page-level concerns; the recording chain itself is covered
+              // by the CaptureController unit tests.
               captureControllerProvider.overrideWith(
-                harness.controllerFactory,
+                _StubCaptureController.factory(
+                  const CaptureState(
+                    phase: CapturePhase.captured,
+                    transcript: 'hello world',
+                    amplitudes: [],
+                  ),
+                ),
               ),
               // Keep the pushed ReconcilePage on its loading shell so it
               // does not reach into GetIt-backed services.
@@ -1096,14 +959,6 @@ void main() {
             ],
           ),
         );
-        await tester.pump();
-
-        // Drive idle -> listening -> captured through the real controller.
-        await tester.tap(find.byType(VoiceButton));
-        await tester.runAsync(() async {});
-        await tester.pump();
-        await tester.tap(find.byType(VoiceButton));
-        await tester.runAsync(() async {});
         await tester.pump();
 
         final messages = tester.element(find.byType(CapturePage)).messages;
@@ -1124,7 +979,6 @@ void main() {
         // keeps an infinite spinner, so we drive the route transition
         // with explicit frames instead of pumpAndSettle.
         await tester.tap(ctaFinder, warnIfMissed: false);
-        await tester.runAsync(() async {});
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
@@ -1137,7 +991,6 @@ void main() {
         // resumes: reset() returns capture to idle (lines 938-939) and the
         // finally block clears _submitting (line 942).
         tester.state<NavigatorState>(find.byType(Navigator)).pop();
-        await tester.runAsync(() async {});
         await tester.pump();
         // Drive the reverse route transition to completion (its duration
         // plus a margin) so ReconcilePage fully leaves the tree.
@@ -1160,9 +1013,80 @@ void main() {
           find.text(idleMessages.dailyOsNextCaptureReconcileCta),
           findsNothing,
         );
-
-        await harness.dispose();
       },
+    );
+  });
+
+  group('CaptureLayoutMetrics', () {
+    final tokens = resolveTestTheme().extension<DsTokens>()!;
+
+    test('minimum review transcript line count per viewport band', () {
+      expect(CaptureLayoutMetrics.minimumReviewTranscriptLineCountFor(559), 2);
+      expect(CaptureLayoutMetrics.minimumReviewTranscriptLineCountFor(560), 3);
+      expect(CaptureLayoutMetrics.minimumReviewTranscriptLineCountFor(699), 3);
+      expect(CaptureLayoutMetrics.minimumReviewTranscriptLineCountFor(700), 4);
+      expect(CaptureLayoutMetrics.minimumReviewTranscriptLineCountFor(1200), 4);
+    });
+
+    glados.Glados2<int, int>(
+      glados.IntAnys(glados.any).intInRange(280, 1600),
+      glados.IntAnys(glados.any).intInRange(0, CapturePhase.values.length),
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'resolve keeps slot height clamped and line counts in range',
+      (viewportSeed, phaseSeed) {
+        final viewportHeight = viewportSeed.toDouble();
+        final phase =
+            CapturePhase.values[phaseSeed % CapturePhase.values.length];
+
+        final layout = CaptureLayoutMetrics.resolve(
+          tokens,
+          phase: phase,
+          viewportHeight: viewportHeight,
+        );
+
+        final minLines =
+            CaptureLayoutMetrics.minimumReviewTranscriptLineCountFor(
+              viewportHeight,
+            );
+        final minSlot = CaptureLayoutMetrics.minimumSlotHeightFor(
+          tokens,
+          phase,
+          minimumReviewTranscriptLineCount: minLines,
+        );
+        final maxSlot = CaptureLayoutMetrics.maximumSlotHeightFor(tokens);
+        final reason = 'viewport=$viewportHeight phase=$phase';
+
+        // (1) slot height stays within the clamp bounds.
+        expect(
+          layout.stateSlotHeight,
+          greaterThanOrEqualTo(minSlot),
+          reason: reason,
+        );
+        expect(
+          layout.stateSlotHeight,
+          lessThanOrEqualTo(math.max(minSlot, maxSlot)),
+          reason: reason,
+        );
+        // (2) live transcript line count is always within [3, 7].
+        expect(
+          layout.liveTranscriptLineCount,
+          inInclusiveRange(3, 7),
+          reason: reason,
+        );
+        // (3) review transcript line count honors the viewport-band minimum.
+        expect(
+          layout.reviewTranscriptLineCount,
+          greaterThanOrEqualTo(minLines),
+          reason: reason,
+        );
+        expect(
+          layout.reviewTranscriptLineCount,
+          lessThanOrEqualTo(math.max(6, minLines)),
+          reason: reason,
+        );
+      },
+      tags: 'glados',
     );
   });
 }
@@ -1207,9 +1131,9 @@ class _ErrorController extends CaptureController {
 /// Wraps a fake recorder + transcription service so widget tests can
 /// drive the [CaptureController] without touching the mic or cloud.
 class _AudioHarness {
-  _AudioHarness({this.transcript = 'transcript'});
+  _AudioHarness();
 
-  final String transcript;
+  static const transcript = 'transcript';
   final MockAudioRecorderRepository recorder = MockAudioRecorderRepository();
   final MockAudioTranscriptionService transcriber =
       MockAudioTranscriptionService();

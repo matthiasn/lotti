@@ -123,6 +123,87 @@ class TestEntryDetailsWidget extends StatelessWidget {
   }
 }
 
+/// Finds private widget types (e.g. `_PulsingBorder`) by runtime type name.
+Finder _byPrivateType(String typeName) =>
+    find.byWidgetPredicate((w) => w.runtimeType.toString() == typeName);
+
+/// Mocks returned by [_registerEntryDetailsMocks] for per-group re-stubbing.
+typedef _EntryDetailsMocks = ({
+  MockJournalDb journalDb,
+  MockPersistenceLogic persistenceLogic,
+  MockUpdateNotifications updateNotifications,
+  MockEntitiesCacheService entitiesCacheService,
+  MockTimeService timeService,
+  MockEditorStateService editorStateService,
+});
+
+/// Registers the GetIt graph shared by every group in this file and applies
+/// the baseline stubs (no categories/labels, private flag on, no unsaved
+/// changes, idle timer). Tests re-stub the returned mocks where needed —
+/// later when() stubs win in mocktail.
+Future<_EntryDetailsMocks> _registerEntryDetailsMocks() async {
+  final journalDb = mockJournalDbWithMeasurableTypes([]);
+  final persistenceLogic = MockPersistenceLogic();
+  final updateNotifications = MockUpdateNotifications();
+  final entitiesCacheService = MockEntitiesCacheService();
+  final timeService = MockTimeService();
+  final editorStateService = MockEditorStateService();
+
+  getIt
+    ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+    ..registerSingleton<UserActivityService>(UserActivityService())
+    ..registerSingleton<UpdateNotifications>(updateNotifications)
+    ..registerSingleton<EditorStateService>(editorStateService)
+    ..registerSingleton<EntitiesCacheService>(entitiesCacheService)
+    ..registerSingleton<LinkService>(MockLinkService())
+    ..registerSingleton<HealthImport>(MockHealthImport())
+    ..registerSingleton<TimeService>(timeService)
+    ..registerSingleton<JournalDb>(journalDb)
+    ..registerSingleton<PersistenceLogic>(persistenceLogic)
+    ..registerSingleton<NavService>(MockNavService());
+
+  when(() => entitiesCacheService.sortedCategories).thenReturn([]);
+  when(() => entitiesCacheService.showPrivateEntries).thenReturn(true);
+  when(() => entitiesCacheService.getLabelById(any())).thenReturn(null);
+  when(() => entitiesCacheService.getCategoryById(any())).thenReturn(null);
+
+  when(
+    () => updateNotifications.updateStream,
+  ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
+
+  when(
+    // ignore: unnecessary_lambdas
+    () => journalDb.watchConfigFlags(),
+  ).thenAnswer(
+    (_) => Stream<Set<ConfigFlag>>.fromIterable([
+      <ConfigFlag>{
+        const ConfigFlag(
+          name: 'private',
+          description: 'Show private entries?',
+          status: true,
+        ),
+      },
+    ]),
+  );
+
+  when(
+    () => editorStateService.getUnsavedStream(any(), any()),
+  ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
+
+  when(
+    timeService.getStream,
+  ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+
+  return (
+    journalDb: journalDb,
+    persistenceLogic: persistenceLogic,
+    updateNotifications: updateNotifications,
+    entitiesCacheService: entitiesCacheService,
+    timeService: timeService,
+    editorStateService: editorStateService,
+  );
+}
+
 void main() {
   group('EntryDetailsWidget Layout Tests', () {
     testWidgets(
@@ -236,66 +317,12 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
 
     late JournalDb mockJournalDb;
-    late MockPersistenceLogic mockPersistenceLogic;
-    late MockUpdateNotifications mockUpdateNotifications;
-    late MockEntitiesCacheService mockEntitiesCacheService;
 
     setUpAll(setFakeDocumentsPath);
 
     setUp(() async {
-      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
-      mockPersistenceLogic = MockPersistenceLogic();
-      mockUpdateNotifications = MockUpdateNotifications();
-      mockEntitiesCacheService = MockEntitiesCacheService();
-
-      final mockTimeService = MockTimeService();
-      final mockEditorStateService = MockEditorStateService();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
-        (_) => [],
-      );
-
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
-
-      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(
-          any(),
-          any(),
-        ),
-      ).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      final mocks = await _registerEntryDetailsMocks();
+      mockJournalDb = mocks.journalDb;
     });
 
     tearDown(getIt.reset);
@@ -318,9 +345,12 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(EntryDetailsWidget), findsOneWidget);
+      // No highlight: neither the pulsing nor the timer border overlays.
+      expect(_byPrivateType('_PulsingBorder'), findsNothing);
+      expect(_byPrivateType('_TimerBorder'), findsNothing);
     });
 
     testWidgets('renders with highlight when isHighlighted=true', (
@@ -345,7 +375,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(EntryDetailsWidget), findsOneWidget);
+      // The scroll highlight mounts the pulsing border overlay.
+      expect(_byPrivateType('_PulsingBorder'), findsOneWidget);
     });
 
     testWidgets('highlight toggles from false to true', (tester) async {
@@ -381,7 +412,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(_byPrivateType('_PulsingBorder'), findsNothing);
 
       // Ensure button is visible before tapping (may be below fold)
       await tester.ensureVisible(find.text('Highlight'));
@@ -389,7 +422,8 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(EntryDetailsWidget), findsOneWidget);
+      // The pulsing border overlay appears once highlighted.
+      expect(_byPrivateType('_PulsingBorder'), findsOneWidget);
     });
 
     testWidgets('highlight toggles from true to false', (tester) async {
@@ -428,14 +462,19 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Verify button exists
+      // Verify button exists; highlight overlay starts present.
       expect(find.text('Clear'), findsOneWidget);
+      expect(_byPrivateType('_PulsingBorder'), findsOneWidget);
 
-      await tester.tap(find.text('Clear'), warnIfMissed: false);
+      // The button can sit below the fold: bring it on screen so the tap
+      // actually lands (the old warnIfMissed: false silently missed it).
+      await tester.ensureVisible(find.text('Clear'));
+      await tester.tap(find.text('Clear'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(EntryDetailsWidget), findsOneWidget);
+      // Clearing the highlight removes the overlay.
+      expect(_byPrivateType('_PulsingBorder'), findsNothing);
     });
 
     testWidgets('showAiEntry and isHighlighted work together', (tester) async {
@@ -458,7 +497,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      expect(find.byType(EntryDetailsWidget), findsOneWidget);
+      expect(_byPrivateType('_PulsingBorder'), findsOneWidget);
     });
   });
 
@@ -466,66 +505,12 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
 
     late JournalDb mockJournalDb;
-    late MockPersistenceLogic mockPersistenceLogic;
-    late MockUpdateNotifications mockUpdateNotifications;
-    late MockEntitiesCacheService mockEntitiesCacheService;
 
     setUpAll(setFakeDocumentsPath);
 
     setUp(() async {
-      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
-      mockPersistenceLogic = MockPersistenceLogic();
-      mockUpdateNotifications = MockUpdateNotifications();
-      mockEntitiesCacheService = MockEntitiesCacheService();
-
-      final mockTimeService = MockTimeService();
-      final mockEditorStateService = MockEditorStateService();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
-        (_) => [],
-      );
-
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
-
-      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(
-          any(),
-          any(),
-        ),
-      ).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      final mocks = await _registerEntryDetailsMocks();
+      mockJournalDb = mocks.journalDb;
     });
 
     tearDown(getIt.reset);
@@ -583,8 +568,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 200));
 
-      // Verify a CustomPaint overlay is rendered without leaving a ticker active.
-      expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+      // The static timer border overlay renders, without leaving a
+      // ticker active (the timer border does not animate).
+      expect(_byPrivateType('_TimerBorder'), findsOneWidget);
       expect(tester.binding.transientCallbackCount, 0);
     });
 
@@ -648,8 +634,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Verify widget renders
-      expect(find.byType(EntryDetailsWidget), findsOneWidget);
+      // Plain card: no border overlay of either kind.
+      expect(_byPrivateType('_TimerBorder'), findsNothing);
+      expect(_byPrivateType('_PulsingBorder'), findsNothing);
     });
 
     testWidgets('scroll highlight renders when only isHighlighted=true', (
@@ -674,8 +661,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Verify a CustomPaint overlay is rendered for the glow
-      expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+      // The pulsing glow renders; the timer border does not.
+      expect(_byPrivateType('_PulsingBorder'), findsOneWidget);
+      expect(_byPrivateType('_TimerBorder'), findsNothing);
     });
 
     testWidgets('timer highlight takes precedence in rendering order', (
@@ -702,8 +690,9 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      expect(find.byType(EntryDetailsWidget), findsOneWidget);
-      expect(find.byType(CustomPaint), findsAtLeastNWidgets(1));
+      // The timer border wins; the pulsing highlight is not mounted.
+      expect(_byPrivateType('_TimerBorder'), findsOneWidget);
+      expect(_byPrivateType('_PulsingBorder'), findsNothing);
     });
   });
 
@@ -711,68 +700,12 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
 
     late JournalDb mockJournalDb;
-    late MockPersistenceLogic mockPersistenceLogic;
-    late MockUpdateNotifications mockUpdateNotifications;
-    late MockEntitiesCacheService mockEntitiesCacheService;
 
     setUpAll(setFakeDocumentsPath);
 
     setUp(() async {
-      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
-      mockPersistenceLogic = MockPersistenceLogic();
-      mockUpdateNotifications = MockUpdateNotifications();
-      mockEntitiesCacheService = MockEntitiesCacheService();
-
-      final mockTimeService = MockTimeService();
-      final mockEditorStateService = MockEditorStateService();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
-        (_) => [],
-      );
-      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
-      when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
-
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
-
-      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(
-          any(),
-          any(),
-        ),
-      ).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      final mocks = await _registerEntryDetailsMocks();
+      mockJournalDb = mocks.journalDb;
     });
 
     tearDown(getIt.reset);
@@ -793,7 +726,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // EntryLabelsDisplay should be present for text entries
       expect(find.byType(EntryDetailsWidget), findsOneWidget);
@@ -817,7 +751,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // The labels display in entry details uses chips only mode (no header/edit)
       // The "Labels" header text should NOT be present
@@ -830,71 +765,10 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('EntryDetailsWidget coverage – task & deleted branches', () {
-    late MockUpdateNotifications mockUpdateNotifications;
-    late MockEntitiesCacheService mockEntitiesCacheService;
-    late MockEditorStateService mockEditorStateService;
-    late MockTimeService mockTimeService;
-
     setUpAll(setFakeDocumentsPath);
 
     setUp(() async {
-      mockUpdateNotifications = MockUpdateNotifications();
-      mockEntitiesCacheService = MockEntitiesCacheService();
-      mockEditorStateService = MockEditorStateService();
-      mockTimeService = MockTimeService();
-
-      final mockJournalDb = mockJournalDbWithMeasurableTypes([]);
-      final mockPersistenceLogic = MockPersistenceLogic();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<NavService>(MockNavService());
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
-      when(
-        () => mockEntitiesCacheService.getLabelById(any()),
-      ).thenReturn(null);
-      when(
-        () => mockEntitiesCacheService.getCategoryById(any()),
-      ).thenReturn(null);
-
-      when(
-        () => mockUpdateNotifications.updateStream,
-      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
-
-      when(
-        // ignore: unnecessary_lambdas
-        () => mockJournalDb.watchConfigFlags(),
-      ).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(any(), any()),
-      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      await _registerEntryDetailsMocks();
     });
 
     tearDown(getIt.reset);
@@ -1062,68 +936,13 @@ void main() {
   });
 
   group('EntryDetailsWidget coverage – isHighlighted with category color', () {
-    late MockUpdateNotifications mockUpdateNotifications;
     late MockEntitiesCacheService mockEntitiesCacheService;
-    late MockEditorStateService mockEditorStateService;
-    late MockTimeService mockTimeService;
 
     setUpAll(setFakeDocumentsPath);
 
     setUp(() async {
-      mockUpdateNotifications = MockUpdateNotifications();
-      mockEntitiesCacheService = MockEntitiesCacheService();
-      mockEditorStateService = MockEditorStateService();
-      mockTimeService = MockTimeService();
-
-      final mockJournalDb = mockJournalDbWithMeasurableTypes([]);
-      final mockPersistenceLogic = MockPersistenceLogic();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<NavService>(MockNavService());
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
-      when(
-        () => mockEntitiesCacheService.getLabelById(any()),
-      ).thenReturn(null);
-
-      when(
-        () => mockUpdateNotifications.updateStream,
-      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
-
-      when(
-        // ignore: unnecessary_lambdas
-        () => mockJournalDb.watchConfigFlags(),
-      ).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(any(), any()),
-      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      final mocks = await _registerEntryDetailsMocks();
+      mockEntitiesCacheService = mocks.entitiesCacheService;
     });
 
     tearDown(getIt.reset);
@@ -1253,71 +1072,13 @@ void main() {
   });
 
   group('EntryDetailsContent coverage – entry type detail sections', () {
-    late MockUpdateNotifications mockUpdateNotifications;
-    late MockEntitiesCacheService mockEntitiesCacheService;
-    late MockEditorStateService mockEditorStateService;
-    late MockTimeService mockTimeService;
     late JournalDb mockJournalDb;
 
     setUpAll(setFakeDocumentsPath);
 
     setUp(() async {
-      mockUpdateNotifications = MockUpdateNotifications();
-      mockEntitiesCacheService = MockEntitiesCacheService();
-      mockEditorStateService = MockEditorStateService();
-      mockTimeService = MockTimeService();
-      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
-
-      final mockPersistenceLogic = MockPersistenceLogic();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<NavService>(MockNavService());
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
-      when(
-        () => mockEntitiesCacheService.getLabelById(any()),
-      ).thenReturn(null);
-      when(
-        () => mockEntitiesCacheService.getCategoryById(any()),
-      ).thenReturn(null);
-
-      when(
-        () => mockUpdateNotifications.updateStream,
-      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
-
-      when(
-        () => mockJournalDb.watchConfigFlags(),
-      ).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(any(), any()),
-      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      final mocks = await _registerEntryDetailsMocks();
+      mockJournalDb = mocks.journalDb;
     });
 
     tearDown(getIt.reset);
@@ -1593,71 +1354,10 @@ void main() {
     // _CollapsibleBody is a private widget; we drive it indirectly through
     // EntryDetailsContent when linkedFrom != null and the item is collapsible.
 
-    late MockUpdateNotifications mockUpdateNotifications;
-    late MockEntitiesCacheService mockEntitiesCacheService;
-    late MockEditorStateService mockEditorStateService;
-    late MockTimeService mockTimeService;
-    late JournalDb mockJournalDb;
-
     setUpAll(setFakeDocumentsPath);
 
     setUp(() async {
-      mockUpdateNotifications = MockUpdateNotifications();
-      mockEntitiesCacheService = MockEntitiesCacheService();
-      mockEditorStateService = MockEditorStateService();
-      mockTimeService = MockTimeService();
-      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
-
-      final mockPersistenceLogic = MockPersistenceLogic();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<NavService>(MockNavService());
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
-      when(
-        () => mockEntitiesCacheService.getLabelById(any()),
-      ).thenReturn(null);
-      when(
-        () => mockEntitiesCacheService.getCategoryById(any()),
-      ).thenReturn(null);
-
-      when(
-        () => mockUpdateNotifications.updateStream,
-      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
-
-      when(
-        () => mockJournalDb.watchConfigFlags(),
-      ).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(any(), any()),
-      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      await _registerEntryDetailsMocks();
     });
 
     tearDown(getIt.reset);
@@ -1789,71 +1489,13 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('_PulsingBorder timer and _GlowBorderPainter.shouldRepaint branches', () {
-    late MockUpdateNotifications mockUpdateNotifications;
     late MockEntitiesCacheService mockEntitiesCacheService;
-    late MockEditorStateService mockEditorStateService;
-    late MockTimeService mockTimeService;
 
     setUpAll(setFakeDocumentsPath);
 
     setUp(() async {
-      mockUpdateNotifications = MockUpdateNotifications();
-      mockEntitiesCacheService = MockEntitiesCacheService();
-      mockEditorStateService = MockEditorStateService();
-      mockTimeService = MockTimeService();
-
-      final mockJournalDb = mockJournalDbWithMeasurableTypes([]);
-      final mockPersistenceLogic = MockPersistenceLogic();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<NavService>(MockNavService());
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
-      when(
-        () => mockEntitiesCacheService.getLabelById(any()),
-      ).thenReturn(null);
-      when(
-        () => mockEntitiesCacheService.getCategoryById(any()),
-      ).thenReturn(null);
-
-      when(
-        () => mockUpdateNotifications.updateStream,
-      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
-
-      when(
-        // ignore: unnecessary_lambdas
-        () => mockJournalDb.watchConfigFlags(),
-      ).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(any(), any()),
-      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      final mocks = await _registerEntryDetailsMocks();
+      mockEntitiesCacheService = mocks.entitiesCacheService;
     });
 
     tearDown(getIt.reset);
@@ -2074,12 +1716,6 @@ void main() {
   // ---------------------------------------------------------------------------
 
   group('EntryDetailsContent coverage – auto-scroll on expand', () {
-    late MockUpdateNotifications mockUpdateNotifications;
-    late MockEntitiesCacheService mockEntitiesCacheService;
-    late MockEditorStateService mockEditorStateService;
-    late MockTimeService mockTimeService;
-    late JournalDb mockJournalDb;
-
     setUpAll(() {
       setFakeDocumentsPath();
       // EntryLink fallback for mocktail any() on updateLink(EntryLink).
@@ -2096,62 +1732,7 @@ void main() {
     });
 
     setUp(() async {
-      mockUpdateNotifications = MockUpdateNotifications();
-      mockEntitiesCacheService = MockEntitiesCacheService();
-      mockEditorStateService = MockEditorStateService();
-      mockTimeService = MockTimeService();
-      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
-
-      final mockPersistenceLogic = MockPersistenceLogic();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<NavService>(MockNavService());
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenReturn([]);
-      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
-      when(
-        () => mockEntitiesCacheService.getLabelById(any()),
-      ).thenReturn(null);
-      when(
-        () => mockEntitiesCacheService.getCategoryById(any()),
-      ).thenReturn(null);
-
-      when(
-        () => mockUpdateNotifications.updateStream,
-      ).thenAnswer((_) => Stream<Set<String>>.fromIterable([]));
-
-      when(
-        () => mockJournalDb.watchConfigFlags(),
-      ).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(any(), any()),
-      ).thenAnswer((_) => Stream<bool>.fromIterable([false]));
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      await _registerEntryDetailsMocks();
     });
 
     tearDown(getIt.reset);
@@ -2354,9 +1935,6 @@ void main() {
     TestWidgetsFlutterBinding.ensureInitialized();
 
     late JournalDb mockJournalDb;
-    late MockPersistenceLogic mockPersistenceLogic;
-    late MockUpdateNotifications mockUpdateNotifications;
-    late MockEntitiesCacheService mockEntitiesCacheService;
 
     setUpAll(() {
       setFakeDocumentsPath();
@@ -2373,61 +1951,8 @@ void main() {
     });
 
     setUp(() async {
-      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
-      mockPersistenceLogic = MockPersistenceLogic();
-      mockUpdateNotifications = MockUpdateNotifications();
-      mockEntitiesCacheService = MockEntitiesCacheService();
-
-      final mockTimeService = MockTimeService();
-      final mockEditorStateService = MockEditorStateService();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
-        (_) => [],
-      );
-      when(
-        () => mockEntitiesCacheService.getCategoryById(any()),
-      ).thenReturn(null);
-      when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
-      when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
-
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
-
-      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(any(), any()),
-      ).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      final mocks = await _registerEntryDetailsMocks();
+      mockJournalDb = mocks.journalDb;
     });
 
     tearDown(getIt.reset);
@@ -3379,9 +2904,10 @@ void main() {
         );
         await tester.pump();
 
-        // Tap the collapse chevron — updateLink will throw
+        // Tap the collapse chevron — updateLink will throw synchronously,
+        // so a single frame is enough for the catch path to run.
         await tester.tap(find.byIcon(Icons.expand_more));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify the exception was captured via LoggingService
         verify(

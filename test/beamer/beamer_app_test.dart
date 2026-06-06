@@ -1802,6 +1802,135 @@ void main() {
         await tester.pump();
       },
     );
+
+    testWidgets(
+      'collapses both gaps when wakes are visible but nothing renders below',
+      (tester) async {
+        // The audio section widget is absent on Flatpak builds, so the
+        // gap lookup below SidebarAudioRecordingSection cannot run there.
+        if (_isFlatpakTestHost()) {
+          return;
+        }
+
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        // No running timer and (default) stopped recorder → hasBelowWake
+        // is false even though the wake card itself is visible.
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+          extraOverrides: [
+            configFlagProvider(showSidebarWakeQueueFlag).overrideWith(
+              (ref) => Stream<bool>.value(true),
+            ),
+            ongoingWakeRecordsProvider.overrideWith(
+              (ref) async => [
+                OngoingWakeRecord(
+                  agentId: 'agent-1',
+                  title: 'Running wake',
+                  startedAt: DateTime(2024, 3, 15, 10),
+                ),
+              ],
+            ),
+            pendingWakeRecordsProvider.overrideWith((ref) async => const []),
+          ],
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Wake card is rendered, but with no timer and no recording both
+        // spacers stay on their zero-height branch.
+        expect(find.byType(SidebarWakeQueue), findsOneWidget);
+        expect(
+          _aboveSettingsGapHeight(
+            tester,
+            belowChildType: SidebarAudioRecordingSection,
+          ),
+          0,
+        );
+        expect(
+          _aboveSettingsGapHeight(
+            tester,
+            belowChildType: SidebarTimerSection,
+          ),
+          0,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'collapses the audio→timer gap when a timer runs without a recording',
+      (tester) async {
+        if (_isFlatpakTestHost()) {
+          return;
+        }
+
+        tester.view
+          ..physicalSize = const Size(1280, 800)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(
+          mockNavService,
+          runningTimer: _runningTimerEntry,
+        );
+        addTearDown(tearDownTestGetIt);
+
+        // Default stopped recorder → audioVisible == false despite the
+        // running timer, so the audio→timer spacer stays at zero. The wake
+        // queue flag is off, so its section (and gap) never renders.
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          viewportSize: _desktopViewportSize,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.byType(SidebarWakeQueue), findsNothing);
+        expect(find.byType(SidebarTimerSection), findsOneWidget);
+        expect(
+          _aboveSettingsGapHeight(
+            tester,
+            belowChildType: SidebarTimerSection,
+          ),
+          0,
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
   });
 
   group('MyBeamerApp activity tracking and focus', () {

@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -322,199 +323,102 @@ void main() {
     });
 
     group('health score calculation', () {
+      Future<int> healthScoreFor({
+        ProjectHealthBand? band,
+        double? confidence,
+        bool metricsPresent = true,
+      }) async {
+        final project = makeTestProject(id: projectId, categoryId: categoryId);
+        final container = createContainer(
+          detailState: ProjectDetailState(
+            project: project,
+            linkedTasks: const [],
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
+          healthMetrics: metricsPresent
+              ? makeTestProjectHealthMetrics(
+                  band: band ?? ProjectHealthBand.onTrack,
+                  confidence: confidence,
+                )
+              : null,
+        );
+
+        final result = await container.read(
+          projectDetailRecordProvider(projectId).future,
+        );
+        return result!.healthScore;
+      }
+
       test('returns 0 when metrics are null', () async {
-        final project = makeTestProject(id: projectId, categoryId: categoryId);
-
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        expect(result!.healthScore, 0);
+        expect(await healthScoreFor(metricsPresent: false), 0);
       });
 
-      test('computes onTrack score with neutral confidence', () async {
-        final project = makeTestProject(id: projectId, categoryId: categoryId);
+      test(
+        'per-band base score with confidence adjustment and clamping',
+        () async {
+          // (band, confidence, expected): base + ((confidence - 0.5) * 12)
+          // rounded, clamped to [0, 100]; null confidence adds nothing.
+          final cases = <(ProjectHealthBand, double?, int)>[
+            (ProjectHealthBand.onTrack, 0.5, 90), // base 90 + 0
+            (ProjectHealthBand.blocked, 0.9, 23), // base 18 + 5
+            (ProjectHealthBand.surviving, null, 78), // base 78, no adjustment
+            (ProjectHealthBand.watch, 0.5, 64), // base 64 + 0
+            (ProjectHealthBand.atRisk, 0.5, 42), // base 42 + 0
+            (ProjectHealthBand.onTrack, 2, 100), // 90 + 18 → clamped to 100
+            (ProjectHealthBand.blocked, -2, 0), // 18 - 30 → clamped to 0
+          ];
 
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-          healthMetrics: makeTestProjectHealthMetrics(
-            confidence: 0.5,
-          ),
-        );
+          for (final (band, confidence, expected) in cases) {
+            expect(
+              await healthScoreFor(band: band, confidence: confidence),
+              expected,
+              reason: 'band=$band confidence=$confidence',
+            );
+          }
+        },
+      );
+    });
 
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
+    group('healthScoreFromMetrics properties', () {
+      glados.Glados2<int, int>(
+        glados.IntAnys(
+          glados.any,
+        ).intInRange(0, ProjectHealthBand.values.length),
+        glados.IntAnys(glados.any).intInRange(-300, 301),
+        glados.ExploreConfig(numRuns: 160),
+      ).test(
+        'score equals clamped base + confidence adjustment for any input',
+        (bandIndex, confidenceCentis) {
+          final band = ProjectHealthBand.values[bandIndex];
+          final confidence = confidenceCentis / 100;
+          final score = healthScoreFromMetrics(
+            makeTestProjectHealthMetrics(band: band, confidence: confidence),
+          );
 
-        // base 90 + ((0.5 - 0.5) * 12).round() = 90 + 0 = 90
-        expect(result!.healthScore, 90);
-      });
+          const bases = {
+            ProjectHealthBand.onTrack: 90,
+            ProjectHealthBand.surviving: 78,
+            ProjectHealthBand.watch: 64,
+            ProjectHealthBand.atRisk: 42,
+            ProjectHealthBand.blocked: 18,
+          };
+          final expected = (bases[band]! + ((confidence - 0.5) * 12).round())
+              .clamp(0, 100);
+          expect(score, expected, reason: 'band=$band confidence=$confidence');
+          expect(score, inInclusiveRange(0, 100));
 
-      test('computes blocked score with high confidence', () async {
-        final project = makeTestProject(id: projectId, categoryId: categoryId);
-
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-          healthMetrics: makeTestProjectHealthMetrics(
-            band: ProjectHealthBand.blocked,
-            confidence: 0.9,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        // base 18 + ((0.9 - 0.5) * 12).round() = 18 + 5 = 23
-        expect(result!.healthScore, 23);
-      });
-
-      test('computes surviving score without confidence', () async {
-        final project = makeTestProject(id: projectId, categoryId: categoryId);
-
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-          healthMetrics: makeTestProjectHealthMetrics(
-            band: ProjectHealthBand.surviving,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        // base 78 + 0 (null confidence) = 78
-        expect(result!.healthScore, 78);
-      });
-
-      test('computes watch score', () async {
-        final project = makeTestProject(id: projectId, categoryId: categoryId);
-
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-          healthMetrics: makeTestProjectHealthMetrics(
-            band: ProjectHealthBand.watch,
-            confidence: 0.5,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        // base 64 + 0 = 64
-        expect(result!.healthScore, 64);
-      });
-
-      test('computes atRisk score', () async {
-        final project = makeTestProject(id: projectId, categoryId: categoryId);
-
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-          healthMetrics: makeTestProjectHealthMetrics(
-            band: ProjectHealthBand.atRisk,
-            confidence: 0.5,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        // base 42 + 0 = 42
-        expect(result!.healthScore, 42);
-      });
-
-      test('clamps score to 100 when confidence pushes it over', () async {
-        final project = makeTestProject(id: projectId, categoryId: categoryId);
-
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-          healthMetrics: makeTestProjectHealthMetrics(
-            // confidence 2.0 → adjustment = ((2.0 - 0.5) * 12).round() = 18
-            // base 90 + 18 = 108 → clamped to 100
-            confidence: 2,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        expect(result!.healthScore, 100);
-      });
-
-      test('clamps score to 0 when confidence pushes it under', () async {
-        final project = makeTestProject(id: projectId, categoryId: categoryId);
-
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-          healthMetrics: makeTestProjectHealthMetrics(
-            band: ProjectHealthBand.blocked,
-            // confidence -2.0 → adjustment = ((-2.0 - 0.5) * 12).round() = -30
-            // base 18 + (-30) = -12 → clamped to 0
-            confidence: -2,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        expect(result!.healthScore, 0);
-      });
+          // Null confidence yields exactly the base score.
+          expect(
+            healthScoreFromMetrics(makeTestProjectHealthMetrics(band: band)),
+            bases[band],
+          );
+          // Null metrics yield zero.
+          expect(healthScoreFromMetrics(null), 0);
+        },
+        tags: 'glados',
+      );
     });
 
     group('AI summary resolution', () {
@@ -836,11 +740,27 @@ void main() {
     });
 
     group('task sorting via highlightedTaskSummaries order', () {
-      test('sorts by status rank: blocked before open before done', () async {
-        final project = makeTestProject(
-          id: projectId,
-          categoryId: categoryId,
+      /// Builds the record from [tasks] and returns the highlighted task
+      /// titles in their sorted order.
+      Future<List<String>> sortedTitles(List<Task> tasks) async {
+        final container = createContainer(
+          detailState: ProjectDetailState(
+            project: makeTestProject(id: projectId, categoryId: categoryId),
+            linkedTasks: tasks,
+            isLoading: false,
+            isSaving: false,
+            hasChanges: false,
+          ),
         );
+        final result = await container.read(
+          projectDetailRecordProvider(projectId).future,
+        );
+        return result!.highlightedTaskSummaries
+            .map((s) => s.task.data.title)
+            .toList();
+      }
+
+      test('sorts by status rank: blocked before open before done', () async {
         final doneTask = makeTask(
           status: doneStatus(),
           title: 'Done Task',
@@ -854,31 +774,14 @@ void main() {
           title: 'Blocked Task',
         );
 
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: [doneTask, openTask, blockedTask],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        final titles = result!.highlightedTaskSummaries
-            .map((s) => s.task.data.title)
-            .toList();
-        expect(titles, ['Blocked Task', 'Open Task', 'Done Task']);
+        expect(await sortedTitles([doneTask, openTask, blockedTask]), [
+          'Blocked Task',
+          'Open Task',
+          'Done Task',
+        ]);
       });
 
       test('sorts all seven status ranks in correct order', () async {
-        final project = makeTestProject(
-          id: projectId,
-          categoryId: categoryId,
-        );
         final tasks = [
           makeTask(status: rejectedStatus(), title: 'Rejected'),
           makeTask(status: doneStatus(), title: 'Done'),
@@ -889,24 +792,7 @@ void main() {
           makeTask(status: blockedStatus(), title: 'Blocked'),
         ];
 
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: tasks,
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        final titles = result!.highlightedTaskSummaries
-            .map((s) => s.task.data.title)
-            .toList();
-        expect(titles, [
+        expect(await sortedTitles(tasks), [
           'Blocked',
           'On Hold',
           'In Progress',
@@ -918,10 +804,6 @@ void main() {
       });
 
       test('within same status, sorts by due date ascending', () async {
-        final project = makeTestProject(
-          id: projectId,
-          categoryId: categoryId,
-        );
         final laterDue = makeTask(
           status: openStatus(),
           title: 'Later',
@@ -933,31 +815,13 @@ void main() {
           due: DateTime(2025, 3),
         );
 
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: [laterDue, earlierDue],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        final titles = result!.highlightedTaskSummaries
-            .map((s) => s.task.data.title)
-            .toList();
-        expect(titles, ['Earlier', 'Later']);
+        expect(await sortedTitles([laterDue, earlierDue]), [
+          'Earlier',
+          'Later',
+        ]);
       });
 
       test('tasks with due date come before tasks without', () async {
-        final project = makeTestProject(
-          id: projectId,
-          categoryId: categoryId,
-        );
         final withDue = makeTask(
           status: openStatus(),
           title: 'Has Due',
@@ -968,33 +832,15 @@ void main() {
           title: 'No Due',
         );
 
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: [withoutDue, withDue],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        final titles = result!.highlightedTaskSummaries
-            .map((s) => s.task.data.title)
-            .toList();
-        expect(titles, ['Has Due', 'No Due']);
+        expect(await sortedTitles([withoutDue, withDue]), [
+          'Has Due',
+          'No Due',
+        ]);
       });
 
       test(
         'within same status and due, sorts by estimate descending',
         () async {
-          final project = makeTestProject(
-            id: projectId,
-            categoryId: categoryId,
-          );
           final smallEstimate = makeTask(
             status: openStatus(),
             title: 'Small',
@@ -1006,35 +852,17 @@ void main() {
             estimate: const Duration(hours: 8),
           );
 
-          final container = createContainer(
-            detailState: ProjectDetailState(
-              project: project,
-              linkedTasks: [smallEstimate, largeEstimate],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
-          );
-
-          final result = await container.read(
-            projectDetailRecordProvider(projectId).future,
-          );
-
-          final titles = result!.highlightedTaskSummaries
-              .map((s) => s.task.data.title)
-              .toList();
           // Larger estimate comes first (descending)
-          expect(titles, ['Large', 'Small']);
+          expect(
+            await sortedTitles([smallEstimate, largeEstimate]),
+            ['Large', 'Small'],
+          );
         },
       );
 
       test(
         'within same status, due, and estimate, sorts by title alphabetically',
         () async {
-          final project = makeTestProject(
-            id: projectId,
-            categoryId: categoryId,
-          );
           final zulu = makeTask(
             status: openStatus(),
             title: 'Zulu',
@@ -1044,54 +872,15 @@ void main() {
             title: 'Alpha',
           );
 
-          final container = createContainer(
-            detailState: ProjectDetailState(
-              project: project,
-              linkedTasks: [zulu, alpha],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
-          );
-
-          final result = await container.read(
-            projectDetailRecordProvider(projectId).future,
-          );
-
-          final titles = result!.highlightedTaskSummaries
-              .map((s) => s.task.data.title)
-              .toList();
-          expect(titles, ['Alpha', 'Zulu']);
+          expect(await sortedTitles([zulu, alpha]), ['Alpha', 'Zulu']);
         },
       );
 
       test('title sorting is case-insensitive', () async {
-        final project = makeTestProject(
-          id: projectId,
-          categoryId: categoryId,
-        );
         final upper = makeTask(status: openStatus(), title: 'Bravo');
         final lower = makeTask(status: openStatus(), title: 'alpha');
 
-        final container = createContainer(
-          detailState: ProjectDetailState(
-            project: project,
-            linkedTasks: [upper, lower],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
-        );
-
-        final result = await container.read(
-          projectDetailRecordProvider(projectId).future,
-        );
-
-        final titles = result!.highlightedTaskSummaries
-            .map((s) => s.task.data.title)
-            .toList();
-        // 'alpha' < 'bravo' case-insensitively
-        expect(titles, ['alpha', 'Bravo']);
+        expect(await sortedTitles([upper, lower]), ['alpha', 'Bravo']);
       });
     });
 

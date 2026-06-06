@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
@@ -1011,4 +1012,182 @@ void main() {
       },
     );
   });
+
+  group('parseProjectStatus / isSameSemanticStatus properties', () {
+    glados.Glados(
+      glados.any.projectStatusScenario,
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'every alias parses to its group and semantic equality follows groups',
+      (scenario) {
+        final now = DateTime(2026, 3, 15, 10);
+
+        final parsed = ProjectToolDispatcher.parseProjectStatus(
+          scenario.styledAlias,
+          reason: scenario.reason,
+          now: now,
+        );
+        expect(parsed, isNotNull, reason: scenario.styledAlias);
+        expect(
+          parsed!.runtimeType,
+          scenario.expectedType,
+          reason: scenario.styledAlias,
+        );
+
+        // On-hold normalizes blank reasons to the fallback string.
+        if (parsed is ProjectOnHold) {
+          final reason = scenario.reason;
+          expect(
+            parsed.reason,
+            (reason == null || reason.trim().isEmpty)
+                ? 'No reason provided'
+                : reason.trim(),
+          );
+        }
+
+        // Same group (and same normalized reason) -> semantically equal.
+        final sameGroup = ProjectToolDispatcher.parseProjectStatus(
+          scenario.sameGroupAlias,
+          reason: scenario.reason,
+          now: now.add(const Duration(minutes: 5)),
+        );
+        expect(
+          ProjectToolDispatcher.isSameSemanticStatus(parsed, sameGroup!),
+          isTrue,
+          reason: '${scenario.styledAlias} vs ${scenario.sameGroupAlias}',
+        );
+
+        // Different group -> never semantically equal.
+        final otherGroup = ProjectToolDispatcher.parseProjectStatus(
+          scenario.otherGroupAlias,
+          reason: scenario.reason,
+          now: now,
+        );
+        expect(
+          ProjectToolDispatcher.isSameSemanticStatus(parsed, otherGroup!),
+          isFalse,
+          reason: '${scenario.styledAlias} vs ${scenario.otherGroupAlias}',
+        );
+      },
+      tags: 'glados',
+    );
+
+    test('unknown status strings parse to null', () {
+      for (final raw in ['', 'bogus', 'reopened', 'in flight']) {
+        expect(
+          ProjectToolDispatcher.parseProjectStatus(
+            raw,
+            reason: null,
+            now: DateTime(2026, 3, 15),
+          ),
+          isNull,
+          reason: raw,
+        );
+      }
+    });
+  });
+
+  group('parseTaskPriority', () {
+    test('maps every alias case-insensitively and defaults null to P2', () {
+      const expected = {
+        'CRITICAL': TaskPriority.p0Urgent,
+        'P0': TaskPriority.p0Urgent,
+        'HIGH': TaskPriority.p1High,
+        'P1': TaskPriority.p1High,
+        'MEDIUM': TaskPriority.p2Medium,
+        'P2': TaskPriority.p2Medium,
+        'LOW': TaskPriority.p3Low,
+        'P3': TaskPriority.p3Low,
+      };
+      for (final entry in expected.entries) {
+        expect(
+          ProjectToolDispatcher.parseTaskPriority(entry.key),
+          entry.value,
+          reason: entry.key,
+        );
+        expect(
+          ProjectToolDispatcher.parseTaskPriority(
+            ' ${entry.key.toLowerCase()} ',
+          ),
+          entry.value,
+          reason: 'lowercase ${entry.key}',
+        );
+      }
+
+      // Absent priority defaults to medium; junk is rejected.
+      expect(
+        ProjectToolDispatcher.parseTaskPriority(null),
+        TaskPriority.p2Medium,
+      );
+      expect(ProjectToolDispatcher.parseTaskPriority('P9'), isNull);
+      expect(ProjectToolDispatcher.parseTaskPriority(42), isNull);
+    });
+  });
+}
+
+/// Alias groups accepted by [ProjectToolDispatcher.parseProjectStatus]:
+/// (canonical alias, all accepted aliases) per semantic status group.
+const _statusAliasGroups = <(String, List<String>)>[
+  ('open', ['open']),
+  ('active', ['active', 'on_track', 'in_progress']),
+  ('on_hold', ['on_hold', 'hold', 'blocked', 'at_risk']),
+  ('completed', ['completed', 'complete', 'done']),
+  ('archived', ['archived', 'archive', 'cancelled', 'canceled']),
+];
+
+/// Deterministic scenario: an alias styled with seed-driven casing,
+/// separators and padding, plus a same-group and other-group alias.
+class _ProjectStatusScenario {
+  _ProjectStatusScenario(int groupIndex, int seed) {
+    final (canonical, aliases) =
+        _statusAliasGroups[groupIndex % _statusAliasGroups.length];
+    // The freezed union cases have private concrete types; resolve the
+    // expected runtimeType by parsing the canonical alias once.
+    expectedType = ProjectToolDispatcher.parseProjectStatus(
+      canonical,
+      reason: 'r',
+      now: DateTime(2026),
+    )!.runtimeType;
+    final alias = aliases[seed % aliases.length];
+    sameGroupAlias = aliases[(seed + 1) % aliases.length];
+    final (_, otherAliases) =
+        _statusAliasGroups[(groupIndex +
+                1 +
+                seed % (_statusAliasGroups.length - 1)) %
+            _statusAliasGroups.length];
+    otherGroupAlias = otherAliases[seed % otherAliases.length];
+
+    // Style: vary the separator ('_' / '-' / ' '), casing and padding —
+    // all of which parseProjectStatus normalizes away.
+    final separator = ['_', '-', ' '][seed % 3];
+    var styled = alias.replaceAll('_', separator);
+    styled = switch (seed % 3) {
+      0 => styled.toUpperCase(),
+      1 => styled[0].toUpperCase() + styled.substring(1),
+      _ => styled,
+    };
+    styledAlias = '${' ' * (seed % 2)}$styled${' ' * ((seed ~/ 2) % 2)}';
+
+    reason = switch (seed % 4) {
+      0 => null,
+      1 => '',
+      2 => '   ',
+      _ => '  needs review $seed  ',
+    };
+  }
+
+  late final Type expectedType;
+  late final String styledAlias;
+  late final String sameGroupAlias;
+  late final String otherGroupAlias;
+  late final String? reason;
+}
+
+extension _AnyProjectStatusScenario on glados.Any {
+  glados.Generator<_ProjectStatusScenario> get projectStatusScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, _statusAliasGroups.length),
+        glados.IntAnys(this).intInRange(0, 1 << 16),
+        _ProjectStatusScenario.new,
+      );
 }

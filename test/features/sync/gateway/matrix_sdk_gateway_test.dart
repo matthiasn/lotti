@@ -18,10 +18,6 @@ class MockClient extends Mock implements Client {}
 
 class MockLoginResponse extends Mock implements LoginResponse {}
 
-class MockDeviceKeys extends Mock implements DeviceKeys {}
-
-class MockDeviceKeysList extends Mock implements DeviceKeysList {}
-
 class MockMatrixFile extends Mock implements MatrixFile {}
 
 class MockGetVersionsResponse extends Mock implements GetVersionsResponse {}

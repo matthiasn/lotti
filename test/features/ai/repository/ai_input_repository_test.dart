@@ -31,8 +31,9 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
-// Mock for TaskProgressRepository
-class MockTaskProgressRepository extends Mock
+// Local fake (not a plain mock): computes real union durations so the
+// repository's progress maths are exercised end-to-end.
+class _ComputingTaskProgressRepository extends Mock
     implements TaskProgressRepository {
   @override
   TaskProgressState getTaskProgress({
@@ -81,9 +82,6 @@ class TestTaskProgressState implements TaskProgressState {
 // From ai_input_repository_language_test.dart — bare mock (no getTaskProgress
 // override) used only in the 'Language support in task data' group below.
 // ---------------------------------------------------------------------------
-
-class MockTaskProgressRepositoryBare extends Mock
-    implements TaskProgressRepository {}
 
 // ---------------------------------------------------------------------------
 // From ai_input_repository_suppressed_ids_test.dart
@@ -135,7 +133,12 @@ class _GeneratedLinkedTaskContextScenario {
   final int langIndex;
   final int summaryIndex;
 
-  static const List<String> _ids = ['task-001', 'task-abc', 'epic-42', 'subtask-x'];
+  static const List<String> _ids = [
+    'task-001',
+    'task-abc',
+    'epic-42',
+    'subtask-x',
+  ];
   static const List<String> _titles = [
     'Fix login bug',
     'Implement search',
@@ -178,33 +181,32 @@ class _GeneratedLinkedTaskContextScenario {
 
 extension _AnyLinkedTaskContext on glados.Any {
   glados.Generator<_GeneratedLinkedTaskContextScenario>
-  get linkedTaskContextScenario =>
-      glados.CombinableAny(this).combine7(
-        glados.IntAnys(this).intInRange(0, 3),
-        glados.IntAnys(this).intInRange(0, 3),
-        glados.IntAnys(this).intInRange(0, 4),
-        glados.IntAnys(this).intInRange(0, 3),
-        glados.IntAnys(this).intInRange(0, 3),
-        glados.IntAnys(this).intInRange(0, 3),
-        glados.IntAnys(this).intInRange(0, 3),
-        (
-          int idIdx,
-          int titleIdx,
-          int statusIdx,
-          int priorityIdx,
-          int estimateIdx,
-          int langIdx,
-          int summaryIdx,
-        ) => _GeneratedLinkedTaskContextScenario(
-          idIndex: idIdx,
-          titleIndex: titleIdx,
-          statusIndex: statusIdx,
-          priorityIndex: priorityIdx,
-          estimateIndex: estimateIdx,
-          langIndex: langIdx,
-          summaryIndex: summaryIdx,
-        ),
-      );
+  get linkedTaskContextScenario => glados.CombinableAny(this).combine7(
+    glados.IntAnys(this).intInRange(0, 3),
+    glados.IntAnys(this).intInRange(0, 3),
+    glados.IntAnys(this).intInRange(0, 4),
+    glados.IntAnys(this).intInRange(0, 3),
+    glados.IntAnys(this).intInRange(0, 3),
+    glados.IntAnys(this).intInRange(0, 3),
+    glados.IntAnys(this).intInRange(0, 3),
+    (
+      int idIdx,
+      int titleIdx,
+      int statusIdx,
+      int priorityIdx,
+      int estimateIdx,
+      int langIdx,
+      int summaryIdx,
+    ) => _GeneratedLinkedTaskContextScenario(
+      idIndex: idIdx,
+      titleIndex: titleIdx,
+      statusIndex: statusIdx,
+      priorityIndex: priorityIdx,
+      estimateIndex: estimateIdx,
+      langIndex: langIdx,
+      summaryIndex: summaryIdx,
+    ),
+  );
 }
 
 /// Test helper to build a ProviderContainer with task progress overrides
@@ -286,7 +288,7 @@ void main() {
 
   group('AiInputRepository', () {
     late MockJournalDb mockDb;
-    late MockTaskProgressRepository mockTaskProgressRepository;
+    late _ComputingTaskProgressRepository mockTaskProgressRepository;
     late MockPersistenceLogic mockPersistenceLogic;
     late MockProjectRepository mockProjectRepository;
     late MockAgentRepository mockAgentRepository;
@@ -296,7 +298,7 @@ void main() {
 
     setUp(() {
       mockDb = MockJournalDb();
-      mockTaskProgressRepository = MockTaskProgressRepository();
+      mockTaskProgressRepository = _ComputingTaskProgressRepository();
       mockPersistenceLogic = MockPersistenceLogic();
       mockProjectRepository = MockProjectRepository();
       mockAgentRepository = MockAgentRepository();
@@ -2511,7 +2513,7 @@ void main() {
     late AiInputRepository repository;
     late MockJournalDb mockDbLang;
     late ProviderContainer containerLang;
-    late MockTaskProgressRepositoryBare mockTaskProgressRepoLang;
+    late MockTaskProgressRepository mockTaskProgressRepoLang;
     late MockPersistenceLogic mockPersistenceLogicLang;
     late MockProjectRepository mockProjectRepositoryLang;
 
@@ -2543,7 +2545,7 @@ void main() {
 
     setUp(() {
       mockDbLang = MockJournalDb();
-      mockTaskProgressRepoLang = MockTaskProgressRepositoryBare();
+      mockTaskProgressRepoLang = MockTaskProgressRepository();
       mockPersistenceLogicLang = MockPersistenceLogic();
       mockProjectRepositoryLang = MockProjectRepository();
 
@@ -3391,7 +3393,7 @@ void main() {
 
   group('AiInputRepository - Linked Task Context', () {
     late MockJournalDb mockDbLinked;
-    late MockTaskProgressRepository mockTaskProgressRepositoryLinked;
+    late _ComputingTaskProgressRepository mockTaskProgressRepositoryLinked;
     late MockPersistenceLogic mockPersistenceLogicLinked;
     late MockEntitiesCacheService mockCacheServiceLinked;
     late MockProjectRepository mockProjectRepositoryLinked;
@@ -3406,7 +3408,7 @@ void main() {
 
     setUp(() {
       mockDbLinked = MockJournalDb();
-      mockTaskProgressRepositoryLinked = MockTaskProgressRepository();
+      mockTaskProgressRepositoryLinked = _ComputingTaskProgressRepository();
       mockPersistenceLogicLinked = MockPersistenceLogic();
       mockCacheServiceLinked = MockEntitiesCacheService();
       mockProjectRepositoryLinked = MockProjectRepository();
@@ -3415,7 +3417,9 @@ void main() {
           taskProgressRepositoryProvider.overrideWithValue(
             mockTaskProgressRepositoryLinked,
           ),
-          projectRepositoryProvider.overrideWithValue(mockProjectRepositoryLinked),
+          projectRepositoryProvider.overrideWithValue(
+            mockProjectRepositoryLinked,
+          ),
         ],
       );
 
@@ -3433,7 +3437,9 @@ void main() {
           id: any(named: 'id'),
         ),
       ).thenAnswer((_) async => (null, <String, TimeRange>{}));
-      when(() => mockDbLinked.journalEntityById(any())).thenAnswer((_) async => null);
+      when(
+        () => mockDbLinked.journalEntityById(any()),
+      ).thenAnswer((_) async => null);
       when(
         () => mockDbLinked.getLinkedEntities(any()),
       ).thenAnswer((_) async => <JournalEntity>[]);
@@ -3565,7 +3571,9 @@ void main() {
           () => mockDbLinked.getLinkedToEntities(taskId),
         ).thenAnswer((_) async => [childDbEntity]);
         // Bulk fetch returns entities for time calculation
-        when(() => mockDbLinked.getBulkLinkedEntities({childTaskId})).thenAnswer(
+        when(
+          () => mockDbLinked.getBulkLinkedEntities({childTaskId}),
+        ).thenAnswer(
           (_) async => {
             childTaskId: [timeEntry],
           },
@@ -3622,7 +3630,9 @@ void main() {
         when(
           () => mockDbLinked.getLinkedToEntities(taskId),
         ).thenAnswer((_) async => [newerDbEntity, olderDbEntity]);
-        when(() => mockDbLinked.getLinkedEntities(any())).thenAnswer((_) async => []);
+        when(
+          () => mockDbLinked.getLinkedEntities(any()),
+        ).thenAnswer((_) async => []);
         when(
           () => mockTaskProgressRepositoryLinked.getTaskProgressData(
             id: any(named: 'id'),
@@ -3671,7 +3681,9 @@ void main() {
           () => mockDbLinked.getLinkedEntities(taskId),
         ).thenAnswer((_) async => [parentTask]);
         // Bulk fetch returns entities for time calculation
-        when(() => mockDbLinked.getBulkLinkedEntities({parentTaskId})).thenAnswer(
+        when(
+          () => mockDbLinked.getBulkLinkedEntities({parentTaskId}),
+        ).thenAnswer(
           (_) async => {
             parentTaskId: [timeEntry],
           },
@@ -3685,6 +3697,47 @@ void main() {
         expect(result[0].estimate, equals('40:00'));
         expect(result[0].timeSpent, equals('12:30'));
       });
+
+      test(
+        'buildLinkedTasksJson combines both directions in one JSON document',
+        () async {
+          final childTask = createTestTask(
+            id: childTaskId,
+            title: 'Child Task',
+          );
+          final parentTask = createTestTask(
+            id: parentTaskId,
+            title: 'Parent Epic',
+          );
+
+          // linked_from: children linking TO this task (raw DB rows).
+          when(
+            () => mockDbLinked.getLinkedToEntities(taskId),
+          ).thenAnswer((_) async => [createDbEntityFromTask(childTask)]);
+          // linked_to: parents this task links to.
+          when(
+            () => mockDbLinked.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => [parentTask]);
+          when(
+            () => mockDbLinked.getBulkLinkedEntities(any()),
+          ).thenAnswer((_) async => {});
+
+          final json = await repositoryLinked.buildLinkedTasksJson(taskId);
+          final decoded = jsonDecode(json) as Map<String, dynamic>;
+
+          expect(decoded.keys, containsAll(['linked_from', 'linked_to']));
+          final linkedFrom = decoded['linked_from'] as List<dynamic>;
+          final linkedTo = decoded['linked_to'] as List<dynamic>;
+          expect(
+            (linkedFrom.single as Map<String, dynamic>)['id'],
+            childTaskId,
+          );
+          expect(
+            (linkedTo.single as Map<String, dynamic>)['id'],
+            parentTaskId,
+          );
+        },
+      );
 
       test('filters non-Task entities from results', () async {
         final parentTask = createTestTask(
@@ -3837,7 +3890,9 @@ void main() {
           () => mockDbLinked.getLinkedEntities(childTaskId),
         ).thenAnswer((_) async => []);
         when(
-          () => mockTaskProgressRepositoryLinked.getTaskProgressData(id: childTaskId),
+          () => mockTaskProgressRepositoryLinked.getTaskProgressData(
+            id: childTaskId,
+          ),
         ).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repositoryLinked.buildLinkedFromContext(taskId);
@@ -3877,7 +3932,9 @@ void main() {
           () => mockDbLinked.getLinkedToEntities(taskId),
         ).thenAnswer((_) async => [childDbEntity]);
         // Bulk fetch returns the AI summary entry
-        when(() => mockDbLinked.getBulkLinkedEntities({childTaskId})).thenAnswer(
+        when(
+          () => mockDbLinked.getBulkLinkedEntities({childTaskId}),
+        ).thenAnswer(
           (_) async => {
             childTaskId: [summaryEntry],
           },
@@ -3940,7 +3997,9 @@ void main() {
           () => mockDbLinked.getLinkedToEntities(taskId),
         ).thenAnswer((_) async => [childDbEntity]);
         // Return in wrong order to test sorting
-        when(() => mockDbLinked.getBulkLinkedEntities({childTaskId})).thenAnswer(
+        when(
+          () => mockDbLinked.getBulkLinkedEntities({childTaskId}),
+        ).thenAnswer(
           (_) async => {
             childTaskId: [olderSummary, newerSummary],
           },
@@ -3987,7 +4046,9 @@ void main() {
           () => mockDbLinked.getLinkedEntities(childTaskId),
         ).thenAnswer((_) async => [imageAnalysis]);
         when(
-          () => mockTaskProgressRepositoryLinked.getTaskProgressData(id: childTaskId),
+          () => mockTaskProgressRepositoryLinked.getTaskProgressData(
+            id: childTaskId,
+          ),
         ).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repositoryLinked.buildLinkedFromContext(taskId);
@@ -4013,7 +4074,9 @@ void main() {
           () => mockDbLinked.getLinkedEntities(childTaskId),
         ).thenAnswer((_) async => []);
         when(
-          () => mockTaskProgressRepositoryLinked.getTaskProgressData(id: childTaskId),
+          () => mockTaskProgressRepositoryLinked.getTaskProgressData(
+            id: childTaskId,
+          ),
         ).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         // Use cache service for label lookups (O(1) per label)
@@ -4063,7 +4126,9 @@ void main() {
           () => mockDbLinked.getLinkedEntities(childTaskId),
         ).thenAnswer((_) async => []);
         when(
-          () => mockTaskProgressRepositoryLinked.getTaskProgressData(id: childTaskId),
+          () => mockTaskProgressRepositoryLinked.getTaskProgressData(
+            id: childTaskId,
+          ),
         ).thenAnswer((_) async => (null, <String, TimeRange>{}));
 
         final result = await repositoryLinked.buildLinkedFromContext(taskId);

@@ -103,7 +103,8 @@ void main() {
 
           // Act - Tap to trigger delete
           await tester.tap(find.text('Delete Provider'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Verify confirmation dialog appears
           expect(
@@ -118,7 +119,8 @@ void main() {
 
           // Confirm deletion
           await tester.tap(find.text('Delete'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Assert
           expect(result, isTrue);
@@ -158,11 +160,13 @@ void main() {
 
         // Act - Tap to trigger delete
         await tester.tap(find.text('Delete Provider'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Cancel deletion
         await tester.tap(find.text('Cancel'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Assert
         expect(result, isFalse);
@@ -199,11 +203,13 @@ void main() {
 
         // Act
         await tester.tap(find.text('Delete Model'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Confirm deletion
         await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Assert
         expect(result, isTrue);
@@ -239,11 +245,13 @@ void main() {
 
         // Act
         await tester.tap(find.text('Delete Prompt'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Confirm deletion
         await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Assert
         expect(result, isTrue);
@@ -284,11 +292,13 @@ void main() {
 
         // Act
         await tester.tap(find.text('Delete Profile'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Confirm deletion
         await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Assert
         expect(result, isTrue);
@@ -319,7 +329,8 @@ void main() {
           );
 
           await tester.tap(find.text('Delete Profile'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Check dialog structure
           expect(find.text('Delete Profile'), findsNWidgets(2));
@@ -362,11 +373,13 @@ void main() {
 
         // Act
         await tester.tap(find.text('Delete Model'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Confirm deletion
         await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Assert
         expect(result, isFalse);
@@ -404,11 +417,13 @@ void main() {
 
         // Act
         await tester.tap(find.text('Delete Provider'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Confirm deletion
         await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Assert
         expect(result, isFalse);
@@ -446,7 +461,8 @@ void main() {
 
         // Act - Delete the model
         await tester.tap(find.text('Delete Model'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Delete'));
         // Mirror the DS toast messenger tests: schedule a frame to
         // resolve the tap, then advance the clock past the dialog
@@ -457,7 +473,8 @@ void main() {
 
         // Undo the deletion
         await tester.tap(find.text('Undo'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Assert
         verify(() => mockRepository.deleteConfig(testModel.id)).called(1);
@@ -497,14 +514,16 @@ void main() {
 
         // Act - Delete the provider
         await tester.tap(find.text('Delete Provider'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 800));
 
         // Undo the deletion
         await tester.tap(find.text('Undo'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Assert
         verify(
@@ -544,12 +563,14 @@ void main() {
 
         // Act - Delete and then try to undo
         await tester.tap(find.text('Delete Model'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Delete'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 800));
         await tester.tap(find.text('Undo'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Assert - Should not crash or show error to user
         verify(() => mockRepository.saveConfig(testModel)).called(1);
@@ -574,7 +595,8 @@ void main() {
           );
 
           await tester.tap(find.text('Delete Provider'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Check dialog structure
           expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
@@ -615,7 +637,8 @@ void main() {
           );
 
           await tester.tap(find.text('Delete Model'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Check dialog structure
           expect(find.text('Delete Model'), findsNWidgets(2));
@@ -650,7 +673,8 @@ void main() {
           );
 
           await tester.tap(find.text('Delete Prompt'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Check dialog structure
           expect(find.text('Delete Prompt'), findsNWidgets(2));
@@ -695,7 +719,8 @@ void main() {
 
           // Act
           await tester.tap(find.text('Delete Provider'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           await tester.tap(find.text('Delete'));
           // Don't fully settle — the countdown timer never stops, so
           // pumpAndSettle would time out. A single frame is enough for
@@ -755,7 +780,8 @@ void main() {
 
           // Act
           await tester.tap(find.text('Delete Provider'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           await tester.tap(find.text('Delete'));
           await tester.pump();
 
@@ -794,7 +820,8 @@ void main() {
 
         // Act
         await tester.tap(find.text('Delete Model'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Delete'));
         await tester.pump();
 
@@ -831,7 +858,8 @@ void main() {
         );
 
         await tester.tap(find.text('Delete Model'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should not crash and should show dialog
         expect(find.text('Delete Model'), findsNWidgets(2));
@@ -868,7 +896,8 @@ void main() {
 
           // Act
           await tester.tap(find.text('Delete Provider'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           await tester.tap(find.text('Delete'));
           await tester.pump();
 
@@ -936,11 +965,13 @@ void main() {
         );
 
         await tester.tap(find.text('Delete Skill'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Confirm the deletion in the dialog
         await tester.tap(find.text('Delete'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(result, isTrue);
         verify(() => mockRepository.deleteConfig(testSkill.id)).called(1);
@@ -968,7 +999,8 @@ void main() {
           );
 
           await tester.tap(find.text('Delete Skill'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Dialog title, warning text, and icon must all reflect the Skill type.
           expect(find.text('Delete Skill'), findsNWidgets(2));
@@ -1005,9 +1037,11 @@ void main() {
         );
 
         await tester.tap(find.text('Delete Skill'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text('Cancel'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(result, isFalse);
         verifyNever(() => mockRepository.deleteConfig(any()));
@@ -1050,12 +1084,14 @@ void main() {
           );
 
           await tester.tap(find.text('Delete Model'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           await tester.tap(find.text('Delete'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 800));
           await tester.tap(find.text('Undo'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // saveConfig was called (and threw); the service must not re-throw.
           verify(() => mockRepository.saveConfig(testModel)).called(1);
@@ -1096,12 +1132,14 @@ void main() {
           );
 
           await tester.tap(find.text('Delete Provider'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           await tester.tap(find.text('Delete'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 800));
           await tester.tap(find.text('Undo'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // saveConfig was called (and threw); service must not propagate.
           verify(() => mockRepository.saveConfig(any())).called(1);

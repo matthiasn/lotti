@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 import '../../../../../widget_test_utils.dart';
@@ -17,25 +15,21 @@ void main() {
       buttonPressed = false;
     });
 
-    Widget createWidget({
+    Future<void> pumpFab(
+      WidgetTester tester, {
       required AiSettingsTab activeTab,
-    }) {
-      return MaterialApp(
-        theme: resolveTestTheme(),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          floatingActionButton: AiSettingsFloatingActionButton(
-            activeTab: activeTab,
-            onPressed: () => buttonPressed = true,
+    }) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            floatingActionButton: AiSettingsFloatingActionButton(
+              activeTab: activeTab,
+              onPressed: () => buttonPressed = true,
+            ),
           ),
         ),
       );
+      await tester.pump();
     }
 
     DesignSystemFloatingActionButton readFab(WidgetTester tester) {
@@ -48,8 +42,7 @@ void main() {
       'wraps a DesignSystemFloatingActionButton inside the standard '
       'bottom-nav padding helper',
       (tester) async {
-        await tester.pumpWidget(createWidget(activeTab: AiSettingsTab.models));
-        await tester.pumpAndSettle();
+        await pumpFab(tester, activeTab: AiSettingsTab.models);
 
         expect(
           find.byType(DesignSystemBottomNavigationFabPadding),
@@ -60,71 +53,36 @@ void main() {
     );
 
     testWidgets(
-      'providers tab uses the add-link icon and the localized provider label',
+      'each tab uses its own icon and a non-empty localized label',
       (tester) async {
-        await tester.pumpWidget(
-          createWidget(activeTab: AiSettingsTab.providers),
-        );
-        await tester.pumpAndSettle();
+        for (final (tab, icon) in [
+          (AiSettingsTab.providers, Icons.add_link_rounded),
+          (AiSettingsTab.models, Icons.auto_awesome_rounded),
+          (AiSettingsTab.profiles, Icons.tune_rounded),
+        ]) {
+          await pumpFab(tester, activeTab: tab);
 
-        final fab = readFab(tester);
-        expect(fab.icon, Icons.add_link_rounded);
-        expect(fab.semanticLabel, isNotEmpty);
-      },
-    );
-
-    testWidgets(
-      'models tab uses the auto-awesome icon and the localized model label',
-      (tester) async {
-        await tester.pumpWidget(createWidget(activeTab: AiSettingsTab.models));
-        await tester.pumpAndSettle();
-
-        final fab = readFab(tester);
-        expect(fab.icon, Icons.auto_awesome_rounded);
-        expect(fab.semanticLabel, isNotEmpty);
-      },
-    );
-
-    testWidgets(
-      'profiles tab uses the tune icon and the localized profile label',
-      (tester) async {
-        await tester.pumpWidget(
-          createWidget(activeTab: AiSettingsTab.profiles),
-        );
-        await tester.pumpAndSettle();
-
-        final fab = readFab(tester);
-        expect(fab.icon, Icons.tune_rounded);
-        expect(fab.semanticLabel, isNotEmpty);
+          final fab = readFab(tester);
+          expect(fab.icon, icon, reason: 'icon for $tab');
+          expect(fab.semanticLabel, isNotEmpty, reason: 'label for $tab');
+        }
       },
     );
 
     testWidgets('per-tab labels are distinct, not a hard-coded string', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        createWidget(activeTab: AiSettingsTab.providers),
-      );
-      await tester.pumpAndSettle();
-      final providerLabel = readFab(tester).semanticLabel;
+      final labels = <String>[];
+      for (final tab in AiSettingsTab.values) {
+        await pumpFab(tester, activeTab: tab);
+        labels.add(readFab(tester).semanticLabel);
+      }
 
-      await tester.pumpWidget(createWidget(activeTab: AiSettingsTab.models));
-      await tester.pumpAndSettle();
-      final modelLabel = readFab(tester).semanticLabel;
-
-      await tester.pumpWidget(createWidget(activeTab: AiSettingsTab.profiles));
-      await tester.pumpAndSettle();
-      final profileLabel = readFab(tester).semanticLabel;
-
-      expect(providerLabel, isNot(equals(modelLabel)));
-      expect(modelLabel, isNot(equals(profileLabel)));
-      expect(providerLabel, isNot(equals(profileLabel)));
+      expect(labels.toSet(), hasLength(AiSettingsTab.values.length));
     });
 
     testWidgets('calls onPressed when tapped', (tester) async {
-      await tester.pumpWidget(
-        createWidget(activeTab: AiSettingsTab.providers),
-      );
+      await pumpFab(tester, activeTab: AiSettingsTab.providers);
 
       await tester.tap(find.byType(DesignSystemFloatingActionButton));
       await tester.pump();
@@ -133,16 +91,12 @@ void main() {
     });
 
     testWidgets('changing active tab swaps the rendered icon', (tester) async {
-      await tester.pumpWidget(
-        createWidget(activeTab: AiSettingsTab.providers),
-      );
-      await tester.pumpAndSettle();
+      await pumpFab(tester, activeTab: AiSettingsTab.providers);
 
       expect(find.byIcon(Icons.add_link_rounded), findsOneWidget);
       expect(find.byIcon(Icons.auto_awesome_rounded), findsNothing);
 
-      await tester.pumpWidget(createWidget(activeTab: AiSettingsTab.models));
-      await tester.pumpAndSettle();
+      await pumpFab(tester, activeTab: AiSettingsTab.models);
 
       expect(find.byIcon(Icons.add_link_rounded), findsNothing);
       expect(find.byIcon(Icons.auto_awesome_rounded), findsOneWidget);

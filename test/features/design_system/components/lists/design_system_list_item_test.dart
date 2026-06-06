@@ -367,9 +367,9 @@ void main() {
         addTearDown(gesture.removePointer);
         await gesture.addPointer(location: Offset.zero);
         await gesture.moveTo(tester.getCenter(find.byKey(itemKey)));
-        await tester.pumpAndSettle();
+        await tester.pump();
         await gesture.moveTo(const Offset(-100, -100));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(events, [true, false]);
       },
@@ -400,9 +400,9 @@ void main() {
         addTearDown(gesture.removePointer);
         await gesture.addPointer(location: Offset.zero);
         await gesture.moveTo(tester.getCenter(find.byKey(itemKey)));
-        await tester.pumpAndSettle();
+        await tester.pump();
         await gesture.moveTo(const Offset(-100, -100));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(events, [true, false]);
       },

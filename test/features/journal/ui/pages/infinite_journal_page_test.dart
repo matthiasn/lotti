@@ -1,14 +1,21 @@
+// ignore_for_file: avoid_redundant_argument_values
+
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/settings_db.dart';
+import 'package:lotti/features/journal/state/journal_page_controller.dart';
+import 'package:lotti/features/journal/state/journal_page_scope.dart';
+import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
+import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_button.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/card_wrapper_widget.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/journal/utils/entry_types.dart';
@@ -578,4 +585,163 @@ void main() {
       expect(find.byIcon(MdiIcons.security), findsOneWidget);
     });
   });
+
+  group('fake-controller branch coverage (merged from the former '
+      'bottom-padding satellite file)', () {
+    setUp(() async {
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<UserActivityService>(UserActivityService());
+        },
+      );
+    });
+
+    tearDown(tearDownTestGetIt);
+
+    testWidgets('adds 100px bottom spacer sliver', (tester) async {
+      const state = JournalPageState(
+        match: '',
+        filters: <DisplayFilter>{},
+        showPrivateEntries: false,
+        showTasks: false,
+        selectedEntryTypes: <String>[],
+        fullTextMatches: <String>{},
+        pagingController: null,
+        taskStatuses: <String>[],
+        selectedTaskStatuses: <String>{},
+        selectedCategoryIds: <String>{},
+        selectedLabelIds: <String>{},
+        selectedPriorities: <String>{},
+      );
+
+      final fakeController = _FakeJournalPageController(state);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const InfiniteJournalPage(),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is SizedBox && w.height == 100,
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('renders paged list branch when pagingController is present', (
+      tester,
+    ) async {
+      final controller = PagingController<int, JournalEntity>(
+        getNextPageKey: (PagingState<int, JournalEntity> state) => null,
+        fetchPage: (int pageKey) async => <JournalEntity>[],
+      );
+
+      final state = JournalPageState(
+        match: '',
+        filters: <DisplayFilter>{},
+        showPrivateEntries: false,
+        showTasks: false,
+        selectedEntryTypes: const <String>[],
+        fullTextMatches: <String>{},
+        pagingController: controller,
+        taskStatuses: const <String>[],
+        selectedTaskStatuses: <String>{},
+        selectedCategoryIds: <String>{},
+        selectedLabelIds: <String>{},
+        selectedPriorities: <String>{},
+      );
+
+      final fakeController = _FakeJournalPageController(state);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const InfiniteJournalPage(),
+          overrides: [
+            journalPageScopeProvider.overrideWithValue(false),
+            journalPageControllerProvider(
+              false,
+            ).overrideWith(() => fakeController),
+          ],
+        ),
+      );
+
+      // The paged branch mounts the PagedSliverList.
+      expect(
+        find.byType(PagedSliverList<int, JournalEntity>),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets(
+      'passes the single selected category id to FloatingAddActionButton',
+      (tester) async {
+        // selectedCategoryIds.length == 1 takes the `selectedCategoryIds.first`
+        // branch in InfiniteJournalPage.build.
+        const state = JournalPageState(
+          match: '',
+          filters: <DisplayFilter>{},
+          showPrivateEntries: false,
+          showTasks: false,
+          selectedEntryTypes: <String>[],
+          fullTextMatches: <String>{},
+          pagingController: null,
+          taskStatuses: <String>[],
+          selectedTaskStatuses: <String>{},
+          selectedCategoryIds: {'cat-only-one'},
+          selectedLabelIds: <String>{},
+          selectedPriorities: <String>{},
+        );
+
+        final fakeController = _FakeJournalPageController(state);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const InfiniteJournalPage(),
+            overrides: [
+              journalPageScopeProvider.overrideWithValue(false),
+              journalPageControllerProvider(
+                false,
+              ).overrideWith(() => fakeController),
+            ],
+          ),
+        );
+
+        await tester.pump(const Duration(milliseconds: 16));
+
+        // The FAB is the only consumer of the resolved categoryId — finding
+        // it confirms the single-id branch built without throwing.
+        final fab = tester.widget<FloatingAddActionButton>(
+          find.byType(FloatingAddActionButton),
+        );
+        expect(fab.categoryId, 'cat-only-one');
+      },
+    );
+  });
+}
+
+class _FakeJournalPageController extends JournalPageController {
+  _FakeJournalPageController(this._testState);
+
+  final JournalPageState _testState;
+
+  @override
+  JournalPageState build(bool showTasks) => _testState;
+
+  @override
+  JournalPageState get state => _testState;
+
+  @override
+  Future<void> refreshQuery({bool preserveVisibleItems = false}) async {}
 }

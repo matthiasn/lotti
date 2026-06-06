@@ -6,20 +6,35 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../mocks/mocks.dart';
+import '../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(() {
-    if (getIt.isRegistered<TimeService>()) {
-      getIt.unregister<TimeService>();
-    }
-    getIt.registerSingleton<TimeService>(_FakeTimeService());
+  late StreamController<JournalEntity?> timeStreamController;
+
+  setUp(() async {
+    timeStreamController = StreamController<JournalEntity?>.broadcast();
+    final mockTimeService = MockTimeService();
+    when(mockTimeService.getStream).thenAnswer(
+      (_) => timeStreamController.stream,
+    );
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<TimeService>(mockTimeService);
+      },
+    );
+  });
+
+  tearDown(() async {
+    await timeStreamController.close();
+    await tearDownTestGetIt();
   });
 
   testWidgets('TimeRecordingIndicator text width is stable', (tester) async {
-    final fake = getIt<TimeService>() as _FakeTimeService;
-
     Future<void> pumpOnce(JournalEntity entity) async {
       await tester.pumpWidget(
         const MaterialApp(
@@ -28,9 +43,11 @@ void main() {
           ),
         ),
       );
-      fake.emit(entity);
+      timeStreamController.add(entity);
+      // Two pumps: one to deliver the stream event, one to lay out the
+      // updated text. No animations are involved.
       await tester.pump();
-      await tester.pumpAndSettle();
+      await tester.pump();
     }
 
     JournalEntity makeEntry(Duration duration) {
@@ -60,15 +77,6 @@ void main() {
 
     expect(w1, equals(w2));
   });
-}
-
-class _FakeTimeService extends TimeService {
-  final _controller = StreamController<JournalEntity?>.broadcast();
-
-  @override
-  Stream<JournalEntity?> getStream() => _controller.stream;
-
-  void emit(JournalEntity? entity) => _controller.add(entity);
 }
 
 // ignore_for_file: avoid_redundant_argument_values

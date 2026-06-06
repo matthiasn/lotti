@@ -17,11 +17,8 @@ import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
-import 'package:lotti/features/ai/conversation/conversation_manager.dart';
-import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
-import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:mocktail/mocktail.dart';
@@ -31,80 +28,12 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
-
-/// Minimal mock of [ConversationRepository] for workflow tests.
-class _MockConversationRepository extends ConversationRepository {
-  _MockConversationRepository(this._mockManager, {this.onSystemMessage});
-
-  final MockConversationManager _mockManager;
-  final void Function(String?)? onSystemMessage;
-  final List<String> deletedConversationIds = [];
-
-  Future<InferenceUsage?> Function({
-    required String conversationId,
-    required String message,
-    required String model,
-    required AiConfigInferenceProvider provider,
-    required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    double temperature,
-    ConversationStrategy? strategy,
-  })?
-  sendMessageDelegate;
-
-  @override
-  void build() {}
-
-  @override
-  String createConversation({String? systemMessage, int maxTurns = 20}) {
-    onSystemMessage?.call(systemMessage);
-    return 'test-conv-id';
-  }
-
-  @override
-  ConversationManager? getConversation(String conversationId) {
-    return _mockManager;
-  }
-
-  @override
-  void deleteConversation(String conversationId) {
-    deletedConversationIds.add(conversationId);
-  }
-
-  @override
-  Future<InferenceUsage?> sendMessage({
-    required String conversationId,
-    required String message,
-    required String model,
-    required AiConfigInferenceProvider provider,
-    required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    double temperature = 0.7,
-    ConversationStrategy? strategy,
-  }) async {
-    if (sendMessageDelegate != null) {
-      return sendMessageDelegate!(
-        conversationId: conversationId,
-        message: message,
-        model: model,
-        provider: provider,
-        inferenceRepo: inferenceRepo,
-        tools: tools,
-        toolChoice: toolChoice,
-        temperature: temperature,
-        strategy: strategy,
-      );
-    }
-    return null;
-  }
-}
+import 'task_agent_workflow_test_helpers.dart';
 
 void main() {
   late MockAgentRepository mockAgentRepository;
   late MockAgentSyncService mockSyncService;
-  late _MockConversationRepository mockConversationRepository;
+  late MockConversationRepository mockConversationRepository;
   late MockAiConfigRepository mockAiConfigRepository;
   late MockCloudInferenceRepository mockCloudInferenceRepository;
   late MockConversationManager mockConversationManager;
@@ -172,7 +101,7 @@ void main() {
     mockAgentRepository = MockAgentRepository();
     mockSyncService = MockAgentSyncService();
     mockConversationManager = MockConversationManager();
-    mockConversationRepository = _MockConversationRepository(
+    mockConversationRepository = MockConversationRepository(
       mockConversationManager,
     );
     mockAiConfigRepository = MockAiConfigRepository();
@@ -576,7 +505,7 @@ void main() {
 
           final sentMessages = <String>[];
           final sendCapturingRepo =
-              _MockConversationRepository(
+              MockConversationRepository(
                   mockConversationManager,
                 )
                 ..sendMessageDelegate =
@@ -908,7 +837,7 @@ void main() {
           ).thenAnswer((_) async => soulVersion);
 
           String? capturedSystemMessage;
-          final capturingRepo = _MockConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
@@ -981,7 +910,7 @@ void main() {
           ).thenAnswer((_) async => null);
 
           String? capturedSystemMessage;
-          final capturingRepo = _MockConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
@@ -2984,7 +2913,7 @@ void main() {
           );
 
           String? capturedSystemMessage;
-          final capturingRepo = _MockConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
@@ -3033,7 +2962,7 @@ void main() {
           );
 
           String? capturedSystemMessage;
-          final capturingRepo = _MockConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
@@ -3085,7 +3014,7 @@ void main() {
           );
 
           String? capturedSystemMessage;
-          final capturingRepo = _MockConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );

@@ -80,9 +80,11 @@ void main() {
       glados.any.taskId,
       glados.any.taskId,
       glados.ExploreConfig(numRuns: 120),
-    ).test(
-        'priority is 2 iff taskId equals selectedTaskId',
-        (taskId, selectedId, hoveredId) {
+    ).test('priority is 2 iff taskId equals selectedTaskId', (
+      taskId,
+      selectedId,
+      hoveredId,
+    ) {
       final priority = taskRowInteractionPriority(
         taskId: taskId,
         selectedTaskId: selectedId.isEmpty ? null : selectedId,
@@ -125,34 +127,38 @@ void main() {
       expect(result.showDividerBelow, isFalse);
     });
 
-    test('selected row with neighbor both sides: has upper and lower overlap',
-        () {
-      final result = buildTaskBrowseRowInteraction(
-        taskId: 'task-2',
-        previousTaskIdInSection: 'task-1',
-        nextTaskIdInSection: 'task-3',
-        selectedTaskId: 'task-2',
-      );
-      // current priority = 2; previous priority = 0; next priority = 0.
-      // hasUpperInteraction = true (previous exists, current > 0).
-      // hasLowerInteraction = true (next exists, current > 0).
-      // topOverlap: current(2) > previous(0) → overlap value.
-      expect(result.topOverlap, greaterThan(0));
-      // bottomOverlap: current(2) >= next(0) → overlap value.
-      expect(result.bottomOverlap, greaterThan(0));
-    });
+    test(
+      'selected row with neighbor both sides: has upper and lower overlap',
+      () {
+        final result = buildTaskBrowseRowInteraction(
+          taskId: 'task-2',
+          previousTaskIdInSection: 'task-1',
+          nextTaskIdInSection: 'task-3',
+          selectedTaskId: 'task-2',
+        );
+        // current priority = 2; previous priority = 0; next priority = 0.
+        // hasUpperInteraction = true (previous exists, current > 0).
+        // hasLowerInteraction = true (next exists, current > 0).
+        // topOverlap: current(2) > previous(0) → overlap value.
+        expect(result.topOverlap, greaterThan(0));
+        // bottomOverlap: current(2) >= next(0) → overlap value.
+        expect(result.bottomOverlap, greaterThan(0));
+      },
+    );
 
-    test('hovered row with neighbor both sides: has upper and lower overlap',
-        () {
-      final result = buildTaskBrowseRowInteraction(
-        taskId: 'task-2',
-        previousTaskIdInSection: 'task-1',
-        nextTaskIdInSection: 'task-3',
-        hoveredTaskId: 'task-2',
-      );
-      expect(result.topOverlap, greaterThan(0));
-      expect(result.bottomOverlap, greaterThan(0));
-    });
+    test(
+      'hovered row with neighbor both sides: has upper and lower overlap',
+      () {
+        final result = buildTaskBrowseRowInteraction(
+          taskId: 'task-2',
+          previousTaskIdInSection: 'task-1',
+          nextTaskIdInSection: 'task-3',
+          hoveredTaskId: 'task-2',
+        );
+        expect(result.topOverlap, greaterThan(0));
+        expect(result.bottomOverlap, greaterThan(0));
+      },
+    );
 
     test('two adjacent unselected rows show divider below first', () {
       final result = buildTaskBrowseRowInteraction(
@@ -220,19 +226,22 @@ void main() {
       expect(result.bottomOverlap, equals(customOverlap));
     });
 
-    test('selected neighbor has higher priority → current loses topOverlap', () {
-      // current = hovered (priority 1), previous = selected (priority 2).
-      // hasUpperInteraction = true; current(1) > previous(2) is false
-      // → topOverlap = 0.
-      final result = buildTaskBrowseRowInteraction(
-        taskId: 'task-2',
-        previousTaskIdInSection: 'task-1',
-        nextTaskIdInSection: null,
-        selectedTaskId: 'task-1',
-        hoveredTaskId: 'task-2',
-      );
-      expect(result.topOverlap, equals(0));
-    });
+    test(
+      'selected neighbor has higher priority → current loses topOverlap',
+      () {
+        // current = hovered (priority 1), previous = selected (priority 2).
+        // hasUpperInteraction = true; current(1) > previous(2) is false
+        // → topOverlap = 0.
+        final result = buildTaskBrowseRowInteraction(
+          taskId: 'task-2',
+          previousTaskIdInSection: 'task-1',
+          nextTaskIdInSection: null,
+          selectedTaskId: 'task-1',
+          hoveredTaskId: 'task-2',
+        );
+        expect(result.topOverlap, equals(0));
+      },
+    );
   });
 
   // ---------------------------------------------------------------------------
@@ -244,7 +253,10 @@ void main() {
       glados.any.taskId,
       glados.any.taskId,
       glados.ExploreConfig(numRuns: 120),
-    ).test('result is idempotent (same args → equal result)', (taskId, otherId) {
+    ).test('result is idempotent (same args → equal result)', (
+      taskId,
+      otherId,
+    ) {
       final id = taskId.isEmpty ? 'default' : taskId;
       final other = otherId.isEmpty ? null : otherId;
 
@@ -271,10 +283,8 @@ void main() {
       glados.any.taskId,
       glados.any.taskId,
       glados.ExploreConfig(numRuns: 120),
-    ).test(
-        'showDividerBelow is only true when nextTaskIdInSection is non-null '
-        'and both current and next priority are 0',
-        (taskId, prevId, nextId) {
+    ).test('showDividerBelow is only true when nextTaskIdInSection is non-null '
+        'and both current and next priority are 0', (taskId, prevId, nextId) {
       final id = taskId.isEmpty ? 'task' : taskId;
       final prev = prevId.isEmpty ? null : prevId;
       final next = nextId.isEmpty ? null : nextId;

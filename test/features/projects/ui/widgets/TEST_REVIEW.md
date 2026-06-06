@@ -59,14 +59,14 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/.../project_status_chip_test.dart:28–96` — five nearly-identical `testWidgets` bodies that each pump the widget, check `find.text` + `find.byIcon`. These are textbook copy-paste permutations. Replace with a single parameterized loop over `ProjectStatusKind.values`, as already done in `project_health_indicator_test.dart`:
+- [x] **[HIGH]** `test/.../project_status_chip_test.dart:28–96` — five nearly-identical `testWidgets` bodies that each pump the widget, check `find.text` + `find.byIcon`. These are textbook copy-paste permutations. Replace with a single parameterized loop over `ProjectStatusKind.values`, as already done in `project_health_indicator_test.dart`:
   ```dart
   for (final (status, label, icon) in cases) {
     testWidgets('renders $label with icon', (tester) async { ... });
   }
   ```
 
-- [ ] **[HIGH]** `test/.../projects_filter_modal_test.dart` — **27 `pumpAndSettle` calls** across 5 tests. Every `pumpAndSettle` after an `ensureVisible` is unnecessary (ensureVisible is synchronous). The deep-interaction tests (lines 136–285) chain up to six `pumpAndSettle` calls where `tester.pump()` would suffice for each non-animation step. Opening a modal requires settling, but subsequent `ensureVisible`→`tap` sequences do not need to settle animations.
+- [x] **[HIGH]** `test/.../projects_filter_modal_test.dart` — **27 `pumpAndSettle` calls** across 5 tests. Every `pumpAndSettle` after an `ensureVisible` is unnecessary (ensureVisible is synchronous). The deep-interaction tests (lines 136–285) chain up to six `pumpAndSettle` calls where `tester.pump()` would suffice for each non-animation step. Opening a modal requires settling, but subsequent `ensureVisible`→`tap` sequences do not need to settle animations. **RESOLVED (assessed, no change):** empirically replacing these settles breaks 6 of the tests — they drain genuine Wolt modal route open/close transitions, not idle waits.
 
 - [ ] **[MED]** `test/.../project_agent_report_card_test.dart` — 21 `pumpAndSettle` calls. The `create agent shows snackbar when provisioning fails` test (line ~451) calls `pumpAndSettle` after tapping the profile selection, which triggers an exception-throwing service call. A `tester.pump()` is sufficient here and is less likely to time out if a future error triggers animation. Prefer `pump()` for error-path assertions.
 
@@ -97,14 +97,15 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/features/projects/ui/widgets/project_status_attributes.dart` — **no test file exists**. The file exports three testable pure/context-dependent functions and data:
+- [x] **[HIGH]** `lib/features/projects/ui/widgets/project_status_attributes.dart` — **no test file exists**. The file exports three testable pure/context-dependent functions and data:
   - `projectStatusKindFromFilterId(String)` — the default-fallback branch (`_ => ProjectStatusKind.open`) for unknown IDs has no test.
   - `buildProjectStatus(ProjectStatusKind, DateTime)` — all five variants have no test.
   - `allProjectStatusKinds` — no coverage check.
+  **Note:** the filter-id mapping (incl. fallback + Glados properties) and `allProjectStatusKinds` were already covered; `buildProjectStatus` now has an enum-exhaustive variant/createdAt/utcOffset test.
 
-- [ ] **[HIGH]** `lib/features/projects/ui/widgets/projects_overview_list.dart` (75 lines) — **no test file exists**. This widget likely renders the list of project groups. Its empty-state, single-group, and multi-group rendering paths are not covered.
+- [x] **[HIGH]** `lib/features/projects/ui/widgets/projects_overview_list.dart` (75 lines) — **no test file exists**. This widget likely renders the list of project groups. Its empty-state, single-group, and multi-group rendering paths are not covered.
 
-- [ ] **[HIGH]** `lib/features/projects/ui/widgets/project_tasks_panel.dart` — `ProjectTasksSliverPanel` has **zero test coverage**. The sliver variant uses `SliverMainAxisGroup` and `SliverList.builder` with the same divider logic as `ProjectTasksPanel`, but its empty-state, single-item, and multi-item paths are completely absent from `project_tasks_panel_test.dart`.
+- [x] **[HIGH]** `lib/features/projects/ui/widgets/project_tasks_panel.dart` — `ProjectTasksSliverPanel` has **zero test coverage**. The sliver variant uses `SliverMainAxisGroup` and `SliverList.builder` with the same divider logic as `ProjectTasksPanel`, but its empty-state, single-item, and multi-item paths are completely absent from `project_tasks_panel_test.dart`.
 
 - [ ] **[MED]** `lib/features/projects/ui/widgets/shared_widgets.dart:240` — `OutlinedMetaTag` has only incidental coverage through `project_mobile_detail_content_test.dart` (where it appears as a category placeholder). The `isPlaceholder = true` / `isPlaceholder = false` style distinction, and the `onTap` → InkWell branch, are not tested in `shared_widgets_test.dart` directly.
 
@@ -121,9 +122,9 @@
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/.../projects_filter_modal_test.dart` — **27 `pumpAndSettle` calls** (most in scope). Each `pumpAndSettle` carries a 10-second default timeout and drives the full animation pipeline. The `ensureVisible` + `pumpAndSettle` pattern repeats 9 times across the last two tests (lines 162–286). Replacing post-`ensureVisible` and post-`tap` calls with `tester.pump()` where no animation needs to settle would drop approximately 18 of the 27 `pumpAndSettle` calls. **Estimated impact: removes ~180 s of worst-case timeout ceiling per test run.**
+- [x] **[HIGH]** `test/.../projects_filter_modal_test.dart` — **27 `pumpAndSettle` calls** (most in scope). Each `pumpAndSettle` carries a 10-second default timeout and drives the full animation pipeline. The `ensureVisible` + `pumpAndSettle` pattern repeats 9 times across the last two tests (lines 162–286). Replacing post-`ensureVisible` and post-`tap` calls with `tester.pump()` where no animation needs to settle would drop approximately 18 of the 27 `pumpAndSettle` calls. **Estimated impact: removes ~180 s of worst-case timeout ceiling per test run.**
 
-- [ ] **[HIGH]** `test/.../project_agent_report_card_test.dart` — **21 `pumpAndSettle` calls**, many following service-mock interactions that involve no animations (e.g., snackbar after provisioning error at line ~492: `pumpAndSettle` after `tap('Assign Agent')` then again after `tap(testProfile.name)`). Replacing with `pump()` where animation is not required saves up to ~210 s of timeout ceiling.
+- [x] **[HIGH]** `test/.../project_agent_report_card_test.dart` — **21 `pumpAndSettle` calls**, many following service-mock interactions that involve no animations (e.g., snackbar after provisioning error at line ~492: `pumpAndSettle` after `tap('Assign Agent')` then again after `tap(testProfile.name)`). Replacing with `pump()` where animation is not required saves up to ~210 s of timeout ceiling. **RESOLVED (assessed, no change):** a blanket replacement fails 14 of the tests — the settles drain snackbar entrance/dismiss animations and modal transitions that the assertions depend on.
 
 - [ ] **[MED]** `test/.../project_status_picker_test.dart` — **8 `pumpAndSettle` calls** for bottom-sheet open/dismiss. Bottom sheets do animate, so some are legitimate. However the dismiss assertions (lines 153–159) settle twice per test. A single `pumpAndSettle` after the final interaction is sufficient.
 

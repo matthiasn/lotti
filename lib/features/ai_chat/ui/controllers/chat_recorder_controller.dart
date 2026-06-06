@@ -156,11 +156,20 @@ class ChatRecorderController extends Notifier<ChatRecorderState> {
         } catch (_) {}
       }
 
-      unawaited(cleanup());
+      // Deliberately not awaited — onDispose callbacks are synchronous. The
+      // future is stored so tests can await the full chain deterministically.
+      disposeCleanupFuture = cleanup();
     });
 
     return const ChatRecorderState.initial();
   }
+
+  /// Completes when the `ref.onDispose` cleanup chain (subscription cancels,
+  /// recorder dispose, file/temp-dir deletion) has finished. Only set once the
+  /// provider has been disposed; exposed so tests can await the otherwise
+  /// unawaited teardown instead of polling the event queue.
+  @visibleForTesting
+  Future<void>? disposeCleanupFuture;
 
   record.AudioRecorder? _recorder;
   StreamSubscription<record.Amplitude>? _ampSub;

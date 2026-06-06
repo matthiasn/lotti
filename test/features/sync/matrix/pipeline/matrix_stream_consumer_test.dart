@@ -5,19 +5,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
-import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
-import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
-
-class _MockSessionManager extends Mock implements MatrixSessionManager {}
-
-class _MockRoomManager extends Mock implements SyncRoomManager {}
 
 class _MockSyncEventProcessor extends Mock implements SyncEventProcessor {
   num? _ts;
@@ -125,8 +119,8 @@ void main() {
     registerFallbackValue(StackTrace.empty);
   });
 
-  late _MockSessionManager session;
-  late _MockRoomManager room;
+  late MockMatrixSessionManager session;
+  late MockSyncRoomManager room;
   late MockDomainLogger logging;
   late MockSettingsDb settings;
   late _MockSyncEventProcessor processor;
@@ -134,8 +128,8 @@ void main() {
   late MockMatrixClient client;
 
   setUp(() {
-    session = _MockSessionManager();
-    room = _MockRoomManager();
+    session = MockMatrixSessionManager();
+    room = MockSyncRoomManager();
     logging = MockDomainLogger();
     settings = MockSettingsDb();
     processor = _MockSyncEventProcessor();
@@ -298,8 +292,8 @@ void main() {
   ).test(
     'generated lifecycle initializes once and hydrates only when needed',
     (scenario) async {
-      final localSession = _MockSessionManager();
-      final localRoom = _MockRoomManager();
+      final localSession = MockMatrixSessionManager();
+      final localRoom = MockSyncRoomManager();
       final localLogging = MockDomainLogger();
       final localSettings = MockSettingsDb();
       final localProcessor = _MockSyncEventProcessor();

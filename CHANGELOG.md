@@ -27,6 +27,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   their underlying tool arguments differ, so identical checklist suggestions
   appear only once.
 
+### Fixed
+- Saving an event now clears the unsaved-changes state, so the save button
+  no longer stays visible after a successful save.
+- Buttons that customize the primary button style (e.g. the date picker's
+  Done button) now apply their custom disabled color instead of silently
+  falling back to the default.
+
 ## [0.9.1014]
 ### Added
 - New "Agent memory compaction" flag in Settings → Flags (off by default):

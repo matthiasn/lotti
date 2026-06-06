@@ -243,6 +243,34 @@ void main() {
     ).thenReturn(null);
   });
 
+  /// Stubs the source-task lookup with [task].
+  void stubSourceTaskLookup(Task? task) {
+    when(
+      () => mockJournalDb.journalEntityById(sourceTaskId),
+    ).thenAnswer((_) async => task);
+  }
+
+  /// Stubs `createTaskEntry` to return [task] (null → creation failure).
+  void stubCreateTask(Task? task) {
+    when(
+      () => mockPersistenceLogic.createTaskEntry(
+        data: any(named: 'data'),
+        entryText: any(named: 'entryText'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenAnswer((_) async => task);
+  }
+
+  /// Stubs `createLink` to answer [result].
+  void stubLinkCreation({bool result = true}) {
+    when(
+      () => mockPersistenceLogic.createLink(
+        fromId: any(named: 'fromId'),
+        toId: any(named: 'toId'),
+      ),
+    ).thenAnswer((_) async => result);
+  }
+
   tearDown(() async {
     await getIt.reset();
   });
@@ -326,9 +354,7 @@ void main() {
       });
 
       test('returns failure when source task not found', () async {
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => null);
+        stubSourceTaskLookup(null);
 
         final result = await handler.handle(
           sourceTaskId,
@@ -428,29 +454,79 @@ void main() {
       );
     });
 
+    group('parsePriority semantics', () {
+      // Spec: null → default p2Medium; non-strings → null; strings resolve to
+      // the priority whose trimmed upper-case form is P0..P3, anything else
+      // (junk, partial matches, padded digits beyond range) → null.
+      const knownPriorities = {
+        'P0': TaskPriority.p0Urgent,
+        'P1': TaskPriority.p1High,
+        'P2': TaskPriority.p2Medium,
+        'P3': TaskPriority.p3Low,
+      };
+
+      test('null defaults to p2Medium and non-strings are rejected', () {
+        expect(FollowUpTaskHandler.parsePriority(null), TaskPriority.p2Medium);
+        expect(FollowUpTaskHandler.parsePriority(1), isNull);
+        expect(FollowUpTaskHandler.parsePriority(const ['P1']), isNull);
+      });
+
+      glados.Glados(
+        glados.CombinableAny(glados.any).combine3(
+          glados.AnyUtils(glados.any).choose(const [
+            'p0',
+            'p1',
+            'p2',
+            'p3',
+            'p4',
+            'P9',
+            'urgent',
+            '',
+            'P22',
+            'p 1',
+          ]),
+          glados.any.bool,
+          glados.IntAnys(glados.any).intInRange(0, 4),
+          (String base, bool upper, int pad) => (
+            base: base,
+            upper: upper,
+            pad: pad,
+          ),
+        ),
+        glados.ExploreConfig(numRuns: 160),
+      ).test(
+        'resolves exactly the P0–P3 space regardless of case/padding',
+        (
+          scenario,
+        ) {
+          final padding = ' ' * scenario.pad;
+          final input =
+              '$padding'
+              '${scenario.upper ? scenario.base.toUpperCase() : scenario.base}'
+              '$padding';
+
+          final expected = knownPriorities[input.trim().toUpperCase()];
+
+          expect(
+            FollowUpTaskHandler.parsePriority(input),
+            expected,
+            reason: 'input="$input"',
+          );
+        },
+        tags: 'glados',
+      );
+    });
+
     group('task creation', () {
       test('creates task with correct title and default priority', () async {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-001');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         await withClock(Clock.fixed(testDate), () async {
           final result = await handler.handle(
@@ -485,24 +561,11 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-002');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         await withClock(Clock.fixed(testDate), () async {
           final result = await handler.handle(
@@ -534,17 +597,9 @@ void main() {
       test('returns failure when createTaskEntry returns null', () async {
         final sourceTask = makeSourceTask();
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => null);
+        stubCreateTask(null);
 
         await withClock(Clock.fixed(testDate), () async {
           final result = await handler.handle(
@@ -563,24 +618,11 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-003');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         await withClock(Clock.fixed(testDate), () async {
           await handler.handle(
@@ -603,17 +645,9 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-link-fail');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
         when(
           () => mockPersistenceLogic.createLink(
@@ -640,25 +674,12 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-link-false');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
         // createLink returns false instead of throwing.
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => false);
+        stubLinkCreation(result: false);
 
         await withClock(Clock.fixed(testDate), () async {
           final result = await handler.handle(
@@ -679,24 +700,11 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-log');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         await withClock(Clock.fixed(testDate), () async {
           await handler.handle(
@@ -725,17 +733,9 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-err');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
         when(
           () => mockPersistenceLogic.createLink(
@@ -776,24 +776,11 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-profile');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         await withClock(Clock.fixed(testDate), () async {
           final result = await handler.handle(
@@ -820,24 +807,11 @@ void main() {
         final sourceTask = makeSourceTask(taskCategoryId: null);
         final newTask = makeNewTask('new-task-no-profile');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         await withClock(Clock.fixed(testDate), () async {
           final result = await handler.handle(
@@ -865,24 +839,11 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-no-autoassign');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         await withClock(Clock.fixed(testDate), () async {
           final result = await handler.handle(
@@ -900,24 +861,11 @@ void main() {
         final sourceTask = makeSourceTask(taskCategoryId: null);
         final newTask = makeNewTask('new-task-006');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         await withClock(Clock.fixed(testDate), () async {
           await handler.handle(
@@ -1000,24 +948,11 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-autoassign');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         await withClock(Clock.fixed(testDate), () async {
           final result = await handlerWithAgent.handle(
@@ -1047,24 +982,11 @@ void main() {
           final sourceTask = makeSourceTask();
           final newTask = makeNewTask('new-task-no-template');
 
-          when(
-            () => mockJournalDb.journalEntityById(sourceTaskId),
-          ).thenAnswer((_) async => sourceTask);
+          stubSourceTaskLookup(sourceTask);
 
-          when(
-            () => mockPersistenceLogic.createTaskEntry(
-              data: any(named: 'data'),
-              entryText: any(named: 'entryText'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer((_) async => newTask);
+          stubCreateTask(newTask);
 
-          when(
-            () => mockPersistenceLogic.createLink(
-              fromId: any(named: 'fromId'),
-              toId: any(named: 'toId'),
-            ),
-          ).thenAnswer((_) async => true);
+          stubLinkCreation();
 
           await withClock(Clock.fixed(testDate), () async {
             final result = await handlerWithAgent.handle(
@@ -1116,24 +1038,11 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-agent-fail');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         await withClock(Clock.fixed(testDate), () async {
           final result = await handlerWithAgent.handle(
@@ -1152,24 +1061,11 @@ void main() {
         final sourceTask = makeSourceTask(taskCategoryId: null);
         final newTask = makeNewTask('new-task-no-cat-agent');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         await withClock(Clock.fixed(testDate), () async {
           final result = await handlerWithAgent.handle(
@@ -1210,24 +1106,11 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-proj');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         when(
           () => mockProjectRepo.inheritProjectFromTask(
@@ -1258,24 +1141,11 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-no-proj');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         // inheritProjectFromTask returns false when source has no project.
         when(
@@ -1301,24 +1171,11 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-proj-fail');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         when(
           () => mockProjectRepo.inheritProjectFromTask(
@@ -1344,24 +1201,11 @@ void main() {
         final sourceTask = makeSourceTask();
         final newTask = makeNewTask('new-task-no-repo');
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer((_) async => sourceTask);
+        stubSourceTaskLookup(sourceTask);
 
-        when(
-          () => mockPersistenceLogic.createTaskEntry(
-            data: any(named: 'data'),
-            entryText: any(named: 'entryText'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => newTask);
+        stubCreateTask(newTask);
 
-        when(
-          () => mockPersistenceLogic.createLink(
-            fromId: any(named: 'fromId'),
-            toId: any(named: 'toId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubLinkCreation();
 
         await withClock(Clock.fixed(testDate), () async {
           final result = await handler.handle(

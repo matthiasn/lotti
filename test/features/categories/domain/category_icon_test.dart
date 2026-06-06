@@ -678,79 +678,136 @@ void _runCategoryIconGladosTests() {
     );
   });
 
-  group('CategoryIconExtension — suggestFromName Glados structural invariants',
-      () {
-    glados.Glados<String?>(
-      glados.any.maybeIconString,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'returns null for null, empty, or whitespace-only input',
-      (input) {
-        // Only assert the null/blank → null contract.
-        final isBlank = input == null || input.trim().isEmpty;
-        if (isBlank) {
+  group(
+    'CategoryIconExtension — suggestFromName Glados structural invariants',
+    () {
+      glados.Glados<String?>(
+        glados.any.maybeIconString,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'returns null for null, empty, or whitespace-only input',
+        (input) {
+          // Only assert the null/blank → null contract.
+          final isBlank = input == null || input.trim().isEmpty;
+          if (isBlank) {
+            expect(
+              CategoryIconExtension.suggestFromName(input),
+              isNull,
+              reason: '"$input" is blank and must return null',
+            );
+          }
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados<CategoryIcon>(
+        glados.any.categoryIcon,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'enum name used as category name always returns a non-null icon',
+        (icon) {
+          // Passing the exact enum name must hit the first match stage.
+          final result = CategoryIconExtension.suggestFromName(icon.name);
           expect(
-            CategoryIconExtension.suggestFromName(input),
-            isNull,
-            reason: '"$input" is blank and must return null',
+            result,
+            isNotNull,
+            reason: '${icon.name} should always match itself',
           );
-        }
-      },
-      tags: 'glados',
-    );
+        },
+        tags: 'glados',
+      );
 
-    glados.Glados<CategoryIcon>(
-      glados.any.categoryIcon,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'enum name used as category name always returns a non-null icon',
-      (icon) {
-        // Passing the exact enum name must hit the first match stage.
-        final result = CategoryIconExtension.suggestFromName(icon.name);
-        expect(
-          result,
-          isNotNull,
-          reason: '${icon.name} should always match itself',
-        );
-      },
-      tags: 'glados',
-    );
-
-    glados.Glados<CategoryIcon>(
-      glados.any.categoryIcon,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'display name used as category name always returns a non-null icon',
-      (icon) {
-        // Passing the display name must hit the exact-display-name stage.
-        final result =
-            CategoryIconExtension.suggestFromName(icon.displayName);
-        expect(
-          result,
-          isNotNull,
-          reason: '${icon.displayName} should always match something',
-        );
-      },
-      tags: 'glados',
-    );
-
-    glados.Glados<CategoryIcon>(
-      glados.any.categoryIcon,
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'when a non-null result is returned it is always a valid CategoryIcon',
-      (icon) {
-        // Use the enum name as input — result must be a member of the enum.
-        final result = CategoryIconExtension.suggestFromName(icon.name);
-        if (result != null) {
+      glados.Glados<CategoryIcon>(
+        glados.any.categoryIcon,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'display name used as category name always returns a non-null icon',
+        (icon) {
+          // Passing the display name must hit the exact-display-name stage.
+          final result = CategoryIconExtension.suggestFromName(
+            icon.displayName,
+          );
           expect(
-            CategoryIcon.values.contains(result),
-            isTrue,
-            reason: '$result is not a valid CategoryIcon',
+            result,
+            isNotNull,
+            reason: '${icon.displayName} should always match something',
           );
-        }
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados<CategoryIcon>(
+        glados.any.categoryIcon,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'when a non-null result is returned it is always a valid CategoryIcon',
+        (icon) {
+          // Use the enum name as input — result must be a member of the enum.
+          final result = CategoryIconExtension.suggestFromName(icon.name);
+          if (result != null) {
+            expect(
+              CategoryIcon.values.contains(result),
+              isTrue,
+              reason: '$result is not a valid CategoryIcon',
+            );
+          }
+        },
+        tags: 'glados',
+      );
+    },
+  );
+
+  group('fromJson/toJson properties', () {
+    glados.Glados(
+      glados.any.categoryIconJsonScenario,
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'fromJson resolves iff the trimmed input is an exact name; '
+      'roundtrip is identity',
+      (scenario) {
+        final parsed = CategoryIconExtension.fromJson(scenario.json);
+
+        final trimmed = scenario.json?.trim();
+        final exact = CategoryIcon.values
+            .where((i) => i.name == trimmed)
+            .firstOrNull;
+        expect(parsed, exact, reason: '"${scenario.json}"');
+
+        // Roundtrip identity for the real value backing the scenario.
+        expect(
+          CategoryIconExtension.fromJson(scenario.icon.toJson()),
+          scenario.icon,
+        );
       },
       tags: 'glados',
     );
   });
+}
+
+/// Deterministic (icon, json) scenario mixing exact names, padded names,
+/// case mutations, unknown strings, empty and null inputs.
+class _CategoryIconJsonScenario {
+  _CategoryIconJsonScenario(int iconPick, int mutation) {
+    icon = CategoryIcon.values[iconPick % CategoryIcon.values.length];
+    json = switch (mutation % 6) {
+      0 => icon.name,
+      1 => '  ${icon.name}  ',
+      2 => icon.name.toUpperCase(),
+      3 => 'not-an-icon-$mutation',
+      4 => '',
+      _ => null,
+    };
+  }
+
+  late final CategoryIcon icon;
+  late final String? json;
+}
+
+extension _AnyCategoryIconJson on glados.Any {
+  glados.Generator<_CategoryIconJsonScenario> get categoryIconJsonScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 1 << 12),
+        glados.IntAnys(this).intInRange(0, 1 << 12),
+        _CategoryIconJsonScenario.new,
+      );
 }

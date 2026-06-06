@@ -1,6 +1,8 @@
+import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -172,4 +174,95 @@ AgentReportHeadEntity makeTestReportHead({
         vectorClock: vectorClock,
       )
       as AgentReportHeadEntity;
+}
+
+CaptureEntity makeTestCapture({
+  String id = 'capture-001',
+  String agentId = kTestAgentId,
+  String transcript = 'Captured transcript',
+  DateTime? capturedAt,
+  DateTime? createdAt,
+  VectorClock? vectorClock,
+  String? audioRef,
+}) {
+  return AgentDomainEntity.capture(
+        id: id,
+        agentId: agentId,
+        transcript: transcript,
+        capturedAt: capturedAt ?? kAgentTestDate,
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        audioRef: audioRef,
+      )
+      as CaptureEntity;
+}
+
+ParsedItemEntity makeTestParsedItem({
+  String id = 'parsed-001',
+  String agentId = kTestAgentId,
+  String captureId = 'capture-001',
+  ParsedItemKind kind = ParsedItemKind.newTask,
+  String title = 'Parsed item',
+  String categoryId = 'category-001',
+  ParsedItemConfidence confidence = ParsedItemConfidence.high,
+  double confidenceScore = 0.9,
+  DateTime? createdAt,
+  VectorClock? vectorClock,
+  bool lowConfidence = false,
+  String? spokenPhrase,
+  String? matchedTaskId,
+  int? estimateMinutes,
+}) {
+  return AgentDomainEntity.parsedItem(
+        id: id,
+        agentId: agentId,
+        captureId: captureId,
+        kind: kind,
+        title: title,
+        categoryId: categoryId,
+        confidence: confidence,
+        confidenceScore: confidenceScore,
+        createdAt: createdAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+        lowConfidence: lowConfidence,
+        spokenPhrase: spokenPhrase,
+        matchedTaskId: matchedTaskId,
+        estimateMinutes: estimateMinutes,
+      )
+      as ParsedItemEntity;
+}
+
+DayPlanEntity makeTestDayPlan({
+  String? id,
+  String agentId = kTestAgentId,
+  String dayId = 'dayplan-2026-05-25',
+  DateTime? planDate,
+  DayPlanData? data,
+  List<DayAgentEnergyBand> energyBands = const [],
+  int capacityMinutes = 480,
+  int scheduledMinutes = 0,
+  DateTime? createdAt,
+  DateTime? updatedAt,
+  VectorClock? vectorClock,
+}) {
+  final resolvedPlanDate = planDate ?? kAgentTestDate;
+  return AgentDomainEntity.dayPlan(
+        id: id ?? 'day_agent_plan:$dayId',
+        agentId: agentId,
+        dayId: dayId,
+        planDate: resolvedPlanDate,
+        data:
+            data ??
+            DayPlanData(
+              planDate: resolvedPlanDate,
+              status: const DayPlanStatus.draft(),
+            ),
+        energyBands: energyBands,
+        capacityMinutes: capacityMinutes,
+        scheduledMinutes: scheduledMinutes,
+        createdAt: createdAt ?? kAgentTestDate,
+        updatedAt: updatedAt ?? kAgentTestDate,
+        vectorClock: vectorClock,
+      )
+      as DayPlanEntity;
 }

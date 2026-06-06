@@ -14,7 +14,6 @@ import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
     show GeminiInferenceRepository, GeneratedImage;
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
-import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/utils/platform.dart' as platform;
@@ -27,9 +26,6 @@ import '../test_utils.dart';
 
 class MockOpenAIClient extends Mock implements OpenAIClient {}
 
-class MockOllamaInferenceRepository extends Mock
-    implements OllamaInferenceRepository {}
-
 class MockGeminiInferenceRepository extends Mock
     implements GeminiInferenceRepository {}
 
@@ -40,6 +36,42 @@ class FakeCreateChatCompletionRequest extends Fake
 class FakeRequest extends Fake implements http.Request {}
 
 class FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
+
+/// Shared scaffolding for CloudInferenceRepository tests: a container with
+/// the routing repositories mocked, the repository under test, and (when
+/// requested) a mock HTTP client. Groups add routing-specific overrides via
+/// `extraOverrides`. A fresh bench per test keeps tests isolated.
+class _TestBench {
+  _TestBench({
+    bool withHttpClient = true,
+    List<Override> extraOverrides = const [],
+  }) : mockHttpClient = withHttpClient ? MockHttpClient() : null,
+       ollamaRepo = MockOllamaInferenceRepository(),
+       geminiRepo = MockGeminiInferenceRepository() {
+    container = ProviderContainer(
+      overrides: [
+        ollamaInferenceRepositoryProvider.overrideWithValue(ollamaRepo),
+        geminiInferenceRepositoryProvider.overrideWithValue(geminiRepo),
+        ...extraOverrides,
+      ],
+    );
+    final ref = container.read(testRefProvider);
+    repository = mockHttpClient == null
+        ? CloudInferenceRepository(ref)
+        : CloudInferenceRepository(ref, httpClient: mockHttpClient);
+  }
+
+  final MockHttpClient? mockHttpClient;
+  final MockOllamaInferenceRepository ollamaRepo;
+  final MockGeminiInferenceRepository geminiRepo;
+  late final ProviderContainer container;
+  late final CloudInferenceRepository repository;
+
+  void dispose() {
+    mockHttpClient?.close();
+    container.dispose();
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -60,6 +92,7 @@ void main() {
     late MockHttpClient mockHttpClient;
     late ProviderContainer container;
     late CloudInferenceRepository repository;
+    late _TestBench bench;
     late AiConfigInferenceProvider testProvider;
 
     const baseUrl = 'https://api.openai.com/v1';
@@ -70,19 +103,10 @@ void main() {
 
     setUp(() {
       mockClient = MockOpenAIClient();
-      mockHttpClient = MockHttpClient();
-      final mockOllamaRepo = MockOllamaInferenceRepository();
-      final mockGeminiRepo = MockGeminiInferenceRepository();
-
-      container = ProviderContainer(
-        overrides: [
-          ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
-          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
-        ],
-      );
-
-      final ref = container.read(testRefProvider);
-      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
+      bench = _TestBench();
+      mockHttpClient = bench.mockHttpClient!;
+      container = bench.container;
+      repository = bench.repository;
       testProvider =
           AiConfig.inferenceProvider(
                 id: 'test-provider-id',
@@ -95,10 +119,7 @@ void main() {
               as AiConfigInferenceProvider;
     });
 
-    tearDown(() async {
-      mockHttpClient.close();
-      container.dispose();
-    });
+    tearDown(() => bench.dispose());
 
     test(
       'generate calls OpenAIClient.createChatCompletionStream with correct parameters',
@@ -1799,34 +1820,22 @@ void main() {
   });
 
   group('CloudInferenceRepository - Gemini Provider', () {
-    late MockHttpClient mockHttpClient;
-    late ProviderContainer container;
     late MockGeminiInferenceRepository mockGeminiRepo;
     late CloudInferenceRepository repository;
+    late _TestBench bench;
 
     setUp(() {
-      mockHttpClient = MockHttpClient();
-      mockGeminiRepo = MockGeminiInferenceRepository();
-
-      container = ProviderContainer(
-        overrides: [
-          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
-          ollamaInferenceRepositoryProvider.overrideWithValue(
-            MockOllamaInferenceRepository(),
-          ),
+      bench = _TestBench(
+        extraOverrides: [
           // Mock the thoughts toggle provider - default to true for testing
           geminiIncludeThoughtsProvider.overrideWithValue(true),
         ],
       );
-
-      final ref = container.read(testRefProvider);
-      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
+      mockGeminiRepo = bench.geminiRepo;
+      repository = bench.repository;
     });
 
-    tearDown(() {
-      mockHttpClient.close();
-      container.dispose();
-    });
+    tearDown(() => bench.dispose());
 
     AiConfigInferenceProvider createGeminiProvider() {
       return AiConfigInferenceProvider(
@@ -2415,31 +2424,18 @@ void main() {
 
   group('CloudInferenceRepository - generateImage', () {
     late MockHttpClient mockHttpClient;
-    late ProviderContainer container;
     late MockGeminiInferenceRepository mockGeminiRepo;
     late CloudInferenceRepository repository;
+    late _TestBench bench;
 
     setUp(() {
-      mockHttpClient = MockHttpClient();
-      mockGeminiRepo = MockGeminiInferenceRepository();
-
-      container = ProviderContainer(
-        overrides: [
-          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
-          ollamaInferenceRepositoryProvider.overrideWithValue(
-            MockOllamaInferenceRepository(),
-          ),
-        ],
-      );
-
-      final ref = container.read(testRefProvider);
-      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
+      bench = _TestBench();
+      mockHttpClient = bench.mockHttpClient!;
+      mockGeminiRepo = bench.geminiRepo;
+      repository = bench.repository;
     });
 
-    tearDown(() {
-      mockHttpClient.close();
-      container.dispose();
-    });
+    tearDown(() => bench.dispose());
 
     AiConfigInferenceProvider createGeminiProvider() {
       return AiConfigInferenceProvider(
@@ -2782,30 +2778,22 @@ void main() {
   group(
     'CloudInferenceRepository - generateWithMessages for other providers',
     () {
-      late ProviderContainer container;
       late CloudInferenceRepository repository;
+      late _TestBench bench;
       late MockOllamaInferenceRepository mockOllamaRepo;
-      late MockGeminiInferenceRepository mockGeminiRepo;
 
       setUp(() {
-        mockOllamaRepo = MockOllamaInferenceRepository();
-        mockGeminiRepo = MockGeminiInferenceRepository();
-
-        container = ProviderContainer(
-          overrides: [
-            geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
-            ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
+        bench = _TestBench(
+          withHttpClient: false,
+          extraOverrides: [
             geminiIncludeThoughtsProvider.overrideWithValue(true),
           ],
         );
-
-        final ref = container.read(testRefProvider);
-        repository = CloudInferenceRepository(ref);
+        mockOllamaRepo = bench.ollamaRepo;
+        repository = bench.repository;
       });
 
-      tearDown(() {
-        container.dispose();
-      });
+      tearDown(() => bench.dispose());
 
       test('routes to Ollama repository for Ollama provider', () async {
         final provider = AiConfigInferenceProvider(
@@ -2879,28 +2867,16 @@ void main() {
 
   group('CloudInferenceRepository - Nullable Temperature', () {
     late MockOpenAIClient mockClient;
-    late ProviderContainer container;
     late CloudInferenceRepository repository;
+    late _TestBench bench;
 
     setUp(() {
       mockClient = MockOpenAIClient();
-      final mockOllamaRepo = MockOllamaInferenceRepository();
-      final mockGeminiRepo = MockGeminiInferenceRepository();
-
-      container = ProviderContainer(
-        overrides: [
-          ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
-          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
-        ],
-      );
-
-      final ref = container.read(testRefProvider);
-      repository = CloudInferenceRepository(ref);
+      bench = _TestBench(withHttpClient: false);
+      repository = bench.repository;
     });
 
-    tearDown(() {
-      container.dispose();
-    });
+    tearDown(() => bench.dispose());
 
     test('generate accepts null temperature parameter', () {
       when(
@@ -3042,30 +3018,17 @@ void main() {
   });
 
   group('CloudInferenceRepository - Temperature handling by provider', () {
-    late ProviderContainer container;
     late CloudInferenceRepository repository;
+    late _TestBench bench;
     late MockHttpClient mockHttpClient;
 
     setUp(() {
-      mockHttpClient = MockHttpClient();
-      final mockOllamaRepo = MockOllamaInferenceRepository();
-      final mockGeminiRepo = MockGeminiInferenceRepository();
-
-      container = ProviderContainer(
-        overrides: [
-          ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
-          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
-        ],
-      );
-
-      final ref = container.read(testRefProvider);
-      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
+      bench = _TestBench();
+      mockHttpClient = bench.mockHttpClient!;
+      repository = bench.repository;
     });
 
-    tearDown(() {
-      mockHttpClient.close();
-      container.dispose();
-    });
+    tearDown(() => bench.dispose());
 
     test('generateWithMessages accepts temperature for OpenAI provider', () {
       final openAiProvider = AiConfigInferenceProvider(
@@ -3556,31 +3519,16 @@ void main() {
     'CloudInferenceRepository - generateWithAudio audioFormat parameter',
     () {
       late MockOpenAIClient mockClient;
-      late MockHttpClient mockHttpClient;
-      late ProviderContainer container;
       late CloudInferenceRepository repository;
+      late _TestBench bench;
 
       setUp(() {
         mockClient = MockOpenAIClient();
-        mockHttpClient = MockHttpClient();
-        final mockOllamaRepo = MockOllamaInferenceRepository();
-        final mockGeminiRepo = MockGeminiInferenceRepository();
-
-        container = ProviderContainer(
-          overrides: [
-            ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
-            geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
-          ],
-        );
-
-        final ref = container.read(testRefProvider);
-        repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
+        bench = _TestBench();
+        repository = bench.repository;
       });
 
-      tearDown(() async {
-        mockHttpClient.close();
-        container.dispose();
-      });
+      tearDown(() => bench.dispose());
 
       test(
         'OpenAI provider uses passed wav audioFormat for chat completions',
@@ -3947,31 +3895,16 @@ void main() {
 
   group('CloudInferenceRepository - dedicated provider routing', () {
     late MockHttpClient mockHttpClient;
-    late MockOllamaInferenceRepository mockOllamaRepo;
-    late MockGeminiInferenceRepository mockGeminiRepo;
-    late ProviderContainer container;
     late CloudInferenceRepository repository;
+    late _TestBench bench;
 
     setUp(() {
-      mockHttpClient = MockHttpClient();
-      mockOllamaRepo = MockOllamaInferenceRepository();
-      mockGeminiRepo = MockGeminiInferenceRepository();
-
-      container = ProviderContainer(
-        overrides: [
-          ollamaInferenceRepositoryProvider.overrideWithValue(mockOllamaRepo),
-          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
-        ],
-      );
-
-      final ref = container.read(testRefProvider);
-      repository = CloudInferenceRepository(ref, httpClient: mockHttpClient);
+      bench = _TestBench();
+      mockHttpClient = bench.mockHttpClient!;
+      repository = bench.repository;
     });
 
-    tearDown(() {
-      mockHttpClient.close();
-      container.dispose();
-    });
+    tearDown(() => bench.dispose());
 
     AiConfigInferenceProvider mistralProvider() => AiConfigInferenceProvider(
       id: 'mistral-provider',
@@ -4122,6 +4055,7 @@ void main() {
     late MockGeminiInferenceRepository mockGeminiRepo;
     late ProviderContainer container;
     late CloudInferenceRepository repository;
+    late _TestBench bench;
 
     const baseUrl = 'https://api.openai.com/v1';
     const apiKey = 'test-key';
@@ -4138,19 +4072,10 @@ void main() {
 
     setUp(() {
       mockClient = MockOpenAIClient();
-      mockGeminiRepo = MockGeminiInferenceRepository();
-
-      container = ProviderContainer(
-        overrides: [
-          ollamaInferenceRepositoryProvider.overrideWithValue(
-            MockOllamaInferenceRepository(),
-          ),
-          geminiInferenceRepositoryProvider.overrideWithValue(mockGeminiRepo),
-        ],
-      );
-
-      final ref = container.read(testRefProvider);
-      repository = CloudInferenceRepository(ref);
+      bench = _TestBench(withHttpClient: false);
+      mockGeminiRepo = bench.geminiRepo;
+      container = bench.container;
+      repository = bench.repository;
 
       when(
         () => mockClient.createChatCompletionStream(
@@ -4339,28 +4264,15 @@ void main() {
   });
 
   group('CloudInferenceRepository - generateImage unsupported providers', () {
-    late ProviderContainer container;
     late CloudInferenceRepository repository;
+    late _TestBench bench;
 
     setUp(() {
-      container = ProviderContainer(
-        overrides: [
-          ollamaInferenceRepositoryProvider.overrideWithValue(
-            MockOllamaInferenceRepository(),
-          ),
-          geminiInferenceRepositoryProvider.overrideWithValue(
-            MockGeminiInferenceRepository(),
-          ),
-        ],
-      );
-
-      final ref = container.read(testRefProvider);
-      repository = CloudInferenceRepository(ref);
+      bench = _TestBench(withHttpClient: false);
+      repository = bench.repository;
     });
 
-    tearDown(() {
-      container.dispose();
-    });
+    tearDown(() => bench.dispose());
 
     // Covers the remaining unsupported switch cases in generateImage,
     // including voxtral and whisper (lines 700-701).

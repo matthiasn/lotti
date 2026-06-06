@@ -4,28 +4,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/date_time/datetime_bottom_sheet.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../../widget_test_utils.dart';
 
-class MockCallback extends Mock {
-  void call(DateTime dateTime);
-}
-
-class MockVoidCallback extends Mock {
-  void call();
-}
-
+// Plain closures (counters / captured-value lists) replace the former
+// one-off Mock classes — callback assertions don't need mocktail here.
 void main() {
   group('DateTimeField Widget Tests', () {
-    late MockCallback mockSetDateTime;
-    late MockVoidCallback mockClear;
-
-    setUp(() {
-      mockSetDateTime = MockCallback();
-      mockClear = MockVoidCallback();
-    });
-
     testWidgets('displays formatted date when dateTime is provided', (
       WidgetTester tester,
     ) async {
@@ -36,7 +21,7 @@ void main() {
           DateTimeField(
             dateTime: testDate,
             labelText: 'Select Date',
-            setDateTime: mockSetDateTime.call,
+            setDateTime: (_) {},
           ),
         ),
       );
@@ -54,7 +39,7 @@ void main() {
           DateTimeField(
             dateTime: null,
             labelText: 'Select Date',
-            setDateTime: mockSetDateTime.call,
+            setDateTime: (_) {},
           ),
         ),
       );
@@ -67,13 +52,14 @@ void main() {
     testWidgets('shows clear button when clear callback is provided', (
       WidgetTester tester,
     ) async {
+      var clearCount = 0;
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeField(
             dateTime: DateTime(2024, 3, 15, 10, 30),
             labelText: 'Select Date',
-            setDateTime: mockSetDateTime.call,
-            clear: mockClear.call,
+            setDateTime: (_) {},
+            clear: () => clearCount++,
           ),
         ),
       );
@@ -83,9 +69,9 @@ void main() {
 
       // Tap clear button
       await tester.tap(find.byIcon(Icons.clear));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
-      verify(mockClear.call).called(1);
+      expect(clearCount, 1);
     });
 
     testWidgets('opens modal when field is tapped', (
@@ -96,7 +82,7 @@ void main() {
           DateTimeField(
             dateTime: null,
             labelText: 'Select Date',
-            setDateTime: mockSetDateTime.call,
+            setDateTime: (_) {},
           ),
         ),
       );
@@ -120,7 +106,7 @@ void main() {
           DateTimeField(
             dateTime: testDate,
             labelText: 'Select Date',
-            setDateTime: mockSetDateTime.call,
+            setDateTime: (_) {},
             mode: CupertinoDatePickerMode.date,
           ),
         ),
@@ -140,7 +126,7 @@ void main() {
           DateTimeField(
             dateTime: testDate,
             labelText: 'Select Time',
-            setDateTime: mockSetDateTime.call,
+            setDateTime: (_) {},
             mode: CupertinoDatePickerMode.time,
           ),
         ),
@@ -152,25 +138,15 @@ void main() {
   });
 
   group('DateTimeStickyActionBar Widget Tests', () {
-    late MockVoidCallback mockOnCancel;
-    late MockVoidCallback mockOnNow;
-    late MockVoidCallback mockOnDone;
-
-    setUp(() {
-      mockOnCancel = MockVoidCallback();
-      mockOnNow = MockVoidCallback();
-      mockOnDone = MockVoidCallback();
-    });
-
     testWidgets('displays all three buttons with correct labels', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeStickyActionBar(
-            onCancel: mockOnCancel.call,
-            onNow: mockOnNow.call,
-            onDone: mockOnDone.call,
+            onCancel: () {},
+            onNow: () {},
+            onDone: () {},
           ),
         ),
       );
@@ -189,30 +165,33 @@ void main() {
     testWidgets('calls correct callbacks when buttons are tapped', (
       WidgetTester tester,
     ) async {
+      var cancelCount = 0;
+      var nowCount = 0;
+      var doneCount = 0;
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeStickyActionBar(
-            onCancel: mockOnCancel.call,
-            onNow: mockOnNow.call,
-            onDone: mockOnDone.call,
+            onCancel: () => cancelCount++,
+            onNow: () => nowCount++,
+            onDone: () => doneCount++,
           ),
         ),
       );
 
       // Tap Cancel button
       await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
-      verify(mockOnCancel.call).called(1);
+      await tester.pump();
+      expect(cancelCount, 1);
 
       // Tap Now button
       await tester.tap(find.text('Now'));
-      await tester.pumpAndSettle();
-      verify(mockOnNow.call).called(1);
+      await tester.pump();
+      expect(nowCount, 1);
 
       // Tap Done button
       await tester.tap(find.text('Done'));
-      await tester.pumpAndSettle();
-      verify(mockOnDone.call).called(1);
+      await tester.pump();
+      expect(doneCount, 1);
     });
   });
 
@@ -236,8 +215,9 @@ void main() {
       // Verify date picker is displayed
       expect(find.byType(CupertinoDatePicker), findsOneWidget);
 
-      // Verify initial date is set via callback
-      await tester.pumpAndSettle();
+      // Verify initial date is set via callback (fires post-frame; one
+      // extra pump is enough — no animation to settle)
+      await tester.pump();
       expect(selectedDate, equals(initialDate));
     });
 
@@ -294,23 +274,18 @@ void main() {
   });
 
   group('DateTimeField Modal Integration Tests', () {
-    late MockCallback mockSetDateTime;
-
-    setUp(() {
-      mockSetDateTime = MockCallback();
-    });
-
     testWidgets('complete flow: open modal, select date, tap done', (
       WidgetTester tester,
     ) async {
       final initialDate = DateTime(2024, 1, 15, 14, 30);
+      final setDates = <DateTime>[];
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeField(
             dateTime: initialDate,
             labelText: 'Select Date',
-            setDateTime: mockSetDateTime.call,
+            setDateTime: setDates.add,
           ),
         ),
       );
@@ -328,7 +303,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify callback was called with the selected date
-      verify(() => mockSetDateTime(initialDate)).called(1);
+      expect(setDates, [initialDate]);
 
       // Verify modal is closed
       expect(find.byType(DateTimeBottomSheet), findsNothing);
@@ -337,12 +312,14 @@ void main() {
     testWidgets('complete flow: open modal, tap now button', (
       WidgetTester tester,
     ) async {
+      final setDates = <DateTime>[];
+
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeField(
             dateTime: null,
             labelText: 'Select Date',
-            setDateTime: mockSetDateTime.call,
+            setDateTime: setDates.add,
           ),
         ),
       );
@@ -355,11 +332,8 @@ void main() {
       await tester.tap(find.text('Now'));
       await tester.pumpAndSettle();
 
-      // Verify callback was called with a DateTime value
-      final capturedDate =
-          verify(() => mockSetDateTime(captureAny())).captured.single
-              as DateTime;
-      expect(capturedDate, isA<DateTime>());
+      // Verify callback was called exactly once with a DateTime value
+      expect(setDates, hasLength(1));
 
       // Verify modal is closed
       expect(find.byType(DateTimeBottomSheet), findsNothing);
@@ -369,13 +343,14 @@ void main() {
       WidgetTester tester,
     ) async {
       final initialDate = DateTime(2024, 1, 15, 14, 30);
+      final setDates = <DateTime>[];
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DateTimeField(
             dateTime: initialDate,
             labelText: 'Select Date',
-            setDateTime: mockSetDateTime.call,
+            setDateTime: setDates.add,
           ),
         ),
       );
@@ -389,7 +364,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify callback was not called
-      verifyNever(() => mockSetDateTime(any()));
+      expect(setDates, isEmpty);
 
       // Verify modal is closed
       expect(find.byType(DateTimeBottomSheet), findsNothing);

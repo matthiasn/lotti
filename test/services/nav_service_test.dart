@@ -154,6 +154,55 @@ extension _AnyGeneratedNavScenario on glados.Any {
       );
 }
 
+/// Bench for the flag-driven NavService tests: wires the four optional-tab
+/// flag stream controllers into a fresh NavService and registers teardown.
+class _NavFlagBench {
+  _NavFlagBench({bool registerTeardown = true}) {
+    final settingsDb = SettingsDb(inMemoryDatabase: true);
+    final journalDb = mockJournalDbWithMeasurableTypes([]);
+
+    when(() => journalDb.watchConfigFlag(any())).thenAnswer((invocation) {
+      final flagName = invocation.positionalArguments.first as String;
+      return switch (flagName) {
+        enableProjectsFlag => projects.stream,
+        enableDailyOsPageFlag => dailyOs.stream,
+        enableHabitsPageFlag => habits.stream,
+        enableDashboardsPageFlag => dashboards.stream,
+        _ => Stream<bool>.value(false),
+      };
+    });
+
+    navService = NavService(journalDb: journalDb, settingsDb: settingsDb);
+    if (registerTeardown) {
+      addTearDown(dispose);
+    }
+  }
+
+  final projects = StreamController<bool>.broadcast(sync: true);
+  final dailyOs = StreamController<bool>.broadcast(sync: true);
+  final habits = StreamController<bool>.broadcast(sync: true);
+  final dashboards = StreamController<bool>.broadcast(sync: true);
+  late final NavService navService;
+
+  /// Emits all four flags at once.
+  void emitAll({required bool enabled}) {
+    projects.add(enabled);
+    dailyOs.add(enabled);
+    habits.add(enabled);
+    dashboards.add(enabled);
+  }
+
+  Future<void> dispose() async {
+    await navService.dispose();
+    await Future.wait([
+      projects.close(),
+      dailyOs.close(),
+      habits.close(),
+      dashboards.close(),
+    ]);
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -305,34 +354,16 @@ void main() {
     ).test('matches generated enabled-tab navigation invariants', (
       scenario,
     ) async {
-      final settingsDb = SettingsDb(inMemoryDatabase: true);
-      final journalDb = mockJournalDbWithMeasurableTypes([]);
-      final projectsController = StreamController<bool>.broadcast(sync: true);
-      final dailyOsController = StreamController<bool>.broadcast(sync: true);
-      final habitsController = StreamController<bool>.broadcast(sync: true);
-      final dashboardsController = StreamController<bool>.broadcast(sync: true);
-
-      when(() => journalDb.watchConfigFlag(any())).thenAnswer((invocation) {
-        final flagName = invocation.positionalArguments.first as String;
-        return switch (flagName) {
-          enableProjectsFlag => projectsController.stream,
-          enableDailyOsPageFlag => dailyOsController.stream,
-          enableHabitsPageFlag => habitsController.stream,
-          enableDashboardsPageFlag => dashboardsController.stream,
-          _ => Stream<bool>.value(false),
-        };
-      });
-
-      final navService = NavService(
-        journalDb: journalDb,
-        settingsDb: settingsDb,
-      );
+      // Glados runs many iterations inside one test: dispose explicitly in
+      // the finally block instead of stacking addTearDown callbacks.
+      final bench = _NavFlagBench(registerTeardown: false);
+      final navService = bench.navService;
 
       try {
-        projectsController.add(scenario.projects);
-        dailyOsController.add(scenario.dailyOs);
-        habitsController.add(scenario.habits);
-        dashboardsController.add(scenario.dashboards);
+        bench.projects.add(scenario.projects);
+        bench.dailyOs.add(scenario.dailyOs);
+        bench.habits.add(scenario.habits);
+        bench.dashboards.add(scenario.dashboards);
         await pumpEventQueue();
 
         final expectedDelegates = [
@@ -366,13 +397,7 @@ void main() {
           );
         }
       } finally {
-        await navService.dispose();
-        await Future.wait([
-          projectsController.close(),
-          dailyOsController.close(),
-          habitsController.close(),
-          dashboardsController.close(),
-        ]);
+        await bench.dispose();
       }
     }, tags: 'glados');
 
@@ -405,37 +430,8 @@ void main() {
     });
 
     test('starts with optional tabs hidden until config flags emit', () async {
-      final settingsDb = SettingsDb(inMemoryDatabase: true);
-      final journalDb = mockJournalDbWithMeasurableTypes([]);
-      final projectsController = StreamController<bool>.broadcast(sync: true);
-      final dailyOsController = StreamController<bool>.broadcast(sync: true);
-      final habitsController = StreamController<bool>.broadcast(sync: true);
-      final dashboardsController = StreamController<bool>.broadcast(sync: true);
-
-      when(() => journalDb.watchConfigFlag(any())).thenAnswer((invocation) {
-        final flagName = invocation.positionalArguments.first as String;
-        return switch (flagName) {
-          enableProjectsFlag => projectsController.stream,
-          enableDailyOsPageFlag => dailyOsController.stream,
-          enableHabitsPageFlag => habitsController.stream,
-          enableDashboardsPageFlag => dashboardsController.stream,
-          _ => Stream<bool>.value(false),
-        };
-      });
-
-      final navService = NavService(
-        journalDb: journalDb,
-        settingsDb: settingsDb,
-      );
-      addTearDown(() async {
-        await navService.dispose();
-        await Future.wait([
-          projectsController.close(),
-          dailyOsController.close(),
-          habitsController.close(),
-          dashboardsController.close(),
-        ]);
-      });
+      final bench = _NavFlagBench();
+      final navService = bench.navService;
 
       expect(
         navService.beamerDelegates,
@@ -447,10 +443,7 @@ void main() {
       );
       expect(navService.projectsIndex, -1);
 
-      projectsController.add(true);
-      dailyOsController.add(true);
-      habitsController.add(true);
-      dashboardsController.add(true);
+      bench.emitAll(enabled: true);
 
       expect(
         navService.beamerDelegates,
@@ -470,50 +463,16 @@ void main() {
     test(
       'falls back to Tasks when Projects is disabled while selected',
       () async {
-        final settingsDb = SettingsDb(inMemoryDatabase: true);
-        final journalDb = mockJournalDbWithMeasurableTypes([]);
-        final projectsController = StreamController<bool>.broadcast(sync: true);
-        final dailyOsController = StreamController<bool>.broadcast(sync: true);
-        final habitsController = StreamController<bool>.broadcast(sync: true);
-        final dashboardsController = StreamController<bool>.broadcast(
-          sync: true,
-        );
+        final bench = _NavFlagBench();
+        final navService = bench.navService;
 
-        when(() => journalDb.watchConfigFlag(any())).thenAnswer((invocation) {
-          final flagName = invocation.positionalArguments.first as String;
-          return switch (flagName) {
-            enableProjectsFlag => projectsController.stream,
-            enableDailyOsPageFlag => dailyOsController.stream,
-            enableHabitsPageFlag => habitsController.stream,
-            enableDashboardsPageFlag => dashboardsController.stream,
-            _ => Stream<bool>.value(false),
-          };
-        });
-
-        final navService = NavService(
-          journalDb: journalDb,
-          settingsDb: settingsDb,
-        );
-        addTearDown(() async {
-          await navService.dispose();
-          await Future.wait([
-            projectsController.close(),
-            dailyOsController.close(),
-            habitsController.close(),
-            dashboardsController.close(),
-          ]);
-        });
-
-        projectsController.add(true);
-        dailyOsController.add(true);
-        habitsController.add(true);
-        dashboardsController.add(true);
+        bench.emitAll(enabled: true);
 
         navService.beamToNamed('/projects');
         expect(navService.index, navService.projectsIndex);
         expect(navService.currentPath, '/projects');
 
-        projectsController.add(false);
+        bench.projects.add(false);
 
         expect(navService.index, navService.tasksIndex);
         expect(navService.currentPath, '/tasks');

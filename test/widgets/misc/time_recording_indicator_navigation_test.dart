@@ -14,50 +14,44 @@ import 'package:lotti/widgets/misc/time_recording_indicator.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
-
-class FakeTimeService extends TimeService {
-  final _controller = StreamController<JournalEntity?>.broadcast();
-  JournalEntity? _linkedFrom;
-
-  @override
-  Stream<JournalEntity?> getStream() => _controller.stream;
-
-  @override
-  JournalEntity? get linkedFrom => _linkedFrom;
-
-  void emit(JournalEntity? entity, {JournalEntity? linkedFrom}) {
-    _linkedFrom = linkedFrom;
-    _controller.add(entity);
-  }
-
-  void dispose() {
-    _controller.close();
-  }
-}
+import '../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late FakeTimeService fakeTimeService;
+  late StreamController<JournalEntity?> timeStreamController;
+  late MockTimeService mockTimeService;
   late MockNavService mockNavService;
 
-  setUp(() {
-    // Isolate GetIt state per test to avoid cross-file contamination
-    getIt.pushNewScope();
-    fakeTimeService = FakeTimeService();
+  setUp(() async {
+    timeStreamController = StreamController<JournalEntity?>.broadcast();
+    mockTimeService = MockTimeService();
+    when(mockTimeService.getStream).thenAnswer(
+      (_) => timeStreamController.stream,
+    );
+    when(() => mockTimeService.linkedFrom).thenReturn(null);
     mockNavService = MockNavService();
 
-    getIt
-      ..registerSingleton<TimeService>(fakeTimeService)
-      ..registerSingleton<NavService>(mockNavService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<TimeService>(mockTimeService)
+          ..registerSingleton<NavService>(mockNavService);
+      },
+    );
   });
 
   tearDown(() async {
-    fakeTimeService.dispose();
-    // Pop the scoped registrations for this test file
-    await getIt.resetScope();
-    await getIt.popScope();
+    await timeStreamController.close();
+    await tearDownTestGetIt();
   });
+
+  /// Emits a running-timer entity on the TimeService stream, optionally
+  /// linked to a parent entity (task or journal entry).
+  void emit(JournalEntity? entity, {JournalEntity? linkedFrom}) {
+    when(() => mockTimeService.linkedFrom).thenReturn(linkedFrom);
+    timeStreamController.add(entity);
+  }
 
   JournalEntity makeEntry(String entryId) {
     final now = DateTime(2025, 1, 1, 12);
@@ -121,7 +115,7 @@ void main() {
       );
 
       // Emit timer linked to task
-      fakeTimeService.emit(entry, linkedFrom: task);
+      emit(entry, linkedFrom: task);
       await tester.pump();
 
       // Tap the indicator
@@ -169,7 +163,7 @@ void main() {
       );
 
       // Emit timer linked to journal entry
-      fakeTimeService.emit(timerEntry, linkedFrom: journalEntry);
+      emit(timerEntry, linkedFrom: journalEntry);
       await tester.pump();
 
       // Tap the indicator
@@ -211,7 +205,7 @@ void main() {
       );
 
       // Emit timer with no linkedFrom
-      fakeTimeService.emit(timerEntry);
+      emit(timerEntry);
       await tester.pump();
 
       // Tap the indicator
@@ -246,7 +240,7 @@ void main() {
       );
 
       // Emit null (no timer running)
-      fakeTimeService.emit(null);
+      emit(null);
       await tester.pump();
 
       // Indicator should not be visible
@@ -281,7 +275,7 @@ void main() {
         ),
       );
 
-      fakeTimeService.emit(entry, linkedFrom: task);
+      emit(entry, linkedFrom: task);
       await tester.pump();
 
       await tester.tap(find.byType(TimeRecordingIndicator));

@@ -286,6 +286,3 @@ void main() {
     );
   });
 }
-
-class MockSyncedAudioInferenceDispatcher extends Mock
-    implements SyncedAudioInferenceDispatcher {}

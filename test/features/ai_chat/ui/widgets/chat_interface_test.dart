@@ -5,7 +5,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
@@ -14,7 +13,6 @@ import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/providers/chat_model_providers.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -112,22 +110,15 @@ void main() {
 
   group('ChatInterface', () {
     late MockChatRepository mockChatRepository;
-    late MockLoggingService mockLoggingService;
 
-    setUp(() {
-      // Isolate GetIt state per test for optimized runners
-      GetIt.instance.pushNewScope();
+    setUp(() async {
+      // setUpTestGetIt registers LoggingService/DomainLogger and the other
+      // common services this widget tree resolves via GetIt.
+      await setUpTestGetIt();
       mockChatRepository = MockChatRepository();
-      mockLoggingService = MockLoggingService();
-
-      GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
-      ensureDomainLoggerRegistered();
     });
 
-    tearDown(() async {
-      await GetIt.instance.resetScope();
-      await GetIt.instance.popScope();
-    });
+    tearDown(tearDownTestGetIt);
 
     testWidgets('displays empty state when no messages', (tester) async {
       final session = _createSession();
@@ -207,11 +198,13 @@ void main() {
       ).thenThrow(Exception('fail'));
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.close));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.byIcon(Icons.error_outline), findsNothing);
     });
 
@@ -248,17 +241,20 @@ void main() {
       ).thenAnswer((_) async => session);
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.enterText(find.byType(TextField), 'Test message');
       await tester.pump();
       await tester.tap(find.byIcon(Icons.send));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
 
       await tester.tap(find.text('Retry'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(sendCallCount, 2);
     });
@@ -285,12 +281,14 @@ void main() {
       ).thenAnswer((_) async => sessionWithMessages);
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Hello'), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.clear_all));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(createCallCount, 2);
     });
@@ -301,7 +299,8 @@ void main() {
       ).thenAnswer((_) async => _createSession());
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Ask me about your tasks'), findsOneWidget);
       expect(
@@ -315,11 +314,13 @@ void main() {
       _stubRepository(mockChatRepository, session: session);
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('AI Assistant'), findsOneWidget);
       await tester.pump(const Duration(milliseconds: 100));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('My Test Chat'), findsOneWidget);
       expect(find.byIcon(Icons.add_comment_outlined), findsOneWidget);
     });
@@ -335,10 +336,12 @@ void main() {
       _stubRepository(mockChatRepository, session: session);
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.pump(const Duration(milliseconds: 100));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Hello, how are you?'), findsOneWidget);
       expect(
@@ -362,7 +365,8 @@ void main() {
       );
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.clear_all), findsOneWidget);
     });
@@ -373,7 +377,8 @@ void main() {
       ).thenAnswer((_) async => _createSession(title: 'Empty Chat'));
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.clear_all), findsNothing);
     });
@@ -384,7 +389,8 @@ void main() {
       ).thenAnswer((_) async => _createSession());
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(TextField), findsOneWidget);
       expect(
@@ -400,7 +406,8 @@ void main() {
       ).thenThrow(Exception('Connection failed'));
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
       expect(find.text('Retry'), findsOneWidget);
@@ -428,7 +435,8 @@ void main() {
       ).thenAnswer((_) async => _createSession());
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.mic), findsOneWidget);
       expect(find.byIcon(Icons.send), findsNothing);
@@ -440,7 +448,8 @@ void main() {
       expect(find.byIcon(Icons.send), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.send));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockChatRepository.sendMessage(
@@ -473,11 +482,13 @@ void main() {
       ).thenAnswer((_) async => _createSession());
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.enterText(find.byType(TextField), 'Hello via Enter!');
       await tester.testTextInput.receiveAction(TextInputAction.send);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockChatRepository.sendMessage(
@@ -497,7 +508,8 @@ void main() {
       ).thenAnswer((_) async => _createSession(metadata: null));
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('AI Assistant'), findsOneWidget);
@@ -525,7 +537,8 @@ void main() {
       ).thenAnswer((_) async => _createSession());
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.enterText(find.byType(TextField), 'Test message');
       await tester.pump();
@@ -542,7 +555,8 @@ void main() {
 
       streamController.add(' world!');
       await streamController.close();
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Hello world!'), findsOneWidget);
     });
@@ -564,7 +578,8 @@ void main() {
         chatRepository: mockChatRepository,
         sessionId: 'existing-session-id',
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockChatRepository.getSession('existing-session-id'),
@@ -638,7 +653,8 @@ void main() {
             ).overrideWith((_) async => [model]),
           ],
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.enterText(find.byType(TextField), 'Hi');
         await tester.pump();
@@ -674,12 +690,14 @@ void main() {
         });
 
         await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(callCount, 1);
 
         await tester.tap(find.byIcon(Icons.add_comment_outlined));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(callCount, 2);
       },
@@ -690,7 +708,8 @@ void main() {
       _stubRepository(mockChatRepository, session: session);
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.mic), findsOneWidget);
       expect(find.byIcon(Icons.send), findsNothing);
@@ -701,7 +720,8 @@ void main() {
       _stubRepository(mockChatRepository, session: session);
 
       await _pumpChatInterface(tester, chatRepository: mockChatRepository);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.mic), findsOneWidget);
       expect(find.byIcon(Icons.send), findsNothing);

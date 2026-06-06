@@ -20,8 +20,6 @@ class _FakeMatrixUnverifiedController extends MatrixUnverifiedController {
   Future<List<DeviceKeys>> build() async => devices;
 }
 
-class MockDeviceKeys extends Mock implements DeviceKeys {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 

@@ -40,7 +40,7 @@ OOM); the main thread verifies centrally (`dart fix` + `flutter analyze` + `flut
 checkbox is flipped. Agents are forbidden from running any `pub`/build command (one early agent ran
 `pub add` and was reverted).
 
-**Status:** 162 / 1001 HIGH addressed & verified, plus ~100 bonus MED/LOW Glados/round-trip tests
+**Status:** 329 / 1001 HIGH addressed & verified, plus ~100 bonus MED/LOW Glados/round-trip tests
 and ~6 files of MED mock-centralization. This session: 24 new test files; 46 redundant test files
 merged-away (one-file-per-source consolidations — **no tests lost**, all moved); 77 existing files
 extended — every change analyzer-clean + targeted tests green; pubspec protected (dependency-tampering

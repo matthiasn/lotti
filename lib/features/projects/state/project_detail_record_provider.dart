@@ -14,6 +14,7 @@ import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:meta/meta.dart';
 
 final projectDetailRecordProvider = FutureProvider.autoDispose
     .family<ProjectRecord?, String>((
@@ -63,7 +64,7 @@ final projectDetailRecordProvider = FutureProvider.autoDispose
       return ProjectRecord(
         project: project,
         category: category,
-        healthScore: _healthScoreFromMetrics(metrics),
+        healthScore: healthScoreFromMetrics(metrics),
         healthMetrics: metrics,
         reportNextWakeAt: nextWakeAt,
         completedTaskCount: completedTaskCount,
@@ -161,7 +162,11 @@ int _taskStatusRank(TaskStatus status) => switch (status) {
   TaskRejected() => 6,
 };
 
-int _healthScoreFromMetrics(ProjectHealthMetrics? metrics) {
+/// Pure health-score formula: per-band base score plus a confidence
+/// adjustment of `((confidence - 0.5) * 12).round()`, clamped to [0, 100].
+/// Public-for-tests so the arithmetic can be property-tested directly.
+@visibleForTesting
+int healthScoreFromMetrics(ProjectHealthMetrics? metrics) {
   final base = switch (metrics?.band) {
     ProjectHealthBand.onTrack => 90,
     ProjectHealthBand.surviving => 78,

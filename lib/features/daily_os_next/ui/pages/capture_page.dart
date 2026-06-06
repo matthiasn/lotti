@@ -76,7 +76,7 @@ class CapturePage extends ConsumerWidget {
           padding: EdgeInsets.only(bottom: bottomNavHeight),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final layout = _CaptureLayoutMetrics.resolve(
+              final layout = CaptureLayoutMetrics.resolve(
                 tokens,
                 phase: state.phase,
                 viewportHeight: constraints.maxHeight,
@@ -157,35 +157,44 @@ class CapturePage extends ConsumerWidget {
   }
 }
 
-class _CaptureLayoutMetrics {
-  const _CaptureLayoutMetrics({
+/// Pure viewport-height → layout calculation for the capture page.
+///
+/// Public (but test-only outside this file) so the clamp/line-count
+/// invariants can be unit- and property-tested without widget pumps.
+@visibleForTesting
+class CaptureLayoutMetrics {
+  const CaptureLayoutMetrics({
     required this.stateSlotHeight,
     required this.liveTranscriptLineCount,
     required this.reviewTranscriptLineCount,
   });
 
-  factory _CaptureLayoutMetrics.resolve(
+  factory CaptureLayoutMetrics.resolve(
     DsTokens tokens, {
     required CapturePhase phase,
     required double viewportHeight,
   }) {
-    final minimumReviewTranscriptLineCount = _minimumReviewTranscriptLineCount(
-      viewportHeight,
-    );
-    final minimumSlotHeight = _minimumSlotHeight(
+    final minimumReviewTranscriptLineCount =
+        minimumReviewTranscriptLineCountFor(viewportHeight);
+    final minimumSlotHeight = minimumSlotHeightFor(
       tokens,
       phase,
       minimumReviewTranscriptLineCount: minimumReviewTranscriptLineCount,
     );
-    final maximumSlotHeight = tokens.spacing.step13 + tokens.spacing.step11;
+    final maximumSlotHeight = maximumSlotHeightFor(tokens);
     final availableForState =
         viewportHeight - _fixedVerticalChrome(tokens, phase);
-    final stateSlotHeight = availableForState.clamp(
-      minimumSlotHeight,
-      maximumSlotHeight,
-    );
+    // On extreme viewports/zoom levels the phase minimum can exceed the cap;
+    // widen the upper bound so clamp() never throws — the minimum wins, as it
+    // already does when the available space is smaller than the minimum.
+    final stateSlotHeight = availableForState
+        .clamp(
+          minimumSlotHeight,
+          math.max(minimumSlotHeight, maximumSlotHeight),
+        )
+        .toDouble();
 
-    return _CaptureLayoutMetrics(
+    return CaptureLayoutMetrics(
       stateSlotHeight: stateSlotHeight,
       liveTranscriptLineCount: _liveTranscriptLineCount(
         tokens,
@@ -223,7 +232,14 @@ class _CaptureLayoutMetrics {
         capturedActionsHeight;
   }
 
-  static double _minimumSlotHeight(
+  /// Upper clamp bound for the state slot.
+  @visibleForTesting
+  static double maximumSlotHeightFor(DsTokens tokens) =>
+      tokens.spacing.step13 + tokens.spacing.step11;
+
+  /// Lower clamp bound for the state slot in the given [phase].
+  @visibleForTesting
+  static double minimumSlotHeightFor(
     DsTokens tokens,
     CapturePhase phase, {
     required int minimumReviewTranscriptLineCount,
@@ -264,7 +280,10 @@ class _CaptureLayoutMetrics {
     );
   }
 
-  static int _minimumReviewTranscriptLineCount(double viewportHeight) {
+  /// Viewport-height band for the review transcript's minimum line count:
+  /// `< 560 → 2`, `< 700 → 3`, otherwise `4`.
+  @visibleForTesting
+  static int minimumReviewTranscriptLineCountFor(double viewportHeight) {
     if (viewportHeight < 560) return 2;
     if (viewportHeight < 700) return 3;
     return 4;

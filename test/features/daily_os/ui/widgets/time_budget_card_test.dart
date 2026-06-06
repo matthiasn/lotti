@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -258,14 +259,32 @@ void main() {
       expect(tapped, isTrue);
     });
 
-    testWidgets('shows progress bar', (tester) async {
+    testWidgets('shows progress bar filled to the recorded fraction', (
+      tester,
+    ) async {
+      // Defaults: planned 2h, recorded 1h -> 50% fill, under budget.
       await tester.pumpWidget(
         createTestWidget(progress: createProgress()),
       );
       await tester.pump();
 
-      // The progress bar is a custom widget, verify it exists
-      expect(find.byType(TimeBudgetCard), findsOneWidget);
+      final bar = tester.widget<FractionallySizedBox>(
+        find.byType(FractionallySizedBox),
+      );
+      expect(bar.widthFactor, closeTo(0.5, 0.001));
+
+      // Under budget -> the fill is NOT the error color.
+      final fill = tester.widget<DecoratedBox>(
+        find.descendant(
+          of: find.byType(FractionallySizedBox),
+          matching: find.byType(DecoratedBox),
+        ),
+      );
+      final context = tester.element(find.byType(TimeBudgetCard));
+      expect(
+        (fill.decoration as BoxDecoration).color,
+        isNot(Theme.of(context).colorScheme.error),
+      );
     });
 
     testWidgets('displays uncategorized when no category', (tester) async {
@@ -405,9 +424,8 @@ void main() {
       expect(find.text('+1h 15m over'), findsOneWidget);
     });
 
-    testWidgets('shows progress bar with correct visual states', (
-      tester,
-    ) async {
+    testWidgets('over-budget progress bar clamps to full and uses the '
+        'error color', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
           progress: createProgress(
@@ -418,8 +436,23 @@ void main() {
       );
       await tester.pump();
 
-      // The progress bar should show over-budget indicator
-      expect(find.byType(TimeBudgetCard), findsOneWidget);
+      // 2h30 recorded vs 2h planned -> fraction clamps to 1.0.
+      final bar = tester.widget<FractionallySizedBox>(
+        find.byType(FractionallySizedBox),
+      );
+      expect(bar.widthFactor, 1.0);
+
+      final fill = tester.widget<DecoratedBox>(
+        find.descendant(
+          of: find.byType(FractionallySizedBox),
+          matching: find.byType(DecoratedBox),
+        ),
+      );
+      final context = tester.element(find.byType(TimeBudgetCard));
+      expect(
+        (fill.decoration as BoxDecoration).color,
+        Theme.of(context).colorScheme.error,
+      );
     });
   });
 
@@ -490,10 +523,9 @@ void main() {
 
       // Should not show task title text when no tasks
       expect(find.text('Test Task'), findsNothing);
-      // Only one divider (not the task section divider)
-      // Actually, when both sections are empty, there should be no dividers
-      // from task sections. Let's just verify the card renders
-      expect(find.byType(TimeBudgetCard), findsOneWidget);
+      // The task-section divider is absent when there are no tasks (the
+      // populated case asserts exactly one Divider).
+      expect(find.byType(Divider), findsNothing);
     });
 
     testWidgets('shows pinned tasks section with divider when populated', (
@@ -567,53 +599,40 @@ void main() {
       expect(find.text('Task With Status'), findsOneWidget);
     });
 
-    testWidgets('shows check_circle icon for completed tasks (TaskDone)', (
-      tester,
-    ) async {
-      final task = createTask(
-        id: 'task-1',
-        title: 'Completed Task',
-        status: TaskStatus.done(
+    // Terminal statuses (done, rejected) both render the check icon —
+    // one parameterized loop instead of copy-paste permutations.
+    for (final (label, status) in [
+      (
+        'done',
+        TaskStatus.done(id: 'status-1', createdAt: testDate, utcOffset: 0),
+      ),
+      (
+        'rejected',
+        TaskStatus.rejected(
           id: 'status-1',
           createdAt: testDate,
           utcOffset: 0,
         ),
-      );
+      ),
+    ]) {
+      testWidgets('shows check_circle icon for $label tasks', (tester) async {
+        final task = createTask(
+          id: 'task-1',
+          title: 'Terminal Task',
+          status: status,
+        );
 
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithTasks(tasks: [task]),
-          isFocusActive: true,
-        ),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          createTestWidget(
+            progress: createProgressWithTasks(tasks: [task]),
+            isFocusActive: true,
+          ),
+        );
+        await tester.pump();
 
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-    });
-
-    testWidgets('shows check_circle icon for rejected tasks (TaskRejected)', (
-      tester,
-    ) async {
-      final task = createTask(
-        id: 'task-1',
-        title: 'Rejected Task',
-        status: TaskStatus.rejected(
-          id: 'status-1',
-          createdAt: testDate,
-          utcOffset: 0,
-        ),
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithTasks(tasks: [task]),
-          isFocusActive: true,
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byIcon(Icons.check_circle), findsOneWidget);
-    });
+        expect(find.byIcon(Icons.check_circle), findsOneWidget);
+      });
+    }
 
     testWidgets(
       'shows faded check_circle for tasks completed on a different day',
@@ -656,119 +675,66 @@ void main() {
       },
     );
 
-    testWidgets('does not show check icon for in-progress tasks', (
-      tester,
-    ) async {
-      final task = createTask(
-        id: 'task-1',
-        title: 'In Progress Task',
-        status: TaskStatus.inProgress(
+    // Non-terminal statuses must NOT render the check icon — one
+    // parameterized loop over all five variants.
+    for (final (label, status) in [
+      (
+        'in-progress',
+        TaskStatus.inProgress(
           id: 'status-1',
           createdAt: testDate,
           utcOffset: 0,
         ),
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithTasks(tasks: [task]),
-          isFocusActive: true,
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byIcon(Icons.check_circle), findsNothing);
-    });
-
-    testWidgets('does not show check icon for open tasks', (tester) async {
-      final task = createTask(
-        id: 'task-1',
-        title: 'Open Task',
-        status: TaskStatus.open(
-          id: 'status-1',
-          createdAt: testDate,
-          utcOffset: 0,
-        ),
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithTasks(tasks: [task]),
-          isFocusActive: true,
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byIcon(Icons.check_circle), findsNothing);
-    });
-
-    testWidgets('does not show check icon for blocked tasks', (tester) async {
-      final task = createTask(
-        id: 'task-1',
-        title: 'Blocked Task',
-        status: TaskStatus.blocked(
+      ),
+      (
+        'open',
+        TaskStatus.open(id: 'status-1', createdAt: testDate, utcOffset: 0),
+      ),
+      (
+        'blocked',
+        TaskStatus.blocked(
           id: 'status-1',
           createdAt: testDate,
           utcOffset: 0,
           reason: 'Waiting for dependency',
         ),
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithTasks(tasks: [task]),
-          isFocusActive: true,
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byIcon(Icons.check_circle), findsNothing);
-    });
-
-    testWidgets('does not show check icon for on-hold tasks', (tester) async {
-      final task = createTask(
-        id: 'task-1',
-        title: 'On Hold Task',
-        status: TaskStatus.onHold(
+      ),
+      (
+        'on-hold',
+        TaskStatus.onHold(
           id: 'status-1',
           createdAt: testDate,
           utcOffset: 0,
           reason: 'Paused',
         ),
-      );
-
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithTasks(tasks: [task]),
-          isFocusActive: true,
-        ),
-      );
-      await tester.pump();
-
-      expect(find.byIcon(Icons.check_circle), findsNothing);
-    });
-
-    testWidgets('does not show check icon for groomed tasks', (tester) async {
-      final task = createTask(
-        id: 'task-1',
-        title: 'Groomed Task',
-        status: TaskStatus.groomed(
+      ),
+      (
+        'groomed',
+        TaskStatus.groomed(
           id: 'status-1',
           createdAt: testDate,
           utcOffset: 0,
         ),
-      );
+      ),
+    ]) {
+      testWidgets('does not show check icon for $label tasks', (tester) async {
+        final task = createTask(
+          id: 'task-1',
+          title: 'Open-ended Task',
+          status: status,
+        );
 
-      await tester.pumpWidget(
-        createTestWidget(
-          progress: createProgressWithTasks(tasks: [task]),
-          isFocusActive: true,
-        ),
-      );
-      await tester.pump();
+        await tester.pumpWidget(
+          createTestWidget(
+            progress: createProgressWithTasks(tasks: [task]),
+            isFocusActive: true,
+          ),
+        );
+        await tester.pump();
 
-      expect(find.byIcon(Icons.check_circle), findsNothing);
-    });
+        expect(find.byIcon(Icons.check_circle), findsNothing);
+      });
+    }
 
     testWidgets('displays multiple pinned tasks', (tester) async {
       final tasks = [
@@ -2551,6 +2517,46 @@ void main() {
       },
     );
   });
+
+  group('formatCompactDuration', () {
+    test('formats canonical examples', () {
+      expect(formatCompactDuration(Duration.zero), '0m');
+      expect(formatCompactDuration(const Duration(minutes: 45)), '45m');
+      expect(formatCompactDuration(const Duration(hours: 2)), '2h');
+      expect(
+        formatCompactDuration(const Duration(hours: 1, minutes: 5)),
+        '1h 5m',
+      );
+    });
+
+    glados.Glados(
+      glados.any.compactDurationMinutes,
+      glados.ExploreConfig(numRuns: 150),
+    ).test('output always reconstructs the duration in whole minutes', (
+      totalMinutes,
+    ) {
+      final duration = Duration(minutes: totalMinutes);
+      final formatted = formatCompactDuration(duration);
+
+      final hours = totalMinutes ~/ 60;
+      final mins = totalMinutes % 60;
+      if (hours > 0) {
+        expect(formatted, startsWith('${hours}h'), reason: formatted);
+        if (mins == 0) {
+          expect(formatted, '${hours}h');
+        } else {
+          expect(formatted, '${hours}h ${mins}m');
+        }
+      } else {
+        expect(formatted, '${mins}m');
+      }
+    }, tags: 'glados');
+  });
+}
+
+extension _AnyCompactDuration on glados.Any {
+  glados.Generator<int> get compactDurationMinutes =>
+      glados.IntAnys(this).intInRange(0, 60 * 50);
 }
 
 /// Test controller that returns grid mode.

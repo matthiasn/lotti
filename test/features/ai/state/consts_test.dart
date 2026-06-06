@@ -176,6 +176,22 @@ void main() {
       expect(AiResponseType.checklistUpdates.isPromptGenerationType, false);
       expect(AiResponseType.imageGeneration.isPromptGenerationType, false);
     });
+
+    test('isLegacyType gates exactly the prompt-superseded types', () {
+      // ignore: deprecated_member_use_from_same_package
+      expect(AiResponseType.taskSummary.isLegacyType, true);
+      // ignore: deprecated_member_use_from_same_package
+      expect(AiResponseType.checklistUpdates.isLegacyType, true);
+      // imageGeneration is intentionally legacy-for-prompts: the cover-art
+      // skill (triggerSkillProvider) superseded prompt-driven execution,
+      // while the enum value itself stays current for skill responses.
+      expect(AiResponseType.imageGeneration.isLegacyType, true);
+
+      expect(AiResponseType.imageAnalysis.isLegacyType, false);
+      expect(AiResponseType.audioTranscription.isLegacyType, false);
+      expect(AiResponseType.promptGeneration.isLegacyType, false);
+      expect(AiResponseType.imagePromptGeneration.isLegacyType, false);
+    });
   });
 
   group('SkillTypeToResponseType', () {

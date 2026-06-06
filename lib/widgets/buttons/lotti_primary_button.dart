@@ -14,6 +14,9 @@ class LottiPrimaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final String label;
   final IconData? icon;
+
+  /// Optional style overrides. Properties set here take precedence over the
+  /// button's defaults; unset properties fall back to the defaults.
   final ButtonStyle? style;
   final String? semanticsLabel;
   final bool isDestructive;
@@ -44,7 +47,9 @@ class LottiPrimaryButton extends StatelessWidget {
       elevation: 2,
     );
 
-    final effectiveStyle = defaultStyle.merge(style);
+    // ButtonStyle.merge keeps `this`'s non-null properties, so the caller's
+    // style must be the receiver for its overrides to win over the defaults.
+    final effectiveStyle = style?.merge(defaultStyle) ?? defaultStyle;
 
     final labelWidget = Text(
       label,

@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:meta/meta.dart';
 
 /// Resolves the best available summary for a task by checking multiple sources
 /// in priority order:
@@ -73,7 +74,7 @@ class TaskSummaryResolver {
     final summariesByTaskId = <String, String>{};
     for (final taskId in ids) {
       final agentSummary = switch (reportsByTaskId[taskId]) {
-        final AgentReportEntity report => _summaryFromReport(report),
+        final AgentReportEntity report => summaryFromReport(report),
         null => null,
       };
       if (agentSummary != null) {
@@ -115,7 +116,7 @@ class TaskSummaryResolver {
       );
       if (report == null) return null;
 
-      final summary = _summaryFromReport(report);
+      final summary = summaryFromReport(report);
       if (summary == null) return null;
 
       developer.log(
@@ -134,7 +135,8 @@ class TaskSummaryResolver {
     }
   }
 
-  String? _summaryFromReport(AgentReportEntity report) {
+  @visibleForTesting
+  String? summaryFromReport(AgentReportEntity report) {
     final tldr = report.tldr?.trim();
     final content = report.content.trim();
     final summary = (tldr != null && tldr.isNotEmpty) ? tldr : content;

@@ -15,7 +15,9 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   late MockJournalDb mockDb;
@@ -51,28 +53,24 @@ void main() {
     color: '#FF0000',
   );
 
-  setUpAll(() {
-    registerFallbackValue(testCategory);
-    registerFallbackValue(testChecklistItem.data);
-  });
+  setUpAll(registerAllFallbackValues);
 
-  setUp(() {
+  setUp(() async {
     mockDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
     mockChecklistRepository = MockChecklistRepository();
     mockCategoryRepository = MockCategoryRepository();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
-    // Register getIt dependencies
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    getIt.registerSingleton<JournalDb>(mockDb);
-
-    if (getIt.isRegistered<UpdateNotifications>()) {
-      getIt.unregister<UpdateNotifications>();
-    }
-    getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockDb)
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+      },
+    );
 
     // Setup stubs
     when(
@@ -92,12 +90,7 @@ void main() {
 
   tearDown(() async {
     await updateStreamController.close();
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    if (getIt.isRegistered<UpdateNotifications>()) {
-      getIt.unregister<UpdateNotifications>();
-    }
+    await tearDownTestGetIt();
   });
 
   group('ChecklistItemController', () {

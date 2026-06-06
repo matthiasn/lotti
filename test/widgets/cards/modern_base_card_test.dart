@@ -2,27 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../../widget_test_utils.dart';
-
-class TestCallbacks {
-  void onTap() {}
-}
-
-class MockCallbacks extends Mock implements TestCallbacks {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ModernBaseCard Tests', () {
-    late MockCallbacks mockCallbacks;
-
-    setUp(() {
-      mockCallbacks = MockCallbacks();
-      when(() => mockCallbacks.onTap()).thenAnswer((_) {});
-    });
-
     testWidgets('renders with light theme (solid color, no gradient)', (
       tester,
     ) async {
@@ -35,7 +21,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the Container
       final container = tester.widget<Container>(
@@ -62,7 +48,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(
         find.byType(Container).first,
@@ -88,7 +74,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(
         find.byType(Container).first,
@@ -111,7 +97,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(
         find.byType(Container).first,
@@ -137,7 +123,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(
         find.byType(Container).first,
@@ -148,22 +134,25 @@ void main() {
     });
 
     testWidgets('tap callback is triggered correctly', (tester) async {
+      // Plain closure instead of a Mock — a counter is all the tap test
+      // needs, and it keeps the file free of one-off mock classes.
+      var tapCount = 0;
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           ModernBaseCard(
-            onTap: mockCallbacks.onTap,
+            onTap: () => tapCount++,
             child: const Text('Test Content'),
           ),
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the card
       await tester.tap(find.byType(InkWell));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
-      verify(() => mockCallbacks.onTap()).called(1);
+      expect(tapCount, 1);
     });
 
     testWidgets('InkWell is present when onTap is provided', (tester) async {
@@ -176,7 +165,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(InkWell), findsOneWidget);
     });
@@ -190,7 +179,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(InkWell), findsNothing);
     });
@@ -205,7 +194,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(
         find
@@ -234,7 +223,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(
         find
@@ -260,7 +249,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(
         find.byType(Container).first,
@@ -280,7 +269,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       var container = tester.widget<Container>(
         find.byType(Container).first,
@@ -298,7 +287,10 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // Re-pumping with a new ThemeData animates via AnimatedTheme
+      // (kThemeAnimationDuration = 200ms); advance past it in one bounded
+      // pump instead of pumpAndSettle.
+      await tester.pump(const Duration(milliseconds: 250));
 
       container = tester.widget<Container>(
         find.byType(Container).first,
@@ -322,7 +314,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text(testText), findsOneWidget);
     });
@@ -336,7 +328,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(
         find.byType(Container).first,
@@ -362,7 +354,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify Container is used (not AnimatedContainer)
       expect(find.byType(Container), findsWidgets);

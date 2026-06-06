@@ -1176,10 +1176,12 @@ void main() {
           ..devicePixelRatio = 1.0;
         addTearDown(tester.view.reset);
 
-        // The widget falls back to DateTime.now() when no clock is injected,
-        // so place the draft on the real calendar day to make the now-line
-        // fall inside the window. DateTime.now() is not fakeable, but the
-        // value is stable within a single (sub-second) test run.
+        // Deliberate exception to the deterministic-dates rule: this test
+        // covers the no-injected-clock FALLBACK branch, so touching the real
+        // clock is the point. Place the draft on the real calendar day to
+        // make the now-line fall inside the window; assertions read the
+        // rendered badge back from the tree so a minute rollover mid-test
+        // cannot flake.
         final wallNow = DateTime.now();
         final today = DateTime(wallNow.year, wallNow.month, wallNow.day);
         final draft = DraftPlan(

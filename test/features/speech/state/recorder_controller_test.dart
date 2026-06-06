@@ -281,47 +281,150 @@ void main() {
       });
     });
 
-    group('setCategoryId', () {
-      test('should set categoryId to non-null value', () {
-        // Arrange
-        const categoryId = 'test-category-123';
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier)
-              // Act
-              ..setCategoryId(categoryId);
+    group('setCategoryId / linkedId round-trip through stop()', () {
+      late MockPersistenceLogic mockPersistence;
+      late MockAutomaticPromptTrigger mockTrigger;
 
-        // Assert - Since _categoryId is private, we can't directly test it
-        // but we can verify the method executes without error
-        expect(() => controller.setCategoryId(categoryId), returnsNormally);
+      setUp(() {
+        // `_categoryId` and `_linkedId` are private; their only observable
+        // effect is what SpeechRepository.createAudioEntry hands to
+        // PersistenceLogic when the recording is stopped, so these tests do
+        // full record → stop round-trips.
+        mockPersistence = MockPersistenceLogic();
+        getIt.registerSingleton<PersistenceLogic>(mockPersistence);
+        when(
+          () => mockPersistence.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+            flag: any(named: 'flag'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer(
+          (_) async => Metadata(
+            id: 'round-trip-entry-id',
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+          ),
+        );
+        when(
+          () => mockPersistence.createDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        when(
+          () => mockAudioRecorderRepository.hasPermission(),
+        ).thenAnswer((_) async => true);
+        when(() => mockAudioRecorderRepository.startRecording()).thenAnswer(
+          (_) async => AudioNote(
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            audioFile: 'audio.m4a',
+            audioDirectory: '/test/path',
+            duration: const Duration(seconds: 5),
+          ),
+        );
+
+        mockTrigger = MockAutomaticPromptTrigger();
+        when(
+          () => mockTrigger.triggerAutomaticPrompts(
+            any(),
+            any(),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            realtimeTranscriptProvided: any(
+              named: 'realtimeTranscriptProvided',
+            ),
+          ),
+        ).thenAnswer((_) async {});
+
+        // Rebuild the container so stop() resolves the stubbed trigger when
+        // a linkedId is present.
+        container.dispose();
+        container = ProviderContainer(
+          overrides: [
+            audioRecorderRepositoryProvider.overrideWithValue(
+              mockAudioRecorderRepository,
+            ),
+            playerFactoryProvider.overrideWithValue(() => mockPlayer),
+            automaticPromptTriggerProvider.overrideWithValue(mockTrigger),
+          ],
+        );
       });
 
-      test('should set categoryId to null', () {
-        // Arrange
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier)
-              // Act & Assert
-              ..setCategoryId(null);
-        expect(() => controller.setCategoryId(null), returnsNormally);
-      });
+      String? persistedCategoryId() {
+        return verify(
+              () => mockPersistence.createMetadata(
+                dateFrom: any(named: 'dateFrom'),
+                dateTo: any(named: 'dateTo'),
+                uuidV5Input: any(named: 'uuidV5Input'),
+                flag: any(named: 'flag'),
+                categoryId: captureAny(named: 'categoryId'),
+              ),
+            ).captured.single
+            as String?;
+      }
 
-      test('should handle multiple categoryId changes', () {
-        // Arrange
-        const firstCategoryId = 'category-1';
-        const secondCategoryId = 'category-2';
+      test(
+        'category set before stop is persisted on the created entry',
+        () async {
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
+
+          await controller.record();
+          controller.setCategoryId('round-trip-category');
+          final entryId = await controller.stop();
+
+          expect(entryId, 'round-trip-entry-id');
+          expect(persistedCategoryId(), 'round-trip-category');
+        },
+      );
+
+      test('last of multiple category changes wins', () async {
         final controller = container.read(
           audioRecorderControllerProvider.notifier,
         );
 
-        // Act & Assert
-        expect(
-          () => controller.setCategoryId(firstCategoryId),
-          returnsNormally,
+        await controller.record();
+        controller
+          ..setCategoryId('category-1')
+          ..setCategoryId('category-2');
+        await controller.stop();
+
+        expect(persistedCategoryId(), 'category-2');
+      });
+
+      test('resetting the category to null persists null', () async {
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
         );
-        expect(
-          () => controller.setCategoryId(secondCategoryId),
-          returnsNormally,
+
+        await controller.record();
+        controller
+          ..setCategoryId('category-1')
+          ..setCategoryId(null);
+        await controller.stop();
+
+        expect(persistedCategoryId(), isNull);
+      });
+
+      test('record(linkedId:) links the created entry on stop', () async {
+        final controller = container.read(
+          audioRecorderControllerProvider.notifier,
         );
-        expect(() => controller.setCategoryId(null), returnsNormally);
+
+        await controller.record(linkedId: 'linked-task-id');
+        await controller.stop();
+
+        verify(
+          () => mockPersistence.createDbEntity(
+            any(),
+            linkedId: 'linked-task-id',
+          ),
+        ).called(1);
       });
     });
   });
@@ -347,23 +450,9 @@ void main() {
         ).called(1);
       });
 
-      test('should set linkedId when provided', () async {
-        // Arrange
-        const testLinkedId = 'test-linked-id-123';
-        final controller = container.read(
-          audioRecorderControllerProvider.notifier,
-        );
-
-        // Act
-        await controller.record(linkedId: testLinkedId);
-
-        // Assert - The linkedId is stored internally and would be used
-        // when creating the journal entry on stop
-        expect(
-          () => controller.record(linkedId: testLinkedId),
-          returnsNormally,
-        );
-      });
+      // linkedId behavior is covered by the round-trip group above
+      // (record(linkedId:) → stop → createDbEntity) and by the successful
+      // record test asserting state.linkedId in the edge-cases group below.
     });
 
     group('pause', () {
@@ -439,8 +528,6 @@ void main() {
         );
 
         // Act & Assert
-        expect(controller.resume, returnsNormally);
-
         // In test environment, AudioRecorder methods throw MissingPluginException
         // but the method should handle this gracefully
         await expectLater(controller.resume(), completes);
@@ -932,35 +1019,9 @@ void main() {
       });
     });
 
-    group('setCategoryId edge cases', () {
-      test('should update categoryId when different from current', () async {
-        // Arrange
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier)
-              // Act
-              ..setCategoryId('category-1')
-              ..setCategoryId('category-2');
-
-        // Assert - We can't directly verify the private field, but we can
-        // ensure the method executes without error and would be used in stop()
-        expect(() => controller.setCategoryId('category-3'), returnsNormally);
-      });
-
-      test('should not update categoryId when same as current', () async {
-        // Arrange
-        final controller =
-            container.read(audioRecorderControllerProvider.notifier)
-              // Act
-              ..setCategoryId('same-category')
-              ..setCategoryId('same-category');
-
-        // Assert
-        expect(
-          () => controller.setCategoryId('same-category'),
-          returnsNormally,
-        );
-      });
-    });
+    // setCategoryId behavior (including repeated changes) is covered by the
+    // 'setCategoryId / linkedId round-trip through stop()' group, which
+    // asserts the persisted categoryId instead of returnsNormally smoke.
   });
 
   group('AudioRecorderController - Integration Tests', () {

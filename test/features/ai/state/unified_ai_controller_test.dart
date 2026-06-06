@@ -33,11 +33,34 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 /// Entry controller that returns null (entity not found).
 class FakeEntryControllerNull extends EntryController {
   @override
   Future<EntryState?> build({required String id}) async => null;
+}
+
+/// File-level factory for the boilerplate [AiConfigPrompt] blocks; only the
+/// parts that vary between tests are parameters.
+AiConfigPrompt _makePromptConfig({
+  String id = 'prompt-1',
+  String name = 'Test Prompt',
+  AiResponseType aiResponseType = AiResponseType.audioTranscription,
+  List<InputDataType> requiredInputData = const [InputDataType.task],
+}) {
+  return AiConfigPrompt(
+    id: id,
+    name: name,
+    systemMessage: 'System',
+    userMessage: 'User',
+    defaultModelId: 'model-1',
+    modelIds: const ['model-1'],
+    createdAt: DateTime(2024, 3, 15),
+    useReasoning: false,
+    requiredInputData: requiredInputData,
+    aiResponseType: aiResponseType,
+  );
 }
 
 void main() {
@@ -74,7 +97,7 @@ void main() {
     );
   });
 
-  setUp(() {
+  setUp(() async {
     mockRepository = MockUnifiedAiInferenceRepository();
     mockDomainLogger = MockDomainLogger();
     mockAiConfigRepository = MockAiConfigRepository();
@@ -89,36 +112,23 @@ void main() {
       () => mockUpdateNotifications.updateStream,
     ).thenAnswer((_) => const Stream<Set<String>>.empty());
 
-    // Set up GetIt
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
-
-    if (getIt.isRegistered<AiConfigRepository>()) {
-      getIt.unregister<AiConfigRepository>();
-    }
-    getIt.registerSingleton<AiConfigRepository>(mockAiConfigRepository);
-
-    if (getIt.isRegistered<EditorStateService>()) {
-      getIt.unregister<EditorStateService>();
-    }
-    getIt.registerSingleton<EditorStateService>(mockEditorStateService);
-
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    getIt.registerSingleton<JournalDb>(mockJournalDb);
-
-    if (getIt.isRegistered<PersistenceLogic>()) {
-      getIt.unregister<PersistenceLogic>();
-    }
-    getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-
-    if (getIt.isRegistered<UpdateNotifications>()) {
-      getIt.unregister<UpdateNotifications>();
-    }
-    getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+    // setUpTestGetIt registers its own DomainLogger/JournalDb/
+    // UpdateNotifications; swap in this file's mocks so stubs and verify
+    // calls hit the right instances.
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockDomainLogger)
+          ..registerSingleton<AiConfigRepository>(mockAiConfigRepository)
+          ..registerSingleton<EditorStateService>(mockEditorStateService)
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockJournalDb)
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+      },
+    );
 
     // Set up default mock behavior for AI config repository
     when(
@@ -152,13 +162,14 @@ void main() {
     ).thenAnswer((_) async {});
   });
 
-  tearDown(() {
+  tearDown(() async {
     // Dispose all containers created during tests
     for (final c in containersToDispose) {
       c.dispose();
     }
     containersToDispose.clear();
     container.dispose();
+    await tearDownTestGetIt();
   });
 
   group('UnifiedAiState equality', () {
@@ -205,16 +216,8 @@ void main() {
     test(
       'joins an in-flight run instead of starting a second inference',
       () async {
-        final promptConfig = AiConfigPrompt(
+        final promptConfig = _makePromptConfig(
           id: 'prompt-join',
-          name: 'Test Prompt',
-          systemMessage: 'System',
-          userMessage: 'User',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -296,16 +299,7 @@ void main() {
 
     test('successfully runs inference and updates state', () {
       fakeAsync((async) {
-        final promptConfig = AiConfigPrompt(
-          id: 'prompt-1',
-          name: 'Test Prompt',
-          systemMessage: 'System',
-          userMessage: 'User',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
+        final promptConfig = _makePromptConfig(
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -415,16 +409,7 @@ void main() {
     });
 
     test('deduplicates concurrent inference requests', () async {
-      final promptConfig = AiConfigPrompt(
-        id: 'prompt-1',
-        name: 'Test Prompt',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime(2024, 3, 15),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
+      final promptConfig = _makePromptConfig(
         // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
@@ -498,16 +483,7 @@ void main() {
 
     test('handles errors during inference', () {
       fakeAsync((async) {
-        final promptConfig = AiConfigPrompt(
-          id: 'prompt-1',
-          name: 'Test Prompt',
-          systemMessage: 'System',
-          userMessage: 'User',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
+        final promptConfig = _makePromptConfig(
           // ignore: deprecated_member_use_from_same_package
           aiResponseType: AiResponseType.taskSummary,
         );
@@ -583,6 +559,80 @@ void main() {
         );
 
         // Clean up
+        subscription.close();
+      });
+    });
+
+    test('handles a promptId that resolves to no config', () {
+      fakeAsync((async) {
+        final states = <UnifiedAiState>[];
+
+        // aiConfigByIdProvider returns null → _performInference throws
+        // 'Invalid prompt configuration', and the catch-block's second
+        // config lookup also gets null so no status update is attempted.
+        container = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
+            aiConfigByIdProvider(
+              'missing-prompt',
+            ).overrideWith((ref) => Future.value()),
+          ],
+        );
+
+        final subscription = container.listen(
+          unifiedAiControllerProvider((
+            entityId: 'test-entity',
+            promptId: 'missing-prompt',
+          )),
+          (previous, next) {
+            states.add(next);
+          },
+          fireImmediately: true,
+        );
+
+        container.read(
+          triggerNewInferenceProvider((
+            entityId: 'test-entity',
+            promptId: 'missing-prompt',
+            linkedEntityId: null,
+          )).future,
+        );
+
+        async.flushMicrotasks();
+
+        // The thrown 'Invalid prompt configuration' is logged …
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            any<Object>(
+              that: predicate<Object>(
+                (e) => e.toString().contains('Invalid prompt configuration'),
+              ),
+            ),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'runInference',
+          ),
+        ).called(1);
+        // … the inference repo is never reached …
+        verifyNever(
+          () => mockRepository.runInference(
+            entityId: any(named: 'entityId'),
+            promptConfig: any(named: 'promptConfig'),
+            onProgress: any(named: 'onProgress'),
+            onStatusChange: any(named: 'onStatusChange'),
+            linkedEntityId: any(named: 'linkedEntityId'),
+          ),
+        );
+        // … and the original exception surfaces in controller state.
+        expect(
+          states.any(
+            (s) => s.error.toString().contains('Invalid prompt configuration'),
+          ),
+          true,
+        );
+
         subscription.close();
       });
     });
@@ -677,16 +727,7 @@ void main() {
 
   group('triggerNewInference provider', () {
     test('triggers inference when called', () async {
-      final promptConfig = AiConfigPrompt(
-        id: 'prompt-1',
-        name: 'Test Prompt',
-        systemMessage: 'System',
-        userMessage: 'User',
-        defaultModelId: 'model-1',
-        modelIds: ['model-1'],
-        createdAt: DateTime(2024, 3, 15),
-        useReasoning: false,
-        requiredInputData: [InputDataType.task],
+      final promptConfig = _makePromptConfig(
         // ignore: deprecated_member_use_from_same_package
         aiResponseType: AiResponseType.taskSummary,
       );
@@ -743,18 +784,7 @@ void main() {
 
     test('updates inference status for linked entity when provided', () {
       fakeAsync((async) {
-        final promptConfig = AiConfigPrompt(
-          id: 'prompt-1',
-          name: 'Test Prompt',
-          systemMessage: 'System',
-          userMessage: 'User',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
+        final promptConfig = _makePromptConfig();
 
         // Override the aiConfigByIdProvider to return our test prompt
         container = ProviderContainer(
@@ -839,18 +869,7 @@ void main() {
 
     test('updates error status for linked entity on failure', () {
       fakeAsync((async) {
-        final promptConfig = AiConfigPrompt(
-          id: 'prompt-1',
-          name: 'Test Prompt',
-          systemMessage: 'System',
-          userMessage: 'User',
-          defaultModelId: 'model-1',
-          modelIds: ['model-1'],
-          createdAt: DateTime(2024, 3, 15),
-          useReasoning: false,
-          requiredInputData: [InputDataType.task],
-          aiResponseType: AiResponseType.audioTranscription,
-        );
+        final promptConfig = _makePromptConfig();
 
         // Override the aiConfigByIdProvider to return our test prompt
         container = ProviderContainer(
@@ -1715,6 +1734,81 @@ void main() {
         ),
       ).called(1);
     });
+
+    test(
+      'logs and swallows a StateError thrown by the runner',
+      () async {
+        final skill =
+            AiConfig.skill(
+                  id: 'skill-transcribe',
+                  name: 'Transcription',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: SkillType.transcription,
+                  requiredInputModalities: [Modality.audio],
+                  systemInstructions: 'System',
+                  userInstructions: 'User',
+                )
+                as AiConfigSkill;
+
+        final thinkingProvider =
+            AiConfig.inferenceProvider(
+                  id: 'anthropic-prov',
+                  name: 'Anthropic',
+                  inferenceProviderType: InferenceProviderType.anthropic,
+                  apiKey: 'key',
+                  baseUrl: 'https://api.anthropic.com',
+                  createdAt: DateTime(2024, 3, 15),
+                )
+                as AiConfigInferenceProvider;
+        final resolvedProfile = ResolvedProfile(
+          thinkingModelId: 'thinking-model',
+          thinkingProvider: thinkingProvider,
+          transcriptionModelId: 'transcription-model',
+          transcriptionProvider: thinkingProvider,
+        );
+
+        when(
+          () => mockResolver.resolveForTask('task-1'),
+        ).thenAnswer((_) async => resolvedProfile);
+        when(
+          () => mockRunner.runTranscription(
+            audioEntryId: any(named: 'audioEntryId'),
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: any(named: 'linkedTaskId'),
+          ),
+        ).thenThrow(StateError('runner blew up'));
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            profileAutomationResolverProvider.overrideWithValue(mockResolver),
+            skillInferenceRunnerProvider.overrideWithValue(mockRunner),
+          ],
+        );
+        containersToDispose.add(testContainer);
+
+        // The provider catches the error and routes it to the logger —
+        // the future itself completes normally.
+        await testContainer.read(
+          triggerSkillProvider((
+            entityId: 'audio-entry-1',
+            skillId: 'skill-transcribe',
+            linkedTaskId: 'task-1',
+            referenceImages: null,
+            overrideModelId: null,
+          )).future,
+        );
+
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.ai,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'triggerSkillProvider',
+          ),
+        ).called(1);
+      },
+    );
 
     test(
       'resolves via category and runs transcription for standalone audio',

@@ -83,11 +83,15 @@ class ProfilePinningSelector extends ConsumerWidget {
       data: (value) => value,
       orElse: () => null,
     );
-    final referencedProviderTypes = _resolveReferencedProviderTypes(
+    final referencedProviderTypes = resolveReferencedProviderTypes(
       modelsAsync,
       providersAsync,
+      referencedModelIds: referencedModelIds,
     );
-    final eligible = _filterEligible(nodes, referencedProviderTypes).toList();
+    final eligible = filterEligible(
+      nodes,
+      referencedProviderTypes,
+    ).toList();
 
     // If the currently-pinned host is no longer in the eligible set (e.g.
     // the user removed a capability or the node profile was edited away),
@@ -165,7 +169,9 @@ class ProfilePinningSelector extends ConsumerWidget {
     );
   }
 
-  Iterable<SyncNodeProfile> _filterEligible(
+  /// Static and public-for-tests: pure filter over node capabilities.
+  @visibleForTesting
+  static Iterable<SyncNodeProfile> filterEligible(
     List<SyncNodeProfile> nodes,
     Set<InferenceProviderType> referencedProviderTypes,
   ) {
@@ -189,10 +195,13 @@ class ProfilePinningSelector extends ConsumerWidget {
   /// the configs are still loading. The dispatcher's `profileIsLocal` is the
   /// load-bearing guard at trigger time, so an under-filtered dropdown during
   /// the brief loading window is acceptable.
-  Set<InferenceProviderType> _resolveReferencedProviderTypes(
+  /// Static and public-for-tests: pure model-id → provider-type resolution.
+  @visibleForTesting
+  static Set<InferenceProviderType> resolveReferencedProviderTypes(
     AsyncValue<List<AiConfig>> modelsAsync,
-    AsyncValue<List<AiConfig>> providersAsync,
-  ) {
+    AsyncValue<List<AiConfig>> providersAsync, {
+    required Set<String> referencedModelIds,
+  }) {
     final models = modelsAsync.maybeWhen<List<AiConfigModel>>(
       data: (value) => value.whereType<AiConfigModel>().toList(),
       orElse: () => const <AiConfigModel>[],

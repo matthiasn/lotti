@@ -107,6 +107,128 @@ void main() {
     });
   });
 
+  /// Default single planned block shared by the seed helpers.
+  List<PlannedBlock> defaultSeedBlocks() => [
+    PlannedBlock(
+      id: 'block-1',
+      categoryId: 'work',
+      startTime: DateTime(2026, 5, 25, 9),
+      endTime: DateTime(2026, 5, 25, 10),
+      title: 'Prep demo',
+      reason: 'Morning focus.',
+    ),
+  ];
+
+  /// Seeds a day plan into [agentEntities]. [scheduledMinutes] defaults to
+  /// the sum of the block durations.
+  DayPlanEntity seedPlanEntity({
+    DayPlanStatus status = const DayPlanStatus.draft(),
+    List<PlannedBlock>? blocks,
+    int capacityMinutes = 360,
+    int? scheduledMinutes,
+    DateTime? deletedAt,
+  }) {
+    final resolvedBlocks = blocks ?? defaultSeedBlocks();
+    final plan =
+        AgentDomainEntity.dayPlan(
+              id: 'day_agent_plan:$_dayId',
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              data: DayPlanData(
+                planDate: DateTime(2026, 5, 25),
+                status: status,
+                plannedBlocks: resolvedBlocks,
+              ),
+              capacityMinutes: capacityMinutes,
+              scheduledMinutes:
+                  scheduledMinutes ??
+                  resolvedBlocks.fold<int>(
+                    0,
+                    (sum, b) => sum + b.duration.inMinutes,
+                  ),
+              createdAt: _now,
+              updatedAt: _now,
+              deletedAt: deletedAt,
+              vectorClock: null,
+            )
+            as DayPlanEntity;
+    agentEntities[plan.id] = plan;
+    return plan;
+  }
+
+  /// Seeds a pending change-set targeting the seeded plan.
+  ChangeSetEntity seedChangeSetEntity({
+    required List<ChangeItem> items,
+    String id = 'plan_diff:test-1',
+  }) {
+    final changeSet =
+        AgentDomainEntity.changeSet(
+              id: id,
+              agentId: _agentId,
+              taskId: 'day_agent_plan:$_dayId',
+              threadId: _threadId,
+              runKey: _runKey,
+              status: ChangeSetStatus.pending,
+              items: items,
+              createdAt: _now,
+              vectorClock: null,
+            )
+            as ChangeSetEntity;
+    agentEntities[changeSet.id] = changeSet;
+    return changeSet;
+  }
+
+  ChangeItem moveBlockItem({
+    String blockId = 'block-1',
+    DateTime? toStart,
+    DateTime? toEnd,
+    String? title,
+    String? type,
+  }) {
+    return ChangeItem(
+      toolName: 'move_block',
+      humanSummary: 'Move "Prep demo"',
+      args: <String, dynamic>{
+        'action': 'moved',
+        'reason': 'New time.',
+        'blockId': blockId,
+        'toStart': (toStart ?? DateTime(2026, 5, 25, 11)).toIso8601String(),
+        'toEnd': (toEnd ?? DateTime(2026, 5, 25, 12)).toIso8601String(),
+        'title': ?title,
+        'type': ?type,
+      },
+    );
+  }
+
+  ChangeItem addBlockItem() {
+    return ChangeItem(
+      toolName: 'add_block',
+      humanSummary: 'Add "Walk"',
+      args: <String, dynamic>{
+        'action': 'added',
+        'reason': 'Recovery break.',
+        'toStart': DateTime(2026, 5, 25, 13).toIso8601String(),
+        'toEnd': DateTime(2026, 5, 25, 13, 30).toIso8601String(),
+        'title': 'Walk',
+        'categoryId': 'life',
+        'type': 'manual',
+      },
+    );
+  }
+
+  ChangeItem dropBlockItem({String blockId = 'block-1'}) {
+    return ChangeItem(
+      toolName: 'drop_block',
+      humanSummary: 'Drop "Prep demo"',
+      args: <String, dynamic>{
+        'action': 'dropped',
+        'reason': 'Not today.',
+        'blockId': blockId,
+      },
+    );
+  }
+
   group('DayAgentPlanService', () {
     test(
       'persistDraftPlan writes plan entity, pinned tasks, and capture link',
@@ -951,39 +1073,11 @@ void main() {
       DayPlanEntity seedPlan({
         List<PlannedBlock>? blocks,
         DayPlanStatus? status,
-      }) {
-        final plan =
-            AgentDomainEntity.dayPlan(
-                  id: 'day_agent_plan:$_dayId',
-                  agentId: _agentId,
-                  dayId: _dayId,
-                  planDate: DateTime(2026, 5, 25),
-                  data: DayPlanData(
-                    planDate: DateTime(2026, 5, 25),
-                    status: status ?? const DayPlanStatus.draft(),
-                    plannedBlocks:
-                        blocks ??
-                        [
-                          PlannedBlock(
-                            id: 'block-1',
-                            categoryId: 'work',
-                            startTime: DateTime(2026, 5, 25, 9),
-                            endTime: DateTime(2026, 5, 25, 10),
-                            title: 'Prep demo',
-                            reason: 'Morning focus.',
-                          ),
-                        ],
-                  ),
-                  capacityMinutes: 360,
-                  scheduledMinutes: 60,
-                  createdAt: _now,
-                  updatedAt: _now,
-                  vectorClock: null,
-                )
-                as DayPlanEntity;
-        agentEntities[plan.id] = plan;
-        return plan;
-      }
+      }) => seedPlanEntity(
+        status: status ?? const DayPlanStatus.draft(),
+        blocks: blocks,
+        scheduledMinutes: 60,
+      );
 
       Map<String, Object?> movedChange({
         String blockId = 'block-1',
@@ -1472,100 +1566,67 @@ void main() {
       DayPlanEntity seedPlan(
         List<PlannedBlock> blocks, {
         DayPlanStatus status = const DayPlanStatus.draft(),
-      }) {
-        final scheduled = blocks.fold<int>(
-          0,
-          (sum, b) => sum + b.duration.inMinutes,
-        );
-        final plan =
-            AgentDomainEntity.dayPlan(
-                  id: planEntityId,
-                  agentId: _agentId,
-                  dayId: _dayId,
-                  planDate: DateTime(2026, 5, 25),
-                  data: DayPlanData(
-                    planDate: DateTime(2026, 5, 25),
-                    status: status,
-                    plannedBlocks: blocks,
-                  ),
-                  capacityMinutes: 360,
-                  scheduledMinutes: scheduled,
-                  createdAt: _now,
-                  updatedAt: _now,
-                  vectorClock: null,
-                )
-                as DayPlanEntity;
-        agentEntities[plan.id] = plan;
-        return plan;
-      }
+      }) => seedPlanEntity(status: status, blocks: blocks);
 
       ChangeSetEntity seedChangeSet({
         required List<ChangeItem> items,
-      }) {
-        final changeSet =
-            AgentDomainEntity.changeSet(
-                  id: 'plan_diff:test-1',
-                  agentId: _agentId,
-                  taskId: planEntityId,
-                  threadId: _threadId,
-                  runKey: _runKey,
-                  status: ChangeSetStatus.pending,
-                  items: items,
-                  createdAt: _now,
-                  vectorClock: null,
-                )
-                as ChangeSetEntity;
-        agentEntities[changeSet.id] = changeSet;
-        return changeSet;
-      }
+      }) => seedChangeSetEntity(items: items);
 
-      ChangeItem moveBlockItem({
-        String blockId = 'block-1',
-        DateTime? toStart,
-        DateTime? toEnd,
-        String? title,
-      }) {
-        return ChangeItem(
-          toolName: 'move_block',
-          humanSummary: 'Move "Prep demo"',
-          args: <String, dynamic>{
-            'action': 'moved',
-            'reason': 'New time.',
-            'blockId': blockId,
-            'toStart': (toStart ?? DateTime(2026, 5, 25, 11)).toIso8601String(),
-            'toEnd': (toEnd ?? DateTime(2026, 5, 25, 12)).toIso8601String(),
-            'title': ?title,
-          },
-        );
-      }
+      test(
+        'move_block without a taskId key retains the existing block taskId',
+        () async {
+          seedPlan([
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 10),
+              title: 'Prep demo',
+              taskId: 'task-keep',
+            ),
+          ]);
+          // moveBlockItem args carry no `taskId` key at all — the key-absent
+          // branch must retain the block's linked task.
+          final changeSet = seedChangeSet(items: [moveBlockItem()]);
 
-      ChangeItem addBlockItem() {
-        return ChangeItem(
-          toolName: 'add_block',
-          humanSummary: 'Add "Walk"',
-          args: <String, dynamic>{
-            'action': 'added',
-            'reason': 'Recovery break.',
-            'toStart': DateTime(2026, 5, 25, 13).toIso8601String(),
-            'toEnd': DateTime(2026, 5, 25, 13, 30).toIso8601String(),
-            'title': 'Walk',
-            'categoryId': 'life',
-            'type': 'manual',
-          },
-        );
-      }
+          await withClock(Clock.fixed(_now), () {
+            return createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            );
+          });
 
-      ChangeItem dropBlockItem({String blockId = 'block-1'}) {
-        return ChangeItem(
-          toolName: 'drop_block',
-          humanSummary: 'Drop "Prep demo"',
-          args: <String, dynamic>{
-            'action': 'dropped',
-            'reason': 'Not today.',
-            'blockId': blockId,
-          },
-        );
-      }
+          final updatedPlan = upsertedEntities
+              .whereType<DayPlanEntity>()
+              .single;
+          final moved = updatedPlan.data.plannedBlocks.single;
+          expect(moved.startTime, DateTime(2026, 5, 25, 11));
+          expect(moved.taskId, 'task-keep');
+        },
+      );
+
+      test(
+        'move_block with a type override updates the block type',
+        () async {
+          seedPlan(defaultSeedBlocks());
+          final changeSet = seedChangeSet(
+            items: [moveBlockItem(type: 'manual')],
+          );
+
+          await withClock(Clock.fixed(_now), () {
+            return createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            );
+          });
+
+          final updatedPlan = upsertedEntities
+              .whereType<DayPlanEntity>()
+              .single;
+          final moved = updatedPlan.data.plannedBlocks.single;
+          expect(moved.type, PlannedBlockType.manual);
+        },
+      );
 
       test(
         'acceptPlanDiff applies all changes, rebuilds plan, writes decisions',
@@ -2730,46 +2791,22 @@ void main() {
       DayPlanEntity seedPlan({
         DayPlanStatus status = const DayPlanStatus.draft(),
         List<PlannedBlock>? blocks,
-      }) {
-        final plan =
-            AgentDomainEntity.dayPlan(
-                  id: planEntityId,
-                  agentId: _agentId,
-                  dayId: _dayId,
-                  planDate: DateTime(2026, 5, 25),
-                  data: DayPlanData(
-                    planDate: DateTime(2026, 5, 25),
-                    status: status,
-                    plannedBlocks:
-                        blocks ??
-                        [
-                          PlannedBlock(
-                            id: 'block-1',
-                            categoryId: 'work',
-                            startTime: DateTime(2026, 5, 25, 9),
-                            endTime: DateTime(2026, 5, 25, 10),
-                            title: 'Prep demo',
-                            reason: 'Morning focus.',
-                          ),
-                          PlannedBlock(
-                            id: 'block-2',
-                            categoryId: 'life',
-                            startTime: DateTime(2026, 5, 25, 12),
-                            endTime: DateTime(2026, 5, 25, 13),
-                            title: 'Lunch',
-                          ),
-                        ],
-                  ),
-                  capacityMinutes: 360,
-                  scheduledMinutes: 120,
-                  createdAt: _now,
-                  updatedAt: _now,
-                  vectorClock: null,
-                )
-                as DayPlanEntity;
-        agentEntities[plan.id] = plan;
-        return plan;
-      }
+      }) => seedPlanEntity(
+        status: status,
+        scheduledMinutes: 120,
+        blocks:
+            blocks ??
+            [
+              ...defaultSeedBlocks(),
+              PlannedBlock(
+                id: 'block-2',
+                categoryId: 'life',
+                startTime: DateTime(2026, 5, 25, 12),
+                endTime: DateTime(2026, 5, 25, 13),
+                title: 'Lunch',
+              ),
+            ],
+      );
 
       test(
         'commitDay flips status + every drafted block, persists, notifies',
@@ -2994,43 +3031,27 @@ void main() {
     });
 
     group('uncommitDay', () {
-      const planEntityId = 'day_agent_plan:$_dayId';
-
       DayPlanEntity seedPlan({
         DayPlanStatus status = const DayPlanStatus.draft(),
         List<PlannedBlock>? blocks,
-      }) {
-        final plan =
-            AgentDomainEntity.dayPlan(
-                  id: planEntityId,
-                  agentId: _agentId,
-                  dayId: _dayId,
-                  planDate: DateTime(2026, 5, 25),
-                  data: DayPlanData(
-                    planDate: DateTime(2026, 5, 25),
-                    status: status,
-                    plannedBlocks:
-                        blocks ??
-                        [
-                          PlannedBlock(
-                            id: 'block-1',
-                            categoryId: 'work',
-                            startTime: DateTime(2026, 5, 25, 9),
-                            endTime: DateTime(2026, 5, 25, 10),
-                            title: 'Prep demo',
-                            reason: 'Morning focus.',
-                            state: PlannedBlockState.committed,
-                          ),
-                        ],
-                  ),
-                  createdAt: _now,
-                  updatedAt: _now,
-                  vectorClock: null,
-                )
-                as DayPlanEntity;
-        agentEntities[plan.id] = plan;
-        return plan;
-      }
+      }) => seedPlanEntity(
+        status: status,
+        capacityMinutes: 480,
+        scheduledMinutes: 0,
+        blocks:
+            blocks ??
+            [
+              PlannedBlock(
+                id: 'block-1',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 25, 9),
+                endTime: DateTime(2026, 5, 25, 10),
+                title: 'Prep demo',
+                reason: 'Morning focus.',
+                state: PlannedBlockState.committed,
+              ),
+            ],
+      );
 
       test(
         'uncommitDay flips status back to draft and walks committed blocks '
@@ -3205,37 +3226,7 @@ void main() {
     });
 
     group('executeTool dispatch for refine', () {
-      DayPlanEntity seedPlan() {
-        final plan =
-            AgentDomainEntity.dayPlan(
-                  id: 'day_agent_plan:$_dayId',
-                  agentId: _agentId,
-                  dayId: _dayId,
-                  planDate: DateTime(2026, 5, 25),
-                  data: DayPlanData(
-                    planDate: DateTime(2026, 5, 25),
-                    status: const DayPlanStatus.draft(),
-                    plannedBlocks: [
-                      PlannedBlock(
-                        id: 'block-1',
-                        categoryId: 'work',
-                        startTime: DateTime(2026, 5, 25, 9),
-                        endTime: DateTime(2026, 5, 25, 10),
-                        title: 'Prep demo',
-                        reason: 'Morning focus.',
-                      ),
-                    ],
-                  ),
-                  capacityMinutes: 360,
-                  scheduledMinutes: 60,
-                  createdAt: _now,
-                  updatedAt: _now,
-                  vectorClock: null,
-                )
-                as DayPlanEntity;
-        agentEntities[plan.id] = plan;
-        return plan;
-      }
+      DayPlanEntity seedPlan() => seedPlanEntity();
 
       test('executeTool returns JSON for propose_plan_diff', () async {
         seedPlan();
@@ -3918,68 +3909,18 @@ void main() {
     });
 
     group('acceptPlanDiff on agreed-status plan', () {
-      const planEntityId = 'day_agent_plan:$_dayId';
-
-      DayPlanEntity seedPlanWithStatus(DayPlanStatus status) {
-        final plan =
-            AgentDomainEntity.dayPlan(
-                  id: planEntityId,
-                  agentId: _agentId,
-                  dayId: _dayId,
-                  planDate: DateTime(2026, 5, 25),
-                  data: DayPlanData(
-                    planDate: DateTime(2026, 5, 25),
-                    status: status,
-                  ),
-                  capacityMinutes: 360,
-                  createdAt: _now,
-                  updatedAt: _now,
-                  vectorClock: null,
-                )
-                as DayPlanEntity;
-        agentEntities[plan.id] = plan;
-        return plan;
-      }
+      DayPlanEntity seedPlanWithStatus(DayPlanStatus status) =>
+          seedPlanEntity(status: status, blocks: const []);
 
       test('add_block on an agreed plan yields a committed added block '
           '(agreed branch of _stateForAcceptedAddedBlock)', () async {
         seedPlanWithStatus(
           DayPlanStatus.agreed(agreedAt: DateTime(2026, 5, 25, 8)),
         );
-        final changeSet =
-            AgentDomainEntity.changeSet(
-                  id: 'plan_diff:agreed-test',
-                  agentId: _agentId,
-                  taskId: planEntityId,
-                  threadId: _threadId,
-                  runKey: _runKey,
-                  status: ChangeSetStatus.pending,
-                  items: [
-                    ChangeItem(
-                      toolName: 'add_block',
-                      humanSummary: 'Add "Walk"',
-                      args: <String, dynamic>{
-                        'action': 'added',
-                        'reason': 'Recovery break.',
-                        'toStart': DateTime(2026, 5, 25, 13).toIso8601String(),
-                        'toEnd': DateTime(
-                          2026,
-                          5,
-                          25,
-                          13,
-                          30,
-                        ).toIso8601String(),
-                        'title': 'Walk',
-                        'categoryId': 'life',
-                        'type': 'manual',
-                      },
-                    ),
-                  ],
-                  createdAt: _now,
-                  vectorClock: null,
-                )
-                as ChangeSetEntity;
-        agentEntities[changeSet.id] = changeSet;
+        final changeSet = seedChangeSetEntity(
+          id: 'plan_diff:agreed-test',
+          items: [addBlockItem()],
+        );
 
         final updated = await withClock(Clock.fixed(_now), () {
           return createService().acceptPlanDiff(
@@ -4001,26 +3942,11 @@ void main() {
     group('deletePlanForDay', () {
       const planEntityId = 'day_agent_plan:$_dayId';
 
-      DayPlanEntity seedPlan({DateTime? deletedAt}) {
-        final plan =
-            AgentDomainEntity.dayPlan(
-                  id: planEntityId,
-                  agentId: _agentId,
-                  dayId: _dayId,
-                  planDate: DateTime(2026, 5, 25),
-                  data: DayPlanData(
-                    planDate: DateTime(2026, 5, 25),
-                    status: const DayPlanStatus.draft(),
-                  ),
-                  createdAt: _now,
-                  updatedAt: _now,
-                  vectorClock: null,
-                  deletedAt: deletedAt,
-                )
-                as DayPlanEntity;
-        agentEntities[plan.id] = plan;
-        return plan;
-      }
+      DayPlanEntity seedPlan({DateTime? deletedAt}) => seedPlanEntity(
+        blocks: const [],
+        capacityMinutes: 480,
+        deletedAt: deletedAt,
+      );
 
       AgentLink captureLink({String captureId = 'capture-001'}) {
         return AgentLink.captureToPlan(

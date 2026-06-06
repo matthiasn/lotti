@@ -159,139 +159,105 @@ void main() {
 
   group('PromptCapabilityFilter', () {
     group('isPromptAvailableOnPlatform', () {
-      test('returns true for all prompts on desktop', () async {
-        // Arrange
-        final prompt = AiTestDataFactory.createTestPrompt(
-          defaultModelId: 'whisper-model',
-          requiredInputData: [InputDataType.audioFiles],
-        );
-
-        final model = AiTestDataFactory.createTestModel(
-          id: 'whisper-model',
-          name: 'Whisper Model',
-          inferenceProviderId: 'whisper-provider',
-        );
-
-        final provider = AiTestDataFactory.createTestProvider(
-          id: 'whisper-provider',
-          name: 'Whisper',
-          type: InferenceProviderType.whisper,
-          baseUrl: 'http://localhost:8080',
-          apiKey: '',
-        );
-
-        when(
-          () => mockRepo.getConfigById('whisper-model'),
-        ).thenAnswer((_) async => model);
-        when(
-          () => mockRepo.getConfigById('whisper-provider'),
-        ).thenAnswer((_) async => provider);
-
-        // Act - Note: This test assumes we're running on desktop
-        // In a real scenario, you'd need to mock the platform detection
-        final result = await filter.isPromptAvailableOnPlatform(prompt);
-
-        // Assert
-        expect(result, isTrue);
-      });
-
-      test('returns true on desktop even when model is null', () async {
-        // Arrange
-        final prompt = AiTestDataFactory.createTestPrompt(
-          defaultModelId: 'non-existent-model',
-        );
-
-        when(
-          () => mockRepo.getConfigById('non-existent-model'),
-        ).thenAnswer((_) async => null);
-
-        // Act
-        final result = await filter.isPromptAvailableOnPlatform(prompt);
-
-        // Assert
-        // On desktop, all prompts are available regardless of configuration
-        expect(result, isTrue);
-      });
-
       test(
-        'returns true on desktop even when model is not AiConfigModel',
+        'returns true on desktop regardless of the config-lookup outcome',
         () async {
-          // Arrange
-          final prompt = AiTestDataFactory.createTestPrompt(
-            defaultModelId: 'wrong-type',
-          );
-
+          // A prompt where the looked-up id resolves to the wrong type.
           final wrongType = AiTestDataFactory.createTestPrompt(
             id: 'wrong-type',
             name: 'Wrong',
             defaultModelId: 'model',
           );
 
-          when(
-            () => mockRepo.getConfigById('wrong-type'),
-          ).thenAnswer((_) async => wrongType);
+          // (description, arrange) — arrange stubs the repo and returns the
+          // prompt under test. On desktop every outcome must be available.
+          final cases = <(String, AiConfigPrompt Function())>[
+            (
+              'fully configured whisper prompt',
+              () {
+                final model = AiTestDataFactory.createTestModel(
+                  id: 'whisper-model',
+                  name: 'Whisper Model',
+                  inferenceProviderId: 'whisper-provider',
+                );
+                final provider = AiTestDataFactory.createTestProvider(
+                  id: 'whisper-provider',
+                  name: 'Whisper',
+                  type: InferenceProviderType.whisper,
+                  baseUrl: 'http://localhost:8080',
+                  apiKey: '',
+                );
+                when(
+                  () => mockRepo.getConfigById('whisper-model'),
+                ).thenAnswer((_) async => model);
+                when(
+                  () => mockRepo.getConfigById('whisper-provider'),
+                ).thenAnswer((_) async => provider);
+                return AiTestDataFactory.createTestPrompt(
+                  defaultModelId: 'whisper-model',
+                  requiredInputData: [InputDataType.audioFiles],
+                );
+              },
+            ),
+            (
+              'model is null',
+              () {
+                when(
+                  () => mockRepo.getConfigById('non-existent-model'),
+                ).thenAnswer((_) async => null);
+                return AiTestDataFactory.createTestPrompt(
+                  defaultModelId: 'non-existent-model',
+                );
+              },
+            ),
+            (
+              'model is not an AiConfigModel',
+              () {
+                when(
+                  () => mockRepo.getConfigById('wrong-type'),
+                ).thenAnswer((_) async => wrongType);
+                return AiTestDataFactory.createTestPrompt(
+                  defaultModelId: 'wrong-type',
+                );
+              },
+            ),
+            (
+              'provider is null',
+              () {
+                final model = AiTestDataFactory.createTestModel(
+                  inferenceProviderId: 'non-existent-provider',
+                );
+                when(
+                  () => mockRepo.getConfigById('test-model'),
+                ).thenAnswer((_) async => model);
+                when(
+                  () => mockRepo.getConfigById('non-existent-provider'),
+                ).thenAnswer((_) async => null);
+                return AiTestDataFactory.createTestPrompt();
+              },
+            ),
+            (
+              'provider is not an AiConfigInferenceProvider',
+              () {
+                final model = AiTestDataFactory.createTestModel(
+                  inferenceProviderId: 'wrong-type',
+                );
+                when(
+                  () => mockRepo.getConfigById('test-model'),
+                ).thenAnswer((_) async => model);
+                when(
+                  () => mockRepo.getConfigById('wrong-type'),
+                ).thenAnswer((_) async => wrongType);
+                return AiTestDataFactory.createTestPrompt();
+              },
+            ),
+          ];
 
-          // Act
-          final result = await filter.isPromptAvailableOnPlatform(prompt);
-
-          // Assert
-          // On desktop, all prompts are available regardless of configuration
-          expect(result, isTrue);
-        },
-      );
-
-      test('returns true on desktop even when provider is null', () async {
-        // Arrange
-        final prompt = AiTestDataFactory.createTestPrompt();
-
-        final model = AiTestDataFactory.createTestModel(
-          inferenceProviderId: 'non-existent-provider',
-        );
-
-        when(
-          () => mockRepo.getConfigById('test-model'),
-        ).thenAnswer((_) async => model);
-        when(
-          () => mockRepo.getConfigById('non-existent-provider'),
-        ).thenAnswer((_) async => null);
-
-        // Act
-        final result = await filter.isPromptAvailableOnPlatform(prompt);
-
-        // Assert
-        // On desktop, all prompts are available regardless of configuration
-        expect(result, isTrue);
-      });
-
-      test(
-        'returns true on desktop even when provider is not AiConfigInferenceProvider',
-        () async {
-          // Arrange
-          final prompt = AiTestDataFactory.createTestPrompt();
-
-          final model = AiTestDataFactory.createTestModel(
-            inferenceProviderId: 'wrong-type',
-          );
-
-          final wrongType = AiTestDataFactory.createTestPrompt(
-            id: 'wrong-type',
-            name: 'Wrong',
-            defaultModelId: 'model',
-          );
-
-          when(
-            () => mockRepo.getConfigById('test-model'),
-          ).thenAnswer((_) async => model);
-          when(
-            () => mockRepo.getConfigById('wrong-type'),
-          ).thenAnswer((_) async => wrongType);
-
-          // Act
-          final result = await filter.isPromptAvailableOnPlatform(prompt);
-
-          // Assert
-          // On desktop, all prompts are available regardless of configuration
-          expect(result, isTrue);
+          for (final (description, arrange) in cases) {
+            final prompt = arrange();
+            final result = await filter.isPromptAvailableOnPlatform(prompt);
+            expect(result, isTrue, reason: description);
+          }
         },
       );
     });
@@ -1183,8 +1149,9 @@ void main() {
     ).test(
       'result matches membership in the known local-only set',
       (providerType) {
-        final result =
-            PromptCapabilityFilter.isLocalOnlyProviderType(providerType);
+        final result = PromptCapabilityFilter.isLocalOnlyProviderType(
+          providerType,
+        );
         final expectedLocal = localOnlyTypes.contains(providerType);
 
         expect(

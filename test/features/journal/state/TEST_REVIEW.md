@@ -102,7 +102,7 @@ _Date: 2026-06-02_
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **Inline GetIt
+- [x] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **Inline GetIt
   registration**: The file uses `setUpAll` (lines 233–347) to call
   `getIt.registerSingleton<T>()` directly for 10+ services, bypassing
   `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart`. It also
@@ -112,18 +112,18 @@ _Date: 2026-06-02_
   own `setUp` that calls `reset(mockJournalDb)` followed by re-stubbing — repeating mock setup
   that belongs in a shared helper.
 
-- [ ] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **Inline mock class**:
+- [x] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **Inline mock class**:
   `class Listener<T> extends Mock` (line 43) and `class FakeEventData extends Fake` (line 48)
   are defined inline. `FakeEventData` should go in `test/helpers/fallbacks.dart`; `Listener<T>`
   is a generic test helper that, if needed elsewhere, belongs in a shared utilities file.
 
-- [ ] **[HIGH]** `test/features/journal/state/linked_entries_controller_test.dart` — **Inline
+- [x] **[HIGH]** `test/features/journal/state/linked_entries_controller_test.dart` — **Inline
   mock classes**: `MockIncludeHiddenController` (line 25) and `_StaticLinksController` (line
   36) are defined inline. `MockIncludeHiddenController` particularly wraps a real Riverpod
   notifier override — a pattern that should be documented and possibly centralised if used in
   other test files.
 
-- [ ] **[HIGH]** `test/features/journal/state/linked_entries_controller_test.dart` — **Inline
+- [x] **[HIGH]** `test/features/journal/state/linked_entries_controller_test.dart` — **Inline
   GetIt registration**: lines 65–70 call `getIt.registerSingleton` for `UpdateNotifications`,
   `JournalDb`, `EditorStateService`, and `PersistenceLogic` directly, bypassing
   `setUpTestGetIt()`.
@@ -187,7 +187,7 @@ _Date: 2026-06-02_
 No Glados tests currently exist anywhere in `test/features/journal/state/`. The following are
 genuine candidates with algebraic invariants over pure logic:
 
-- [ ] **[HIGH]** `lib/features/journal/state/journal_query_runner.dart` —
+- [x] **[HIGH]** `lib/features/journal/state/journal_query_runner.dart` —
   `JournalQueryRunner.sortByDueDate` (lines 393–414): This is a pure, deterministic comparator
   over a list of `JournalEntity`. Its invariants are:
   1. **Total order**: output is always a permutation of the input.
@@ -232,17 +232,17 @@ genuine candidates with algebraic invariants over pure logic:
   A dedicated `journal_page_subscriptions_test.dart` should at minimum test
   `applyJournalConfigFlags` directly (it is a pure static method and requires no mocks).
 
-- [ ] **[HIGH]** `lib/features/journal/state/journal_page_state.dart` — **No test file**. The
+- [x] **[HIGH]** `lib/features/journal/state/journal_page_state.dart` — **No test file**. The
   `TasksFilter.fromJson` factory and the `@freezed` `copyWith` mechanics are exercised
   indirectly, but there are no direct unit tests for malformed JSON, missing optional fields,
   or enum parsing edge cases.
 
-- [ ] **[HIGH]** `lib/features/journal/state/entry_controller.dart` — **`save()` for
+- [x] **[HIGH]** `lib/features/journal/state/entry_controller.dart` — **`save()` for
   `JournalEvent` type is untested**: The `save()` method has an `if (entry is JournalEvent)`
   branch (lines 229–243) that calls `_persistenceLogic.updateEvent`. There are save tests for
   `JournalEntry` (text) and `Task`, but no test that exercises the Event save path.
 
-- [ ] **[HIGH]** `lib/features/journal/state/entry_controller.dart` — **`save()` with a running
+- [x] **[HIGH]** `lib/features/journal/state/entry_controller.dart` — **`save()` with a running
   timer entry**: Lines 250–258 contain a `stopRecording` + `Future.delayed(stopRecordingDelay)`
   path. The `stopRecording: true` test (line 1 429) does call `TimeService.stop`, but it does
   not assert that the `_shouldShowEditorToolBar` is reset to `false` and `_dirty` is cleared —
@@ -279,7 +279,7 @@ genuine candidates with algebraic invariants over pure logic:
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **Real I/O in
+- [x] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **Real I/O in
   `copyImage` setUp** (lines 2 929–2 979): This test group creates a real `Directory.systemTemp`
   directory, writes a PNG file, and registers a real `Directory` in GetIt. This is the only
   group in this scope with real filesystem I/O. While the I/O is minimal, the `setUp` and
@@ -289,7 +289,7 @@ genuine candidates with algebraic invariants over pure logic:
   injected interface or skipping the file-write if the assertion is purely about the clipboard
   branch guard. **Estimated impact**: adds ~50–100 ms per test run on a cold filesystem.
 
-- [ ] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **`setUpAll` registers
+- [x] **[HIGH]** `test/features/journal/state/entry_controller_test.dart` — **`setUpAll` registers
   all GetIt singletons before any test runs, but `tearDownAll(getIt.reset)` is the only
   cleanup** (line 349). Any test failure that prevents tearDownAll from running contaminates
   subsequent test files in the same shard. Using `setUp`/`tearDown` (or `setUpTestGetIt()`)

@@ -44,7 +44,7 @@
 
 ## File Size / Split Opportunities
 
-- [ ] **[HIGH]** One-test-file-per-source-file rule is violated across the labels feature, in three separate ways:
+- [x] **[HIGH]** One-test-file-per-source-file rule is violated across the labels feature, in three separate ways: **RESOLVED:** (1) the processor's five extra test files had already been consolidated; the remaining stray file is now moved to its mirror path `services/label_assignment_processor_test.dart`; (2) `ui/labels_list_page_test.dart` merged into `ui/pages/labels_list_page_test.dart` as a sibling group (helper + scoped setUp preserved); (3) the duplicate `ui/label_editor_sheet_test.dart` was already gone — only `ui/widgets/label_editor_sheet_test.dart` remains.
 
   1. **`label_assignment_processor.dart`** (277 lines) has **6** test files:
      - `test/features/labels/label_assignment_processor_test.dart` (129 lines) — stray, wrong directory
@@ -65,7 +65,7 @@
      - `test/features/labels/ui/widgets/label_editor_sheet_test.dart` (307 lines)
      Consolidate into `test/features/labels/ui/widgets/label_editor_sheet_test.dart`.
 
-- [ ] **[HIGH]** `test/features/labels/ui/label_details_page_test.dart` is 802 lines with 15 test cases each repeating a ~15-line setup block (`ProviderContainer`, `addTearDown(container.dispose)`, `tester.pumpWidget(UncontrolledProviderScope(container: container, child: makeTestableWidget2(...)))`). Extract a file-level `_pumpPage(tester, {ProviderContainer? container, LabelEditorState? state})` helper to eliminate the boilerplate.
+- [x] **[HIGH]** `test/features/labels/ui/label_details_page_test.dart` is 802 lines with 15 test cases each repeating a ~15-line setup block (`ProviderContainer`, `addTearDown(container.dispose)`, `tester.pumpWidget(UncontrolledProviderScope(container: container, child: makeTestableWidget2(...)))`). Extract a file-level `_pumpPage(tester, {ProviderContainer? container, LabelEditorState? state})` helper to eliminate the boilerplate. **RESOLVED:** shared `pumpPage(tester, {overrides, child})` helper builds the kept-alive container, pumps, and drains the first frames; all 15 setup blocks now route through it.
 
 - [ ] **[MED]** `lib/features/labels/repository/labels_repository.dart` is 490 lines. The file mixes four distinct concerns: stream-watching (`watchLabels`, `watchLabel`), CRUD operations (`createLabel`, `updateLabel`, `deleteLabel`, `setLabels`), utility methods (`buildLabelTuples`, `getLabelUsageCounts`, `addLabels`), and normalization helpers (`_normalizeCategoryIds`). The normalization logic at lines 370–420 is pure and could move to a `labels_normalization.dart` util, making it independently testable.
 
@@ -103,9 +103,9 @@
 
 ## Coverage / Missing-Behavior Gaps
 
-- [ ] **[HIGH]** `lib/features/labels/services/label_assignment_event_service.dart` (31 lines) — no dedicated test file. The `isClosed` guard in `publish()` (line 24) is never directly exercised by any test. The `dispose()` method and post-dispose behavior are also untested. While the service is instantiated in processor tests, its own contract (broadcast stream, lifecycle, closed-guard) has no unit test.
+- [x] **[HIGH]** `lib/features/labels/services/label_assignment_event_service.dart` (31 lines) — no dedicated test file. The `isClosed` guard in `publish()` (line 24) is never directly exercised by any test. The `dispose()` method and post-dispose behavior are also untested. While the service is instantiated in processor tests, its own contract (broadcast stream, lifecycle, closed-guard) has no unit test. **RESOLVED (already covered):** `services/label_assignment_event_service_test.dart` exists with broadcast, closed-guard, post-dispose, source-default, and a Glados delivery property.
 
-- [ ] **[HIGH]** `lib/features/labels/utils/assigned_labels_util.dart` (21 lines) — no test file exists. The `buildAssignedLabelTuples` function looks up label names from the DB and falls back to the ID when the definition is missing. The fallback path (`def?.name ?? lid`) and the empty-list short-circuit are untested.
+- [x] **[HIGH]** `lib/features/labels/utils/assigned_labels_util.dart` (21 lines) — no test file exists. The `buildAssignedLabelTuples` function looks up label names from the DB and falls back to the ID when the definition is missing. The fallback path (`def?.name ?? lid`) and the empty-list short-circuit are untested. **RESOLVED:** new `utils/assigned_labels_util_test.dart` covers the empty-ids short-circuit (verifyNever on the DB), name resolution, and the missing-definition id fallback.
 
 - [ ] **[MED]** `labels_repository_test.dart` (main file at 1150 lines) — the `buildLabelTuples` method behavior when given IDs not present in `getAllLabelDefinitions` (fallback to the ID string) is not tested. This mirrors the same gap in `assigned_labels_util.dart`.
 
@@ -119,7 +119,7 @@
 
 ## Test Execution Speed Opportunities
 
-- [ ] **[HIGH]** `test/features/labels/ui/label_details_page_test.dart` — 21 `pumpAndSettle` calls in 15 tests (~1.4 per test). Several of these (e.g., the `pumpAndSettle` immediately after `tester.pumpWidget(...)` when the controller state is synchronously set via `overrideWithBuild`) could be replaced with `tester.pump()`. After a synchronous state override, there is no animation; a single frame pump suffices. **Estimated saving: 0.5–2s per shard.**
+- [x] **[HIGH]** `test/features/labels/ui/label_details_page_test.dart` — 21 `pumpAndSettle` calls in 15 tests (~1.4 per test). Several of these (e.g., the `pumpAndSettle` immediately after `tester.pumpWidget(...)` when the controller state is synchronously set via `overrideWithBuild`) could be replaced with `tester.pump()`. After a synchronous state override, there is no animation; a single frame pump suffices. **Estimated saving: 0.5–2s per shard.** **RESOLVED:** all 21 settles are gone — post-pumpWidget settles are bounded pumps inside `pumpPage`, and the dialog/interaction settles are pump + 300ms.
 
 - [x] **[HIGH]** 6 test files covering `label_assignment_processor.dart` run as separate test files in the `very_good test` suite. Each file instantiates its own `LabelAssignmentEventService`, does `getIt.reset()`, and runs its setUp/tearDown independently. Consolidating into one file eliminates 5 redundant `getIt` warm-up/reset cycles and allows `setUpAll` to register constants once. **Estimated saving: 0.3–1s per shard.**
 

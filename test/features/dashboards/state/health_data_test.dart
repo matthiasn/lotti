@@ -526,8 +526,7 @@ void main() {
         final color = colorByValueAndType(obs, config);
         expect(color, isA<Color>());
         // The color must correspond to one of the hex values in the map.
-        final validColors =
-            thresholds.values.map(colorFromCssHex).toList();
+        final validColors = thresholds.values.map(colorFromCssHex).toList();
         expect(validColors, contains(color));
       },
       tags: 'glados',

@@ -38,15 +38,15 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/features/tasks/ui/cover_art_thumbnail_test.dart` does not use `setUpTestGetIt()` / `tearDownTestGetIt()`. It performs raw `getIt.reset()` + manual singleton registration inline (lines 27–53). This violates the "Use `setUpTestGetIt()` / `tearDownTestGetIt()`" rule and can leak state between tests.
+- [x] **[HIGH]** `test/features/tasks/ui/cover_art_thumbnail_test.dart` does not use `setUpTestGetIt()` / `tearDownTestGetIt()`. It performs raw `getIt.reset()` + manual singleton registration inline (lines 27–53). This violates the "Use `setUpTestGetIt()` / `tearDownTestGetIt()`" rule and can leak state between tests.
 
-- [ ] **[HIGH]** `test/features/tasks/ui/compact_task_progress_test.dart` uses `getIt.registerSingleton<TimeService>(TimeService())` directly in `setUpAll` (line 33) without `setUpTestGetIt`. This registers a real `TimeService` which holds a platform timer, violating the fake-time policy and creating cross-test contamination risk.
+- [x] **[HIGH]** `test/features/tasks/ui/compact_task_progress_test.dart` uses `getIt.registerSingleton<TimeService>(TimeService())` directly in `setUpAll` (line 33) without `setUpTestGetIt`. This registers a real `TimeService` which holds a platform timer, violating the fake-time policy and creating cross-test contamination risk.
 
-- [ ] **[HIGH]** `test/features/tasks/ui/linked_duration_timer_text_test.dart` same pattern as above (line 13–16): raw `getIt.registerSingleton<TimeService>` in `setUpAll`.
+- [x] **[HIGH]** `test/features/tasks/ui/linked_duration_timer_text_test.dart` same pattern as above (line 13–16): raw `getIt.registerSingleton<TimeService>` in `setUpAll`.
 
-- [ ] **[HIGH]** `test/features/tasks/ui/compact_task_progress_timer_text_test.dart` same pattern (line 13–16).
+- [x] **[HIGH]** `test/features/tasks/ui/compact_task_progress_timer_text_test.dart` same pattern (line 13–16).
 
-- [ ] **[HIGH]** `test/features/tasks/ui/task_status_test.dart` defines an inline `MockTask` class (lines 12–28) instead of importing from `test/mocks/mocks.dart`. This violates "Use centralized mocks."
+- [x] **[HIGH]** `test/features/tasks/ui/task_status_test.dart` defines an inline `MockTask` class (lines 12–28) instead of importing from `test/mocks/mocks.dart`. This violates "Use centralized mocks."
 
 - [ ] **[MED]** `test/features/tasks/ui/task_status_test.dart` lines 82–173 and 288–381 are two near-identical loops that iterate over all `TaskStatus` values and check `backgroundColor`. These should be consolidated into a single parameterized helper, not duplicated for light vs. dark mode. The duplication is ~90 lines.
 
@@ -68,9 +68,9 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/features/tasks/ui/time_recording_icon.dart` (59 ln) has **no test file** at all. `TimeRecordingIcon` uses a `StreamBuilder` over `TimeService.getStream()` and shows a colored dot only when `linkedFrom.meta.id == taskId`. This stream-switching logic and the "other task tracking" hide behavior are completely untested.
+- [x] **[HIGH]** `lib/features/tasks/ui/time_recording_icon.dart` (59 ln) has **no test file** at all. `TimeRecordingIcon` uses a `StreamBuilder` over `TimeService.getStream()` and shows a colored dot only when `linkedFrom.meta.id == taskId`. This stream-switching logic and the "other task tracking" hide behavior are completely untested.
 
-- [ ] **[HIGH]** `lib/features/tasks/ui/linked_duration.dart` (75 ln) has no dedicated test file. `linked_duration_timer_text_test.dart` only checks text-width stability (one test). The actual rendering logic — progress bar color switch when `progress > estimate`, "clamp to 1.0" for the bar value, `SizedBox.shrink` when `state == null || estimate == Duration.zero` — is untested.
+- [x] **[HIGH]** `lib/features/tasks/ui/linked_duration.dart` (75 ln) has no dedicated test file. `linked_duration_timer_text_test.dart` only checks text-width stability (one test). The actual rendering logic — progress bar color switch when `progress > estimate`, "clamp to 1.0" for the bar value, `SizedBox.shrink` when `state == null || estimate == Duration.zero` — is untested.
 
 - [x] **[HIGH]** `lib/features/tasks/ui/utils.dart` (76 ln) has no test file. Functions `taskColorFromStatusString`, `taskIconFromStatusString`, and `taskLabelFromStatusString` are tested indirectly via widget tests at best. There is no dedicated unit test file, violating "One test file per source file."
 
@@ -82,9 +82,9 @@
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/features/tasks/ui/cover_art_thumbnail_test.dart` — 32 `pumpAndSettle()` calls (lines 131, 159, 186, 212, 240, 266, 307, 360, 398, 433, 471, 493, 522, 543, 582, 604, 636, 653, 683, 699, 781, 807 + others). Most tests show a static `SizedBox > ClipRect > FittedBox > Image` after resolving a provider — the animation that `pumpAndSettle` waits for is file-decode async work not real animations. Replacing with `await tester.pump()` + `await tester.pump()` (two frames to resolve the async provider and rebuild) would make this the biggest speed win in the root directory. Estimated saving: ~320s of CI virtual time across the 32 sites.
+- [x] **[HIGH]** `test/features/tasks/ui/cover_art_thumbnail_test.dart` — 32 `pumpAndSettle()` calls (lines 131, 159, 186, 212, 240, 266, 307, 360, 398, 433, 471, 493, 522, 543, 582, 604, 636, 653, 683, 699, 781, 807 + others). Most tests show a static `SizedBox > ClipRect > FittedBox > Image` after resolving a provider — the animation that `pumpAndSettle` waits for is file-decode async work not real animations. Replacing with `await tester.pump()` + `await tester.pump()` (two frames to resolve the async provider and rebuild) would make this the biggest speed win in the root directory. Estimated saving: ~320s of CI virtual time across the 32 sites.
 
-- [ ] **[HIGH]** `test/features/tasks/ui/due_date_text_test.dart` — 21 `pumpAndSettle()` calls. `DueDateText` is a stateless toggling widget with no unresolved animations; each test only needs `tester.pump()` after an interaction. Savings: ~210s of virtual CI time.
+- [x] **[HIGH]** `test/features/tasks/ui/due_date_text_test.dart` — 21 `pumpAndSettle()` calls. `DueDateText` is a stateless toggling widget with no unresolved animations; each test only needs `tester.pump()` after an interaction. Savings: ~210s of virtual CI time.
 
 - [ ] **[MED]** `test/features/tasks/ui/compact_task_progress_test.dart` — 10 `pumpAndSettle()` calls (lines 87, 105, 126, 164, 185, 206, 227, 246, 263, 288). The widget resolves an `AsyncNotifier` (one frame) and then is static. Each could be `await tester.pump()` (2 pumps max). Savings: ~100s.
 

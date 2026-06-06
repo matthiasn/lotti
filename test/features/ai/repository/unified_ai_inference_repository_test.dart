@@ -1,6 +1,7 @@
 // ignore_for_file: unawaited_futures, avoid_redundant_argument_values
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -8,6 +9,7 @@ import 'package:drift/drift.dart' show Selectable;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -95,6 +97,8 @@ void main() {
   late MockLabelsRepository mockLabelsRepository;
   late TestChecklistCompletionService testChecklistCompletionService;
 
+  late Directory suiteTempDir;
+
   setUpAll(() {
     // Isolate registrations from other files when tests are optimized
     getIt.pushNewScope();
@@ -113,6 +117,11 @@ void main() {
     registerFallbackValue(FakeChecklistData());
     registerFallbackValue(FakeChecklistItemData());
     registerFallbackValue(ChatCompletionMessageInputAudioFormat.wav);
+
+    // One suite-level temp root; each test gets a cheap unique subdirectory
+    // instead of its own systemTemp dir + recursive delete (~92 fs round
+    // trips saved per run). Deleted once in tearDownAll.
+    suiteTempDir = Directory.systemTemp.createTempSync('lotti_ai_repo_test_');
   });
 
   late Directory? baseTempDir;
@@ -135,23 +144,18 @@ void main() {
 
     reset(mockJournalDb);
 
-    // Set up GetIt
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    if (getIt.isRegistered<Directory>()) {
-      getIt.unregister<Directory>();
-    }
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
+    // Per-test GetIt scope: popScope in tearDown removes everything this
+    // test registered (including inline registrations in test bodies) in a
+    // single call, replacing six isRegistered/unregister round trips.
     getIt
+      ..pushNewScope()
       ..registerSingleton<JournalDb>(mockJournalDb)
       ..registerSingleton<Directory>(mockDirectory)
       ..registerSingleton<LoggingService>(mockLoggingService);
 
-    // Mock directory path to a writable temp location (unique per test)
-    baseTempDir = Directory.systemTemp.createTempSync('lotti_ai_repo_test_');
+    // Mock directory path to a writable temp location (unique per test,
+    // nested under the suite-level root created in setUpAll)
+    baseTempDir = suiteTempDir.createTempSync('t');
     overrideTempDirs = <Directory>[];
     when(() => mockDirectory.path).thenReturn(baseTempDir!.path);
 
@@ -199,16 +203,11 @@ void main() {
       ..autoChecklistServiceForTesting = mockAutoChecklistService;
   });
 
-  tearDown(() {
+  tearDown(() async {
     container.dispose();
-    // Clean up temp directories if they were created
-    // Note: Only remove if it still exists and is empty-ish; ignore errors
+    // Per-test base dirs live under suiteTempDir and are removed once in
+    // tearDownAll; only test-created override dirs are cleaned up here.
     try {
-      // Always attempt to remove the base temp dir
-      if (baseTempDir != null && baseTempDir!.existsSync()) {
-        baseTempDir!.deleteSync(recursive: true);
-      }
-      // Remove any override dirs registered by tests
       for (final d in overrideTempDirs) {
         if (d.existsSync()) {
           d.deleteSync(recursive: true);
@@ -218,18 +217,16 @@ void main() {
       when(() => mockDirectory.path).thenReturn(Directory.systemTemp.path);
     } catch (_) {}
 
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    if (getIt.isRegistered<Directory>()) {
-      getIt.unregister<Directory>();
-    }
-    if (getIt.isRegistered<LoggingService>()) {
-      getIt.unregister<LoggingService>();
-    }
+    // Drop the per-test scope pushed in setUp (and anything tests added).
+    await getIt.popScope();
   });
 
   tearDownAll(() async {
+    try {
+      if (suiteTempDir.existsSync()) {
+        suiteTempDir.deleteSync(recursive: true);
+      }
+    } catch (_) {}
     // Pop scoped registrations for this file
     await getIt.resetScope();
     await getIt.popScope();
@@ -1414,6 +1411,134 @@ void main() {
           // Clean up the temporary directory
           tempDir.deleteSync(recursive: true);
         }
+      });
+
+      test('rethrows when the image file is missing on disk', () async {
+        // Point the documents directory at an empty temp dir WITHOUT creating
+        // the image file, so _prepareImages' readAsBytes fails.
+        final tempDir = Directory.systemTemp.createTempSync('image_missing');
+        overrideTempDirs.add(tempDir);
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        final imageEntity = JournalImage(
+          meta: _createMetadata(),
+          data: ImageData(
+            capturedAt: DateTime(2024, 3, 15, 10, 30),
+            imageId: 'test-image',
+            imageFile: 'missing.jpg',
+            imageDirectory: '/images/',
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Image Analysis',
+          requiredInputData: [InputDataType.images],
+          aiResponseType: AiResponseType.imageAnalysis,
+        );
+
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: imageEntity,
+          model: _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4-vision',
+          ),
+          provider: _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          ),
+          taskDetailsJson: '{"image": "missing.jpg"}',
+        );
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []);
+
+        final statusChanges = <InferenceStatus>[];
+
+        // runInference logs and rethrows; the file read failure surfaces as
+        // a FileSystemException and no idle status is ever emitted.
+        await expectLater(
+          repository!.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          ),
+          throwsA(isA<FileSystemException>()),
+        );
+
+        expect(statusChanges, [InferenceStatus.running]);
+        verifyNever(
+          () => mockCloudInferenceRepo.generateWithImages(
+            any(),
+            provider: any(named: 'provider'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            images: any(named: 'images'),
+            baseUrl: any(named: 'baseUrl'),
+            apiKey: any(named: 'apiKey'),
+          ),
+        );
+      });
+
+      test('rethrows when the audio file is missing on disk', () async {
+        final tempDir = Directory.systemTemp.createTempSync('audio_missing');
+        overrideTempDirs.add(tempDir);
+        when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+        final audioEntity = JournalAudio(
+          meta: _createMetadata(),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+            audioFile: 'missing.mp3',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 30),
+          ),
+        );
+
+        final promptConfig = _createPrompt(
+          id: 'prompt-1',
+          name: 'Audio Transcription',
+          requiredInputData: [InputDataType.audioFiles],
+          aiResponseType: AiResponseType.audioTranscription,
+        );
+
+        _stubInferenceContext(
+          mockAiInputRepo: mockAiInputRepo,
+          mockAiConfigRepo: mockAiConfigRepo,
+          entity: audioEntity,
+          model: _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'whisper-1',
+          ),
+          provider: _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          ),
+          taskDetailsJson: '{"audio": "missing.mp3"}',
+        );
+        when(
+          () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+        ).thenAnswer((_) async => []);
+
+        final statusChanges = <InferenceStatus>[];
+
+        await expectLater(
+          repository!.runInference(
+            entityId: 'test-id',
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          ),
+          throwsA(isA<FileSystemException>()),
+        );
+
+        expect(statusChanges, [InferenceStatus.running]);
       });
 
       test('successfully runs inference with audio', () async {
@@ -5383,14 +5508,8 @@ Take into account the following task context:
       () {
         // Register a mock AgentDatabase in GetIt before constructing the repo
         final mockAgentDb = MockAgentDatabase();
-        if (!getIt.isRegistered<AgentDatabase>()) {
-          getIt.registerSingleton<AgentDatabase>(mockAgentDb);
-        }
-        addTearDown(() {
-          if (getIt.isRegistered<AgentDatabase>()) {
-            getIt.unregister<AgentDatabase>();
-          }
-        });
+        // Registered in this test's GetIt scope; tearDown pops the scope.
+        getIt.registerSingleton<AgentDatabase>(mockAgentDb);
 
         // Constructing the repository should hit the branch at line 69
         final ref = container.read(testRefProvider);
@@ -5407,14 +5526,8 @@ Take into account the following task context:
     test('creates AutoChecklistService lazily when not set via testing setter', () {
       // AutoChecklistService internally calls getIt<DomainLogger>(), register it.
       final mockDomainLogger = MockDomainLogger();
-      if (!getIt.isRegistered<DomainLogger>()) {
-        getIt.registerSingleton<DomainLogger>(mockDomainLogger);
-      }
-      addTearDown(() {
-        if (getIt.isRegistered<DomainLogger>()) {
-          getIt.unregister<DomainLogger>();
-        }
-      });
+      // Registered in this test's GetIt scope; tearDown pops the scope.
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
       // Create a fresh repository WITHOUT calling autoChecklistServiceForTesting
       final ref = container.read(testRefProvider);
@@ -6318,6 +6431,125 @@ Take into account the following task context:
           expect(statusChanges, contains(InferenceStatus.idle));
         },
       );
+
+      test(
+        'skips re-run when language is detected but response is non-empty',
+        () async {
+          final taskEntity = Task(
+            meta: _createMetadata(),
+            data: TaskData(
+              status: TaskStatus.inProgress(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15, 10, 30),
+                utcOffset: 0,
+              ),
+              title: 'Language Detection Test',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
+            ),
+          );
+
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Task Summary',
+            requiredInputData: [InputDataType.task],
+          );
+
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gpt-4',
+          );
+
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.genericOpenAi,
+          );
+
+          var callCount = 0;
+          when(
+            () => mockAiInputRepo.getEntity(taskEntity.id),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockAiConfigRepo.getConfigById('model-1'),
+          ).thenAnswer((_) async => model);
+          when(
+            () => mockAiConfigRepo.getConfigById('provider-1'),
+          ).thenAnswer((_) async => provider);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: taskEntity.id),
+          ).thenAnswer((_) async => '{"task":"details"}');
+
+          when(
+            () => mockJournalRepo.getJournalEntityById(taskEntity.id),
+          ).thenAnswer((_) async => taskEntity);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          // Single run: BOTH a language tool call AND text content, so the
+          // `response.trim().isEmpty` half of the re-run gate is false and
+          // no second inference must be started.
+          when(
+            () => mockCloudInferenceRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              systemMessage: any(named: 'systemMessage'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              provider: any(named: 'provider'),
+              tools: any(named: 'tools'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            ),
+          ).thenAnswer((_) {
+            callCount++;
+            return Stream.fromIterable([
+              _createStreamChunkWithToolCalls([
+                _createMockToolCall(
+                  index: 0,
+                  id: 'lang-1',
+                  functionName: TaskFunctions.setTaskLanguage,
+                  arguments:
+                      '{"languageCode":"de","confidence":"high","reason":"German text"}',
+                ),
+              ]),
+              CreateChatCompletionStreamResponse(
+                id: 'response-text',
+                choices: const [
+                  ChatCompletionStreamResponseChoice(
+                    delta: ChatCompletionStreamResponseDelta(
+                      content: 'Zusammenfassung der Aufgabe',
+                    ),
+                    finishReason: ChatCompletionFinishReason.stop,
+                    index: 0,
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+              ),
+            ]);
+          });
+
+          _stubCreateAiResponseEntry(mockAiInputRepo);
+
+          final statusChanges = <InferenceStatus>[];
+          await repository!.runInference(
+            entityId: taskEntity.id,
+            promptConfig: promptConfig,
+            onProgress: (_) {},
+            onStatusChange: statusChanges.add,
+          );
+
+          // Language was set, but the non-empty response suppresses the
+          // automatic re-run: exactly one inference call.
+          expect(callCount, 1);
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
+          expect(statusChanges, contains(InferenceStatus.idle));
+        },
+      );
     },
   );
 
@@ -6755,14 +6987,8 @@ Take into account the following task context:
           // LabelAssignmentProcessor calls getIt<DomainLogger>() in its
           // constructor — register a mock so the constructor doesn't throw.
           final mockDomainLogger = MockDomainLogger();
-          if (!getIt.isRegistered<DomainLogger>()) {
-            getIt.registerSingleton<DomainLogger>(mockDomainLogger);
-          }
-          addTearDown(() {
-            if (getIt.isRegistered<DomainLogger>()) {
-              getIt.unregister<DomainLogger>();
-            }
-          });
+          // Registered in this test's GetIt scope; tearDown pops the scope.
+          getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
           // Build real LabelDefinition fixtures — global (no applicableCategoryIds)
           // and not deleted (no deletedAt) so the validator marks them valid.
@@ -6871,14 +7097,8 @@ Take into account the following task context:
           // LabelAssignmentProcessor's constructor resolves getIt<DomainLogger>
           // even though processAssignment is never reached on this path.
           final mockDomainLogger = MockDomainLogger();
-          if (!getIt.isRegistered<DomainLogger>()) {
-            getIt.registerSingleton<DomainLogger>(mockDomainLogger);
-          }
-          addTearDown(() {
-            if (getIt.isRegistered<DomainLogger>()) {
-              getIt.unregister<DomainLogger>();
-            }
-          });
+          // Registered in this test's GetIt scope; tearDown pops the scope.
+          getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
           // Both requested labels (X, Y) are on the task's suppression set, so
           // `proposed` becomes empty while `requested` is non-empty, taking the
@@ -7030,6 +7250,113 @@ Take into account the following task context:
         },
       );
     },
+  );
+
+  group('extractJsonObjects', () {
+    test('returns empty list for empty and brace-free input', () {
+      expect(extractJsonObjects(''), isEmpty);
+      expect(extractJsonObjects('no json here, just text'), isEmpty);
+    });
+
+    test('ignores stray closing braces before an object', () {
+      expect(extractJsonObjects('}{"a":1}'), ['{"a":1}']);
+    });
+
+    test('keeps nested objects as a single result', () {
+      expect(
+        extractJsonObjects('{"a": {"b": 2}}'),
+        ['{"a": {"b": 2}}'],
+      );
+    });
+
+    test('ignores braces inside string literals', () {
+      expect(
+        extractJsonObjects('{"reason": "The user selected {Item}"}'),
+        ['{"reason": "The user selected {Item}"}'],
+      );
+      // Unbalanced brace inside a string must not open/close objects.
+      expect(
+        extractJsonObjects('{"a": "}"}{"b": 2}'),
+        ['{"a": "}"}', '{"b": 2}'],
+      );
+    });
+
+    test('handles escaped quotes inside string literals', () {
+      expect(
+        extractJsonObjects(r'{"a": "say \"hi\" {x}"}'),
+        [r'{"a": "say \"hi\" {x}"}'],
+      );
+    });
+
+    glados.Glados(
+      glados.any.jsonObjectsScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'N concatenated well-formed JSON objects round-trip in order',
+      (scenario) {
+        final extracted = extractJsonObjects(scenario.concatenated);
+
+        expect(
+          extracted.length,
+          scenario.objects.length,
+          reason: 'input: ${scenario.concatenated}',
+        );
+        for (var i = 0; i < extracted.length; i++) {
+          expect(
+            jsonDecode(extracted[i]),
+            scenario.objects[i],
+            reason: 'object $i of input: ${scenario.concatenated}',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+/// A generated list of well-formed JSON objects plus their concatenation
+/// with brace-free separator noise — the exact shape AI providers produce
+/// when they glue several tool-call argument objects together.
+class _JsonObjectsScenario {
+  _JsonObjectsScenario({
+    required int count,
+    required int seed,
+    required this.separator,
+  }) : objects = List.generate(count, (i) => _buildObject(seed, i));
+
+  final List<Map<String, Object?>> objects;
+  final String separator;
+
+  static Map<String, Object?> _buildObject(int seed, int i) {
+    return switch ((seed + i) % 4) {
+      0 => {'key$i': 'text value $i'},
+      1 => {'key$i': seed + i},
+      2 => {'key$i': i.isEven},
+      // Nested braces are balanced, so they must survive extraction.
+      _ => {
+        'key$i': {'inner': i},
+      },
+    };
+  }
+
+  String get concatenated =>
+      separator + objects.map(jsonEncode).join(separator) + separator;
+
+  @override
+  String toString() =>
+      '_JsonObjectsScenario(objects: $objects, separator: "$separator")';
+}
+
+extension _AnyJsonObjectsScenario on glados.Any {
+  glados.Generator<_JsonObjectsScenario> get jsonObjectsScenario => combine3(
+    intInRange(0, 7),
+    intInRange(0, 1000),
+    choose(const ['', ' ', '\n', ', ', ' noise without braces ']),
+    (int count, int seed, String separator) => _JsonObjectsScenario(
+      count: count,
+      seed: seed,
+      separator: separator,
+    ),
   );
 }
 

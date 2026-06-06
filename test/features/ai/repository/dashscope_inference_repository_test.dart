@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
@@ -922,5 +923,114 @@ void main() {
         );
       });
     });
+
+    group('extractImageUrlFromSse', () {
+      test('returns null for empty body and bodies without data lines', () {
+        final repo = DashScopeInferenceRepository();
+        addTearDown(repo.close);
+        expect(repo.extractImageUrlFromSse(''), isNull);
+        expect(
+          repo.extractImageUrlFromSse('id:1\nevent:result\n:HTTP_STATUS/200'),
+          isNull,
+        );
+      });
+
+      glados.Glados(
+        glados.any.dashScopeSseScenario,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'extracts the last image URL from generated SSE bodies, '
+        'skipping text events and malformed lines',
+        (scenario) {
+          final repo = DashScopeInferenceRepository();
+          addTearDown(repo.close);
+
+          expect(
+            repo.extractImageUrlFromSse(scenario.sseBody),
+            scenario.expectedUrl,
+            reason: scenario.sseBody,
+          );
+        },
+        tags: 'glados',
+      );
+    });
   });
+}
+
+/// A generated DashScope SSE body mixing text events, image events, and
+/// malformed data lines, paired with the URL the parser must extract (the
+/// image URL of the LAST image event, or null when none is present).
+class _DashScopeSseScenario {
+  _DashScopeSseScenario({required int count, required int seed})
+    : _kinds = List.generate(count, (i) => (seed + i) % 3);
+
+  final List<int> _kinds;
+
+  String? get expectedUrl {
+    final lastImage = _kinds.lastIndexOf(1);
+    return lastImage == -1 ? null : _imageUrl(lastImage);
+  }
+
+  static String _imageUrl(int i) =>
+      'https://dashscope-result.oss.aliyuncs.com/img$i.png';
+
+  String get sseBody {
+    final buffer = StringBuffer();
+    for (var i = 0; i < _kinds.length; i++) {
+      final data = switch (_kinds[i]) {
+        0 => jsonEncode({
+          'output': {
+            'choices': [
+              {
+                'message': {
+                  'content': [
+                    {'type': 'text', 'text': 'delta $i'},
+                  ],
+                  'role': 'assistant',
+                },
+                'finish_reason': 'null',
+              },
+            ],
+            'finished': false,
+          },
+        }),
+        1 => jsonEncode({
+          'output': {
+            'choices': [
+              {
+                'message': {
+                  'content': [
+                    {'type': 'image', 'image': _imageUrl(i)},
+                  ],
+                  'role': 'assistant',
+                },
+                'finish_reason': 'stop',
+              },
+            ],
+            'finished': true,
+          },
+        }),
+        // Malformed payload — the parser must skip it without failing.
+        _ => 'not json at all {',
+      };
+      buffer
+        ..writeln('id:${i + 1}')
+        ..writeln('event:result')
+        ..writeln(':HTTP_STATUS/200')
+        ..writeln('data:$data')
+        ..writeln();
+    }
+    return buffer.toString();
+  }
+
+  @override
+  String toString() => '_DashScopeSseScenario(kinds: $_kinds)';
+}
+
+extension _AnyDashScopeSseScenario on glados.Any {
+  glados.Generator<_DashScopeSseScenario> get dashScopeSseScenario => combine2(
+    intInRange(0, 9),
+    intInRange(0, 1000),
+    (int count, int seed) => _DashScopeSseScenario(count: count, seed: seed),
+  );
 }

@@ -877,35 +877,15 @@ class UnifiedAiInferenceRepository {
       if (toolCall.function.name ==
           ChecklistCompletionFunctions.suggestChecklistCompletion) {
         // Handle case where multiple JSON objects might be concatenated
-        final argumentsStr = toolCall.function.arguments;
-
-        // Try to split multiple JSON objects if they're concatenated
-        // This regex matches JSON objects by looking for balanced braces
-        // NOTE: This manual parsing logic may fail if the reason field contains
-        // unmatched { or } characters. This is a known limitation but should be
-        // rare in practice since AI-generated reasons are typically well-formed.
-        final jsonObjects = <String>[];
-        var depth = 0;
-        var start = -1;
-
-        for (var i = 0; i < argumentsStr.length; i++) {
-          if (argumentsStr[i] == '{') {
-            if (depth == 0) {
-              start = i;
-            }
-            depth++;
-          } else if (argumentsStr[i] == '}') {
-            depth--;
-            if (depth == 0 && start != -1) {
-              jsonObjects.add(argumentsStr.substring(start, i + 1));
-              start = -1;
-            }
-          }
-        }
+        final jsonObjects = extractJsonObjects(toolCall.function.arguments);
 
         if (jsonObjects.isEmpty) {
+          // Log metadata only — raw arguments can carry user content/PII
+          // and can be arbitrarily large.
           developer.log(
-            'No valid JSON found in arguments: $argumentsStr',
+            'No valid JSON found in arguments '
+            '(toolCallId=${toolCall.id}, '
+            'length=${toolCall.function.arguments.length})',
             name: 'UnifiedAiInferenceRepository',
           );
           continue;
@@ -1379,4 +1359,57 @@ class UnifiedAiInferenceRepository {
 @riverpod
 UnifiedAiInferenceRepository unifiedAiInferenceRepository(Ref ref) {
   return UnifiedAiInferenceRepository(ref);
+}
+
+/// Extracts top-level JSON object substrings from [input] by brace-depth
+/// scanning.
+///
+/// AI providers sometimes concatenate several JSON objects into one tool-call
+/// argument string; this splits them back apart. Text outside braces is
+/// ignored. Braces inside JSON string literals (including escaped quotes)
+/// are ignored so a reason like `"The user selected {Item}"` does not skew
+/// the depth count.
+List<String> extractJsonObjects(String input) {
+  final jsonObjects = <String>[];
+  var depth = 0;
+  var start = -1;
+  var inString = false;
+  var escaped = false;
+
+  for (var i = 0; i < input.length; i++) {
+    final char = input[i];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (inString) {
+      if (char == r'\') {
+        escaped = true;
+      } else if (char == '"') {
+        inString = false;
+      }
+      continue;
+    }
+    // Only treat quotes as string delimiters inside an object — stray
+    // quotes in the surrounding prose must not flip the string state.
+    if (char == '"' && depth > 0) {
+      inString = true;
+    } else if (char == '{') {
+      if (depth == 0) {
+        start = i;
+      }
+      depth++;
+    } else if (char == '}') {
+      if (depth > 0) {
+        depth--;
+        if (depth == 0 && start != -1) {
+          jsonObjects.add(input.substring(start, i + 1));
+          start = -1;
+        }
+      }
+    }
+  }
+
+  return jsonObjects;
 }

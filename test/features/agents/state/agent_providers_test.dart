@@ -184,7 +184,7 @@ void main() {
       expect(logger, isA<DomainLogger>());
 
       // Let the config flag streams emit so ref.listen fires.
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       await container.pump();
 
       expect(logger.enabledDomains, contains(LogDomain.agentRuntime));
@@ -227,7 +227,7 @@ void main() {
       runtimeController.add(true);
       workflowController.add(true);
       syncController.add(false);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       await container.pump();
 
       expect(logger.enabledDomains, contains(LogDomain.agentRuntime));
@@ -237,7 +237,7 @@ void main() {
       // Toggle: agent_runtime off, sync on.
       runtimeController.add(false);
       syncController.add(true);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       await container.pump();
 
       expect(logger.enabledDomains, isNot(contains(LogDomain.agentRuntime)));
@@ -1838,6 +1838,57 @@ void main() {
         verify(
           () => mockNotifications.notifyUiOnly(
             {kTestAgentId, 'tpl-1', 'AGENT_CHANGED'},
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'wakeExecutor still notifies without templateId when the template '
+      'lookup throws',
+      () async {
+        final identity = makeTestIdentity();
+        final mutated = <String, VectorClock>{
+          'entry-1': const VectorClock({}),
+        };
+
+        when(
+          () => bench.mockService.getAgent(kTestAgentId),
+        ).thenAnswer((_) async => identity);
+        when(
+          () => bench.mockWorkflow.execute(
+            agentIdentity: any(named: 'agentIdentity'),
+            runKey: any(named: 'runKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+            threadId: any(named: 'threadId'),
+          ),
+        ).thenAnswer(
+          (_) async => WakeResult(success: true, mutatedEntries: mutated),
+        );
+        // The template lookup failing must NOT fail the completed wake:
+        // the error is swallowed and the notification fires without the
+        // templateId token.
+        when(
+          () => bench.mockTemplateService.getTemplateForAgent(kTestAgentId),
+        ).thenThrow(StateError('template lookup failed'));
+
+        final capture = bench.captureWakeExecutor();
+        final container = bench.createContainer();
+        await bench.initAndSubscribe(container);
+
+        final result = await capture.executor(
+          kTestAgentId,
+          'run-key-err',
+          {'tok-e'},
+          'thread-err',
+        );
+        expect(result, mutated);
+
+        final mockNotifications =
+            getIt<UpdateNotifications>() as MockUpdateNotifications;
+        verify(
+          () => mockNotifications.notifyUiOnly(
+            {kTestAgentId, 'AGENT_CHANGED'},
           ),
         ).called(1);
       },

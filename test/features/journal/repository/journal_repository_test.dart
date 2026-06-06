@@ -23,7 +23,35 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+
+/// Base metadata fixture for repository tests — every field defaults to the
+/// shared 2023 timestamps; pass only what differs.
+Metadata testMeta({
+  String id = 'test-id',
+  String? categoryId,
+  DateTime? deletedAt,
+  VectorClock? vectorClock,
+  bool starred = false,
+  bool private = false,
+  EntryFlag flag = EntryFlag.none,
+}) {
+  return Metadata(
+    id: id,
+    createdAt: DateTime(2023),
+    updatedAt: DateTime(2023),
+    dateFrom: DateTime(2023),
+    dateTo: DateTime(2023),
+    starred: starred,
+    private: private,
+    flag: flag,
+    categoryId: categoryId,
+    deletedAt: deletedAt,
+    vectorClock: vectorClock,
+  );
+}
 
 void main() {
   group('JournalRepository', () {
@@ -38,7 +66,9 @@ void main() {
     late JournalRepository repository;
     late StreamController<Set<String>> updateStreamController;
 
-    setUp(() {
+    setUpAll(registerAllFallbackValues);
+
+    setUp(() async {
       mockJournalDb = MockJournalDb();
       mockPersistenceLogic = MockPersistenceLogic();
       mockNotificationService = MockNotificationService();
@@ -51,97 +81,33 @@ void main() {
         sync: true,
       );
 
-      // Register our mock services
-      getIt
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<NotificationService>(mockNotificationService)
-        ..registerSingleton<DomainLogger>(mockDomainLogger)
-        ..registerSingleton<VectorClockService>(mockVectorClockService)
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<OutboxService>(mockOutboxService)
-        ..registerSingleton<TimeService>(mockTimeService);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockJournalDb)
+            ..unregister<UpdateNotifications>()
+            ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+            ..unregister<DomainLogger>()
+            ..registerSingleton<DomainLogger>(mockDomainLogger)
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..registerSingleton<NotificationService>(mockNotificationService)
+            ..registerSingleton<VectorClockService>(mockVectorClockService)
+            ..registerSingleton<OutboxService>(mockOutboxService)
+            ..registerSingleton<TimeService>(mockTimeService);
+        },
+      );
 
       when(
         () => mockUpdateNotifications.updateStream,
       ).thenAnswer((_) => updateStreamController.stream);
 
       repository = JournalRepository();
-
-      // Register fallback values for any complex types
-      registerFallbackValue(
-        Metadata(
-          id: 'test-id',
-          createdAt: DateTime(2023),
-          updatedAt: DateTime(2023),
-          dateFrom: DateTime(2023),
-          dateTo: DateTime(2023),
-          starred: false,
-          private: false,
-          flag: EntryFlag.none,
-        ),
-      );
-      registerFallbackValue(
-        JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Test content',
-            markdown: 'test',
-          ),
-          meta: Metadata(
-            id: 'test-id',
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
-        ),
-      );
-      registerFallbackValue(
-        SyncMessage.entryLink(
-          entryLink: EntryLink.basic(
-            id: 'link-id',
-            fromId: 'from-id',
-            toId: 'to-id',
-            updatedAt: DateTime(2023),
-            createdAt: DateTime(2023),
-            vectorClock: null,
-          ),
-          status: SyncEntryStatus.update,
-        ),
-      );
-      registerFallbackValue(
-        EntryLink.basic(
-          id: 'link-id',
-          fromId: 'from-id',
-          toId: 'to-id',
-          updatedAt: DateTime(2023),
-          createdAt: DateTime(2023),
-          vectorClock: null,
-        ),
-      );
-      registerFallbackValue(
-        TaskData(
-          status: TaskStatus.open(
-            id: 'status-id',
-            createdAt: DateTime(2023),
-            utcOffset: 0,
-          ),
-          dateFrom: DateTime(2023),
-          dateTo: DateTime(2023),
-          statusHistory: const [],
-          title: 'Test Task',
-        ),
-      );
-      registerFallbackValue(EntryFlag.none);
-      registerFallbackValue(DateTime(2023));
     });
 
     tearDown(() async {
       await updateStreamController.close();
-      await getIt.reset();
+      await tearDownTestGetIt();
     });
 
     group('updateCategoryId', () {
@@ -155,16 +121,7 @@ void main() {
             plainText: 'Test content',
             markdown: 'test',
           ),
-          meta: Metadata(
-            id: journalEntityId,
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
+          meta: testMeta(),
         );
 
         final updatedMeta = testEntity.meta.copyWith(
@@ -250,17 +207,7 @@ void main() {
             plainText: 'Test content',
             markdown: 'test',
           ),
-          meta: Metadata(
-            id: journalEntityId,
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-            categoryId: 'existing-category',
-          ),
+          meta: testMeta(categoryId: 'existing-category'),
         );
 
         final updatedMeta = testEntity.meta.copyWith(
@@ -348,16 +295,7 @@ void main() {
             plainText: 'Test content',
             markdown: 'test',
           ),
-          meta: Metadata(
-            id: journalEntityId,
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
+          meta: testMeta(),
         );
 
         final updatedMeta = testEntity.meta.copyWith(
@@ -442,16 +380,7 @@ void main() {
             plainText: 'Timer entry',
             markdown: 'timer',
           ),
-          meta: Metadata(
-            id: journalEntityId,
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
+          meta: testMeta(id: journalEntityId),
         );
 
         final updatedMeta = testEntity.meta.copyWith(
@@ -520,16 +449,7 @@ void main() {
             plainText: 'Non-active entry',
             markdown: 'test',
           ),
-          meta: Metadata(
-            id: journalEntityId,
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
+          meta: testMeta(id: journalEntityId),
         );
 
         final activeTimer = JournalEntity.journalEntry(
@@ -537,16 +457,7 @@ void main() {
             plainText: 'Active timer',
             markdown: 'timer',
           ),
-          meta: Metadata(
-            id: activeTimerId,
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
+          meta: testMeta(id: activeTimerId),
         );
 
         final updatedMeta = testEntity.meta.copyWith(
@@ -614,16 +525,7 @@ void main() {
             plainText: 'Test content',
             markdown: 'test',
           ),
-          meta: Metadata(
-            id: journalEntityId,
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
+          meta: testMeta(),
         );
 
         final updatedMeta = testEntity.meta.copyWith(
@@ -831,16 +733,7 @@ void main() {
             plainText: 'Test content',
             markdown: 'test',
           ),
-          meta: Metadata(
-            id: 'test-id',
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
+          meta: testMeta(),
         );
 
         // Mock the updateJournalEntity call
@@ -871,16 +764,7 @@ void main() {
             plainText: 'Test content',
             markdown: 'test',
           ),
-          meta: Metadata(
-            id: 'test-id',
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
+          meta: testMeta(),
         );
 
         // Mock the updateJournalEntity call to throw an exception
@@ -1028,32 +912,14 @@ void main() {
               plainText: 'Entry 1',
               markdown: 'Entry 1',
             ),
-            meta: Metadata(
-              id: 'entry-1',
-              createdAt: DateTime(2023),
-              updatedAt: DateTime(2023),
-              dateFrom: DateTime(2023),
-              dateTo: DateTime(2023),
-              starred: false,
-              private: false,
-              flag: EntryFlag.none,
-            ),
+            meta: testMeta(id: 'entry-1'),
           ),
           JournalEntity.journalEntry(
             entryText: const EntryText(
               plainText: 'Entry 2',
               markdown: 'Entry 2',
             ),
-            meta: Metadata(
-              id: 'entry-2',
-              createdAt: DateTime(2023),
-              updatedAt: DateTime(2023),
-              dateFrom: DateTime(2023),
-              dateTo: DateTime(2023),
-              starred: false,
-              private: false,
-              flag: EntryFlag.none,
-            ),
+            meta: testMeta(id: 'entry-2'),
           ),
         ];
 
@@ -1087,26 +953,14 @@ void main() {
               plainText: 'Entry 1',
               markdown: 'Entry 1',
             ),
-            meta: Metadata(
-              id: 'entry-1',
-              createdAt: DateTime(2023),
-              updatedAt: DateTime(2023),
-              dateFrom: DateTime(2023),
-              dateTo: DateTime(2023),
-            ),
+            meta: testMeta(id: 'entry-1'),
           ),
           JournalEntity.journalEntry(
             entryText: const EntryText(
               plainText: 'Entry 2',
               markdown: 'Entry 2',
             ),
-            meta: Metadata(
-              id: 'entry-2',
-              createdAt: DateTime(2023),
-              updatedAt: DateTime(2023),
-              dateFrom: DateTime(2023),
-              dateTo: DateTime(2023),
-            ),
+            meta: testMeta(id: 'entry-2'),
           ),
         ];
 
@@ -1131,13 +985,7 @@ void main() {
               plainText: 'Entry 1',
               markdown: 'Entry 1',
             ),
-            meta: Metadata(
-              id: 'entry-1',
-              createdAt: DateTime(2023),
-              updatedAt: DateTime(2023),
-              dateFrom: DateTime(2023),
-              dateTo: DateTime(2023),
-            ),
+            meta: testMeta(id: 'entry-1'),
           ),
         ];
 
@@ -1162,13 +1010,7 @@ void main() {
               plainText: 'Entry 1',
               markdown: 'Entry 1',
             ),
-            meta: Metadata(
-              id: 'entry-1',
-              createdAt: DateTime(2023),
-              updatedAt: DateTime(2023),
-              dateFrom: DateTime(2023),
-              dateTo: DateTime(2023),
-            ),
+            meta: testMeta(id: 'entry-1'),
           ),
         ];
         final refreshedEntities = [
@@ -1220,16 +1062,7 @@ void main() {
             plainText: 'Test content',
             markdown: 'test',
           ),
-          meta: Metadata(
-            id: entityId,
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
+          meta: testMeta(id: entityId),
         );
 
         // Mock the journalEntityById call
@@ -1269,16 +1102,7 @@ void main() {
             plainText: 'Initial content',
             markdown: 'initial',
           ),
-          meta: Metadata(
-            id: entityId,
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-            private: false,
-            flag: EntryFlag.none,
-          ),
+          meta: testMeta(id: entityId),
         );
         final updatedEntity = JournalEntity.journalEntry(
           entryText: const EntryText(
@@ -2452,28 +2276,12 @@ void main() {
       collapsedRepository = JournalRepository();
 
       registerFallbackValue(
-        Metadata(
-          id: 'test-id',
-          createdAt: DateTime(2023),
-          updatedAt: DateTime(2023),
-          dateFrom: DateTime(2023),
-          dateTo: DateTime(2023),
-          starred: false,
-          private: false,
-          flag: EntryFlag.none,
-        ),
+        testMeta(),
       );
       registerFallbackValue(
         JournalEntity.journalEntry(
           entryText: const EntryText(plainText: 'test', markdown: 'test'),
-          meta: Metadata(
-            id: 'test-id',
-            createdAt: DateTime(2023),
-            updatedAt: DateTime(2023),
-            dateFrom: DateTime(2023),
-            dateTo: DateTime(2023),
-            starred: false,
-          ),
+          meta: testMeta(),
         ),
       );
       registerFallbackValue(

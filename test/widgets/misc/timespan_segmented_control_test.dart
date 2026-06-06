@@ -20,7 +20,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Should display all 4 segment options with short labels
         expect(find.text('30d'), findsOneWidget);
@@ -40,7 +40,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       // Short labels on phone screen
       expect(find.text('7d'), findsOneWidget);
@@ -60,7 +60,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       // Find the SegmentedButton
       final segmentedButton = find.byType(SegmentedButton<int>);
@@ -82,11 +82,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       // Tap the 30d segment (short label on phone)
       await tester.tap(find.text('30d'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(selectedValue, equals(30));
     });
@@ -104,10 +104,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       await tester.tap(find.text('365d'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(selectedValue, equals(365));
     });
@@ -124,7 +124,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       // Should show short labels like "30d" instead of "30 days"
       expect(find.text('30d'), findsOneWidget);
@@ -145,7 +145,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.text('30 days'), findsOneWidget);
       expect(find.text('90 days'), findsOneWidget);
@@ -170,20 +170,20 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       // Tap through all segments
       await tester.tap(find.text('30d'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       await tester.tap(find.text('180d'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       await tester.tap(find.text('365d'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       await tester.tap(find.text('90d'));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(selectedValues, containsAllInOrder([30, 180, 365, 90]));
     });

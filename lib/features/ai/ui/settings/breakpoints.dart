@@ -13,11 +13,6 @@ library;
 /// `ai_settings_page.dart`.
 const double aiSettingsGridColumnBreakpoint = 700;
 
-/// Width at which `AiSettingsHeaderBar` stops fitting the search
-/// field + the "+ Add provider" CTA side-by-side and stacks them
-/// vertically.
-const double aiSettingsHeaderStackBreakpoint = 600;
-
 /// Inner-modal width above which the FTUE result modal switches from
 /// the mobile bottom-sheet (CTA fills the row) to the desktop / tablet
 /// dialog (CTA pinned to the right edge with a comfortable cap).

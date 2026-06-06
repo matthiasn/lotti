@@ -17,22 +17,9 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-
-// Helper to register a mock instance in getIt
-void registerMock<T extends Object>(T instance) {
-  if (getIt.isRegistered<T>()) {
-    getIt.unregister<T>();
-  }
-  getIt.registerSingleton<T>(instance);
-}
-
-// Helper to unregister a type from getIt
-void unregisterMock<T extends Object>() {
-  if (getIt.isRegistered<T>()) {
-    getIt.unregister<T>();
-  }
-}
+import '../../../widget_test_utils.dart';
 
 void main() {
   late MockJournalDb mockDb;
@@ -79,25 +66,9 @@ void main() {
     ),
   );
 
-  setUpAll(() {
-    registerFallbackValue(testTask.data);
-    registerFallbackValue(
-      const ChecklistData(
-        title: '',
-        linkedChecklistItems: [],
-        linkedTasks: [],
-      ),
-    );
-    registerFallbackValue(
-      const ChecklistItemData(
-        title: '',
-        isChecked: false,
-        linkedChecklists: [],
-      ),
-    );
-  });
+  setUpAll(registerAllFallbackValues);
 
-  setUp(() {
+  setUp(() async {
     mockDb = MockJournalDb();
     mockUpdateNotifications = MockUpdateNotifications();
     mockJournalRepository = MockJournalRepository();
@@ -105,11 +76,18 @@ void main() {
     mockDomainLogger = MockDomainLogger();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
-    // Register getIt dependencies
-    registerMock<JournalDb>(mockDb);
-    registerMock<UpdateNotifications>(mockUpdateNotifications);
-    registerMock<PersistenceLogic>(mockPersistenceLogic);
-    registerMock<DomainLogger>(mockDomainLogger);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockDb)
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockDomainLogger)
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      },
+    );
 
     // Setup stubs
     when(
@@ -135,11 +113,84 @@ void main() {
 
   tearDown(() async {
     await updateStreamController.close();
-    unregisterMock<JournalDb>();
-    unregisterMock<UpdateNotifications>();
-    unregisterMock<PersistenceLogic>();
-    unregisterMock<DomainLogger>();
+    await tearDownTestGetIt();
   });
+
+  /// Builds a [ChecklistItem] linked to `checklist-comp` for the completion
+  /// and completion-rate controller tests.
+  ChecklistItem makeCompletionItem({
+    required String id,
+    required bool isChecked,
+    bool isArchived = false,
+    bool isDeleted = false,
+  }) {
+    return ChecklistItem(
+      meta: Metadata(
+        id: id,
+        createdAt: DateTime(2025),
+        updatedAt: DateTime(2025),
+        dateFrom: DateTime(2025),
+        dateTo: DateTime(2025),
+        deletedAt: isDeleted ? DateTime(2025) : null,
+      ),
+      data: ChecklistItemData(
+        title: id,
+        isChecked: isChecked,
+        linkedChecklists: const ['checklist-comp'],
+        isArchived: isArchived,
+      ),
+    );
+  }
+
+  /// Builds a [ProviderContainer] with the checklist and all item controllers
+  /// warmed up so completion/rate state computations see resolved values.
+  Future<ProviderContainer> buildCompletionContainer({
+    required Checklist checklist,
+    required List<String> itemIds,
+  }) async {
+    final mockChecklistRepository = MockChecklistRepository();
+    when(
+      () => mockChecklistRepository.updateChecklist(
+        checklistId: any(named: 'checklistId'),
+        data: any(named: 'data'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(
+      () => mockChecklistRepository.updateChecklistItem(
+        checklistItemId: any(named: 'checklistItemId'),
+        data: any(named: 'data'),
+        taskId: any(named: 'taskId'),
+      ),
+    ).thenAnswer((_) async => true);
+
+    final container = ProviderContainer(
+      overrides: [
+        journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+        checklistRepositoryProvider.overrideWithValue(mockChecklistRepository),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    // Warm up the checklist controller first so its state is resolved.
+    await container.read(
+      checklistControllerProvider((
+        id: checklist.meta.id,
+        taskId: null,
+      )).future,
+    );
+
+    // Warm up every item controller so the aggregation sees resolved values.
+    for (final itemId in itemIds) {
+      await container.read(
+        checklistItemControllerProvider((
+          id: itemId,
+          taskId: null,
+        )).future,
+      );
+    }
+
+    return container;
+  }
 
   group('ChecklistController', () {
     group('delete', () {
@@ -418,26 +469,28 @@ void main() {
         ).thenAnswer((_) async => true);
       });
 
-      test('reorders item to target index position', () async {
-        // Checklist with 3 items
-        final checklistWith3Items = Checklist(
-          meta: Metadata(
-            id: 'checklist-1',
-            createdAt: DateTime(2025),
-            updatedAt: DateTime(2025),
-            dateFrom: DateTime(2025),
-            dateTo: DateTime(2025),
-          ),
-          data: const ChecklistData(
-            title: 'Test Checklist',
-            linkedChecklistItems: ['item-1', 'item-2', 'item-3'],
-            linkedTasks: ['task-1'],
+      /// Stubs `checklist-1` with [items], builds a container, awaits the
+      /// initial state, and returns the controller — shared scaffolding for
+      /// every reordering test in this group.
+      Future<ChecklistController> bootstrap({
+        List<String> items = const ['item-1', 'item-2', 'item-3'],
+      }) async {
+        when(() => mockDb.journalEntityById('checklist-1')).thenAnswer(
+          (_) async => Checklist(
+            meta: Metadata(
+              id: 'checklist-1',
+              createdAt: DateTime(2025),
+              updatedAt: DateTime(2025),
+              dateFrom: DateTime(2025),
+              dateTo: DateTime(2025),
+            ),
+            data: ChecklistData(
+              title: 'Test Checklist',
+              linkedChecklistItems: items,
+              linkedTasks: const ['task-1'],
+            ),
           ),
         );
-
-        when(
-          () => mockDb.journalEntityById('checklist-1'),
-        ).thenAnswer((_) async => checklistWith3Items);
 
         final container = ProviderContainer(
           overrides: [
@@ -449,7 +502,6 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        // Wait for initial state
         await container.read(
           checklistControllerProvider((
             id: 'checklist-1',
@@ -457,12 +509,25 @@ void main() {
           )).future,
         );
 
-        final notifier = container.read(
+        return container.read(
           checklistControllerProvider((
             id: 'checklist-1',
             taskId: 'task-1',
           )).notifier,
         );
+      }
+
+      ChecklistData captureUpdate() =>
+          verify(
+                () => mockChecklistRepository.updateChecklist(
+                  checklistId: 'checklist-1',
+                  data: captureAny(named: 'data'),
+                ),
+              ).captured.single
+              as ChecklistData;
+
+      test('reorders item to target index position', () async {
+        final notifier = await bootstrap();
 
         // Drop item-1 at targetIndex 2 (before item-3)
         // Since item-1 is removed first, actual insertion is at index 1
@@ -471,66 +536,18 @@ void main() {
           targetIndex: 2,
         );
 
-        // Verify updateChecklist was called with reordered items
-        final captured =
-            verify(
-                  () => mockChecklistRepository.updateChecklist(
-                    checklistId: 'checklist-1',
-                    data: captureAny(named: 'data'),
-                  ),
-                ).captured.single
-                as ChecklistData;
-
         // Original: [item-1, item-2, item-3]
         // Remove item-1: [item-2, item-3]
         // targetIndex=2 > oldIndex=0, so newIndex = 2 - 1 = 1
         // Insert at 1: [item-2, item-1, item-3]
-        expect(captured.linkedChecklistItems, ['item-2', 'item-1', 'item-3']);
+        expect(
+          captureUpdate().linkedChecklistItems,
+          ['item-2', 'item-1', 'item-3'],
+        );
       });
 
       test('reorders item using targetItemId (insert after)', () async {
-        final checklistWith3Items = Checklist(
-          meta: Metadata(
-            id: 'checklist-1',
-            createdAt: DateTime(2025),
-            updatedAt: DateTime(2025),
-            dateFrom: DateTime(2025),
-            dateTo: DateTime(2025),
-          ),
-          data: const ChecklistData(
-            title: 'Test Checklist',
-            linkedChecklistItems: ['item-1', 'item-2', 'item-3'],
-            linkedTasks: ['task-1'],
-          ),
-        );
-
-        when(
-          () => mockDb.journalEntityById('checklist-1'),
-        ).thenAnswer((_) async => checklistWith3Items);
-
-        final container = ProviderContainer(
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-            checklistRepositoryProvider.overrideWithValue(
-              mockChecklistRepository,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        await container.read(
-          checklistControllerProvider((
-            id: 'checklist-1',
-            taskId: 'task-1',
-          )).future,
-        );
-
-        final notifier = container.read(
-          checklistControllerProvider((
-            id: 'checklist-1',
-            taskId: 'task-1',
-          )).notifier,
-        );
+        final notifier = await bootstrap();
 
         // Move item-1 after item-2
         await notifier.dropChecklistItem(
@@ -538,45 +555,16 @@ void main() {
           targetItemId: 'item-2',
         );
 
-        final captured =
-            verify(
-                  () => mockChecklistRepository.updateChecklist(
-                    checklistId: 'checklist-1',
-                    data: captureAny(named: 'data'),
-                  ),
-                ).captured.single
-                as ChecklistData;
-
-        // item-1 moved after item-2
         // Original: [item-1, item-2, item-3]
         // After: [item-2, item-1, item-3]
-        expect(captured.linkedChecklistItems, ['item-2', 'item-1', 'item-3']);
+        expect(
+          captureUpdate().linkedChecklistItems,
+          ['item-2', 'item-1', 'item-3'],
+        );
       });
 
       test('does nothing when item not in checklist', () async {
-        final container = ProviderContainer(
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-            checklistRepositoryProvider.overrideWithValue(
-              mockChecklistRepository,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        await container.read(
-          checklistControllerProvider((
-            id: 'checklist-1',
-            taskId: 'task-1',
-          )).future,
-        );
-
-        final notifier = container.read(
-          checklistControllerProvider((
-            id: 'checklist-1',
-            taskId: 'task-1',
-          )).notifier,
-        );
+        final notifier = await bootstrap();
 
         // Try to reorder non-existent item
         await notifier.dropChecklistItem(
@@ -596,67 +584,19 @@ void main() {
       test(
         'appends to end when no position specified for same checklist',
         () async {
-          final checklistWith3Items = Checklist(
-            meta: Metadata(
-              id: 'checklist-1',
-              createdAt: DateTime(2025),
-              updatedAt: DateTime(2025),
-              dateFrom: DateTime(2025),
-              dateTo: DateTime(2025),
-            ),
-            data: const ChecklistData(
-              title: 'Test Checklist',
-              linkedChecklistItems: ['item-1', 'item-2', 'item-3'],
-              linkedTasks: ['task-1'],
-            ),
-          );
-
-          when(
-            () => mockDb.journalEntityById('checklist-1'),
-          ).thenAnswer((_) async => checklistWith3Items);
-
-          final container = ProviderContainer(
-            overrides: [
-              journalRepositoryProvider.overrideWithValue(
-                mockJournalRepository,
-              ),
-              checklistRepositoryProvider.overrideWithValue(
-                mockChecklistRepository,
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
-
-          await container.read(
-            checklistControllerProvider((
-              id: 'checklist-1',
-              taskId: 'task-1',
-            )).future,
-          );
-
-          final notifier = container.read(
-            checklistControllerProvider((
-              id: 'checklist-1',
-              taskId: 'task-1',
-            )).notifier,
-          );
+          final notifier = await bootstrap();
 
           // Reorder item-1 with no target position
-          await notifier.dropChecklistItem(
-            {'checklistItemId': 'item-1', 'checklistId': 'checklist-1'},
-          );
-
-          final captured =
-              verify(
-                    () => mockChecklistRepository.updateChecklist(
-                      checklistId: 'checklist-1',
-                      data: captureAny(named: 'data'),
-                    ),
-                  ).captured.single
-                  as ChecklistData;
+          await notifier.dropChecklistItem({
+            'checklistItemId': 'item-1',
+            'checklistId': 'checklist-1',
+          });
 
           // item-1 moved to end
-          expect(captured.linkedChecklistItems, ['item-2', 'item-3', 'item-1']);
+          expect(
+            captureUpdate().linkedChecklistItems,
+            ['item-2', 'item-3', 'item-1'],
+          );
         },
       );
     });
@@ -1648,87 +1588,6 @@ void main() {
     });
 
     group('ChecklistCompletionController', () {
-      late MockChecklistRepository mockChecklistRepository;
-
-      ChecklistItem makeItem({
-        required String id,
-        required bool isChecked,
-        bool isArchived = false,
-        bool isDeleted = false,
-      }) {
-        final meta = Metadata(
-          id: id,
-          createdAt: DateTime(2025),
-          updatedAt: DateTime(2025),
-          dateFrom: DateTime(2025),
-          dateTo: DateTime(2025),
-          deletedAt: isDeleted ? DateTime(2025) : null,
-        );
-        return ChecklistItem(
-          meta: meta,
-          data: ChecklistItemData(
-            title: id,
-            isChecked: isChecked,
-            linkedChecklists: const ['checklist-comp'],
-            isArchived: isArchived,
-          ),
-        );
-      }
-
-      setUp(() {
-        mockChecklistRepository = MockChecklistRepository();
-        when(
-          () => mockChecklistRepository.updateChecklist(
-            checklistId: any(named: 'checklistId'),
-            data: any(named: 'data'),
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
-            taskId: any(named: 'taskId'),
-          ),
-        ).thenAnswer((_) async => true);
-      });
-
-      /// Helper: build a [ProviderContainer] with the checklist and item
-      /// controllers all warmed up so that [_computeState] sees resolved values.
-      Future<ProviderContainer> buildCompletionContainer({
-        required Checklist checklist,
-        required List<String> itemIds,
-      }) async {
-        final container = ProviderContainer(
-          overrides: [
-            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
-            checklistRepositoryProvider.overrideWithValue(
-              mockChecklistRepository,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        // Warm up the checklist controller first so its state is resolved.
-        await container.read(
-          checklistControllerProvider((
-            id: checklist.meta.id,
-            taskId: null,
-          )).future,
-        );
-
-        // Warm up every item controller so _computeState finds resolved values.
-        for (final itemId in itemIds) {
-          await container.read(
-            checklistItemControllerProvider((
-              id: itemId,
-              taskId: null,
-            )).future,
-          );
-        }
-
-        return container;
-      }
-
       test('computes correct completion counts from checklist items', () async {
         final checklist = Checklist(
           meta: Metadata(
@@ -1750,13 +1609,19 @@ void main() {
         ).thenAnswer((_) async => checklist);
         when(
           () => mockDb.journalEntityById('item-a'),
-        ).thenAnswer((_) async => makeItem(id: 'item-a', isChecked: true));
+        ).thenAnswer(
+          (_) async => makeCompletionItem(id: 'item-a', isChecked: true),
+        );
         when(
           () => mockDb.journalEntityById('item-b'),
-        ).thenAnswer((_) async => makeItem(id: 'item-b', isChecked: false));
+        ).thenAnswer(
+          (_) async => makeCompletionItem(id: 'item-b', isChecked: false),
+        );
         when(
           () => mockDb.journalEntityById('item-c'),
-        ).thenAnswer((_) async => makeItem(id: 'item-c', isChecked: true));
+        ).thenAnswer(
+          (_) async => makeCompletionItem(id: 'item-c', isChecked: true),
+        );
 
         final container = await buildCompletionContainer(
           checklist: checklist,
@@ -1795,19 +1660,28 @@ void main() {
         ).thenAnswer((_) async => checklist);
         when(
           () => mockDb.journalEntityById('item-a'),
-        ).thenAnswer((_) async => makeItem(id: 'item-a', isChecked: true));
+        ).thenAnswer(
+          (_) async => makeCompletionItem(id: 'item-a', isChecked: true),
+        );
         // item-b is archived
         when(
           () => mockDb.journalEntityById('item-b'),
         ).thenAnswer(
-          (_) async =>
-              makeItem(id: 'item-b', isChecked: true, isArchived: true),
+          (_) async => makeCompletionItem(
+            id: 'item-b',
+            isChecked: true,
+            isArchived: true,
+          ),
         );
         // item-c is deleted
         when(
           () => mockDb.journalEntityById('item-c'),
         ).thenAnswer(
-          (_) async => makeItem(id: 'item-c', isChecked: true, isDeleted: true),
+          (_) async => makeCompletionItem(
+            id: 'item-c',
+            isChecked: true,
+            isDeleted: true,
+          ),
         );
 
         final container = await buildCompletionContainer(
@@ -1861,6 +1735,144 @@ void main() {
 
         expect(result.totalCount, 0);
         expect(result.completedCount, 0);
+      });
+    });
+
+    group('ChecklistCompletionRateController', () {
+      Checklist makeRateChecklist(List<String> itemIds) => Checklist(
+        meta: Metadata(
+          id: 'checklist-comp',
+          createdAt: DateTime(2025),
+          updatedAt: DateTime(2025),
+          dateFrom: DateTime(2025),
+          dateTo: DateTime(2025),
+        ),
+        data: ChecklistData(
+          title: 'Rate Test',
+          linkedChecklistItems: itemIds,
+          linkedTasks: const [],
+        ),
+      );
+
+      /// Warms the completion controller (holding it alive) and then resolves
+      /// the rate controller, returning the container with both subscribed.
+      Future<ProviderContainer> bootstrapRate({
+        required Checklist checklist,
+        required List<String> itemIds,
+      }) async {
+        final container = await buildCompletionContainer(
+          checklist: checklist,
+          itemIds: itemIds,
+        );
+
+        final completionSub = container.listen(
+          checklistCompletionControllerProvider((
+            id: 'checklist-comp',
+            taskId: null,
+          )),
+          (_, _) {},
+        );
+        addTearDown(completionSub.close);
+        await container.read(
+          checklistCompletionControllerProvider((
+            id: 'checklist-comp',
+            taskId: null,
+          )).future,
+        );
+
+        final rateSub = container.listen(
+          checklistCompletionRateControllerProvider((
+            id: 'checklist-comp',
+            taskId: null,
+          )),
+          (_, _) {},
+        );
+        addTearDown(rateSub.close);
+        await container.read(
+          checklistCompletionRateControllerProvider((
+            id: 'checklist-comp',
+            taskId: null,
+          )).future,
+        );
+
+        return container;
+      }
+
+      double? readRate(ProviderContainer container) => container
+          .read(
+            checklistCompletionRateControllerProvider((
+              id: 'checklist-comp',
+              taskId: null,
+            )),
+          )
+          .value;
+
+      test('computes rate as completedCount / totalCount', () async {
+        final checklist = makeRateChecklist(
+          const ['item-a', 'item-b', 'item-c'],
+        );
+        when(
+          () => mockDb.journalEntityById('checklist-comp'),
+        ).thenAnswer((_) async => checklist);
+        when(() => mockDb.journalEntityById('item-a')).thenAnswer(
+          (_) async => makeCompletionItem(id: 'item-a', isChecked: true),
+        );
+        when(() => mockDb.journalEntityById('item-b')).thenAnswer(
+          (_) async => makeCompletionItem(id: 'item-b', isChecked: false),
+        );
+        when(() => mockDb.journalEntityById('item-c')).thenAnswer(
+          (_) async => makeCompletionItem(id: 'item-c', isChecked: true),
+        );
+
+        final container = await bootstrapRate(
+          checklist: checklist,
+          itemIds: const ['item-a', 'item-b', 'item-c'],
+        );
+
+        expect(readRate(container), closeTo(2 / 3, 1e-9));
+      });
+
+      test('returns 0.0 when the checklist has no active items', () async {
+        final checklist = makeRateChecklist(const []);
+        when(
+          () => mockDb.journalEntityById('checklist-comp'),
+        ).thenAnswer((_) async => checklist);
+
+        final container = await bootstrapRate(
+          checklist: checklist,
+          itemIds: const [],
+        );
+
+        // totalCount == 0 must not divide by zero.
+        expect(readRate(container), 0.0);
+      });
+
+      test('updates reactively when an item is checked', () async {
+        final checklist = makeRateChecklist(const ['item-a', 'item-b']);
+        when(
+          () => mockDb.journalEntityById('checklist-comp'),
+        ).thenAnswer((_) async => checklist);
+        when(() => mockDb.journalEntityById('item-a')).thenAnswer(
+          (_) async => makeCompletionItem(id: 'item-a', isChecked: false),
+        );
+        when(() => mockDb.journalEntityById('item-b')).thenAnswer(
+          (_) async => makeCompletionItem(id: 'item-b', isChecked: false),
+        );
+
+        final container = await bootstrapRate(
+          checklist: checklist,
+          itemIds: const ['item-a', 'item-b'],
+        );
+        expect(readRate(container), 0.0);
+
+        // item-a gets checked and a DB notification fires.
+        when(() => mockDb.journalEntityById('item-a')).thenAnswer(
+          (_) async => makeCompletionItem(id: 'item-a', isChecked: true),
+        );
+        updateStreamController.add({'item-a'});
+        await pumpEventQueue();
+
+        expect(readRate(container), closeTo(0.5, 1e-9));
       });
     });
   });

@@ -4,18 +4,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 
+import '../../widget_test_utils.dart';
+
+Future<void> _pump(WidgetTester tester, Widget widget) =>
+    tester.pumpWidget(makeTestableWidgetWithScaffold(widget));
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('GlassIconContainer', () {
     testWidgets('renders child widget', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: GlassIconContainer(
-              child: Icon(Icons.arrow_back),
-            ),
-          ),
+      await _pump(
+        tester,
+        const GlassIconContainer(
+          child: Icon(Icons.arrow_back),
         ),
       );
 
@@ -23,13 +25,10 @@ void main() {
     });
 
     testWidgets('uses default size of 40', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: GlassIconContainer(
-              child: Icon(Icons.close),
-            ),
-          ),
+      await _pump(
+        tester,
+        const GlassIconContainer(
+          child: Icon(Icons.close),
         ),
       );
 
@@ -45,14 +44,11 @@ void main() {
     });
 
     testWidgets('uses custom size when provided', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: GlassIconContainer(
-              size: 60,
-              child: Icon(Icons.menu),
-            ),
-          ),
+      await _pump(
+        tester,
+        const GlassIconContainer(
+          size: 60,
+          child: Icon(Icons.menu),
         ),
       );
 
@@ -68,13 +64,10 @@ void main() {
     });
 
     testWidgets('contains BackdropFilter for blur effect', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: GlassIconContainer(
-              child: Icon(Icons.settings),
-            ),
-          ),
+      await _pump(
+        tester,
+        const GlassIconContainer(
+          child: Icon(Icons.settings),
         ),
       );
 
@@ -89,13 +82,10 @@ void main() {
     });
 
     testWidgets('contains ClipRRect for rounded corners', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: GlassIconContainer(
-              child: Icon(Icons.home),
-            ),
-          ),
+      await _pump(
+        tester,
+        const GlassIconContainer(
+          child: Icon(Icons.home),
         ),
       );
 
@@ -103,14 +93,11 @@ void main() {
     });
 
     testWidgets('uses custom borderRadius when provided', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: GlassIconContainer(
-              borderRadius: 8,
-              child: Icon(Icons.star),
-            ),
-          ),
+      await _pump(
+        tester,
+        const GlassIconContainer(
+          borderRadius: 8,
+          child: Icon(Icons.star),
         ),
       );
 
@@ -123,13 +110,10 @@ void main() {
     });
 
     testWidgets('centers the child widget', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: GlassIconContainer(
-              child: Icon(Icons.favorite),
-            ),
-          ),
+      await _pump(
+        tester,
+        const GlassIconContainer(
+          child: Icon(Icons.favorite),
         ),
       );
 
@@ -145,13 +129,10 @@ void main() {
     });
 
     testWidgets('has semi-transparent black background', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: GlassIconContainer(
-              child: Icon(Icons.check),
-            ),
-          ),
+      await _pump(
+        tester,
+        const GlassIconContainer(
+          child: Icon(Icons.check),
         ),
       );
 
@@ -169,15 +150,12 @@ void main() {
     testWidgets('can be used inside IconButton', (tester) async {
       var tapped = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: IconButton(
-              onPressed: () => tapped = true,
-              icon: const GlassIconContainer(
-                child: Icon(Icons.chevron_left),
-              ),
-            ),
+      await _pump(
+        tester,
+        IconButton(
+          onPressed: () => tapped = true,
+          icon: const GlassIconContainer(
+            child: Icon(Icons.chevron_left),
           ),
         ),
       );

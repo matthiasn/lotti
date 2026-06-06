@@ -5,6 +5,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 
@@ -106,8 +107,11 @@ void main() {
       'any canonical filter-ID produces a valid ProjectStatusKind',
       (filterId) {
         final kind = projectStatusKindFromFilterId(filterId);
-        expect(ProjectStatusKind.values.contains(kind), isTrue,
-            reason: 'got $kind for "$filterId"');
+        expect(
+          ProjectStatusKind.values.contains(kind),
+          isTrue,
+          reason: 'got $kind for "$filterId"',
+        );
       },
       tags: 'glados',
     );
@@ -147,6 +151,33 @@ void main() {
     test('contains all five distinct kinds in declaration order', () {
       expect(allProjectStatusKinds, hasLength(5));
       expect(allProjectStatusKinds, containsAll(ProjectStatusKind.values));
+    });
+  });
+
+  group('buildProjectStatus', () {
+    test('builds the matching variant for every kind at the given time', () {
+      final at = DateTime(2026, 3, 15, 10);
+
+      // Exhaustive over the enum.
+      for (final kind in ProjectStatusKind.values) {
+        final status = buildProjectStatus(kind, at);
+
+        final matchedKind = switch (status) {
+          ProjectOpen() => ProjectStatusKind.open,
+          ProjectActive() => ProjectStatusKind.active,
+          ProjectOnHold() => ProjectStatusKind.onHold,
+          ProjectCompleted() => ProjectStatusKind.completed,
+          ProjectArchived() => ProjectStatusKind.archived,
+        };
+        expect(matchedKind, kind);
+        expect(status.createdAt, at, reason: '$kind');
+        expect(
+          status.utcOffset,
+          at.timeZoneOffset.inMinutes,
+          reason: '$kind',
+        );
+        expect(status.id, isNotEmpty, reason: '$kind');
+      }
     });
   });
 }

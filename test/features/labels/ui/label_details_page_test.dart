@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -130,6 +131,27 @@ void main() {
     beamToNamedOverride = null;
   });
 
+  /// Builds a kept-alive [ProviderContainer] with [overrides], pumps
+  /// [child] inside it, and drains the first frames with bounded pumps
+  /// (the synchronously-overridden controller state needs no settling).
+  Future<ProviderContainer> pumpPage(
+    WidgetTester tester, {
+    List<Override> overrides = const [],
+    Widget child = const LabelDetailsPage(),
+  }) async {
+    final container = ProviderContainer(overrides: overrides);
+    addTearDown(container.dispose);
+    await tester.pumpWidget(
+      UncontrolledProviderScope(
+        container: container,
+        child: makeTestableWidget2(child),
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    return container;
+  }
+
   group('LabelDetailsPage', () {
     testWidgets('create mode: Save disabled when name empty', (tester) async {
       const state = LabelEditorState(
@@ -139,22 +161,14 @@ void main() {
         selectedCategoryIds: {},
       );
 
-      final container = ProviderContainer(
+      await pumpPage(
+        tester,
         overrides: [
           labelEditorControllerProvider.overrideWithBuild(
             (ref, args) => state,
           ),
         ],
       );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: makeTestableWidget2(const LabelDetailsPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
 
       final saveButton = find.byType(LottiPrimaryButton);
       expect(saveButton, findsOneWidget);
@@ -181,20 +195,12 @@ void main() {
         },
       );
 
-      final container = ProviderContainer(
+      await pumpPage(
+        tester,
         overrides: [
           labelEditorControllerProvider.overrideWith(() => fakeController),
         ],
       );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: makeTestableWidget2(const LabelDetailsPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
 
       final saveButton = find.byType(LottiPrimaryButton);
       expect(
@@ -219,15 +225,11 @@ void main() {
       );
       when(() => repo.deleteLabel('label-1')).thenAnswer((_) async {});
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [labelsRepositoryProvider.overrideWithValue(repo)],
-          child: makeTestableWidget2(
-            const LabelDetailsPage(labelId: 'label-1'),
-          ),
-        ),
+      await pumpPage(
+        tester,
+        overrides: [labelsRepositoryProvider.overrideWithValue(repo)],
+        child: const LabelDetailsPage(labelId: 'label-1'),
       );
-      await tester.pumpAndSettle();
 
       // Tap the delete button in the bottom bar
       await tester.tap(find.byType(LottiTertiaryButton));
@@ -262,20 +264,12 @@ void main() {
         onPick: (c) => picked = c,
       );
 
-      final container = ProviderContainer(
+      await pumpPage(
+        tester,
         overrides: [
           labelEditorControllerProvider.overrideWith(() => colorSpyController),
         ],
       );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: makeTestableWidget2(const LabelDetailsPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
 
       // Drive color change directly via the pre-constructed controller
       // (UI swatch hit-testing can be flaky in tests)
@@ -297,22 +291,14 @@ void main() {
         () => (cacheService as MockEntitiesCacheService).sortedCategories,
       ).thenReturn(<CategoryDefinition>[]);
 
-      final container = ProviderContainer(
+      await pumpPage(
+        tester,
         overrides: [
           labelEditorControllerProvider.overrideWithBuild(
             (ref, args) => state,
           ),
         ],
       );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: makeTestableWidget2(const LabelDetailsPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
 
       // Tap the Add category button (label is localized). We only assert it exists and is tappable.
       final addButton = find.byIcon(Icons.add);
@@ -340,20 +326,12 @@ void main() {
         },
       );
 
-      final container = ProviderContainer(
+      await pumpPage(
+        tester,
         overrides: [
           labelEditorControllerProvider.overrideWith(() => fakeController),
         ],
       );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: makeTestableWidget2(const LabelDetailsPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.meta);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
@@ -381,20 +359,12 @@ void main() {
         },
       );
 
-      final container = ProviderContainer(
+      await pumpPage(
+        tester,
         overrides: [
           labelEditorControllerProvider.overrideWith(() => fakeController),
         ],
       );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: makeTestableWidget2(const LabelDetailsPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
 
       await tester.sendKeyDownEvent(LogicalKeyboardKey.control);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
@@ -417,27 +387,20 @@ void main() {
           selectedCategoryIds: {},
         );
 
-        final container = ProviderContainer(
+        await pumpPage(
+          tester,
           overrides: [
             labelEditorControllerProvider.overrideWithBuild(
               (ref, args) => state,
             ),
           ],
         );
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: makeTestableWidget2(const LabelDetailsPage()),
-          ),
-        );
-        await tester.pumpAndSettle();
 
         await tester.tap(
           find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(beamedTo, '/settings/labels');
       },
@@ -465,20 +428,12 @@ void main() {
           },
         );
 
-        final container = ProviderContainer(
+        await pumpPage(
+          tester,
           overrides: [
             labelEditorControllerProvider.overrideWith(() => fakeController),
           ],
         );
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: makeTestableWidget2(const LabelDetailsPage()),
-          ),
-        );
-        await tester.pumpAndSettle();
 
         final cancel = find.byType(LottiSecondaryButton);
         expect(cancel, findsOneWidget);
@@ -501,22 +456,14 @@ void main() {
         errorMessage: 'boom error',
       );
 
-      final container = ProviderContainer(
+      await pumpPage(
+        tester,
         overrides: [
           labelEditorControllerProvider.overrideWithBuild(
             (ref, args) => state,
           ),
         ],
       );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: makeTestableWidget2(const LabelDetailsPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
 
       // Ensure the error row is built and visible within sliver list
       final errorText = find.text('boom error');
@@ -531,22 +478,14 @@ void main() {
         isPrivate: false,
         selectedCategoryIds: {},
       );
-      final container = ProviderContainer(
+      await pumpPage(
+        tester,
         overrides: [
           labelEditorControllerProvider.overrideWithBuild(
             (ref, args) => state,
           ),
         ],
       );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: makeTestableWidget2(const LabelDetailsPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
 
       final switchFinder = find.byType(Switch);
       await tester.ensureVisible(switchFinder);
@@ -593,22 +532,14 @@ void main() {
         isPrivate: false,
         selectedCategoryIds: {'cat-work', 'cat-life'},
       );
-      final container = ProviderContainer(
+      await pumpPage(
+        tester,
         overrides: [
           labelEditorControllerProvider.overrideWithBuild(
             (ref, args) => state,
           ),
         ],
       );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: makeTestableWidget2(const LabelDetailsPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
 
       // Ensure both chips are present
       expect(find.text('Work'), findsWidgets);
@@ -640,22 +571,14 @@ void main() {
         selectedCategoryIds: {},
         description: 'Hello world',
       );
-      final container = ProviderContainer(
+      await pumpPage(
+        tester,
         overrides: [
           labelEditorControllerProvider.overrideWithBuild(
             (ref, args) => state,
           ),
         ],
       );
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: makeTestableWidget2(const LabelDetailsPage()),
-        ),
-      );
-      await tester.pumpAndSettle();
 
       // Both fields seeded from state
       final nameField = find.byType(TextFormField).first;
@@ -701,19 +624,16 @@ void main() {
         );
         when(() => repo.deleteLabel(any())).thenAnswer((_) async {});
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [labelsRepositoryProvider.overrideWithValue(repo)],
-            child: makeTestableWidget2(
-              const LabelDetailsPage(labelId: 'label-1'),
-            ),
-          ),
+        await pumpPage(
+          tester,
+          overrides: [labelsRepositoryProvider.overrideWithValue(repo)],
+          child: const LabelDetailsPage(labelId: 'label-1'),
         );
-        await tester.pumpAndSettle();
 
         // Open the delete confirmation dialog.
         await tester.tap(find.byType(LottiTertiaryButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.byType(AlertDialog), findsOneWidget);
 
         // The first tertiary button inside the dialog is Cancel.
@@ -724,7 +644,8 @@ void main() {
             )
             .first;
         await tester.tap(cancelButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Dialog is dismissed, nothing deleted, and no navigation happened.
         expect(find.byType(AlertDialog), findsNothing);
@@ -757,20 +678,12 @@ void main() {
           initialState: state,
         );
 
-        final container = ProviderContainer(
+        await pumpPage(
+          tester,
           overrides: [
             labelEditorControllerProvider.overrideWith(() => controller),
           ],
         );
-        addTearDown(container.dispose);
-
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: makeTestableWidget2(const LabelDetailsPage()),
-          ),
-        );
-        await tester.pumpAndSettle();
 
         // No chips initially.
         expect(find.byType(InputChip), findsNothing);
@@ -779,13 +692,16 @@ void main() {
         final addButton = find.byIcon(Icons.add);
         await tester.ensureVisible(addButton);
         await tester.tap(addButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Toggle the category on, then confirm with Done.
         await tester.tap(find.text('Mindfulness').first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.widgetWithText(FilledButton, 'Done'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The page forwarded exactly the selected id to the controller...
         expect(controller.addedIds, [categoryMindfulness.id]);

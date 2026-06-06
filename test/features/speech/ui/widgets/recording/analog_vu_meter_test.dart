@@ -83,7 +83,9 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     testWidgets('shows clip indicator for high decibels', (tester) async {
@@ -106,7 +108,9 @@ void main() {
         findsOneWidget,
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     testWidgets('maintains aspect ratio at different sizes', (tester) async {
@@ -193,7 +197,8 @@ void main() {
             dBFS: values.dBFS,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(AnalogVuMeter), findsOneWidget);
       }
@@ -204,7 +209,8 @@ void main() {
     ) async {
       // Start with low value
       await tester.pumpWidget(makeTestableWidget(vu: -10, dBFS: -30));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Increase to trigger peak hold
       await tester.pumpWidget(makeTestableWidget(vu: 2, dBFS: -16));
@@ -226,16 +232,18 @@ void main() {
       );
 
       // Allow all animations and timers to complete
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pump(const Duration(milliseconds: 500));
     });
 
     testWidgets('disposes animation controllers properly', (tester) async {
       await tester.pumpWidget(makeTestableWidget(vu: 0, dBFS: -60));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Replace widget to trigger dispose
       await tester.pumpWidget(const SizedBox());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // No exceptions should be thrown
       expect(find.byType(AnalogVuMeter), findsNothing);
@@ -266,7 +274,7 @@ void main() {
       expect(find.byType(AnalogVuMeter), findsOneWidget);
 
       // Allow all animations and timers to complete fully
-      await tester.pumpAndSettle(const Duration(seconds: 2));
+      await tester.pump(const Duration(milliseconds: 500));
     });
   });
 

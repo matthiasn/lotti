@@ -6,86 +6,44 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
-import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
-import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
-import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
-import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
-import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
-import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:matrix/encryption/utils/key_verification.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class _MockGateway extends Mock implements MatrixSyncGateway {}
-
-class _MockMessageSender extends Mock implements MatrixMessageSender {}
-
-class _MockSettingsDb extends Mock implements SettingsDb {}
-
-class _MockEventProcessor extends Mock implements SyncEventProcessor {}
-
-class _MockSecureStorage extends Mock implements SecureStorage {}
-
-class _MockActivityGate extends Mock implements UserActivityGate {}
-
-class _MockClient extends Mock implements Client {}
-
-class _MockSentEventRegistry extends Mock implements SentEventRegistry {}
-
-class _MockSessionManager extends Mock implements MatrixSessionManager {}
-
-class _MockRoomManager extends Mock implements SyncRoomManager {}
-
-class _MockPipeline extends Mock implements MatrixStreamConsumer {}
-
-class _MockSyncEngine extends Mock implements SyncEngine {}
-
-class _MockCoordinator extends Mock implements SyncLifecycleCoordinator {}
-
-class _MockQueueCoordinator extends Mock implements QueuePipelineCoordinator {}
-
 class _FakeMatrixMessageContext extends Fake implements MatrixMessageContext {}
 
-class _MockDeviceKeys extends Mock implements DeviceKeys {}
-
-class _MockKeyVerification extends Mock implements KeyVerification {}
-
 void main() {
-  late _MockGateway gateway;
+  late MockMatrixSyncGateway gateway;
   late DomainLogger loggingService;
-  late _MockActivityGate activityGate;
-  late _MockMessageSender messageSender;
-  late _MockSettingsDb settingsDb;
-  late _MockEventProcessor eventProcessor;
-  late _MockSecureStorage secureStorage;
-  late _MockClient client;
-  late _MockSentEventRegistry sentEventRegistry;
-  late _MockSessionManager sessionManager;
-  late _MockRoomManager roomManager;
-  late _MockPipeline pipeline;
-  late _MockSyncEngine syncEngine;
-  late _MockCoordinator coordinator;
-  late _MockQueueCoordinator queueCoordinator;
+  late MockUserActivityGate activityGate;
+  late MockMatrixMessageSender messageSender;
+  late MockSettingsDb settingsDb;
+  late MockSyncEventProcessor eventProcessor;
+  late MockSecureStorage secureStorage;
+  late MockMatrixClient client;
+  late MockSentEventRegistry sentEventRegistry;
+  late MockMatrixSessionManager sessionManager;
+  late MockSyncRoomManager roomManager;
+  late MockMatrixStreamConsumer pipeline;
+  late MockSyncEngine syncEngine;
+  late MockSyncLifecycleCoordinator coordinator;
+  late MockQueuePipelineCoordinator queueCoordinator;
 
-  _MockQueueCoordinator buildQueueCoordinator() {
-    final c = _MockQueueCoordinator();
+  MockQueuePipelineCoordinator buildQueueCoordinator() {
+    final c = MockQueuePipelineCoordinator();
     when(c.start).thenAnswer((_) async {});
     when(() => c.isRunning).thenReturn(false);
     when(
@@ -111,20 +69,20 @@ void main() {
   });
 
   setUp(() {
-    gateway = _MockGateway();
+    gateway = MockMatrixSyncGateway();
     loggingService = MockDomainLogger();
-    activityGate = _MockActivityGate();
-    messageSender = _MockMessageSender();
-    settingsDb = _MockSettingsDb();
-    eventProcessor = _MockEventProcessor();
-    secureStorage = _MockSecureStorage();
-    client = _MockClient();
-    sentEventRegistry = _MockSentEventRegistry();
-    sessionManager = _MockSessionManager();
-    roomManager = _MockRoomManager();
-    pipeline = _MockPipeline();
-    syncEngine = _MockSyncEngine();
-    coordinator = _MockCoordinator();
+    activityGate = MockUserActivityGate();
+    messageSender = MockMatrixMessageSender();
+    settingsDb = MockSettingsDb();
+    eventProcessor = MockSyncEventProcessor();
+    secureStorage = MockSecureStorage();
+    client = MockMatrixClient();
+    sentEventRegistry = MockSentEventRegistry();
+    sessionManager = MockMatrixSessionManager();
+    roomManager = MockSyncRoomManager();
+    pipeline = MockMatrixStreamConsumer();
+    syncEngine = MockSyncEngine();
+    coordinator = MockSyncLifecycleCoordinator();
     queueCoordinator = buildQueueCoordinator();
 
     when(() => sessionManager.client).thenReturn(client);
@@ -990,7 +948,7 @@ void main() {
       'constructor uses roomManager from sessionManager when no roomManager '
       'is injected',
       () {
-        final innerRoomManager = _MockRoomManager();
+        final innerRoomManager = MockSyncRoomManager();
         when(() => innerRoomManager.currentRoomId).thenReturn('!r:s');
         when(() => innerRoomManager.currentRoom).thenReturn(null);
         when(
@@ -1026,7 +984,7 @@ void main() {
       'constructor throws ArgumentError when syncEngine coordinator does not '
       'match provided lifecycleCoordinator',
       () {
-        final differentCoordinator = _MockCoordinator();
+        final differentCoordinator = MockSyncLifecycleCoordinator();
         // syncEngine returns `coordinator`, but we pass `differentCoordinator`.
         when(() => syncEngine.lifecycleCoordinator).thenReturn(coordinator);
 
@@ -1412,7 +1370,7 @@ void main() {
   group('MatrixService deleteDevice', () {
     // Covers lines 548-552: throws ArgumentError when deviceId is null.
     test('deleteDevice throws ArgumentError when deviceId is null', () async {
-      final deviceKeys = _MockDeviceKeys();
+      final deviceKeys = MockDeviceKeys();
       when(() => deviceKeys.deviceId).thenReturn(null);
       when(() => deviceKeys.deviceDisplayName).thenReturn('My Device');
 
@@ -1426,7 +1384,7 @@ void main() {
 
     // Covers lines 556-560: throws StateError when matrixConfig is null.
     test('deleteDevice throws StateError when matrixConfig is null', () async {
-      final deviceKeys = _MockDeviceKeys();
+      final deviceKeys = MockDeviceKeys();
       when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
       when(() => sessionManager.matrixConfig).thenReturn(null);
 
@@ -1443,7 +1401,7 @@ void main() {
     test(
       'deleteDevice throws StateError when device belongs to different user',
       () async {
-        final deviceKeys = _MockDeviceKeys();
+        final deviceKeys = MockDeviceKeys();
         when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
         when(() => deviceKeys.userId).thenReturn('@other:server');
         when(() => client.userID).thenReturn('@me:server');
@@ -1468,7 +1426,7 @@ void main() {
     test(
       'deleteDevice throws UnsupportedError when password is empty',
       () async {
-        final deviceKeys = _MockDeviceKeys();
+        final deviceKeys = MockDeviceKeys();
         when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
         when(() => deviceKeys.userId).thenReturn('@me:server');
         when(() => client.userID).thenReturn('@me:server');
@@ -1494,7 +1452,7 @@ void main() {
     test(
       'deleteDevice calls client.deleteDevice when credentials are valid',
       () async {
-        final deviceKeys = _MockDeviceKeys();
+        final deviceKeys = MockDeviceKeys();
         when(() => deviceKeys.deviceId).thenReturn('DEVICE1');
         when(() => deviceKeys.userId).thenReturn('@me:server');
         when(() => client.userID).thenReturn('@me:server');
@@ -1733,7 +1691,7 @@ void main() {
     // controller flow through to subscribers.
     test('getIncomingKeyVerificationStream exposes incoming controller', () {
       final service = createService();
-      final verification = _MockKeyVerification();
+      final verification = MockKeyVerification();
 
       final received = <KeyVerification>[];
       final sub = service.getIncomingKeyVerificationStream().listen(
@@ -1752,8 +1710,8 @@ void main() {
     // Covers line 498: verifyDevice delegates to verifyMatrixDevice, which
     // starts SDK verification and stores the resulting runner on the service.
     test('verifyDevice starts verification and sets keyVerificationRunner', () {
-      final deviceKeys = _MockDeviceKeys();
-      final verification = _MockKeyVerification();
+      final deviceKeys = MockDeviceKeys();
+      final verification = MockKeyVerification();
       when(deviceKeys.startVerification).thenAnswer((_) async => verification);
       when(() => verification.lastStep).thenReturn(null);
       when(() => verification.isDone).thenReturn(false);

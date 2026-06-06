@@ -11,6 +11,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   late MockDomainLogger mockDomainLogger;
@@ -35,15 +36,20 @@ void main() {
         as AiConfigSkill;
   }
 
-  setUp(() {
+  setUp(() async {
     mockDomainLogger = MockDomainLogger();
     mockProfileAutomationService = MockProfileAutomationService();
     mockRunner = MockSkillInferenceRunner();
 
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+    // setUpTestGetIt registers a real DomainLogger; swap in the mock so the
+    // tests can verify log/error calls directly.
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockDomainLogger);
+      },
+    );
 
     when(
       () => mockDomainLogger.log(
@@ -78,11 +84,9 @@ void main() {
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
     container.dispose();
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
+    await tearDownTestGetIt();
   });
 
   group('AutomaticImageAnalysisTrigger', () {

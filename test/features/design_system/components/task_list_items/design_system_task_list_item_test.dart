@@ -225,28 +225,64 @@ void main() {
       expect(decoration.color, dsTokensLight.colors.surface.focusPressed);
     });
 
-    testWidgets('priority P0 uses error color with priority_high icon', (
+    testWidgets('priority chip colour, weight, and icon per priority level', (
       tester,
     ) async {
-      const key = Key('p0-task');
-
-      await _pumpTaskListItem(
-        tester,
-        DesignSystemTaskListItem(
-          key: key,
-          title: 'Task',
-          priority: DesignSystemTaskPriority.p0,
-          status: DesignSystemTaskStatus.open,
-          statusLabel: 'Open',
-          onTap: () {},
+      final cases = [
+        (
+          DesignSystemTaskPriority.p0,
+          'P0',
+          dsTokensLight.colors.alert.error.defaultColor,
+          Icons.priority_high_rounded,
         ),
-      );
+        (
+          DesignSystemTaskPriority.p1,
+          'P1',
+          dsTokensLight.colors.alert.error.defaultColor,
+          Icons.local_fire_department_rounded,
+        ),
+        (
+          DesignSystemTaskPriority.p2,
+          'P2',
+          dsTokensLight.colors.alert.warning.defaultColor,
+          Icons.circle,
+        ),
+        (
+          DesignSystemTaskPriority.p3,
+          'P3',
+          dsTokensLight.colors.text.mediumEmphasis,
+          Icons.circle,
+        ),
+      ];
 
-      expect(
-        richTextStyleFor(tester, 'P0')?.color,
-        dsTokensLight.colors.alert.error.defaultColor,
-      );
-      expect(find.byIcon(Icons.priority_high_rounded), findsOneWidget);
+      for (final (priority, label, expectedColor, expectedIcon) in cases) {
+        await _pumpTaskListItem(
+          tester,
+          DesignSystemTaskListItem(
+            title: 'Task',
+            priority: priority,
+            status: DesignSystemTaskStatus.open,
+            statusLabel: 'Open',
+            onTap: () {},
+          ),
+        );
+
+        expect(
+          richTextStyleFor(tester, label)?.color,
+          expectedColor,
+          reason: '$label colour',
+        );
+        expect(
+          richTextStyleFor(tester, label)?.fontWeight,
+          dsTokensLight.typography.weight.semiBold,
+          reason: '$label weight',
+        );
+        expect(
+          find.byIcon(expectedIcon),
+          findsOneWidget,
+          reason: '$label icon',
+        );
+      }
     });
 
     testWidgets('category badge renders on same line as title', (
@@ -275,77 +311,6 @@ void main() {
       // Badge should be on the same row (same Y), to the right (higher X)
       expect(badgeOffset.dy, closeTo(titleOffset.dy, 4));
       expect(badgeOffset.dx, greaterThan(titleOffset.dx));
-    });
-
-    testWidgets('priority P1 uses error color', (tester) async {
-      const key = Key('p1-task');
-
-      await _pumpTaskListItem(
-        tester,
-        DesignSystemTaskListItem(
-          key: key,
-          title: 'Task',
-          priority: DesignSystemTaskPriority.p1,
-          status: DesignSystemTaskStatus.open,
-          statusLabel: 'Open',
-          onTap: () {},
-        ),
-      );
-
-      expect(
-        richTextStyleFor(tester, 'P1')?.color,
-        dsTokensLight.colors.alert.error.defaultColor,
-      );
-      expect(
-        richTextStyleFor(tester, 'P1')?.fontWeight,
-        dsTokensLight.typography.weight.semiBold,
-      );
-    });
-
-    testWidgets('priority P2 uses warning color', (tester) async {
-      const key = Key('p2-task');
-
-      await _pumpTaskListItem(
-        tester,
-        DesignSystemTaskListItem(
-          key: key,
-          title: 'Task',
-          priority: DesignSystemTaskPriority.p2,
-          status: DesignSystemTaskStatus.open,
-          statusLabel: 'Open',
-          onTap: () {},
-        ),
-      );
-
-      expect(
-        richTextStyleFor(tester, 'P2')?.color,
-        dsTokensLight.colors.alert.warning.defaultColor,
-      );
-      expect(
-        richTextStyleFor(tester, 'P2')?.fontWeight,
-        dsTokensLight.typography.weight.semiBold,
-      );
-    });
-
-    testWidgets('priority P3 uses medium emphasis color', (tester) async {
-      const key = Key('p3-task');
-
-      await _pumpTaskListItem(
-        tester,
-        DesignSystemTaskListItem(
-          key: key,
-          title: 'Task',
-          priority: DesignSystemTaskPriority.p3,
-          status: DesignSystemTaskStatus.open,
-          statusLabel: 'Open',
-          onTap: () {},
-        ),
-      );
-
-      expect(
-        richTextStyleFor(tester, 'P3')?.color,
-        dsTokensLight.colors.text.mediumEmphasis,
-      );
     });
 
     testWidgets('status text uses high emphasis color for all statuses', (
@@ -437,64 +402,32 @@ void main() {
       expect(find.text('Study'), findsOneWidget);
     });
 
-    testWidgets('renders fire icon for priority', (tester) async {
-      await _pumpTaskListItem(
-        tester,
-        DesignSystemTaskListItem(
-          title: 'Task',
-          priority: DesignSystemTaskPriority.p1,
-          status: DesignSystemTaskStatus.open,
-          statusLabel: 'Open',
-          onTap: () {},
+    testWidgets('renders the matching status icon per status', (tester) async {
+      // The fire icon for P1 priority is covered by the priority loop above.
+      final cases = [
+        (
+          DesignSystemTaskStatus.blocked,
+          'Blocked',
+          Icons.warning_amber_rounded,
         ),
-      );
+        (DesignSystemTaskStatus.open, 'Open', Icons.circle_outlined),
+        (DesignSystemTaskStatus.onHold, 'On Hold', Icons.pause_rounded),
+      ];
 
-      expect(find.byIcon(Icons.local_fire_department_rounded), findsOneWidget);
-    });
+      for (final (status, label, expectedIcon) in cases) {
+        await _pumpTaskListItem(
+          tester,
+          DesignSystemTaskListItem(
+            title: 'Task',
+            priority: DesignSystemTaskPriority.p1,
+            status: status,
+            statusLabel: label,
+            onTap: () {},
+          ),
+        );
 
-    testWidgets('renders warning icon for blocked status', (tester) async {
-      await _pumpTaskListItem(
-        tester,
-        DesignSystemTaskListItem(
-          title: 'Task',
-          priority: DesignSystemTaskPriority.p1,
-          status: DesignSystemTaskStatus.blocked,
-          statusLabel: 'Blocked',
-          onTap: () {},
-        ),
-      );
-
-      expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
-    });
-
-    testWidgets('renders circle icon for open status', (tester) async {
-      await _pumpTaskListItem(
-        tester,
-        DesignSystemTaskListItem(
-          title: 'Task',
-          priority: DesignSystemTaskPriority.p1,
-          status: DesignSystemTaskStatus.open,
-          statusLabel: 'Open',
-          onTap: () {},
-        ),
-      );
-
-      expect(find.byIcon(Icons.circle_outlined), findsOneWidget);
-    });
-
-    testWidgets('renders pause icon for on hold status', (tester) async {
-      await _pumpTaskListItem(
-        tester,
-        DesignSystemTaskListItem(
-          title: 'Task',
-          priority: DesignSystemTaskPriority.p1,
-          status: DesignSystemTaskStatus.onHold,
-          statusLabel: 'On Hold',
-          onTap: () {},
-        ),
-      );
-
-      expect(find.byIcon(Icons.pause_rounded), findsOneWidget);
+        expect(find.byIcon(expectedIcon), findsOneWidget, reason: label);
+      }
     });
 
     testWidgets('resets hover/pressed when forcedState changes', (

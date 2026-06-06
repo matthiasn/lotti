@@ -18,7 +18,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify leading icon
       expect(find.byIcon(Icons.star_rounded), findsOneWidget);
@@ -45,11 +45,11 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the item
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify callback was triggered
       expect(tapped, isTrue);
@@ -71,11 +71,11 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Tap the item
       await tester.tap(find.byType(ActionMenuListItem));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify callback was NOT triggered
       expect(tapped, isFalse);
@@ -104,7 +104,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Verify icon is rendered
         expect(find.byIcon(icon), findsOneWidget, reason: 'Icon for $title');
@@ -125,7 +125,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the leading icon
       final iconFinder = find.byIcon(Icons.star_rounded);
@@ -146,7 +146,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the title text widget
       final textFinder = find.text('Private');
@@ -168,7 +168,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the leading icon
       final iconFinder = find.byIcon(Icons.star_rounded);
@@ -190,7 +190,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the title text widget
       final textFinder = find.text('Delete entry');
@@ -214,7 +214,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the leading icon
       final iconFinder = find.byIcon(Icons.star_rounded);
@@ -237,7 +237,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify Material widget exists for proper InkWell behavior
       expect(find.byType(Material), findsWidgets);
@@ -257,7 +257,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the Padding widget inside the InkWell
       final inkWellFinder = find.byType(InkWell);
@@ -289,7 +289,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the title text widget
       final textFinder = find.text(longTitle);
@@ -312,7 +312,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify title is rendered
       expect(find.text('Labels'), findsOneWidget);
@@ -332,7 +332,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Verify title is rendered
       expect(find.text('Favorite'), findsOneWidget);
@@ -365,7 +365,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the inner Column (for title/subtitle)
       final columnFinder = find.descendant(
@@ -394,7 +394,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the Row widget inside ActionMenuListItem
       final rowFinder = find.descendant(
@@ -421,7 +421,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find Expanded widget containing the title
       final expandedFinder = find.ancestor(
@@ -444,7 +444,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the leading icon
       final iconFinder = find.byIcon(Icons.delete_outline_rounded);
@@ -469,7 +469,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the leading icon
       final iconFinder = find.byIcon(Icons.delete_outline_rounded);
@@ -494,7 +494,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the leading icon
       final iconFinder = find.byIcon(Icons.star_rounded);

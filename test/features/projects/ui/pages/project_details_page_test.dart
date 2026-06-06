@@ -651,7 +651,7 @@ void main() {
 
     group('callback wiring', () {
       testWidgets(
-        'onCategoryTap callback is wired to the detail content',
+        'all interaction callbacks are wired to the detail content',
         (tester) async {
           await pumpPageWithData(
             tester,
@@ -668,92 +668,53 @@ void main() {
           final content = tester.widget<ProjectMobileDetailContent>(
             find.byType(ProjectMobileDetailContent),
           );
-          expect(
-            content.onCategoryTap,
-            isNotNull,
-            reason: 'onCategoryTap should be provided to the content widget',
-          );
-        },
-      );
-
-      testWidgets(
-        'onTargetDateTap callback is wired to the detail content',
-        (tester) async {
-          await pumpPageWithData(
-            tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
+          // One pump, one widget lookup — assert every callback the page
+          // must hand to the content widget.
+          <String, Object?>{
+            'onCategoryTap': content.onCategoryTap,
+            'onTargetDateTap': content.onTargetDateTap,
+            'onStatusTap': content.onStatusTap,
+            'onTaskTap': content.onTaskTap,
+          }.forEach(
+            (name, callback) => expect(
+              callback,
+              isNotNull,
+              reason: '$name should be provided to the content widget',
             ),
-            record: testRecord,
-          );
-
-          final content = tester.widget<ProjectMobileDetailContent>(
-            find.byType(ProjectMobileDetailContent),
-          );
-          expect(
-            content.onTargetDateTap,
-            isNotNull,
-            reason: 'onTargetDateTap should be provided to the content widget',
-          );
-        },
-      );
-
-      testWidgets(
-        'onStatusTap callback is wired to the detail content',
-        (tester) async {
-          await pumpPageWithData(
-            tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
-            record: testRecord,
-          );
-
-          final content = tester.widget<ProjectMobileDetailContent>(
-            find.byType(ProjectMobileDetailContent),
-          );
-          expect(
-            content.onStatusTap,
-            isNotNull,
-            reason: 'onStatusTap should be provided to the content widget',
-          );
-        },
-      );
-
-      testWidgets(
-        'onTaskTap callback is wired to the detail content',
-        (tester) async {
-          await pumpPageWithData(
-            tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
-            record: testRecord,
-          );
-
-          final content = tester.widget<ProjectMobileDetailContent>(
-            find.byType(ProjectMobileDetailContent),
-          );
-          expect(
-            content.onTaskTap,
-            isNotNull,
-            reason: 'onTaskTap should be provided to the content widget',
           );
         },
       );
     });
+
+    /// Sizes the surface tall enough for bottom sheets, pumps the page in
+    /// its default loaded state, and returns the mounted content widget.
+    Future<ProjectMobileDetailContent> pumpForModal(
+      WidgetTester tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(430, 1200)
+        ..devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await pumpPageWithData(
+        tester,
+        controllerState: ProjectDetailState(
+          project: testProject,
+          linkedTasks: const [],
+          isLoading: false,
+          isSaving: false,
+          hasChanges: false,
+        ),
+        record: testRecord,
+      );
+
+      return tester.widget<ProjectMobileDetailContent>(
+        find.byType(ProjectMobileDetailContent),
+      );
+    }
 
     group('status picker modal', () {
       testWidgets(
@@ -761,34 +722,13 @@ void main() {
         (tester) async {
           // Use a tall surface so the bottom sheet has room to render all
           // status options without overflow.
-          tester.view
-            ..physicalSize = const Size(430, 1200)
-            ..devicePixelRatio = 1.0;
-          addTearDown(() {
-            tester.view.resetPhysicalSize();
-            tester.view.resetDevicePixelRatio();
-          });
-
-          await pumpPageWithData(
-            tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
-            record: testRecord,
-          );
-
-          final content = tester.widget<ProjectMobileDetailContent>(
-            find.byType(ProjectMobileDetailContent),
-          );
+          final content = await pumpForModal(tester);
 
           // Invoke the onStatusTap callback directly to trigger the
           // bottom sheet.
           content.onStatusTap!();
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // The bottom sheet should show all status options.
           expect(find.text('Open'), findsWidgets);
@@ -802,38 +742,18 @@ void main() {
       testWidgets(
         'tapping a non-selected status option dismisses the sheet and saves',
         (tester) async {
-          tester.view
-            ..physicalSize = const Size(430, 1200)
-            ..devicePixelRatio = 1.0;
-          addTearDown(() {
-            tester.view.resetPhysicalSize();
-            tester.view.resetDevicePixelRatio();
-          });
-
-          await pumpPageWithData(
-            tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
-            record: testRecord,
-          );
-
-          final content = tester.widget<ProjectMobileDetailContent>(
-            find.byType(ProjectMobileDetailContent),
-          );
+          final content = await pumpForModal(tester);
 
           // Open the status picker bottom sheet.
           content.onStatusTap!();
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // The default test project has status 'Open'. Tap 'Active' which
           // is a different status to trigger the selection path.
           await tester.tap(find.text('Active'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // The sheet should be dismissed — status options are no longer
           // visible.
@@ -845,33 +765,12 @@ void main() {
       testWidgets(
         'tapping the already-selected status dismisses without saving',
         (tester) async {
-          tester.view
-            ..physicalSize = const Size(430, 1200)
-            ..devicePixelRatio = 1.0;
-          addTearDown(() {
-            tester.view.resetPhysicalSize();
-            tester.view.resetDevicePixelRatio();
-          });
-
-          await pumpPageWithData(
-            tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
-            record: testRecord,
-          );
-
-          final content = tester.widget<ProjectMobileDetailContent>(
-            find.byType(ProjectMobileDetailContent),
-          );
+          final content = await pumpForModal(tester);
 
           // Open the status picker bottom sheet.
           content.onStatusTap!();
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // The default test project has status 'Open'. The 'Open' option
           // should have a check mark (Icons.check_rounded) indicating it is
@@ -886,7 +785,8 @@ void main() {
             matching: find.byType(ListTile),
           );
           await tester.tap(openTile);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // The sheet should be dismissed without triggering a save.
           expect(find.text('Archived'), findsNothing);
@@ -897,32 +797,11 @@ void main() {
       testWidgets(
         'displays all five status variants with correct icons',
         (tester) async {
-          tester.view
-            ..physicalSize = const Size(430, 1200)
-            ..devicePixelRatio = 1.0;
-          addTearDown(() {
-            tester.view.resetPhysicalSize();
-            tester.view.resetDevicePixelRatio();
-          });
-
-          await pumpPageWithData(
-            tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
-            record: testRecord,
-          );
-
-          final content = tester.widget<ProjectMobileDetailContent>(
-            find.byType(ProjectMobileDetailContent),
-          );
+          final content = await pumpForModal(tester);
 
           content.onStatusTap!();
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Verify each status variant renders with its expected icon.
           expect(
@@ -994,7 +873,8 @@ void main() {
 
           // Invoke the onCategoryTap callback to open the modal.
           content.onCategoryTap!();
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // The modal should contain the CategorySelectionModalContent
           // widget and display the 'Category:' title.
@@ -1230,7 +1110,8 @@ void main() {
 
           // Open the category picker modal.
           content.onCategoryTap!();
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(find.byType(CategorySelectionModalContent), findsOneWidget);
 

@@ -196,7 +196,7 @@ Future<_FtueModelTally> _ensureModelsExist({
       continue;
     }
 
-    final existing = _findConfiguredKnownModel(
+    final existing = findConfiguredKnownModel(
       config.id,
       providerId: providerId,
       providerType: providerType,
@@ -219,7 +219,12 @@ Future<_FtueModelTally> _ensureModelsExist({
   return (created: created, verified: verified);
 }
 
-AiConfigModel? _findConfiguredKnownModel(
+/// Finds an already-configured model matching [providerModelId]: either a
+/// model bound directly to [providerId], or one bound to another *usable*
+/// provider of the same [providerType] (so FTUE setup verifies instead of
+/// seeding a duplicate row).
+@visibleForTesting
+AiConfigModel? findConfiguredKnownModel(
   String providerModelId, {
   required String providerId,
   required InferenceProviderType providerType,

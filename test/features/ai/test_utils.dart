@@ -4,12 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openai_dart/openai_dart.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../widget_test_utils.dart' show resolveTestTheme;
 
@@ -290,6 +295,107 @@ class AiTestWidgets {
     return AiTestSetup.createTestApp(
       providerOverrides: overrides,
       child: child,
+    );
+  }
+}
+
+/// Test data factory shared by the checklist function-handler tests
+/// (`lotti_checklist_update_handler_test.dart`,
+/// `lotti_batch_checklist_handler_test.dart`).
+class ChecklistTestDataFactory {
+  static final _testDate = DateTime(2024, 1, 15);
+  static const _uuid = Uuid();
+
+  static Task createTask({
+    String? id,
+    String? title,
+    List<String>? checklistIds,
+  }) {
+    final taskId = id ?? _uuid.v4();
+    return Task(
+      meta: Metadata(
+        id: taskId,
+        createdAt: _testDate,
+        updatedAt: _testDate,
+        dateFrom: _testDate,
+        dateTo: _testDate,
+        categoryId: 'test-category',
+      ),
+      data: TaskData(
+        title: title ?? 'Test Task',
+        checklistIds: checklistIds ?? [],
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: _testDate,
+          utcOffset: 0,
+        ),
+        statusHistory: const [],
+        dateFrom: _testDate,
+        dateTo: _testDate,
+      ),
+    );
+  }
+
+  static ChecklistItem createChecklistItem({
+    String? id,
+    String? title,
+    bool isChecked = false,
+    bool isArchived = false,
+    List<String>? linkedChecklists,
+    ChangeSource checkedBy = ChangeSource.user,
+    DateTime? checkedAt,
+  }) {
+    final itemId = id ?? _uuid.v4();
+    return ChecklistItem(
+      meta: Metadata(
+        id: itemId,
+        createdAt: _testDate,
+        updatedAt: _testDate,
+        dateFrom: _testDate,
+        dateTo: _testDate,
+        categoryId: 'test-category',
+      ),
+      data: createChecklistItemData(
+        title: title,
+        isChecked: isChecked,
+        isArchived: isArchived,
+        linkedChecklists: linkedChecklists ?? ['checklist-1'],
+        checkedBy: checkedBy,
+        checkedAt: checkedAt,
+      ),
+    );
+  }
+
+  static ChecklistItemData createChecklistItemData({
+    String? title,
+    bool isChecked = false,
+    bool isArchived = false,
+    List<String> linkedChecklists = const [],
+    ChangeSource checkedBy = ChangeSource.user,
+    DateTime? checkedAt,
+  }) {
+    return ChecklistItemData(
+      title: title ?? 'Test Item',
+      isChecked: isChecked,
+      isArchived: isArchived,
+      linkedChecklists: linkedChecklists,
+      checkedBy: checkedBy,
+      checkedAt: checkedAt,
+    );
+  }
+
+  static ChatCompletionMessageToolCall createToolCall({
+    required String functionName,
+    required String arguments,
+    String? id,
+  }) {
+    return ChatCompletionMessageToolCall(
+      id: id ?? 'tool-1',
+      type: ChatCompletionMessageToolCallType.function,
+      function: ChatCompletionMessageFunctionCall(
+        name: functionName,
+        arguments: arguments,
+      ),
     );
   }
 }

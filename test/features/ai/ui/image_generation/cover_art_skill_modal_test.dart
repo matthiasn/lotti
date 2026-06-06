@@ -14,6 +14,7 @@ import 'package:lotti/get_it.dart';
 
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
+import 'test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -54,7 +55,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testLinkedTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(refImageState),
+              () => FakeReferenceImageSelectionController(refImageState),
             ),
           ],
           child: const _CoverArtSkillModalHost(
@@ -82,7 +83,7 @@ void main() {
               referenceImageSelectionControllerProvider(
                 taskId: testLinkedTaskId,
               ).overrideWith(
-                () => _MockReferenceImageSelectionController(
+                () => FakeReferenceImageSelectionController(
                   const ReferenceImageSelectionState(),
                 ),
               ),
@@ -167,7 +168,7 @@ void main() {
               referenceImageSelectionControllerProvider(
                 taskId: testLinkedTaskId,
               ).overrideWith(
-                () => _MockReferenceImageSelectionControllerWithProcessing(
+                () => FakeReferenceImageSelectionController(
                   stateWithImages,
                   processedImages: processedImages,
                 ),
@@ -226,7 +227,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testLinkedTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(errorState),
+              () => FakeReferenceImageSelectionController(errorState),
             ),
           ],
           child: const _CoverArtSkillModalHost(
@@ -258,7 +259,7 @@ void main() {
               referenceImageSelectionControllerProvider(
                 taskId: testLinkedTaskId,
               ).overrideWith(
-                () => _MockReferenceImageSelectionController(errorState),
+                () => FakeReferenceImageSelectionController(errorState),
               ),
               triggerSkillProvider.overrideWith(
                 (ref, params) {
@@ -306,7 +307,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testLinkedTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(refImageState),
+              () => FakeReferenceImageSelectionController(refImageState),
             ),
           ],
           child: const _CoverArtSkillModalHost(
@@ -338,7 +339,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testLinkedTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(
+              () => FakeReferenceImageSelectionController(
                 const ReferenceImageSelectionState(),
               ),
             ),
@@ -399,7 +400,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testLinkedTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(
+              () => FakeReferenceImageSelectionController(
                 const ReferenceImageSelectionState(),
               ),
             ),
@@ -479,54 +480,4 @@ class _CoverArtSkillModalHost extends ConsumerWidget {
   }
 }
 
-/// Mock reference image selection controller that returns a fixed state.
-class _MockReferenceImageSelectionController
-    extends ReferenceImageSelectionController {
-  _MockReferenceImageSelectionController(this._fixedState);
-
-  final ReferenceImageSelectionState _fixedState;
-
-  @override
-  ReferenceImageSelectionState build({required String taskId}) {
-    return _fixedState;
-  }
-
-  @override
-  void toggleImageSelection(String imageId) {}
-
-  @override
-  void clearSelection() {}
-
-  @override
-  Future<List<ProcessedReferenceImage>> processSelectedImages() async {
-    return [];
-  }
-}
-
 /// Mock controller that returns processed images for testing.
-class _MockReferenceImageSelectionControllerWithProcessing
-    extends ReferenceImageSelectionController {
-  _MockReferenceImageSelectionControllerWithProcessing(
-    this._fixedState, {
-    this.processedImages = const [],
-  });
-
-  final ReferenceImageSelectionState _fixedState;
-  final List<ProcessedReferenceImage> processedImages;
-
-  @override
-  ReferenceImageSelectionState build({required String taskId}) {
-    return _fixedState;
-  }
-
-  @override
-  void toggleImageSelection(String imageId) {}
-
-  @override
-  void clearSelection() {}
-
-  @override
-  Future<List<ProcessedReferenceImage>> processSelectedImages() async {
-    return processedImages;
-  }
-}

@@ -381,9 +381,10 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
-        // Open the picker by tapping the category placeholder.
+        // Open the picker by tapping the category placeholder — a real
+        // modal route transition, so a settle is genuinely needed.
         await tester.tap(find.text('Choose a category...'));
         await tester.pumpAndSettle();
 
@@ -425,7 +426,7 @@ void main() {
           matching: find.byType(GestureDetector),
         );
         await tester.tap(startSelector.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // The time picker dialog should appear.
         expect(find.byType(Dialog), findsOneWidget);
@@ -437,7 +438,7 @@ void main() {
           matching: find.text('Cancel'),
         );
         await tester.tap(cancelInDialog);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('9:00 AM'), findsOneWidget);
       },
@@ -454,11 +455,11 @@ void main() {
           matching: find.byType(GestureDetector),
         );
         await tester.tap(startSelector.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Confirm the default time (9:00 AM) by tapping OK.
         await tester.tap(find.text('OK'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Start time stays 9:00 AM; end time remains 10:00 AM.
         expect(find.text('9:00 AM'), findsOneWidget);
@@ -479,13 +480,13 @@ void main() {
           matching: find.byType(GestureDetector),
         );
         await tester.tap(startSelector.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Switch to keyboard/text input mode.
         final keyboardIcon = find.byIcon(Icons.keyboard_outlined);
         if (keyboardIcon.evaluate().isNotEmpty) {
           await tester.tap(keyboardIcon);
-          await tester.pumpAndSettle();
+          await tester.pump();
 
           // Enter 11:00 AM which is >= end time (10:00 AM).
           final hourField = find.byType(EditableText).first;
@@ -496,7 +497,7 @@ void main() {
           }
 
           await tester.tap(find.text('OK'));
-          await tester.pumpAndSettle();
+          await tester.pump();
 
           // End time should be auto-adjusted to 12:00 AM (11+1=12).
           // The start time should be 11:00 AM and the end time adjusted.
@@ -504,7 +505,7 @@ void main() {
         } else {
           // Keyboard mode not available; just cancel and verify widget intact.
           await tester.tap(find.text('Cancel'));
-          await tester.pumpAndSettle();
+          await tester.pump();
           expect(find.byType(AddBlockSheet), findsOneWidget);
         }
       },
@@ -528,7 +529,7 @@ void main() {
           matching: find.byType(GestureDetector),
         );
         await tester.tap(endSelector.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(Dialog), findsOneWidget);
 
@@ -538,7 +539,7 @@ void main() {
           matching: find.text('Cancel'),
         );
         await tester.tap(cancelInDialog);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('10:00 AM'), findsOneWidget);
       },
@@ -555,11 +556,11 @@ void main() {
           matching: find.byType(GestureDetector),
         );
         await tester.tap(endSelector.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Confirm the default end time (10:00 AM).
         await tester.tap(find.text('OK'));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // End time should remain 10:00 AM, start time 9:00 AM.
         expect(find.text('10:00 AM'), findsOneWidget);
@@ -604,7 +605,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Open the end time picker.
         final endSelector = find.ancestor(
@@ -612,13 +613,13 @@ void main() {
           matching: find.byType(GestureDetector),
         );
         await tester.tap(endSelector.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Switch to keyboard input to set an invalid time (before start).
         final keyboardIcon = find.byIcon(Icons.keyboard_outlined);
         if (keyboardIcon.evaluate().isNotEmpty) {
           await tester.tap(keyboardIcon);
-          await tester.pumpAndSettle();
+          await tester.pump();
 
           // Enter 8:00 AM which is before start (9:00 AM) → invalid range.
           final fields = find.byType(EditableText);
@@ -630,14 +631,14 @@ void main() {
           }
 
           await tester.tap(find.text('OK'));
-          await tester.pumpAndSettle();
+          await tester.pump();
 
           // End time should NOT have changed to the invalid value.
           expect(find.text('10:00 AM'), findsOneWidget);
         } else {
           // If keyboard mode is unavailable, just verify cancel works.
           await tester.tap(find.text('Cancel'));
-          await tester.pumpAndSettle();
+          await tester.pump();
           expect(find.text('10:00 AM'), findsOneWidget);
         }
       },
@@ -708,9 +709,9 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
-        // Select a category.
+        // Select a category — modal route transitions need to settle.
         await tester.tap(find.text('Choose a category...'));
         await tester.pumpAndSettle();
 
@@ -727,7 +728,7 @@ void main() {
 
         // Tap Add Block.
         await tester.tap(addButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // addPlannedBlock should have been called exactly once.
         expect(tracker.addedBlocks, hasLength(1));
@@ -791,12 +792,12 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final cancelButton = find.widgetWithText(OutlinedButton, 'Cancel');
       expect(cancelButton, findsOneWidget);
       await tester.tap(cancelButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Pop was triggered.
       expect(popped, isTrue);
@@ -820,12 +821,12 @@ void main() {
           matching: find.byType(GestureDetector),
         );
         await tester.tap(endSelector.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final keyboardIcon = find.byIcon(Icons.keyboard_outlined);
         if (keyboardIcon.evaluate().isNotEmpty) {
           await tester.tap(keyboardIcon);
-          await tester.pumpAndSettle();
+          await tester.pump();
 
           final fields = find.byType(EditableText);
           if (fields.evaluate().length >= 2) {
@@ -834,7 +835,7 @@ void main() {
           }
 
           await tester.tap(find.text('OK'));
-          await tester.pumpAndSettle();
+          await tester.pump();
 
           // If 9:30 > 9:00 the end time is accepted → 30m duration.
           expect(find.byType(AddBlockSheet), findsOneWidget);
@@ -847,7 +848,7 @@ void main() {
         } else {
           // Keyboard mode unavailable: confirm default end time.
           await tester.tap(find.text('OK'));
-          await tester.pumpAndSettle();
+          await tester.pump();
           expect(find.text('1h'), findsOneWidget);
         }
       },
@@ -866,12 +867,12 @@ void main() {
           matching: find.byType(GestureDetector),
         );
         await tester.tap(endSelector.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final keyboardIcon = find.byIcon(Icons.keyboard_outlined);
         if (keyboardIcon.evaluate().isNotEmpty) {
           await tester.tap(keyboardIcon);
-          await tester.pumpAndSettle();
+          await tester.pump();
 
           final fields = find.byType(EditableText);
           if (fields.evaluate().length >= 2) {
@@ -880,7 +881,7 @@ void main() {
           }
 
           await tester.tap(find.text('OK'));
-          await tester.pumpAndSettle();
+          await tester.pump();
 
           expect(find.byType(AddBlockSheet), findsOneWidget);
           // 10:30 - 9:00 = 1h 30m → '1h 30m'.
@@ -889,7 +890,7 @@ void main() {
           expect(hasHoursMins || hasHourExact, isTrue);
         } else {
           await tester.tap(find.text('OK'));
-          await tester.pumpAndSettle();
+          await tester.pump();
           expect(find.text('1h'), findsOneWidget);
         }
       },

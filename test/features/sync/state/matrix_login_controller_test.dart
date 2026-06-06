@@ -9,8 +9,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockClient extends Mock implements Client {}
-
 // Listener for state changes
 class StateListener<T> extends Mock {
   void call(T? previous, T next);
@@ -21,7 +19,7 @@ void main() {
 
   late ProviderContainer container;
   late MockMatrixService mockMatrixService;
-  late MockClient mockClient;
+  late MockMatrixClient mockClient;
   late StateListener<AsyncValue<LoginState?>> listener;
 
   // Use a real StreamController for the loginStateStream
@@ -29,7 +27,7 @@ void main() {
 
   setUp(() {
     mockMatrixService = MockMatrixService();
-    mockClient = MockClient();
+    mockClient = MockMatrixClient();
     loginStateController = StreamController<LoginState>.broadcast();
 
     // Basic setup for the mock services

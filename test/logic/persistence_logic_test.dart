@@ -2426,6 +2426,31 @@ void main() {
           verifyLogged(LogDomain.sync, 'createLink.recordSent');
         },
       );
+
+      test(
+        'createLink returns false when upsertEntryLink reports no row changed',
+        () async {
+          // res == 0 means the link write was rejected (e.g. duplicate); the
+          // early return must skip sequence recording and outbox enqueue.
+          when(
+            () => journalDb.upsertEntryLink(any<EntryLink>()),
+          ).thenAnswer((_) async => 0);
+
+          final created = await logic.createLink(
+            fromId: 'from-id',
+            toId: 'to-id',
+          );
+
+          expect(created, isFalse);
+          verifyNever(
+            () => sequenceLog.recordSentEntryLink(
+              linkId: any(named: 'linkId'),
+              vectorClock: any(named: 'vectorClock'),
+            ),
+          );
+          verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+        },
+      );
     });
 
     test(

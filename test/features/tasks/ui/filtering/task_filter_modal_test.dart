@@ -892,8 +892,9 @@ void main() {
       bool hasUnsavedClauses = true,
       JournalPageState? pageState,
     }) {
-      saveFlowFakeController =
-          FakeJournalPageController(pageState ?? saveFlowMockState);
+      saveFlowFakeController = FakeJournalPageController(
+        pageState ?? saveFlowMockState,
+      );
 
       return WidgetTestBench(
         child: ProviderScope(
@@ -912,8 +913,7 @@ void main() {
             body: Builder(
               builder: (context) => ElevatedButton(
                 key: const ValueKey('open-filter-modal'),
-                onPressed: () =>
-                    showTaskFilterModal(context, showTasks: true),
+                onPressed: () => showTaskFilterModal(context, showTasks: true),
                 child: const Text('Open'),
               ),
             ),

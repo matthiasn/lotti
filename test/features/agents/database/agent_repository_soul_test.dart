@@ -1,3 +1,6 @@
+import 'dart:convert';
+
+import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -1059,6 +1062,95 @@ void main() {
         );
         expect(active, hasLength(1));
         expect(active.first.id, 'link-it-replacement');
+      },
+    );
+
+    test(
+      'upsertLink soft-deletes a conflicting improver_target from a '
+      'DIFFERENT template (UNIQUE on to_id) instead of hard-deleting it',
+      () async {
+        final original = model.AgentLink.improverTarget(
+          id: 'link-it-tpl-a',
+          fromId: 'tpl-a',
+          toId: 'improver-001',
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+        await repo.upsertLink(original);
+
+        // Different from_id -> natural key differs -> the conflict goes
+        // through the soft-delete (tombstone) path, not the hard delete.
+        final rebind = model.AgentLink.improverTarget(
+          id: 'link-it-tpl-b',
+          fromId: 'tpl-b',
+          toId: 'improver-001',
+          createdAt: testDate.add(const Duration(minutes: 1)),
+          updatedAt: testDate.add(const Duration(minutes: 1)),
+          vectorClock: null,
+        );
+        await repo.upsertLink(rebind);
+
+        final active = await repo.getLinksTo(
+          'improver-001',
+          type: AgentLinkTypes.improverTarget,
+        );
+        expect(active, hasLength(1));
+        expect(active.first.id, 'link-it-tpl-b');
+
+        // The original row survives as a tombstone (soft-deleted, not
+        // hard-deleted), so sync still propagates the retraction.
+        final raw = await db
+            .customSelect(
+              'SELECT deleted_at FROM agent_links WHERE id = ?',
+              variables: [Variable.withString('link-it-tpl-a')],
+            )
+            .getSingle();
+        expect(raw.data['deleted_at'], isNotNull);
+      },
+    );
+
+    test(
+      "upsertLink keeps the soft-deleted row's serialized JSON in step "
+      'with the SQL tombstone columns (json_set side-channel)',
+      () async {
+        final original = model.AgentLink.soulAssignment(
+          id: 'link-sa-json',
+          fromId: 'tpl-json',
+          toId: soulId,
+          createdAt: testDate,
+          updatedAt: testDate,
+          vectorClock: null,
+        );
+        await repo.upsertLink(original);
+
+        // Re-bind the template to a different soul: the original link is
+        // soft-deleted via the handoff path.
+        final rebind = model.AgentLink.soulAssignment(
+          id: 'link-sa-json-2',
+          fromId: 'tpl-json',
+          toId: 'soul-other',
+          createdAt: testDate.add(const Duration(minutes: 1)),
+          updatedAt: testDate.add(const Duration(minutes: 1)),
+          vectorClock: null,
+        );
+        await repo.upsertLink(rebind);
+
+        final raw = await db
+            .customSelect(
+              'SELECT deleted_at, serialized FROM agent_links WHERE id = ?',
+              variables: [Variable.withString('link-sa-json')],
+            )
+            .getSingle();
+        expect(raw.data['deleted_at'], isNotNull);
+
+        // Readers that decode from `serialized` without a deleted_at filter
+        // must see the tombstone in the JSON too.
+        final decoded =
+            jsonDecode(raw.data['serialized'] as String)
+                as Map<String, dynamic>;
+        expect(decoded['deletedAt'], isNotNull);
+        expect(decoded['updatedAt'], isNot(testDate.toIso8601String()));
       },
     );
   });

@@ -131,6 +131,37 @@ JournalEntry _makeJournalEntry(String id) => JournalEntry(
 // Tests
 // ---------------------------------------------------------------------------
 
+/// Shared GetIt scaffolding for the interaction-test groups: stubbed
+/// update notifications plus real in-memory journal/editor databases,
+/// opened once per group and closed in tearDownAll.
+class _DbBench {
+  late JournalDb journalDb;
+  late EditorDb editorDb;
+
+  Future<void> setUpAll() async {
+    await getIt.reset();
+    final mockUpdateNotifications = MockUpdateNotifications();
+    when(() => mockUpdateNotifications.updateStream).thenAnswer(
+      (_) => Stream<Set<String>>.fromIterable([]),
+    );
+
+    journalDb = JournalDb(inMemoryDatabase: true);
+    editorDb = EditorDb(inMemoryDatabase: true);
+
+    getIt
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+      ..registerSingleton<JournalDb>(journalDb)
+      ..registerSingleton<EditorDb>(editorDb)
+      ..registerSingleton<EditorStateService>(EditorStateService());
+  }
+
+  Future<void> tearDownAll() async {
+    await journalDb.close();
+    await editorDb.close();
+    await getIt.reset();
+  }
+}
+
 void main() {
   setUpAll(() {
     registerAllFallbackValues();
@@ -1299,7 +1330,9 @@ void main() {
           // Track navigation calls
           var navCalled = false;
           String? navPath;
-          when(() => mockNavService.beamToNamed(any())).thenAnswer((invocation) {
+          when(() => mockNavService.beamToNamed(any())).thenAnswer((
+            invocation,
+          ) {
             navCalled = true;
             navPath = invocation.positionalArguments[0] as String;
           });
@@ -1369,7 +1402,9 @@ void main() {
           // Track navigation calls
           var navCalled = false;
           String? navPath;
-          when(() => mockNavService.beamToNamed(any())).thenAnswer((invocation) {
+          when(() => mockNavService.beamToNamed(any())).thenAnswer((
+            invocation,
+          ) {
             navCalled = true;
             navPath = invocation.positionalArguments[0] as String;
           });
@@ -1400,7 +1435,9 @@ void main() {
           expect(navPath, '/tasks/$testTaskId');
         });
 
-        testWidgets('does not navigate when task creation fails', (tester) async {
+        testWidgets('does not navigate when task creation fails', (
+          tester,
+        ) async {
           // Mock the persistence logic to return null (failure)
           when(
             () => mockPersistenceLogic.createTaskEntry(
@@ -1413,7 +1450,9 @@ void main() {
 
           // Track navigation calls
           var navCalled = false;
-          when(() => mockNavService.beamToNamed(any())).thenAnswer((invocation) {
+          when(() => mockNavService.beamToNamed(any())).thenAnswer((
+            invocation,
+          ) {
             navCalled = true;
           });
 
@@ -1473,7 +1512,9 @@ void main() {
           // Track navigation calls
           var navCalled = false;
           String? navPath;
-          when(() => mockNavService.beamToNamed(any())).thenAnswer((invocation) {
+          when(() => mockNavService.beamToNamed(any())).thenAnswer((
+            invocation,
+          ) {
             navCalled = true;
             navPath = invocation.positionalArguments[0] as String;
           });
@@ -1534,7 +1575,9 @@ void main() {
           // Track navigation calls
           var navCalled = false;
           String? navPath;
-          when(() => mockNavService.beamToNamed(any())).thenAnswer((invocation) {
+          when(() => mockNavService.beamToNamed(any())).thenAnswer((
+            invocation,
+          ) {
             navCalled = true;
             navPath = invocation.positionalArguments[0] as String;
           });
@@ -1577,7 +1620,9 @@ void main() {
 
           // Track navigation calls
           var navCalled = false;
-          when(() => mockNavService.beamToNamed(any())).thenAnswer((invocation) {
+          when(() => mockNavService.beamToNamed(any())).thenAnswer((
+            invocation,
+          ) {
             navCalled = true;
           });
 
@@ -1675,53 +1720,6 @@ void main() {
         expect(find.text(l10n.addActionAddAudioRecording), findsOneWidget);
         expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
       });
-
-      testWidgets('onTap callback is triggered when tapped', (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateAudioItem(
-              'linked-id',
-              categoryId: 'category-id',
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        // Find and tap the item
-        final itemFinder = find.byType(CreateMenuListItem);
-        expect(itemFinder, findsOneWidget);
-
-        // Get the onTap callback
-        final item = tester.widget<CreateMenuListItem>(itemFinder);
-        expect(item.onTap, isNotNull);
-
-        // Verify the widget structure is correct
-        expect(item.icon, Icons.mic_none_rounded);
-      });
-
-      testWidgets('passes linkedId and categoryId correctly', (tester) async {
-        const testLinkedId = 'test-linked-id';
-        const testCategoryId = 'test-category-id';
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateAudioItem(
-              testLinkedId,
-              categoryId: testCategoryId,
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        // Verify widget is rendered with correct parameters
-        final widget = tester.widget<CreateAudioItem>(
-          find.byType(CreateAudioItem),
-        );
-        expect(widget.linkedFromId, testLinkedId);
-        expect(widget.categoryId, testCategoryId);
-      });
     });
 
     // CreateTimerItem widget tests are complex due to required provider setup.
@@ -1769,7 +1767,9 @@ void main() {
           // This is what happens after createTimerEntry succeeds
           container
               .read(
-                journalFocusControllerProvider(id: linkedEntry.meta.id).notifier,
+                journalFocusControllerProvider(
+                  id: linkedEntry.meta.id,
+                ).notifier,
               )
               .publishJournalFocus(
                 entryId: timerEntry.meta.id,
@@ -1809,7 +1809,9 @@ void main() {
         if (timerEntry != null) {
           container
               .read(
-                journalFocusControllerProvider(id: linkedEntry.meta.id).notifier,
+                journalFocusControllerProvider(
+                  id: linkedEntry.meta.id,
+                ).notifier,
               )
               .publishJournalFocus(
                 entryId: timerEntry.meta.id,
@@ -1909,53 +1911,6 @@ void main() {
         expect(find.text(l10n.addActionAddText), findsOneWidget);
         expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
       });
-
-      testWidgets('onTap callback exists', (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateTextItem(
-              'linked-id',
-              categoryId: 'category-id',
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        // Find the item
-        final itemFinder = find.byType(CreateMenuListItem);
-        expect(itemFinder, findsOneWidget);
-
-        // Get the onTap callback
-        final item = tester.widget<CreateMenuListItem>(itemFinder);
-        expect(item.onTap, isNotNull);
-
-        // Verify the widget structure is correct
-        expect(item.icon, Icons.notes_rounded);
-      });
-
-      testWidgets('passes linkedId and categoryId correctly', (tester) async {
-        const testLinkedId = 'test-linked-id';
-        const testCategoryId = 'test-category-id';
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateTextItem(
-              testLinkedId,
-              categoryId: testCategoryId,
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        // Verify widget is rendered with correct parameters
-        final widget = tester.widget<CreateTextItem>(
-          find.byType(CreateTextItem),
-        );
-        expect(widget.linkedFromId, testLinkedId);
-        expect(widget.categoryId, testCategoryId);
-      });
     });
 
     group('ModernImportImageItem Tests', () {
@@ -1977,53 +1932,6 @@ void main() {
         expect(find.text(l10n.addActionImportImage), findsOneWidget);
         expect(find.byIcon(Icons.photo_library_rounded), findsOneWidget);
       });
-
-      testWidgets('onTap callback exists', (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const ImportImageItem(
-              'linked-id',
-              categoryId: 'category-id',
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        // Find the item
-        final itemFinder = find.byType(CreateMenuListItem);
-        expect(itemFinder, findsOneWidget);
-
-        // Get the onTap callback
-        final item = tester.widget<CreateMenuListItem>(itemFinder);
-        expect(item.onTap, isNotNull);
-
-        // Verify the widget structure is correct
-        expect(item.icon, Icons.photo_library_rounded);
-      });
-
-      testWidgets('passes linkedId and categoryId correctly', (tester) async {
-        const testLinkedId = 'test-linked-id';
-        const testCategoryId = 'test-category-id';
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const ImportImageItem(
-              testLinkedId,
-              categoryId: testCategoryId,
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        // Verify widget is rendered with correct parameters
-        final widget = tester.widget<ImportImageItem>(
-          find.byType(ImportImageItem),
-        );
-        expect(widget.linkedFromId, testLinkedId);
-        expect(widget.categoryId, testCategoryId);
-      });
     });
 
     group('ModernCreateScreenshotItem Tests', () {
@@ -2044,53 +1952,6 @@ void main() {
         expect(find.byType(CreateMenuListItem), findsOneWidget);
         expect(find.text(l10n.addActionAddScreenshot), findsOneWidget);
         expect(find.byIcon(Icons.screenshot_monitor_rounded), findsOneWidget);
-      });
-
-      testWidgets('onTap callback exists', (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateScreenshotItem(
-              'linked-id',
-              categoryId: 'category-id',
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        // Find the item
-        final itemFinder = find.byType(CreateMenuListItem);
-        expect(itemFinder, findsOneWidget);
-
-        // Get the onTap callback
-        final item = tester.widget<CreateMenuListItem>(itemFinder);
-        expect(item.onTap, isNotNull);
-
-        // Verify the widget structure is correct
-        expect(item.icon, Icons.screenshot_monitor_rounded);
-      });
-
-      testWidgets('passes linkedId and categoryId correctly', (tester) async {
-        const testLinkedId = 'test-linked-id';
-        const testCategoryId = 'test-category-id';
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateScreenshotItem(
-              testLinkedId,
-              categoryId: testCategoryId,
-            ),
-          ),
-        );
-
-        await tester.pump();
-
-        // Verify widget is rendered with correct parameters
-        final widget = tester.widget<CreateScreenshotItem>(
-          find.byType(CreateScreenshotItem),
-        );
-        expect(widget.linkedFromId, testLinkedId);
-        expect(widget.categoryId, testCategoryId);
       });
     });
 
@@ -2305,7 +2166,9 @@ void main() {
         await flagController.close();
       });
 
-      testWidgets('shows Event item when enableEventsFlag is ON', (tester) async {
+      testWidgets('shows Event item when enableEventsFlag is ON', (
+        tester,
+      ) async {
         // Mock JournalDb.watchConfigFlags() to return enableEventsFlag: true
         when(() => mockDb.watchConfigFlags()).thenAnswer(
           (_) => Stream<Set<ConfigFlag>>.fromIterable([
@@ -2440,7 +2303,9 @@ void main() {
             const CreateTaskItem(null, categoryId: 'cat-id'),
             overrides: [
               journalDbProvider.overrideWithValue(mockDb),
-              taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+              taskAgentServiceProvider.overrideWithValue(
+                MockTaskAgentService(),
+              ),
             ],
           ),
         );
@@ -2565,31 +2430,9 @@ void main() {
     // 3. Navigation tests above demonstrate onTap execution for CreateTaskItem/CreateEventItem
 
     group('CreateTimerItem Widget Integration Tests', () {
-      late JournalDb journalDb;
-      late EditorDb editorDb;
-
-      setUpAll(() async {
-        await getIt.reset();
-        final mockUpdateNotifications = MockUpdateNotifications();
-        when(() => mockUpdateNotifications.updateStream).thenAnswer(
-          (_) => Stream<Set<String>>.fromIterable([]),
-        );
-
-        journalDb = JournalDb(inMemoryDatabase: true);
-        editorDb = EditorDb(inMemoryDatabase: true);
-
-        getIt
-          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-          ..registerSingleton<JournalDb>(journalDb)
-          ..registerSingleton<EditorDb>(editorDb)
-          ..registerSingleton<EditorStateService>(EditorStateService());
-      });
-
-      tearDownAll(() async {
-        await journalDb.close();
-        await editorDb.close();
-        await getIt.reset();
-      });
+      final bench = _DbBench();
+      setUpAll(bench.setUpAll);
+      tearDownAll(bench.tearDownAll);
 
       testWidgets('onTap executes and creates timer', (tester) async {
         const parentId = 'parent-entry-id';
@@ -2731,31 +2574,9 @@ void main() {
     });
 
     group('CreateAudioItem Widget Integration Tests (modern)', () {
-      late JournalDb journalDb;
-      late EditorDb editorDb;
-
-      setUpAll(() async {
-        await getIt.reset();
-        final mockUpdateNotifications = MockUpdateNotifications();
-        when(() => mockUpdateNotifications.updateStream).thenAnswer(
-          (_) => Stream<Set<String>>.fromIterable([]),
-        );
-
-        journalDb = JournalDb(inMemoryDatabase: true);
-        editorDb = EditorDb(inMemoryDatabase: true);
-
-        getIt
-          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-          ..registerSingleton<JournalDb>(journalDb)
-          ..registerSingleton<EditorDb>(editorDb)
-          ..registerSingleton<EditorStateService>(EditorStateService());
-      });
-
-      tearDownAll(() async {
-        await journalDb.close();
-        await editorDb.close();
-        await getIt.reset();
-      });
+      final bench = _DbBench();
+      setUpAll(bench.setUpAll);
+      tearDownAll(bench.tearDownAll);
 
       testWidgets('onTap calls showAudioRecordingModal', (tester) async {
         const linkedId = 'linked-id';
@@ -2808,31 +2629,9 @@ void main() {
     });
 
     group('CreateTextItem Widget Integration Tests (modern)', () {
-      late JournalDb journalDb;
-      late EditorDb editorDb;
-
-      setUpAll(() async {
-        await getIt.reset();
-        final mockUpdateNotifications = MockUpdateNotifications();
-        when(() => mockUpdateNotifications.updateStream).thenAnswer(
-          (_) => Stream<Set<String>>.fromIterable([]),
-        );
-
-        journalDb = JournalDb(inMemoryDatabase: true);
-        editorDb = EditorDb(inMemoryDatabase: true);
-
-        getIt
-          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-          ..registerSingleton<JournalDb>(journalDb)
-          ..registerSingleton<EditorDb>(editorDb)
-          ..registerSingleton<EditorStateService>(EditorStateService());
-      });
-
-      tearDownAll(() async {
-        await journalDb.close();
-        await editorDb.close();
-        await getIt.reset();
-      });
+      final bench = _DbBench();
+      setUpAll(bench.setUpAll);
+      tearDownAll(bench.tearDownAll);
 
       testWidgets('onTap executes and creates text entry', (tester) async {
         const linkedId = 'linked-entry-id';
@@ -2897,31 +2696,9 @@ void main() {
     });
 
     group('ImportImageItem Widget Integration Tests (modern)', () {
-      late JournalDb journalDb;
-      late EditorDb editorDb;
-
-      setUpAll(() async {
-        await getIt.reset();
-        final mockUpdateNotifications = MockUpdateNotifications();
-        when(() => mockUpdateNotifications.updateStream).thenAnswer(
-          (_) => Stream<Set<String>>.fromIterable([]),
-        );
-
-        journalDb = JournalDb(inMemoryDatabase: true);
-        editorDb = EditorDb(inMemoryDatabase: true);
-
-        getIt
-          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-          ..registerSingleton<JournalDb>(journalDb)
-          ..registerSingleton<EditorDb>(editorDb)
-          ..registerSingleton<EditorStateService>(EditorStateService());
-      });
-
-      tearDownAll(() async {
-        await journalDb.close();
-        await editorDb.close();
-        await getIt.reset();
-      });
+      final bench = _DbBench();
+      setUpAll(bench.setUpAll);
+      tearDownAll(bench.tearDownAll);
 
       testWidgets('renders import image item correctly', (tester) async {
         const linkedId = 'linked-id';
@@ -2951,31 +2728,9 @@ void main() {
     });
 
     group('CreateScreenshotItem Widget Integration Tests (modern)', () {
-      late JournalDb journalDb;
-      late EditorDb editorDb;
-
-      setUpAll(() async {
-        await getIt.reset();
-        final mockUpdateNotifications = MockUpdateNotifications();
-        when(() => mockUpdateNotifications.updateStream).thenAnswer(
-          (_) => Stream<Set<String>>.fromIterable([]),
-        );
-
-        journalDb = JournalDb(inMemoryDatabase: true);
-        editorDb = EditorDb(inMemoryDatabase: true);
-
-        getIt
-          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-          ..registerSingleton<JournalDb>(journalDb)
-          ..registerSingleton<EditorDb>(editorDb)
-          ..registerSingleton<EditorStateService>(EditorStateService());
-      });
-
-      tearDownAll(() async {
-        await journalDb.close();
-        await editorDb.close();
-        await getIt.reset();
-      });
+      final bench = _DbBench();
+      setUpAll(bench.setUpAll);
+      tearDownAll(bench.tearDownAll);
 
       testWidgets('renders screenshot item correctly', (tester) async {
         const linkedId = 'linked-id';
@@ -3005,33 +2760,13 @@ void main() {
     });
 
     group('PasteImageItem Widget Integration Tests (modern)', () {
-      late JournalDb journalDb;
-      late EditorDb editorDb;
+      final bench = _DbBench();
+      setUpAll(bench.setUpAll);
+      tearDownAll(bench.tearDownAll);
 
-      setUpAll(() async {
-        await getIt.reset();
-        final mockUpdateNotifications = MockUpdateNotifications();
-        when(() => mockUpdateNotifications.updateStream).thenAnswer(
-          (_) => Stream<Set<String>>.fromIterable([]),
-        );
-
-        journalDb = JournalDb(inMemoryDatabase: true);
-        editorDb = EditorDb(inMemoryDatabase: true);
-
-        getIt
-          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-          ..registerSingleton<JournalDb>(journalDb)
-          ..registerSingleton<EditorDb>(editorDb)
-          ..registerSingleton<EditorStateService>(EditorStateService());
-      });
-
-      tearDownAll(() async {
-        await journalDb.close();
-        await editorDb.close();
-        await getIt.reset();
-      });
-
-      testWidgets('hides when canPasteImage is false (default)', (tester) async {
+      testWidgets('hides when canPasteImage is false (default)', (
+        tester,
+      ) async {
         const linkedId = 'linked-id';
         const categoryId = 'category-id';
 

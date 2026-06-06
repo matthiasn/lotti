@@ -14,8 +14,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockAiConfigDb extends Mock implements AiConfigDb {}
-
 void main() {
   late GetIt getIt;
   late MockOutboxService mockOutboxService;

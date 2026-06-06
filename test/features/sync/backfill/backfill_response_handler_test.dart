@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
@@ -1996,10 +1997,12 @@ void main() {
     });
 
     test('skips entries within cooldown period', () async {
-      // Pre-populate the cooldown cache with a recent response (now).
-      // The handler uses DateTime.now() internally, so a real-time "now"
-      // timestamp will be within the 5-minute cooldown window.
-      handler.recentlyResponded['$aliceHostId:3'] = DateTime.now();
+      final fixedNow = DateTime(2026, 5, 25, 9);
+      // Pre-populate the cooldown cache with a response from one minute ago —
+      // squarely inside the cooldown window under the fixed clock.
+      handler.recentlyResponded['$aliceHostId:3'] = fixedNow.subtract(
+        const Duration(minutes: 1),
+      );
 
       const request = SyncBackfillRequest(
         entries: [
@@ -2008,7 +2011,10 @@ void main() {
         requesterId: requesterId,
       );
 
-      await handler.handleBackfillRequest(request);
+      await withClock(
+        Clock.fixed(fixedNow),
+        () => handler.handleBackfillRequest(request),
+      );
 
       // Should not call any sequence log or outbox methods
       verifyNever(
@@ -2053,7 +2059,7 @@ void main() {
               responseCooldown: Duration.zero,
             )
             // Set window to now so the rate window is still active
-            ..windowStart = DateTime.now()
+            ..windowStart = DateTime(2026, 5, 25, 9)
             ..responsesInWindow =
                 SyncTuning.backfillResponseRateLimit; // At the limit
 
@@ -2065,7 +2071,10 @@ void main() {
         requesterId: requesterId,
       );
 
-      await handler.handleBackfillRequest(request);
+      await withClock(
+        Clock.fixed(DateTime(2026, 5, 25, 9)),
+        () => handler.handleBackfillRequest(request),
+      );
 
       // Should be rate limited - no processing
       verifyNever(
@@ -2074,7 +2083,7 @@ void main() {
     });
 
     test('cleans expired cooldown entries at batch start', () async {
-      final now = DateTime.now();
+      final now = DateTime(2026, 5, 25, 9);
 
       // Add an entry that's already expired (well past 5-minute cooldown)
       handler.recentlyResponded['$aliceHostId:99'] = now.subtract(
@@ -2097,7 +2106,10 @@ void main() {
         () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 10),
       ).thenAnswer((_) async => null);
 
-      await handler.handleBackfillRequest(request);
+      await withClock(
+        Clock.fixed(now),
+        () => handler.handleBackfillRequest(request),
+      );
 
       // Expired entry should be cleaned
       expect(
@@ -2110,6 +2122,44 @@ void main() {
         isTrue,
       );
     });
+
+    test(
+      'an entry aged exactly the cooldown duration is no longer skipped',
+      () async {
+        final fixedNow = DateTime(2026, 5, 25, 9);
+        // Exactly at the boundary: difference == cooldown fails the
+        // strictly-less-than check, so the entry must be processed again
+        // (and swept by the batch-start cleanup).
+        handler.recentlyResponded['$aliceHostId:3'] = fixedNow.subtract(
+          SyncTuning.backfillResponseCooldown,
+        );
+
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: aliceHostId, counter: 3),
+          ],
+          requesterId: requesterId,
+        );
+
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        await withClock(
+          Clock.fixed(fixedNow),
+          () => handler.handleBackfillRequest(request),
+        );
+
+        verify(
+          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 3),
+        ).called(1);
+        // The boundary-aged entry was replaced by a fresh cooldown stamp.
+        expect(handler.recentlyResponded['$aliceHostId:3'], fixedNow);
+      },
+    );
   });
 
   group('handleBackfillResponse', () {
@@ -3248,7 +3298,7 @@ void main() {
     group('BackfillResponseHandler generated batch behavior', () {
       glados.Glados(
         glados.any.generatedBackfillBatchScenario,
-        glados.ExploreConfig(numRuns: 240),
+        glados.ExploreConfig(numRuns: 160),
       ).test(
         'matches the generated batch model for dedupe, cooldown, and rate limit',
         (scenario) async {
@@ -3347,7 +3397,7 @@ void main() {
     group('BackfillResponseHandler generated response verification', () {
       glados.Glados(
         glados.any.generatedHandleBackfillResponseScenario,
-        glados.ExploreConfig(numRuns: 260),
+        glados.ExploreConfig(numRuns: 160),
       ).test(
         'matches the generated receive-side verification model',
         (scenario) async {

@@ -5,25 +5,22 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/tasks/ui/task_status.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/themes/theme.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../../../test_helper.dart';
 
-class MockTask extends Mock implements Task {
-  MockTask(this.taskData);
-
-  final TaskData taskData;
-
-  @override
-  TaskData get data => taskData;
-
-  @override
-  Metadata get meta => Metadata(
-    id: 'test-task-id',
-    createdAt: DateTime(2024, 3, 15, 10, 30),
-    updatedAt: DateTime(2024, 3, 15, 10, 30),
-    dateFrom: DateTime(2024, 3, 15, 10, 30),
-    dateTo: DateTime(2024, 3, 15, 10, 30),
+/// Builds a real [Task] around the given [TaskData] — no mock needed for a
+/// plain value object.
+Task _makeTask(TaskData taskData) {
+  final testDate = DateTime(2024, 3, 15, 10, 30);
+  return Task(
+    meta: Metadata(
+      id: 'test-task-id',
+      createdAt: testDate,
+      updatedAt: testDate,
+      dateFrom: testDate,
+      dateTo: testDate,
+    ),
+    data: taskData,
   );
 }
 
@@ -40,7 +37,7 @@ void main() {
     );
   }
 
-  MockTask createMockTask(TaskStatus status) {
+  Task createTask(TaskStatus status) {
     final taskData = TaskData(
       status: status,
       dateFrom: testDate,
@@ -49,7 +46,7 @@ void main() {
       title: 'Test Task',
     );
 
-    return MockTask(taskData);
+    return _makeTask(taskData);
   }
 
   testWidgets('renders with correct label for open status', (tester) async {
@@ -60,7 +57,7 @@ void main() {
         utcOffset: utcOffset,
       ),
     );
-    final mockTask = createMockTask(status);
+    final mockTask = createTask(status);
 
     await tester.pumpWidget(
       WidgetTestBench(
@@ -153,7 +150,7 @@ void main() {
         testDate.timeZoneOffset.inMinutes,
       );
 
-      final mockTask = createMockTask(status);
+      final mockTask = createTask(status);
 
       await tester.pumpWidget(
         WidgetTestBench(
@@ -183,7 +180,7 @@ void main() {
         utcOffset: utcOffset,
       ),
     );
-    final mockTask = createMockTask(status);
+    final mockTask = createTask(status);
 
     await tester.pumpWidget(
       WidgetTestBench(
@@ -212,7 +209,7 @@ void main() {
         utcOffset: utcOffset,
       ),
     );
-    final mockTask = createMockTask(status);
+    final mockTask = createTask(status);
 
     await tester.pumpWidget(
       WidgetTestBench(
@@ -239,7 +236,7 @@ void main() {
       createdAt: testDate,
       utcOffset: testDate.timeZoneOffset.inMinutes,
     );
-    final mockTask = createMockTask(status);
+    final mockTask = createTask(status);
 
     await tester.pumpWidget(
       WidgetTestBench(
@@ -262,7 +259,7 @@ void main() {
         utcOffset: utcOffset,
       ),
     );
-    final mockTask = createMockTask(status);
+    final mockTask = createTask(status);
 
     await tester.pumpWidget(
       WidgetTestBench(
@@ -361,7 +358,7 @@ void main() {
           testDate.timeZoneOffset.inMinutes,
         );
 
-        final mockTask = createMockTask(status);
+        final mockTask = createTask(status);
 
         await tester.pumpWidget(
           DarkWidgetTestBench(
@@ -392,7 +389,7 @@ void main() {
         utcOffset: utcOffset,
       ),
     );
-    final mockTask = createMockTask(status);
+    final mockTask = createTask(status);
 
     await tester.pumpWidget(
       DarkWidgetTestBench(
@@ -421,7 +418,7 @@ void main() {
       createdAt: testDate,
       utcOffset: testDate.timeZoneOffset.inMinutes,
     );
-    final mockTask = createMockTask(status);
+    final mockTask = createTask(status);
 
     await tester.pumpWidget(
       DarkWidgetTestBench(

@@ -917,7 +917,7 @@ void main() {
         // whenIdle must resolve after the queued download finishes.
         // Lines 209-210: the Completer is created and its future returned
         // because the queue is non-empty when whenIdle() is called.
-        await ingestor.whenIdle().timeout(const Duration(seconds: 5));
+        await ingestor.whenIdle().timeout(const Duration(seconds: 2));
 
         final writtenFile = File('${tempDir.path}/$relativePath');
         expect(writtenFile.existsSync(), isTrue);
@@ -969,7 +969,7 @@ void main() {
           scheduleDownload: true,
         );
 
-        await ingestor.whenIdle().timeout(const Duration(seconds: 5));
+        await ingestor.whenIdle().timeout(const Duration(seconds: 2));
 
         // Only one actual download should have occurred because the second
         // schedule for the same key was deduped.
@@ -1022,7 +1022,7 @@ void main() {
 
         // Now let the download complete.
         downloadCompleter.complete();
-        await ingestor.whenIdle().timeout(const Duration(seconds: 5));
+        await ingestor.whenIdle().timeout(const Duration(seconds: 2));
         expect(idleResolved, isTrue);
       },
     );
@@ -1095,7 +1095,7 @@ void main() {
         downloadCompleter.complete();
 
         // Wait for both downloads to finish.
-        await ingestor.whenIdle().timeout(const Duration(seconds: 5));
+        await ingestor.whenIdle().timeout(const Duration(seconds: 2));
 
         // The file should exist and reflect the second download's bytes.
         final writtenFile = File('${tempDir.path}/attachments/supersede.json');

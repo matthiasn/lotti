@@ -3,19 +3,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:lotti/widgets/app_bar/glass_icon_container.dart';
 
+import '../../widget_test_utils.dart';
+
+Future<void> _pump(WidgetTester tester, Widget widget) =>
+    tester.pumpWidget(makeTestableWidgetWithScaffold(widget));
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('GlassActionButton', () {
     testWidgets('renders child widget', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GlassActionButton(
-              onTap: () {},
-              child: const Icon(Icons.more_horiz),
-            ),
-          ),
+      await _pump(
+        tester,
+        GlassActionButton(
+          onTap: () {},
+          child: const Icon(Icons.more_horiz),
         ),
       );
 
@@ -25,32 +27,26 @@ void main() {
     testWidgets('calls onTap when pressed', (tester) async {
       var tapped = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GlassActionButton(
-              onTap: () => tapped = true,
-              child: const Icon(Icons.settings),
-            ),
-          ),
+      await _pump(
+        tester,
+        GlassActionButton(
+          onTap: () => tapped = true,
+          child: const Icon(Icons.settings),
         ),
       );
 
       await tester.tap(find.byType(GlassActionButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(tapped, isTrue);
     });
 
     testWidgets('contains GlassIconContainer', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GlassActionButton(
-              onTap: () {},
-              child: const Icon(Icons.add),
-            ),
-          ),
+      await _pump(
+        tester,
+        GlassActionButton(
+          onTap: () {},
+          child: const Icon(Icons.add),
         ),
       );
 
@@ -58,14 +54,11 @@ void main() {
     });
 
     testWidgets('uses default size of 40', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GlassActionButton(
-              onTap: () {},
-              child: const Icon(Icons.star),
-            ),
-          ),
+      await _pump(
+        tester,
+        GlassActionButton(
+          onTap: () {},
+          child: const Icon(Icons.star),
         ),
       );
 
@@ -77,15 +70,12 @@ void main() {
     });
 
     testWidgets('uses custom size when provided', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GlassActionButton(
-              onTap: () {},
-              size: 50,
-              child: const Icon(Icons.favorite),
-            ),
-          ),
+      await _pump(
+        tester,
+        GlassActionButton(
+          onTap: () {},
+          size: 50,
+          child: const Icon(Icons.favorite),
         ),
       );
 
@@ -97,14 +87,11 @@ void main() {
     });
 
     testWidgets('contains Material with transparency', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GlassActionButton(
-              onTap: () {},
-              child: const Icon(Icons.menu),
-            ),
-          ),
+      await _pump(
+        tester,
+        GlassActionButton(
+          onTap: () {},
+          child: const Icon(Icons.menu),
         ),
       );
 
@@ -119,14 +106,11 @@ void main() {
     });
 
     testWidgets('contains InkWell for tap feedback', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GlassActionButton(
-              onTap: () {},
-              child: const Icon(Icons.edit),
-            ),
-          ),
+      await _pump(
+        tester,
+        GlassActionButton(
+          onTap: () {},
+          child: const Icon(Icons.edit),
         ),
       );
 
@@ -140,14 +124,11 @@ void main() {
     });
 
     testWidgets('Material has rounded border radius', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GlassActionButton(
-              onTap: () {},
-              child: const Icon(Icons.close),
-            ),
-          ),
+      await _pump(
+        tester,
+        GlassActionButton(
+          onTap: () {},
+          child: const Icon(Icons.close),
         ),
       );
 
@@ -162,14 +143,11 @@ void main() {
     });
 
     testWidgets('renders any widget as child', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: GlassActionButton(
-              onTap: () {},
-              child: const Text('A'),
-            ),
-          ),
+      await _pump(
+        tester,
+        GlassActionButton(
+          onTap: () {},
+          child: const Text('A'),
         ),
       );
 

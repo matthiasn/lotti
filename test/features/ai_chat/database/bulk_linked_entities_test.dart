@@ -8,11 +8,87 @@ import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 
+final testDate = DateTime(2024, 1, 15);
+
+/// Task fixture with the shared test dates; pass only what differs.
+JournalEntity _makeTask(
+  String id, {
+  String? title,
+  DateTime? dateFrom,
+  TaskStatus? status,
+  String? plainText,
+}) {
+  final date = dateFrom ?? testDate;
+  return JournalEntity.task(
+    meta: Metadata(
+      id: id,
+      createdAt: testDate,
+      updatedAt: testDate,
+      dateFrom: date,
+      dateTo: date,
+      categoryId: 'category-1',
+    ),
+    data: TaskData(
+      title: title ?? 'Test Task',
+      status:
+          status ??
+          TaskStatus.open(
+            id: 'status-$id',
+            createdAt: testDate,
+            utcOffset: 0,
+          ),
+      dateFrom: date,
+      dateTo: date,
+      statusHistory: [],
+    ),
+    entryText: EntryText(plainText: plainText ?? 'Task description'),
+  );
+}
+
+/// AI-response fixture linked-entity tests attach to a task.
+JournalEntity _makeAiResponse(
+  String id, {
+  DateTime? dateFrom,
+  String? response,
+}) {
+  final date = dateFrom ?? testDate;
+  return JournalEntity.aiResponse(
+    meta: Metadata(
+      id: id,
+      createdAt: testDate,
+      updatedAt: testDate,
+      dateFrom: date,
+      dateTo: date,
+    ),
+    data: AiResponseData(
+      model: 'gpt-4',
+      systemMessage: 'You are a helpful assistant',
+      prompt: 'Summarize this task',
+      thoughts: 'User wants task summary',
+      response: response ?? 'AI generated summary',
+      promptId: 'prompt-123',
+      // ignore: deprecated_member_use_from_same_package
+      type: AiResponseType.taskSummary,
+    ),
+    entryText: EntryText(plainText: response ?? 'AI Response'),
+  );
+}
+
+/// Basic from→to link fixture.
+EntryLink _makeLink(String fromId, String toId, {String? id}) {
+  return EntryLink.basic(
+    id: id ?? 'link-$fromId-$toId',
+    fromId: fromId,
+    toId: toId,
+    createdAt: testDate,
+    updatedAt: testDate,
+    vectorClock: null,
+  );
+}
+
 void main() {
   group('JournalDb getBulkLinkedEntities', () {
     late JournalDb journalDb;
-    final testDate = DateTime(2024, 1, 15);
-
     setUp(() {
       journalDb = JournalDb(inMemoryDatabase: true);
     });
@@ -49,58 +125,18 @@ void main() {
 
       test('integration test with real data', () async {
         // Arrange
-        final task = JournalEntity.task(
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-            categoryId: 'category-1',
-          ),
-          data: TaskData(
-            title: 'Test Task',
-            status: TaskStatus.open(
-              id: 'status-1',
-              createdAt: testDate,
-              utcOffset: 0,
-            ),
-            dateFrom: testDate,
-            dateTo: testDate,
-            statusHistory: [],
-          ),
-          entryText: const EntryText(plainText: 'Task description'),
+        final task = _makeTask(
+          'task-1',
+          title: 'Test Task',
+          plainText: 'Task description',
         );
 
-        final aiResponse = JournalEntity.aiResponse(
-          meta: Metadata(
-            id: 'ai-response-1',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-          ),
-          data: const AiResponseData(
-            model: 'gpt-4',
-            systemMessage: 'You are a helpful assistant',
-            prompt: 'Summarize this task',
-            thoughts: 'User wants task summary',
-            response: 'AI generated summary',
-            promptId: 'prompt-123',
-            // ignore: deprecated_member_use_from_same_package
-            type: AiResponseType.taskSummary,
-          ),
-          entryText: const EntryText(plainText: 'AI Response'),
+        final aiResponse = _makeAiResponse(
+          'ai-response-1',
+          response: 'AI generated summary',
         );
 
-        final link = EntryLink.basic(
-          id: 'link-1',
-          fromId: task.meta.id,
-          toId: aiResponse.meta.id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        );
+        final link = _makeLink(task.meta.id, aiResponse.meta.id, id: 'link-1');
 
         // Insert test data
         await journalDb.upsertJournalDbEntity(toDbEntity(task));
@@ -122,27 +158,10 @@ void main() {
 
       test('fetches linked entities for multiple parent IDs', () async {
         // Arrange
-        final task1 = JournalEntity.task(
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-            categoryId: 'category-1',
-          ),
-          data: TaskData(
-            title: 'Test Task 1',
-            status: TaskStatus.open(
-              id: 'status-1',
-              createdAt: testDate,
-              utcOffset: 0,
-            ),
-            dateFrom: testDate,
-            dateTo: testDate,
-            statusHistory: [],
-          ),
-          entryText: const EntryText(plainText: 'Task 1 description'),
+        final task1 = _makeTask(
+          'task-1',
+          title: 'Test Task 1',
+          plainText: 'Task 1 description',
         );
 
         final task2 = JournalEntity.task(
@@ -168,64 +187,26 @@ void main() {
           entryText: const EntryText(plainText: 'Task 2 description'),
         );
 
-        final aiResponse1 = JournalEntity.aiResponse(
-          meta: Metadata(
-            id: 'ai-response-1',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-          ),
-          data: const AiResponseData(
-            model: 'gpt-4',
-            systemMessage: 'You are a helpful assistant',
-            prompt: 'Summarize this task',
-            thoughts: 'User wants task summary',
-            response: 'AI summary for task 1',
-            promptId: 'prompt-123',
-            // ignore: deprecated_member_use_from_same_package
-            type: AiResponseType.taskSummary,
-          ),
-          entryText: const EntryText(plainText: 'AI Response 1'),
+        final aiResponse1 = _makeAiResponse(
+          'ai-response-1',
+          response: 'AI summary for task 1',
         );
 
-        final aiResponse2 = JournalEntity.aiResponse(
-          meta: Metadata(
-            id: 'ai-response-2',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-          ),
-          data: const AiResponseData(
-            model: 'gpt-4',
-            systemMessage: 'You are a helpful assistant',
-            prompt: 'Summarize this task',
-            thoughts: 'User wants task summary',
-            response: 'AI summary for task 2',
-            promptId: 'prompt-123',
-            // ignore: deprecated_member_use_from_same_package
-            type: AiResponseType.taskSummary,
-          ),
-          entryText: const EntryText(plainText: 'AI Response 2'),
+        final aiResponse2 = _makeAiResponse(
+          'ai-response-2',
+          response: 'AI summary for task 2',
         );
 
-        final link1 = EntryLink.basic(
+        final link1 = _makeLink(
+          task1.meta.id,
+          aiResponse1.meta.id,
           id: 'link-1',
-          fromId: task1.meta.id,
-          toId: aiResponse1.meta.id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
         );
 
-        final link2 = EntryLink.basic(
+        final link2 = _makeLink(
+          task2.meta.id,
+          aiResponse2.meta.id,
           id: 'link-2',
-          fromId: task2.meta.id,
-          toId: aiResponse2.meta.id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
         );
 
         // Insert test data
@@ -258,48 +239,15 @@ void main() {
 
       test('handles multiple linked entities per parent ID', () async {
         // Arrange
-        final task = JournalEntity.task(
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-            categoryId: 'category-1',
-          ),
-          data: TaskData(
-            title: 'Test Task',
-            status: TaskStatus.open(
-              id: 'status-1',
-              createdAt: testDate,
-              utcOffset: 0,
-            ),
-            dateFrom: testDate,
-            dateTo: testDate,
-            statusHistory: [],
-          ),
-          entryText: const EntryText(plainText: 'Task description'),
+        final task = _makeTask(
+          'task-1',
+          title: 'Test Task',
+          plainText: 'Task description',
         );
 
-        final aiResponse1 = JournalEntity.aiResponse(
-          meta: Metadata(
-            id: 'ai-response-1',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-          ),
-          data: const AiResponseData(
-            model: 'gpt-4',
-            systemMessage: 'You are a helpful assistant',
-            prompt: 'Summarize this task',
-            thoughts: 'User wants task summary',
-            response: 'First AI summary',
-            promptId: 'prompt-123',
-            // ignore: deprecated_member_use_from_same_package
-            type: AiResponseType.taskSummary,
-          ),
-          entryText: const EntryText(plainText: 'AI Response 1'),
+        final aiResponse1 = _makeAiResponse(
+          'ai-response-1',
+          response: 'First AI summary',
         );
 
         final aiResponse2 = JournalEntity.aiResponse(
@@ -323,22 +271,16 @@ void main() {
           entryText: const EntryText(plainText: 'AI Response 2'),
         );
 
-        final link1 = EntryLink.basic(
+        final link1 = _makeLink(
+          task.meta.id,
+          aiResponse1.meta.id,
           id: 'link-1',
-          fromId: task.meta.id,
-          toId: aiResponse1.meta.id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
         );
 
-        final link2 = EntryLink.basic(
+        final link2 = _makeLink(
+          task.meta.id,
+          aiResponse2.meta.id,
           id: 'link-2',
-          fromId: task.meta.id,
-          toId: aiResponse2.meta.id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
         );
 
         // Insert test data
@@ -365,36 +307,16 @@ void main() {
     group('edge cases and error handling', () {
       test('handles broken links gracefully', () async {
         // Arrange - create a link pointing to non-existent entity
-        final task = JournalEntity.task(
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-            categoryId: 'category-1',
-          ),
-          data: TaskData(
-            title: 'Test Task',
-            status: TaskStatus.open(
-              id: 'status-1',
-              createdAt: testDate,
-              utcOffset: 0,
-            ),
-            dateFrom: testDate,
-            dateTo: testDate,
-            statusHistory: [],
-          ),
-          entryText: const EntryText(plainText: 'Task description'),
+        final task = _makeTask(
+          'task-1',
+          title: 'Test Task',
+          plainText: 'Task description',
         );
 
-        final brokenLink = EntryLink.basic(
+        final brokenLink = _makeLink(
+          task.meta.id,
+          'non-existent-entity',
           id: 'broken-link',
-          fromId: task.meta.id,
-          toId: 'non-existent-entity',
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
         );
 
         // Insert only task and broken link (no target entity)
@@ -411,58 +333,18 @@ void main() {
 
       test('handles mix of valid and invalid parent IDs', () async {
         // Arrange
-        final task = JournalEntity.task(
-          meta: Metadata(
-            id: 'task-1',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-            categoryId: 'category-1',
-          ),
-          data: TaskData(
-            title: 'Test Task',
-            status: TaskStatus.open(
-              id: 'status-1',
-              createdAt: testDate,
-              utcOffset: 0,
-            ),
-            dateFrom: testDate,
-            dateTo: testDate,
-            statusHistory: [],
-          ),
-          entryText: const EntryText(plainText: 'Task description'),
+        final task = _makeTask(
+          'task-1',
+          title: 'Test Task',
+          plainText: 'Task description',
         );
 
-        final aiResponse = JournalEntity.aiResponse(
-          meta: Metadata(
-            id: 'ai-response-1',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-          ),
-          data: const AiResponseData(
-            model: 'gpt-4',
-            systemMessage: 'You are a helpful assistant',
-            prompt: 'Summarize this task',
-            thoughts: 'User wants task summary',
-            response: 'AI summary',
-            promptId: 'prompt-123',
-            // ignore: deprecated_member_use_from_same_package
-            type: AiResponseType.taskSummary,
-          ),
-          entryText: const EntryText(plainText: 'AI Response'),
+        final aiResponse = _makeAiResponse(
+          'ai-response-1',
+          response: 'AI summary',
         );
 
-        final link = EntryLink.basic(
-          id: 'link-1',
-          fromId: task.meta.id,
-          toId: aiResponse.meta.id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
-        );
+        final link = _makeLink(task.meta.id, aiResponse.meta.id, id: 'link-1');
 
         // Insert test data
         await journalDb.upsertJournalDbEntity(toDbEntity(task));
@@ -482,35 +364,20 @@ void main() {
       });
 
       test('handles large number of parent IDs efficiently', () async {
-        // Arrange - create 50 tasks with linked entities
+        // Arrange - create 15 tasks with linked entities. (15 is enough to
+        // exercise the bulk query shape without the insert overhead of the
+        // previous 50-task loop.)
         final taskIds = <String>{};
         final expectedLinkedCount = <String, int>{};
 
-        for (var i = 0; i < 50; i++) {
+        for (var i = 0; i < 15; i++) {
           final taskId = 'task-$i';
           taskIds.add(taskId);
 
-          final task = JournalEntity.task(
-            meta: Metadata(
-              id: taskId,
-              createdAt: testDate,
-              updatedAt: testDate,
-              dateFrom: testDate,
-              dateTo: testDate,
-              categoryId: 'category-1',
-            ),
-            data: TaskData(
-              title: 'Test Task $i',
-              status: TaskStatus.open(
-                id: 'status-$i',
-                createdAt: testDate,
-                utcOffset: 0,
-              ),
-              dateFrom: testDate,
-              dateTo: testDate,
-              statusHistory: [],
-            ),
-            entryText: EntryText(plainText: 'Task $i description'),
+          final task = _makeTask(
+            taskId,
+            title: 'Test Task $i',
+            plainText: 'Task $i description',
           );
 
           await journalDb.upsertJournalDbEntity(toDbEntity(task));
@@ -521,35 +388,12 @@ void main() {
 
           for (var j = 0; j < linkedCount; j++) {
             final responseId = 'ai-response-$i-$j';
-            final aiResponse = JournalEntity.aiResponse(
-              meta: Metadata(
-                id: responseId,
-                createdAt: testDate,
-                updatedAt: testDate,
-                dateFrom: testDate,
-                dateTo: testDate,
-              ),
-              data: AiResponseData(
-                model: 'gpt-4',
-                systemMessage: 'You are a helpful assistant',
-                prompt: 'Summarize this task',
-                thoughts: 'User wants task summary',
-                response: 'AI summary $i-$j',
-                promptId: 'prompt-123',
-                // ignore: deprecated_member_use_from_same_package
-                type: AiResponseType.taskSummary,
-              ),
-              entryText: EntryText(plainText: 'AI Response $i-$j'),
+            final aiResponse = _makeAiResponse(
+              responseId,
+              response: 'AI summary $i-$j',
             );
 
-            final link = EntryLink.basic(
-              id: 'link-$i-$j',
-              fromId: taskId,
-              toId: responseId,
-              createdAt: testDate,
-              updatedAt: testDate,
-              vectorClock: null,
-            );
+            final link = _makeLink(taskId, responseId, id: 'link-$i-$j');
 
             await journalDb.upsertJournalDbEntity(toDbEntity(aiResponse));
             await journalDb.upsertEntryLink(link);
@@ -557,16 +401,11 @@ void main() {
         }
 
         // Act
-        final stopwatch = Stopwatch()..start();
         final result = await journalDb.getBulkLinkedEntities(taskIds);
-        stopwatch.stop();
 
-        // Assert
-        expect(result, hasLength(50));
-        expect(
-          stopwatch.elapsedMilliseconds,
-          lessThan(1000),
-        ); // Should complete in < 1 second
+        // Assert — functional only; wall-clock expectations are flaky on
+        // loaded CI runners and belong in a dedicated benchmark.
+        expect(result, hasLength(15));
 
         // Verify each task has the expected number of linked entities
         for (final taskId in taskIds) {
@@ -586,78 +425,32 @@ void main() {
             final taskId = 'task-$i';
             taskIds.add(taskId);
 
-            final task = JournalEntity.task(
-              meta: Metadata(
-                id: taskId,
-                createdAt: testDate,
-                updatedAt: testDate,
-                dateFrom: testDate,
-                dateTo: testDate,
-                categoryId: 'category-1',
-              ),
-              data: TaskData(
-                title: 'Test Task $i',
-                status: TaskStatus.open(
-                  id: 'status-$i',
-                  createdAt: testDate,
-                  utcOffset: 0,
-                ),
-                dateFrom: testDate,
-                dateTo: testDate,
-                statusHistory: [],
-              ),
-              entryText: EntryText(plainText: 'Task $i description'),
+            final task = _makeTask(
+              taskId,
+              title: 'Test Task $i',
+              plainText: 'Task $i description',
             );
 
-            final aiResponse = JournalEntity.aiResponse(
-              meta: Metadata(
-                id: 'ai-response-$i',
-                createdAt: testDate,
-                updatedAt: testDate,
-                dateFrom: testDate,
-                dateTo: testDate,
-              ),
-              data: AiResponseData(
-                model: 'gpt-4',
-                systemMessage: 'You are a helpful assistant',
-                prompt: 'Summarize this task',
-                thoughts: 'User wants task summary',
-                response: 'AI summary $i',
-                promptId: 'prompt-123',
-                // ignore: deprecated_member_use_from_same_package
-                type: AiResponseType.taskSummary,
-              ),
-              entryText: EntryText(plainText: 'AI Response $i'),
+            final aiResponse = _makeAiResponse(
+              'ai-response-$i',
+              response: 'AI summary $i',
             );
 
-            final link = EntryLink.basic(
-              id: 'link-$i',
-              fromId: taskId,
-              toId: 'ai-response-$i',
-              createdAt: testDate,
-              updatedAt: testDate,
-              vectorClock: null,
-            );
+            final link = _makeLink(taskId, 'ai-response-$i', id: 'link-$i');
 
             await journalDb.upsertJournalDbEntity(toDbEntity(task));
             await journalDb.upsertJournalDbEntity(toDbEntity(aiResponse));
             await journalDb.upsertEntryLink(link);
           }
 
-          // Act - measure bulk method
-          final bulkStopwatch = Stopwatch()..start();
+          // Act — the bulk call and the per-id calls must agree.
           final bulkResult = await journalDb.getBulkLinkedEntities(taskIds);
-          bulkStopwatch.stop();
-
-          // Act - measure individual calls
-          final individualStopwatch = Stopwatch()..start();
           final individualResults = <String, List<JournalEntity>>{};
           for (final taskId in taskIds) {
             individualResults[taskId] = await journalDb.getLinkedEntities(
               taskId,
             );
           }
-          individualStopwatch.stop();
 
           // Assert - results should be equivalent
           expect(bulkResult.length, equals(individualResults.length));
@@ -667,13 +460,6 @@ void main() {
               equals(individualResults[taskId]?.length),
             );
           }
-
-          // Note: Performance comparisons are inherently flaky in unit tests due to:
-          // - JIT compilation overhead
-          // - System load variations
-          // - In-memory databases not showing I/O patterns
-          // The functional equivalence assertion above is the important verification.
-          // Performance benchmarking should be done with dedicated tools.
         },
       );
     });
@@ -737,22 +523,16 @@ void main() {
         );
 
         // Both tasks link to the same entry
-        final link1 = EntryLink.basic(
+        final link1 = _makeLink(
+          task1.meta.id,
+          sharedEntry.meta.id,
           id: 'link-dedup-1',
-          fromId: task1.meta.id,
-          toId: sharedEntry.meta.id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
         );
 
-        final link2 = EntryLink.basic(
+        final link2 = _makeLink(
+          task2.meta.id,
+          sharedEntry.meta.id,
           id: 'link-dedup-2',
-          fromId: task2.meta.id,
-          toId: sharedEntry.meta.id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
         );
 
         // Save entities and links
@@ -839,31 +619,22 @@ void main() {
         );
 
         // Create links in non-chronological order to test sorting
-        final linkToOldest = EntryLink.basic(
+        final linkToOldest = _makeLink(
+          task.meta.id,
+          oldestEntry.meta.id,
           id: 'link-to-oldest',
-          fromId: task.meta.id,
-          toId: oldestEntry.meta.id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
         );
 
-        final linkToNewest = EntryLink.basic(
+        final linkToNewest = _makeLink(
+          task.meta.id,
+          newestEntry.meta.id,
           id: 'link-to-newest',
-          fromId: task.meta.id,
-          toId: newestEntry.meta.id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
         );
 
-        final linkToMiddle = EntryLink.basic(
+        final linkToMiddle = _makeLink(
+          task.meta.id,
+          middleEntry.meta.id,
           id: 'link-to-middle',
-          fromId: task.meta.id,
-          toId: middleEntry.meta.id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          vectorClock: null,
         );
 
         // Save entities and links

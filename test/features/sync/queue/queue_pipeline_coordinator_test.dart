@@ -460,6 +460,148 @@ extension _AnyGeneratedDrainScenario on glados.Any {
       );
 }
 
+/// Shared scaffolding for the two Glados coordinator properties.
+///
+/// Creates the full local mock set with the same baseline stubs as the
+/// file-level `setUp()`, plus the in-memory databases the coordinator
+/// constructor requires (never written by these properties). Property
+/// bodies re-stub only the members their model drives (queue.stats,
+/// pen.flushInto, earliestReadyAt, ...) — a later `when(...)` wins.
+/// [AttachmentIndex] with a synchronous controller so a test can land a
+/// path in the coordinator's pending-resurrection set at an exact point
+/// in the start() sequence (the real index delivers asynchronously).
+class _SyncPathAttachmentIndex extends AttachmentIndex {
+  _SyncPathAttachmentIndex() : super(logging: null);
+
+  final StreamController<String> ctl = StreamController<String>.broadcast(
+    sync: true,
+  );
+
+  @override
+  Stream<String> get pathRecorded => ctl.stream;
+}
+
+/// Stream whose [listen] throws — fails the journal-updates subscription
+/// inside coordinator.start(). The central MockUpdateNotifications getter
+/// swallows exceptions thrown by stubbed answers (it falls back to an
+/// empty stream), so a throwing `listen` is the reliable injection point.
+class _ThrowingSubscribeStream extends Stream<Set<String>> {
+  @override
+  StreamSubscription<Set<String>> listen(
+    void Function(Set<String> event)? onData, {
+    Function? onError,
+    void Function()? onDone,
+    bool? cancelOnError,
+  }) => throw StateError('updateStream wiring failed');
+}
+
+class _GladosBench {
+  _GladosBench() {
+    when(
+      () => sessionManager.timelineEvents,
+    ).thenAnswer((_) => timelineCtl.stream);
+    when(() => sessionManager.client).thenReturn(client);
+    when(() => client.onSync).thenReturn(syncCtl);
+    when(() => roomManager.currentRoomId).thenReturn(null);
+    when(() => roomManager.currentRoom).thenReturn(null);
+    when(
+      () => settingsDb.itemByKey(any<String>()),
+    ).thenAnswer((_) async => null);
+    when(
+      () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
+    ).thenAnswer((_) async => 1);
+    when(() => seeder.seedIfAbsent(any())).thenAnswer((_) async => true);
+    when(() => queue.pruneStrandedEntries(any())).thenAnswer((_) async => 0);
+    when(worker.start).thenAnswer((_) async {});
+    when(worker.stop).thenAnswer((_) async {});
+    when(worker.drainToCompletion).thenAnswer((_) async => 0);
+    when(bridge.start).thenReturn(null);
+    when(bridge.stop).thenAnswer((_) async {});
+    when(bridge.bridgeNow).thenAnswer((_) async {});
+    when(pen.stop).thenAnswer((_) async {});
+    when(() => pen.size).thenReturn(0);
+    when(queue.dispose).thenAnswer((_) async {});
+    when(queue.stats).thenAnswer(
+      (_) async => const QueueStats(
+        total: 0,
+        byProducer: {},
+        readyNow: 0,
+        oldestEnqueuedAt: null,
+      ),
+    );
+    when(queue.earliestReadyAt).thenAnswer((_) async => null);
+    when(
+      () => logging.log(
+        any<LogDomain>(),
+        any<String>(),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) {});
+    when(
+      () => logging.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
+      ),
+    ).thenAnswer((_) async {});
+  }
+
+  final syncDb = SyncDatabase(inMemoryDatabase: true);
+  final journalDb = JournalDb(inMemoryDatabase: true);
+  final settingsDb = MockSettingsDb();
+  final sessionManager = _MockSessionManager();
+  final roomManager = _MockRoomManager();
+  final processor = MockSyncEventProcessor();
+  final sequenceLog = MockSyncSequenceLogService();
+  final logging = MockDomainLogger();
+  final queue = MockInboundQueue();
+  final worker = _MockWorker();
+  final bridge = _MockBridge();
+  final pen = _MockPen();
+  final seeder = _MockSeeder();
+  final client = MockMatrixClient();
+  final room = MockRoom();
+  final timelineCtl = StreamController<Event>.broadcast(sync: true);
+  final syncCtl = CachedStreamController<SyncUpdate>();
+  final sentEventRegistry = SentEventRegistry();
+
+  QueuePipelineCoordinator buildCoordinator({
+    AttachmentIngestor? attachmentIngestor,
+    SentEventRegistry? sentEventRegistry,
+    AttachmentIndex? attachmentIndex,
+    UpdateNotifications? updateNotifications,
+  }) {
+    return QueuePipelineCoordinator(
+      syncDb: syncDb,
+      settingsDb: settingsDb,
+      journalDb: journalDb,
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      eventProcessor: processor,
+      sequenceLogService: sequenceLog,
+      activityGate: null,
+      logging: logging,
+      attachmentIndex: attachmentIndex,
+      updateNotifications: updateNotifications,
+      attachmentIngestor: attachmentIngestor,
+      sentEventRegistry: sentEventRegistry,
+      queueOverride: queue,
+      workerOverride: worker,
+      bridgeOverride: bridge,
+      penOverride: pen,
+      seederOverride: seeder,
+    );
+  }
+
+  Future<void> dispose() async {
+    await timelineCtl.close();
+    await syncCtl.close();
+    await syncDb.close();
+    await journalDb.close();
+  }
+}
+
 void main() {
   late SyncDatabase syncDb;
   late JournalDb journalDb;
@@ -629,29 +771,149 @@ void main() {
     },
   );
 
+  test(
+    'self-echo suppression logs once per interval and resets the counter',
+    () async {
+      final bench = _GladosBench();
+      addTearDown(bench.dispose);
+      final logMessages = <String>[];
+      when(
+        () => bench.logging.log(
+          any<LogDomain>(),
+          any<String>(),
+          subDomain: any<String>(named: 'subDomain'),
+        ),
+      ).thenAnswer((invocation) {
+        logMessages.add(invocation.positionalArguments[1] as String);
+      });
+      when(() => bench.roomManager.currentRoomId).thenReturn(roomId);
+      when(
+        () => bench.queue.enqueueLive(any()),
+      ).thenAnswer((_) async => EnqueueResult.empty);
+      when(() => bench.pen.hold(any())).thenReturn(false);
+
+      final coordinator = bench.buildCoordinator(
+        sentEventRegistry: bench.sentEventRegistry,
+      );
+
+      Event selfEcho(String id) {
+        final e = MockEvent();
+        when(() => e.eventId).thenReturn(id);
+        when(() => e.roomId).thenReturn(roomId);
+        when(() => e.type).thenReturn(EventTypes.Message);
+        when(() => e.status).thenReturn(EventStatus.synced);
+        bench.sentEventRegistry.register(id);
+        return e;
+      }
+
+      Iterable<String> suppressionLogs() =>
+          logMessages.where((m) => m.contains('selfEchoSuppressed'));
+
+      var current = DateTime.utc(2026);
+      await withClock(Clock(() => current), () async {
+        await coordinator.start();
+
+        // First suppressed echo: no previous flush -> logs count=1 and
+        // starts the suppression window.
+        bench.timelineCtl.add(selfEcho(r'$echo-1'));
+        await pumpEventQueue();
+        expect(suppressionLogs(), hasLength(1));
+        expect(suppressionLogs().single, contains('count=1'));
+
+        // Echoes inside the 30s window accumulate silently.
+        bench.timelineCtl.add(selfEcho(r'$echo-2'));
+        bench.timelineCtl.add(selfEcho(r'$echo-3'));
+        await pumpEventQueue();
+        expect(suppressionLogs(), hasLength(1));
+
+        // First echo after the window flushes the accumulated count and
+        // resets the counter.
+        current = current.add(const Duration(seconds: 31));
+        bench.timelineCtl.add(selfEcho(r'$echo-4'));
+        await pumpEventQueue();
+        expect(suppressionLogs(), hasLength(2));
+        expect(suppressionLogs().last, contains('count=3'));
+
+        // Suppressed events never reach the pen or the queue.
+        verifyNever(() => bench.pen.hold(any()));
+        verifyNever(() => bench.queue.enqueueLive(any()));
+
+        await coordinator.stop();
+      });
+    },
+  );
+
+  test(
+    'start() unwind awaits an in-flight attachment-path flush before '
+    'tearing down and leaves the coordinator retryable',
+    () async {
+      final bench = _GladosBench();
+      addTearDown(bench.dispose);
+      final attachmentIndex = _SyncPathAttachmentIndex();
+      final updateNotifications = MockUpdateNotifications();
+      final flushGate = Completer<void>();
+
+      when(
+        () => bench.queue.resurrectByPaths(any()),
+      ).thenAnswer((_) => flushGate.future.then((_) => 0));
+
+      late QueuePipelineCoordinator coordinator;
+      var updateStreamAccesses = 0;
+      when(() => updateNotifications.updateStream).thenAnswer((_) {
+        updateStreamAccesses++;
+        if (updateStreamAccesses == 1) {
+          // _attachmentPathSub is live at this point in start(). Land a
+          // path synchronously and force the debounced flush to start (it
+          // parks on flushGate); the returned stream then fails start()'s
+          // listen() so the unwind runs with _attachmentPathFlushInFlight
+          // non-null.
+          attachmentIndex.ctl.add('/attachments/a.json');
+          unawaited(coordinator.flushPendingPathResurrectionsForTest());
+          return _ThrowingSubscribeStream();
+        }
+        return const Stream<Set<String>>.empty();
+      });
+
+      coordinator = bench.buildCoordinator(
+        attachmentIndex: attachmentIndex,
+        updateNotifications: updateNotifications,
+      );
+
+      final startFuture = coordinator.start();
+      // Let start() reach the unwind's `await pendingFlush`.
+      await pumpEventQueue();
+      // The unwind is parked on the flush; the failure has not
+      // propagated yet and the worker has not been torn down.
+      verifyNever(bench.worker.stop);
+
+      flushGate.complete();
+      await expectLater(startFuture, throwsStateError);
+
+      // The flush completed before teardown and teardown ran fully.
+      verify(
+        () => bench.queue.resurrectByPaths(['/attachments/a.json']),
+      ).called(1);
+      verify(bench.bridge.stop).called(1);
+      verify(bench.worker.stop).called(1);
+      expect(coordinator.isRunning, isFalse);
+
+      // The unwind left a retryable coordinator: a second start()
+      // (with updateStream now healthy) succeeds.
+      await coordinator.start();
+      expect(coordinator.isRunning, isTrue);
+      await coordinator.stop();
+      await attachmentIndex.ctl.close();
+    },
+  );
+
   glados.Glados(
     glados.any.liveIngressScenario,
     glados.ExploreConfig(numRuns: 120),
   ).test(
     'generated live ingress filters room/status/self-echo before queueing',
     (scenario) async {
-      final localSyncDb = SyncDatabase(inMemoryDatabase: true);
-      final localJournalDb = JournalDb(inMemoryDatabase: true);
-      final localSettingsDb = MockSettingsDb();
-      final localSessionManager = _MockSessionManager();
-      final localRoomManager = _MockRoomManager();
-      final localProcessor = MockSyncEventProcessor();
-      final localSequenceLog = MockSyncSequenceLogService();
-      final localLogging = MockDomainLogger();
-      final localQueue = MockInboundQueue();
-      final localWorker = _MockWorker();
-      final localBridge = _MockBridge();
-      final localPen = _MockPen();
-      final localSeeder = _MockSeeder();
-      final localClient = MockMatrixClient();
-      final localTimelineCtl = StreamController<Event>.broadcast(sync: true);
-      final localSyncCtl = CachedStreamController<SyncUpdate>();
-      final sentEventRegistry = SentEventRegistry();
+      final bench = _GladosBench();
+      addTearDown(bench.dispose);
       final ingestor = _FakeAttachmentIngestor(
         shouldThrow:
             scenario.ingestorKind == _GeneratedLiveIngestorKind.throwsError,
@@ -661,78 +923,24 @@ void main() {
       final penHoldsByEventId = <String, bool>{};
       String? currentRoomId = scenario.currentRoomId;
 
-      when(
-        () => localSessionManager.timelineEvents,
-      ).thenAnswer((_) => localTimelineCtl.stream);
-      when(() => localSessionManager.client).thenReturn(localClient);
-      when(() => localClient.onSync).thenReturn(localSyncCtl);
-      when(() => localRoomManager.currentRoomId).thenAnswer(
+      when(() => bench.roomManager.currentRoomId).thenAnswer(
         (_) => currentRoomId,
       );
-      when(() => localRoomManager.currentRoom).thenReturn(null);
-      when(
-        () => localSettingsDb.itemByKey(any<String>()),
-      ).thenAnswer((_) async => null);
-      when(
-        () => localSettingsDb.saveSettingsItem(any<String>(), any<String>()),
-      ).thenAnswer((_) async => 1);
-      when(() => localSeeder.seedIfAbsent(any())).thenAnswer((_) async => true);
-      when(
-        () => localQueue.pruneStrandedEntries(any()),
-      ).thenAnswer((_) async => 0);
-      when(localWorker.start).thenAnswer((_) async {});
-      when(localWorker.stop).thenAnswer((_) async {});
-      when(localWorker.drainToCompletion).thenAnswer((_) async => 0);
-      when(localBridge.start).thenReturn(null);
-      when(localBridge.stop).thenAnswer((_) async {});
-      when(localBridge.bridgeNow).thenAnswer((_) async {});
-      when(localPen.stop).thenAnswer((_) async {});
-      when(() => localPen.size).thenReturn(0);
-      when(localQueue.dispose).thenAnswer((_) async {});
-      when(() => localQueue.enqueueLive(any())).thenAnswer((invocation) async {
+      when(() => bench.queue.enqueueLive(any())).thenAnswer((
+        invocation,
+      ) async {
         enqueuedEvents.add(invocation.positionalArguments.single as Event);
         return EnqueueResult.empty;
       });
-      when(localQueue.stats).thenAnswer(
-        (_) async => const QueueStats(
-          total: 0,
-          byProducer: {},
-          readyNow: 0,
-          oldestEnqueuedAt: null,
-        ),
-      );
-      when(localQueue.earliestReadyAt).thenAnswer((_) async => null);
-      when(() => localPen.hold(any())).thenAnswer((invocation) {
+      when(() => bench.pen.hold(any())).thenAnswer((invocation) {
         final event = invocation.positionalArguments.single as Event;
         penEvents.add(event);
         return penHoldsByEventId[event.eventId] ?? false;
       });
-      when(
-        () => localLogging.error(
-          any<LogDomain>(),
-          any<Object>(),
-          stackTrace: any<StackTrace>(named: 'stackTrace'),
-          subDomain: any<String>(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async {});
 
-      final coordinator = QueuePipelineCoordinator(
-        syncDb: localSyncDb,
-        settingsDb: localSettingsDb,
-        journalDb: localJournalDb,
-        sessionManager: localSessionManager,
-        roomManager: localRoomManager,
-        eventProcessor: localProcessor,
-        sequenceLogService: localSequenceLog,
-        activityGate: null,
-        logging: localLogging,
+      final coordinator = bench.buildCoordinator(
         attachmentIngestor: ingestor,
-        sentEventRegistry: sentEventRegistry,
-        queueOverride: localQueue,
-        workerOverride: localWorker,
-        bridgeOverride: localBridge,
-        penOverride: localPen,
-        seederOverride: localSeeder,
+        sentEventRegistry: bench.sentEventRegistry,
       );
 
       try {
@@ -745,7 +953,7 @@ void main() {
               : null;
           penHoldsByEventId[eventId] = operation.penHolds;
           if (operation.selfEcho) {
-            sentEventRegistry.register(eventId);
+            bench.sentEventRegistry.register(eventId);
           }
 
           final event = MockEvent();
@@ -753,7 +961,7 @@ void main() {
           when(() => event.roomId).thenReturn(scenario.eventRoomIdAt(i));
           when(() => event.type).thenReturn(operation.type);
           when(() => event.status).thenReturn(operation.status);
-          localTimelineCtl.add(event);
+          bench.timelineCtl.add(event);
         }
         await coordinator.stop();
 
@@ -772,12 +980,7 @@ void main() {
           hasLength(scenario.expectedQueueCalls),
           reason: '$scenario',
         );
-      } finally {
-        await localTimelineCtl.close();
-        await localSyncCtl.close();
-        await localSyncDb.close();
-        await localJournalDb.close();
-      }
+      } finally {}
     },
     tags: 'glados',
   );
@@ -1462,23 +1665,7 @@ void main() {
     ).test(
       'generated drainUntilEmpty follows queue, pen, ready-at and timeout model',
       (scenario) async {
-        final localSyncDb = SyncDatabase(inMemoryDatabase: true);
-        final localJournalDb = JournalDb(inMemoryDatabase: true);
-        final localSettingsDb = MockSettingsDb();
-        final localSessionManager = _MockSessionManager();
-        final localRoomManager = _MockRoomManager();
-        final localProcessor = MockSyncEventProcessor();
-        final localSequenceLog = MockSyncSequenceLogService();
-        final localLogging = MockDomainLogger();
-        final localQueue = MockInboundQueue();
-        final localWorker = _MockWorker();
-        final localBridge = _MockBridge();
-        final localPen = _MockPen();
-        final localSeeder = _MockSeeder();
-        final localClient = MockMatrixClient();
-        final localRoom = MockRoom();
-        final localTimelineCtl = StreamController<Event>.broadcast(sync: true);
-        final localSyncCtl = CachedStreamController<SyncUpdate>();
+        final bench = _GladosBench();
         final events = <String>[];
         final exceptionSubDomains = <String>[];
         var statsCalls = 0;
@@ -1486,36 +1673,19 @@ void main() {
         var flushCalls = 0;
         var readyAtCalls = 0;
 
-        when(
-          () => localSessionManager.timelineEvents,
-        ).thenAnswer((_) => localTimelineCtl.stream);
-        when(() => localSessionManager.client).thenReturn(localClient);
-        when(() => localClient.onSync).thenReturn(localSyncCtl);
-        when(() => localRoomManager.currentRoomId).thenReturn(roomId);
-        when(() => localRoomManager.currentRoom).thenReturn(
-          scenario.hasRoom ? localRoom : null,
+        when(() => bench.roomManager.currentRoomId).thenReturn(roomId);
+        when(() => bench.roomManager.currentRoom).thenReturn(
+          scenario.hasRoom ? bench.room : null,
         );
-        when(() => localSeeder.seedIfAbsent(any())).thenAnswer(
-          (_) async => true,
-        );
-        when(
-          () => localQueue.pruneStrandedEntries(any()),
-        ).thenAnswer((_) async => 0);
-        when(localWorker.start).thenAnswer((_) async {});
-        when(localWorker.stop).thenAnswer((_) async {});
-        when(localWorker.drainToCompletion).thenAnswer((_) async {
+        when(bench.worker.drainToCompletion).thenAnswer((_) async {
           drainCalls++;
           if (scenario.workerThrows) {
             throw StateError('generated drain failure');
           }
           return 0;
         });
-        when(localBridge.start).thenReturn(null);
-        when(localBridge.stop).thenAnswer((_) async {});
-        when(localBridge.bridgeNow).thenAnswer((_) async {});
-        when(localPen.stop).thenAnswer((_) async {});
         when(
-          () => localPen.flushInto(queue: localQueue, room: localRoom),
+          () => bench.pen.flushInto(queue: bench.queue, room: bench.room),
         ).thenAnswer((_) async {
           flushCalls++;
           if (scenario.penThrows) {
@@ -1527,8 +1697,7 @@ void main() {
             dropped: 0,
           );
         });
-        when(localQueue.dispose).thenAnswer((_) async {});
-        when(localQueue.stats).thenAnswer((_) async {
+        when(bench.queue.stats).thenAnswer((_) async {
           final step = scenario.stepAt(statsCalls);
           statsCalls++;
           return QueueStats(
@@ -1538,11 +1707,11 @@ void main() {
             oldestEnqueuedAt: null,
           );
         });
-        when(() => localPen.size).thenAnswer((_) {
+        when(() => bench.pen.size).thenAnswer((_) {
           final index = statsCalls <= 0 ? 0 : statsCalls - 1;
           return scenario.stepAt(index).penSize;
         });
-        when(localQueue.earliestReadyAt).thenAnswer((_) async {
+        when(bench.queue.earliestReadyAt).thenAnswer((_) async {
           readyAtCalls++;
           final index = statsCalls <= 0 ? 0 : statsCalls - 1;
           final step = scenario.stepAt(index);
@@ -1559,7 +1728,7 @@ void main() {
           }
         });
         when(
-          () => localLogging.log(
+          () => bench.logging.log(
             any<LogDomain>(),
             any<String>(),
             subDomain: any<String>(named: 'subDomain'),
@@ -1568,7 +1737,7 @@ void main() {
           events.add(invocation.positionalArguments[1] as String);
         });
         when(
-          () => localLogging.error(
+          () => bench.logging.error(
             any<LogDomain>(),
             any<Object>(),
             stackTrace: any<StackTrace>(named: 'stackTrace'),
@@ -1580,22 +1749,7 @@ void main() {
           );
         });
 
-        final coordinator = QueuePipelineCoordinator(
-          syncDb: localSyncDb,
-          settingsDb: localSettingsDb,
-          journalDb: localJournalDb,
-          sessionManager: localSessionManager,
-          roomManager: localRoomManager,
-          eventProcessor: localProcessor,
-          sequenceLogService: localSequenceLog,
-          activityGate: null,
-          logging: localLogging,
-          queueOverride: localQueue,
-          workerOverride: localWorker,
-          bridgeOverride: localBridge,
-          penOverride: localPen,
-          seederOverride: localSeeder,
-        );
+        final coordinator = bench.buildCoordinator();
 
         try {
           fakeAsync((async) {
@@ -1678,10 +1832,7 @@ void main() {
             reason: '$scenario',
           );
         } finally {
-          await localTimelineCtl.close();
-          await localSyncCtl.close();
-          await localSyncDb.close();
-          await localJournalDb.close();
+          await bench.dispose();
         }
       },
       tags: 'glados',
@@ -2985,6 +3136,53 @@ void main() {
 
         coordinator.maybeStartGapRecovery();
         expect(coordinator.gapRecoveryInFlight, isFalse);
+      },
+    );
+
+    test(
+      'forward bootstrap with an unresolvable anchor falls back to the '
+      'backward walk (errorNoProgress path)',
+      () async {
+        final coordinator = buildWithRealQueue();
+        await coordinator.start();
+        addTearDown(() async => coordinator.stop());
+
+        final room = MockRoom();
+        when(() => room.id).thenReturn(roomId);
+        // Forward walk: the anchor context fetch throws, producing
+        // totalPages == 0 + error == _BootstrapOutcome.errorNoProgress.
+        when(
+          () => room.getTimeline(
+            eventContextId: any(named: 'eventContextId'),
+          ),
+        ).thenThrow(Exception('anchor context fetch failed'));
+        // Backward walk: empty, exhausted timeline -> completes cleanly.
+        final timeline = stubTimeline(
+          events: <Event>[],
+          canRequestHistory: () => false,
+          onRequestHistory: (_) async {},
+        );
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => timeline);
+
+        final completed = await coordinator.runBootstrapForTest(
+          room: room,
+          untilTimestamp: 100,
+          anchorEventId: r'$compacted-away-anchor',
+        );
+
+        // The fallback chain completed via the backward walk.
+        expect(completed, isTrue);
+        verify(
+          () => logging.log(
+            LogDomain.sync,
+            any(that: contains('fallbackToBackward')),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
+        // The backward walk actually ran after the forward failure.
+        verify(() => room.getTimeline(limit: any(named: 'limit'))).called(1);
       },
     );
 

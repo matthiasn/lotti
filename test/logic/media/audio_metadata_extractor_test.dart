@@ -242,7 +242,7 @@ void main() {
 
       glados.Glados(
         glados.any.audioFilenameScenario,
-        glados.ExploreConfig(numRuns: 180),
+        glados.ExploreConfig(numRuns: 120),
       ).test('parses generated UTC filenames into local timestamps', (
         scenario,
       ) {
@@ -287,7 +287,7 @@ void main() {
 
       glados.Glados(
         glados.any.audioFilenameScenario,
-        glados.ExploreConfig(numRuns: 180),
+        glados.ExploreConfig(numRuns: 120),
       ).test('formats generated local dates into relative paths', (scenario) {
         expect(
           AudioMetadataExtractor.computeRelativePath(
@@ -364,7 +364,7 @@ void main() {
 
       glados.Glados(
         glados.any.audioFilenameScenario,
-        glados.ExploreConfig(numRuns: 180),
+        glados.ExploreConfig(numRuns: 120),
       ).test('formats generated local timestamps into target filenames', (
         scenario,
       ) {

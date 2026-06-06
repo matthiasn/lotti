@@ -164,7 +164,8 @@ void main() {
         );
 
         // Wait for the error to be processed
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // The page should handle the error gracefully
         // It might show loading or might handle the error differently
@@ -191,7 +192,8 @@ void main() {
 
         // Emit null (category not found)
         streamController.add(null);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Should show "Category not found" message - check for partial text since we don't know exact translation
         expect(find.textContaining('not found'), findsOneWidget);
@@ -218,7 +220,8 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Check for form sections - these are translated texts
         expect(find.text('Basic Settings'), findsOneWidget);
@@ -242,7 +245,8 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Check for form fields in the visible area
         // Name field is in Basic Settings (Speech Dictionary is scrolled out)
@@ -272,7 +276,8 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Check for bottom bar
         expect(find.byType(FormBottomBar), findsOneWidget);
@@ -305,7 +310,8 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Find the name text field (first one) and check its value
         final textFields = find.byType(TextFormField);
@@ -334,7 +340,8 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         final saveButton = find.byType(LottiPrimaryButton);
         final buttonWidget = tester.widget<LottiPrimaryButton>(saveButton);
@@ -365,7 +372,8 @@ void main() {
         );
 
         streamController.add(category);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Change the name (use .first to target name field, not speech dictionary)
         final nameField = find.byType(TextFormField).first;
@@ -398,7 +406,8 @@ void main() {
         );
 
         streamController.add(category);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Find and tap the private switch
         final switches = find.byType(Switch);
@@ -406,11 +415,13 @@ void main() {
 
         // Scroll to ensure the switch is visible before tapping
         await tester.ensureVisible(switches.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Tap the first switch (Private)
         await tester.tap(switches.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Save button should now be enabled
         final enabledButton = findEnabledPrimaryButton(tester);
@@ -439,12 +450,14 @@ void main() {
               child: CategoryDetailsPage(categoryId: testCategoryId),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           await tester.tap(
             find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(beamedTo, '/settings/categories');
         },
@@ -468,12 +481,14 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Find and tap cancel button
         final cancelButton = find.byType(LottiSecondaryButton);
         await tester.tap(cancelButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Cancel beams back to the categories list — V2's detail
         // surface mounts inline, so this is the only way the user
@@ -499,12 +514,14 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Find and tap delete button
         final deleteButton = find.byType(LottiTertiaryButton);
         await tester.tap(deleteButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Check dialog appears
         expect(find.byType(AlertDialog), findsOneWidget);
@@ -535,11 +552,13 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Open delete dialog
           await tester.tap(find.byType(LottiTertiaryButton));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Confirm delete — destructive button is the second tertiary
           // button inside the dialog (the first is the cancel button).
@@ -550,7 +569,8 @@ void main() {
               )
               .last;
           await tester.tap(confirmButton);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           verify(() => mockRepository.deleteCategory(testCategoryId)).called(1);
           // Beams to the list so the now-deleted detail isn't left
@@ -575,17 +595,20 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Open delete dialog
         final deleteButton = find.byType(LottiTertiaryButton);
         await tester.tap(deleteButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Find cancel button in dialog and tap it
         final cancelInDialog = find.text('Cancel').last;
         await tester.tap(cancelInDialog);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Dialog should be dismissed
         expect(find.byType(AlertDialog), findsNothing);
@@ -621,7 +644,8 @@ void main() {
 
         // Emit the category
         streamController.add(category);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Category name should be displayed
         expect(find.text('Initial Name'), findsAtLeastNWidgets(1));
@@ -630,13 +654,51 @@ void main() {
         await streamController.close();
       });
 
-      testWidgets('controller state updates trigger UI rebuilds', (
+      testWidgets('renders the streamed category name and live updates', (
+        tester,
+      ) async {
+        final category = CategoryTestUtils.createTestCategory(
+          name: 'Initial Name',
+        );
+        final updated = category.copyWith(name: 'Renamed Category');
+        final controller = StreamController<CategoryDefinition?>();
+        addTearDown(controller.close);
+
+        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+          (_) => controller.stream,
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              categoryRepositoryProvider.overrideWithValue(mockRepository),
+            ],
+            child: CategoryDetailsPage(categoryId: testCategoryId),
+          ),
+        );
+
+        controller.add(category);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        expect(find.text('Initial Name'), findsOneWidget);
+
+        // A later stream emission rebuilds the page with the new name.
+        controller.add(updated);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        expect(find.text('Renamed Category'), findsOneWidget);
+        expect(find.text('Initial Name'), findsNothing);
+      });
+
+      testWidgets('disposal cancels the watch without surfacing errors', (
         tester,
       ) async {
         final category = CategoryTestUtils.createTestCategory();
+        final controller = StreamController<CategoryDefinition?>();
+        addTearDown(controller.close);
 
         when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-          (_) => Stream.value(category),
+          (_) => controller.stream,
         );
 
         await tester.pumpWidget(
@@ -647,32 +709,11 @@ void main() {
             child: CategoryDetailsPage(categoryId: testCategoryId),
           ),
         );
+        controller.add(category);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-        await tester.pumpAndSettle();
-
-        // Check that the controller was created and is watching the category
-        verify(() => mockRepository.watchCategory(testCategoryId)).called(1);
-      });
-
-      testWidgets('dispose does not throw errors', (tester) async {
-        final category = CategoryTestUtils.createTestCategory();
-
-        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
-          (_) => Stream.value(category),
-        );
-
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: CategoryDetailsPage(categoryId: testCategoryId),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Navigate away to trigger disposal
+        // Navigate away to trigger disposal.
         await tester.pumpWidget(
           RiverpodWidgetTestBench(
             overrides: [
@@ -681,11 +722,15 @@ void main() {
             child: const Scaffold(body: Text('Different Page')),
           ),
         );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
-        await tester.pumpAndSettle();
-
-        // Test passes if no errors are thrown
-        expect(find.text('Different Page'), findsOneWidget);
+        // Events after disposal are ignored (subscription cancelled) and
+        // surface no errors.
+        controller.add(category.copyWith(name: 'Post Dispose'));
+        await tester.pump();
+        expect(find.text('Post Dispose'), findsNothing);
+        expect(tester.takeException(), isNull);
       });
     });
 
@@ -709,12 +754,14 @@ void main() {
         );
 
         streamController.add(category);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Clear the name field (use .first to target name field, not speech dictionary)
         final nameField = find.byType(TextFormField).first;
         await tester.enterText(nameField, '   '); // Only spaces
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Try to save - find the enabled save button
         final saveButtons = find.byType(LottiPrimaryButton);
@@ -736,7 +783,8 @@ void main() {
           reason: 'Should find an enabled save button',
         );
         await tester.tap(saveButtons.at(enabledIndex!));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Should show error
         expect(find.text('Category name cannot be empty'), findsOneWidget);
@@ -773,7 +821,8 @@ void main() {
 
         // Should be able to open color picker
         await tester.tap(find.byIcon(Icons.palette_outlined));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Color picker dialog should open
         expect(find.byType(AlertDialog), findsOneWidget);
@@ -804,7 +853,8 @@ void main() {
         );
 
         streamController.add(category);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Enter name with whitespace (use .first to target name field, not speech dictionary)
         final nameField = find.byType(TextFormField).first;
@@ -829,7 +879,8 @@ void main() {
           reason: 'Should find an enabled save button',
         );
         await tester.tap(saveButtons.at(enabledIndex!));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Verify the saved category has the new name
         final capturedCategory =
@@ -869,7 +920,8 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Enter category name
         await tester.enterText(find.byType(TextField), 'New Category');
@@ -878,7 +930,8 @@ void main() {
         // Tap create button
         final createButton = find.byType(LottiPrimaryButton);
         await tester.tap(createButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // After a successful create the page beams back to the list.
         expect(beamedTo, '/settings/categories');
@@ -918,7 +971,8 @@ void main() {
         );
 
         streamController.add(category);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Change name to enable save (use .first to target name field, not speech dictionary)
         await tester.enterText(find.byType(TextFormField).first, 'Updated');
@@ -927,7 +981,8 @@ void main() {
         // Tap save button
         final saveButton = findEnabledPrimaryButton(tester);
         await tester.tap(find.byWidget(saveButton!));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Success path shows the snackbar and beams back to the list.
         expect(find.byType(SnackBar), findsOneWidget);
@@ -948,11 +1003,13 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Leave the name field empty and tap Create.
         await tester.tap(find.byType(LottiPrimaryButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Repository must not be called when the name is empty.
         verifyNever(
@@ -991,13 +1048,15 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         await tester.enterText(find.byType(TextField), 'New Category');
         await tester.pump();
 
         await tester.tap(find.byType(LottiPrimaryButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Error toast shown and the page stays put — no beam fired.
         expect(
@@ -1030,7 +1089,8 @@ void main() {
         );
 
         streamController.add(category);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Initially no save button in app bar (no changes)
         expect(
@@ -1109,12 +1169,14 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         await tester.tap(
           find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(beamedTo, '/settings/categories');
       });
@@ -1134,12 +1196,14 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           final cancelButton = find.byType(LottiSecondaryButton);
           await tester.ensureVisible(cancelButton);
           await tester.tap(cancelButton);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(beamedTo, '/settings/categories');
         },
@@ -1157,7 +1221,8 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Two disabled switch tiles (Private, Active) visible in create mode
           final switchFields = tester.widgetList<LottiSwitchField>(
@@ -1199,12 +1264,14 @@ void main() {
 
           // Emit null → category not found
           streamController.add(null);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           await tester.tap(
             find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(beamedTo, '/settings/categories');
           await streamController.close();
@@ -1247,7 +1314,8 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // With a tall viewport all SliverList items are on-screen.
           expect(
@@ -1289,7 +1357,8 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(
             find.byType(CategoryProjectsSection),
@@ -1323,13 +1392,15 @@ void main() {
           );
 
           streamController.add(category);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Tap palette icon to open color picker
           final paletteIcon = find.byIcon(Icons.palette_outlined);
           await tester.ensureVisible(paletteIcon);
           await tester.tap(paletteIcon);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Color picker dialog should open with the select/cancel actions
           expect(find.byType(AlertDialog), findsOneWidget);
@@ -1337,7 +1408,8 @@ void main() {
           // Cancel — no color change, dialog dismissed
           final cancelButton = find.text('Cancel').last;
           await tester.tap(cancelButton);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(find.byType(AlertDialog), findsNothing);
 
@@ -1368,13 +1440,15 @@ void main() {
           );
 
           streamController.add(category);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Open color picker in edit mode
           final paletteIcon = find.byIcon(Icons.palette_outlined);
           await tester.ensureVisible(paletteIcon);
           await tester.tap(paletteIcon);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // AlertDialog with Select and Cancel actions is shown
           expect(find.byType(AlertDialog), findsOneWidget);
@@ -1386,7 +1460,8 @@ void main() {
           // invoked with the current picker value regardless).
           final selectButton = find.text('Select');
           await tester.tap(selectButton);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(find.byType(AlertDialog), findsNothing);
 
@@ -1424,16 +1499,19 @@ void main() {
           );
 
           streamController.add(category);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Three Switch widgets: Private(0), Active(1), Favorite(2).
           // Tap the Switch widget at index 1 (Active) directly.
           final switches = find.byType(Switch);
           expect(switches, findsNWidgets(3));
           await tester.ensureVisible(switches.at(1));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
           await tester.tap(switches.at(1));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           final enabledSave = findEnabledPrimaryButton(tester);
           expect(
@@ -1470,14 +1548,17 @@ void main() {
           );
 
           streamController.add(category);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           final switches = find.byType(Switch);
           expect(switches, findsNWidgets(3));
           await tester.ensureVisible(switches.at(2));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
           await tester.tap(switches.at(2));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           final enabledSave = findEnabledPrimaryButton(tester);
           expect(
@@ -1504,7 +1585,8 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Initially shows "Choose an icon" hint text
           expect(
@@ -1521,7 +1603,8 @@ void main() {
               .first;
           await tester.ensureVisible(inkWellFinder);
           await tester.tap(inkWellFinder);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Icon picker dialog should open
           expect(find.byType(CategoryIconPicker), findsOneWidget);
@@ -1531,7 +1614,8 @@ void main() {
           final firstIconText = find.text(firstIconName);
           await tester.ensureVisible(firstIconText);
           await tester.tap(firstIconText);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // The "Choose an icon" text should be replaced by the icon's display name
           expect(
@@ -1555,7 +1639,8 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(
             find.text(CategoryIconStrings.chooseIconText),
@@ -1570,14 +1655,16 @@ void main() {
               )
               .first;
           await tester.tap(inkWellFinder);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(find.byType(CategoryIconPicker), findsOneWidget);
 
           // Dismiss without picking (tap close button in dialog header)
           final closeBtn = find.widgetWithIcon(IconButton, Icons.close);
           await tester.tap(closeBtn);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Display name should remain the default
           expect(
@@ -1608,7 +1695,8 @@ void main() {
           );
 
           streamController.add(category);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Open the icon picker
           final iconSection = find.text(CategoryIconStrings.iconSelectionHint);
@@ -1620,7 +1708,8 @@ void main() {
               .first;
           await tester.ensureVisible(inkWell);
           await tester.tap(inkWell);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(find.byType(CategoryIconPicker), findsOneWidget);
 
@@ -1629,7 +1718,8 @@ void main() {
           final firstIconText = find.text(firstIconName);
           await tester.ensureVisible(firstIconText);
           await tester.tap(firstIconText);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // After picking, the icon change should mark the form dirty
           final enabledSave = findEnabledPrimaryButton(tester);
@@ -1658,7 +1748,8 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // With no icon on the category, "Choose an icon" is shown
           expect(
@@ -1693,7 +1784,8 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Shows the icon's display name instead of the fallback
           expect(
@@ -1737,7 +1829,8 @@ void main() {
           );
 
           streamController.add(category);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // With a tall viewport the language dropdown is on-screen.
           final langDropdown = find.byType(CategoryLanguageDropdown);
@@ -1745,7 +1838,8 @@ void main() {
 
           // Tap to open the language selector modal
           await tester.tap(langDropdown);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // The modal content (LanguageSelectionModalContent) appears
           // inside the WoltModalSheet route. We detect it via its key widget
@@ -1757,7 +1851,8 @@ void main() {
 
           // Dismiss the modal
           tester.state<NavigatorState>(find.byType(Navigator).first).pop();
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           await streamController.close();
         },
@@ -1792,7 +1887,8 @@ void main() {
           );
 
           streamController.add(category);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Make a change to enable save
           final nameField = find.byType(TextFormField).first;
@@ -1802,7 +1898,8 @@ void main() {
           // Tap save
           final saveBtn = findEnabledPrimaryButton(tester);
           await tester.tap(find.byWidget(saveBtn!));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Error message should be shown
           expect(
@@ -1843,19 +1940,22 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Open the color picker (default selected color is null → the
           // picker seeds at Colors.red).
           await tester.tap(find.byIcon(Icons.palette_outlined));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
           expect(find.byType(AlertDialog), findsOneWidget);
 
           // Tap "Select" → CategoryColorPicker.onColorChanged fires with the
           // seeded red, which runs setState(_selectedColor = color) on the
           // page. The dialog dismisses.
           await tester.tap(find.text('Select'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
           expect(find.byType(AlertDialog), findsNothing);
 
           // The color row now shows the selected hex (the picker seeds at
@@ -1870,7 +1970,8 @@ void main() {
           await tester.pump();
 
           await tester.tap(find.byType(LottiPrimaryButton));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Repository received the selected color (red swatch), not the blue
           // default — confirming the non-null color branch executed.
@@ -1920,14 +2021,16 @@ void main() {
           );
 
           streamController.add(category);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Save starts disabled (no changes yet).
           expect(findEnabledPrimaryButton(tester), isNull);
 
           // Open the language selector modal.
           await tester.tap(find.byType(CategoryLanguageDropdown));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
           expect(find.byType(LanguageSelectionModalContent), findsOneWidget);
 
           // The current language ('en' → "English") renders as the selected
@@ -1938,7 +2041,8 @@ void main() {
           final germanCard = find.text('German');
           expect(germanCard, findsOneWidget);
           await tester.tap(germanCard, warnIfMissed: false);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           // Modal dismissed (Navigator.pop ran).
           expect(find.byType(LanguageSelectionModalContent), findsNothing);

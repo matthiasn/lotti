@@ -1,0 +1,187 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_animate/flutter_animate.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_quill/flutter_quill.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/editor_db.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/editor/editor_toolbar.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
+
+class _TestEntryController extends EntryController {
+  @override
+  Future<EntryState?> build({required String id}) async {
+    controller = QuillController.basic();
+    return EntryState.saved(
+      entryId: id,
+      entry: null,
+      showMap: false,
+      isFocused: true,
+      shouldShowEditorToolBar: true,
+      formKey: formKey,
+    );
+  }
+}
+
+void main() {
+  const entryId = 'toolbar-entry';
+  late QuillController quillController;
+
+  setUp(() async {
+    final mockUpdateNotifications = MockUpdateNotifications();
+    when(() => mockUpdateNotifications.updateStream).thenAnswer(
+      (_) => Stream<Set<String>>.fromIterable([]),
+    );
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+          ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
+          ..registerSingleton<EditorStateService>(EditorStateService());
+      },
+    );
+    quillController = QuillController.basic();
+  });
+
+  tearDown(() async {
+    quillController.dispose();
+    await tearDownTestGetIt();
+  });
+
+  /// Container with the entry controller overridden and kept alive (the
+  /// real editor page watches it; without a listener the autoDispose family
+  /// recreates the notifier between frames and the animation-complete write
+  /// lands on a discarded instance).
+  ProviderContainer makeKeptAliveContainer() {
+    final container = ProviderContainer(
+      overrides: [
+        entryControllerProvider(id: entryId).overrideWith(
+          _TestEntryController.new,
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+    final sub = container.listen(
+      entryControllerProvider(id: entryId),
+      (_, _) {},
+    );
+    addTearDown(sub.close);
+    return container;
+  }
+
+  // Quill widgets need FlutterQuillLocalizations.delegate, which the shared
+  // makeTestableWidget helpers don't register — mirror the MaterialApp
+  // wrapper used by editor_widget_test.
+  Widget buildSubject(ProviderContainer container) {
+    return UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(
+        theme: resolveTestTheme(),
+        localizationsDelegates: const [
+          AppLocalizations.delegate,
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+          FlutterQuillLocalizations.delegate,
+        ],
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: Scaffold(
+          body: Align(
+            alignment: Alignment.topCenter,
+            child: ToolbarWidget(
+              controller: quillController,
+              entryId: entryId,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  group('ToolbarWidget', () {
+    testWidgets(
+      'animates in, completes, and switches to the static path on rebuild',
+      (tester) async {
+        final container = makeKeptAliveContainer();
+        final notifier = container.read(
+          entryControllerProvider(id: entryId).notifier,
+        );
+
+        await tester.pumpWidget(buildSubject(container));
+        await tester.pump();
+
+        // Animation path: the toolbar mounts inside an Animate wrapper.
+        expect(find.byType(QuillSimpleToolbar), findsOneWidget);
+        final animate = tester.widget<Animate>(find.byType(Animate).first);
+        expect(animate.onComplete, isNotNull);
+        expect(notifier.animationCompleted, isFalse);
+
+        // Fire the completion callback exactly as the animation controller
+        // would; it must flip the notifier flag.
+        final controller = AnimationController(vsync: const TestVSync());
+        addTearDown(controller.dispose);
+        animate.onComplete!(controller);
+        expect(notifier.animationCompleted, isTrue);
+
+        // Rebuild: the static branch renders a fixed-height SizedBox with
+        // no Animate wrapper.
+        await tester.pumpWidget(buildSubject(container));
+        await tester.pump();
+
+        expect(find.byType(Animate), findsNothing);
+        final sizedBox = tester.widget<SizedBox>(
+          find
+              .ancestor(
+                of: find.byType(QuillSimpleToolbar),
+                matching: find.byType(SizedBox),
+              )
+              .first,
+        );
+        expect(sizedBox.height, 45);
+
+        // Flush any timers Quill schedules internally before teardown.
+        await tester.pump(const Duration(seconds: 1));
+      },
+    );
+
+    testWidgets('custom divider button inserts a divider embed', (
+      tester,
+    ) async {
+      final container = makeKeptAliveContainer();
+      // Render the static (post-animation) branch so the toolbar is at
+      // full height and the buttons are hittable.
+      container
+              .read(entryControllerProvider(id: entryId).notifier)
+              .animationCompleted =
+          true;
+      await tester.pumpWidget(buildSubject(container));
+      await tester.pump();
+
+      // The custom button sits at the end of the single-row toolbar;
+      // bring it into view before tapping.
+      await tester.ensureVisible(find.byIcon(Icons.horizontal_rule));
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.horizontal_rule));
+      await tester.pump();
+
+      // The embed's object replacement character lands in the document.
+      expect(
+        quillController.document.toPlainText().codeUnitAt(0),
+        0xFFFC,
+      );
+
+      // Flush any timers Quill schedules internally before teardown.
+      await tester.pump(const Duration(seconds: 1));
+    });
+  });
+}

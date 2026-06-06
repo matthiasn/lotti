@@ -1018,5 +1018,65 @@ void main() {
         expect(find.text('No completed items yet.'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'migrates a legacy bool=false preference to ChecklistFilter.all',
+      (tester) async {
+        // Only the legacy bool key exists: false → ChecklistFilter.all, and
+        // the preference is rewritten in the new string form.
+        SharedPreferences.setMockInitialValues({
+          'checklist_filter_mode_cl-1': false,
+        });
+        final prevIsTestEnv = platform_utils.isTestEnv;
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = prevIsTestEnv);
+
+        await _pump(
+          tester,
+          initiallyExpanded: true,
+          completedCount: 0,
+          totalCount: 0,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The preference is rewritten as the new string form with the
+        // migrated `all` value.
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getString('checklist_filter_mode_cl-1'),
+          ChecklistFilter.all.name,
+        );
+      },
+    );
+
+    testWidgets(
+      'migrates a legacy bool=true preference to ChecklistFilter.openOnly',
+      (tester) async {
+        SharedPreferences.setMockInitialValues({
+          'checklist_filter_mode_cl-1': true,
+        });
+        final prevIsTestEnv = platform_utils.isTestEnv;
+        platform_utils.isTestEnv = false;
+        addTearDown(() => platform_utils.isTestEnv = prevIsTestEnv);
+
+        await _pump(
+          tester,
+          initiallyExpanded: true,
+          completedCount: 0,
+          totalCount: 0,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // The preference is rewritten in the new string form with the
+        // migrated openOnly value.
+        final prefs = await SharedPreferences.getInstance();
+        expect(
+          prefs.getString('checklist_filter_mode_cl-1'),
+          ChecklistFilter.openOnly.name,
+        );
+      },
+    );
   });
 }

@@ -480,6 +480,84 @@ extension _AnyInboundQueueScenario on glados.Any {
           .map((rows) => _GeneratedBatchAccountingScenario(rows: rows));
 }
 
+/// Generated commit/skip interleaving for the waitForDrainAtMostTo
+/// ordering invariant: the waiter completes exactly when the active total
+/// reaches the threshold and never before.
+class _DrainWaiterScenario {
+  _DrainWaiterScenario({
+    required int rawCount,
+    required int rawThreshold,
+    required this.seed,
+  }) : eventCount = rawCount % 5 + 1 {
+    threshold = rawThreshold % (eventCount + 1);
+  }
+
+  final int eventCount;
+  late final int threshold;
+  final int seed;
+
+  String eventIdAt(int i) =>
+      r'$drain-'
+      '$seed-$i';
+
+  /// true -> commitApplied, false -> markSkipped.
+  bool commitAt(int i) => (seed + i).isEven;
+
+  @override
+  String toString() =>
+      '_DrainWaiterScenario(count: $eventCount, threshold: $threshold, '
+      'ops: ${List.generate(eventCount, (i) => commitAt(i) ? 'c' : 's')})';
+}
+
+/// Generated transaction nesting for the depth-emission coalescing
+/// invariant: in-transaction emissions are suppressed; one post-commit
+/// emission fires iff any mutation happened anywhere in the nest.
+class _DepthCoalescingScenario {
+  _DepthCoalescingScenario({required int rawDepth, required this.seed})
+    : depth = rawDepth % 4 + 1;
+
+  final int depth;
+  final int seed;
+
+  bool mutatesAt(int level) => (seed >> level).isEven;
+
+  bool get anyMutation =>
+      List.generate(depth, mutatesAt).any((mutates) => mutates);
+
+  String eventIdAt(int level) =>
+      r'$depth-'
+      '$seed-$level';
+
+  @override
+  String toString() =>
+      '_DepthCoalescingScenario(depth: $depth, '
+      'mutations: ${List.generate(depth, mutatesAt)})';
+}
+
+extension _AnyDrainAndDepthScenarios on glados.Any {
+  glados.Generator<_DrainWaiterScenario> get drainWaiterScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(0, 100),
+        glados.IntAnys(this).intInRange(0, 100),
+        glados.IntAnys(this).intInRange(0, 1000),
+        (int rawCount, int rawThreshold, int seed) => _DrainWaiterScenario(
+          rawCount: rawCount,
+          rawThreshold: rawThreshold,
+          seed: seed,
+        ),
+      );
+
+  glados.Generator<_DepthCoalescingScenario> get depthCoalescingScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 100),
+        glados.IntAnys(this).intInRange(0, 1000),
+        (int rawDepth, int seed) => _DepthCoalescingScenario(
+          rawDepth: rawDepth,
+          seed: seed,
+        ),
+      );
+}
+
 Future<void> _withFreshInboundQueue(
   Future<void> Function(SyncDatabase db, InboundQueue queue) body,
 ) async {
@@ -702,6 +780,110 @@ void main() {
           throwsA(isA<TimeoutException>()),
         );
       },
+    );
+
+    glados.Glados(
+      glados.any.drainWaiterScenario,
+      glados.ExploreConfig(numRuns: 60),
+    ).test(
+      'generated commit/skip interleavings complete the waiter exactly '
+      'when the active total reaches the threshold — never before',
+      (scenario) async {
+        await _withFreshInboundQueue((db, freshQueue) async {
+          await freshQueue.enqueueBatch(
+            [
+              for (var i = 0; i < scenario.eventCount; i++)
+                _buildSyncEvent(
+                  eventId: scenario.eventIdAt(i),
+                  roomId: roomA,
+                  originTsMs: i + 1,
+                ),
+            ],
+            producer: InboundEventProducer.live,
+          );
+
+          var completed = false;
+          final waiter = freshQueue
+              .waitForDrainAtMostTo(scenario.threshold)
+              .then((_) => completed = true);
+          await pumpEventQueue();
+          expect(
+            completed,
+            scenario.eventCount <= scenario.threshold,
+            reason: 'pre-op: $scenario',
+          );
+
+          final batch = await freshQueue.peekBatchReady(
+            maxBatch: scenario.eventCount,
+          );
+          expect(batch, hasLength(scenario.eventCount));
+          for (var i = 0; i < batch.length; i++) {
+            if (scenario.commitAt(i)) {
+              await freshQueue.commitApplied(batch[i]);
+            } else {
+              await freshQueue.markSkipped(batch[i], reason: 'generatedSkip');
+            }
+            await pumpEventQueue();
+            final remaining = scenario.eventCount - (i + 1);
+            expect(
+              completed,
+              remaining <= scenario.threshold,
+              reason: 'after op $i: $scenario',
+            );
+          }
+          await waiter;
+        });
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('depth emission coalescing (generated)', () {
+    glados.Glados(
+      glados.any.depthCoalescingScenario,
+      glados.ExploreConfig(numRuns: 60),
+    ).test(
+      'nested transactions suppress in-flight emissions and fire '
+      'post-commit iff any mutation occurred',
+      (scenario) async {
+        await _withFreshInboundQueue((db, freshQueue) async {
+          final emissions = <QueueDepthSignal>[];
+          final sub = freshQueue.depthChanges.listen(emissions.add);
+
+          Future<void> nest(int level) async {
+            await freshQueue.runInTransaction(() async {
+              if (scenario.mutatesAt(level)) {
+                await freshQueue.enqueueLive(
+                  _buildSyncEvent(
+                    eventId: scenario.eventIdAt(level),
+                    roomId: roomA,
+                    originTsMs: level + 1,
+                  ),
+                );
+              }
+              if (level + 1 < scenario.depth) {
+                await nest(level + 1);
+              }
+              // Still inside the (possibly outer) transaction: depth
+              // emissions must be held back.
+              expect(emissions, isEmpty, reason: 'inside txn: $scenario');
+            });
+          }
+
+          await nest(0);
+          await pumpEventQueue();
+
+          if (scenario.anyMutation) {
+            // Exactly one coalesced post-commit emission — duplicates would
+            // indicate the depth gate leaked intermediate notifications.
+            expect(emissions, hasLength(1), reason: '$scenario');
+          } else {
+            expect(emissions, isEmpty, reason: '$scenario');
+          }
+          await sub.cancel();
+        });
+      },
+      tags: 'glados',
     );
   });
 

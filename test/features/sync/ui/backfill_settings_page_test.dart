@@ -91,7 +91,8 @@ void main() {
         child: SingleChildScrollView(child: BackfillSettingsBody()),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 250));
   }
 
   AppLocalizations messagesOf(WidgetTester tester) =>
@@ -230,7 +231,8 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.refresh));
       await tester.pump();
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       verify(() => mockSequenceService.getBackfillStats()).called(1);
     });
@@ -259,7 +261,8 @@ void main() {
       await pumpBody(tester);
 
       await tester.tap(find.byType(DesignSystemToggle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       final toggle = tester.widget<DesignSystemToggle>(
         find.byType(DesignSystemToggle),
@@ -310,7 +313,8 @@ void main() {
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       expect(find.text(messages.backfillManualTitle), findsOneWidget);
       expect(find.text(messages.backfillReRequestTitle), findsOneWidget);
@@ -325,7 +329,8 @@ void main() {
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       // Find the DesignSystemButton whose label is the manual trigger.
       final triggerLabel = messages.backfillManualTrigger;
@@ -335,9 +340,11 @@ void main() {
       );
 
       await tester.ensureVisible(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(buttonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       verify(() => mockBackfillService.processFullBackfill()).called(1);
     });
@@ -349,7 +356,8 @@ void main() {
         final messages = messagesOf(tester);
 
         await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
 
         final btn = tester.widget<DesignSystemButton>(
           find.widgetWithText(
@@ -381,7 +389,8 @@ void main() {
         final messages = messagesOf(tester);
 
         await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
 
         final btn = tester.widget<DesignSystemButton>(
           find.widgetWithText(
@@ -413,7 +422,8 @@ void main() {
         final messages = messagesOf(tester);
 
         await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
 
         final btn = tester.widget<DesignSystemButton>(
           find.widgetWithText(
@@ -445,7 +455,8 @@ void main() {
         final messages = messagesOf(tester);
 
         await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
 
         // The CTA label is dynamic ("Retire 0 stuck entries") — find
         // the row's title and assert the same row's button is null.
@@ -536,16 +547,12 @@ void main() {
           abandoned: abandoned,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
     }
 
     Future<void> pumpInScaffold(WidgetTester tester) async {
-      await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: SingleChildScrollView(child: BackfillSettingsBody()),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpBody(tester);
     }
 
     testWidgets('initial paint reads queue.stats() for inbound + skipped', (
@@ -589,7 +596,8 @@ void main() {
         );
 
         await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
 
         expect(find.text(messages.queueSkippedCardTitle), findsOneWidget);
       },
@@ -601,16 +609,19 @@ void main() {
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       final btn = find.widgetWithText(
         DesignSystemButton,
         messages.queueSkippedRetryAll,
       );
       await tester.ensureVisible(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       verify(() => queue.resurrectAll()).called(1);
     });
@@ -620,7 +631,8 @@ void main() {
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       // The "Catch up now" CTA reuses the same label as the action title.
       final btn = find.widgetWithText(
@@ -628,9 +640,11 @@ void main() {
         messages.queueCatchUpNowButton,
       );
       await tester.ensureVisible(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       verify(() => coordinator.triggerBridge()).called(1);
     });
@@ -640,48 +654,43 @@ void main() {
   group('BackfillSettingsBody · confirmation dialogs', () {
     testWidgets('Ask peers cancel closes the dialog without invoking the '
         'controller', (tester) async {
-      await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: SingleChildScrollView(child: BackfillSettingsBody()),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpBody(tester);
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       final askPeersBtn = find.widgetWithText(
         DesignSystemButton,
         messages.backfillAskPeersTrigger(3),
       );
       await tester.ensureVisible(askPeersBtn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(askPeersBtn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       // Confirm dialog rendered.
       expect(find.text(messages.backfillAskPeersConfirmTitle), findsOneWidget);
 
       // Cancel.
       await tester.tap(find.text(messages.cancelButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       verifyNever(() => mockSequenceService.resetAllUnresolvableEntries());
     });
 
     testWidgets('Retire stuck cancel closes the dialog without invoking the '
         'controller', (tester) async {
-      await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: SingleChildScrollView(child: BackfillSettingsBody()),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpBody(tester);
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       // Open count = 5 (missing) + 2 (requested) = 7.
       final retireBtn = find.widgetWithText(
@@ -689,9 +698,11 @@ void main() {
         messages.backfillRetireStuckTrigger(7),
       );
       await tester.ensureVisible(retireBtn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(retireBtn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       expect(
         find.text(messages.backfillRetireStuckConfirmTitle),
@@ -699,7 +710,8 @@ void main() {
       );
 
       await tester.tap(find.text(messages.cancelButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       verifyNever(
         () => mockSequenceService.retireAgedOutRequestedEntries(
@@ -717,29 +729,28 @@ void main() {
         ),
       ).thenAnswer((_) async => 7);
 
-      await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: SingleChildScrollView(child: BackfillSettingsBody()),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpBody(tester);
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       final retireBtn = find.widgetWithText(
         DesignSystemButton,
         messages.backfillRetireStuckTrigger(7),
       );
       await tester.ensureVisible(retireBtn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(retireBtn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       // Tap the confirm button using its dialog label.
       await tester.tap(find.text(messages.backfillRetireStuckConfirmAccept));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       verify(
         () => mockSequenceService.retireAgedOutRequestedEntries(
@@ -755,28 +766,27 @@ void main() {
         () => mockSequenceService.resetAllUnresolvableEntries(),
       ).thenAnswer((_) async => 3);
 
-      await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: SingleChildScrollView(child: BackfillSettingsBody()),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpBody(tester);
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       final askBtn = find.widgetWithText(
         DesignSystemButton,
         messages.backfillAskPeersTrigger(3),
       );
       await tester.ensureVisible(askBtn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(askBtn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       await tester.tap(find.text(messages.backfillAskPeersConfirmAccept));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       verify(() => mockSequenceService.resetAllUnresolvableEntries()).called(1);
     });
@@ -793,16 +803,12 @@ void main() {
           () => mockBackfillService.processFullBackfill(),
         ).thenAnswer((_) => completer.future);
 
-        await tester.pumpWidget(
-          const RiverpodWidgetTestBench(
-            child: SingleChildScrollView(child: BackfillSettingsBody()),
-          ),
-        );
-        await tester.pumpAndSettle();
+        await pumpBody(tester);
         final messages = messagesOf(tester);
 
         await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
 
         // Trigger the manual backfill (kicks `isProcessing = true`).
         final manualBtn = find.widgetWithText(
@@ -810,7 +816,8 @@ void main() {
           messages.backfillManualTrigger,
         );
         await tester.ensureVisible(manualBtn);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
         await tester.tap(manualBtn);
         await tester.pump();
 
@@ -849,7 +856,8 @@ void main() {
         // Let the in-flight call finish so the test tearDown doesn't trip on
         // a pending future.
         completer.complete(5);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
       },
     );
   });
@@ -905,7 +913,8 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       completer.complete(populatedStats);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
     });
 
     testWidgets('Advanced recovery collapses on a second header tap', (
@@ -916,11 +925,13 @@ void main() {
       final header = find.text(messages.backfillAdvancedRecoveryTitle);
 
       await tester.tap(header);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       expect(find.text(messages.backfillManualTitle), findsOneWidget);
 
       await tester.tap(header);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       expect(find.text(messages.backfillManualTitle), findsNothing);
     });
 
@@ -933,16 +944,19 @@ void main() {
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       final btn = find.widgetWithText(
         DesignSystemButton,
         messages.backfillResetUnresolvableTrigger,
       );
       await tester.ensureVisible(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       verify(() => mockSequenceService.resetUnresolvableEntries()).called(1);
     });
@@ -958,16 +972,19 @@ void main() {
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       final btn = find.widgetWithText(
         DesignSystemButton,
         messages.backfillReRequestTrigger,
       );
       await tester.ensureVisible(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       verify(() => mockBackfillService.processReRequest()).called(1);
     });
@@ -1012,23 +1029,20 @@ void main() {
         (_) async => throw Exception('bridge boom'),
       );
 
-      await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: SingleChildScrollView(child: BackfillSettingsBody()),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpBody(tester);
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       final btn = find.widgetWithText(
         DesignSystemButton,
         messages.queueCatchUpNowButton,
       );
       await tester.ensureVisible(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(btn);
       await tester.pump();
 
@@ -1042,12 +1056,7 @@ void main() {
         (_) async => throw Exception('resurrect boom'),
       );
 
-      await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: SingleChildScrollView(child: BackfillSettingsBody()),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpBody(tester);
       // Push abandoned > 0 so the Retry skipped action becomes visible.
       depthCtl.add(
         const QueueDepthSignal(
@@ -1057,18 +1066,21 @@ void main() {
           abandoned: 4,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       final messages = messagesOf(tester);
 
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       final btn = find.widgetWithText(
         DesignSystemButton,
         messages.queueSkippedRetryAll,
       );
       await tester.ensureVisible(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(btn);
       await tester.pump();
 
@@ -1089,15 +1101,11 @@ void main() {
     // Opens the advanced recovery group and returns the localized
     // messages bundle for the body under test.
     Future<AppLocalizations> openRecovery(WidgetTester tester) async {
-      await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: SingleChildScrollView(child: BackfillSettingsBody()),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpBody(tester);
       final messages = messagesOf(tester);
       await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       return messages;
     }
 
@@ -1133,7 +1141,8 @@ void main() {
           messages.backfillResetUnresolvableTrigger,
         );
         await tester.ensureVisible(btn);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
         await tester.tap(btn);
         await tester.pump();
 
@@ -1144,7 +1153,8 @@ void main() {
         );
 
         completer.complete(0);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 250));
       },
     );
 
@@ -1163,7 +1173,8 @@ void main() {
         messages.backfillReRequestTrigger,
       );
       await tester.ensureVisible(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(btn);
       await tester.pump();
 
@@ -1174,7 +1185,8 @@ void main() {
       );
 
       completer.complete(0);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
     });
 
     testWidgets('ask-peers shows the reopening label after confirm', (
@@ -1192,9 +1204,11 @@ void main() {
         messages.backfillAskPeersTrigger(3),
       );
       await tester.ensureVisible(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       // Confirm the dialog so the controller op actually kicks off.
       await tester.tap(find.text(messages.backfillAskPeersConfirmAccept));
@@ -1207,7 +1221,8 @@ void main() {
       );
 
       completer.complete(0);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
     });
 
     testWidgets('retire-stuck shows the retiring label after confirm', (
@@ -1228,9 +1243,11 @@ void main() {
         messages.backfillRetireStuckTrigger(7),
       );
       await tester.ensureVisible(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       await tester.tap(btn);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       await tester.tap(find.text(messages.backfillRetireStuckConfirmAccept));
       await tester.pump();
@@ -1242,7 +1259,8 @@ void main() {
       );
 
       completer.complete(0);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
     });
   });
 
@@ -1291,12 +1309,7 @@ void main() {
 
       getIt.registerSingleton<MatrixService>(matrixService);
 
-      await tester.pumpWidget(
-        const RiverpodWidgetTestBench(
-          child: SingleChildScrollView(child: BackfillSettingsBody()),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await pumpBody(tester);
 
       // Queue A drives the inbound count to 11.
       ctlA.add(
@@ -1306,7 +1319,8 @@ void main() {
           oldestEnqueuedAt: null,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       expect(find.text('11'), findsWidgets);
 
       // Swap to queue B and force a body rebuild via a stats refresh.
@@ -1317,7 +1331,8 @@ void main() {
         () => mockSequenceService.getBackfillStats(),
       ).thenAnswer((_) async => emptyStats);
       await tester.tap(find.byIcon(Icons.refresh));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
 
       // After the rebind `_latest` was reset to null, so the inbound
       // cell falls back to 0 — A's "11" is gone.
@@ -1331,7 +1346,8 @@ void main() {
           oldestEnqueuedAt: null,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       expect(find.text('99'), findsNothing);
 
       // The NEW queue B drives the row instead.
@@ -1342,7 +1358,8 @@ void main() {
           oldestEnqueuedAt: null,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
       expect(find.text('42'), findsWidgets);
 
       // Sanity: messages bundle resolved from the live body.

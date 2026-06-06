@@ -16,8 +16,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 
-class _MockEvent extends Mock implements Event {}
-
 void main() {
   setUpAll(() {
     registerFallbackValue(StackTrace.empty);
@@ -28,7 +26,7 @@ void main() {
       'returns bytes verbatim when no encoding header is present',
       () async {
         final logging = MockDomainLogger();
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.content).thenReturn(<String, dynamic>{});
 
         final payload = Uint8List.fromList([1, 2, 3, 4, 5]);
@@ -57,7 +55,7 @@ void main() {
         // receivers must pass the bytes through untouched rather than
         // panic or corrupt the file.
         final logging = MockDomainLogger();
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.content).thenReturn(<String, dynamic>{
           attachmentEncodingKey: 'brotli',
         });
@@ -86,7 +84,7 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.content).thenReturn(<String, dynamic>{
           attachmentEncodingKey: attachmentEncodingGzip,
         });
@@ -141,7 +139,7 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.content).thenReturn(<String, dynamic>{
           attachmentEncodingKey: attachmentEncodingGzip,
         });
@@ -198,7 +196,7 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.content).thenReturn(<String, dynamic>{
           attachmentEncodingKey: attachmentEncodingGzip,
         });
@@ -266,7 +264,7 @@ void main() {
         // behind a hung peer).
         var downloadCalls = 0;
         final completer = Completer<MatrixFile>();
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.eventId).thenReturn(r'$same-event-id');
         when(() => event.downloadAndDecryptAttachment()).thenAnswer((_) {
           downloadCalls++;
@@ -303,7 +301,7 @@ void main() {
       'attempt triggers a fresh download',
       () async {
         var downloadCalls = 0;
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.eventId).thenReturn(r'$release-test');
         when(() => event.downloadAndDecryptAttachment()).thenAnswer((_) async {
           downloadCalls++;
@@ -331,7 +329,7 @@ void main() {
         // that return null. In those cases we fall back to running each
         // call independently rather than stacking them on a shared key.
         var downloadCalls = 0;
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.eventId).thenReturn('');
         when(() => event.downloadAndDecryptAttachment()).thenAnswer((_) async {
           downloadCalls++;
@@ -360,7 +358,7 @@ void main() {
       'not poison the shared map',
       () async {
         var downloadCalls = 0;
-        final event = _MockEvent();
+        final event = MockEvent();
         when(() => event.eventId).thenThrow(StateError('no id'));
         when(() => event.downloadAndDecryptAttachment()).thenAnswer((_) async {
           downloadCalls++;
@@ -383,7 +381,7 @@ void main() {
         // Runs under fakeAsync so we advance the virtual clock past the
         // configured timeout rather than awaiting a real Duration.
         fakeAsync((async) {
-          final event = _MockEvent();
+          final event = MockEvent();
           when(() => event.eventId).thenReturn(r'$timeout-test');
           when(
             () => event.downloadAndDecryptAttachment(),

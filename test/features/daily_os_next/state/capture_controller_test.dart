@@ -1082,6 +1082,110 @@ void main() {
         );
       },
     );
+
+    /// Stubs a successful realtime session whose stop() writes an audio file
+    /// and yields [realtimeTranscript].
+    void stubRealtimeSession({required String realtimeTranscript}) {
+      when(
+        () => realtimeService.startRealtimeTranscription(
+          pcmStream: any(named: 'pcmStream'),
+          onDelta: any(named: 'onDelta'),
+          config: any(named: 'config'),
+        ),
+      ).thenAnswer((_) async {});
+      when(
+        () => realtimeService.stop(
+          stopRecorder: any(named: 'stopRecorder'),
+          outputPath: any(named: 'outputPath'),
+        ),
+      ).thenAnswer((invocation) async {
+        final stopRecorder =
+            invocation.namedArguments[#stopRecorder] as Future<void> Function();
+        final outputPath = invocation.namedArguments[#outputPath] as String;
+        await stopRecorder();
+        return RealtimeStopResult(
+          transcript: realtimeTranscript,
+          audioFilePath: '$outputPath.m4a',
+        );
+      });
+    }
+
+    test(
+      'skipRealtimeTranscriptVerificationForNextCapture skips the batch '
+      'verifier for one capture only',
+      () async {
+        stubRealtimeSession(realtimeTranscript: 'realtime text');
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer((_) async => 'batch text');
+
+        final container = buildContainer();
+        addTearDown(container.dispose);
+
+        final notifier = container.read(captureControllerProvider.notifier)
+          ..skipRealtimeTranscriptVerificationForNextCapture();
+        await notifier.toggle();
+        await notifier.toggle();
+
+        // The skipped capture keeps realtime verbatim without transcribing.
+        expect(
+          container.read(captureControllerProvider).transcript,
+          'realtime text',
+        );
+        verifyNever(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        );
+
+        // The skip is one-shot: the next capture verifies again.
+        await notifier.toggle(); // captured -> reset/idle
+        await notifier.toggle(); // idle -> listening
+        await notifier.toggle(); // listening -> captured
+        verify(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'keeps the realtime transcript when the batch transcript is empty',
+      () async {
+        stubRealtimeSession(realtimeTranscript: 'realtime text');
+        // Whitespace-only batch output trims to empty.
+        when(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).thenAnswer((_) async => '   ');
+
+        final container = buildContainer();
+        addTearDown(container.dispose);
+
+        final notifier = container.read(captureControllerProvider.notifier);
+        await notifier.toggle();
+        await notifier.toggle();
+
+        expect(
+          container.read(captureControllerProvider).transcript,
+          'realtime text',
+        );
+        verify(
+          () => transcriber.transcribe(
+            any(),
+            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group(

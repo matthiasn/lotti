@@ -40,7 +40,8 @@ Future<void> _pumpBar(
       ),
     ),
   );
-  await tester.pumpAndSettle();
+  // Static bar: a plain pump renders it; nothing animates on first build.
+  await tester.pump();
 }
 
 void main() {
@@ -86,7 +87,7 @@ void main() {
     await tester.tap(
       find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(
       find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
@@ -106,7 +107,7 @@ void main() {
     await tester.tap(
       find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(
       find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
@@ -127,7 +128,7 @@ void main() {
     await tester.tap(
       find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final field = find.byKey(
       DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
@@ -139,7 +140,7 @@ void main() {
     await tester.tap(
       find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(saved, 'My filter');
   });
@@ -157,7 +158,7 @@ void main() {
     await tester.tap(
       find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final field = find.byKey(
       DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
@@ -166,7 +167,7 @@ void main() {
     await tester.tap(
       find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupCommitKey),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(saveCount, 0);
   });
@@ -184,7 +185,7 @@ void main() {
     await tester.tap(
       find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('In progress · P0'), findsOneWidget);
   });
@@ -201,7 +202,7 @@ void main() {
       await tester.tap(
         find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final field = find.byKey(
         DesignSystemTaskFilterActionBar.saveNamePopupFieldKey,
@@ -236,7 +237,7 @@ void main() {
       await tester.tap(
         find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the action button again to toggle the menu closed; this routes
       // through the popup's State.dispose which removes the controller
@@ -244,7 +245,7 @@ void main() {
       await tester.tap(
         find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),

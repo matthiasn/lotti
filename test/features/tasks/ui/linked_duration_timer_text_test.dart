@@ -6,14 +6,26 @@ import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
-    if (!getIt.isRegistered<TimeService>()) {
-      getIt.registerSingleton<TimeService>(TimeService());
-    }
+    // Scoped mock instead of a real TimeService (fake-time policy).
+    final mockTimeService = MockTimeService();
+    when(mockTimeService.getStream).thenAnswer((_) => const Stream.empty());
+    when(() => mockTimeService.linkedFrom).thenReturn(null);
+    when(mockTimeService.getCurrent).thenReturn(null);
+    getIt
+      ..pushNewScope()
+      ..registerSingleton<TimeService>(mockTimeService);
+  });
+
+  tearDownAll(() async {
+    await getIt.popScope();
   });
 
   testWidgets('LinkedDuration text widths are stable', (tester) async {

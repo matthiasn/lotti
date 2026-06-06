@@ -344,6 +344,57 @@ void main() {
     ).thenReturn(null);
   });
 
+  /// Stubs the checklist-item lookup with [item] (null → lookup failure).
+  void stubItemLookup(ChecklistItem? item) {
+    when(
+      () => mockJournalDb.journalEntityById(itemId),
+    ).thenAnswer((_) async => item);
+  }
+
+  /// Stubs the source-task lookup with a task owning [checklistIds].
+  void stubSourceTask({List<String>? checklistIds = const [checklistId]}) {
+    when(() => mockJournalDb.journalEntityById(sourceTaskId)).thenAnswer(
+      (_) async => makeTask(id: sourceTaskId, checklistIds: checklistIds),
+    );
+  }
+
+  /// Stubs the target-task lookup with a task owning [checklistIds].
+  void stubTargetTask({
+    List<String>? checklistIds = const [targetChecklistId],
+    String? categoryId,
+  }) {
+    when(() => mockJournalDb.journalEntityById(targetTaskId)).thenAnswer(
+      (_) async => makeTask(
+        id: targetTaskId,
+        checklistIds: checklistIds,
+        categoryId: categoryId,
+      ),
+    );
+  }
+
+  /// Stubs the archival update on the source item to return [result].
+  void stubArchiveUpdate({bool result = true}) {
+    when(
+      () => mockChecklistRepository.updateChecklistItem(
+        checklistItemId: any(named: 'checklistItemId'),
+        data: any(named: 'data'),
+        taskId: any(named: 'taskId'),
+      ),
+    ).thenAnswer((_) async => result);
+  }
+
+  /// Stubs the copy-into-target call to return [created].
+  void stubAddItemToChecklist(ChecklistItem created) {
+    when(
+      () => mockChecklistRepository.addItemToChecklist(
+        checklistId: any(named: 'checklistId'),
+        title: any(named: 'title'),
+        isChecked: any(named: 'isChecked'),
+        categoryId: any(named: 'categoryId'),
+      ),
+    ).thenAnswer((_) async => created);
+  }
+
   group('ChecklistMigrationHandler', () {
     group('validation', () {
       test('returns failure when item id is missing', () async {
@@ -370,9 +421,7 @@ void main() {
       });
 
       test('returns failure when checklist item not found', () async {
-        when(
-          () => mockJournalDb.journalEntityById(itemId),
-        ).thenAnswer((_) async => null);
+        stubItemLookup(null);
 
         final result = await handler.handle(
           sourceTaskId,
@@ -412,14 +461,7 @@ void main() {
             ),
           );
 
-          when(
-            () => mockJournalDb.journalEntityById(sourceTaskId),
-          ).thenAnswer(
-            (_) async => makeTask(
-              id: sourceTaskId,
-              checklistIds: [checklistId],
-            ),
-          );
+          stubSourceTask();
 
           final result = await handler.handle(
             sourceTaskId,
@@ -452,9 +494,7 @@ void main() {
                 )
                 as ChecklistItem;
 
-        when(
-          () => mockJournalDb.journalEntityById(itemId),
-        ).thenAnswer((_) async => archivedItem);
+        stubItemLookup(archivedItem);
 
         final result = await handler.handle(
           sourceTaskId,
@@ -482,46 +522,16 @@ void main() {
       test('archives item in source and copies to target', () async {
         final item = makeChecklistItem();
 
-        when(
-          () => mockJournalDb.journalEntityById(itemId),
-        ).thenAnswer((_) async => item);
+        stubItemLookup(item);
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: sourceTaskId,
-            checklistIds: [checklistId],
-          ),
-        );
+        stubSourceTask();
 
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
-            taskId: any(named: 'taskId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubArchiveUpdate();
 
-        when(
-          () => mockJournalDb.journalEntityById(targetTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: targetTaskId,
-            checklistIds: [targetChecklistId],
-            categoryId: 'cat-002',
-          ),
-        );
+        stubTargetTask(categoryId: 'cat-002');
 
-        when(
-          () => mockChecklistRepository.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer(
-          (_) async => makeChecklistItem(
+        stubAddItemToChecklist(
+          makeChecklistItem(
             id: 'new-item-001',
             linkedChecklists: [targetChecklistId],
           ),
@@ -569,45 +579,16 @@ void main() {
       test('preserves isChecked state when copying', () async {
         final checkedItem = makeChecklistItem(isChecked: true);
 
-        when(
-          () => mockJournalDb.journalEntityById(itemId),
-        ).thenAnswer((_) async => checkedItem);
+        stubItemLookup(checkedItem);
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: sourceTaskId,
-            checklistIds: [checklistId],
-          ),
-        );
+        stubSourceTask();
 
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
-            taskId: any(named: 'taskId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubArchiveUpdate();
 
-        when(
-          () => mockJournalDb.journalEntityById(targetTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: targetTaskId,
-            checklistIds: [targetChecklistId],
-          ),
-        );
+        stubTargetTask();
 
-        when(
-          () => mockChecklistRepository.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer(
-          (_) async => makeChecklistItem(
+        stubAddItemToChecklist(
+          makeChecklistItem(
             id: 'new-item-002',
             isChecked: true,
             linkedChecklists: [targetChecklistId],
@@ -654,26 +635,11 @@ void main() {
           ),
         );
 
-        when(
-          () => mockJournalDb.journalEntityById(itemId),
-        ).thenAnswer((_) async => item);
+        stubItemLookup(item);
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: sourceTaskId,
-            checklistIds: [checklistId],
-          ),
-        );
+        stubSourceTask();
 
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
-            taskId: any(named: 'taskId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubArchiveUpdate();
 
         // Target has no checklists.
         when(
@@ -696,15 +662,8 @@ void main() {
           ),
         );
 
-        when(
-          () => mockChecklistRepository.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer(
-          (_) async => makeChecklistItem(
+        stubAddItemToChecklist(
+          makeChecklistItem(
             id: 'new-item-003',
             linkedChecklists: ['auto-created-checklist'],
           ),
@@ -740,18 +699,9 @@ void main() {
       test('returns failure when createChecklist fails', () async {
         final item = makeChecklistItem();
 
-        when(
-          () => mockJournalDb.journalEntityById(itemId),
-        ).thenAnswer((_) async => item);
+        stubItemLookup(item);
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: sourceTaskId,
-            checklistIds: [checklistId],
-          ),
-        );
+        stubSourceTask();
 
         when(
           () => mockJournalDb.journalEntityById(targetTaskId),
@@ -1097,18 +1047,9 @@ void main() {
       test('returns failure when target task not found', () async {
         final item = makeChecklistItem();
 
-        when(
-          () => mockJournalDb.journalEntityById(itemId),
-        ).thenAnswer((_) async => item);
+        stubItemLookup(item);
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: sourceTaskId,
-            checklistIds: [checklistId],
-          ),
-        );
+        stubSourceTask();
 
         when(
           () => mockJournalDb.journalEntityById(targetTaskId),
@@ -1145,33 +1086,12 @@ void main() {
             () => mockJournalDb.journalEntityById(itemId),
           ).thenAnswer((_) async => item);
 
-          when(
-            () => mockJournalDb.journalEntityById(sourceTaskId),
-          ).thenAnswer(
-            (_) async => makeTask(
-              id: sourceTaskId,
-              checklistIds: [checklistId],
-            ),
-          );
+          stubSourceTask();
 
-          when(
-            () => mockJournalDb.journalEntityById(targetTaskId),
-          ).thenAnswer(
-            (_) async => makeTask(
-              id: targetTaskId,
-              checklistIds: [targetChecklistId],
-            ),
-          );
+          stubTargetTask();
 
-          when(
-            () => mockChecklistRepository.addItemToChecklist(
-              checklistId: any(named: 'checklistId'),
-              title: any(named: 'title'),
-              isChecked: any(named: 'isChecked'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer(
-            (_) async => makeChecklistItem(
+          stubAddItemToChecklist(
+            makeChecklistItem(
               id: 'new-item-copy',
               linkedChecklists: [targetChecklistId],
             ),
@@ -1207,18 +1127,9 @@ void main() {
       test('logs via DomainLogger when target task not found', () async {
         final item = makeChecklistItem();
 
-        when(
-          () => mockJournalDb.journalEntityById(itemId),
-        ).thenAnswer((_) async => item);
+        stubItemLookup(item);
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: sourceTaskId,
-            checklistIds: [checklistId],
-          ),
-        );
+        stubSourceTask();
 
         when(
           () => mockJournalDb.journalEntityById(targetTaskId),
@@ -1268,49 +1179,20 @@ void main() {
       test('logs via DomainLogger on successful migration', () async {
         final item = makeChecklistItem();
 
-        when(
-          () => mockJournalDb.journalEntityById(itemId),
-        ).thenAnswer((_) async => item);
+        stubItemLookup(item);
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: sourceTaskId,
-            checklistIds: [checklistId],
-          ),
-        );
+        stubSourceTask();
 
-        when(
-          () => mockJournalDb.journalEntityById(targetTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: targetTaskId,
-            checklistIds: [targetChecklistId],
-          ),
-        );
+        stubTargetTask();
 
-        when(
-          () => mockChecklistRepository.addItemToChecklist(
-            checklistId: any(named: 'checklistId'),
-            title: any(named: 'title'),
-            isChecked: any(named: 'isChecked'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer(
-          (_) async => makeChecklistItem(
+        stubAddItemToChecklist(
+          makeChecklistItem(
             id: 'new-item-log',
             linkedChecklists: [targetChecklistId],
           ),
         );
 
-        when(
-          () => mockChecklistRepository.updateChecklistItem(
-            checklistItemId: any(named: 'checklistItemId'),
-            data: any(named: 'data'),
-            taskId: any(named: 'taskId'),
-          ),
-        ).thenAnswer((_) async => true);
+        stubArchiveUpdate();
 
         await handler.handle(
           sourceTaskId,
@@ -1350,27 +1232,11 @@ void main() {
       test('returns failure when addItemToChecklist returns null', () async {
         final item = makeChecklistItem();
 
-        when(
-          () => mockJournalDb.journalEntityById(itemId),
-        ).thenAnswer((_) async => item);
+        stubItemLookup(item);
 
-        when(
-          () => mockJournalDb.journalEntityById(sourceTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: sourceTaskId,
-            checklistIds: [checklistId],
-          ),
-        );
+        stubSourceTask();
 
-        when(
-          () => mockJournalDb.journalEntityById(targetTaskId),
-        ).thenAnswer(
-          (_) async => makeTask(
-            id: targetTaskId,
-            checklistIds: [targetChecklistId],
-          ),
-        );
+        stubTargetTask();
 
         when(
           () => mockChecklistRepository.addItemToChecklist(

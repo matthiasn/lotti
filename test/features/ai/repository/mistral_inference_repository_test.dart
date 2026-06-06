@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -1789,5 +1790,116 @@ data: not valid json 5
         ).called(1);
       });
     });
+
+    group('convertMessages', () {
+      glados.Glados(
+        glados.any.mistralMessagesScenario,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'role and content survive conversion for every message kind',
+        (scenario) {
+          final repository = MistralInferenceRepository();
+          final converted = repository.convertMessages(scenario.messages);
+
+          expect(converted.length, scenario.messages.length);
+          for (var i = 0; i < converted.length; i++) {
+            scenario.verify(i, converted[i]);
+          }
+        },
+        tags: 'glados',
+      );
+    });
   });
+}
+
+/// A generated list of [ChatCompletionMessage]s covering every supported
+/// role variant, paired with per-message expectations for the converted map.
+class _MistralMessagesScenario {
+  _MistralMessagesScenario({required int count, required int seed})
+    : _kinds = List.generate(count, (i) => (seed + i) % 5);
+
+  final List<int> _kinds;
+
+  List<ChatCompletionMessage> get messages => [
+    for (var i = 0; i < _kinds.length; i++)
+      switch (_kinds[i]) {
+        0 => ChatCompletionMessage.system(content: 'sys $i'),
+        1 => ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('hello $i'),
+        ),
+        2 => ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.parts([
+            ChatCompletionMessageContentPart.text(text: 'part $i'),
+            ChatCompletionMessageContentPart.image(
+              imageUrl: ChatCompletionMessageImageUrl(url: 'http://img/$i'),
+            ),
+          ]),
+        ),
+        3 => ChatCompletionMessage.assistant(
+          content: 'answer $i',
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'tc-$i',
+              type: ChatCompletionMessageToolCallType.function,
+              function: ChatCompletionMessageFunctionCall(
+                name: 'fn$i',
+                arguments: '{"x":$i}',
+              ),
+            ),
+          ],
+        ),
+        _ => ChatCompletionMessage.tool(
+          toolCallId: 'call-$i',
+          content: 'result $i',
+        ),
+      },
+  ];
+
+  /// Asserts the converted map for message [i] preserves role and content.
+  void verify(int i, Map<String, dynamic> map) {
+    switch (_kinds[i]) {
+      case 0:
+        expect(map, {'role': 'system', 'content': 'sys $i'});
+      case 1:
+        expect(map, {'role': 'user', 'content': 'hello $i'});
+      case 2:
+        expect(map['role'], 'user');
+        expect(map['content'], [
+          {'type': 'text', 'text': 'part $i'},
+          {
+            'type': 'image_url',
+            'image_url': {'url': 'http://img/$i'},
+          },
+        ]);
+      case 3:
+        expect(map['role'], 'assistant');
+        expect(map['content'], 'answer $i');
+        expect(map['tool_calls'], [
+          {
+            'id': 'tc-$i',
+            'type': 'function',
+            'function': {'name': 'fn$i', 'arguments': '{"x":$i}'},
+          },
+        ]);
+      default:
+        expect(map, {
+          'role': 'tool',
+          'tool_call_id': 'call-$i',
+          'content': 'result $i',
+        });
+    }
+  }
+
+  @override
+  String toString() => '_MistralMessagesScenario(kinds: $_kinds)';
+}
+
+extension _AnyMistralMessagesScenario on glados.Any {
+  glados.Generator<_MistralMessagesScenario> get mistralMessagesScenario =>
+      combine2(
+        intInRange(0, 8),
+        intInRange(0, 1000),
+        (int count, int seed) =>
+            _MistralMessagesScenario(count: count, seed: seed),
+      );
 }

@@ -412,36 +412,10 @@ void main() {
     });
 
     testWidgets('edit mode calls updateTitle on save', (tester) async {
-      final controller = FakeChecklistItemController(
-        _makeItem(title: 'Old title'),
+      final ctrls = await _pumpWithControllers(
+        tester,
+        item: _makeItem(title: 'Old title'),
       );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            checklistItemControllerProvider((
-              id: 'item-1',
-              taskId: 'task-1',
-            )).overrideWith(() => controller),
-            checklistControllerProvider((
-              id: 'checklist-1',
-              taskId: 'task-1',
-            )).overrideWith(FakeChecklistController.new),
-            checklistCompletionServiceProvider.overrideWith(
-              FakeChecklistCompletionService.new,
-            ),
-          ],
-          child: makeTestableWidgetWithScaffold(
-            const ChecklistItemRow(
-              itemId: 'item-1',
-              checklistId: 'checklist-1',
-              taskId: 'task-1',
-              index: 0,
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
 
       await tester.tap(find.byIcon(Icons.mode_edit_outlined));
       await tester.pump();
@@ -450,7 +424,7 @@ void main() {
       await tester.sendKeyEvent(LogicalKeyboardKey.enter);
       await tester.pump();
 
-      expect(controller.updatedTitle, 'New title');
+      expect(ctrls.itemController.updatedTitle, 'New title');
     });
 
     // ── Divider ────────────────────────────────────────────────────────────
@@ -576,49 +550,23 @@ void main() {
     testWidgets(
       'checking item with active suggestion clears it',
       (tester) async {
-        final completionSvc = FakeChecklistCompletionService([
-          const ChecklistCompletionSuggestion(
-            checklistItemId: 'item-1',
-            confidence: ChecklistCompletionConfidence.medium,
-            reason: 'Looks done',
-          ),
-        ]);
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              checklistItemControllerProvider((
-                id: 'item-1',
-                taskId: 'task-1',
-              )).overrideWith(
-                () => FakeChecklistItemController(_makeItem()),
-              ),
-              checklistControllerProvider((
-                id: 'checklist-1',
-                taskId: 'task-1',
-              )).overrideWith(FakeChecklistController.new),
-              checklistCompletionServiceProvider.overrideWith(
-                () => completionSvc,
-              ),
-            ],
-            child: makeTestableWidgetWithScaffold(
-              const ChecklistItemRow(
-                itemId: 'item-1',
-                checklistId: 'checklist-1',
-                taskId: 'task-1',
-                index: 0,
-              ),
+        final ctrls = await _pumpWithControllers(
+          tester,
+          suggestions: const [
+            ChecklistCompletionSuggestion(
+              checklistItemId: 'item-1',
+              confidence: ChecklistCompletionConfidence.medium,
+              reason: 'Looks done',
             ),
-          ),
+          ],
         );
-        // Two pumps: one to resolve async providers, one to rebuild.
-        await tester.pump();
+        // Second pump: rebuild after async providers resolved.
         await tester.pump();
 
         await tester.tap(find.byType(Checkbox));
         await tester.pump();
 
-        expect(completionSvc.clearedItemId, 'item-1');
+        expect(ctrls.completionService.clearedItemId, 'item-1');
       },
     );
 
@@ -1075,36 +1023,11 @@ void main() {
     testWidgets('cancel icon in edit mode exits editing without saving', (
       tester,
     ) async {
-      final controller = FakeChecklistItemController(
-        _makeItem(title: 'Original title'),
+      final ctrls = await _pumpWithControllers(
+        tester,
+        item: _makeItem(title: 'Original title'),
       );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            checklistItemControllerProvider((
-              id: 'item-1',
-              taskId: 'task-1',
-            )).overrideWith(() => controller),
-            checklistControllerProvider((
-              id: 'checklist-1',
-              taskId: 'task-1',
-            )).overrideWith(FakeChecklistController.new),
-            checklistCompletionServiceProvider.overrideWith(
-              FakeChecklistCompletionService.new,
-            ),
-          ],
-          child: makeTestableWidgetWithScaffold(
-            const ChecklistItemRow(
-              itemId: 'item-1',
-              checklistId: 'checklist-1',
-              taskId: 'task-1',
-              index: 0,
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
+      final controller = ctrls.itemController;
 
       // Enter edit mode.
       await tester.tap(find.byIcon(Icons.mode_edit_outlined));
@@ -1132,36 +1055,11 @@ void main() {
     testWidgets('edit mode cancel with pristine field exits editing', (
       tester,
     ) async {
-      final controller = FakeChecklistItemController(
-        _makeItem(title: 'Pristine title'),
+      final ctrls = await _pumpWithControllers(
+        tester,
+        item: _makeItem(title: 'Pristine title'),
       );
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            checklistItemControllerProvider((
-              id: 'item-1',
-              taskId: 'task-1',
-            )).overrideWith(() => controller),
-            checklistControllerProvider((
-              id: 'checklist-1',
-              taskId: 'task-1',
-            )).overrideWith(FakeChecklistController.new),
-            checklistCompletionServiceProvider.overrideWith(
-              FakeChecklistCompletionService.new,
-            ),
-          ],
-          child: makeTestableWidgetWithScaffold(
-            const ChecklistItemRow(
-              itemId: 'item-1',
-              checklistId: 'checklist-1',
-              taskId: 'task-1',
-              index: 0,
-            ),
-          ),
-        ),
-      );
-      await tester.pump();
+      final controller = ctrls.itemController;
 
       // Enter edit mode.
       await tester.tap(find.byIcon(Icons.mode_edit_outlined));

@@ -10,53 +10,103 @@ import '../../../../widget_test_utils.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  group('TextViewerWidgetNonScrollable', () {
-    testWidgets('renders with null entryText', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const TextViewerWidgetNonScrollable(
-            entryText: null,
-            maxHeight: 200,
-          ),
+  Future<void> pumpViewer(
+    WidgetTester tester, {
+    required EntryText? entryText,
+    double maxHeight = 200,
+  }) async {
+    await tester.pumpWidget(
+      makeTestableWidget(
+        TextViewerWidgetNonScrollable(
+          entryText: entryText,
+          maxHeight: maxHeight,
         ),
-      );
+      ),
+    );
+    await tester.pump();
+  }
 
-      expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-      expect(find.byType(QuillEditor), findsOneWidget);
+  QuillController editorController(WidgetTester tester) =>
+      tester.widget<QuillEditor>(find.byType(QuillEditor)).controller;
+
+  String editorText(WidgetTester tester) =>
+      editorController(tester).document.toPlainText();
+
+  group('TextViewerWidgetNonScrollable', () {
+    testWidgets('renders an empty document for null entryText', (
+      tester,
+    ) async {
+      await pumpViewer(tester, entryText: null);
+
+      expect(editorText(tester).trim(), isEmpty);
     });
 
-    testWidgets('renders with plainText only', (tester) async {
-      const entryText = EntryText(
-        plainText: 'Simple plain text content',
-      );
+    testWidgets('renders an empty document for empty plainText', (
+      tester,
+    ) async {
+      await pumpViewer(tester, entryText: const EntryText(plainText: ''));
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const TextViewerWidgetNonScrollable(
-            entryText: entryText,
-            maxHeight: 200,
-          ),
+      expect(editorText(tester).trim(), isEmpty);
+    });
+
+    group('content prioritization', () {
+      // quill > markdown > plainText — assert what actually lands in the
+      // rendered document, not just that an editor exists.
+      for (final (label, entryText, mustContain, mustNotContain) in [
+        (
+          'plainText renders when alone',
+          const EntryText(plainText: 'Plain text only'),
+          'Plain text only',
+          <String>[],
         ),
+        (
+          'markdown wins over plainText',
+          const EntryText(
+            plainText: 'plain fallback',
+            markdown: '# Markdown heading',
+          ),
+          'Markdown heading',
+          ['plain fallback'],
+        ),
+        (
+          'quill wins over markdown and plainText',
+          const EntryText(
+            plainText: 'plain fallback',
+            markdown: 'markdown fallback',
+            quill: r'[{"insert":"Quill text\n"}]',
+          ),
+          'Quill text',
+          ['markdown fallback', 'plain fallback'],
+        ),
+      ]) {
+        testWidgets(label, (tester) async {
+          await pumpViewer(tester, entryText: entryText);
+
+          final text = editorText(tester);
+          expect(text, contains(mustContain));
+          for (final absent in mustNotContain) {
+            expect(text, isNot(contains(absent)));
+          }
+        });
+      }
+    });
+
+    testWidgets('renders special characters intact', (tester) async {
+      const specials = r'Special chars: émojis 🚀, unicode ñ, symbols @#$%';
+      await pumpViewer(
+        tester,
+        entryText: const EntryText(plainText: specials),
       );
 
-      expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-      expect(find.byType(QuillEditor), findsOneWidget);
+      expect(editorText(tester), contains(specials));
     });
 
     testWidgets('configures embed builders with unknown fallback', (
       tester,
     ) async {
-      const entryText = EntryText(
-        plainText: 'Supports embeds',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const TextViewerWidgetNonScrollable(
-            entryText: entryText,
-            maxHeight: 200,
-          ),
-        ),
+      await pumpViewer(
+        tester,
+        entryText: const EntryText(plainText: 'Supports embeds'),
       );
 
       final quillEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));
@@ -73,449 +123,127 @@ void main() {
       );
     });
 
-    testWidgets('renders with markdown content', (tester) async {
-      const entryText = EntryText(
-        plainText: 'Markdown content',
-        markdown: '# Header\n\nSome **bold** text',
+    testWidgets('creates a read-only controller behind AbsorbPointer', (
+      tester,
+    ) async {
+      await pumpViewer(
+        tester,
+        entryText: const EntryText(plainText: 'Test content'),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const TextViewerWidgetNonScrollable(
-            entryText: entryText,
-            maxHeight: 200,
-          ),
+      expect(editorController(tester).readOnly, isTrue);
+      expect(
+        find.ancestor(
+          of: find.byType(QuillEditor),
+          matching: find.byType(AbsorbPointer),
         ),
+        findsWidgets,
       );
-
-      expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-      expect(find.byType(QuillEditor), findsOneWidget);
-    });
-
-    testWidgets('renders with quill content', (tester) async {
-      const entryText = EntryText(
-        plainText: 'Quill content',
-        quill: r'[{"insert":"Quill formatted text\n"}]',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const TextViewerWidgetNonScrollable(
-            entryText: entryText,
-            maxHeight: 200,
-          ),
-        ),
-      );
-
-      expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-      expect(find.byType(QuillEditor), findsOneWidget);
-    });
-
-    testWidgets('uses LimitedBox with correct maxHeight', (tester) async {
-      const maxHeight = 150.0;
-      const entryText = EntryText(
-        plainText: 'Test content',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const TextViewerWidgetNonScrollable(
-            entryText: entryText,
-            maxHeight: maxHeight,
-          ),
-        ),
-      );
-
-      final limitedBox = tester.widget<LimitedBox>(
-        find.byType(LimitedBox),
-      );
-      expect(limitedBox.maxHeight, maxHeight);
-    });
-
-    testWidgets('creates read-only QuillController', (tester) async {
-      const entryText = EntryText(
-        plainText: 'Test content',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const TextViewerWidgetNonScrollable(
-            entryText: entryText,
-            maxHeight: 200,
-          ),
-        ),
-      );
-
-      final quillEditor = tester.widget<QuillEditor>(
-        find.byType(QuillEditor),
-      );
-      expect(quillEditor.controller.readOnly, isTrue);
-    });
-
-    testWidgets('uses LayoutBuilder for responsive layout', (tester) async {
-      const entryText = EntryText(
-        plainText: 'Test content',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const TextViewerWidgetNonScrollable(
-            entryText: entryText,
-            maxHeight: 200,
-          ),
-        ),
-      );
-
       expect(find.byType(LayoutBuilder), findsOneWidget);
     });
 
-    testWidgets('recreates controller when entryText changes', (tester) async {
-      const initialEntryText = EntryText(
-        plainText: 'Initial content',
-      );
-      const updatedEntryText = EntryText(
-        plainText: 'Updated content',
-      );
-
-      Widget buildWidget(EntryText? entryText) {
-        return makeTestableWidget(
-          TextViewerWidgetNonScrollable(
-            entryText: entryText,
-            maxHeight: 200,
-          ),
+    testWidgets('applies maxHeight to the LimitedBox, small or large', (
+      tester,
+    ) async {
+      for (final maxHeight in [1.0, 150.0, 10000.0]) {
+        await pumpViewer(
+          tester,
+          entryText: const EntryText(plainText: 'Test content'),
+          maxHeight: maxHeight,
         );
+
+        final limitedBox = tester.widget<LimitedBox>(find.byType(LimitedBox));
+        expect(limitedBox.maxHeight, maxHeight, reason: '$maxHeight');
       }
-
-      // Initial render
-      await tester.pumpWidget(buildWidget(initialEntryText));
-      expect(find.byType(QuillEditor), findsOneWidget);
-
-      // Update entryText
-      await tester.pumpWidget(buildWidget(updatedEntryText));
-      await tester.pump();
-
-      // Should still have QuillEditor (controller recreated internally)
-      expect(find.byType(QuillEditor), findsOneWidget);
     });
 
-    testWidgets('contains QuillEditor for displaying content', (tester) async {
-      const entryText = EntryText(
-        plainText: 'Test content',
+    testWidgets('recreates the controller when entryText changes', (
+      tester,
+    ) async {
+      await pumpViewer(
+        tester,
+        entryText: const EntryText(plainText: 'Initial content'),
+      );
+      expect(editorText(tester), contains('Initial content'));
+
+      await pumpViewer(
+        tester,
+        entryText: const EntryText(plainText: 'Updated content'),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const TextViewerWidgetNonScrollable(
-            entryText: entryText,
-            maxHeight: 200,
-          ),
-        ),
-      );
-
-      // Should contain QuillEditor
-      expect(find.byType(QuillEditor), findsOneWidget);
-
-      // Should be wrapped in AbsorbPointer to prevent interaction
-      expect(find.byType(AbsorbPointer), findsWidgets);
-    });
-
-    testWidgets('handles empty plainText gracefully', (tester) async {
-      const entryText = EntryText(
-        plainText: '',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const TextViewerWidgetNonScrollable(
-            entryText: entryText,
-            maxHeight: 200,
-          ),
-        ),
-      );
-
-      expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-      expect(find.byType(QuillEditor), findsOneWidget);
-    });
-
-    testWidgets('prefers quill over markdown when both exist', (tester) async {
-      const entryText = EntryText(
-        plainText: 'Plain text',
-        markdown: '# Markdown content',
-        quill: r'[{"insert":"Quill content\n"}]',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const TextViewerWidgetNonScrollable(
-            entryText: entryText,
-            maxHeight: 200,
-          ),
-        ),
-      );
-
-      // Should render without throwing
-      expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-      expect(find.byType(QuillEditor), findsOneWidget);
-    });
-
-    testWidgets('fallback to plainText when markdown is null', (tester) async {
-      const entryText = EntryText(
-        plainText: 'Fallback plain text',
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          const TextViewerWidgetNonScrollable(
-            entryText: entryText,
-            maxHeight: 200,
-          ),
-        ),
-      );
-
-      expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-      expect(find.byType(QuillEditor), findsOneWidget);
+      // The rendered document follows the new entryText.
+      expect(editorText(tester), contains('Updated content'));
+      expect(editorText(tester), isNot(contains('Initial content')));
     });
 
     group('overflow detection and gradient', () {
-      testWidgets('has proper widget structure for gradient', (tester) async {
-        const entryText = EntryText(
-          plainText: 'Test content for overflow',
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            const TextViewerWidgetNonScrollable(
-              entryText: entryText,
-              maxHeight: 200,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Should have the basic structure
-        expect(find.byType(QuillEditor), findsOneWidget);
-        expect(find.byType(AbsorbPointer), findsWidgets);
-      });
-
       testWidgets('shows ShaderMask when content overflows', (tester) async {
-        // Create long content that will overflow
         final longText = List.generate(
           50,
           (i) => 'Line $i of long content',
         ).join('\n');
-        final entryText = EntryText(
-          plainText: longText,
+
+        await pumpViewer(
+          tester,
+          entryText: EntryText(plainText: longText),
+          maxHeight: 100, // Small height to force overflow.
         );
+        await tester.pump();
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            TextViewerWidgetNonScrollable(
-              entryText: entryText,
-              maxHeight: 100, // Small height to force overflow
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // When content overflows, ShaderMask should be present
         expect(find.byType(ShaderMask), findsWidgets);
       });
 
-      testWidgets('triggers overflow check on layout changes', (tester) async {
-        const entryText = EntryText(
-          plainText: 'Test content for overflow',
+      testWidgets('short content within maxHeight needs no gradient mask', (
+        tester,
+      ) async {
+        await pumpViewer(
+          tester,
+          entryText: const EntryText(plainText: 'fits easily'),
+          maxHeight: 500,
         );
+        await tester.pump();
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            const TextViewerWidgetNonScrollable(
-              entryText: entryText,
-              maxHeight: 200,
-            ),
-          ),
+        expect(find.byType(ShaderMask), findsNothing);
+      });
+
+      testWidgets('re-evaluates overflow when maxHeight shrinks', (
+        tester,
+      ) async {
+        final longText = List.generate(
+          50,
+          (i) => 'Line $i of long content',
+        ).join('\n');
+
+        await pumpViewer(
+          tester,
+          entryText: EntryText(plainText: longText),
+          maxHeight: 5000,
         );
+        await tester.pump();
+        expect(find.byType(ShaderMask), findsNothing);
 
-        await tester.pumpAndSettle();
-
-        // Change layout by updating the widget
-        await tester.pumpWidget(
-          makeTestableWidget(
-            const TextViewerWidgetNonScrollable(
-              entryText: entryText,
-              maxHeight: 100, // Smaller height
-            ),
-          ),
+        await pumpViewer(
+          tester,
+          entryText: EntryText(plainText: longText),
+          maxHeight: 100,
         );
+        await tester.pump();
 
-        await tester.pumpAndSettle();
-
-        // Should still render properly after layout change
-        expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
+        expect(find.byType(ShaderMask), findsWidgets);
       });
     });
 
     group('controller lifecycle', () {
-      testWidgets('disposes controller properly', (tester) async {
-        const entryText = EntryText(
-          plainText: 'Test content',
+      testWidgets('disposes controller cleanly on unmount', (tester) async {
+        await pumpViewer(
+          tester,
+          entryText: const EntryText(plainText: 'Test content'),
         );
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            const TextViewerWidgetNonScrollable(
-              entryText: entryText,
-              maxHeight: 200,
-            ),
-          ),
-        );
-
         expect(find.byType(QuillEditor), findsOneWidget);
 
-        // Remove widget to trigger dispose
-        await tester.pumpWidget(
-          makeTestableWidget(
-            const SizedBox(),
-          ),
-        );
+        await tester.pumpWidget(makeTestableWidget(const SizedBox()));
 
-        // Should not throw or cause memory leaks
         expect(find.byType(TextViewerWidgetNonScrollable), findsNothing);
-      });
-    });
-
-    group('edge cases', () {
-      testWidgets('handles very small maxHeight', (tester) async {
-        const entryText = EntryText(
-          plainText: 'Test content',
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            const TextViewerWidgetNonScrollable(
-              entryText: entryText,
-              maxHeight: 1, // Very small height
-            ),
-          ),
-        );
-
-        expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-      });
-
-      testWidgets('handles very large maxHeight', (tester) async {
-        const entryText = EntryText(
-          plainText: 'Test content',
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            const TextViewerWidgetNonScrollable(
-              entryText: entryText,
-              maxHeight: 10000, // Very large height
-            ),
-          ),
-        );
-
-        expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-      });
-
-      testWidgets('handles special characters in text', (tester) async {
-        const entryText = EntryText(
-          plainText: r'Special chars: émojis 🚀, unicode ñ, symbols @#$%',
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            const TextViewerWidgetNonScrollable(
-              entryText: entryText,
-              maxHeight: 200,
-            ),
-          ),
-        );
-
-        expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-        expect(find.byType(QuillEditor), findsOneWidget);
-      });
-
-      testWidgets('handles null quill content gracefully', (tester) async {
-        const entryText = EntryText(
-          plainText: 'Fallback text',
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            const TextViewerWidgetNonScrollable(
-              entryText: entryText,
-              maxHeight: 200,
-            ),
-          ),
-        );
-
-        // Widget should render with fallback content
-        expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-        expect(find.byType(QuillEditor), findsOneWidget);
-      });
-    });
-
-    group('content prioritization', () {
-      testWidgets('uses quill when available', (tester) async {
-        const entryText = EntryText(
-          plainText: 'Plain text',
-          markdown: 'Markdown text',
-          quill: r'[{"insert":"Quill text\n"}]',
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            const TextViewerWidgetNonScrollable(
-              entryText: entryText,
-              maxHeight: 200,
-            ),
-          ),
-        );
-
-        expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-        expect(find.byType(QuillEditor), findsOneWidget);
-      });
-
-      testWidgets('falls back to markdown when quill is null', (tester) async {
-        const entryText = EntryText(
-          plainText: 'Plain text',
-          markdown: 'Markdown text',
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            const TextViewerWidgetNonScrollable(
-              entryText: entryText,
-              maxHeight: 200,
-            ),
-          ),
-        );
-
-        expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-        expect(find.byType(QuillEditor), findsOneWidget);
-      });
-
-      testWidgets('falls back to plainText when markdown is null', (
-        tester,
-      ) async {
-        const entryText = EntryText(
-          plainText: 'Plain text only',
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidget(
-            const TextViewerWidgetNonScrollable(
-              entryText: entryText,
-              maxHeight: 200,
-            ),
-          ),
-        );
-
-        expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-        expect(find.byType(QuillEditor), findsOneWidget);
       });
     });
   });

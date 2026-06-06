@@ -14,10 +14,9 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
-
-class FakeConfigFlag extends Fake implements ConfigFlag {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -27,7 +26,7 @@ void main() {
   final mockUpdateNotifications = MockUpdateNotifications();
 
   setUpAll(() {
-    registerFallbackValue(FakeConfigFlag());
+    registerFallbackValue(fallbackConfigFlag);
   });
 
   setUp(() async {
@@ -112,7 +111,9 @@ void main() {
       () => mockPersistenceLogic.setConfigFlag(any()),
     ).thenAnswer((_) async {});
 
+    // Per-test GetIt scope, popped in tearDown.
     GetIt.I
+      ..pushNewScope()
       ..registerSingleton<JournalDb>(mockDb)
       ..registerSingleton<UserActivityService>(mockUserActivityService)
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
@@ -122,7 +123,7 @@ void main() {
   });
 
   tearDown(() async {
-    await GetIt.I.reset();
+    await GetIt.I.popScope();
   });
 
   group('FlagsPage', () {
@@ -130,7 +131,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // 12 flags in the mock data.
       expect(find.byType(DesignSystemListItem), findsNWidgets(12));
@@ -140,7 +141,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(SettingsIcon), findsNWidgets(12));
     });
@@ -151,7 +152,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
       expect(find.text(context.messages.configFlagPrivate), findsOneWidget);
@@ -165,7 +166,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
       final privateFlagItem = find.widgetWithText(
@@ -184,7 +185,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
       final notificationsItem = find.widgetWithText(
@@ -204,7 +205,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
       final privateFlagItem = find.widgetWithText(
@@ -228,7 +229,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
 
@@ -250,7 +251,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byIcon(Icons.lock_outline_rounded), findsAtLeastNWidgets(1));
       expect(find.byIcon(Icons.event_rounded), findsAtLeastNWidgets(1));
@@ -266,7 +267,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(DecoratedBox), findsAtLeastNWidgets(1));
       expect(find.byType(ClipRRect), findsAtLeastNWidgets(1));
@@ -280,7 +281,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
       expect(
@@ -299,7 +300,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // The icon is shared with the in-pane What's New tree leaf, so
       // the visual language stays consistent between sidebar and
@@ -313,7 +314,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
       final whatsNewItem = find.widgetWithText(
@@ -327,7 +328,7 @@ void main() {
       // scroll for us — `scrollUntilVisible` can't pick a single
       // scrollable when the page nests several.
       await tester.ensureVisible(whatsNewItem);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
       await tester.tap(
         find.descendant(of: whatsNewItem, matching: find.byType(Switch)),
       );
@@ -350,14 +351,14 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(FlagsPage));
         await tester.enterText(
           find.byType(DesignSystemSearch),
           context.messages.configFlagEnableForkHealing,
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final item = find.widgetWithText(
           DesignSystemListItem,
@@ -387,14 +388,14 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(FlagsPage));
         await tester.enterText(
           find.byType(DesignSystemSearch),
           context.messages.configFlagEnableAiSummaryTts,
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final ttsItem = find.widgetWithText(
           DesignSystemListItem,
@@ -419,14 +420,14 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
       await tester.enterText(
         find.byType(DesignSystemSearch),
         context.messages.configFlagEnableAiSummaryTts,
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final ttsItem = find.widgetWithText(
         DesignSystemListItem,
@@ -455,7 +456,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(FlagsPage));
         final indicatorItem = find.widgetWithText(
@@ -463,7 +464,7 @@ void main() {
           context.messages.configFlagShowSyncActivityIndicator,
         );
         await tester.ensureVisible(indicatorItem);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
         expect(indicatorItem, findsOneWidget);
         expect(
           find.text(
@@ -488,7 +489,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(FlagsPage));
         final indicatorItem = find.widgetWithText(
@@ -496,7 +497,7 @@ void main() {
           context.messages.configFlagShowSyncActivityIndicator,
         );
         await tester.ensureVisible(indicatorItem);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
         await tester.tap(
           find.descendant(of: indicatorItem, matching: find.byType(Switch)),
         );
@@ -521,7 +522,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(FlagsPage));
         final wakesItem = find.widgetWithText(
@@ -529,7 +530,7 @@ void main() {
           context.messages.configFlagShowSidebarWakeQueue,
         );
         await tester.ensureVisible(wakesItem);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
         expect(wakesItem, findsOneWidget);
         expect(
           find.text(
@@ -553,7 +554,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(FlagsPage));
         final wakesItem = find.widgetWithText(
@@ -561,7 +562,7 @@ void main() {
           context.messages.configFlagShowSidebarWakeQueue,
         );
         await tester.ensureVisible(wakesItem);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
         await tester.tap(
           find.descendant(of: wakesItem, matching: find.byType(Switch)),
         );
@@ -584,7 +585,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Exactly one search bar — keeps assertions in later tests
       // unambiguous and protects against accidental duplication.
@@ -597,7 +598,7 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
       // Assert via the widget property rather than a text finder —
@@ -616,12 +617,12 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
       // "private" hits only the title/desc of the private flag.
       await tester.enterText(find.byType(DesignSystemSearch), 'private');
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(DesignSystemListItem), findsOneWidget);
       expect(find.text(context.messages.configFlagPrivate), findsOneWidget);
@@ -631,11 +632,11 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(FlagsPage));
       await tester.enterText(find.byType(DesignSystemSearch), 'PRIVATE');
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text(context.messages.configFlagPrivate), findsOneWidget);
     });
@@ -646,14 +647,14 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(FlagsPage));
         await tester.enterText(
           find.byType(DesignSystemSearch),
           'no-such-flag-xyz',
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(DesignSystemListItem), findsNothing);
         expect(
@@ -669,11 +670,11 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Filter down to one row…
         await tester.enterText(find.byType(DesignSystemSearch), 'private');
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
         expect(find.byType(DesignSystemListItem), findsOneWidget);
 
         // …then tap the X affordance the search bar exposes when text
@@ -684,7 +685,7 @@ void main() {
         final clearIcon = find.byIcon(Icons.cancel_rounded);
         expect(clearIcon, findsOneWidget);
         await tester.tap(clearIcon);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(DesignSystemListItem), findsNWidgets(12));
       },
@@ -696,17 +697,17 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         await tester.enterText(find.byType(DesignSystemSearch), 'private');
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
         expect(find.byType(DesignSystemListItem), findsOneWidget);
 
         // `enterText('')` exercises the textfield's onChanged path
         // (not the X button) — both must converge on the same
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
         expect(find.byType(DesignSystemListItem), findsNWidgets(12));
       },
     );
@@ -717,10 +718,10 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         await tester.enterText(find.byType(DesignSystemSearch), '   ');
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Whitespace-trimming inside `filterDisplayedFlags` keeps the
         // list intact rather than producing a "no match" empty state.
@@ -736,7 +737,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Every flag row should opt out of the single-line ellipsis cap.
         // Sampling the first row is enough — the for-loop in `_FlagsList`
@@ -758,7 +759,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         List<DesignSystemListItem> rows() => tester
             .widgetList<DesignSystemListItem>(
@@ -830,7 +831,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Sanity: no activity reported yet from setting up the page.
         clearInteractions(mockUserActivityService);
@@ -854,7 +855,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // The pinned search lives directly under FlagsBody, NOT inside
         // the SingleChildScrollView that owns the list.
@@ -1092,7 +1093,7 @@ void main() {
           await tester.pumpWidget(
             makeTestableWidgetWithScaffold(const FlagsPage()),
           );
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           final context = tester.element(find.byType(FlagsPage));
 
@@ -1152,7 +1153,7 @@ void main() {
             find.byType(DesignSystemSearch),
             expectedTitle,
           );
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           final item = find.widgetWithText(
             DesignSystemListItem,
@@ -1230,7 +1231,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // The flag does not appear in FlagsBody.displayedItems, so
         // `orderedFlags` will be empty → the widget returns SizedBox.shrink.
@@ -1265,7 +1266,7 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const FlagsPage()),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Only the private flag is in displayedItems → exactly one row.
         expect(find.byType(DesignSystemListItem), findsOneWidget);

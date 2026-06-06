@@ -256,14 +256,16 @@ class EntryController extends _$EntryController {
           getIt<TimeService>().stop();
         });
       }
-
-      focusNode.unfocus();
-
-      _shouldShowEditorToolBar = false;
-      _dirty = false;
-
-      emitState();
     }
+
+    // Finalize for every entry type (events included): drop focus, hide the
+    // editor toolbar, and clear the dirty flag so the UI reflects the save.
+    focusNode.unfocus();
+
+    _shouldShowEditorToolBar = false;
+    _dirty = false;
+
+    emitState();
 
     await _editorStateService.entryWasSaved(
       id: id,

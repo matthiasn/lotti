@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,7 +20,6 @@ import 'package:lotti/features/agents/ui/soul_selector.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
@@ -92,6 +90,11 @@ void main() {
   setUp(() async {
     await setUpTestGetIt();
     mockTemplateService = MockAgentTemplateService();
+    // Default: no agent instances bound to the template. Tests that need
+    // instances re-stub this (later when() stubs win in mocktail).
+    when(
+      () => mockTemplateService.getAgentsForTemplate(any()),
+    ).thenAnswer((_) async => []);
     _mockNavService = MockNavService();
     when(() => _mockNavService.currentPath).thenReturn('/settings/agents');
     when(() => _mockNavService.beamBack()).thenReturn(null);
@@ -161,7 +164,8 @@ void main() {
   group('AgentTemplateDetailPage - Create mode', () {
     testWidgets('shows create title and empty form', (tester) async {
       await tester.pumpWidget(buildCreateSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
       expect(
@@ -178,7 +182,8 @@ void main() {
 
     testWidgets('save is disabled without profile selection', (tester) async {
       await tester.pumpWidget(buildCreateSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Enter a name — but no profile selected
       final nameField = find.byType(TextField).first;
@@ -218,7 +223,8 @@ void main() {
           profiles: [_testProfile],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Enter a name
       final nameField = find.byType(TextField).first;
@@ -228,14 +234,17 @@ void main() {
       // Select a profile via the profile picker
       final profileDropdown = find.byIcon(Icons.arrow_drop_down);
       await tester.tap(profileDropdown.first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       await tester.tap(find.text('Test Profile'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Tap create button
       final context = tester.element(find.byType(AgentTemplateDetailPage));
       await tester.tap(find.text(context.messages.createButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       verify(
         () => mockTemplateService.createTemplate(
@@ -255,7 +264,8 @@ void main() {
       await tester.pumpWidget(
         buildCreateSubject(profiles: [_testProfile]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Cancel is always present in create mode.
       final context = tester.element(find.byType(AgentTemplateDetailPage));
@@ -284,10 +294,6 @@ void main() {
     const templateId = 'tpl-edit-001';
 
     testWidgets('populates form fields from template', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(
           templateId: templateId,
@@ -303,7 +309,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Name field populated
       expect(find.text('Laura'), findsOneWidget);
@@ -312,14 +319,11 @@ void main() {
     });
 
     testWidgets('shows edit title and populated form fields', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
       expect(
@@ -345,10 +349,6 @@ void main() {
     testWidgets('uses generalDirective over legacy directives when non-empty', (
       tester,
     ) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(
           templateId: templateId,
@@ -359,7 +359,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Should use the new field, not the legacy one.
       expect(find.text('Modern general directive'), findsOneWidget);
@@ -367,9 +368,6 @@ void main() {
     });
 
     testWidgets('save calls updateTemplate and createVersion', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
       when(
         () => mockTemplateService.updateTemplate(
           templateId: any(named: 'templateId'),
@@ -392,7 +390,8 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Make form dirty so Save button appears
       final nameField = find.byType(TextField).first;
@@ -403,7 +402,8 @@ void main() {
       await tester.tap(
         find.text(context.messages.agentTemplateSaveNewVersion),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       verify(
         () => mockTemplateService.updateTemplate(
@@ -429,9 +429,6 @@ void main() {
       'editing directive fields marks form dirty and saves new text',
       (tester) async {
         when(
-          () => mockTemplateService.getAgentsForTemplate(any()),
-        ).thenAnswer((_) async => []);
-        when(
           () => mockTemplateService.updateTemplate(
             templateId: any(named: 'templateId'),
             displayName: any(named: 'displayName'),
@@ -453,7 +450,8 @@ void main() {
         await tester.pumpWidget(
           buildEditSubject(templateId: templateId),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         final context = tester.element(find.byType(AgentTemplateDetailPage));
 
@@ -495,7 +493,8 @@ void main() {
         await tester.tap(
           find.text(context.messages.agentTemplateSaveNewVersion),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         verify(
           () => mockTemplateService.createVersion(
@@ -512,10 +511,6 @@ void main() {
     testWidgets('clean form review button beams to review route', (
       tester,
     ) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       final beamedPaths = <String>[];
       beamToNamedOverride = beamedPaths.add;
       addTearDown(() => beamToNamedOverride = null);
@@ -523,7 +518,8 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
@@ -538,10 +534,6 @@ void main() {
     });
 
     testWidgets('version history shows versions', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       final v1 = makeTestTemplateVersion(
         id: 'v1',
         agentId: templateId,
@@ -560,13 +552,15 @@ void main() {
           versionHistory: [v2, v1],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
       // Switch to Stats tab where version history now lives
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Scroll to make version history visible
       await tester.scrollUntilVisible(
@@ -574,7 +568,8 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Section title visible
       expect(
@@ -599,9 +594,6 @@ void main() {
 
     testWidgets('rollback calls rollbackToVersion', (tester) async {
       when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-      when(
         () => mockTemplateService.rollbackToVersion(
           templateId: any(named: 'templateId'),
           versionId: any(named: 'versionId'),
@@ -626,13 +618,15 @@ void main() {
           versionHistory: [v2, v1],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
       // Switch to Stats tab where version history now lives
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Scroll down to make the restore icon visible, then tap it
       await tester.scrollUntilVisible(
@@ -640,15 +634,18 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       await tester.tap(find.byIcon(Icons.restore));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Confirm in dialog
       await tester.tap(
         find.text(context.messages.agentTemplateRollbackAction).last,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       verify(
         () => mockTemplateService.rollbackToVersion(
@@ -662,9 +659,6 @@ void main() {
       tester,
     ) async {
       when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-      when(
         () => mockTemplateService.rollbackToVersion(
           templateId: any(named: 'templateId'),
           versionId: any(named: 'versionId'),
@@ -689,21 +683,25 @@ void main() {
           versionHistory: [v2, v1],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       await tester.scrollUntilVisible(
         find.byIcon(Icons.restore),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       await tester.tap(find.byIcon(Icons.restore));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // The rollback confirmation dialog is open.
       expect(find.byType(AlertDialog), findsOneWidget);
@@ -715,7 +713,8 @@ void main() {
           matching: find.text(context.messages.cancelButton),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Dialog dismissed and no rollback was performed.
       expect(find.byType(AlertDialog), findsNothing);
@@ -729,22 +728,21 @@ void main() {
 
     testWidgets('delete calls deleteTemplate', (tester) async {
       when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-      when(
         () => mockTemplateService.deleteTemplate(any()),
       ).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
       // Navigate to Stats tab where delete button lives
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Scroll to find delete button
       await tester.scrollUntilVisible(
@@ -752,15 +750,18 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Tap delete button
       await tester.tap(find.byIcon(Icons.delete_outline));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Confirm in dialog
       await tester.tap(find.text(context.messages.deleteButton).last);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       verify(
         () => mockTemplateService.deleteTemplate(templateId),
@@ -771,30 +772,31 @@ void main() {
       tester,
     ) async {
       when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-      when(
         () => mockTemplateService.deleteTemplate(any()),
       ).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       await tester.scrollUntilVisible(
         find.byIcon(Icons.delete_outline),
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       await tester.tap(find.byIcon(Icons.delete_outline));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Confirmation dialog is open.
       expect(find.byType(AlertDialog), findsOneWidget);
@@ -806,7 +808,8 @@ void main() {
           matching: find.text(context.messages.cancelButton),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Dialog dismissed, nothing deleted.
       expect(find.byType(AlertDialog), findsNothing);
@@ -816,9 +819,6 @@ void main() {
     testWidgets('shows error when deleting template with instances', (
       tester,
     ) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
       when(() => mockTemplateService.deleteTemplate(any())).thenThrow(
         const TemplateInUseException(
           templateId: 'test',
@@ -829,13 +829,15 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
       // Navigate to Stats tab where delete button lives
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Scroll to find delete button
       await tester.scrollUntilVisible(
@@ -843,15 +845,18 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Tap delete button
       await tester.tap(find.byIcon(Icons.delete_outline));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Confirm in dialog
       await tester.tap(find.text(context.messages.deleteButton).last);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(
         find.text(context.messages.agentTemplateDeleteHasInstances),
@@ -913,6 +918,8 @@ void main() {
           ],
         ),
       );
+      // Genuine settle: the sync-throwing provider override only surfaces
+      // its error state through settle-style pumping.
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
@@ -951,7 +958,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
       expect(
@@ -961,9 +969,6 @@ void main() {
     });
 
     testWidgets('shows commonError snackbar when save fails', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
       when(
         () => mockTemplateService.updateTemplate(
           templateId: any(named: 'templateId'),
@@ -977,7 +982,8 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Make form dirty so Save button appears
       final nameField = find.byType(TextField).first;
@@ -988,7 +994,8 @@ void main() {
       await tester.tap(
         find.text(context.messages.agentTemplateSaveNewVersion),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text(context.messages.commonError), findsOneWidget);
     });
@@ -997,22 +1004,21 @@ void main() {
       tester,
     ) async {
       when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-      when(
         () => mockTemplateService.deleteTemplate(any()),
       ).thenThrow(Exception('unexpected delete error'));
 
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
       // Navigate to Stats tab where delete button lives
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Scroll to find delete button
       await tester.scrollUntilVisible(
@@ -1020,23 +1026,23 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Tap delete button
       await tester.tap(find.byIcon(Icons.delete_outline));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Confirm in dialog
       await tester.tap(find.text(context.messages.deleteButton).last);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text(context.messages.commonError), findsOneWidget);
     });
 
     testWidgets('shows commonError snackbar on rollback error', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
       when(
         () => mockTemplateService.rollbackToVersion(
           templateId: any(named: 'templateId'),
@@ -1062,13 +1068,15 @@ void main() {
           versionHistory: [v2, v1],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
       // Switch to Stats tab where version history now lives
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Scroll to restore icon and tap
       await tester.scrollUntilVisible(
@@ -1076,15 +1084,18 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       await tester.tap(find.byIcon(Icons.restore));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Confirm in dialog
       await tester.tap(
         find.text(context.messages.agentTemplateRollbackAction).last,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text(context.messages.commonError), findsOneWidget);
     });
@@ -1092,10 +1103,6 @@ void main() {
     testWidgets('shows no versions text when version list is empty', (
       tester,
     ) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       final tpl = makeTestTemplate(id: templateId, agentId: templateId);
       final ver = makeTestTemplateVersion(agentId: templateId);
 
@@ -1121,13 +1128,15 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
       // Switch to Stats tab where version history now lives
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Scroll to version history section
       await tester.scrollUntilVisible(
@@ -1135,7 +1144,8 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(
         find.text(context.messages.agentTemplateNoVersions),
@@ -1146,10 +1156,6 @@ void main() {
     testWidgets('shows loading indicator in version history section', (
       tester,
     ) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       final tpl = makeTestTemplate(id: templateId, agentId: templateId);
       final ver = makeTestTemplateVersion(agentId: templateId);
       final completer = Completer<List<AgentDomainEntity>>();
@@ -1203,10 +1209,6 @@ void main() {
     });
 
     testWidgets('shows error text in version history section', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       final tpl = makeTestTemplate(id: templateId, agentId: templateId);
       final ver = makeTestTemplateVersion(agentId: templateId);
 
@@ -1234,6 +1236,9 @@ void main() {
           ],
         ),
       );
+      // Genuine settle: the erroring version-history provider needs
+      // settle-style pumping to surface its error state (see the back-
+      // chevron error test above).
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
@@ -1257,10 +1262,6 @@ void main() {
     testWidgets('reseeds directives when active version changes', (
       tester,
     ) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       final v1 = makeTestTemplateVersion(
         id: 'v1',
         agentId: templateId,
@@ -1306,30 +1307,16 @@ void main() {
         ..._profileOverrides(),
       ];
 
-      final container = ProviderContainer(overrides: overrides);
+      final (:widget, :container) = makeTestableWidgetWithContainer(
+        const AgentTemplateDetailPage(templateId: templateId),
+        overrides: overrides,
+        mediaQueryData: const MediaQueryData(size: Size(400, 800)),
+      );
       addTearDown(container.dispose);
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MediaQuery(
-            data: MediaQueryData(
-              size: Size(400, 800),
-            ),
-            child: MaterialApp(
-              localizationsDelegates: [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: AgentTemplateDetailPage(templateId: templateId),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
+      await tester.pumpWidget(widget);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Verify v1 directives are shown.
       expect(find.text('Version 1 directives'), findsOneWidget);
@@ -1337,7 +1324,8 @@ void main() {
       // Simulate evolution approval: switch to v2 and invalidate.
       currentVersion = v2;
       container.invalidate(activeTemplateVersionProvider(templateId));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Directive field should now show v2 directives.
       expect(find.text('Version 2 directives'), findsOneWidget);
@@ -1347,10 +1335,6 @@ void main() {
     testWidgets(
       'reseeds prefers generalDirective over legacy directives on change',
       (tester) async {
-        when(
-          () => mockTemplateService.getAgentsForTemplate(any()),
-        ).thenAnswer((_) async => []);
-
         final v1 = makeTestTemplateVersion(
           id: 'v1',
           agentId: templateId,
@@ -1390,35 +1374,24 @@ void main() {
           ..._profileOverrides(),
         ];
 
-        final container = ProviderContainer(overrides: overrides);
+        final (:widget, :container) = makeTestableWidgetWithContainer(
+          const AgentTemplateDetailPage(templateId: templateId),
+          overrides: overrides,
+          mediaQueryData: const MediaQueryData(size: Size(400, 800)),
+        );
         addTearDown(container.dispose);
 
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: const MediaQuery(
-              data: MediaQueryData(size: Size(400, 800)),
-              child: MaterialApp(
-                localizationsDelegates: [
-                  AppLocalizations.delegate,
-                  GlobalMaterialLocalizations.delegate,
-                  GlobalWidgetsLocalizations.delegate,
-                  GlobalCupertinoLocalizations.delegate,
-                ],
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: AgentTemplateDetailPage(templateId: templateId),
-              ),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
+        await tester.pumpWidget(widget);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.text('V1 general directive'), findsOneWidget);
 
         // Switch active version to v2 and invalidate to trigger the re-seed.
         currentVersion = v2;
         container.invalidate(activeTemplateVersionProvider(templateId));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // generalDirective wins over the legacy directives field.
         expect(find.text('V2 general directive'), findsOneWidget);
@@ -1429,14 +1402,11 @@ void main() {
     testWidgets('shows 1-on-1 review button when form is clean', (
       tester,
     ) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
@@ -1466,14 +1436,11 @@ void main() {
     });
 
     testWidgets('shows Cancel and Save when form is dirty', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
@@ -1505,14 +1472,11 @@ void main() {
     });
 
     testWidgets('delete button visible on Stats tab', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
@@ -1528,7 +1492,8 @@ void main() {
 
       // Navigate to Stats tab
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Scroll to delete button
       await tester.scrollUntilVisible(
@@ -1536,21 +1501,19 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.byIcon(Icons.delete_outline), findsOneWidget);
       expect(find.text(context.messages.deleteButton), findsOneWidget);
     });
 
     testWidgets('shows three tabs in edit mode', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
@@ -1569,14 +1532,11 @@ void main() {
     });
 
     testWidgets('bottom bar hidden on Stats and Reports tabs', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
@@ -1589,35 +1549,36 @@ void main() {
 
       // Switch to Stats tab — bottom bar should disappear
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       expect(find.byType(FormBottomBar), findsNothing);
 
       // Switch to Reports tab — bottom bar should still be hidden
       await tester.tap(find.text(context.messages.agentTemplateReportsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       expect(find.byType(FormBottomBar), findsNothing);
 
       // Switch back to Settings tab — bottom bar should reappear
       await tester.tap(find.text(context.messages.agentTemplateSettingsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
       expect(find.byType(FormBottomBar), findsOneWidget);
     });
 
     testWidgets('Stats tab shows token usage section', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
       // Navigate to Stats tab
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Should show the aggregate heading from TemplateTokenUsageSection
       expect(
@@ -1629,20 +1590,20 @@ void main() {
     testWidgets('Reports tab shows empty state when no reports', (
       tester,
     ) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Navigate to Reports tab
+      // Navigate to Reports tab. The tab content builds lazily, so after
+      // the transition one more frame lets its async provider deliver data.
       await tester.tap(find.text(context.messages.agentTemplateReportsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
 
       expect(
         find.text(context.messages.agentTemplateReportsEmpty),
@@ -1651,10 +1612,6 @@ void main() {
     });
 
     testWidgets('Reports tab shows report cards with content', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       final report1 = makeTestReport(
         id: 'r1',
         agentId: 'agent-a',
@@ -1705,13 +1662,17 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Navigate to Reports tab
+      // Navigate to Reports tab. The tab content builds lazily, so after
+      // the transition one more frame lets its async provider deliver data.
       await tester.tap(find.text(context.messages.agentTemplateReportsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
 
       // Report content visible (rendered via GptMarkdown inside
       // AgentReportSection)
@@ -1723,10 +1684,6 @@ void main() {
     });
 
     testWidgets('Reports tab renders report with tldr field', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       final report = makeTestReport(
         id: 'r1',
         agentId: 'agent-a',
@@ -1772,13 +1729,17 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Navigate to Reports tab
+      // Navigate to Reports tab. The tab content builds lazily, so after
+      // the transition one more frame lets its async provider deliver data.
       await tester.tap(find.text(context.messages.agentTemplateReportsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
 
       // TLDR text should be visible (always shown)
       expect(find.textContaining('Brief summary'), findsOneWidget);
@@ -1788,10 +1749,6 @@ void main() {
     testWidgets('Reports tab skips non-AgentReportEntity items', (
       tester,
     ) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       final report = makeTestReport(
         id: 'r1',
         agentId: 'agent-a',
@@ -1841,13 +1798,17 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Navigate to Reports tab
+      // Navigate to Reports tab. The tab content builds lazily, so after
+      // the transition one more frame lets its async provider deliver data.
       await tester.tap(find.text(context.messages.agentTemplateReportsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
 
       // Valid report is shown (rendered via GptMarkdown inside
       // AgentReportSection)
@@ -1858,10 +1819,6 @@ void main() {
     });
 
     testWidgets('Reports tab shows loading indicator', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const AgentTemplateDetailPage(templateId: templateId),
@@ -1914,10 +1871,6 @@ void main() {
     });
 
     testWidgets('Reports tab shows error state', (tester) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
           const AgentTemplateDetailPage(templateId: templateId),
@@ -1958,13 +1911,17 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Navigate to Reports tab
+      // Navigate to Reports tab. The tab content builds lazily, so after
+      // the transition one more frame lets its async provider deliver data.
       await tester.tap(find.text(context.messages.agentTemplateReportsTab));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
 
       expect(
         find.text(context.messages.commonError),
@@ -1979,14 +1936,11 @@ void main() {
     testWidgets('back chevron calls beamBack when in settings path', (
       tester,
     ) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pump();
@@ -1998,14 +1952,11 @@ void main() {
       tester,
     ) async {
       when(() => _mockNavService.currentPath).thenReturn('/tasks');
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pump();
@@ -2015,7 +1966,8 @@ void main() {
 
     testWidgets('back chevron works on create mode', (tester) async {
       await tester.pumpWidget(buildCreateSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pump();
@@ -2045,6 +1997,9 @@ void main() {
           ],
         ),
       );
+      // Genuine settle: the sync-throwing provider override only surfaces
+      // its error state through settle-style pumping (riverpod schedules
+      // retry work between frames); bounded fixed pumps never reach it.
       await tester.pumpAndSettle();
 
       await tester.tap(find.byIcon(Icons.chevron_left));
@@ -2075,7 +2030,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pump();
@@ -2086,14 +2042,11 @@ void main() {
     testWidgets('cancel button navigates back when form is dirty', (
       tester,
     ) async {
-      when(
-        () => mockTemplateService.getAgentsForTemplate(any()),
-      ).thenAnswer((_) async => []);
-
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Make form dirty so Cancel button appears
       final nameField = find.byType(TextField).first;
@@ -2176,7 +2129,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Enter a name
         final nameField = find.byType(TextField).first;
@@ -2186,23 +2140,28 @@ void main() {
         // Select a profile via the profile picker
         final profileDropdown = find.byIcon(Icons.arrow_drop_down);
         await tester.tap(profileDropdown.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
         await tester.tap(find.text('Test Profile'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Select a soul via the SoulSelector picker
         final soulSelector = find.byType(SoulSelector);
         expect(soulSelector, findsOneWidget);
         await tester.tap(soulSelector);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
         // Pick "Laura" in the modal
         await tester.tap(find.text('Laura').last);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Tap create button
         final context = tester.element(find.byType(AgentTemplateDetailPage));
         await tester.tap(find.text(context.messages.createButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         verify(
           () => mockSoulService.assignSoulToTemplate(
@@ -2216,9 +2175,6 @@ void main() {
     testWidgets(
       'edit mode calls assignSoulToTemplate when soul changes',
       (tester) async {
-        when(
-          () => mockTemplateService.getAgentsForTemplate(any()),
-        ).thenAnswer((_) async => []);
         when(
           () => mockTemplateService.updateTemplate(
             templateId: any(named: 'templateId'),
@@ -2256,7 +2212,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // The soul selector should show "Laura" (seeded from provider)
         expect(find.text('Laura'), findsWidgets);
@@ -2264,16 +2221,19 @@ void main() {
         // Change soul to "Tom" by tapping the selector and picking Tom
         final soulSelector = find.byType(SoulSelector);
         await tester.tap(soulSelector);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
         await tester.tap(find.text('Tom').last);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Form is now dirty (soul changed), save button appears
         final context = tester.element(find.byType(AgentTemplateDetailPage));
         await tester.tap(
           find.text(context.messages.agentTemplateSaveNewVersion),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         verify(
           () => mockSoulService.assignSoulToTemplate(
@@ -2287,9 +2247,6 @@ void main() {
     testWidgets(
       'edit mode calls unassignSoul when soul is cleared',
       (tester) async {
-        when(
-          () => mockTemplateService.getAgentsForTemplate(any()),
-        ).thenAnswer((_) async => []);
         when(
           () => mockTemplateService.updateTemplate(
             templateId: any(named: 'templateId'),
@@ -2327,7 +2284,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Verify soul is seeded: "Laura" visible
         expect(find.text('Laura'), findsWidgets);
@@ -2340,14 +2298,16 @@ void main() {
         );
         expect(clearIcon, findsOneWidget);
         await tester.tap(clearIcon);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Form is now dirty (soul cleared), save button appears
         final context = tester.element(find.byType(AgentTemplateDetailPage));
         await tester.tap(
           find.text(context.messages.agentTemplateSaveNewVersion),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         verify(
           () => mockSoulService.unassignSoul(templateId),
@@ -2358,10 +2318,6 @@ void main() {
     testWidgets(
       'edit mode seeds soul selection from soulForTemplateProvider',
       (tester) async {
-        when(
-          () => mockTemplateService.getAgentsForTemplate(any()),
-        ).thenAnswer((_) async => []);
-
         await tester.pumpWidget(
           buildEditSubject(
             templateId: templateId,
@@ -2376,7 +2332,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // The SoulSelector should display "Laura" (from seeded soul-1)
         final soulSelector = find.byType(SoulSelector);

@@ -419,7 +419,9 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      // Static host (a single button) — one frame is enough; no animations
+      // to settle.
+      await tester.pump();
       return service;
     }
 
@@ -491,7 +493,9 @@ void main() {
         );
 
         await tester.tap(find.text('go'));
-        await tester.pumpAndSettle();
+        // The denied-permission path opens no UI — a single frame plus the
+        // awaited Future below is all the synchronization needed.
+        await tester.pump();
 
         // The delegated importer actually ran (it asked for permission) and
         // the returned Future completed without throwing.

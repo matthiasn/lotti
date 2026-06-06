@@ -2,41 +2,14 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
-import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
-import 'package:lotti/features/sync/matrix/session_manager.dart';
-import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
-import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
-import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class _MockGateway extends Mock implements MatrixSyncGateway {}
-
-class _MockMessageSender extends Mock implements MatrixMessageSender {}
-
-class _MockSettingsDb extends Mock implements SettingsDb {}
-
-class _MockEventProcessor extends Mock implements SyncEventProcessor {}
-
-class _MockSecureStorage extends Mock implements SecureStorage {}
-
-class _MockRoomManager extends Mock implements SyncRoomManager {}
-
-class _MockSessionManager extends Mock implements MatrixSessionManager {}
-
-class _MockPipeline extends Mock implements MatrixStreamConsumer {}
-
-class _MockQueueCoordinator extends Mock implements QueuePipelineCoordinator {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -45,9 +18,9 @@ void main() {
     registerFallbackValue(StackTrace.current);
   });
 
-  late _MockGateway gateway;
-  late _MockSessionManager sessionManager;
-  late _MockSecureStorage secureStorage;
+  late MockMatrixSyncGateway gateway;
+  late MockMatrixSessionManager sessionManager;
+  late MockSecureStorage secureStorage;
   late MockDomainLogger logging;
   late MatrixService service;
 
@@ -58,17 +31,17 @@ void main() {
   );
 
   setUp(() {
-    gateway = _MockGateway();
-    sessionManager = _MockSessionManager();
-    secureStorage = _MockSecureStorage();
+    gateway = MockMatrixSyncGateway();
+    sessionManager = MockMatrixSessionManager();
+    secureStorage = MockSecureStorage();
 
     logging = MockDomainLogger();
-    final sender = _MockMessageSender();
-    final settingsDb = _MockSettingsDb();
-    final eventProcessor = _MockEventProcessor();
-    final roomManager = _MockRoomManager();
-    final pipeline = _MockPipeline();
-    final queueCoordinator = _MockQueueCoordinator();
+    final sender = MockMatrixMessageSender();
+    final settingsDb = MockSettingsDb();
+    final eventProcessor = MockSyncEventProcessor();
+    final roomManager = MockSyncRoomManager();
+    final pipeline = MockMatrixStreamConsumer();
+    final queueCoordinator = MockQueuePipelineCoordinator();
     when(queueCoordinator.start).thenAnswer((_) async {});
     when(() => queueCoordinator.isRunning).thenReturn(false);
     when(

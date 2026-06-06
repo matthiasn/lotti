@@ -34,11 +34,11 @@ Note: `journal_card_timer_text_test.dart` (38 lines) has no corresponding source
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** Four test files (`animated_task_card_test.dart`, `card_wrapper_widget_test.dart`, `journal_image_card_test.dart`, `journal_card_test.dart`) each define their own **inline `MockNavService`**, **inline `MockEntitiesCacheService`**, and **inline `MockTimeService`** classes. This violates the centralized mocks rule. All four should import from `test/mocks/mocks.dart`. Duplicated inline implementations are a maintenance burden (e.g., all four have nearly identical `MockNavService.beamToNamed` that appends to `navigationHistory`).
+- [x] **[HIGH]** Four test files (`animated_task_card_test.dart`, `card_wrapper_widget_test.dart`, `journal_image_card_test.dart`, `journal_card_test.dart`) each define their own **inline `MockNavService`**, **inline `MockEntitiesCacheService`**, and **inline `MockTimeService`** classes. This violates the centralized mocks rule. All four should import from `test/mocks/mocks.dart`. Duplicated inline implementations are a maintenance burden (e.g., all four have nearly identical `MockNavService.beamToNamed` that appends to `navigationHistory`).
 
-- [ ] **[HIGH]** `journal_card_test.dart:100` and `animated_task_card_test.dart:67`: both use `getIt.allowReassignment = true` — a flag that masks test isolation bugs by silently overwriting registered singletons. The canonical pattern is `setUpTestGetIt()` / `tearDownTestGetIt()`, which resets the container cleanly.
+- [x] **[HIGH]** `journal_card_test.dart:100` and `animated_task_card_test.dart:67`: both use `getIt.allowReassignment = true` — a flag that masks test isolation bugs by silently overwriting registered singletons. The canonical pattern is `setUpTestGetIt()` / `tearDownTestGetIt()`, which resets the container cleanly.
 
-- [ ] **[HIGH]** `journal_card_test.dart:426`, `445`, `849`, `867`, `885`: `getIt.registerSingleton<NavService>(mockNavService)` is called **inside individual test bodies** rather than in `setUp`. This means navigation service is registered only for certain tests, while other tests in the same file have no `NavService` — a fragile and non-deterministic pattern. The `allowReassignment = true` flag makes this possible but not safe.
+- [x] **[HIGH]** `journal_card_test.dart:426`, `445`, `849`, `867`, `885`: `getIt.registerSingleton<NavService>(mockNavService)` is called **inside individual test bodies** rather than in `setUp`. This means navigation service is registered only for certain tests, while other tests in the same file have no `NavService` — a fragile and non-deterministic pattern. The `allowReassignment = true` flag makes this possible but not safe.
 
 - [ ] **[MED]** `animated_task_card_test.dart` lines ~248–274 (`'renders task with different statuses'`), ~276–296 (`'handles task with due date'`), ~298–318 (`'maintains correct layout structure'`), ~368–400 (`'respects theme changes'`): each of these tests asserts only `findsOneWidget` on `AnimatedModernTaskCard` or `findsNothing` on exceptions — **pure existence/smoke tests** with no behavioral assertions. They should be either deleted or augmented with meaningful assertions (e.g., verifying the status chip text or that a theme-specific color is applied).
 
@@ -62,11 +62,11 @@ Note: `journal_card_timer_text_test.dart` (38 lines) has no corresponding source
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `card_image_widget.dart` — `_CardImageWidgetState.didUpdateWidget` (line 27–31): this lifecycle method calls `resetFileWatcher()` when `journalImage.id` changes. There is **no test** for this path. The test file verifies rendering and watcher setup but never changes the `journalImage` prop mid-test to exercise the reset branch.
+- [x] **[HIGH]** `card_image_widget.dart` — `_CardImageWidgetState.didUpdateWidget` (line 27–31): this lifecycle method calls `resetFileWatcher()` when `journalImage.id` changes. There is **no test** for this path. The test file verifies rendering and watcher setup but never changes the `journalImage` prop mid-test to exercise the reset branch.
 
-- [ ] **[HIGH]** `card_image_widget.dart` — `fileExists == false` branch (line 45–47): returns `SizedBox.shrink()` when the image file does not exist on disk. `card_image_widget_test.dart` creates real temp files for all tests, so this branch is never exercised. A test with a non-existent file path should assert that `SizedBox.shrink()` renders.
+- [x] **[HIGH]** `card_image_widget.dart` — `fileExists == false` branch (line 45–47): returns `SizedBox.shrink()` when the image file does not exist on disk. `card_image_widget_test.dart` creates real temp files for all tests, so this branch is never exercised. A test with a non-existent file path should assert that `SizedBox.shrink()` renders.
 
-- [ ] **[HIGH]** `_DistanceBadge._colorForDistance` — three of four color branches are untested. Only the `d < 0.3` (green) branch has a test (`card_wrapper_widget_test.dart:381`). The `orange` (`0.3 ≤ d < 0.6`), `deepOrange` (`0.6 ≤ d < 0.8`), and `red` (`d ≥ 0.8`) branches have no coverage.
+- [x] **[HIGH]** `_DistanceBadge._colorForDistance` — three of four color branches are untested. Only the `d < 0.3` (green) branch has a test (`card_wrapper_widget_test.dart:381`). The `orange` (`0.3 ≤ d < 0.6`), `deepOrange` (`0.6 ≤ d < 0.8`), and `red` (`d ≥ 0.8`) branches have no coverage.
 
 - [ ] **[MED]** `ModernJournalCard._buildBody` switch — the `RatingEntry` branch (line 285–294 of `journal_card.dart`) renders a localized `'Session Rating'` label. `journal_card_test.dart:811–820` tests this with `testRatingEntry` — coverage exists but only for the label; the import of `testRatingEntry` from `test_data.dart` suggests the entry may have no category icon, so the `_shouldShowCategoryIcon()` filter is not exercised for this type.
 
@@ -80,9 +80,9 @@ Note: `journal_card_timer_text_test.dart` (38 lines) has no corresponding source
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `task_card_test.dart`: **27 `pumpAndSettle` calls** for a widget that has no animations in the test environment (no real database, no running timers). Every `pumpAndSettle` uses a 10-second default timeout. Replacing with `await tester.pump()` or `await tester.pump(const Duration(milliseconds: 50))` would make each test complete faster and eliminate timeout risks. **Estimated impact: significant in CI shard that contains this file.**
+- [x] **[HIGH]** `task_card_test.dart`: **27 `pumpAndSettle` calls** for a widget that has no animations in the test environment (no real database, no running timers). Every `pumpAndSettle` uses a 10-second default timeout. Replacing with `await tester.pump()` or `await tester.pump(const Duration(milliseconds: 50))` would make each test complete faster and eliminate timeout risks. **Estimated impact: significant in CI shard that contains this file.**
 
-- [ ] **[HIGH]** `animated_task_card_test.dart`: **17 `pumpAndSettle` calls** for a widget that primarily wraps `ModernTaskCard` in an `AnimatedModalItem`. Most of these are after static renders. The exceptions — tap-animation tests (lines 219–246) and hover tests (lines 187–217) — legitimately need pump calls, but `pumpAndSettle` is overkill when `pump(const Duration(milliseconds: 300))` would suffice for the animation duration.
+- [x] **[HIGH]** `animated_task_card_test.dart`: **17 `pumpAndSettle` calls** for a widget that primarily wraps `ModernTaskCard` in an `AnimatedModalItem`. Most of these are after static renders. The exceptions — tap-animation tests (lines 219–246) and hover tests (lines 187–217) — legitimately need pump calls, but `pumpAndSettle` is overkill when `pump(const Duration(milliseconds: 300))` would suffice for the animation duration.
 
 - [ ] **[MED]** `journal_card_test.dart`: **12 `pumpAndSettle` calls**. Several are in tests that render fully static widgets (no animation providers, no stream watchers). Replacing with `pump()` in static-render tests would reduce risk.
 

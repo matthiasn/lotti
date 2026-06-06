@@ -167,8 +167,11 @@ void main() {
       'isClipping is true for every dBFS strictly above −3',
       (dbfs) {
         final level = AudioRecordingSignalLevel.fromDbfs(dbfs);
-        expect(level.isClipping, isTrue,
-            reason: 'dBFS=$dbfs should be clipping');
+        expect(
+          level.isClipping,
+          isTrue,
+          reason: 'dBFS=$dbfs should be clipping',
+        );
       },
       tags: 'glados',
     );
@@ -180,8 +183,11 @@ void main() {
       'isClipping is false for every dBFS at or below −3',
       (dbfs) {
         final level = AudioRecordingSignalLevel.fromDbfs(dbfs);
-        expect(level.isClipping, isFalse,
-            reason: 'dBFS=$dbfs should not be clipping');
+        expect(
+          level.isClipping,
+          isFalse,
+          reason: 'dBFS=$dbfs should not be clipping',
+        );
       },
       tags: 'glados',
     );

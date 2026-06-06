@@ -51,7 +51,9 @@ void main() {
         () => mockUpdateNotifications.updateStream,
       ).thenAnswer((_) => updateStreamController.stream);
 
+      // Per-test GetIt scope, popped in tearDown.
       getIt
+        ..pushNewScope()
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
         ..registerSingleton<NotificationService>(mockNotificationService)
@@ -60,7 +62,7 @@ void main() {
 
     tearDown(() async {
       await updateStreamController.close();
-      await getIt.reset();
+      await getIt.popScope();
     });
 
     test('initializes with empty habit definition for new habit', () {

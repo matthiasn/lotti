@@ -213,10 +213,12 @@ void main() {
         );
 
         await tester.tap(find.text('open'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         final messages = _l10n(tester);
         await tester.tap(find.text(messages.aiPickProviderContinueButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(captured, isNotNull);
         expect(captured!.isConfirmed, isTrue);
@@ -254,13 +256,15 @@ void main() {
         );
 
         await tester.tap(find.text('open'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         final messages = _l10n(tester);
         // Pick Anthropic.
         await tester.tap(find.text(messages.aiProviderAnthropicName));
         await tester.pump();
         await tester.tap(find.text(messages.aiPickProviderContinueButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(captured!.providerType, InferenceProviderType.anthropic);
       },
@@ -297,12 +301,14 @@ void main() {
         );
 
         await tester.tap(find.text('open'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         final messages = _l10n(tester);
         await tester.tap(
           find.text(messages.aiPickProviderDontShowAgainButton),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(captured!.isDontShowAgain, isTrue);
         expect(captured!.providerType, isNull);
@@ -498,14 +504,16 @@ void main() {
           );
 
           await tester.tap(find.text('open'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           final messages = _l10n(tester);
           // Pick OpenAI-compatible (genericOpenAi) — proves the
           // advanced tile is selectable end-to-end, not just rendered.
           await tester.tap(find.text(messages.aiProviderGenericOpenAiName));
           await tester.pump();
           await tester.tap(find.text(messages.aiPickProviderContinueButton));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(resolved, isTrue);
           expect(captured, InferenceProviderType.genericOpenAi);
@@ -538,10 +546,12 @@ void main() {
           );
 
           await tester.tap(find.text('open'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           // Swipe-dismiss equivalent: pop with no result.
           Navigator.of(tester.element(find.byType(AiPickProviderModal))).pop();
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(resolved, isTrue);
           expect(captured, isNull);
@@ -576,10 +586,12 @@ void main() {
           );
 
           await tester.tap(find.text('open'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           final messages = _l10n(tester);
           await tester.tap(find.text(messages.aiPickProviderContinueButton));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(captured, InferenceProviderType.anthropic);
         },
@@ -609,11 +621,13 @@ void main() {
         );
 
         await tester.tap(find.text('open'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         // Pop the sheet with no result — mirrors a swipe-dismiss or
         // the modal's close X.
         Navigator.of(tester.element(find.byType(AiPickProviderModal))).pop();
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(captured, isNotNull);
         expect(captured!.kind, AiPickProviderResultKind.cancelled);
@@ -658,10 +672,12 @@ void main() {
         );
 
         await tester.tap(find.text('open'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         final messages = _l10n(tester);
         await tester.tap(find.text(messages.aiPickProviderContinueButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Seed should have skipped the disabled Ollama tile and
         // landed on the first enabled tile (Gemini).

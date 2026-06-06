@@ -1,6 +1,5 @@
 // ignore_for_file: prefer_const_constructors
 
-import 'package:drift/drift.dart' hide isNull;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -22,10 +21,7 @@ import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-// Local generic selectable mock — the central [MockSelectable] requires a
-// list of values up front, but these tests stub `get()` per-test instead.
-class MockSelectable<T> extends Mock implements Selectable<T> {}
+import '../../../widget_test_utils.dart';
 
 class _NoAgentResolver extends TaskSummaryResolver {
   _NoAgentResolver() : super(_EmptyAgentRepository());
@@ -236,14 +232,18 @@ void main() {
       vectorClock: null,
     );
 
-    setUp(() {
+    setUp(() async {
       mockJournalDb = MockJournalDb();
 
-      // Setup GetIt
-      if (getIt.isRegistered<JournalDb>()) {
-        getIt.unregister<JournalDb>();
-      }
-      getIt.registerSingleton<JournalDb>(mockJournalDb);
+      // setUpTestGetIt registers its own JournalDb; swap in this file's
+      // mock so the repository and stubs share one instance.
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockJournalDb);
+        },
+      );
 
       repository = TaskSummaryRepository(
         journalDb: mockJournalDb,
@@ -251,7 +251,43 @@ void main() {
       );
     });
 
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
+
+    /// Stubs the `workEntriesInDateRange` query (canonical date range and
+    /// category unless [anyArgs]) so it returns [entries].
+    void stubWorkEntries(
+      List<JournalDbEntity> entries, {
+      bool anyArgs = false,
+    }) {
+      final selectable = MockSelectable<JournalDbEntity>(entries);
+      if (anyArgs) {
+        when(
+          () =>
+              mockJournalDb.workEntriesInDateRange(any(), any(), any(), any()),
+        ).thenReturn(selectable);
+        return;
+      }
+      when(
+        () => mockJournalDb.workEntriesInDateRange(
+          ['JournalEntry', 'JournalAudio'],
+          [testCategoryId],
+          DateTime(
+            testStartDate.year,
+            testStartDate.month,
+            testStartDate.day,
+          ).toUtc(),
+          DateTime(
+            testEndDate.year,
+            testEndDate.month,
+            testEndDate.day,
+            23,
+            59,
+            59,
+            999,
+          ).toUtc(),
+        ),
+      ).thenReturn(selectable);
+    }
 
     group('getTaskSummaries', () {
       test('returns task summaries with AI responses in happy path', () async {
@@ -262,32 +298,7 @@ void main() {
         );
 
         // Mock the new database-level filtering method
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        final expectedStartUtc = DateTime(
-          testStartDate.year,
-          testStartDate.month,
-          testStartDate.day,
-        ).toUtc();
-        final expectedEndUtc = DateTime(
-          testEndDate.year,
-          testEndDate.month,
-          testEndDate.day,
-          23,
-          59,
-          59,
-          999,
-        ).toUtc();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            ['JournalEntry', 'JournalAudio'],
-            [testCategoryId],
-            expectedStartUtc,
-            expectedEndUtc,
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(
-          mockWorkEntriesSelectable.get,
-        ).thenAnswer((_) async => [testJournalDbEntry, testJournalDbAudio]);
+        stubWorkEntries([testJournalDbEntry, testJournalDbAudio]);
 
         when(
           () => mockJournalDb.linksForEntryIds({
@@ -332,33 +343,9 @@ void main() {
           endDate: testEndDate.ymd,
         );
 
-        // Mock database query - should only return audio entry since short text entry is filtered out
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        final expectedStartUtc = DateTime(
-          testStartDate.year,
-          testStartDate.month,
-          testStartDate.day,
-        ).toUtc();
-        final expectedEndUtc = DateTime(
-          testEndDate.year,
-          testEndDate.month,
-          testEndDate.day,
-          23,
-          59,
-          59,
-          999,
-        ).toUtc();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            ['JournalEntry', 'JournalAudio'],
-            [testCategoryId],
-            expectedStartUtc,
-            expectedEndUtc,
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(mockWorkEntriesSelectable.get).thenAnswer(
-          (_) async => [testJournalDbAudio],
-        ); // Only audio, short entry filtered out
+        // Mock database query - should only return audio entry since short
+        // text entry is filtered out.
+        stubWorkEntries([testJournalDbAudio]);
 
         when(
           () => mockJournalDb.linksForEntryIds({testJournalDbAudio.id}),
@@ -396,32 +383,7 @@ void main() {
         );
 
         // Mock database query - should include short audio entry (no duration filter for audio)
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        final expectedStartUtc = DateTime(
-          testStartDate.year,
-          testStartDate.month,
-          testStartDate.day,
-        ).toUtc();
-        final expectedEndUtc = DateTime(
-          testEndDate.year,
-          testEndDate.month,
-          testEndDate.day,
-          23,
-          59,
-          59,
-          999,
-        ).toUtc();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            ['JournalEntry', 'JournalAudio'],
-            [testCategoryId],
-            expectedStartUtc,
-            expectedEndUtc,
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(
-          mockWorkEntriesSelectable.get,
-        ).thenAnswer((_) async => [testJournalDbAudioShort]);
+        stubWorkEntries([testJournalDbAudioShort]);
 
         when(
           () => mockJournalDb.linksForEntryIds({testJournalDbAudioShort.id}),
@@ -460,32 +422,7 @@ void main() {
           endDate: testEndDate.ymd,
         );
 
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        final expectedStartUtc = DateTime(
-          testStartDate.year,
-          testStartDate.month,
-          testStartDate.day,
-        ).toUtc();
-        final expectedEndUtc = DateTime(
-          testEndDate.year,
-          testEndDate.month,
-          testEndDate.day,
-          23,
-          59,
-          59,
-          999,
-        ).toUtc();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            ['JournalEntry', 'JournalAudio'],
-            [testCategoryId],
-            expectedStartUtc,
-            expectedEndUtc,
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(
-          mockWorkEntriesSelectable.get,
-        ).thenAnswer((_) async => [testJournalDbEntry]); // Only entry in range
+        stubWorkEntries([testJournalDbEntry]); // Only entry in range
 
         when(
           () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
@@ -513,30 +450,7 @@ void main() {
           endDate: testEndDate.ymd,
         );
 
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        final expectedStartUtc = DateTime(
-          testStartDate.year,
-          testStartDate.month,
-          testStartDate.day,
-        ).toUtc();
-        final expectedEndUtc = DateTime(
-          testEndDate.year,
-          testEndDate.month,
-          testEndDate.day,
-          23,
-          59,
-          59,
-          999,
-        ).toUtc();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            ['JournalEntry', 'JournalAudio'],
-            [testCategoryId],
-            expectedStartUtc,
-            expectedEndUtc,
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(mockWorkEntriesSelectable.get).thenAnswer((_) async => []);
+        stubWorkEntries([]);
 
         // Act
         final result = await repository.getTaskSummaries(
@@ -561,32 +475,7 @@ void main() {
           endDate: testEndDate.ymd,
         );
 
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        final expectedStartUtc = DateTime(
-          testStartDate.year,
-          testStartDate.month,
-          testStartDate.day,
-        ).toUtc();
-        final expectedEndUtc = DateTime(
-          testEndDate.year,
-          testEndDate.month,
-          testEndDate.day,
-          23,
-          59,
-          59,
-          999,
-        ).toUtc();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            ['JournalEntry', 'JournalAudio'],
-            [testCategoryId],
-            expectedStartUtc,
-            expectedEndUtc,
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(
-          mockWorkEntriesSelectable.get,
-        ).thenAnswer((_) async => [testJournalDbEntry]);
+        stubWorkEntries([testJournalDbEntry]);
 
         when(
           () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
@@ -625,32 +514,7 @@ void main() {
           entryText: const EntryText(plainText: 'Not a task'),
         );
 
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        final expectedStartUtc = DateTime(
-          testStartDate.year,
-          testStartDate.month,
-          testStartDate.day,
-        ).toUtc();
-        final expectedEndUtc = DateTime(
-          testEndDate.year,
-          testEndDate.month,
-          testEndDate.day,
-          23,
-          59,
-          59,
-          999,
-        ).toUtc();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            ['JournalEntry', 'JournalAudio'],
-            [testCategoryId],
-            expectedStartUtc,
-            expectedEndUtc,
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(
-          mockWorkEntriesSelectable.get,
-        ).thenAnswer((_) async => [testJournalDbEntry]);
+        stubWorkEntries([testJournalDbEntry]);
 
         when(
           () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
@@ -732,18 +596,7 @@ void main() {
             vectorClock: null,
           );
 
-          final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-          when(
-            () => mockJournalDb.workEntriesInDateRange(
-              any(),
-              any(),
-              any(),
-              any(),
-            ),
-          ).thenReturn(mockWorkEntriesSelectable);
-          when(
-            mockWorkEntriesSelectable.get,
-          ).thenAnswer((_) async => [testJournalDbEntry]);
+          stubWorkEntries([testJournalDbEntry], anyArgs: true);
 
           when(
             () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
@@ -778,32 +631,7 @@ void main() {
             endDate: testEndDate.ymd,
           );
 
-          final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-          final expectedStartUtc = DateTime(
-            testStartDate.year,
-            testStartDate.month,
-            testStartDate.day,
-          ).toUtc();
-          final expectedEndUtc = DateTime(
-            testEndDate.year,
-            testEndDate.month,
-            testEndDate.day,
-            23,
-            59,
-            59,
-            999,
-          ).toUtc();
-          when(
-            () => mockJournalDb.workEntriesInDateRange(
-              ['JournalEntry', 'JournalAudio'],
-              [testCategoryId],
-              expectedStartUtc,
-              expectedEndUtc,
-            ),
-          ).thenReturn(mockWorkEntriesSelectable);
-          when(
-            mockWorkEntriesSelectable.get,
-          ).thenAnswer((_) async => [testJournalDbEntry]);
+          stubWorkEntries([testJournalDbEntry]);
 
           when(
             () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
@@ -844,32 +672,7 @@ void main() {
           endDate: testEndDate.ymd,
         );
 
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        final expectedStartUtc = DateTime(
-          testStartDate.year,
-          testStartDate.month,
-          testStartDate.day,
-        ).toUtc();
-        final expectedEndUtc = DateTime(
-          testEndDate.year,
-          testEndDate.month,
-          testEndDate.day,
-          23,
-          59,
-          59,
-          999,
-        ).toUtc();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            ['JournalEntry', 'JournalAudio'],
-            [testCategoryId],
-            expectedStartUtc,
-            expectedEndUtc,
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(
-          mockWorkEntriesSelectable.get,
-        ).thenAnswer((_) async => [testJournalDbEntry]);
+        stubWorkEntries([testJournalDbEntry]);
 
         when(
           () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
@@ -921,32 +724,7 @@ void main() {
           vectorClock: null,
         );
 
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        final expectedStartUtc = DateTime(
-          testStartDate.year,
-          testStartDate.month,
-          testStartDate.day,
-        ).toUtc();
-        final expectedEndUtc = DateTime(
-          testEndDate.year,
-          testEndDate.month,
-          testEndDate.day,
-          23,
-          59,
-          59,
-          999,
-        ).toUtc();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            ['JournalEntry', 'JournalAudio'],
-            [testCategoryId],
-            expectedStartUtc,
-            expectedEndUtc,
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(
-          mockWorkEntriesSelectable.get,
-        ).thenAnswer((_) async => [testJournalDbEntry]);
+        stubWorkEntries([testJournalDbEntry]);
 
         when(
           () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
@@ -1065,32 +843,7 @@ void main() {
             ),
           );
 
-          final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-          final expectedStartUtc = DateTime(
-            testStartDate.year,
-            testStartDate.month,
-            testStartDate.day,
-          ).toUtc();
-          final expectedEndUtc = DateTime(
-            testEndDate.year,
-            testEndDate.month,
-            testEndDate.day,
-            23,
-            59,
-            59,
-            999,
-          ).toUtc();
-          when(
-            () => mockJournalDb.workEntriesInDateRange(
-              ['JournalEntry', 'JournalAudio'],
-              [testCategoryId],
-              expectedStartUtc,
-              expectedEndUtc,
-            ),
-          ).thenReturn(mockWorkEntriesSelectable);
-          when(
-            mockWorkEntriesSelectable.get,
-          ).thenAnswer((_) async => [testJournalDbEntry]);
+          stubWorkEntries([testJournalDbEntry]);
 
           when(
             () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
@@ -1157,32 +910,7 @@ void main() {
           ),
         );
 
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        final expectedStartUtc = DateTime(
-          testStartDate.year,
-          testStartDate.month,
-          testStartDate.day,
-        ).toUtc();
-        final expectedEndUtc = DateTime(
-          testEndDate.year,
-          testEndDate.month,
-          testEndDate.day,
-          23,
-          59,
-          59,
-          999,
-        ).toUtc();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            ['JournalEntry', 'JournalAudio'],
-            [testCategoryId],
-            expectedStartUtc,
-            expectedEndUtc,
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(
-          mockWorkEntriesSelectable.get,
-        ).thenAnswer((_) async => [testJournalDbEntry]);
+        stubWorkEntries([testJournalDbEntry]);
 
         when(
           () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
@@ -1261,32 +989,7 @@ void main() {
           vectorClock: null,
         );
 
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        final expectedStartUtc = DateTime(
-          testStartDate.year,
-          testStartDate.month,
-          testStartDate.day,
-        ).toUtc();
-        final expectedEndUtc = DateTime(
-          testEndDate.year,
-          testEndDate.month,
-          testEndDate.day,
-          23,
-          59,
-          59,
-          999,
-        ).toUtc();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            ['JournalEntry', 'JournalAudio'],
-            [testCategoryId],
-            expectedStartUtc,
-            expectedEndUtc,
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(
-          mockWorkEntriesSelectable.get,
-        ).thenAnswer((_) async => [testJournalDbEntry, testJournalDbAudio2]);
+        stubWorkEntries([testJournalDbEntry, testJournalDbAudio2]);
 
         when(
           () => mockJournalDb.linksForEntryIds({
@@ -1433,16 +1136,7 @@ void main() {
           limit: -5, // Negative limit
         );
 
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            any(),
-            any(),
-            any(),
-            any(),
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(mockWorkEntriesSelectable.get).thenAnswer((_) async => []);
+        stubWorkEntries([], anyArgs: true);
 
         // Act
         final result = await repository.getTaskSummaries(
@@ -1462,16 +1156,7 @@ void main() {
           limit: 99999, // Very large limit
         );
 
-        final mockWorkEntriesSelectable = MockSelectable<JournalDbEntity>();
-        when(
-          () => mockJournalDb.workEntriesInDateRange(
-            any(),
-            any(),
-            any(),
-            any(),
-          ),
-        ).thenReturn(mockWorkEntriesSelectable);
-        when(mockWorkEntriesSelectable.get).thenAnswer((_) async => []);
+        stubWorkEntries([], anyArgs: true);
 
         // Act
         final result = await repository.getTaskSummaries(
@@ -1539,7 +1224,6 @@ void main() {
           statusHistory: const [],
         ),
       );
-      final selectable = MockSelectable<JournalDbEntity>();
       when(
         () => providerJournalDb.workEntriesInDateRange(
           any(),
@@ -1547,8 +1231,7 @@ void main() {
           any(),
           any(),
         ),
-      ).thenReturn(selectable);
-      when(selectable.get).thenAnswer((_) async => [workEntry]);
+      ).thenReturn(MockSelectable<JournalDbEntity>([workEntry]));
       when(
         () => providerJournalDb.linksForEntryIds({workEntry.id}),
       ).thenAnswer(

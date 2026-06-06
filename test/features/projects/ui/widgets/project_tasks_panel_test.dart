@@ -2,6 +2,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/projects/ui/model/project_list_detail_models.dart';
 import 'package:lotti/features/projects/ui/widgets/project_tasks_panel.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -310,6 +311,70 @@ void main() {
       expect(backgroundRect.right, rowRect.right);
       expect(backgroundRect.top, lessThan(rowRect.top));
       expect(backgroundRect.bottom, greaterThan(rowRect.bottom));
+    });
+  });
+
+  group('ProjectTasksSliverPanel', () {
+    Widget wrapSliver(Widget sliver) {
+      return makeTestableWidget2(
+        Theme(
+          data: DesignSystemTheme.dark(),
+          child: Scaffold(
+            body: CustomScrollView(slivers: [sliver]),
+          ),
+        ),
+      );
+    }
+
+    testWidgets('renders header, divider and one row per task summary', (
+      tester,
+    ) async {
+      final record = makeTestProjectRecord(
+        highlightedTaskSummaries: [
+          makeTestTaskSummary(
+            task: makeTestTask(id: 'task-a', title: 'Implement sync'),
+          ),
+          makeTestTaskSummary(
+            task: makeTestTask(id: 'task-b', title: 'Offline cache'),
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(
+        wrapSliver(ProjectTasksSliverPanel(record: record)),
+      );
+      await tester.pump();
+
+      expect(find.text('Project Tasks'), findsOneWidget);
+      expect(find.text('Implement sync'), findsOneWidget);
+      expect(find.text('Offline cache'), findsOneWidget);
+    });
+
+    testWidgets('forwards row taps to onTaskTap with the tapped summary', (
+      tester,
+    ) async {
+      final summary = makeTestTaskSummary(
+        task: makeTestTask(id: 'task-tap', title: 'Tap me'),
+      );
+      final record = makeTestProjectRecord(
+        highlightedTaskSummaries: [summary],
+      );
+
+      TaskSummary? tapped;
+      await tester.pumpWidget(
+        wrapSliver(
+          ProjectTasksSliverPanel(
+            record: record,
+            onTaskTap: (s) => tapped = s,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Tap me'));
+      await tester.pump();
+
+      expect(tapped, same(summary));
     });
   });
 }

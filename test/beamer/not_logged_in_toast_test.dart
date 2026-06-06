@@ -8,7 +8,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -135,23 +134,50 @@ Future<MockNavService> _stubNavService() async {
   return mockNav;
 }
 
-void _registerNavService(MockNavService mockNav) {
-  if (getIt.isRegistered<NavService>()) {
-    getIt.unregister<NavService>();
-  }
-  getIt.registerSingleton<NavService>(mockNav);
-}
-
-void _registerTimeService() {
+/// Registers everything AppScreen needs in GetIt through the centralized
+/// helper: the test-specific [db], a zero-count sync DB, the stubbed
+/// NavService, and an idle TimeService.
+Future<void> _setUpToastGetIt(MockJournalDb db) async {
+  final mockNav = await _stubNavService();
   final mockTimeService = MockTimeService();
   when(
     mockTimeService.getStream,
   ).thenAnswer((_) => const Stream<JournalEntity?>.empty());
   when(mockTimeService.getCurrent).thenReturn(null);
-  if (getIt.isRegistered<TimeService>()) {
-    getIt.unregister<TimeService>();
-  }
-  getIt.registerSingleton<TimeService>(mockTimeService);
+
+  await setUpTestGetIt(
+    additionalSetup: () {
+      getIt
+        ..unregister<JournalDb>()
+        ..registerSingleton<JournalDb>(db)
+        ..registerSingleton<SyncDatabase>(mockSyncDatabaseWithCount(0))
+        ..registerSingleton<NavService>(mockNav)
+        ..registerSingleton<TimeService>(mockTimeService);
+    },
+  );
+  ensureThemingServicesRegistered();
+}
+
+MockMatrixService _stubMatrixService() {
+  final mockMatrix = MockMatrixService();
+  // Stub matrix streams used by IncomingVerificationWrapper to avoid
+  // null errors.
+  when(
+    mockMatrix.getIncomingKeyVerificationStream,
+  ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+  when(
+    () => mockMatrix.incomingKeyVerificationRunnerStream,
+  ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+  return mockMatrix;
+}
+
+Future<BeamerDelegate> _createAppDelegate() async {
+  final delegate = BeamerDelegate(
+    setBrowserTabTitle: false,
+    locationBuilder: (routeInformation, _) => _TestLocation(routeInformation),
+  );
+  await delegate.setNewRoutePath(RouteInformation(uri: Uri.parse('/')));
+  return delegate;
 }
 
 Widget _buildTestRouterApp({
@@ -178,24 +204,54 @@ Widget _buildTestRouterApp({
   );
 }
 
+/// Pumps the AppScreen router shell for [loginState] and flushes the first
+/// frames with bounded pumps (the toast path is post-frame-callback driven,
+/// so no open-ended settling is required).
+Future<void> _pumpToastApp(
+  WidgetTester tester, {
+  required BeamerDelegate routerDelegate,
+  required MockMatrixService matrix,
+  required MockOutboxService outbox,
+  required LoginState loginState,
+}) async {
+  await tester.pumpWidget(
+    _buildTestRouterApp(
+      routerDelegate: routerDelegate,
+      overrides: [
+        matrixServiceProvider.overrideWithValue(matrix),
+        loginStateStreamProvider.overrideWith(
+          (ref) => Stream<LoginState>.value(loginState),
+        ),
+        outboxServiceProvider.overrideWithValue(outbox),
+        // Prevent Gemini setup prompt from triggering during tests
+        aiSetupPromptServiceProvider.overrideWith(
+          _MockAiSetupPromptService.new,
+        ),
+        // Prevent What's New from creating pending timers
+        shouldAutoShowWhatsNewProvider.overrideWith(
+          (ref) async => false,
+        ),
+      ],
+    ),
+  );
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 100));
+}
+
+/// Flushes the post-frame callback that shows the toast plus the snack-bar
+/// entrance frame after a login-gate event.
+Future<void> _pumpGateEvent(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 100));
+}
+
 void _usePhoneViewport(WidgetTester tester) {
   tester.view
     ..physicalSize = phoneMediaQueryData.size
     ..devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);
-}
-
-MockSettingsDb _stubSettingsDb() {
-  final settingsDb = MockSettingsDb();
-  when(() => settingsDb.itemByKey(any())).thenAnswer((_) async => null);
-  when(
-    () => settingsDb.itemsByKeys(any()),
-  ).thenAnswer((_) async => <String, String?>{});
-  when(
-    () => settingsDb.saveSettingsItem(any(), any()),
-  ).thenAnswer((_) async => 1);
-  return settingsDb;
 }
 
 void main() {
@@ -210,185 +266,93 @@ void main() {
       ..physicalSize = const Size(800, 1200)
       ..devicePixelRatio = 1.0;
   });
-  tearDown(() {
+  tearDown(() async {
     TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
+    await tearDownTestGetIt();
   });
 
-  testWidgets('Shows red toast only when outbox attempts send while logged out', (
-    tester,
-  ) async {
-    _usePhoneViewport(tester);
-    addTearDown(tearDownTestGetIt);
+  testWidgets(
+    'Shows red toast only when outbox attempts send while logged out',
+    (
+      tester,
+    ) async {
+      _usePhoneViewport(tester);
 
-    final db = MockJournalDb();
-    when(() => db.watchConfigFlag(any())).thenAnswer((invocation) {
-      final flagName = invocation.positionalArguments.first as String;
-      const enabledFlags = {
-        enableDailyOsPageFlag,
-        enableDashboardsPageFlag,
-        enableHabitsPageFlag,
-        enableMatrixFlag,
-      };
-      if (flagName == enableTooltipFlag) {
-        return Stream<bool>.value(false);
-      }
-      return Stream<bool>.value(enabledFlags.contains(flagName));
-    });
+      final db = MockJournalDb();
+      when(() => db.watchConfigFlag(any())).thenAnswer((invocation) {
+        final flagName = invocation.positionalArguments.first as String;
+        const enabledFlags = {
+          enableDailyOsPageFlag,
+          enableDashboardsPageFlag,
+          enableHabitsPageFlag,
+          enableMatrixFlag,
+        };
+        if (flagName == enableTooltipFlag) {
+          return Stream<bool>.value(false);
+        }
+        return Stream<bool>.value(enabledFlags.contains(flagName));
+      });
+      await _setUpToastGetIt(db);
 
-    // Register GetIt dependencies used by AppScreen children
-    final syncDb = mockSyncDatabaseWithCount(0);
-    if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
-    if (getIt.isRegistered<SyncDatabase>()) getIt.unregister<SyncDatabase>();
-    if (getIt.isRegistered<SettingsDb>()) getIt.unregister<SettingsDb>();
-    final settingsDb = _stubSettingsDb();
-    getIt
-      ..registerSingleton<JournalDb>(db)
-      ..registerSingleton<SyncDatabase>(syncDb)
-      ..registerSingleton<SettingsDb>(settingsDb);
-    ensureThemingServicesRegistered();
+      final mockMatrix = _stubMatrixService();
 
-    _registerNavService(await _stubNavService());
+      // User activity for MyBeamerApp
+      final mockUserActivityService = _MockUserActivityService();
+      when(mockUserActivityService.updateActivity).thenReturn(null);
 
-    // Build with provider overrides to satisfy Riverpod + Router via MyBeamerApp
-    final mockMatrix = MockMatrixService();
-    // Stub matrix streams used by IncomingVerificationWrapper to avoid null errors
-    when(
-      mockMatrix.getIncomingKeyVerificationStream,
-    ).thenAnswer((_) => const Stream<KeyVerification>.empty());
-    when(
-      () => mockMatrix.incomingKeyVerificationRunnerStream,
-    ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+      // Mock OutboxService and provide a stream to emit login-gate events
+      final mockOutboxService = MockOutboxService();
+      final controller = StreamController<void>.broadcast();
+      addTearDown(controller.close);
+      when(
+        () => mockOutboxService.notLoggedInGateStream,
+      ).thenAnswer((_) => controller.stream);
 
-    _registerTimeService();
+      await _pumpToastApp(
+        tester,
+        routerDelegate: await _createAppDelegate(),
+        matrix: mockMatrix,
+        outbox: mockOutboxService,
+        loginState: LoginState.loggedOut,
+      );
 
-    // User activity for MyBeamerApp
-    final mockUserActivityService = _MockUserActivityService();
-    when(mockUserActivityService.updateActivity).thenReturn(null);
+      // On startup while logged out: no toast yet (only on outbox attempt)
+      expect(find.byType(SnackBar), findsNothing);
 
-    // Use MaterialApp.router with proper BeamLocation
-    final routerDelegate = BeamerDelegate(
-      setBrowserTabTitle: false,
-      locationBuilder: (routeInformation, _) {
-        return _TestLocation(routeInformation);
-      },
-    );
+      // Simulate an outbox send attempt getting gated by not-logged-in
+      controller.add(null);
+      await _pumpGateEvent(tester);
 
-    // Initialize the delegate's route
-    await routerDelegate.setNewRoutePath(RouteInformation(uri: Uri.parse('/')));
+      // Expect a SnackBar with the localized text after the event
+      expect(find.byType(SnackBar), findsOneWidget);
+      expect(find.text('Sync is not logged in'), findsOneWidget);
 
-    // Mock OutboxService and provide a stream to emit login-gate events
-    final mockOutboxService = MockOutboxService();
-    final controller = StreamController<void>.broadcast();
-    addTearDown(controller.close);
-    when(
-      () => mockOutboxService.notLoggedInGateStream,
-    ).thenAnswer((_) => controller.stream);
-
-    await tester.pumpWidget(
-      _buildTestRouterApp(
-        routerDelegate: routerDelegate,
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrix),
-          loginStateStreamProvider.overrideWith(
-            (ref) => Stream<LoginState>.value(LoginState.loggedOut),
-          ),
-          outboxServiceProvider.overrideWithValue(mockOutboxService),
-          // Prevent Gemini setup prompt from triggering during tests
-          aiSetupPromptServiceProvider.overrideWith(
-            _MockAiSetupPromptService.new,
-          ),
-          // Prevent What's New from creating pending timers
-          shouldAutoShowWhatsNewProvider.overrideWith(
-            (ref) async => false,
-          ),
-        ],
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    // On startup while logged out: no toast yet (only on outbox attempt)
-    expect(find.byType(SnackBar), findsNothing);
-
-    // Simulate an outbox send attempt getting gated by not-logged-in
-    controller.add(null);
-    await tester.pump();
-    await tester.pumpAndSettle();
-
-    // Expect a SnackBar with the localized text after the event
-    expect(find.byType(SnackBar), findsOneWidget);
-    expect(find.text('Sync is not logged in'), findsOneWidget);
-
-    // Now simulate login: rebuild with logged in state
-    final routerDelegate2 = BeamerDelegate(
-      setBrowserTabTitle: false,
-      locationBuilder: (routeInformation, _) {
-        return _TestLocation(routeInformation);
-      },
-    );
-
-    // Initialize the delegate's route
-    await routerDelegate2.setNewRoutePath(
-      RouteInformation(uri: Uri.parse('/')),
-    );
-
-    await tester.pumpWidget(
-      _buildTestRouterApp(
-        routerDelegate: routerDelegate2,
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrix),
-          loginStateStreamProvider.overrideWith(
-            (ref) => Stream<LoginState>.value(LoginState.loggedIn),
-          ),
-          outboxServiceProvider.overrideWithValue(mockOutboxService),
-          aiSetupPromptServiceProvider.overrideWith(
-            _MockAiSetupPromptService.new,
-          ),
-          shouldAutoShowWhatsNewProvider.overrideWith(
-            (ref) async => false,
-          ),
-        ],
-      ),
-    );
-    await tester.pumpAndSettle();
-    // No additional SnackBar expected now.
-    // We tolerate one lingering SnackBar due to UI rebuilds.
-  });
+      // Now simulate login: rebuild with logged in state
+      await _pumpToastApp(
+        tester,
+        routerDelegate: await _createAppDelegate(),
+        matrix: mockMatrix,
+        outbox: mockOutboxService,
+        loginState: LoginState.loggedIn,
+      );
+      // No additional SnackBar expected now.
+      // We tolerate one lingering SnackBar due to UI rebuilds.
+    },
+  );
 
   testWidgets('Duplicate login-gate events show only one toast per session', (
     tester,
   ) async {
     _usePhoneViewport(tester);
-    addTearDown(tearDownTestGetIt);
 
     final db = MockJournalDb();
     when(() => db.getConfigFlag(any())).thenAnswer((_) async => false);
     when(
       db.watchActiveConfigFlagNames,
     ).thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
+    await _setUpToastGetIt(db);
 
-    // Register GetIt dependencies used by AppScreen children
-    final syncDb = mockSyncDatabaseWithCount(0);
-    if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
-    if (getIt.isRegistered<SyncDatabase>()) getIt.unregister<SyncDatabase>();
-    if (getIt.isRegistered<SettingsDb>()) getIt.unregister<SettingsDb>();
-    final settingsDb = _stubSettingsDb();
-    getIt
-      ..registerSingleton<JournalDb>(db)
-      ..registerSingleton<SyncDatabase>(syncDb)
-      ..registerSingleton<SettingsDb>(settingsDb);
-    ensureThemingServicesRegistered();
-
-    _registerNavService(await _stubNavService());
-    _registerTimeService();
-
-    final mockMatrix = MockMatrixService();
-    when(
-      mockMatrix.getIncomingKeyVerificationStream,
-    ).thenAnswer((_) => const Stream<KeyVerification>.empty());
-    when(
-      () => mockMatrix.incomingKeyVerificationRunnerStream,
-    ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    final mockMatrix = _stubMatrixService();
 
     final mockOutboxService = MockOutboxService();
     final controller = StreamController<void>.broadcast();
@@ -397,42 +361,20 @@ void main() {
       () => mockOutboxService.notLoggedInGateStream,
     ).thenAnswer((_) => controller.stream);
 
-    final routerDelegate = BeamerDelegate(
-      setBrowserTabTitle: false,
-      locationBuilder: (routeInformation, _) {
-        return _TestLocation(routeInformation);
-      },
+    await _pumpToastApp(
+      tester,
+      routerDelegate: await _createAppDelegate(),
+      matrix: mockMatrix,
+      outbox: mockOutboxService,
+      loginState: LoginState.loggedOut,
     );
-    await routerDelegate.setNewRoutePath(RouteInformation(uri: Uri.parse('/')));
-
-    await tester.pumpWidget(
-      _buildTestRouterApp(
-        routerDelegate: routerDelegate,
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrix),
-          loginStateStreamProvider.overrideWith(
-            (ref) => Stream<LoginState>.value(LoginState.loggedOut),
-          ),
-          outboxServiceProvider.overrideWithValue(mockOutboxService),
-          aiSetupPromptServiceProvider.overrideWith(
-            _MockAiSetupPromptService.new,
-          ),
-          shouldAutoShowWhatsNewProvider.overrideWith(
-            (ref) async => false,
-          ),
-        ],
-      ),
-    );
-
-    await tester.pumpAndSettle();
     expect(find.byType(SnackBar), findsNothing);
 
     // Emit two events in the same session
     controller
       ..add(null)
       ..add(null);
-    await tester.pump();
-    await tester.pumpAndSettle();
+    await _pumpGateEvent(tester);
 
     expect(find.byType(SnackBar), findsOneWidget);
     expect(find.text('Sync is not logged in'), findsOneWidget);
@@ -442,36 +384,15 @@ void main() {
     tester,
   ) async {
     _usePhoneViewport(tester);
-    addTearDown(tearDownTestGetIt);
 
     final db = MockJournalDb();
     when(() => db.getConfigFlag(any())).thenAnswer((_) async => false);
     when(
       db.watchActiveConfigFlagNames,
     ).thenAnswer((_) => Stream<Set<String>>.value({enableMatrixFlag}));
+    await _setUpToastGetIt(db);
 
-    // Register GetIt dependencies used by AppScreen children
-    final syncDb = mockSyncDatabaseWithCount(0);
-    if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>();
-    if (getIt.isRegistered<SyncDatabase>()) getIt.unregister<SyncDatabase>();
-    if (getIt.isRegistered<SettingsDb>()) getIt.unregister<SettingsDb>();
-    final settingsDb = _stubSettingsDb();
-    getIt
-      ..registerSingleton<JournalDb>(db)
-      ..registerSingleton<SyncDatabase>(syncDb)
-      ..registerSingleton<SettingsDb>(settingsDb);
-    ensureThemingServicesRegistered();
-
-    _registerNavService(await _stubNavService());
-    _registerTimeService();
-
-    final mockMatrix = MockMatrixService();
-    when(
-      mockMatrix.getIncomingKeyVerificationStream,
-    ).thenAnswer((_) => const Stream<KeyVerification>.empty());
-    when(
-      () => mockMatrix.incomingKeyVerificationRunnerStream,
-    ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+    final mockMatrix = _stubMatrixService();
 
     final mockOutboxService = MockOutboxService();
     final controller = StreamController<void>.broadcast();
@@ -480,84 +401,40 @@ void main() {
       () => mockOutboxService.notLoggedInGateStream,
     ).thenAnswer((_) => controller.stream);
 
-    final routerDelegate = BeamerDelegate(
-      setBrowserTabTitle: false,
-      locationBuilder: (routeInformation, _) {
-        return _TestLocation(routeInformation);
-      },
-    );
-    await routerDelegate.setNewRoutePath(RouteInformation(uri: Uri.parse('/')));
+    final routerDelegate = await _createAppDelegate();
 
     // First build: logged out
-    await tester.pumpWidget(
-      _buildTestRouterApp(
-        routerDelegate: routerDelegate,
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrix),
-          loginStateStreamProvider.overrideWith(
-            (ref) => Stream<LoginState>.value(LoginState.loggedOut),
-          ),
-          outboxServiceProvider.overrideWithValue(mockOutboxService),
-          aiSetupPromptServiceProvider.overrideWith(
-            _MockAiSetupPromptService.new,
-          ),
-          shouldAutoShowWhatsNewProvider.overrideWith(
-            (ref) async => false,
-          ),
-        ],
-      ),
+    await _pumpToastApp(
+      tester,
+      routerDelegate: routerDelegate,
+      matrix: mockMatrix,
+      outbox: mockOutboxService,
+      loginState: LoginState.loggedOut,
     );
-    await tester.pumpAndSettle();
     expect(find.byType(SnackBar), findsNothing);
     controller.add(null);
-    await tester.pump();
-    await tester.pumpAndSettle();
+    await _pumpGateEvent(tester);
     expect(find.byType(SnackBar), findsOneWidget);
 
     // Second build: simulate login (resets guard)
-    await tester.pumpWidget(
-      _buildTestRouterApp(
-        routerDelegate: routerDelegate,
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrix),
-          loginStateStreamProvider.overrideWith(
-            (ref) => Stream<LoginState>.value(LoginState.loggedIn),
-          ),
-          outboxServiceProvider.overrideWithValue(mockOutboxService),
-          aiSetupPromptServiceProvider.overrideWith(
-            _MockAiSetupPromptService.new,
-          ),
-          shouldAutoShowWhatsNewProvider.overrideWith(
-            (ref) async => false,
-          ),
-        ],
-      ),
+    await _pumpToastApp(
+      tester,
+      routerDelegate: routerDelegate,
+      matrix: mockMatrix,
+      outbox: mockOutboxService,
+      loginState: LoginState.loggedIn,
     );
-    await tester.pumpAndSettle();
 
     // Third build: back to logged out, a new event should show toast again
-    await tester.pumpWidget(
-      _buildTestRouterApp(
-        routerDelegate: routerDelegate,
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrix),
-          loginStateStreamProvider.overrideWith(
-            (ref) => Stream<LoginState>.value(LoginState.loggedOut),
-          ),
-          outboxServiceProvider.overrideWithValue(mockOutboxService),
-          aiSetupPromptServiceProvider.overrideWith(
-            _MockAiSetupPromptService.new,
-          ),
-          shouldAutoShowWhatsNewProvider.overrideWith(
-            (ref) async => false,
-          ),
-        ],
-      ),
+    await _pumpToastApp(
+      tester,
+      routerDelegate: routerDelegate,
+      matrix: mockMatrix,
+      outbox: mockOutboxService,
+      loginState: LoginState.loggedOut,
     );
-    await tester.pumpAndSettle();
     controller.add(null);
-    await tester.pump();
-    await tester.pumpAndSettle();
+    await _pumpGateEvent(tester);
     expect(find.byType(SnackBar), findsOneWidget);
     expect(find.text('Sync is not logged in'), findsOneWidget);
   });

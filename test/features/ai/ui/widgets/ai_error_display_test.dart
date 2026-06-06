@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/inference_error.dart';
 import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
-import 'package:lotti/l10n/app_localizations.dart';
+
+import '../../../../widget_test_utils.dart';
 
 void main() {
   group('AiErrorDisplay', () {
@@ -19,18 +19,9 @@ void main() {
     Widget createTestWidget({
       required InferenceError error,
       VoidCallback? onRetry,
-      ThemeData? theme,
     }) {
-      return MaterialApp(
-        theme: theme ?? ThemeData.light(),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
+      return makeTestableWidgetNoScroll(
+        Scaffold(
           body: SingleChildScrollView(
             child: AiErrorDisplay(
               error: error,
@@ -38,7 +29,21 @@ void main() {
             ),
           ),
         ),
+        // The error card needs more width than the phone default.
+        mediaQueryData: const MediaQueryData(size: Size(800, 600)),
       );
+    }
+
+    /// Pumps on a wide surface so the suggestions list has room; resets the
+    /// view in teardown.
+    Future<void> pumpWide(WidgetTester tester, Widget widget) async {
+      tester.view
+        ..physicalSize = const Size(1200, 800)
+        ..devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(widget);
+      await tester.pumpAndSettle();
     }
 
     group('basic rendering', () {
@@ -120,18 +125,10 @@ void main() {
           type: InferenceErrorType.networkConnection,
         );
 
-        // Use larger screen to prevent overflow
-        tester.view.physicalSize = const Size(1200, 800);
-        tester.view.devicePixelRatio = 1.0;
-
-        await tester.pumpWidget(createTestWidget(error: error));
-        await tester.pumpAndSettle();
+        await pumpWide(tester, createTestWidget(error: error));
 
         expect(find.text('Check your internet connection'), findsOneWidget);
         expect(find.text('Verify the server URL is correct'), findsOneWidget);
-
-        // Reset view
-        addTearDown(tester.view.resetPhysicalSize);
       });
 
       testWidgets('shows suggestions for timeout errors', (
@@ -142,15 +139,9 @@ void main() {
           type: InferenceErrorType.timeout,
         );
 
-        tester.view.physicalSize = const Size(1200, 800);
-        tester.view.devicePixelRatio = 1.0;
-
-        await tester.pumpWidget(createTestWidget(error: error));
-        await tester.pumpAndSettle();
+        await pumpWide(tester, createTestWidget(error: error));
 
         expect(find.text('Try again with a shorter prompt'), findsOneWidget);
-
-        addTearDown(tester.view.resetPhysicalSize);
       });
 
       testWidgets('shows suggestions for authentication errors', (
@@ -161,15 +152,9 @@ void main() {
           type: InferenceErrorType.authentication,
         );
 
-        tester.view.physicalSize = const Size(1200, 800);
-        tester.view.devicePixelRatio = 1.0;
-
-        await tester.pumpWidget(createTestWidget(error: error));
-        await tester.pumpAndSettle();
+        await pumpWide(tester, createTestWidget(error: error));
 
         expect(find.text('Verify your API key is correct'), findsOneWidget);
-
-        addTearDown(tester.view.resetPhysicalSize);
       });
 
       testWidgets('shows suggestions for rate limit errors', (
@@ -180,18 +165,12 @@ void main() {
           type: InferenceErrorType.rateLimit,
         );
 
-        tester.view.physicalSize = const Size(1200, 800);
-        tester.view.devicePixelRatio = 1.0;
-
-        await tester.pumpWidget(createTestWidget(error: error));
-        await tester.pumpAndSettle();
+        await pumpWide(tester, createTestWidget(error: error));
 
         expect(
           find.text('Wait a few minutes before trying again'),
           findsOneWidget,
         );
-
-        addTearDown(tester.view.resetPhysicalSize);
       });
 
       testWidgets('shows Ollama-specific suggestions for model not found', (
@@ -202,16 +181,10 @@ void main() {
           type: InferenceErrorType.invalidRequest,
         );
 
-        tester.view.physicalSize = const Size(1200, 800);
-        tester.view.devicePixelRatio = 1.0;
-
-        await tester.pumpWidget(createTestWidget(error: error));
-        await tester.pumpAndSettle();
+        await pumpWide(tester, createTestWidget(error: error));
 
         expect(find.text('Run: ollama pull llama2'), findsOneWidget);
         expect(find.text('Make sure Ollama is running'), findsOneWidget);
-
-        addTearDown(tester.view.resetPhysicalSize);
       });
 
       testWidgets('shows generic invalid request suggestions', (
@@ -222,15 +195,9 @@ void main() {
           type: InferenceErrorType.invalidRequest,
         );
 
-        tester.view.physicalSize = const Size(1200, 800);
-        tester.view.devicePixelRatio = 1.0;
-
-        await tester.pumpWidget(createTestWidget(error: error));
-        await tester.pumpAndSettle();
+        await pumpWide(tester, createTestWidget(error: error));
 
         expect(find.text('Check your model configuration'), findsOneWidget);
-
-        addTearDown(tester.view.resetPhysicalSize);
       });
 
       testWidgets('shows suggestions for server errors', (
@@ -241,15 +208,9 @@ void main() {
           type: InferenceErrorType.serverError,
         );
 
-        tester.view.physicalSize = const Size(1200, 800);
-        tester.view.devicePixelRatio = 1.0;
-
-        await tester.pumpWidget(createTestWidget(error: error));
-        await tester.pumpAndSettle();
+        await pumpWide(tester, createTestWidget(error: error));
 
         expect(find.text('Wait a few minutes and try again'), findsOneWidget);
-
-        addTearDown(tester.view.resetPhysicalSize);
       });
 
       testWidgets('shows suggestions for unknown errors', (
@@ -260,28 +221,16 @@ void main() {
           type: InferenceErrorType.unknown,
         );
 
-        tester.view.physicalSize = const Size(1200, 800);
-        tester.view.devicePixelRatio = 1.0;
-
-        await tester.pumpWidget(createTestWidget(error: error));
-        await tester.pumpAndSettle();
+        await pumpWide(tester, createTestWidget(error: error));
 
         expect(find.text('Check the error details'), findsOneWidget);
-
-        addTearDown(tester.view.resetPhysicalSize);
       });
 
       testWidgets('shows suggestions container', (WidgetTester tester) async {
-        tester.view.physicalSize = const Size(1200, 800);
-        tester.view.devicePixelRatio = 1.0;
-
-        await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await pumpWide(tester, createTestWidget(error: testError));
 
         // Should find bullet points indicating suggestions
         expect(find.textContaining('•'), findsWidgets);
-
-        addTearDown(tester.view.resetPhysicalSize);
       });
     });
 
@@ -336,6 +285,38 @@ void main() {
 
         expect(find.byType(FilledButton), findsNothing);
       });
+
+      testWidgets(
+        'shows the retry button for every retryable error type and fires '
+        'onRetry on tap',
+        (tester) async {
+          const retryableTypes = [
+            InferenceErrorType.networkConnection,
+            InferenceErrorType.timeout,
+            InferenceErrorType.serverError,
+            InferenceErrorType.rateLimit,
+            InferenceErrorType.unknown,
+          ];
+
+          for (final type in retryableTypes) {
+            var retries = 0;
+            await pumpWide(
+              tester,
+              createTestWidget(
+                error: InferenceError(message: 'Boom', type: type),
+                onRetry: () => retries++,
+              ),
+            );
+
+            final retryButton = find.byType(FilledButton);
+            expect(retryButton, findsOneWidget, reason: '$type');
+
+            await tester.ensureVisible(retryButton);
+            await tester.tap(retryButton);
+            expect(retries, 1, reason: '$type');
+          }
+        },
+      );
     });
 
     group('text selection', () {
@@ -364,30 +345,10 @@ void main() {
     });
 
     group('theme variations', () {
-      testWidgets('renders correctly in light theme', (
+      testWidgets('renders under the suite theme', (
         WidgetTester tester,
       ) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            error: testError,
-            theme: ThemeData.light(),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        expect(find.byType(AiErrorDisplay), findsOneWidget);
-        expect(find.text('Test error message'), findsOneWidget);
-      });
-
-      testWidgets('renders correctly in dark theme', (
-        WidgetTester tester,
-      ) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            error: testError,
-            theme: ThemeData.dark(),
-          ),
-        );
+        await tester.pumpWidget(createTestWidget(error: testError));
         await tester.pumpAndSettle();
 
         expect(find.byType(AiErrorDisplay), findsOneWidget);
@@ -411,11 +372,7 @@ void main() {
       });
 
       testWidgets('centers text elements', (WidgetTester tester) async {
-        tester.view.physicalSize = const Size(1200, 800);
-        tester.view.devicePixelRatio = 1.0;
-
-        await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await pumpWide(tester, createTestWidget(error: testError));
 
         // Find the SelectableText widget containing the error message
         final selectableTextFinder = find.byType(SelectableText).first;
@@ -426,8 +383,6 @@ void main() {
         // Verify it contains the expected text and is centered
         expect(selectableText.data, contains('Test error message'));
         expect(selectableText.textAlign, TextAlign.center);
-
-        addTearDown(tester.view.resetPhysicalSize);
       });
 
       testWidgets('uses proper padding', (WidgetTester tester) async {
@@ -452,16 +407,9 @@ void main() {
         );
 
         // Use a larger screen size to accommodate long text
-        tester.view.physicalSize = const Size(1200, 800);
-        tester.view.devicePixelRatio = 1.0;
-
-        await tester.pumpWidget(createTestWidget(error: longError));
-        await tester.pumpAndSettle();
+        await pumpWide(tester, createTestWidget(error: longError));
 
         expect(find.byType(SelectableText), findsWidgets);
-
-        // Reset view
-        addTearDown(tester.view.resetPhysicalSize);
       });
 
       testWidgets('handles empty suggestions list', (
@@ -522,7 +470,6 @@ void main() {
       ) async {
         tester.view.physicalSize = const Size(1200, 800);
         tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
         var retried = false;
         final error = InferenceError(
           message: 'Temporary error',

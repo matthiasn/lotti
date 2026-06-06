@@ -17,6 +17,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:sqlite3/sqlite3.dart' show SqliteException;
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 import 'agent_repository_test_helpers.dart';
@@ -8083,8 +8084,9 @@ void main() {
     late AgentRepository loggedRepo;
     late MockDomainLogger mockLogger;
 
+    setUpAll(registerAllFallbackValues);
+
     setUp(() {
-      registerFallbackValue(StackTrace.empty);
       loggedDb = AgentDatabase(inMemoryDatabase: true, background: false);
       mockLogger = MockDomainLogger();
       loggedRepo = AgentRepository(loggedDb, domainLogger: mockLogger);

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/database/sync_db.dart';
@@ -79,18 +80,18 @@ class BackfillResponseHandler {
   bool _isRecentlyResponded(String hostId, int counter) {
     final lastResponse = recentlyResponded[_cooldownKey(hostId, counter)];
     if (lastResponse == null) return false;
-    return DateTime.now().difference(lastResponse) < _responseCooldown;
+    return clock.now().difference(lastResponse) < _responseCooldown;
   }
 
   /// Record that a (hostId, counter) pair was responded to.
   void _recordResponse(String hostId, int counter) {
-    recentlyResponded[_cooldownKey(hostId, counter)] = DateTime.now();
+    recentlyResponded[_cooldownKey(hostId, counter)] = clock.now();
   }
 
   /// Periodically clean expired entries from the cooldown cache.
   /// Called at the start of each request batch.
   void _cleanExpiredCooldowns() {
-    final now = DateTime.now();
+    final now = clock.now();
     recentlyResponded.removeWhere(
       (_, timestamp) => now.difference(timestamp) >= _responseCooldown,
     );
@@ -98,7 +99,7 @@ class BackfillResponseHandler {
 
   /// Check if the rate limit has been reached for the current time window.
   bool _isRateLimited() {
-    final now = DateTime.now();
+    final now = clock.now();
     if (windowStart == null ||
         now.difference(windowStart!) >= SyncTuning.backfillResponseRateWindow) {
       // Start a new window

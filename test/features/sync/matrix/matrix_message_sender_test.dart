@@ -29,8 +29,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockDeviceKeys extends Mock implements DeviceKeys {}
-
 enum _GeneratedSendMessageKind {
   aiConfigDelete,
   themingSelection,
@@ -2320,6 +2318,43 @@ void main() {
       ).called(greaterThanOrEqualTo(2));
     });
 
+    test(
+      'returns null and logs when the JSON payload file is unreadable',
+      () async {
+        // No file is created at the path: the readAsBytes try/catch fires.
+        final message =
+            SyncMessage.journalEntity(
+                  id: 'entry-missing',
+                  jsonPath: '/entries/does-not-exist.json',
+                  vectorClock: VectorClock({'device': 1}),
+                  status: SyncEntryStatus.initial,
+                )
+                as SyncJournalEntity;
+
+        final result = await sender.sendJournalEntityPayloadForTesting(
+          room: room,
+          message: message,
+        );
+
+        expect(result, isNull);
+        // Nothing was sent to the room.
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'sendMatrixMsg',
+          ),
+        ).called(1);
+      },
+    );
+
     test('propagates failure when attachment upload fails', () async {
       final responses = <String?>['json-id', null];
       when(
@@ -2380,9 +2415,104 @@ void main() {
 
       expect(result, isNull);
     });
+
+    test('propagates failure when audio attachment upload fails', () async {
+      // First sendFileEvent (the JSON payload) succeeds; the audio
+      // attachment upload returns null -> the whole send must fail.
+      final responses = <String?>['json-id', null];
+      when(
+        () => room.sendFileEvent(
+          any<MatrixFile>(),
+          extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+        ),
+      ).thenAnswer((_) async => responses.removeAt(0));
+      when(
+        () => journalDb.getConfigFlag(resendAttachments),
+      ).thenAnswer((_) async => true);
+
+      final sampleDate = DateTime.utc(2024, 1, 1);
+      final metadata = Metadata(
+        id: 'audio-entry',
+        createdAt: sampleDate,
+        updatedAt: sampleDate,
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        vectorClock: VectorClock({'device': 1}),
+      );
+      final audioData = AudioData(
+        dateFrom: sampleDate,
+        dateTo: sampleDate,
+        audioFile: 'recording.m4a',
+        audioDirectory: '/audio/',
+        duration: const Duration(seconds: 5),
+      );
+      final journalEntity = JournalEntity.journalAudio(
+        meta: metadata,
+        data: audioData,
+        entryText: const EntryText(plainText: 'Audio test'),
+      );
+
+      const jsonPath = '/entries/failing-audio.json';
+      File('${documentsDirectory.path}$jsonPath')
+        ..createSync(recursive: true)
+        ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
+
+      final audioPath =
+          '${documentsDirectory.path}${audioData.audioDirectory}'
+          '${audioData.audioFile}';
+      File(audioPath)
+        ..createSync(recursive: true)
+        ..writeAsBytesSync(List<int>.filled(10, 7));
+
+      final message =
+          SyncMessage.journalEntity(
+                id: 'audio-entry',
+                jsonPath: jsonPath,
+                vectorClock: VectorClock({'device': 1}),
+                status: SyncEntryStatus.initial,
+              )
+              as SyncJournalEntity;
+
+      final result = await sender.sendJournalEntityPayloadForTesting(
+        room: room,
+        message: message,
+      );
+
+      expect(result, isNull);
+    });
   });
 
   group('enrichAndUploadAgentPayloadForTesting', () {
+    test(
+      'skips send when both inline payload and jsonPath are missing',
+      () async {
+        const message = SyncMessage.agentEntity(
+          status: SyncEntryStatus.update,
+        );
+
+        final result = await sender.enrichAndUploadAgentPayloadForTesting(
+          room: room,
+          message: message,
+        );
+
+        // Terminal skip: nothing to upload, nothing sent.
+        expect(result, isNull);
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            'skipping agentEntity send: missing payload and jsonPath',
+            subDomain: 'sendMatrixMsg',
+          ),
+        ).called(1);
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
+      },
+    );
+
     test('uploads entity file and strips inline payload', () async {
       when(
         () => room.sendFileEvent(
@@ -3216,6 +3346,44 @@ void main() {
         );
 
         expect(result, isNull);
+      },
+    );
+
+    test(
+      'sendOutboxBundlePayloadForTesting returns null and logs when the '
+      'manifest gzip encode fails',
+      () async {
+        // Inject a failing encoder via the constructor seam — the worker
+        // isolate encode can fail e.g. on isolate-spawn failure.
+        final failingSender = MatrixMessageSender(
+          loggingService: loggingService,
+          journalDb: journalDb,
+          documentsDirectory: documentsDirectory,
+          sentEventRegistry: sentEventRegistry,
+          gzipEncode: (_) async => throw StateError('encode boom'),
+        );
+
+        final result = await failingSender.sendOutboxBundlePayloadForTesting(
+          room: room,
+          message: bundleWith(2),
+        );
+
+        expect(result, isNull);
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(that: isA<StateError>()),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'sendMatrixMsg.outboxBundle.encode',
+          ),
+        ).called(1);
+        // Nothing reaches the wire after an encode failure.
+        verifyNever(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        );
       },
     );
 

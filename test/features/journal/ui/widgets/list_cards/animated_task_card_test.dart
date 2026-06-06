@@ -14,61 +14,46 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/modal/animated_modal_item.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../mocks/mocks.dart';
 import '../../../../../test_helper.dart';
 import '../../../../../widget_test_utils.dart';
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
-  @override
-  CategoryDefinition? getCategoryById(String? id) {
-    return id == 'test-category-id'
-        ? CategoryDefinition(
-            id: 'test-category-id',
-            createdAt: DateTime(2024, 1, 1, 12),
-            updatedAt: DateTime(2024, 1, 1, 12),
-            name: 'Test Category',
-            vectorClock: null,
-            private: false,
-            active: true,
-            color: '#FF0000',
-          )
-        : null;
-  }
-}
-
-class MockNavService extends Mock implements NavService {
-  final List<String> navigationHistory = [];
-
-  @override
-  void beamToNamed(String path, {Object? data}) {
-    navigationHistory.add(path);
-  }
-}
-
-class MockTimeService extends Mock implements TimeService {
-  @override
-  JournalEntity? get linkedFrom => null;
-
-  @override
-  Stream<JournalEntity?> getStream() => Stream.value(null);
-}
 
 void main() {
   late Task testTask;
   late MockEntitiesCacheService mockEntitiesCacheService;
-  late MockNavService mockNavService;
+  late RecordingMockNavService mockNavService;
   late MockTimeService mockTimeService;
   late DateTime now;
 
   setUp(() {
     mockEntitiesCacheService = MockEntitiesCacheService();
-    mockNavService = MockNavService();
+    mockNavService = RecordingMockNavService();
     mockTimeService = MockTimeService();
     // Register mock services
-    getIt.allowReassignment = true;
     getIt
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<TimeService>(mockTimeService)
       ..registerSingleton<NavService>(mockNavService);
+
+    when(() => mockTimeService.linkedFrom).thenReturn(null);
+    when(mockTimeService.getStream).thenAnswer((_) => Stream.value(null));
+    when(
+      () => mockEntitiesCacheService.getCategoryById(any()),
+    ).thenReturn(null);
+    when(
+      () => mockEntitiesCacheService.getCategoryById('test-category-id'),
+    ).thenReturn(
+      CategoryDefinition(
+        id: 'test-category-id',
+        createdAt: DateTime(2024, 1, 1, 12),
+        updatedAt: DateTime(2024, 1, 1, 12),
+        name: 'Test Category',
+        vectorClock: null,
+        private: false,
+        active: true,
+        color: '#FF0000',
+      ),
+    );
 
     // Create test task
     now = DateTime(2024, 1, 1, 12); // Use a fixed time for deterministic tests
@@ -132,7 +117,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the animated wrapper is present
       expect(find.byType(AnimatedModalItem), findsOneWidget);
@@ -152,7 +137,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the card
       await tester.tap(find.byType(AnimatedModalItem));
@@ -172,7 +157,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the AnimatedModalItem has the correct parameters
       final animatedItem = tester.widget<AnimatedModalItem>(
@@ -194,7 +179,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find MouseRegions - there may be multiple due to nested widgets
       final mouseRegions = find.byType(MouseRegion);
@@ -206,7 +191,7 @@ void main() {
       );
       await gesture.addPointer();
       await gesture.moveTo(tester.getCenter(find.byType(AnimatedModalItem)));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The animation should have triggered
       // We can't easily test the visual result, but we verify the gesture was handled
@@ -226,7 +211,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Start tap
       final gesture = await tester.startGesture(
@@ -239,7 +224,7 @@ void main() {
 
       // Complete tap
       await gesture.up();
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify navigation occurred
       expect(mockNavService.navigationHistory, ['/tasks/test-task-id']);
@@ -266,7 +251,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the card renders without errors
       expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
@@ -288,7 +273,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the card renders with due date
       expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
@@ -305,7 +290,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the widget tree structure
       expect(
@@ -327,7 +312,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Perform multiple rapid taps
       await tester.tap(find.byType(AnimatedModalItem));
@@ -335,7 +320,7 @@ void main() {
       await tester.tap(find.byType(AnimatedModalItem));
       await tester.pump(const Duration(milliseconds: 50));
       await tester.tap(find.byType(AnimatedModalItem));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Navigation should have been called three times
       expect(mockNavService.navigationHistory.length, 3);
@@ -359,7 +344,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the card renders without overflow
       expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
@@ -377,7 +362,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the card renders in dark theme
       expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
@@ -393,7 +378,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the card renders in light theme
       expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
@@ -410,7 +395,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify ModernTaskCard receives showCreationDate: true
       final modernTaskCard = tester.widget<ModernTaskCard>(
@@ -429,7 +414,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify ModernTaskCard receives showCreationDate: false by default
       final modernTaskCard = tester.widget<ModernTaskCard>(

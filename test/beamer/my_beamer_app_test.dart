@@ -131,21 +131,6 @@ void main() {
       expect(tooltipVisibility.visible, isFalse);
     });
 
-    test('GestureDetector onTap calls unfocus on primary focus', () {
-      // Test the unfocus logic directly without widget test
-      // In MyBeamerApp, GestureDetector.onTap does:
-      //   FocusManager.instance.primaryFocus?.unfocus()
-      // This verifies the pattern is correct
-      var unfocusCalled = false;
-      void onTapHandler() {
-        // Simulating what would happen if there was a primary focus
-        unfocusCalled = true;
-      }
-
-      onTapHandler();
-      expect(unfocusCalled, isTrue);
-    });
-
     testWidgets('MaterialApp uses theme from ThemingState', (tester) async {
       final customDarkTheme = ThemeData.dark().copyWith(
         primaryColor: Colors.red,
@@ -174,42 +159,6 @@ void main() {
       );
 
       expect(find.text('Theme: Brightness.dark'), findsOneWidget);
-    });
-
-    test('default tooltip visibility is true when stream has no value', () {
-      // In MyBeamerApp, when enableTooltipsProvider has no value,
-      // it defaults to true: `ref.watch(...).valueOrNull ?? true`
-      const bool? streamValue = null;
-      const enableTooltips = streamValue ?? true;
-
-      expect(enableTooltips, isTrue);
-    });
-
-    test('tooltip visibility uses stream value when available', () {
-      // Test that stream values are used directly
-      // When stream emits false, tooltips should be disabled
-      const streamValueFalse = false;
-      expect(streamValueFalse, isFalse);
-
-      // When stream emits true, tooltips should be enabled
-      const streamValueTrue = true;
-      expect(streamValueTrue, isTrue);
-
-      // The ?? true fallback only applies when value is null
-      const bool? nullValue = null;
-      const withFallback = nullValue ?? true;
-      expect(withFallback, isTrue);
-    });
-  });
-
-  group('MyBeamerApp initState', () {
-    test('currentPath from NavService is used for initial route', () {
-      // In initState, MyBeamerApp uses:
-      // initialPath: effectiveNavService.currentPath
-      // This verifies that the pattern works correctly
-      const testPath = '/settings';
-      expect(testPath, isNotEmpty);
-      expect(testPath.startsWith('/'), isTrue);
     });
   });
 

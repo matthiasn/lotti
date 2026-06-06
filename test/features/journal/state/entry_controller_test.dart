@@ -44,9 +44,6 @@ class Listener<T> extends Mock {
   void call(T? previous, T next);
 }
 
-// Added FakeEventData
-class FakeEventData extends Fake implements EventData {}
-
 // Definitions for sample JournalImage for testing addTextToImage
 const _testImageEntryId = 'image_id_001';
 final _testImageDateFrom = DateTime(2023, 10, 26, 10);
@@ -231,6 +228,9 @@ void main() {
 
   // setUpAll at main scope
   setUpAll(() {
+    // File-level GetIt scope: popped in tearDownAll so registrations never
+    // leak into other files in the same very_good batch isolate.
+    getIt.pushNewScope();
     stopRecordingDelay = Duration.zero;
 
     registerFallbackValue(fallbackJournalEntity);
@@ -346,7 +346,10 @@ void main() {
     ).thenAnswer((_) async => true);
   });
 
-  tearDownAll(getIt.reset);
+  tearDownAll(() async {
+    await getIt.resetScope();
+    await getIt.popScope();
+  });
 
   group('EntryController Tests - ', () {
     // Specific setUp for this group if needed (e.g., vcMockNext reset)
@@ -1458,8 +1461,17 @@ void main() {
         when(mockTimeService.stop).thenAnswer((_) async {});
 
         await notifier.save(stopRecording: true);
+        await container.pump();
 
         verify(mockTimeService.stop).called(1);
+
+        // The full post-save transition: dirty cleared and the editor
+        // toolbar hidden — not just the timer side effect.
+        final savedState = await container.read(
+          entryControllerProvider(id: entryId).future,
+        );
+        expect(savedState, isNot(isA<EntryStateDirty>()));
+        expect(savedState?.shouldShowEditorToolBar, isFalse);
       });
 
       test('save propagates exception from updateJournalEntityText', () async {
@@ -1488,6 +1500,68 @@ void main() {
 
         expect(notifier.save, throwsA(exception));
       });
+    });
+
+    group('save method - JournalEvent', () {
+      final entryId = testEventEntry.meta.id;
+
+      test(
+        'save routes through updateEvent preserving title and status',
+        () async {
+          final container = makeProviderContainer();
+          final notifier = container.read(
+            entryControllerProvider(id: entryId).notifier,
+          );
+          await container.read(entryControllerProvider(id: entryId).future);
+
+          notifier.setDirty(value: true);
+
+          when(
+            () => mockPersistenceLogic.updateEvent(
+              entryText: any(named: 'entryText'),
+              journalEntityId: entryId,
+              data: any(named: 'data'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockEditorStateService.entryWasSaved(
+              id: entryId,
+              lastSaved: any(named: 'lastSaved'),
+              controller: notifier.controller,
+            ),
+          ).thenAnswer((_) async {});
+
+          await notifier.save();
+          await container.pump();
+
+          // With no form mounted, the saved data falls back to the event's
+          // existing title and status.
+          final captured = verify(
+            () => mockPersistenceLogic.updateEvent(
+              entryText: any(named: 'entryText'),
+              journalEntityId: entryId,
+              data: captureAny(named: 'data'),
+            ),
+          ).captured;
+          final capturedData = captured.single as EventData;
+          expect(capturedData.title, testEventEntry.data.title);
+          expect(capturedData.status, testEventEntry.data.status);
+
+          // The text-entry save path must not run for events.
+          verifyNever(
+            () => mockPersistenceLogic.updateJournalEntityText(
+              entryId,
+              any(),
+              any(),
+            ),
+          );
+
+          final savedState = await container.read(
+            entryControllerProvider(id: entryId).future,
+          );
+          expect(savedState, isNot(isA<EntryStateDirty>()));
+        },
+      );
     });
   });
 

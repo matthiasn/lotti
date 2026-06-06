@@ -4,12 +4,13 @@ import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 
 /// Generates dates within a sensible calendar range.
 extension _AnyRouteDate on glados.Any {
-  glados.Generator<DateTime> get routeDate => glados.CombinableAny(this).combine3(
-    glados.any.intInRange(1000, 9999),
-    glados.any.intInRange(1, 12),
-    glados.any.intInRange(1, 28),
-    DateTime.new,
-  );
+  glados.Generator<DateTime> get routeDate =>
+      glados.CombinableAny(this).combine3(
+        glados.any.intInRange(1000, 9999),
+        glados.any.intInRange(1, 12),
+        glados.any.intInRange(1, 28),
+        DateTime.new,
+      );
 }
 
 void main() {

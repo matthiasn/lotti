@@ -26,17 +26,7 @@ import 'package:record/record.dart' as record;
 
 import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
-
-class _MockAudioRecorder extends Mock implements record.AudioRecorder {}
-
-class _MockCloudInferenceRepository extends Mock
-    implements CloudInferenceRepository {}
-
-class _MockTranscriptionService extends Mock
-    implements AudioTranscriptionService {}
-
-class _MockRealtimeService extends Mock
-    implements RealtimeTranscriptionService {}
+import '../../../../widget_test_utils.dart';
 
 class _InMemoryAiConfigRepo extends AiConfigRepository {
   _InMemoryAiConfigRepo() : super(AiConfigDb(inMemoryDatabase: true));
@@ -188,24 +178,21 @@ void main() {
     );
   });
 
-  setUp(() {
-    // Ensure logging is available to avoid getIt lookup errors.
-    // Always reset to _FakeLoggingService to ensure consistent state.
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    getIt.registerSingleton<DomainLogger>(MockDomainLogger());
+  setUp(() async {
+    await setUpTestGetIt(
+      additionalSetup: () {
+        // The controller logs through DomainLogger; tests only need a mock.
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(MockDomainLogger());
+      },
+    );
   });
 
-  tearDown(() {
-    // Clean up GetIt state to prevent cross-test contamination
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   test('start() without permission sets errorType and message', () async {
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => false);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
 
@@ -233,7 +220,7 @@ void main() {
   test('concurrent start attempts are rejected', () async {
     // Use fake time to avoid real waits
     fakeAsync((FakeAsync async) {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       final gate = Completer<void>();
@@ -311,7 +298,7 @@ void main() {
       fromSync: true,
     );
 
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     when(
@@ -334,7 +321,7 @@ void main() {
       ),
     );
 
-    final mockCloud = _MockCloudInferenceRepository();
+    final mockCloud = MockCloudInferenceRepository();
     when(
       () => mockCloud.generateWithAudio(
         any(),
@@ -378,7 +365,7 @@ void main() {
 
   test('dispose cleans files, cancels timer, clears amplitudes', () async {
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
 
@@ -412,7 +399,7 @@ void main() {
           ),
         ),
         audioTranscriptionServiceProvider.overrideWithValue(
-          _MockTranscriptionService(),
+          MockAudioTranscriptionService(),
         ),
       ],
     );
@@ -444,12 +431,9 @@ void main() {
     sub.close();
     container.dispose();
 
-    // The ref.onDispose cleanup is unawaited and chains multiple async
-    // operations. Pump the event queue repeatedly until cleanup completes.
-    for (var i = 0; i < 10; i++) {
-      await pumpEventQueue();
-      if (!await tempSubdir.exists()) break;
-    }
+    // Await the otherwise-unawaited onDispose cleanup chain via the
+    // deterministic test hook.
+    await controller.disposeCleanupFuture;
 
     // Directory is cleaned up after dispose
     expect(await tempSubdir.exists(), isFalse);
@@ -457,7 +441,7 @@ void main() {
 
   test('creates audio file and deletes on cancel', () async {
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
 
@@ -492,7 +476,7 @@ void main() {
           ),
         ),
         audioTranscriptionServiceProvider.overrideWithValue(
-          _MockTranscriptionService(),
+          MockAudioTranscriptionService(),
         ),
       ],
     );
@@ -528,7 +512,7 @@ void main() {
 
   test("rapid start-stop cycles don't leak and stay stable", () async {
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     // Emit amplitude events so state changes to recording
@@ -552,7 +536,7 @@ void main() {
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
     // Fast transcription result to avoid delays
-    final mockSvc = _MockTranscriptionService();
+    final mockSvc = MockAudioTranscriptionService();
     when(() => mockSvc.transcribe(any())).thenAnswer((_) async => 'ok');
 
     final container = ProviderContainer(
@@ -590,7 +574,7 @@ void main() {
 
   test('timeout during transcription surfaces error and cleans up', () async {
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     // Emit amplitude events so state changes to recording
@@ -610,7 +594,7 @@ void main() {
     });
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
-    final mockSvc = _MockTranscriptionService();
+    final mockSvc = MockAudioTranscriptionService();
     when(
       () => mockSvc.transcribe(any()),
     ).thenThrow(TimeoutException('timeout'));
@@ -644,7 +628,7 @@ void main() {
   });
 
   test('start() handles temp directory failure gracefully', () async {
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
 
@@ -679,7 +663,7 @@ void main() {
     getIt.registerSingleton<DomainLogger>(mockLogger);
 
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     when(
@@ -706,7 +690,7 @@ void main() {
           );
         }),
         audioTranscriptionServiceProvider.overrideWithValue(
-          _MockTranscriptionService(),
+          MockAudioTranscriptionService(),
         ),
       ],
     );
@@ -737,7 +721,7 @@ void main() {
     getIt.registerSingleton<DomainLogger>(mockLogger);
 
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     // Stream that returns a subscription whose cancel throws
@@ -765,7 +749,7 @@ void main() {
           );
         }),
         audioTranscriptionServiceProvider.overrideWithValue(
-          _MockTranscriptionService(),
+          MockAudioTranscriptionService(),
         ),
       ],
     );
@@ -804,7 +788,7 @@ void main() {
     getIt.registerSingleton<DomainLogger>(mockLogger);
 
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     when(
@@ -832,7 +816,7 @@ void main() {
           );
         }),
         audioTranscriptionServiceProvider.overrideWithValue(
-          _MockTranscriptionService(),
+          MockAudioTranscriptionService(),
         ),
       ],
     );
@@ -878,7 +862,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         audioTranscriptionServiceProvider.overrideWithValue(
-          _MockTranscriptionService(),
+          MockAudioTranscriptionService(),
         ),
       ],
     );
@@ -910,7 +894,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           audioTranscriptionServiceProvider.overrideWithValue(
-            _MockTranscriptionService(),
+            MockAudioTranscriptionService(),
           ),
         ],
       );
@@ -935,7 +919,7 @@ void main() {
 
   test('ref.onDispose cleans up active recording resources', () async {
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -967,7 +951,7 @@ void main() {
           ),
         ),
         audioTranscriptionServiceProvider.overrideWithValue(
-          _MockTranscriptionService(),
+          MockAudioTranscriptionService(),
         ),
       ],
     );
@@ -990,12 +974,9 @@ void main() {
     sub.close();
     container.dispose();
 
-    // Wait for cleanup by pumping the event queue multiple times to allow
-    // the unawaited cleanup future chain to complete
-    for (var i = 0; i < 10; i++) {
-      await pumpEventQueue();
-      if (!await tempSubdir.exists()) break;
-    }
+    // Await the otherwise-unawaited onDispose cleanup chain via the
+    // deterministic test hook.
+    await controller.disposeCleanupFuture;
 
     // Temp directory should be cleaned up by onDispose
     expect(await tempSubdir.exists(), isFalse);
@@ -1005,7 +986,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         audioTranscriptionServiceProvider.overrideWithValue(
-          _MockTranscriptionService(),
+          MockAudioTranscriptionService(),
         ),
       ],
     );
@@ -1028,7 +1009,7 @@ void main() {
     'partialTranscript updates progressively during streaming transcription',
     () async {
       final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(
@@ -1046,7 +1027,7 @@ void main() {
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
       // Mock transcription service that streams chunks progressively
-      final mockSvc = _MockTranscriptionService();
+      final mockSvc = MockAudioTranscriptionService();
       final streamController = StreamController<String>();
 
       when(
@@ -1110,7 +1091,7 @@ void main() {
 
   test('partialTranscript is cleared when transcription completes', () async {
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     when(
@@ -1127,7 +1108,7 @@ void main() {
     });
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
-    final mockSvc = _MockTranscriptionService();
+    final mockSvc = MockAudioTranscriptionService();
     when(
       () => mockSvc.transcribeStream(any()),
     ).thenAnswer((_) => Stream.fromIterable(['Complete transcript']));
@@ -1160,7 +1141,7 @@ void main() {
 
   test('partialTranscript is cleared on cancel during processing', () async {
     final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
-    final mockRecorder = _MockAudioRecorder();
+    final mockRecorder = MockAudioRecorder();
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     when(
@@ -1178,7 +1159,7 @@ void main() {
     when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
     // Create a stream that never completes (simulates long transcription)
-    final mockSvc = _MockTranscriptionService();
+    final mockSvc = MockAudioTranscriptionService();
     final neverEndingController = StreamController<String>();
 
     when(
@@ -1234,7 +1215,7 @@ void main() {
 
   group('startRealtime', () {
     test('sets status to realtimeRecording on success', () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -1242,7 +1223,7 @@ void main() {
         () => mockRecorder.startStream(any<record.RecordConfig>()),
       ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.amplitudeStream,
       ).thenAnswer((_) => Stream<double>.empty());
@@ -1278,11 +1259,11 @@ void main() {
     });
 
     test('permission denied sets error state', () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => false);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
 
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
 
       final container = ProviderContainer(
         overrides: [
@@ -1309,12 +1290,12 @@ void main() {
     });
 
     test('concurrent startRealtime is rejected', () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       final gate = Completer<bool>();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) => gate.future);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
 
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
 
       final container = ProviderContainer(
         overrides: [
@@ -1343,7 +1324,7 @@ void main() {
     });
 
     test('updates partialTranscript from onDelta callback', () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -1352,7 +1333,7 @@ void main() {
       ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
       void Function(String)? capturedOnDelta;
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.amplitudeStream,
       ).thenAnswer((_) => Stream<double>.empty());
@@ -1399,7 +1380,7 @@ void main() {
 
   group('stopRealtime', () {
     test('sets transcript and returns to idle', () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -1407,7 +1388,7 @@ void main() {
         () => mockRecorder.startStream(any<record.RecordConfig>()),
       ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.amplitudeStream,
       ).thenAnswer((_) => Stream<double>.empty());
@@ -1459,7 +1440,7 @@ void main() {
 
   group('cancel during realtime', () {
     test('cancels realtime subscriptions and returns to idle', () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -1467,7 +1448,7 @@ void main() {
         () => mockRecorder.startStream(any<record.RecordConfig>()),
       ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.amplitudeStream,
       ).thenAnswer((_) => Stream<double>.empty());
@@ -1514,7 +1495,7 @@ void main() {
     final container = ProviderContainer(
       overrides: [
         audioTranscriptionServiceProvider.overrideWithValue(
-          _MockTranscriptionService(),
+          MockAudioTranscriptionService(),
         ),
       ],
     );
@@ -1541,7 +1522,7 @@ void main() {
   test(
     'stopAndTranscribe completes successfully with empty transcription',
     () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(
@@ -1566,7 +1547,7 @@ void main() {
             ),
           ),
           audioTranscriptionServiceProvider.overrideWithValue(
-            _MockTranscriptionService(),
+            MockAudioTranscriptionService(),
           ),
         ],
       );
@@ -1606,7 +1587,7 @@ void main() {
 
   group('startRealtime error handling', () {
     test('sets error state when startRealtimeTranscription throws', () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -1614,7 +1595,7 @@ void main() {
         () => mockRecorder.startStream(any<record.RecordConfig>()),
       ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.amplitudeStream,
       ).thenAnswer((_) => Stream<double>.empty());
@@ -1653,7 +1634,7 @@ void main() {
 
   group('stopRealtime error handling', () {
     test('sets error state when realtimeService.stop throws', () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -1661,7 +1642,7 @@ void main() {
         () => mockRecorder.startStream(any<record.RecordConfig>()),
       ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.amplitudeStream,
       ).thenAnswer((_) => Stream<double>.empty());
@@ -1677,6 +1658,7 @@ void main() {
           outputPath: any(named: 'outputPath'),
         ),
       ).thenThrow(Exception('WebSocket closed unexpectedly'));
+      when(() => mockRealtime.dispose()).thenAnswer((_) async {});
 
       final container = ProviderContainer(
         overrides: [
@@ -1710,6 +1692,9 @@ void main() {
       expect(state.status, ChatRecorderStatus.idle);
       expect(state.errorType, ChatRecorderErrorType.transcriptionFailed);
       expect(state.error, contains('Realtime transcription failed'));
+      // The catch path must tear down the WebSocket/service subscriptions
+      // that stop() would have cleaned up on success.
+      verify(() => mockRealtime.dispose()).called(1);
     });
   });
 
@@ -1721,7 +1706,7 @@ void main() {
         '${baseTemp.path}/lotti_chat_rec',
       ).create(recursive: true);
 
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(
@@ -1737,7 +1722,7 @@ void main() {
       ).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
-      final mockSvc = _MockTranscriptionService();
+      final mockSvc = MockAudioTranscriptionService();
       when(
         () => mockSvc.transcribeStream(any()),
       ).thenAnswer((_) => Stream.value('timer transcript'));
@@ -1789,7 +1774,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           audioTranscriptionServiceProvider.overrideWithValue(
-            _MockTranscriptionService(),
+            MockAudioTranscriptionService(),
           ),
         ],
       );
@@ -1812,7 +1797,7 @@ void main() {
 
   group('startRealtime when not idle', () {
     test('returns early when status is not idle', () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -1820,7 +1805,7 @@ void main() {
         () => mockRecorder.startStream(any<record.RecordConfig>()),
       ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.amplitudeStream,
       ).thenAnswer((_) => Stream<double>.empty());
@@ -1870,7 +1855,7 @@ void main() {
 
   group('max timer safety stop for realtime', () {
     test('fires and calls stopRealtime after max duration', () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -1878,7 +1863,7 @@ void main() {
         () => mockRecorder.startStream(any<record.RecordConfig>()),
       ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.amplitudeStream,
       ).thenAnswer((_) => Stream<double>.empty());
@@ -1944,7 +1929,7 @@ void main() {
 
   group('_onAppPaused lifecycle', () {
     test('stops realtime recording when app is paused', () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -1952,7 +1937,7 @@ void main() {
         () => mockRecorder.startStream(any<record.RecordConfig>()),
       ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.amplitudeStream,
       ).thenAnswer((_) => Stream<double>.empty());
@@ -2021,7 +2006,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           audioTranscriptionServiceProvider.overrideWithValue(
-            _MockTranscriptionService(),
+            MockAudioTranscriptionService(),
           ),
         ],
       );
@@ -2077,7 +2062,7 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -2085,7 +2070,7 @@ void main() {
         () => mockRecorder.startStream(any<record.RecordConfig>()),
       ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.amplitudeStream,
       ).thenAnswer((_) => _ThrowOnCancelDoubleStream());
@@ -2168,7 +2153,7 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
         when(() => mockRecorder.dispose()).thenAnswer((_) async {});
         when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -2176,7 +2161,7 @@ void main() {
           () => mockRecorder.startStream(any<record.RecordConfig>()),
         ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
-        final mockRealtime = _MockRealtimeService();
+        final mockRealtime = MockRealtimeTranscriptionService();
         // amplitudeStream returns a subscription whose cancel() throws
         when(
           () => mockRealtime.amplitudeStream,
@@ -2272,7 +2257,7 @@ void main() {
         ).thenAnswer((_) async {});
 
         final baseTemp = await Directory.systemTemp.createTemp('rec_697_');
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
         // dispose() throws — this is what triggers line 697
         when(
@@ -2302,7 +2287,7 @@ void main() {
               ),
             ),
             audioTranscriptionServiceProvider.overrideWithValue(
-              _MockTranscriptionService(),
+              MockAudioTranscriptionService(),
             ),
           ],
         );
@@ -2359,7 +2344,7 @@ void main() {
         final baseTemp = await Directory.systemTemp.createTemp('rec_726_');
         const now = 9999000726;
 
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
         when(() => mockRecorder.dispose()).thenAnswer((_) async {});
         when(
@@ -2390,7 +2375,7 @@ void main() {
               ),
             ),
             audioTranscriptionServiceProvider.overrideWithValue(
-              _MockTranscriptionService(),
+              MockAudioTranscriptionService(),
             ),
           ],
         );
@@ -2447,7 +2432,7 @@ void main() {
         final baseTemp = await Directory.systemTemp.createTemp('rec_749_');
         const now = 9999000749;
 
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
         when(() => mockRecorder.dispose()).thenAnswer((_) async {});
         when(
@@ -2476,7 +2461,7 @@ void main() {
               ),
             ),
             audioTranscriptionServiceProvider.overrideWithValue(
-              _MockTranscriptionService(),
+              MockAudioTranscriptionService(),
             ),
           ],
         );
@@ -2541,7 +2526,7 @@ void main() {
         // runs without an explicit override. We exercise that branch by
         // constructing the controller without the override, then verifying
         // the controller initialises correctly (idle state, no error).
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         when(
           () => mockRecorder.hasPermission(),
         ).thenAnswer((_) async => false);
@@ -2558,7 +2543,7 @@ void main() {
               ),
             ),
             audioTranscriptionServiceProvider.overrideWithValue(
-              _MockTranscriptionService(),
+              MockAudioTranscriptionService(),
             ),
           ],
         );
@@ -2597,7 +2582,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             audioTranscriptionServiceProvider.overrideWithValue(
-              _MockTranscriptionService(),
+              MockAudioTranscriptionService(),
             ),
           ],
         );
@@ -2622,7 +2607,7 @@ void main() {
     test(
       'transitions from recording to idle with transcript when file exists',
       () async {
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
         when(() => mockRecorder.dispose()).thenAnswer((_) async {});
         when(
@@ -2636,7 +2621,7 @@ void main() {
         ).thenAnswer((_) async {}); // no real file; transcription is mocked
         when(() => mockRecorder.stop()).thenAnswer((_) async => null);
 
-        final mockSvc = _MockTranscriptionService();
+        final mockSvc = MockAudioTranscriptionService();
         when(
           () => mockSvc.transcribeStream(any()),
         ).thenAnswer((_) => Stream.value('hello'));
@@ -2676,6 +2661,66 @@ void main() {
         expect(state.partialTranscript, isNull);
       },
     );
+
+    test(
+      'sets noAudioFile when a recorder is active but no file path exists '
+      '(realtime session stopped through the batch path)',
+      () async {
+        // startRealtime() sets _recorder but never _filePath, so calling
+        // stopAndTranscribe() on a realtime session reaches the defensive
+        // null-filePath branch.
+        final mockRecorder = MockAudioRecorder();
+        when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+        when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+        when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+        when(
+          () => mockRecorder.startStream(any<record.RecordConfig>()),
+        ).thenAnswer((_) async => Stream<Uint8List>.empty());
+
+        final mockRealtime = MockRealtimeTranscriptionService();
+        when(
+          () => mockRealtime.amplitudeStream,
+        ).thenAnswer((_) => Stream<double>.empty());
+        when(
+          () => mockRealtime.startRealtimeTranscription(
+            pcmStream: any(named: 'pcmStream'),
+            onDelta: any(named: 'onDelta'),
+          ),
+        ).thenAnswer((_) async {});
+
+        final container = ProviderContainer(
+          overrides: [
+            chatRecorderControllerProvider.overrideWith(
+              () => ChatRecorderController(
+                recorderFactory: () => mockRecorder,
+                tempDirectoryProvider: () async => Directory.systemTemp,
+                realtimeTranscriptionService: mockRealtime,
+              ),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+        addTearDown(sub.close);
+
+        final controller = container.read(
+          chatRecorderControllerProvider.notifier,
+        );
+        await controller.startRealtime();
+        expect(
+          container.read(chatRecorderControllerProvider).status,
+          ChatRecorderStatus.realtimeRecording,
+        );
+
+        await controller.stopAndTranscribe();
+
+        final state = container.read(chatRecorderControllerProvider);
+        expect(state.status, ChatRecorderStatus.idle);
+        expect(state.errorType, ChatRecorderErrorType.noAudioFile);
+        expect(state.error, 'No audio file available');
+      },
+    );
   });
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -2687,7 +2732,7 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           audioTranscriptionServiceProvider.overrideWithValue(
-            _MockTranscriptionService(),
+            MockAudioTranscriptionService(),
           ),
         ],
       );
@@ -2725,7 +2770,7 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             audioTranscriptionServiceProvider.overrideWithValue(
-              _MockTranscriptionService(),
+              MockAudioTranscriptionService(),
             ),
           ],
         );
@@ -2759,7 +2804,7 @@ void main() {
 
   group('realtimeAvailableProvider', () {
     test('returns false while realtime UI is disabled', () async {
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(() => mockRealtime.resolveRealtimeConfig()).thenAnswer(
         (_) async => (
           provider:
@@ -2800,7 +2845,7 @@ void main() {
     });
 
     test('returns false when no realtime model configured', () async {
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.resolveRealtimeConfig(),
       ).thenAnswer((_) async => null);
@@ -2836,7 +2881,7 @@ void main() {
         if (await dir.exists()) await dir.delete(recursive: true);
       });
 
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(
@@ -2864,7 +2909,7 @@ void main() {
             ),
           ),
           audioTranscriptionServiceProvider.overrideWithValue(
-            _MockTranscriptionService(),
+            MockAudioTranscriptionService(),
           ),
         ],
       );
@@ -2902,7 +2947,7 @@ void main() {
     test(
       'disposes recorder after hasPermission when unmounted (line 194)',
       () async {
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         late ProviderContainer container;
         when(() => mockRecorder.hasPermission()).thenAnswer((_) async {
           // Become unmounted before the post-hasPermission guard.
@@ -2923,7 +2968,7 @@ void main() {
               ),
             ),
             audioTranscriptionServiceProvider.overrideWithValue(
-              _MockTranscriptionService(),
+              MockAudioTranscriptionService(),
             ),
           ],
         );
@@ -2950,7 +2995,7 @@ void main() {
     test(
       'disposes recorder after tempDirectoryProvider when unmounted (line 209)',
       () async {
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         late ProviderContainer container;
         when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
         var disposeCalls = 0;
@@ -2972,7 +3017,7 @@ void main() {
               ),
             ),
             audioTranscriptionServiceProvider.overrideWithValue(
-              _MockTranscriptionService(),
+              MockAudioTranscriptionService(),
             ),
           ],
         );
@@ -3004,7 +3049,7 @@ void main() {
         addTearDown(() async {
           if (await baseTemp.exists()) await baseTemp.delete(recursive: true);
         });
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         late ProviderContainer container;
         when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
         var disposeCalls = 0;
@@ -3033,7 +3078,7 @@ void main() {
               ),
             ),
             audioTranscriptionServiceProvider.overrideWithValue(
-              _MockTranscriptionService(),
+              MockAudioTranscriptionService(),
             ),
           ],
         );
@@ -3067,7 +3112,7 @@ void main() {
     test(
       'stops and disposes recorder when unmounted after start (lines 230-231)',
       () async {
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         late ProviderContainer container;
         when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
         var stopCalls = 0;
@@ -3099,7 +3144,7 @@ void main() {
               ),
             ),
             audioTranscriptionServiceProvider.overrideWithValue(
-              _MockTranscriptionService(),
+              MockAudioTranscriptionService(),
             ),
           ],
         );
@@ -3129,7 +3174,7 @@ void main() {
   // the `filePath == null` branch → cleanup + noAudioFile error.
   group('stopAndTranscribe with null file path', () {
     test('sets noAudioFile error when recorder set without file path', () async {
-      final mockRecorder = _MockAudioRecorder();
+      final mockRecorder = MockAudioRecorder();
       when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
       when(() => mockRecorder.dispose()).thenAnswer((_) async {});
       when(() => mockRecorder.stop()).thenAnswer((_) async => null);
@@ -3137,7 +3182,7 @@ void main() {
         () => mockRecorder.startStream(any<record.RecordConfig>()),
       ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
-      final mockRealtime = _MockRealtimeService();
+      final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.amplitudeStream,
       ).thenAnswer((_) => Stream<double>.empty());
@@ -3193,7 +3238,7 @@ void main() {
     test(
       'disposes recorder after hasPermission when unmounted (line 438)',
       () async {
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         late ProviderContainer container;
         when(() => mockRecorder.hasPermission()).thenAnswer((_) async {
           container.dispose();
@@ -3204,7 +3249,7 @@ void main() {
           disposeCalls++;
         });
 
-        final mockRealtime = _MockRealtimeService();
+        final mockRealtime = MockRealtimeTranscriptionService();
 
         container = ProviderContainer(
           overrides: [
@@ -3235,7 +3280,7 @@ void main() {
       'stops and disposes recorder after startStream when unmounted '
       '(lines 460-461)',
       () async {
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         late ProviderContainer container;
         when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
         var stopCalls = 0;
@@ -3256,7 +3301,7 @@ void main() {
           return Stream<Uint8List>.empty();
         });
 
-        final mockRealtime = _MockRealtimeService();
+        final mockRealtime = MockRealtimeTranscriptionService();
         when(
           () => mockRealtime.amplitudeStream,
         ).thenAnswer((_) => Stream<double>.empty());
@@ -3300,7 +3345,7 @@ void main() {
     test(
       'invokes stopRecorder which stops the recorder (lines 576-577)',
       () async {
-        final mockRecorder = _MockAudioRecorder();
+        final mockRecorder = MockAudioRecorder();
         when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
         when(() => mockRecorder.dispose()).thenAnswer((_) async {});
         var recorderStopCalls = 0;
@@ -3312,7 +3357,7 @@ void main() {
           () => mockRecorder.startStream(any<record.RecordConfig>()),
         ).thenAnswer((_) async => Stream<Uint8List>.empty());
 
-        final mockRealtime = _MockRealtimeService();
+        final mockRealtime = MockRealtimeTranscriptionService();
         when(
           () => mockRealtime.amplitudeStream,
         ).thenAnswer((_) => Stream<double>.empty());

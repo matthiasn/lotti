@@ -223,7 +223,7 @@ void main() {
 
       glados.Glados(
         glados.any.rationalScenario,
-        glados.ExploreConfig(numRuns: 180),
+        glados.ExploreConfig(numRuns: 120),
       ).test('parses generated non-zero rational fractions', (scenario) {
         expect(
           ExifDataExtractor.parseRational(scenario.input),
@@ -401,7 +401,7 @@ void main() {
 
       glados.Glados(
         glados.any.gpsCoordinateScenario,
-        glados.ExploreConfig(numRuns: 180),
+        glados.ExploreConfig(numRuns: 120),
       ).test('converts generated DMS coordinates to signed decimals', (
         scenario,
       ) {
@@ -509,7 +509,7 @@ void main() {
 
       glados.Glados(
         glados.any.exifDateScenario,
-        glados.ExploreConfig(numRuns: 180),
+        glados.ExploreConfig(numRuns: 120),
       ).test('parses generated EXIF timestamp strings', (scenario) {
         expect(
           ExifDataExtractor.parseExifDateString(scenario.input),

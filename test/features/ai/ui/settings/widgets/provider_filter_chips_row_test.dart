@@ -150,7 +150,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Verify all provider names are displayed
         expect(find.text('Anthropic'), findsOneWidget);
@@ -173,7 +173,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Verify "All" chip is rendered (using the localized string)
         expect(find.text('All'), findsOneWidget);
@@ -193,7 +193,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Verify "All" text is not found
         expect(find.text('All'), findsNothing);
@@ -211,7 +211,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Verify no FilterChip widgets are found
         expect(find.byType(FilterChip), findsNothing);
@@ -238,7 +238,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Tap first provider
         await tester.tap(find.text('Anthropic'));
@@ -278,7 +278,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Tap provider1 chip to deselect
         await tester.tap(find.text('Anthropic'));
@@ -302,7 +302,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Tap "All" chip
         await tester.tap(find.text('All'));
@@ -326,7 +326,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Tap provider1
         await tester.tap(find.text('Anthropic'));
@@ -368,7 +368,7 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 50));
 
           // Tap provider1 chip again to deselect
           await tester.tap(find.text('Anthropic'));
@@ -394,7 +394,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Tap "All" chip
         await tester.tap(find.text('All'));
@@ -462,7 +462,9 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        // Second pump lets each chip's aiConfigByIdProvider future resolve.
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Verify ProviderFilterChip widgets are found
         expect(find.byType(ProviderFilterChip), findsNWidgets(3));
@@ -485,7 +487,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Verify FilterChip widgets are found
         expect(find.byType(FilterChip), findsNWidgets(3));
@@ -510,7 +512,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Verify only 2 chips are rendered
         expect(find.byType(FilterChip), findsNWidgets(2));
@@ -536,7 +538,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Verify all 3 provider chips are rendered
         expect(find.byType(FilterChip), findsNWidgets(3));
@@ -559,7 +561,7 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 50));
 
           // Verify SizedBox.shrink is rendered
           expect(find.byType(SizedBox), findsOneWidget);
@@ -582,7 +584,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Get the FilterChip for provider1 and verify it's selected
         final provider1Chips = find.ancestor(
@@ -624,7 +626,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Verify provider1 is selected
         final provider1Chips = find.ancestor(
@@ -710,7 +712,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Verify error state shows SizedBox.shrink
         expect(find.byType(SizedBox), findsOneWidget);
@@ -728,7 +730,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Verify all chips render correctly
         expect(find.byType(FilterChip), findsNWidgets(3));
@@ -757,7 +759,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Tap a chip
         await tester.tap(find.text('Anthropic'));
@@ -788,7 +790,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 50));
 
         // Tap to deselect
         await tester.tap(find.text('Anthropic'));
@@ -863,7 +865,10 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          // Two pumps: the first builds the chip shells, the second lets
+          // each chip's aiConfigByIdProvider future resolve to its label.
+          await tester.pump(const Duration(milliseconds: 50));
+          await tester.pump(const Duration(milliseconds: 50));
 
           // Sanity: styled chips actually rendered (not SizedBox.shrink).
           expect(find.byType(ProviderFilterChip), findsNWidgets(3));

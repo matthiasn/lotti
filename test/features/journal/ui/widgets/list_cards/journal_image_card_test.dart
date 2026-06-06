@@ -17,64 +17,19 @@ import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
 
-class MockNavService extends Mock implements NavService {
-  final List<String> navigationHistory = [];
-
-  @override
-  void beamToNamed(String path, {Object? data}) {
-    navigationHistory.add(path);
-  }
-}
-
-class MockTimeService implements TimeService {
-  JournalEntity? _linkedFrom;
-
-  @override
-  JournalEntity? get linkedFrom => _linkedFrom;
-
-  @override
-  Stream<JournalEntity?> getStream() {
-    return Stream.value(null);
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
-  static final _testDate = DateTime(2024, 3, 15, 10, 30);
-
-  @override
-  CategoryDefinition? getCategoryById(String? categoryId) {
-    return categoryId != null
-        ? CategoryDefinition(
-            id: 'test-category-id',
-            createdAt: _testDate,
-            updatedAt: _testDate,
-            name: 'Test Category',
-            vectorClock: null,
-            private: false,
-            active: true,
-            color: '#FF0000',
-          )
-        : null;
-  }
-}
-
 void main() {
-  late MockNavService mockNavService;
+  late RecordingMockNavService mockNavService;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockTimeService mockTimeService;
 
   setUp(() {
-    mockNavService = MockNavService();
+    mockNavService = RecordingMockNavService();
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockTimeService = MockTimeService();
-
-    getIt.allowReassignment = true;
 
     // Create temp directory for tests
     final tempDir = Directory.systemTemp.createTempSync(
@@ -84,7 +39,26 @@ void main() {
     getIt
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<TimeService>(mockTimeService)
+      ..registerSingleton<NavService>(mockNavService)
       ..registerSingleton<Directory>(tempDir);
+
+    when(() => mockTimeService.linkedFrom).thenReturn(null);
+    when(mockTimeService.getStream).thenAnswer((_) => Stream.value(null));
+    when(
+      () => mockEntitiesCacheService.getCategoryById(any()),
+    ).thenReturn(
+      CategoryDefinition(
+        id: 'test-category-id',
+        createdAt: DateTime(2024, 3, 15, 10, 30),
+        updatedAt: DateTime(2024, 3, 15, 10, 30),
+        name: 'Test Category',
+        vectorClock: null,
+        private: false,
+        active: true,
+        color: '#FF0000',
+      ),
+    );
+    when(() => mockEntitiesCacheService.getCategoryById(null)).thenReturn(null);
   });
 
   tearDown(() async {
@@ -193,7 +167,6 @@ void main() {
 
     testWidgets('navigates to journal detail on tap', (tester) async {
       final imageEntry = testImageEntry;
-      getIt.registerSingleton<NavService>(mockNavService);
 
       await tester.pumpWidget(
         makeTestableWidget(

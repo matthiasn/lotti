@@ -26,7 +26,7 @@ void main() {
         ),
       );
       // Let animation complete
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       expect(find.text('No timeline entries'), findsOneWidget);
     });
@@ -39,7 +39,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       expect(
         find.text('Start a timer or add planned blocks to see your day.'),
@@ -61,7 +61,7 @@ void main() {
       expect(find.byType(TimelineEmptyState), findsOneWidget);
 
       // Animation completes
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
       expect(find.byType(TimelineEmptyState), findsOneWidget);
     });
 
@@ -73,7 +73,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       expect(find.byType(CustomPaint), findsWidgets);
     });
@@ -88,7 +88,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       expect(find.text('No time budgets'), findsOneWidget);
     });
@@ -101,7 +101,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       expect(
         find.text(
@@ -119,7 +119,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       expect(find.text('Add Budget'), findsOneWidget);
     });
@@ -132,7 +132,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       final buttonFinder = find.text('Add Budget');
       expect(buttonFinder, findsOneWidget);
@@ -159,7 +159,7 @@ void main() {
       expect(find.byType(BudgetsEmptyState), findsOneWidget);
 
       // Animation completes
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
       expect(find.byType(BudgetsEmptyState), findsOneWidget);
     });
 
@@ -171,7 +171,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       expect(find.byType(CustomPaint), findsWidgets);
     });
@@ -184,7 +184,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
     });
@@ -199,7 +199,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       expect(find.text('No timeline entries'), findsOneWidget);
       expect(
@@ -221,7 +221,7 @@ void main() {
       // Let animation run past 0.5 progress so the dashed indicator
       // dark branch (line 172) is also exercised.
       await tester.pump(const Duration(milliseconds: 600));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       expect(find.byType(CustomPaint), findsWidgets);
     });
@@ -236,7 +236,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       expect(find.text('No time budgets'), findsOneWidget);
       expect(
@@ -257,7 +257,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 900));
 
         // CustomPaint should render without error in dark theme —
         // verifies the dark-branch color lists in build() and painters.
@@ -277,7 +277,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 900));
 
       final addBudgetText = find.text('Add Budget');
       expect(addBudgetText, findsOneWidget);
@@ -333,7 +333,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 900));
 
         final addBudgetText = find.text('Add Budget');
         expect(addBudgetText, findsOneWidget);
@@ -347,7 +347,7 @@ void main() {
         await tester.tap(gestureDetector.first);
         await tester.pump();
         // Sheet opened – close it so no modal is left open.
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 900));
       },
     );
 
@@ -377,14 +377,14 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 900));
 
         // Tap the TextButton.icon whose label is the plan-without-voice text.
         final planBtn = find.byIcon(Icons.edit_calendar_outlined);
         expect(planBtn, findsOneWidget);
         await tester.ensureVisible(planBtn);
         await tester.tap(planBtn);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 900));
 
         // After beaming, the delegate should have navigated to the calendar page.
         expect(

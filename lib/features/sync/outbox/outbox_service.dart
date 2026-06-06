@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:clock/clock.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -204,7 +205,9 @@ class OutboxService {
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
   StreamSubscription<LoginState>? _loginSubscription;
   StreamSubscription<int>? _outboxCountSubscription;
-  final DateTime _createdAt = DateTime.now();
+  // clock.now() (package:clock) so tests can drive the startup grace
+  // window with withClock instead of waiting out real seconds.
+  final DateTime _createdAt = clock.now();
   static const Duration _loginGateStartupGrace = Duration(seconds: 5);
   bool _isDisposed = false;
   Timer? _watchdogTimer;
@@ -231,9 +234,11 @@ class OutboxService {
   void _startRunner() {
     _clientRunner = ClientRunner<int>(
       callback: (event) async {
-        final started = DateTime.now();
+        // clock.now() so fakeAsync-driven tests can advance the measured
+        // wait deterministically (fake_async patches package:clock).
+        final started = clock.now();
         await _activityGate.waitUntilIdle();
-        final waitedMs = DateTime.now().difference(started).inMilliseconds;
+        final waitedMs = clock.now().difference(started).inMilliseconds;
         if (waitedMs > 50) {
           // Light instrumentation to correlate potential stalls.
           _loggingService.log(
@@ -723,7 +728,7 @@ class OutboxService {
         // - There are pending outbox items
         // - We are past the initial startup window
         final withinGrace =
-            DateTime.now().difference(_createdAt) < _loginGateStartupGrace;
+            clock.now().difference(_createdAt) < _loginGateStartupGrace;
         if (!withinGrace && !_loginGateEventsController.isClosed) {
           final hasPending = (await _repository.fetchPending(
             limit: 1,

@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
@@ -12,6 +11,7 @@ import 'package:lotti/features/daily_os_next/ui/widgets/lock_in_scene.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../test_utils.dart';
 
 const _category = DayAgentCategory(
   id: 'cat_focus',
@@ -43,139 +43,6 @@ DraftPlan _planWithItems() => DraftPlan(
     ),
   ],
 );
-
-class _RecordingAgent implements DayAgentInterface {
-  _RecordingAgent();
-
-  DraftPlan? capturedPlan;
-  int commitCount = 0;
-
-  @override
-  Future<DraftPlan> commitDay(DraftPlan plan) async {
-    capturedPlan = plan;
-    commitCount++;
-    return plan.copyWith(state: DayState.committed);
-  }
-
-  // ---- Unused interface members below ----
-  @override
-  Future<CaptureId> submitCapture({
-    required String transcript,
-    required DateTime capturedAt,
-    String? audioId,
-  }) async => const CaptureId('cap');
-
-  @override
-  Future<DraftPlan?> currentPlanForDate(DateTime date) async => null;
-
-  @override
-  Future<bool> deletePlanForDate(DateTime date) async => true;
-
-  @override
-  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => const [];
-
-  @override
-  Future<List<PendingItem>> surfacePendingDecisions({
-    DateTime? forDate,
-  }) async => const [];
-
-  @override
-  Future<ParsedItem> breakCaptureLink(String parsedItemId) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<TriageResult> applyTriage({
-    required String taskId,
-    required TriageAction action,
-    DateTime? deferTo,
-  }) async => TriageResult(taskId: taskId, action: action);
-
-  @override
-  Future<DraftPlan> draftDayPlan({
-    required CaptureId captureId,
-    required List<String> decidedTaskIds,
-    required DateTime dayDate,
-    List<String> decidedCaptureItemIds = const [],
-    List<TimeBlock> calendarBlocks = const [],
-    bool Function()? isCancelled,
-  }) async => _planWithItems();
-
-  @override
-  Future<List<LearningCard>> summarizeRecentPatterns({
-    required DateTime asOf,
-    int lookbackDays = 7,
-  }) async => const [];
-
-  @override
-  Future<PlanDiff> proposePlanDiff({
-    required DraftPlan currentPlan,
-    required String voiceTranscript,
-    bool Function()? isCancelled,
-  }) async => PlanDiff(
-    id: 'd',
-    transcript: voiceTranscript,
-    changes: const [],
-    updatedPlan: currentPlan,
-  );
-
-  @override
-  Future<DraftPlan> acceptDiff(PlanDiff diff, {List<int>? itemIndices}) async =>
-      diff.updatedPlan;
-
-  @override
-  Future<DraftPlan> revertDiff({
-    required PlanDiff diff,
-    required DraftPlan originalPlan,
-    List<int>? itemIndices,
-  }) async => originalPlan;
-
-  @override
-  Future<
-    ({
-      List<CompletedItem> completed,
-      List<CarryoverItem> carryover,
-      ShutdownMetrics metrics,
-    })
-  >
-  surfaceShutdownData({required DateTime forDate}) async => (
-    completed: const <CompletedItem>[],
-    carryover: const <CarryoverItem>[],
-    metrics: const ShutdownMetrics(
-      focusMinutes: 0,
-      flowSessions: 0,
-      contextSwitches: 0,
-      contextSwitchesWeekAvg: 0,
-      energyScore: 0,
-      energyDeltaVsWeek: 0,
-    ),
-  );
-
-  @override
-  Future<void> recordReflection({
-    required DateTime forDate,
-    required String text,
-    required ReflectionSource source,
-  }) async {}
-
-  @override
-  Future<void> recordCarryoverDecision({
-    required String taskId,
-    required CarryoverAction action,
-    DateTime? when,
-  }) async {}
-
-  @override
-  Future<TomorrowNote> generateTomorrowNote({
-    required DateTime forDate,
-  }) async => const TomorrowNote(body: '', maturity: 1);
-
-  @override
-  Future<List<TaskCorpusItem>> surfaceTaskCorpus({
-    TaskCorpusState stateFilter = TaskCorpusState.all,
-    String? categoryId,
-    String? query,
-  }) async => const [];
-}
 
 Widget _wrap(
   Widget child, {
@@ -297,7 +164,7 @@ void main() {
       'completing the hold calls agent.commitDay and reveals LockInScene',
       (tester) async {
         _setSurface(tester, const Size(1280, 1200));
-        final agent = _RecordingAgent();
+        final agent = RecordingDayAgent();
         final draft = _planWithItems();
         await tester.pumpWidget(
           _wrap(
@@ -320,7 +187,7 @@ void main() {
       'LockInScene completion pops the navigator with the committed plan',
       (tester) async {
         _setSurface(tester, const Size(1280, 1200));
-        final agent = _RecordingAgent();
+        final agent = RecordingDayAgent();
         final draft = _planWithItems();
 
         DraftPlan? popped;
@@ -365,7 +232,7 @@ void main() {
       tester,
     ) async {
       _setSurface(tester, const Size(1280, 1200));
-      final agent = _RecordingAgent();
+      final agent = RecordingDayAgent();
       final draft = _planWithItems();
 
       DraftPlan? popped;

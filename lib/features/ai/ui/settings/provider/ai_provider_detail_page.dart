@@ -500,7 +500,7 @@ class _ConnectionSection extends StatelessWidget {
       if (requiresKey)
         _ConnectionRow(
           label: messages.aiProviderDetailApiKeyLabel,
-          value: _maskApiKey(provider.apiKey),
+          value: maskApiKey(provider.apiKey),
           isMissing: provider.apiKey.trim().isEmpty,
         ),
       if (usesBaseUrl)
@@ -552,7 +552,8 @@ class _ConnectionSection extends StatelessWidget {
 /// Masks an API key down to its trailing four characters. Returns an
 /// empty string when the trimmed key is empty — [_ConnectionRow] then
 /// substitutes the localized "Not set" placeholder.
-String _maskApiKey(String key) {
+@visibleForTesting
+String maskApiKey(String key) {
   final trimmed = key.trim();
   if (trimmed.isEmpty) return '';
   if (trimmed.length <= 4) return '•' * trimmed.length;

@@ -19,13 +19,10 @@ import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:matrix/encryption/utils/key_verification.dart';
-import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
-
-class MockDeviceKeys extends Mock implements DeviceKeys {}
 
 class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
 

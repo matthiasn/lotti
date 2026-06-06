@@ -22,6 +22,7 @@ import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/services/profile_automation_service.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -123,12 +124,16 @@ void registerAllFallbackValues() {
   registerFallbackValue(InsightLevel.info);
   registerFallbackValue(StackTrace.empty);
 
+  // AI skill types (for hasAutomatedSkillType stubs with `any()`)
+  registerFallbackValue(SkillType.transcription);
+
   // Fake classes from mocks.dart
   registerFallbackValue(FakeMetadata());
   registerFallbackValue(FakeDashboardDefinition());
   registerFallbackValue(FakeHabitDefinition());
   registerFallbackValue(FakeCategoryDefinition());
   registerFallbackValue(FakeEntryText());
+  registerFallbackValue(FakeEventData());
   registerFallbackValue(FakeTaskData());
   registerFallbackValue(FakeJournalAudio());
   registerFallbackValue(FakePlayable());
@@ -138,6 +143,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeAiConfigModel());
   registerFallbackValue(FakeAiConfigInferenceProvider());
   registerFallbackValue(FakeChatSession());
+  registerFallbackValue(FakeChecklistData());
   registerFallbackValue(FakeChecklistItemData());
 
   // Agent domain entity fallbacks
@@ -337,6 +343,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(Uri());
   registerFallbackValue(<String>{});
   registerFallbackValue(DateTime(2024));
+  registerFallbackValue(EntryFlag.none);
   registerFallbackValue(Float32List(0));
   registerFallbackValue(<int>[]);
   registerFallbackValue(<String>[]);

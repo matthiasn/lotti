@@ -22,13 +22,16 @@ import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../../../widget_test_utils.dart' show resolveTestTheme;
+import '../../../widget_test_utils.dart'
+    show
+        makeTestableWidgetNoScroll,
+        resolveTestTheme,
+        setUpTestGetIt,
+        tearDownTestGetIt;
 import '../test_utils.dart';
 
 /// Helper to create override for UnifiedAiController with a specific state.
@@ -68,7 +71,6 @@ class _TestInferenceStatusController extends InferenceStatusController {
 void main() {
   late AiConfigPrompt testPromptConfig;
   late MockUnifiedAiInferenceRepository mockRepository;
-  late MockDomainLogger mockLoggingService;
   late MockCloudInferenceRepository mockCloudRepository;
   late MockCategoryRepository mockCategoryRepository;
 
@@ -79,7 +81,7 @@ void main() {
     registerFallbackValue(fallbackJournalEntity);
   });
 
-  setUp(() {
+  setUp(() async {
     final testDate = DateTime(2024, 3, 15, 10, 30);
     testPromptConfig =
         AiConfig.prompt(
@@ -99,33 +101,11 @@ void main() {
             as AiConfigPrompt;
 
     mockRepository = MockUnifiedAiInferenceRepository();
-    mockLoggingService = MockDomainLogger();
     mockCloudRepository = MockCloudInferenceRepository();
     mockCategoryRepository = MockCategoryRepository();
 
-    // Set up GetIt
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    getIt.registerSingleton<DomainLogger>(mockLoggingService);
-
-    // Mock logging methods
-    when(
-      () => mockLoggingService.log(
-        any<LogDomain>(),
-        any<String>(),
-        subDomain: any(named: 'subDomain'),
-      ),
-    ).thenReturn(null);
-
-    when(
-      () => mockLoggingService.error(
-        any<LogDomain>(),
-        any<Object>(),
-        stackTrace: any<StackTrace>(named: 'stackTrace'),
-        subDomain: any(named: 'subDomain'),
-      ),
-    ).thenAnswer((_) async {});
+    // Registers core services (including a test-env DomainLogger) in GetIt.
+    await setUpTestGetIt();
 
     // Mock repository getActivePromptsForContext
     when(
@@ -140,35 +120,23 @@ void main() {
     ).thenAnswer((_) => Stream.value(null));
   });
 
-  tearDown(() {
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
+  /// Thin wrapper over the central [makeTestableWidgetNoScroll] (DS theme,
+  /// localizations, phone media query) that adds the shared repository
+  /// overrides and a host Scaffold.
   Widget buildTestWidget(
     Widget child, {
     List<Override> overrides = const [],
   }) {
-    return ProviderScope(
+    return makeTestableWidgetNoScroll(
+      Scaffold(body: child),
       overrides: [
         unifiedAiInferenceRepositoryProvider.overrideWithValue(mockRepository),
         cloudInferenceRepositoryProvider.overrideWithValue(mockCloudRepository),
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
         ...overrides,
       ],
-      child: MaterialApp(
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
-        home: Scaffold(
-          body: child,
-        ),
-      ),
     );
   }
 
@@ -399,6 +367,94 @@ void main() {
 
       expect(inferenceTriggered, isFalse);
     });
+
+    testWidgets(
+      'shouldTriggerOnInit=false suppresses the trigger but still subscribes '
+      'to an existing inference',
+      (tester) async {
+        // shouldTriggerOnInit=false with showExisting=false takes initState's
+        // else branch: no triggerNewInference call, but it DOES run
+        // _subscribeToExistingInference. Rendering still uses the controller
+        // state (not _streamProgress), unlike showExisting=true.
+        var triggerCount = 0;
+
+        final container = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
+            aiConfigByIdProvider(testPromptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {
+              triggerCount++;
+            }),
+          ],
+        );
+
+        // Start an active inference so _subscribeToExistingInference finds
+        // a progress stream to attach to.
+        final activeNotifier = container.read(
+          activeInferenceControllerProvider(
+            entityId: testEntityId,
+            // ignore: deprecated_member_use_from_same_package
+            aiResponseType: AiResponseType.taskSummary,
+          ).notifier,
+        )..startInference(promptId: testPromptId);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+              ],
+              home: Scaffold(
+                body: UnifiedAiProgressContent(
+                  entityId: testEntityId,
+                  promptId: testPromptId,
+                  shouldTriggerOnInit: false,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Post-frame callback + async subscribe.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // No inference was triggered despite showExisting being false.
+        expect(triggerCount, 0);
+
+        // The else branch subscribed to the active inference's broadcast
+        // progress stream.
+        final activeData = container.read(
+          activeInferenceControllerProvider(
+            entityId: testEntityId,
+            // ignore: deprecated_member_use_from_same_package
+            aiResponseType: AiResponseType.taskSummary,
+          ),
+        );
+        expect(activeData!.progressStreamController.hasListener, isTrue);
+
+        // Streamed progress is NOT rendered: with showExisting=false the
+        // build uses controllerState.message, not _streamProgress.
+        activeNotifier.updateProgress('Streamed but hidden');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.textContaining('Streamed but hidden'), findsNothing);
+
+        // Unmount and dispose in-body so cacheFor timers are cancelled
+        // before the pending-timer check.
+        await tester.pumpWidget(const SizedBox());
+        container.dispose();
+      },
+    );
   });
 
   group('UnifiedAiProgressContent - showExisting and activeInference', () {
@@ -1069,23 +1125,15 @@ Implement OAuth 2.0 authentication flow in Flutter using the oauth2 package.''',
           );
         });
 
-        // buildTestWidget uses the default MaterialApp theme, which lacks
-        // the DsTokens extension the toast depends on. Wire a local
-        // ProviderScope + MaterialApp with resolveTestTheme() instead so
-        // the SnackBar (hosted by the root ScaffoldMessenger) can read
-        // design tokens.
+        // buildTestWidget resolves the DS theme, so the success SnackBar
+        // (hosted by the root ScaffoldMessenger) can read design tokens.
         await tester.pumpWidget(
-          ProviderScope(
+          buildTestWidget(
+            const UnifiedAiProgressContent(
+              entityId: entityId,
+              promptId: promptId,
+            ),
             overrides: [
-              unifiedAiInferenceRepositoryProvider.overrideWithValue(
-                mockRepository,
-              ),
-              cloudInferenceRepositoryProvider.overrideWithValue(
-                mockCloudRepository,
-              ),
-              categoryRepositoryProvider.overrideWithValue(
-                mockCategoryRepository,
-              ),
               aiConfigByIdProvider(promptId).overrideWith(
                 (ref) async => promptGenConfig,
               ),
@@ -1109,17 +1157,6 @@ Generate a widget that renders a login form.''',
               ),
               triggerNewInferenceProvider.overrideWith((ref, arg) async {}),
             ],
-            child: MaterialApp(
-              theme: resolveTestTheme(),
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: const Scaffold(
-                body: UnifiedAiProgressContent(
-                  entityId: entityId,
-                  promptId: promptId,
-                ),
-              ),
-            ),
           ),
         );
 
@@ -2012,6 +2049,95 @@ Generate a widget that renders a login form.''',
           find.byType(DesignSystemToast),
         );
         expect(toast.tone, DesignSystemToastTone.success);
+      },
+    );
+
+    testWidgets(
+      'intermediate progress events update status text, bar value and '
+      'percentage (lines 530-533, 596-608)',
+      (tester) async {
+        // A StreamController lets us assert the UI between individual events,
+        // which Stream.fromIterable cannot (all events flush in one pump).
+        // It is closed within the test so the `await for` loop completes
+        // finitely, keeping the group's no-open-controllers guarantee.
+        final progressController = StreamController<OllamaPullProgress>();
+        when(
+          () => mockCloudRepository.installModel(any(), any()),
+        ).thenAnswer((_) => progressController.stream);
+
+        await pumpInstallDialog(
+          tester,
+          modelName: 'llama3',
+          providers: [makeOllama()],
+        );
+
+        await tester.tap(find.text('Install'));
+        // Bounded pumps until the installing UI shows: the provider .future
+        // read and the stream subscription need a few event-loop turns.
+        for (var i = 0; i < 20; i++) {
+          if (find.text('Installing model...').evaluate().isNotEmpty) break;
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        expect(find.text('Installing model...'), findsOneWidget);
+
+        // Manifest pull at progress 0: status renders, the bar is at 0, and
+        // the percentage line is suppressed by the `_progress > 0` guard.
+        progressController.add(
+          const OllamaPullProgress(status: 'pulling manifest', progress: 0),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('pulling manifest'), findsOneWidget);
+        expect(
+          tester
+              .widget<LinearProgressIndicator>(
+                find.byType(LinearProgressIndicator),
+              )
+              .value,
+          0,
+        );
+        expect(find.textContaining('%'), findsNothing);
+
+        // Mid-download event replaces the status and renders the percentage.
+        progressController.add(
+          const OllamaPullProgress(status: 'downloading', progress: 0.42),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('downloading'), findsOneWidget);
+        expect(find.text('pulling manifest'), findsNothing);
+        expect(
+          tester
+              .widget<LinearProgressIndicator>(
+                find.byType(LinearProgressIndicator),
+              )
+              .value,
+          closeTo(0.42, 1e-9),
+        );
+        expect(find.text('42.0%'), findsOneWidget);
+
+        // A later event overwrites the previous progress (toStringAsFixed(1)
+        // rounding at line 607: 0.875 → 87.5%).
+        progressController.add(
+          const OllamaPullProgress(
+            status: 'verifying sha256 digest',
+            progress: 0.875,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('verifying sha256 digest'), findsOneWidget);
+        expect(find.text('87.5%'), findsOneWidget);
+        expect(find.text('42.0%'), findsNothing);
+
+        // Closing the stream completes the `await for` → success path pops
+        // the dialog (same bounded-pump pattern as the success test above).
+        await progressController.close();
+        for (var i = 0; i < 20; i++) {
+          if (find.byType(OllamaModelInstallDialog).evaluate().isEmpty) break;
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        expect(find.byType(OllamaModelInstallDialog), findsNothing);
       },
     );
 

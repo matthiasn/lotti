@@ -40,6 +40,16 @@ AppLocalizations l10n(WidgetTester tester) => AppLocalizations.of(
   tester.element(find.byType(InferenceProviderEditPage)),
 )!;
 
+/// Sets the test surface size for the duration of the test.
+Future<void> _setTestSurface(
+  WidgetTester tester, {
+  double width = 1024,
+  double height = 768,
+}) async {
+  await tester.binding.setSurfaceSize(Size(width, height));
+  addTearDown(() => tester.binding.setSurfaceSize(null));
+}
+
 void main() {
   late MockAiConfigRepository mockRepository;
   late MockCategoryRepository mockCategoryRepository;
@@ -78,10 +88,11 @@ void main() {
     // Use in-memory database for tests
     settingsDb = SettingsDb(inMemoryDatabase: true);
 
-    if (getIt.isRegistered<SettingsDb>()) {
-      getIt.unregister<SettingsDb>();
-    }
-    getIt.registerSingleton<SettingsDb>(settingsDb);
+    // Per-test scope: registrations (including the in-test DomainLogger
+    // ones below) are shadowed here and popped in tearDown.
+    getIt
+      ..pushNewScope()
+      ..registerSingleton<SettingsDb>(settingsDb);
 
     testProvider = AiConfig.inferenceProvider(
       id: 'test-provider-id',
@@ -140,7 +151,7 @@ void main() {
 
   tearDown(() async {
     await settingsDb.close();
-    await getIt.reset();
+    await getIt.popScope();
   });
 
   Widget buildTestWidget({
@@ -195,7 +206,8 @@ void main() {
     Widget widget,
   ) async {
     await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
   }
 
   Future<void> pumpInferenceProviderPageQuick(
@@ -210,8 +222,7 @@ void main() {
     testWidgets('displays correct title for new provider', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester);
 
       await pumpInferenceProviderPageQuick(tester, buildTestWidget());
 
@@ -234,8 +245,7 @@ void main() {
     testWidgets('displays correct title for existing provider', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester);
 
       await pumpInferenceProviderPageQuick(
         tester,
@@ -248,8 +258,7 @@ void main() {
     testWidgets('loads and displays existing provider data', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester);
 
       await pumpInferenceProviderPageQuick(
         tester,
@@ -264,8 +273,7 @@ void main() {
     testWidgets('shows form sections with proper labels', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester);
 
       // Use existing provider that requires API key to show Authentication section
       await pumpInferenceProviderPageQuick(
@@ -287,8 +295,7 @@ void main() {
     testWidgets('enables save button when required fields are filled', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       await pumpInferenceProviderPage(tester, buildTestWidget());
 
@@ -328,8 +335,7 @@ void main() {
     testWidgets('opens provider type selection modal when field is tapped', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester);
 
       // The in-form provider-type picker only exists in EDIT mode in the
       // v5 layout (in CREATE mode the user picks the type via
@@ -340,7 +346,8 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(configId: 'test-provider-id'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Tap the InkWell that wraps the dropdown caret in
       // `_ProviderTypeField` — that is the only tap target that
@@ -351,7 +358,8 @@ void main() {
           matching: find.byType(InkWell),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Verify modal appears with provider options
       expect(find.text('Select Provider Type'), findsOneWidget);
@@ -360,12 +368,12 @@ void main() {
     });
 
     testWidgets('toggles API key visibility', (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester);
 
       // Use existing provider that requires API key to show API key field
       await tester.pumpWidget(buildTestWidget(configId: 'test-provider-id'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Find visibility toggle button
       final visibilityToggle = find.byIcon(Icons.visibility_rounded);
@@ -382,11 +390,11 @@ void main() {
     testWidgets('has back, save-as-draft and save-and-continue buttons', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester);
 
       await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // The legacy two-button FormBottomBar (Cancel + Save) is gone
       // from the create flow. The new `_AddProviderFooterBar` renders
@@ -409,8 +417,7 @@ void main() {
     testWidgets('shows error state when loading fails', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester);
 
       // Setup repository to throw error
       when(
@@ -418,6 +425,8 @@ void main() {
       ).thenThrow(Exception('Failed to load'));
 
       await tester.pumpWidget(buildTestWidget(configId: 'error-id'));
+      // Genuine settle: the throwing provider only surfaces its error state
+      // through settle-style pumping (riverpod retry scheduling).
       await tester.pumpAndSettle();
 
       // Check error UI
@@ -429,11 +438,11 @@ void main() {
     testWidgets('validates form fields with valid and invalid data', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester);
 
       await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Test name validation - too short
       await tester.enterText(
@@ -441,8 +450,7 @@ void main() {
         'AB',
       );
       await tester.pump();
-
-      // The form validates on change - validation errors may appear
+      expect(find.text('Must be at least 3 characters'), findsOneWidget);
 
       // Test URL validation - invalid format
       await tester.enterText(
@@ -450,8 +458,7 @@ void main() {
         'not-a-url',
       );
       await tester.pump();
-
-      // The form validates on change - validation errors may appear
+      expect(find.text('Please enter a valid URL'), findsOneWidget);
 
       // Enter valid data to verify errors disappear
       await tester.enterText(
@@ -463,13 +470,14 @@ void main() {
         'https://valid.url.com',
       );
       await tester.pump();
+      expect(find.text('Must be at least 3 characters'), findsNothing);
+      expect(find.text('Please enter a valid URL'), findsNothing);
     });
 
     testWidgets('pre-fills form when changing provider type', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester);
 
       // The in-form provider-type picker (and its `_ProviderTypeField`
       // tap target) only exists in EDIT mode in the v5 layout. Seed an
@@ -490,7 +498,8 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(configId: 'generic-provider-id'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Open provider type modal via the dropdown caret InkWell — the
       // styled box is wrapped in an InkWell now (not GestureDetector).
@@ -500,7 +509,8 @@ void main() {
           matching: find.byType(InkWell),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Select OpenAI from the modal options. The unified
       // AiPickProviderModal is a select-then-confirm picker (unlike
@@ -525,7 +535,8 @@ void main() {
       await tester.tap(
         find.text(l10n(tester).aiPickProviderContinueButton),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Check that form was pre-filled
       expect(find.text('OpenAI'), findsAtLeastNWidgets(1));
@@ -533,11 +544,11 @@ void main() {
     });
 
     testWidgets('saves modified provider data', (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       await tester.pumpWidget(buildTestWidget(configId: 'test-provider-id'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Modify a field
       final nameField = find.widgetWithText(TextFormField, 'Test Provider');
@@ -558,11 +569,11 @@ void main() {
     });
 
     testWidgets('handles keyboard shortcuts', (WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester);
 
       await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Fill form to make it valid (genericOpenAi default doesn't require API key)
       await tester.enterText(
@@ -584,8 +595,7 @@ void main() {
     testWidgets(
       'loads existing Ollama provider without showing API key field',
       (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 768));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester);
 
         // Create an Ollama provider
         final ollamaProvider = AiConfig.inferenceProvider(
@@ -602,7 +612,8 @@ void main() {
         ).thenAnswer((_) async => ollamaProvider);
 
         await tester.pumpWidget(buildTestWidget(configId: 'ollama-id'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Verify form loads with Ollama data
         expect(find.text('My Ollama'), findsOneWidget);
@@ -620,13 +631,13 @@ void main() {
       'provider type via the pick-provider modal, so the harness lands '
       'directly in create-mode form with the flat-field API key row',
       (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 768));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester);
 
         await tester.pumpWidget(
           buildTestWidget(preselectedType: InferenceProviderType.openAi),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // The flat-field layout surfaces "API KEY" as the FlatField
         // caption (uppercased localised label) and the field's hint
@@ -649,13 +660,13 @@ void main() {
       'preselectedType in the constructor mirrors how the production '
       'pick-provider modal hands a chosen tile to the connect form',
       (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 768));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester);
 
         await tester.pumpWidget(
           buildTestWidget(preselectedType: InferenceProviderType.anthropic),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         expect(
@@ -682,13 +693,13 @@ void main() {
     testWidgets(
       'create-mode MLX Audio provider shows embedded-runtime hint without URL or API key fields',
       (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 768));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester);
 
         await tester.pumpWidget(
           buildTestWidget(preselectedType: InferenceProviderType.mlxAudio),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         expect(
@@ -722,8 +733,7 @@ void main() {
     testWidgets(
       'saving a new MLX Audio provider offers only STT models for install',
       (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         final savedConfigs = <AiConfig>[];
         when(() => mockRepository.saveConfig(any())).thenAnswer((invocation) {
@@ -747,7 +757,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
@@ -791,8 +802,7 @@ void main() {
     testWidgets(
       'edit-mode MLX Audio provider keeps local hint and skips authentication section',
       (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1000));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1000);
 
         final mlxProvider = AiConfig.inferenceProvider(
           id: 'mlx-provider-id',
@@ -812,7 +822,8 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(configId: 'mlx-provider-id'),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         expect(
@@ -832,12 +843,12 @@ void main() {
     testWidgets('API key field visibility changes when switching providers', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 768));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester);
 
       // Start with a provider that requires API key
       await tester.pumpWidget(buildTestWidget(configId: 'test-provider-id'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Initially with OpenAI, API key should be visible
       expect(find.text('API Key'), findsOneWidget);
@@ -849,7 +860,8 @@ void main() {
           matching: find.byType(GestureDetector),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Ensure Ollama option is visible before tapping. Unified
       // picker = tile-select followed by Continue, unlike the
@@ -872,13 +884,15 @@ void main() {
       );
 
       // Wait for modal to close
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Force multiple pump cycles to ensure state propagates
       for (var i = 0; i < 5; i++) {
         await tester.pump(const Duration(milliseconds: 100));
       }
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // API key should be hidden
       expect(find.text('API Key'), findsNothing);
@@ -892,7 +906,8 @@ void main() {
             )
             .first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Ensure OpenAI option is visible before tapping. Unified
       // picker = tile-select followed by Continue.
@@ -915,7 +930,8 @@ void main() {
       await tester.tap(
         find.text(l10n(tester).aiPickProviderContinueButton),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // API key should be visible again
       expect(find.text('API Key'), findsOneWidget);
@@ -924,8 +940,7 @@ void main() {
     testWidgets('can save Ollama provider without API key', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       // v5 flow: the pick-provider modal sends preselectedType into
       // the form. Seed `ollama` directly to land in create-mode form
@@ -934,7 +949,8 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(preselectedType: InferenceProviderType.ollama),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Fill only name (no API key needed for Ollama).
       final strings = l10n(tester);
@@ -942,7 +958,8 @@ void main() {
         find.widgetWithText(TextFormField, strings.apiKeyDisplayNameHint),
         'My Local Ollama',
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
       await tester.ensureVisible(saveButton);
@@ -958,8 +975,7 @@ void main() {
     testWidgets('validates form correctly for different provider types', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       // v5: the in-form provider switcher is gone in create mode.
       // This test split into two preselected harnesses — the OpenAI
@@ -970,14 +986,16 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(preselectedType: InferenceProviderType.ollama),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final strings = l10n(tester);
       await tester.enterText(
         find.widgetWithText(TextFormField, strings.apiKeyDisplayNameHint),
         'My Ollama',
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final saveButton = find.text(strings.aiProviderConnectSaveAndContinue);
       await tester.ensureVisible(saveButton);
@@ -993,8 +1011,7 @@ void main() {
     testWidgets('shows prompt setup dialog after saving new Gemini provider', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       // Track saved configs to return dynamically created models
       final savedConfigs = <AiConfig>[];
@@ -1017,7 +1034,8 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(preselectedType: InferenceProviderType.gemini),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Fill required fields
       await tester.enterText(
@@ -1038,7 +1056,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Prepopulation seeds all known Gemini models when the provider is
       // added, so every FTUE preset row is already present and the
@@ -1050,8 +1069,7 @@ void main() {
     testWidgets(
       'does not show prompt setup dialog for providers without FTUE support',
       (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         // OpenRouter is the only truly unsupported provider — Anthropic
         // and Ollama both wire FTUE end-to-end as of the redesigned
@@ -1061,7 +1079,8 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(preselectedType: InferenceProviderType.openRouter),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Fill required fields
         await tester.enterText(
@@ -1081,7 +1100,8 @@ void main() {
         await tester.pump();
 
         await tester.tap(saveButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // No FTUE preview modal for unsupported providers.
         expect(find.text('Accept & finish'), findsNothing);
@@ -1091,8 +1111,7 @@ void main() {
     testWidgets(
       'does not show prompt setup dialog when editing existing provider',
       (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         // Setup existing Gemini provider
         final existingGemini = AiConfig.inferenceProvider(
@@ -1111,7 +1130,8 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(configId: 'existing-gemini-id'),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Modify a field
         final nameField = find.widgetWithText(TextFormField, 'Existing Gemini');
@@ -1124,7 +1144,8 @@ void main() {
         await tester.pump();
 
         await tester.tap(saveButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // No FTUE preview modal on edits.
         expect(find.text('Accept & finish'), findsNothing);
@@ -1134,8 +1155,7 @@ void main() {
     testWidgets('creates models when user confirms in setup dialog', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       // Track saved configs to return dynamically created models
       final savedConfigs = <AiConfig>[];
@@ -1156,7 +1176,8 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(preselectedType: InferenceProviderType.gemini),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Fill fields
       await tester.enterText(
@@ -1176,14 +1197,16 @@ void main() {
       await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Prepopulation seeds every known Gemini model on addConfig, so
       // the FTUE preview is skipped and the result modal opens directly.
       // Tap "Start using AI" to dismiss it.
       expect(find.text('Start using AI'), findsOneWidget);
       await tester.tap(find.text('Start using AI'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Verify models were created and no prompts
       final modelsCreated = savedConfigs.whereType<AiConfigModel>().length;
@@ -1195,8 +1218,7 @@ void main() {
     testWidgets('skips prompt creation when user declines', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       // Track saved configs to return dynamically created models
       final savedConfigs = <AiConfig>[];
@@ -1214,7 +1236,8 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(preselectedType: InferenceProviderType.gemini),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Fill fields
       await tester.enterText(
@@ -1234,13 +1257,15 @@ void main() {
       await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Prepopulation skips the preview; the result modal opens directly.
       // Dismiss via "Start using AI" — neither path creates any prompt rows.
       expect(find.text('Start using AI'), findsOneWidget);
       await tester.tap(find.text('Start using AI'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Modal closes, no prompts ever get created.
       expect(find.text('Start using AI'), findsNothing);
@@ -1253,8 +1278,7 @@ void main() {
     testWidgets('shows Available Models section for existing provider', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       // Create a Gemini provider (which has known models)
       final geminiProvider = AiConfig.inferenceProvider(
@@ -1274,7 +1298,8 @@ void main() {
       ).thenAnswer((_) => Stream.value([]));
 
       await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Scroll to find Available Models section
       final availableModelsSection = find.text('Available Models');
@@ -1294,11 +1319,11 @@ void main() {
     testWidgets('does not show Available Models section for new provider', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Should not show Available Models section for new provider
       expect(find.text('Available Models'), findsNothing);
@@ -1307,8 +1332,7 @@ void main() {
     testWidgets('displays known models for Gemini provider', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1600);
 
       final geminiProvider = AiConfig.inferenceProvider(
         id: 'gemini-provider-id',
@@ -1327,7 +1351,8 @@ void main() {
       ).thenAnswer((_) => Stream.value([]));
 
       await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Scroll to find Available Models section
       final availableModelsSection = find.text('Available Models');
@@ -1345,8 +1370,7 @@ void main() {
     testWidgets('shows Added indicator for already configured models', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1600);
 
       final geminiProvider = AiConfig.inferenceProvider(
         id: 'gemini-provider-id',
@@ -1377,7 +1401,8 @@ void main() {
       ).thenAnswer((_) => Stream.value([existingModel]));
 
       await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Scroll to find Available Models section
       final availableModelsSection = find.text('Available Models');
@@ -1391,8 +1416,7 @@ void main() {
     testWidgets('can add a known model by tapping add button', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1600);
 
       final geminiProvider = AiConfig.inferenceProvider(
         id: 'gemini-provider-id',
@@ -1411,7 +1435,8 @@ void main() {
       ).thenAnswer((_) => Stream.value([]));
 
       await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Scroll to find Available Models section
       final availableModelsSection = find.text('Available Models');
@@ -1446,8 +1471,7 @@ void main() {
       'that the existing happy-path test skips by completing saveConfig '
       'synchronously',
       (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1600));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1600);
 
         final geminiProvider = AiConfig.inferenceProvider(
           id: 'gemini-provider-id',
@@ -1475,7 +1499,8 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(configId: 'gemini-provider-id'),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         await tester.ensureVisible(find.text('Available Models'));
         await tester.pump();
@@ -1496,15 +1521,15 @@ void main() {
         // back to false and the spinner unmounts; otherwise the pending
         // Future would trip the framework's leak guard on teardown.
         saveCompleter.complete();
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
       },
     );
 
     testWidgets('shows modality chips for known models', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1600);
 
       final geminiProvider = AiConfig.inferenceProvider(
         id: 'gemini-provider-id',
@@ -1523,7 +1548,8 @@ void main() {
       ).thenAnswer((_) => Stream.value([]));
 
       await tester.pumpWidget(buildTestWidget(configId: 'gemini-provider-id'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Scroll to find Available Models section
       final availableModelsSection = find.text('Available Models');
@@ -1538,8 +1564,7 @@ void main() {
     testWidgets(
       'does not show Available Models for providers without known models',
       (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         // `genericOpenAi` represents an arbitrary OpenAI-compatible
         // endpoint with no curated catalog, so it is intentionally
@@ -1565,7 +1590,8 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(configId: 'custom-provider-id'),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text('Available Models'), findsNothing);
       },
@@ -1576,8 +1602,7 @@ void main() {
     testWidgets('shows AI Setup Wizard section for existing Gemini provider', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1600);
 
       final geminiProvider = AiConfig.inferenceProvider(
         id: 'gemini-provider-id',
@@ -1604,7 +1629,8 @@ void main() {
           existingProviders: [geminiProvider],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final strings = l10n(tester);
 
@@ -1632,8 +1658,7 @@ void main() {
     testWidgets('shows AI Setup Wizard section for existing OpenAI provider', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1600);
 
       final openAiProvider = AiConfig.inferenceProvider(
         id: 'openai-provider-id',
@@ -1660,7 +1685,8 @@ void main() {
           existingProviders: [openAiProvider],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final strings = l10n(tester);
 
@@ -1682,8 +1708,7 @@ void main() {
     testWidgets('shows AI Setup Wizard section for existing Mistral provider', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1600);
 
       final mistralProvider = AiConfig.inferenceProvider(
         id: 'mistral-provider-id',
@@ -1710,7 +1735,8 @@ void main() {
           existingProviders: [mistralProvider],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final strings = l10n(tester);
 
@@ -1732,8 +1758,7 @@ void main() {
     testWidgets('does not show AI Setup Wizard for unsupported providers', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1600);
 
       // OpenRouter is not in ftueSupportedProviderTypes (Ollama and
       // Anthropic now are), so it stays the truly-unsupported case.
@@ -1762,7 +1787,8 @@ void main() {
           existingProviders: [openRouterProvider],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final strings = l10n(tester);
 
@@ -1773,11 +1799,11 @@ void main() {
     testWidgets('does not show AI Setup Wizard for new provider', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final strings = l10n(tester);
 
@@ -1788,8 +1814,7 @@ void main() {
     testWidgets('Run Setup button shows confirmation dialog when tapped', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1600);
 
       final geminiProvider = AiConfig.inferenceProvider(
         id: 'gemini-provider-id',
@@ -1816,7 +1841,8 @@ void main() {
           existingProviders: [geminiProvider],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final strings = l10n(tester);
 
@@ -1842,8 +1868,7 @@ void main() {
       'Run Setup -> Accept & finish -> Start using AI runs the full FTUE '
       'workflow, persists models and clears the running spinner',
       (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1600));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1600);
 
         final geminiProvider = AiConfig.inferenceProvider(
           id: 'gemini-provider-id',
@@ -1883,7 +1908,8 @@ void main() {
             existingProviders: [geminiProvider],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
 
@@ -1934,8 +1960,7 @@ void main() {
     testWidgets('displays all localized strings correctly', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1600);
 
       final geminiProvider = AiConfig.inferenceProvider(
         id: 'gemini-provider-id',
@@ -1962,7 +1987,8 @@ void main() {
           existingProviders: [geminiProvider],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final strings = l10n(tester);
 
@@ -1988,8 +2014,7 @@ void main() {
     testWidgets('shows Running state while setup is in progress', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1600));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1600);
 
       final geminiProvider = AiConfig.inferenceProvider(
         id: 'gemini-provider-id',
@@ -2016,7 +2041,8 @@ void main() {
           existingProviders: [geminiProvider],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final strings = l10n(tester);
 
@@ -2035,8 +2061,7 @@ void main() {
     testWidgets('shows prompt setup dialog after saving new OpenAI provider', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       // Track saved configs to return dynamically created models
       final savedConfigs = <AiConfig>[];
@@ -2054,7 +2079,8 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(preselectedType: InferenceProviderType.openAi),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Fill required fields
       await tester.enterText(
@@ -2074,7 +2100,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Prepopulation seeds every known OpenAI model on addConfig, so
       // the FTUE preview is skipped and the result modal opens directly.
@@ -2085,8 +2112,7 @@ void main() {
     testWidgets('shows prompt setup dialog after saving new Mistral provider', (
       WidgetTester tester,
     ) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       // Track saved configs to return dynamically created models
       final savedConfigs = <AiConfig>[];
@@ -2104,7 +2130,8 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(preselectedType: InferenceProviderType.mistral),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Fill required fields
       await tester.enterText(
@@ -2124,7 +2151,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(saveButton);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Prepopulation seeds every known Mistral model on addConfig, so
       // the FTUE preview is skipped and the result modal opens directly.
@@ -2135,8 +2163,7 @@ void main() {
     testWidgets(
       'creates models for OpenAI when user confirms in setup dialog',
       (WidgetTester tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         // Track saved configs to return dynamically created models
         final savedConfigs = <AiConfig>[];
@@ -2154,7 +2181,8 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(preselectedType: InferenceProviderType.openAi),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Fill fields
         await tester.enterText(
@@ -2174,13 +2202,15 @@ void main() {
         await tester.pump();
 
         await tester.tap(saveButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Prepopulation seeds every known OpenAI model on addConfig, so
         // the FTUE preview is skipped and the result modal opens directly.
         expect(find.text('Start using AI'), findsOneWidget);
         await tester.tap(find.text('Start using AI'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Verify models were created and no prompts
         final modelsCreated = savedConfigs.whereType<AiConfigModel>().length;
@@ -2201,15 +2231,15 @@ void main() {
       'spinner when saveConfig throws on a NEW provider — covers the '
       'try/catch branch in handleSave',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         when(
           () => mockRepository.saveConfig(any()),
         ).thenThrow(Exception('write failed'));
 
         await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Make a valid OpenAI provider so the form is dirty + valid.
         final strings = l10n(tester);
@@ -2239,7 +2269,8 @@ void main() {
         await tester.pump();
         // Drain the awaited future so the catch + finally fire.
         await tester.pump(const Duration(milliseconds: 50));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Toast text comes from `commonError` — assert it landed in
         // the tree. Different toast implementations expose the title
@@ -2256,8 +2287,7 @@ void main() {
       'on an EXISTING provider — covers the same catch arm via the '
       'edit-flow branch (configId != null)',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         when(
           () => mockRepository.saveConfig(any()),
@@ -2266,7 +2296,8 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(configId: 'test-provider-id'),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         // Dirty the existing provider so save becomes enabled.
@@ -2280,7 +2311,8 @@ void main() {
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text(strings.commonError), findsAtLeastNWidgets(1));
       },
@@ -2293,13 +2325,10 @@ void main() {
       'save-error tests skip because they leave LoggingService '
       'unregistered',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         final mockDomainLogger = MockDomainLogger();
-        if (getIt.isRegistered<DomainLogger>()) {
-          getIt.unregister<DomainLogger>();
-        }
+        // Registered into the per-test scope pushed in setUp.
         getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
         when(
@@ -2307,7 +2336,8 @@ void main() {
         ).thenThrow(Exception('boom'));
 
         await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         await tester.enterText(
@@ -2332,7 +2362,8 @@ void main() {
         await tester.tap(saveLabel);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         verify(
           () => mockDomainLogger.error(
@@ -2350,13 +2381,10 @@ void main() {
       '`.update` subDomain on an EXISTING provider — same ternary branch, '
       'opposite arm',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         final mockDomainLogger = MockDomainLogger();
-        if (getIt.isRegistered<DomainLogger>()) {
-          getIt.unregister<DomainLogger>();
-        }
+        // Registered into the per-test scope pushed in setUp.
         getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
         when(
@@ -2366,7 +2394,8 @@ void main() {
         await tester.pumpWidget(
           buildTestWidget(configId: 'test-provider-id'),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         await tester.enterText(
           find.widgetWithText(TextFormField, 'Test Provider'),
@@ -2378,7 +2407,8 @@ void main() {
         await tester.tap(find.text('Save'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         verify(
           () => mockDomainLogger.error(
@@ -2408,13 +2438,13 @@ void main() {
       'picked in the pick-provider modal), so the harness seeds `configId` '
       'to exercise the edit-mode chrome where the field still lives.',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         await tester.pumpWidget(
           buildTestWidget(configId: 'test-provider-id'),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Tap the field's dropdown caret — the only tap target inside
         // `_ProviderTypeField` that opens the picker.
@@ -2424,7 +2454,8 @@ void main() {
             matching: find.byType(InkWell),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // The provider-type selection modal exposes "Anthropic Claude"
         // (the localised display name) as a list row that is only
@@ -2443,13 +2474,13 @@ void main() {
       'renders the localised provider type display name as the field '
       'value and the matching provider icon as the leading affordance',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         await tester.pumpWidget(
           buildTestWidget(configId: 'test-provider-id'),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         // Field label (caption) and value (provider display name).
@@ -2468,13 +2499,13 @@ void main() {
       'where `_ProviderTypeField` still renders after the v5 create-mode '
       'rewrite.',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         await tester.pumpWidget(
           buildTestWidget(configId: 'test-provider-id'),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         // The field annotates itself with `Semantics(button: true,
@@ -2509,13 +2540,13 @@ void main() {
       'because `_ProviderTypeField` is no longer rendered in the v5 '
       'create chrome.',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         await tester.pumpWidget(
           buildTestWidget(configId: 'test-provider-id'),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         // The provider-type label sits inside the field, so we walk up
@@ -2548,11 +2579,11 @@ void main() {
       'persists the draft config and surfaces the success toast when '
       'the user fills the display name and taps Save as draft',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         await tester.enterText(
@@ -2566,7 +2597,8 @@ void main() {
         await tester.tap(draftButton);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Draft path must reach the repository at least once (one call
         // for the provider, additional calls for any pre-populated
@@ -2585,15 +2617,15 @@ void main() {
       'covers the try/catch arm in handleSaveDraft, mirroring the '
       'existing handleSave error tests',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         when(
           () => mockRepository.saveConfig(any()),
         ).thenThrow(Exception('draft boom'));
 
         await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         await tester.enterText(
@@ -2607,7 +2639,8 @@ void main() {
         await tester.tap(draftButton);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text(strings.commonError), findsAtLeastNWidgets(1));
       },
@@ -2618,13 +2651,10 @@ void main() {
       '`handleSaveDraft` subDomain when addConfig throws — covers the '
       'logging arm distinct from `handleSave.add`/`handleSave.update`',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         final mockDomainLogger = MockDomainLogger();
-        if (getIt.isRegistered<DomainLogger>()) {
-          getIt.unregister<DomainLogger>();
-        }
+        // Registered into the per-test scope pushed in setUp.
         getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
         when(
@@ -2632,7 +2662,8 @@ void main() {
         ).thenThrow(Exception('draft boom'));
 
         await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         await tester.enterText(
@@ -2646,7 +2677,8 @@ void main() {
         await tester.tap(draftButton);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 50));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         verify(
           () => mockDomainLogger.error(
@@ -2672,14 +2704,15 @@ void main() {
       'create chrome rendered — exercises the leading IconButton.onPressed '
       'arm at the top of the build',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         await tester.tap(find.byIcon(Icons.chevron_left_rounded));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         expect(
@@ -2694,17 +2727,18 @@ void main() {
       '_AddProviderFooterBar.onBack — the silent pop is correct in a '
       'rootless test surface (no NavService, no Beamer)',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         final back = find.text(strings.aiProviderConnectBackToProviders);
         await tester.ensureVisible(back);
         await tester.tap(back);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Form chrome still rendered — pop was a silent no-op, no crash.
         expect(find.byType(InferenceProviderEditPage), findsOneWidget);
@@ -2717,11 +2751,11 @@ void main() {
       'that renders the step as a Semantics button + InkWell, distinct '
       'from the mobile (plain Text) branch',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         final choose = find.text(strings.aiProviderConnectStepChoose);
@@ -2733,7 +2767,8 @@ void main() {
         await tester.tap(
           find.ancestor(of: choose, matching: find.byType(InkWell)),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(InferenceProviderEditPage), findsOneWidget);
       },
@@ -2755,7 +2790,8 @@ void main() {
         addTearDown(tester.view.resetDevicePixelRatio);
 
         await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         expect(
@@ -2777,20 +2813,22 @@ void main() {
       "it does not crash — covers _buildErrorState's LottiSecondaryButton "
       'onPressed callback',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         when(
           () => mockRepository.getConfigById('error-id'),
         ).thenThrow(Exception('Failed to load'));
 
         await tester.pumpWidget(buildTestWidget(configId: 'error-id'));
+        // Genuine settle: the throwing provider only surfaces its error
+        // state through settle-style pumping (riverpod retry scheduling).
         await tester.pumpAndSettle();
 
         final goBack = find.text('Go Back');
         expect(goBack, findsOneWidget);
         await tester.tap(goBack);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(InferenceProviderEditPage), findsOneWidget);
       },
@@ -2821,8 +2859,7 @@ void main() {
     });
 
     Future<void> pumpWithOpenAiSelection(WidgetTester tester) async {
-      await tester.binding.setSurfaceSize(const Size(1024, 1200));
-      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _setTestSurface(tester, height: 1200);
 
       // Seed an OpenAI provider so the form lands in EDIT mode where the
       // provider-type modal can be opened to retarget the create flow.
@@ -2831,7 +2868,8 @@ void main() {
       await tester.pumpWidget(
         buildTestWidget(preselectedType: InferenceProviderType.openAi),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
     }
 
     testWidgets(
@@ -2869,15 +2907,15 @@ void main() {
       'form is valid — covers the CallbackShortcuts binding registered '
       'in the build path',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         when(
           () => mockUrlLauncher.launchUrl(any(), any()),
         ).thenAnswer((_) async => true);
 
         await tester.pumpWidget(buildTestWidget(configId: 'test-provider-id'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Dirty the field so the form remains valid + dirty after the
         // shortcut fires (the save handler short-circuits when the form
@@ -2892,7 +2930,8 @@ void main() {
         await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
         await tester.sendKeyUpEvent(LogicalKeyboardKey.meta);
         await tester.pump();
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         verify(() => mockRepository.saveConfig(any())).called(greaterThan(0));
       },
@@ -2902,8 +2941,7 @@ void main() {
       'focusApiKey: true requests focus on the API key field and scrolls '
       'it into view — covers the Fix-flow `_tryFocusApiKey` branch',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         when(
           () => mockUrlLauncher.launchUrl(any(), any()),
@@ -2915,7 +2953,8 @@ void main() {
             focusApiKey: true,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final apiKeyField = find.widgetWithText(TextFormField, 'test-key-123');
         expect(apiKeyField, findsOneWidget);
@@ -2943,16 +2982,17 @@ void main() {
       'covers the legacy two-button bar branch (line 487) that the '
       'create-flow footer test does not reach',
       (tester) async {
-        await tester.binding.setSurfaceSize(const Size(1024, 1200));
-        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await _setTestSurface(tester, height: 1200);
 
         await tester.pumpWidget(buildTestWidget(configId: 'test-provider-id'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final cancel = find.text('Cancel');
         expect(cancel, findsOneWidget);
         await tester.tap(cancel);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Silent no-op pop — page still rendered, no crash.
         expect(find.byType(InferenceProviderEditPage), findsOneWidget);
@@ -3027,7 +3067,8 @@ void main() {
       // Advance past the 600 ms debounce so the verifier fires.
       await tester.pump(const Duration(milliseconds: 700));
       // Let the probe future complete + the rebuild settle.
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
     }
 
     testWidgets(
@@ -3045,7 +3086,8 @@ void main() {
             additionalOverrides: verifierOverridesFor(probe: probe),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
         final strings = l10n(tester);
         final apiKeyField = find.widgetWithText(
           TextField,
@@ -3064,7 +3106,8 @@ void main() {
         expect(find.byType(CircularProgressIndicator), findsWidgets);
         // Resolve so the test tear-down doesn't trip on pending timers.
         probe.completeWith(const ConnectionCheckIdle());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
       },
     );
 
@@ -3085,7 +3128,8 @@ void main() {
             additionalOverrides: verifierOverridesFor(probe: probe),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
         await typeApiKeyAndFlushDebounce(tester);
 
         final strings = l10n(tester);
@@ -3121,7 +3165,8 @@ void main() {
             additionalOverrides: verifierOverridesFor(probe: probe),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
         await typeApiKeyAndFlushDebounce(tester);
 
         final strings = l10n(tester);
@@ -3165,7 +3210,8 @@ void main() {
             additionalOverrides: verifierOverridesFor(probe: probe),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
         await typeApiKeyAndFlushDebounce(tester);
 
         final strings = l10n(tester);
@@ -3205,7 +3251,8 @@ void main() {
             additionalOverrides: verifierOverridesFor(probe: probe),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
         await typeApiKeyAndFlushDebounce(tester);
 
         final strings = l10n(tester);
@@ -3233,7 +3280,8 @@ void main() {
             additionalOverrides: verifierOverridesFor(probe: probe),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
         await typeApiKeyAndFlushDebounce(tester);
 
         final strings = l10n(tester);
@@ -3261,7 +3309,8 @@ void main() {
             additionalOverrides: verifierOverridesFor(probe: probe),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
         await typeApiKeyAndFlushDebounce(tester);
 
         final strings = l10n(tester);
@@ -3286,7 +3335,8 @@ void main() {
             additionalOverrides: verifierOverridesFor(probe: probe),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final strings = l10n(tester);
         final apiKeyField = find.widgetWithText(
@@ -3299,7 +3349,8 @@ void main() {
         expect(probe.calls, 0);
         // Cross the 600 ms threshold.
         await tester.pump(const Duration(milliseconds: 400));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
         expect(probe.calls, 1);
       },
     );
@@ -3318,14 +3369,16 @@ void main() {
             additionalOverrides: verifierOverridesFor(probe: probe),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
         await typeApiKeyAndFlushDebounce(tester);
         expect(probe.calls, 1);
 
         final strings = l10n(tester);
         final retry = find.text(strings.aiProviderConnectionRetryButton);
         await tester.ensureVisible(retry);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
         await tester.tap(retry);
         // Process the tap WITHOUT advancing time — the retry handler
         // must fire the probe synchronously, no 600 ms debounce wait.
@@ -3335,7 +3388,8 @@ void main() {
         // signal an accidental debounce reintroduction).
         await tester.pump(const Duration(milliseconds: 700));
         expect(probe.calls, 2);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
       },
     );
   });

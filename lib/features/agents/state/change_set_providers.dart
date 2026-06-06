@@ -24,6 +24,7 @@ import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'change_set_providers.g.dart';
@@ -34,7 +35,8 @@ part 'change_set_providers.g.dart';
 /// [ChangeSetEntity] records in the DB. This collapses them at the
 /// provider level by fingerprinting each set's pending items (toolName +
 /// args) and keeping only the newest set per fingerprint.
-List<AgentDomainEntity> _deduplicateChangeSets(
+@visibleForTesting
+List<AgentDomainEntity> deduplicateChangeSets(
   List<AgentDomainEntity> sets,
 ) {
   if (sets.length <= 1) return sets;
@@ -87,7 +89,7 @@ projectPendingChangeSetsProvider = FutureProvider.autoDispose
         identity.agentId,
         taskId: projectId,
       );
-      return _deduplicateChangeSets(sets);
+      return deduplicateChangeSets(sets);
     });
 
 final projectRecommendationServiceProvider =

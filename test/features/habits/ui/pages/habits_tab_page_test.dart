@@ -16,38 +16,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
-
-class MockHabitsController extends HabitsController {
-  MockHabitsController(this._state);
-
-  final HabitsState _state;
-  bool setTimeSpanCalled = false;
-  int? lastTimeSpan;
-
-  @override
-  HabitsState build() => _state;
-
-  @override
-  void setDisplayFilter(HabitDisplayFilter? displayFilter) {}
-
-  @override
-  void toggleShowSearch() {}
-
-  @override
-  void toggleShowTimeSpan() {}
-
-  @override
-  void toggleSelectedCategoryIds(String categoryId) {}
-
-  @override
-  void toggleZeroBased() {}
-
-  @override
-  Future<void> setTimeSpan(int timeSpanDays) async {
-    setTimeSpanCalled = true;
-    lastTimeSpan = timeSpanDays;
-  }
-}
+import '../../test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -120,7 +89,7 @@ void main() {
         ProviderScope(
           overrides: [
             habitsControllerProvider.overrideWith(
-              () => MockHabitsController(testState),
+              () => FakeHabitsController(testState),
             ),
           ],
           child: makeTestableWidgetWithScaffold(
@@ -129,7 +98,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(
         find.text(habitFlossing.name),
@@ -140,13 +109,13 @@ void main() {
       expect(searchButtonFinder, findsOneWidget);
 
       await tester.tap(searchButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final timeSpanButtonFinder = find.byIcon(Icons.calendar_month);
       expect(timeSpanButtonFinder, findsOneWidget);
 
       await tester.tap(timeSpanButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final habitCategoryFilterFinder = find.byKey(
         const Key('habit_category_filter'),
@@ -154,7 +123,7 @@ void main() {
       expect(habitCategoryFilterFinder, findsOneWidget);
 
       await tester.tap(habitCategoryFilterFinder);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
     });
 
     testWidgets(
@@ -172,7 +141,7 @@ void main() {
           ProviderScope(
             overrides: [
               habitsControllerProvider.overrideWith(
-                () => MockHabitsController(testState),
+                () => FakeHabitsController(testState),
               ),
             ],
             child: makeTestableWidgetWithScaffold(
@@ -181,7 +150,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should have exactly 1 HabitCompletionCard for openNow habit
         expect(find.byType(HabitCompletionCard), findsOneWidget);
@@ -205,7 +174,7 @@ void main() {
           ProviderScope(
             overrides: [
               habitsControllerProvider.overrideWith(
-                () => MockHabitsController(testState),
+                () => FakeHabitsController(testState),
               ),
             ],
             child: makeTestableWidgetWithScaffold(
@@ -214,7 +183,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should have exactly 1 HabitCompletionCard for completed habit
         expect(find.byType(HabitCompletionCard), findsOneWidget);
@@ -237,7 +206,7 @@ void main() {
           ProviderScope(
             overrides: [
               habitsControllerProvider.overrideWith(
-                () => MockHabitsController(testState),
+                () => FakeHabitsController(testState),
               ),
             ],
             child: makeTestableWidgetWithScaffold(
@@ -246,7 +215,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should have exactly 1 HabitCompletionCard for pendingLater habit
         expect(find.byType(HabitCompletionCard), findsOneWidget);
@@ -267,7 +236,7 @@ void main() {
         ProviderScope(
           overrides: [
             habitsControllerProvider.overrideWith(
-              () => MockHabitsController(testState),
+              () => FakeHabitsController(testState),
             ),
           ],
           child: makeTestableWidgetWithScaffold(
@@ -276,7 +245,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // No HabitCompletionCards when all lists are empty
       expect(find.byType(HabitCompletionCard), findsNothing);
@@ -296,7 +265,7 @@ void main() {
           ProviderScope(
             overrides: [
               habitsControllerProvider.overrideWith(
-                () => MockHabitsController(testState),
+                () => FakeHabitsController(testState),
               ),
             ],
             child: makeTestableWidgetWithScaffold(
@@ -305,7 +274,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
       },
@@ -330,7 +299,7 @@ void main() {
           ProviderScope(
             overrides: [
               habitsControllerProvider.overrideWith(
-                () => MockHabitsController(testState),
+                () => FakeHabitsController(testState),
               ),
             ],
             child: makeTestableWidgetWithScaffold(
@@ -339,7 +308,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
         expect(find.byKey(Key(habitFlossing.id)), findsNothing);

@@ -18,7 +18,7 @@
 ## File size / split opportunities
 
 - [ ] **[LOW]** All files are well within guidelines (largest: `due_date_utils_test.dart` at 274 lines). No splits needed.
-- [ ] **[LOW]** `task_navigation.dart` (46 lines) is small. Its function `openLinkedTaskDetail` has two branches (desktop vs mobile) and an optional `focusSuggestions` path, all of which require a widget test environment. The missing test file is the primary concern.
+- [x] **[LOW]** `task_navigation.dart` (46 lines) is small. Its function `openLinkedTaskDetail` has two branches (desktop vs mobile) and an optional `focusSuggestions` path, all of which require a widget test environment. The missing test file is the primary concern. **RESOLVED:** mirror test added (see the HIGH coverage item).
 
 ---
 
@@ -39,7 +39,7 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `task_navigation.dart` has **no test file** (`test/features/tasks/util/task_navigation_test.dart` does not exist). The function `openLinkedTaskDetail` has three distinct code paths:
+- [x] **[HIGH]** `task_navigation.dart` has **no test file** (`test/features/tasks/util/task_navigation_test.dart` does not exist). The function `openLinkedTaskDetail` has three distinct code paths: **RESOLVED:** new `task_navigation_test.dart` covers all three paths — desktop pushes onto the NavService detail stack (no navigator route), mobile pushes a MaterialPageRoute (popped before the heavyweight page builds), and `focusSuggestions: true` publishes the focus intent before navigating.
   1. `focusSuggestions = true` → publishes a focus intent via `taskFocusControllerProvider`.
   2. Desktop layout (`isDesktopLayout` returns true) → calls `NavService.pushDesktopTaskDetail`.
   3. Mobile layout → pushes a `MaterialPageRoute` via `Navigator.of(context).push`.

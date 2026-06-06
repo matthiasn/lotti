@@ -95,6 +95,19 @@ void main() {
     targetDate: targetDate,
   );
 
+  /// The canonical loaded state; override the flags that matter per test.
+  ProjectDetailState defaultState({
+    bool isLoading = false,
+    bool isSaving = false,
+    bool hasChanges = false,
+  }) => ProjectDetailState(
+    project: testProject,
+    linkedTasks: const [],
+    isLoading: isLoading,
+    isSaving: isSaving,
+    hasChanges: hasChanges,
+  );
+
   setUpAll(registerAllFallbackValues);
 
   setUp(() async {
@@ -188,13 +201,7 @@ void main() {
       testWidgets('shows project title in text field', (tester) async {
         await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         // The title controller should be synced with the project title
@@ -209,13 +216,7 @@ void main() {
       ) async {
         await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         expect(find.byType(ProjectStatusPicker), findsOneWidget);
@@ -228,19 +229,14 @@ void main() {
       ) async {
         await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         // The picker shows the current status text ("Open")
         final picker = find.byType(ProjectStatusPicker);
         await tester.tap(picker);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Bottom sheet should appear with status options
         // "Change Status" appears twice: section title + sheet title
@@ -254,21 +250,17 @@ void main() {
       ) async {
         await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         final picker = find.byType(ProjectStatusPicker);
         await tester.tap(picker);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         await tester.tap(find.text('Active'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Sheet should be dismissed — only section title remains
         expect(find.text('Active'), findsNothing);
@@ -279,13 +271,7 @@ void main() {
       ) async {
         await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         expect(find.byType(ProjectTargetDateField), findsOneWidget);
@@ -296,13 +282,7 @@ void main() {
       testWidgets('shows ProjectAgentReportCard', (tester) async {
         await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         expect(find.byType(ProjectAgentReportCard), findsOneWidget);
@@ -313,13 +293,7 @@ void main() {
       ) async {
         await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
           extraOverrides: [
             projectHealthMetricsProvider(_projectId).overrideWith(
               (ref) async => makeTestProjectHealthMetrics(
@@ -342,13 +316,7 @@ void main() {
 
           await pumpPage(
             tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
+            controllerState: defaultState(),
             extraOverrides: [
               projectHealthMetricsProvider(_projectId).overrideWith(
                 (ref) => completer.future,
@@ -366,13 +334,7 @@ void main() {
         (tester) async {
           await pumpPage(
             tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
+            controllerState: defaultState(),
             extraOverrides: [
               projectHealthMetricsProvider(
                 _projectId,
@@ -390,13 +352,7 @@ void main() {
         (tester) async {
           await pumpPage(
             tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
+            controllerState: defaultState(),
             extraOverrides: [
               projectHealthMetricsProvider(_projectId).overrideWith(
                 (ref) async => throw Exception('health failed'),
@@ -432,13 +388,7 @@ void main() {
                   as AgentIdentityEntity;
           await pumpPage(
             tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
+            controllerState: defaultState(),
             projectAgent: agent,
             extraOverrides: [
               projectRecommendationsProvider(_projectId).overrideWith(
@@ -501,13 +451,7 @@ void main() {
 
           await pumpPage(
             tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
+            controllerState: defaultState(),
             extraOverrides: [
               projectPendingChangeSetsProvider(_projectId).overrideWith(
                 (ref) async => [changeSet],
@@ -524,13 +468,7 @@ void main() {
       testWidgets('shows linked tasks content when loaded', (tester) async {
         await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         // Verify the empty-state message from ProjectLinkedTasksSection
@@ -544,13 +482,7 @@ void main() {
       ) async {
         await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         final textField = tester.widget<TextFormField>(
@@ -633,13 +565,7 @@ void main() {
       testWidgets('save button is disabled when no changes', (tester) async {
         await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         final saveButton = find.widgetWithText(FilledButton, 'Save');
@@ -698,7 +624,8 @@ void main() {
           );
 
           await tester.tap(find.text('Save'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
 
           expect(controller.saveChangesCalls, 1);
           verify(mockNavService.beamBack).called(1);
@@ -729,13 +656,7 @@ void main() {
             overrides: [
               projectDetailControllerProvider('test-project-id').overrideWith(
                 () => _TestProjectDetailController(
-                  ProjectDetailState(
-                    project: testProject,
-                    linkedTasks: const [],
-                    isLoading: false,
-                    isSaving: false,
-                    hasChanges: false,
-                  ),
+                  defaultState(),
                 ),
               ),
               projectAgentProvider('test-project-id').overrideWith(
@@ -746,7 +667,8 @@ void main() {
         );
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Navigate to the detail page
+        // Navigate to the detail page. Route push/pop chains transitions,
+        // so settle is genuinely needed here.
         await tester.tap(find.text('Go'));
         await tester.pumpAndSettle();
 
@@ -772,13 +694,7 @@ void main() {
 
           await pumpPage(
             tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
+            controllerState: defaultState(),
             categoryId: 'cat-123',
           );
 
@@ -861,13 +777,7 @@ void main() {
       ) async {
         await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         expect(find.byType(ErrorStateWidget), findsNothing);
@@ -925,13 +835,7 @@ void main() {
       ) async {
         final controller = await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         // The save button should be disabled (null onPressed), but let's
@@ -1010,13 +914,7 @@ void main() {
       ) async {
         final controller = await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         // Enter text into the title field
@@ -1035,13 +933,7 @@ void main() {
       testWidgets('tapping date field opens date picker', (tester) async {
         await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         // Tap the date display area (the InkWell in ProjectTargetDateField)
@@ -1065,13 +957,7 @@ void main() {
         (tester) async {
           final controller = await pumpPage(
             tester,
-            controllerState: ProjectDetailState(
-              project: testProject,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
-            ),
+            controllerState: defaultState(),
           );
 
           // Tap the date display area
@@ -1099,13 +985,7 @@ void main() {
       ) async {
         final controller = await pumpPage(
           tester,
-          controllerState: ProjectDetailState(
-            project: testProject,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
-          ),
+          controllerState: defaultState(),
         );
 
         // The clear icon is only shown when targetDate is not null.

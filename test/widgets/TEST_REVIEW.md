@@ -52,11 +52,11 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/widgets/app_bar/glass_action_button_test.dart`, `glass_back_button_test.dart`, `glass_icon_container_test.dart` — all three use 8–12 hand-rolled `MaterialApp(home: Scaffold(body: ...))` pumpWidget calls instead of `makeTestableWidget()`. Extract a file-level `_pump(tester, widget)` helper using `makeTestableWidget`. These are the only Group A files that never call `makeTestableWidget`.
+- [x] **[HIGH]** `test/widgets/app_bar/glass_action_button_test.dart`, `glass_back_button_test.dart`, `glass_icon_container_test.dart` — all three use 8–12 hand-rolled `MaterialApp(home: Scaffold(body: ...))` pumpWidget calls instead of `makeTestableWidget()`. Extract a file-level `_pump(tester, widget)` helper using `makeTestableWidget`. These are the only Group A files that never call `makeTestableWidget`.
 
-- [ ] **[HIGH]** `test/widgets/cards/modern_base_card_test.dart` — inline `class MockCallbacks extends Mock implements TestCallbacks {}` (line 13). This is a callback mock that should either go into `test/mocks/mocks.dart` or be replaced by a plain Dart closure (no Mock needed here — `mockCallbacks.onTap` could simply be `() { callCount++ }`). Using `verify()` on a non-centralised mock is noise; the tap test at line 150 is the only one that actually calls `verify`, and it could use a simple bool flag instead.
+- [x] **[HIGH]** `test/widgets/cards/modern_base_card_test.dart` — inline `class MockCallbacks extends Mock implements TestCallbacks {}` (line 13). This is a callback mock that should either go into `test/mocks/mocks.dart` or be replaced by a plain Dart closure (no Mock needed here — `mockCallbacks.onTap` could simply be `() { callCount++ }`). Using `verify()` on a non-centralised mock is noise; the tap test at line 150 is the only one that actually calls `verify`, and it could use a simple bool flag instead.
 
-- [ ] **[HIGH]** `test/widgets/date_time/datetime_field_test.dart` — two inline mock classes: `MockCallback` (line 11) and `MockVoidCallback` (line 15). Neither exists in `test/mocks/mocks.dart`. The `MockVoidCallback` pattern in particular is reused 3 times in the same file (3× `setUp` allocation). These should be extracted to central mocks or replaced with closures.
+- [x] **[HIGH]** `test/widgets/date_time/datetime_field_test.dart` — two inline mock classes: `MockCallback` (line 11) and `MockVoidCallback` (line 15). Neither exists in `test/mocks/mocks.dart`. The `MockVoidCallback` pattern in particular is reused 3 times in the same file (3× `setUp` allocation). These should be extracted to central mocks or replaced with closures.
 
 - [x] **[HIGH]** `test/widgets/events/event_form_labels_test.dart` + `test/widgets/events/event_form_test.dart` — both test `EventForm` and replicate identical GetIt setup blocks (registering `EntitiesCacheService`, `EditorStateService`, `JournalDb`, `UpdateNotifications`) across two files. The AGENTS.md rule "one test file per source file" also applies; `event_form.dart` has two test files. The label-related tests could be merged back into `event_form_test.dart` behind a sub-group, or the setup should use `setUpTestGetIt()` where possible.
 
@@ -90,15 +90,15 @@ Per the README: Glados is for pure functions with structured input. Widget tests
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/widgets/app_bar/title_app_bar.dart` (105 lines) — **zero test coverage**. Contains three classes: `TitleAppBar`, `TitleWidgetAppBar`, and `BackWidget`. `BackWidget` uses GetIt to call `NavService.beamBack()` and wraps an animated `fadeIn`. None of the rendering, back-navigation callback, `onPressed` override path, or animation are tested.
+- [x] **[HIGH]** `lib/widgets/app_bar/title_app_bar.dart` (105 lines) — **zero test coverage**. Contains three classes: `TitleAppBar`, `TitleWidgetAppBar`, and `BackWidget`. `BackWidget` uses GetIt to call `NavService.beamBack()` and wraps an animated `fadeIn`. None of the rendering, back-navigation callback, `onPressed` override path, or animation are tested.
 
-- [ ] **[HIGH]** `lib/widgets/app_bar/sliver_title_bar.dart` (41 lines) — **zero test coverage**. `SliverTitleBar` renders a `SliverAppBar` with configurable `pinned`, `showBackButton`, and `bottom`. No test exercises even basic rendering.
+- [x] **[HIGH]** `lib/widgets/app_bar/sliver_title_bar.dart` (41 lines) — **zero test coverage**. `SliverTitleBar` renders a `SliverAppBar` with configurable `pinned`, `showBackButton`, and `bottom`. No test exercises even basic rendering.
 
-- [ ] **[HIGH]** `lib/widgets/buttons/lotti_primary_button.dart` (83 lines) — **zero test coverage**. `LottiPrimaryButton` has `isDestructive` styling, `icon` rendering, `semanticsLabel`, and a custom `style` merge path. The secondary and tertiary buttons have tests; the primary does not.
+- [x] **[HIGH]** `lib/widgets/buttons/lotti_primary_button.dart` (83 lines) — **zero test coverage**. `LottiPrimaryButton` has `isDestructive` styling, `icon` rendering, `semanticsLabel`, and a custom `style` merge path. The secondary and tertiary buttons have tests; the primary does not.
 
-- [ ] **[HIGH]** `lib/widgets/events/event_status.dart` (24 lines) — **zero test coverage**. `EventStatusWidget` is a simple `Chip` with status-colored background; tests should verify label text, background alpha, and all `EventStatus` variants.
+- [x] **[HIGH]** `lib/widgets/events/event_status.dart` (24 lines) — **zero test coverage**. `EventStatusWidget` is a simple `Chip` with status-colored background; tests should verify label text, background alpha, and all `EventStatus` variants.
 
-- [ ] **[HIGH]** `lib/widgets/charts/dashboard_item_modal.dart` (65 lines) — **zero test coverage**. The aggregation-type selection and `Navigator.pop` trigger are completely untested.
+- [x] **[HIGH]** `lib/widgets/charts/dashboard_item_modal.dart` (65 lines) — **zero test coverage**. The aggregation-type selection and `Navigator.pop` trigger are completely untested.
 
 - [ ] **[MED]** `test/widgets/charts/` — `dashboard_health_test.dart`, `dashboard_health_data_test.dart`, `dashboard_measurables_test.dart`, `dashboard_workout_test.dart` all test widgets from `lib/features/dashboards/ui/widgets/charts/**`, not from `lib/widgets/charts/`. This violates the "one test file per source file, paths must mirror" rule. These four files should be moved/merged into `test/features/dashboards/ui/widgets/charts/`.
 
@@ -112,9 +112,9 @@ Per the README: Glados is for pure functions with structured input. Widget tests
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/widgets/date_time/datetime_field_test.dart` — **12× `pumpAndSettle`** across 12 test bodies, including 5 on tests that pump purely static `TextField` or `CupertinoDatePicker` widgets with no ongoing animations. Replace post-pump `pumpAndSettle()` with `tester.pump()` for the non-modal static cases (renders, format checks), keeping `pumpAndSettle` only for modal open/close transitions. Estimated: removes ~7 unnecessary settle cycles per run.
+- [x] **[HIGH]** `test/widgets/date_time/datetime_field_test.dart` — **12× `pumpAndSettle`** across 12 test bodies, including 5 on tests that pump purely static `TextField` or `CupertinoDatePicker` widgets with no ongoing animations. Replace post-pump `pumpAndSettle()` with `tester.pump()` for the non-modal static cases (renders, format checks), keeping `pumpAndSettle` only for modal open/close transitions. Estimated: removes ~7 unnecessary settle cycles per run.
 
-- [ ] **[HIGH]** `test/widgets/cards/modern_base_card_test.dart` — **18× `pumpAndSettle`** (one per test, on a static decoration card with no animations). `ModernBaseCard` uses `Container`, not `AnimatedContainer`; `pumpAndSettle` is never needed. Replace all with `await tester.pump()`. Estimated: up to 18× 10s timeout exposure eliminated (each `pumpAndSettle` has a 10s default; in practice they complete fast, but in animation-heavy environments they can stall).
+- [x] **[HIGH]** `test/widgets/cards/modern_base_card_test.dart` — **18× `pumpAndSettle`** (one per test, on a static decoration card with no animations). `ModernBaseCard` uses `Container`, not `AnimatedContainer`; `pumpAndSettle` is never needed. Replace all with `await tester.pump()`. Estimated: up to 18× 10s timeout exposure eliminated (each `pumpAndSettle` has a 10s default; in practice they complete fast, but in animation-heavy environments they can stall).
 
 - [ ] **[MED]** `test/widgets/cards/modern_card_content_test.dart` and `modern_status_chip_test.dart` — **14×** and **12×** `pumpAndSettle` respectively, on static layout cards. Same pattern as above: replace with `tester.pump()`.
 

@@ -10,10 +10,12 @@ import 'package:genui/genui.dart' as genui;
 import 'package:http/http.dart' as http;
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:location/location.dart' as location_pkg;
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -48,6 +50,7 @@ import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
@@ -59,6 +62,7 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
@@ -73,6 +77,7 @@ import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/audio_transcription_service.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
@@ -94,19 +99,34 @@ import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
+import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
+import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_processor.dart';
+import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
+import 'package:lotti/features/sync/matrix/session_manager.dart';
+import 'package:lotti/features/sync/matrix/sync_engine.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
+import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
+import 'package:lotti/features/sync/outbox/outbox_processor.dart';
+import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
+import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/repository/whats_new_service.dart';
@@ -128,11 +148,16 @@ import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/location.dart';
+import 'package:matrix/encryption.dart';
+import 'package:matrix/encryption/cross_signing.dart';
+import 'package:matrix/encryption/key_verification_manager.dart';
 import 'package:matrix/matrix.dart';
+import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
+import 'package:record/record.dart' as record;
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
 /// Generic mock for drift Selectable queries used in widget tests.
@@ -223,7 +248,60 @@ class MockSurfaceContext extends Mock implements genui.SurfaceContext {}
 
 class MockMatrixClient extends Mock implements Client {}
 
+class MockSyncMaintenanceRepository extends Mock
+    implements SyncMaintenanceRepository {}
+
+class MockSyncedAudioInferenceDispatcher extends Mock
+    implements SyncedAudioInferenceDispatcher {}
+
+class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
+
+class MockMatrixMessageSender extends Mock implements MatrixMessageSender {}
+
+class MockSentEventRegistry extends Mock implements SentEventRegistry {}
+
+class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
+
+class MockSyncRoomManager extends Mock implements SyncRoomManager {}
+
+class MockMatrixStreamConsumer extends Mock implements MatrixStreamConsumer {}
+
+class MockSyncEngine extends Mock implements SyncEngine {}
+
+class MockSyncLifecycleCoordinator extends Mock
+    implements SyncLifecycleCoordinator {}
+
+class MockKeyVerification extends Mock implements KeyVerification {}
+
+class MockUserActivityGate extends Mock implements UserActivityGate {}
+
+class MockOutboxRepository extends Mock implements OutboxRepository {}
+
+class MockOutboxMessageSender extends Mock implements OutboxMessageSender {}
+
+class MockOutboxProcessor extends Mock implements OutboxProcessor {}
+
+class MockCachedLoginController extends Mock
+    implements CachedStreamController<LoginState> {}
+
 class MockMatrixDatabase extends Mock implements DatabaseApi {}
+
+class MockDeviceKeys extends Mock implements DeviceKeys {}
+
+class MockDeviceKeysList extends Mock implements DeviceKeysList {}
+
+class MockMatrixSdkGateway extends Mock implements MatrixSdkGateway {}
+
+class MockSyncUpdate extends Mock implements SyncUpdate {}
+
+class MockEncryption extends Mock implements Encryption {}
+
+class MockCrossSigning extends Mock implements CrossSigning {}
+
+class MockKeyVerificationManager extends Mock
+    implements KeyVerificationManager {}
+
+class MockStrippedStateEvent extends Mock implements StrippedStateEvent {}
 
 class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
   @override
@@ -391,6 +469,11 @@ class MockFts5Db extends Mock implements Fts5Db {}
 
 class MockTimeService extends Mock implements TimeService {}
 
+class MockTaskProgressRepository extends Mock
+    implements TaskProgressRepository {}
+
+class MockAiConfigDb extends Mock implements AiConfigDb {}
+
 class MockLoggingService extends Mock implements LoggingService {
   MockLoggingService() {
     registerFallbackValue(InsightLevel.info);
@@ -514,6 +597,8 @@ class MockAudioPlayerController extends Mock implements AudioPlayerController {}
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}
 
+class MockAudioRecorder extends Mock implements record.AudioRecorder {}
+
 class MockAudioTranscriptionService extends Mock
     implements AudioTranscriptionService {}
 
@@ -521,6 +606,17 @@ class MockRealtimeTranscriptionService extends Mock
     implements RealtimeTranscriptionService {}
 
 class MockNavService extends Mock implements NavService {}
+
+/// Recording variant of [MockNavService]: captures beamToNamed paths so
+/// tests can assert navigation without stubbing.
+class RecordingMockNavService extends Mock implements NavService {
+  final List<String> navigationHistory = [];
+
+  @override
+  void beamToNamed(String path, {Object? data}) {
+    navigationHistory.add(path);
+  }
+}
 
 class MockNotificationService extends Mock implements NotificationService {}
 
@@ -540,6 +636,8 @@ class FakeHabitDefinition extends Fake implements HabitDefinition {}
 class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
 
 class FakeEntryText extends Fake implements EntryText {}
+
+class FakeEventData extends Fake implements EventData {}
 
 class FakeTaskData extends Fake implements TaskData {}
 
@@ -708,6 +806,8 @@ class MockSyncEventProcessor extends Mock implements SyncEventProcessor {
 
 class MockMatrixStreamProcessor extends Mock implements MatrixStreamProcessor {}
 
+class MockJournalEntityLoader extends Mock implements SyncJournalEntityLoader {}
+
 class MockSyncNodeProfileBroadcaster extends Mock
     implements SyncNodeProfileBroadcaster {}
 
@@ -739,6 +839,8 @@ class MockTaskSummaryRepository extends Mock implements TaskSummaryRepository {}
 
 class MockTaskSummaryResolver extends Mock implements TaskSummaryResolver {}
 
+class MockDayPlanRepository extends Mock implements DayPlanRepository {}
+
 class MockHabitsRepository extends Mock implements HabitsRepository {}
 
 class MockRatingRepository extends Mock implements RatingRepository {}
@@ -767,6 +869,11 @@ class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
 
 class MockConversationManager extends Mock implements ConversationManager {}
+
+class MockConversationStrategy extends Mock implements ConversationStrategy {}
+
+class MockOllamaInferenceRepository extends Mock
+    implements OllamaInferenceRepository {}
 
 class MockAgentToolExecutor extends Mock implements AgentToolExecutor {}
 
@@ -821,6 +928,8 @@ class FakeAiConfigInferenceProvider extends Fake
     implements AiConfigInferenceProvider {}
 
 class FakeChatSession extends Fake implements ChatSession {}
+
+class FakeChecklistData extends Fake implements ChecklistData {}
 
 class FakeChecklistItemData extends Fake implements ChecklistItemData {}
 
@@ -893,6 +1002,8 @@ class MockSpeechDictionaryService extends Mock
 /// Mock for the MediaKit [Player] used by audio duration extraction and the
 /// speech recorder.
 class MockPlayer extends Mock implements Player {}
+
+class MockPlayerState extends Mock implements PlayerState {}
 
 /// Mock for the MediaKit [PlayerStream] exposing event streams such as
 /// `duration`.

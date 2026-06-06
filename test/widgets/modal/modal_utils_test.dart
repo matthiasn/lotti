@@ -15,6 +15,29 @@ class _TestNavigatorObserver extends NavigatorObserver {
   }
 }
 
+/// Runs [build] inside a mounted [BuildContext] and returns its result.
+///
+/// Replaces the MaterialApp + Builder + `return const SizedBox()`
+/// scaffolding that every page-construction test used to repeat, and moves
+/// the assertions out of the builder callback.
+Future<T> _buildInContext<T>(
+  WidgetTester tester,
+  T Function(BuildContext context) build,
+) async {
+  late T result;
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Builder(
+        builder: (context) {
+          result = build(context);
+          return const SizedBox();
+        },
+      ),
+    ),
+  );
+  return result;
+}
+
 void main() {
   group('ModalUtils', () {
     group('modalTypeBuilder', () {
@@ -167,173 +190,131 @@ void main() {
 
     group('modalSheetPage', () {
       testWidgets('creates page with minimal configuration', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.modalSheetPage(
-                  context: context,
-                  child: const Text('Test Content'),
-                );
-
-                expect(page, isA<WoltModalSheetPage>());
-                expect(page.hasSabGradient, false);
-                expect(page.navBarHeight, 65);
-                expect(page.hasTopBarLayer, true);
-                expect(page.isTopBarLayerAlwaysVisible, true);
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.modalSheetPage(
+            context: context,
+            child: const Text('Test Content'),
           ),
         );
+
+        expect(page, isA<WoltModalSheetPage>());
+        expect(page.hasSabGradient, false);
+        expect(page.navBarHeight, 65);
+        expect(page.hasTopBarLayer, true);
+        expect(page.isTopBarLayerAlwaysVisible, true);
       });
 
       testWidgets('creates page with title', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.modalSheetPage(
-                  context: context,
-                  child: const Text('Test Content'),
-                  title: 'Test Title',
-                );
-
-                expect(page.topBarTitle, isNotNull);
-                expect(page.topBarTitle, isA<Container>());
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.modalSheetPage(
+            context: context,
+            child: const Text('Test Content'),
+            title: 'Test Title',
           ),
         );
+
+        expect(page.topBarTitle, isNotNull);
+        expect(page.topBarTitle, isA<Container>());
       });
 
-      testWidgets('creates page with back button', (tester) async {
-        // var backPressed = false; // Not used in this test, just checking widget creation
+      testWidgets('creates page with back button that fires onTapBack', (
+        tester,
+      ) async {
+        var backPressed = false;
+        Widget? leading;
 
         await tester.pumpWidget(
           MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.modalSheetPage(
-                  context: context,
-                  child: const Text('Test Content'),
-                  onTapBack: () {}, // backPressed = true,
-                );
-
-                expect(page.leadingNavBarWidget, isNotNull);
-                expect(page.leadingNavBarWidget, isA<IconButton>());
-
-                return const SizedBox();
-              },
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  leading ??= ModalUtils.modalSheetPage(
+                    context: context,
+                    child: const Text('Test Content'),
+                    onTapBack: () => backPressed = true,
+                  ).leadingNavBarWidget;
+                  return leading!;
+                },
+              ),
             ),
           ),
         );
+
+        expect(leading, isA<IconButton>());
+
+        // The back button must actually invoke the supplied callback.
+        await tester.tap(find.byType(IconButton));
+        expect(backPressed, isTrue);
       });
 
       testWidgets('creates page with close button', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.modalSheetPage(
-                  context: context,
-                  child: const Text('Test Content'),
-                  showCloseButton: true,
-                );
-
-                expect(page.trailingNavBarWidget, isNotNull);
-                expect(page.trailingNavBarWidget, isA<IconButton>());
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.modalSheetPage(
+            context: context,
+            child: const Text('Test Content'),
+            showCloseButton: true,
           ),
         );
+
+        expect(page.trailingNavBarWidget, isNotNull);
+        expect(page.trailingNavBarWidget, isA<IconButton>());
       });
 
       testWidgets('creates page with sticky action bar', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.modalSheetPage(
-                  context: context,
-                  child: const Text('Test Content'),
-                  stickyActionBar: const Text('Action Bar'),
-                );
-
-                expect(page.stickyActionBar, isNotNull);
-                expect(page.stickyActionBar, isA<Text>());
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.modalSheetPage(
+            context: context,
+            child: const Text('Test Content'),
+            stickyActionBar: const Text('Action Bar'),
           ),
         );
+
+        expect(page.stickyActionBar, isNotNull);
+        expect(page.stickyActionBar, isA<Text>());
       });
 
       testWidgets('creates page with custom padding', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.modalSheetPage(
-                  context: context,
-                  child: const Text('Test Content'),
-                  padding: const EdgeInsets.all(10),
-                );
-
-                // The padding is applied in Padding widget
-                expect(page.child, isA<Padding>());
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.modalSheetPage(
+            context: context,
+            child: const Text('Test Content'),
+            padding: const EdgeInsets.all(10),
           ),
         );
+
+        // The padding is applied in Padding widget
+        expect(page.child, isA<Padding>());
       });
 
       testWidgets('creates page with custom navBarHeight', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.modalSheetPage(
-                  context: context,
-                  child: const Text('Test Content'),
-                  navBarHeight: 80,
-                );
-
-                expect(page.navBarHeight, 80);
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.modalSheetPage(
+            context: context,
+            child: const Text('Test Content'),
+            navBarHeight: 80,
           ),
         );
+
+        expect(page.navBarHeight, 80);
       });
 
       testWidgets('creates page without top bar layer', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.modalSheetPage(
-                  context: context,
-                  child: const Text('Test Content'),
-                  hasTopBarLayer: false,
-                );
-
-                expect(page.hasTopBarLayer, false);
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.modalSheetPage(
+            context: context,
+            child: const Text('Test Content'),
+            hasTopBarLayer: false,
           ),
         );
+
+        expect(page.hasTopBarLayer, false);
       });
 
       testWidgets('uses padding wrapper for content', (tester) async {
@@ -679,193 +660,151 @@ void main() {
       testWidgets('creates sliver page with minimal configuration', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.sliverModalSheetPage(
-                  context: context,
-                  slivers: const [
-                    SliverToBoxAdapter(child: Text('Test Sliver')),
-                  ],
-                );
-
-                expect(page, isA<SliverWoltModalSheetPage>());
-                expect(page.hasSabGradient, false);
-                expect(page.useSafeArea, true);
-                expect(page.resizeToAvoidBottomInset, true);
-                expect(page.navBarHeight, 65);
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.sliverModalSheetPage(
+            context: context,
+            slivers: const [
+              SliverToBoxAdapter(child: Text('Test Sliver')),
+            ],
           ),
         );
+
+        expect(page, isA<SliverWoltModalSheetPage>());
+        expect(page.hasSabGradient, false);
+        expect(page.useSafeArea, true);
+        expect(page.resizeToAvoidBottomInset, true);
+        expect(page.navBarHeight, 65);
       });
 
       testWidgets('creates sliver page with title', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.sliverModalSheetPage(
-                  context: context,
-                  slivers: const [
-                    SliverToBoxAdapter(child: Text('Test Sliver')),
-                  ],
-                  title: 'Sliver Title',
-                );
-
-                expect(page.topBarTitle, isNotNull);
-                expect(page.topBarTitle, isA<Padding>());
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.sliverModalSheetPage(
+            context: context,
+            slivers: const [
+              SliverToBoxAdapter(child: Text('Test Sliver')),
+            ],
+            title: 'Sliver Title',
           ),
         );
+
+        expect(page.topBarTitle, isNotNull);
+        expect(page.topBarTitle, isA<Padding>());
       });
 
-      testWidgets('creates sliver page with back button', (tester) async {
-        // var backPressed = false; // Not used in this test, just checking widget creation
+      testWidgets('creates sliver page with back button that fires onTapBack', (
+        tester,
+      ) async {
+        var backPressed = false;
+        Widget? leading;
 
         await tester.pumpWidget(
           MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.sliverModalSheetPage(
-                  context: context,
-                  slivers: const [
-                    SliverToBoxAdapter(child: Text('Test Sliver')),
-                  ],
-                  onTapBack: () {}, // backPressed = true,
-                );
-
-                expect(page.leadingNavBarWidget, isNotNull);
-                expect(page.leadingNavBarWidget, isA<IconButton>());
-
-                return const SizedBox();
-              },
+            home: Scaffold(
+              body: Builder(
+                builder: (context) {
+                  leading ??= ModalUtils.sliverModalSheetPage(
+                    context: context,
+                    slivers: const [
+                      SliverToBoxAdapter(child: Text('Test Sliver')),
+                    ],
+                    onTapBack: () => backPressed = true,
+                  ).leadingNavBarWidget;
+                  return leading!;
+                },
+              ),
             ),
           ),
         );
+
+        expect(leading, isA<IconButton>());
+
+        // The back button must actually invoke the supplied callback.
+        await tester.tap(find.byType(IconButton));
+        expect(backPressed, isTrue);
       });
 
       testWidgets('creates sliver page with close button', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.sliverModalSheetPage(
-                  context: context,
-                  slivers: const [
-                    SliverToBoxAdapter(child: Text('Test Sliver')),
-                  ],
-                );
-
-                expect(page.trailingNavBarWidget, isNotNull);
-                expect(page.trailingNavBarWidget, isA<IconButton>());
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.sliverModalSheetPage(
+            context: context,
+            slivers: const [
+              SliverToBoxAdapter(child: Text('Test Sliver')),
+            ],
           ),
         );
+
+        expect(page.trailingNavBarWidget, isNotNull);
+        expect(page.trailingNavBarWidget, isA<IconButton>());
       });
 
       testWidgets('creates sliver page without close button', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.sliverModalSheetPage(
-                  context: context,
-                  slivers: const [
-                    SliverToBoxAdapter(child: Text('Test Sliver')),
-                  ],
-                  showCloseButton: false,
-                );
-
-                expect(page.trailingNavBarWidget, isNull);
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.sliverModalSheetPage(
+            context: context,
+            slivers: const [
+              SliverToBoxAdapter(child: Text('Test Sliver')),
+            ],
+            showCloseButton: false,
           ),
         );
+
+        expect(page.trailingNavBarWidget, isNull);
       });
 
       testWidgets('creates sliver page with scroll controller', (tester) async {
         final scrollController = ScrollController();
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.sliverModalSheetPage(
-                  context: context,
-                  slivers: const [
-                    SliverToBoxAdapter(child: Text('Test Sliver')),
-                  ],
-                  scrollController: scrollController,
-                );
-
-                expect(page.scrollController, equals(scrollController));
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.sliverModalSheetPage(
+            context: context,
+            slivers: const [
+              SliverToBoxAdapter(child: Text('Test Sliver')),
+            ],
+            scrollController: scrollController,
           ),
         );
+
+        expect(page.scrollController, equals(scrollController));
 
         scrollController.dispose();
       });
 
       testWidgets('creates sliver page with sticky action bar', (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.sliverModalSheetPage(
-                  context: context,
-                  slivers: const [
-                    SliverToBoxAdapter(child: Text('Test Sliver')),
-                  ],
-                  stickyActionBar: const Text('Sticky Bar'),
-                );
-
-                expect(page.stickyActionBar, isNotNull);
-                expect(page.stickyActionBar, isA<Text>());
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.sliverModalSheetPage(
+            context: context,
+            slivers: const [
+              SliverToBoxAdapter(child: Text('Test Sliver')),
+            ],
+            stickyActionBar: const Text('Sticky Bar'),
           ),
         );
+
+        expect(page.stickyActionBar, isNotNull);
+        expect(page.stickyActionBar, isA<Text>());
       });
 
       testWidgets('creates sliver page with custom navBarHeight', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Builder(
-              builder: (context) {
-                final page = ModalUtils.sliverModalSheetPage(
-                  context: context,
-                  slivers: const [
-                    SliverToBoxAdapter(child: Text('Test Sliver')),
-                  ],
-                  navBarHeight: 100,
-                );
-
-                expect(page.navBarHeight, 100);
-
-                return const SizedBox();
-              },
-            ),
+        final page = await _buildInContext(
+          tester,
+          (context) => ModalUtils.sliverModalSheetPage(
+            context: context,
+            slivers: const [
+              SliverToBoxAdapter(child: Text('Test Sliver')),
+            ],
+            navBarHeight: 100,
           ),
         );
+
+        expect(page.navBarHeight, 100);
       });
     });
 

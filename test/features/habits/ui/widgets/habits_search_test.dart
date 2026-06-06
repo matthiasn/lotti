@@ -71,7 +71,7 @@ void main() {
           child: HabitsSearchWidget(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(LottiSearchBar), findsOneWidget);
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
@@ -90,7 +90,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Enter search text
       await tester.enterText(find.byType(TextField), 'test query');
@@ -107,7 +107,7 @@ void main() {
           child: HabitsSearchWidget(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Initially no clear button visible
       expect(find.byIcon(Icons.clear_rounded), findsNothing);
@@ -133,7 +133,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Enter search text
       await tester.enterText(find.byType(TextField), 'test query');
@@ -147,7 +147,7 @@ void main() {
 
       // Tap clear button
       await tester.tap(find.byIcon(Icons.clear_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Verify state was cleared
       expect(capturedRef.read(habitsControllerProvider).searchString, isEmpty);
@@ -159,7 +159,7 @@ void main() {
           child: HabitsSearchWidget(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Enter search text
       await tester.enterText(find.byType(TextField), 'persistent text');
@@ -188,7 +188,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Enter some text
       await tester.enterText(find.byType(TextField), 'initial text');
@@ -196,7 +196,7 @@ void main() {
 
       // Change state externally (e.g., via another widget)
       capturedRef.read(habitsControllerProvider.notifier).setSearchString('');
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Verify the text field was cleared
       final textField = tester.widget<TextField>(find.byType(TextField));
@@ -216,7 +216,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Enter mixed case text
       await tester.enterText(find.byType(TextField), 'TEST Query');

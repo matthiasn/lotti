@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -25,6 +26,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
+import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -121,6 +123,24 @@ void main() {
           )
           as AiConfigModel;
 
+  // GetIt registrations are identical for every test in this 135-test file:
+  // register once (item: avoid 135x getIt.reset + re-registration). Tests
+  // that start the shared TimeService stop it via addTearDown, and the
+  // MockPersistenceLogic singleton is never verified against, so no
+  // cross-test state leaks.
+  setUpAll(() async {
+    registerAllFallbackValues();
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+          ..registerSingleton<TimeService>(TimeService());
+      },
+    );
+  });
+
+  tearDownAll(tearDownTestGetIt);
+
   setUp(() async {
     mockAgentRepository = MockAgentRepository();
     mockSyncService = MockAgentSyncService();
@@ -136,16 +156,6 @@ void main() {
     mockChecklistRepository = MockChecklistRepository();
     mockLabelsRepository = MockLabelsRepository();
     mockTemplateService = MockAgentTemplateService();
-
-    registerAllFallbackValues();
-
-    await setUpTestGetIt(
-      additionalSetup: () {
-        getIt
-          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-          ..registerSingleton<TimeService>(TimeService());
-      },
-    );
 
     when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async => {});
     stubAppendMilestone(mockSyncService);
@@ -303,8 +313,6 @@ void main() {
         ..enabledDomains.add(LogDomain.agentWorkflow),
     );
   });
-
-  tearDownAll(tearDownTestGetIt);
 
   group('TaskAgentWorkflow', () {
     group('execute returns error', () {
@@ -957,7 +965,7 @@ void main() {
       test('system prompt contains scaffold and template directives', () async {
         String? capturedSystemMessage;
         // Override createConversation to capture the system message.
-        final capturingRepo = CapturingConversationRepository(
+        final capturingRepo = MockConversationRepository(
           mockConversationManager,
           onSystemMessage: (msg) => capturedSystemMessage = msg,
         );
@@ -1019,7 +1027,7 @@ void main() {
           ).thenAnswer((_) async => splitVersion);
 
           String? capturedSystemMessage;
-          final capturingRepo = CapturingConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
@@ -1084,7 +1092,7 @@ void main() {
           ).thenAnswer((_) async => splitVersion);
 
           String? capturedSystemMessage;
-          final capturingRepo = CapturingConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
@@ -1160,7 +1168,7 @@ void main() {
           ).thenAnswer((_) async => soulVersion);
 
           String? capturedSystemMessage;
-          final capturingRepo = CapturingConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
@@ -1234,7 +1242,7 @@ void main() {
           ).thenAnswer((_) async => null);
 
           String? capturedSystemMessage;
-          final capturingRepo = CapturingConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
@@ -2486,6 +2494,17 @@ void main() {
               };
           when(() => mockConversationManager.messages).thenReturn([]);
 
+          // The old-report deletion is the last side effect of the
+          // fire-and-forget _embedAgentReport future; completing a
+          // Completer from its stub lets the test await the pipeline
+          // deterministically instead of draining the event queue.
+          final embedPipelineDone = Completer<void>();
+          when(
+            () => mockEmbeddingStore.deleteEntityEmbeddings('old-report'),
+          ).thenAnswer((_) async {
+            if (!embedPipelineDone.isCompleted) embedPipelineDone.complete();
+          });
+
           final result = await workflowWithEmbeddings.execute(
             agentIdentity: testAgentIdentity,
             runKey: runKey,
@@ -2494,7 +2513,12 @@ void main() {
           );
 
           expect(result.success, isTrue);
-          await pumpEventQueue();
+          await embedPipelineDone.future.timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => throw TimeoutException(
+              'embedding pipeline never deleted the old report embedding',
+            ),
+          );
 
           verify(
             () => mockEmbeddingRepository.embed(
@@ -2588,6 +2612,11 @@ void main() {
 
           // The wake itself still succeeds — embedding is best-effort.
           expect(result.success, isTrue);
+          // No Completer hook is possible here: the throwing lookup is the
+          // last observable call and its catch handler produces no further
+          // side effects. pumpEventQueue is a bounded deterministic drain
+          // (Duration.zero turns, not real waiting), acceptable for letting
+          // the swallowed error settle before the verifyNever checks.
           await pumpEventQueue();
 
           // The throwing lookup short-circuits before any embed/delete call.
@@ -4721,14 +4750,19 @@ void main() {
         );
       }
 
-      test('set_task_title delegates to handler when title exists', () async {
-        // Handler receives the call — the workflow no longer hard-guards
-        // against existing titles (the prompt instructs the agent).
+      test('set_task_title is deferred when a title already exists', () async {
+        // The initial-title auto-apply only fires on an empty title; with a
+        // populated title the rename must flow through the confirmable
+        // proposal path (no immediate journal write).
         final result = await executeWithToolCallOnRealTask(
           'set_task_title',
           '{"title":"New Title"}',
         );
         expect(result.success, isTrue);
+        verifyToolWasDeferred(
+          mockConversationManager: mockConversationManager,
+          mockJournalRepository: mockJournalRepository,
+        );
       });
 
       test('set_task_title succeeds on empty title', () async {
@@ -4766,6 +4800,16 @@ void main() {
           task: taskNoTitle,
         );
         expect(result.success, isTrue);
+        // Empty title takes the initial-title auto-apply shortcut: the
+        // handler writes immediately instead of queuing a proposal.
+        final written =
+            verify(
+                  () => mockJournalRepository.updateJournalEntity(
+                    captureAny(),
+                  ),
+                ).captured.single
+                as Task;
+        expect(written.data.title, 'My New Task');
       });
 
       // ── Deferred tool calls ──────────────────────────────────────────
@@ -5166,6 +5210,54 @@ void main() {
               mockConversationManager: mockConversationManager,
               mockJournalRepository: mockJournalRepository,
             );
+          },
+        );
+
+        test(
+          'deferred change set fires a task-suggestion notification when '
+          'NotificationRepository is registered',
+          () async {
+            // End-to-end through the wake: ChangeSetBuilder.build runs
+            // inside syncService.runInTransaction at step 10b and must fire
+            // the inbox row for the accumulated pending item. The builder-
+            // level path is covered in change_set_builder_test; this pins
+            // the workflow-level integration.
+            final notificationRepository = MockNotificationRepository();
+            getIt.registerSingleton<NotificationRepository>(
+              notificationRepository,
+            );
+            addTearDown(
+              () => getIt.unregister<NotificationRepository>(),
+            );
+            when(
+              () => notificationRepository.createTaskSuggestion(
+                linkedTaskId: any(named: 'linkedTaskId'),
+                suggestionCount: any(named: 'suggestionCount'),
+                title: any(named: 'title'),
+                body: any(named: 'body'),
+                scheduledFor: any(named: 'scheduledFor'),
+                category: any(named: 'category'),
+                idSeed: any(named: 'idSeed'),
+              ),
+            ).thenAnswer((_) async => null);
+
+            final result = await executeWithToolCallOnRealTask(
+              'update_task_estimate',
+              '{"minutes":60}',
+              task: taskForUpdates,
+            );
+
+            expect(result.success, isTrue);
+            verify(
+              () => notificationRepository.createTaskSuggestion(
+                linkedTaskId: taskId,
+                suggestionCount: 1,
+                title: any(named: 'title'),
+                body: any(named: 'body'),
+                category: any(named: 'category'),
+                idSeed: any(named: 'idSeed'),
+              ),
+            ).called(1);
           },
         );
       });

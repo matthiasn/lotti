@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'dashscope_inference_repository.g.dart';
@@ -95,7 +96,7 @@ class DashScopeInferenceRepository {
     );
 
     // Extract image URL from SSE events
-    final imageUrl = _extractImageUrlFromSse(responseBody);
+    final imageUrl = extractImageUrlFromSse(responseBody);
     if (imageUrl == null) {
       throw Exception(
         'DashScope image generation did not return an image URL. '
@@ -197,7 +198,8 @@ class DashScopeInferenceRepository {
   /// :HTTP_STATUS/200
   /// data:{"output":{"choices":[{"message":{"content":[{"type":"image","image":"https://..."}]}}],"finished":true}}
   /// ```
-  String? _extractImageUrlFromSse(String sseResponse) {
+  @visibleForTesting
+  String? extractImageUrlFromSse(String sseResponse) {
     // Parse SSE events - look for data: lines
     final dataLines = sseResponse
         .split('\n')

@@ -31,13 +31,13 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/…/state/recorder_controller_test.dart:296–338` — `setCategoryId` group: all three tests only assert `returnsNormally`. Because `_categoryId` is private, the tests verify nothing observable. Either add a round-trip test (call `record` then `stop` and verify the entry was created with the expected category) or remove the redundant tests and fold the meaningful coverage into the `stop()` group.
+- [x] **[HIGH]** `test/…/state/recorder_controller_test.dart:296–338` — `setCategoryId` group: all three tests only assert `returnsNormally`. Because `_categoryId` is private, the tests verify nothing observable. Either add a round-trip test (call `record` then `stop` and verify the entry was created with the expected category) or remove the redundant tests and fold the meaningful coverage into the `stop()` group.
 
-- [ ] **[HIGH]** `test/…/state/recorder_controller_test.dart:362–378` — `record() should set linkedId when provided`: asserts `returnsNormally` on a *second* call to `record()` (line 375), which is pure smoke. The meaningful assertion (state.linkedId == testLinkedId after a successful start) exists in a later group (line 726) but is missing here.
+- [x] **[HIGH]** `test/…/state/recorder_controller_test.dart:362–378` — `record() should set linkedId when provided`: asserts `returnsNormally` on a *second* call to `record()` (line 375), which is pure smoke. The meaningful assertion (state.linkedId == testLinkedId after a successful start) exists in a later group (line 726) but is missing here.
 
-- [ ] **[HIGH]** `test/…/state/recorder_controller_test.dart:447–458` — `resume() should execute without throwing`: `expect(controller.resume, returnsNormally)` passes a tear-off, not a function call, so it evaluates to whether the *getter itself* doesn't throw, not whether calling `resume()` succeeds. The `await expectLater(controller.resume(), completes)` on the next line is the real assertion — remove the bogus one.
+- [x] **[HIGH]** `test/…/state/recorder_controller_test.dart:447–458` — `resume() should execute without throwing`: `expect(controller.resume, returnsNormally)` passes a tear-off, not a function call, so it evaluates to whether the *getter itself* doesn't throw, not whether calling `resume()` succeeds. The `await expectLater(controller.resume(), completes)` on the next line is the real assertion — remove the bogus one.
 
-- [ ] **[HIGH]** `test/…/state/audio_player_controller_test.dart:1213–1573` — Error Handling group: each test creates a fully independent `localContainer`, tears it down manually, and duplicates 40-line mock setup. None of the teardowns call `await getIt.reset()`, meaning GetIt contamination between tests is possible. Extract a shared `_makeErrorContainer({required thrower})` helper and use `addTearDown`.
+- [x] **[HIGH]** `test/…/state/audio_player_controller_test.dart:1213–1573` — Error Handling group: each test creates a fully independent `localContainer`, tears it down manually, and duplicates 40-line mock setup. None of the teardowns call `await getIt.reset()`, meaning GetIt contamination between tests is possible. Extract a shared `_makeErrorContainer({required thrower})` helper and use `addTearDown`.
 
 - [ ] **[MED]** `test/…/state/recorder_controller_test.dart:558–564` — `stop() should log exceptions` group: verifies `verifyNever` on error logging, but the test setup is identical to the adjacent "return null when no audio note" test. These two tests can be merged into one.
 
@@ -57,7 +57,7 @@ No other non-trivial pure-logic functions are present in the state layer that ar
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/…/state/checkbox_visibility_provider.dart` — Has **no dedicated test file**. The `hasProfileTranscription` provider (async, watches `inferenceProfileControllerProvider`) and `checkboxVisibility` (handles null linkedId, loading, error, and data branches) need a `checkbox_visibility_provider_test.dart` that mirrors the source file. The `audio_checkbox_settings_test.dart` file tests recorder state, not this provider.
+- [x] **[HIGH]** `lib/…/state/checkbox_visibility_provider.dart` — Has **no dedicated test file**. The `hasProfileTranscription` provider (async, watches `inferenceProfileControllerProvider`) and `checkboxVisibility` (handles null linkedId, loading, error, and data branches) need a `checkbox_visibility_provider_test.dart` that mirrors the source file. The `audio_checkbox_settings_test.dart` file tests recorder state, not this provider.
 
 - [ ] **[MED]** `test/…/state/recorder_controller_test.dart:1103–1173` — The `_triggerAutomaticPrompts` comment block (lines 1144–1173) acknowledges that automatic prompt triggering is not unit-tested; it is only covered by a single integration test (lines 1739–1853). The integration test covers the happy path with a linked ID, but not: (a) the path where `_categoryId == null`; (b) exception thrown inside `triggerAutomaticPrompts` being logged but not re-thrown.
 
@@ -67,7 +67,7 @@ No other non-trivial pure-logic functions are present in the state layer that ar
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/…/state/audio_player_controller_test.dart:1213–1573` — Five isolated `localContainer` tests each create fresh mock hierarchies, re-register GetIt singletons, and make real async calls. No fakeAsync wrapping. If any of the underlying providers schedule microtasks or timers, these tests incur real-clock overhead. Collapsing them via a shared helper reduces setup time by ≈80 %.
+- [x] **[HIGH]** `test/…/state/audio_player_controller_test.dart:1213–1573` — Five isolated `localContainer` tests each create fresh mock hierarchies, re-register GetIt singletons, and make real async calls. No fakeAsync wrapping. If any of the underlying providers schedule microtasks or timers, these tests incur real-clock overhead. Collapsing them via a shared helper reduces setup time by ≈80 %.
 
 - [ ] **[MED]** `test/…/state/recorder_controller_test.dart:858–944` — "build() amplitude subscription" group: uses `fakeAsync` correctly but the inner `for (var i = 0; i < 20; i++)` loop (line 890) manually replays 20 mock amplitude events inline — this is fine with fakeAsync but the comment ("fill the RMS buffer") suggests a helper like `_fillVuBuffer(amplitudeController, mockAmplitude, count: 20, async: async)` would make the intent clearer and enable reuse in any future VU meter tests.
 

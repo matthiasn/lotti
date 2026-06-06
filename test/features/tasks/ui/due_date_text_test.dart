@@ -18,7 +18,7 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byIcon(Icons.event_rounded), findsOneWidget);
         expect(find.byType(Text), findsOneWidget);
@@ -35,7 +35,7 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text('Due Today'), findsOneWidget);
       });
@@ -51,7 +51,7 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should show "Due: Jun 20, 2025" format
         final expectedText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
@@ -69,7 +69,7 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Initially shows absolute format
         final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
@@ -77,7 +77,7 @@ void main() {
 
         // Tap to toggle - use the Text widget directly to avoid hit test issues
         await tester.tap(find.text(absoluteText));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Now shows relative format
         expect(find.text('Due in 5 days'), findsOneWidget);
@@ -94,12 +94,12 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Tap to show relative - use the text to avoid hit test issues
         final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
         await tester.tap(find.text(absoluteText));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text('Due Tomorrow'), findsOneWidget);
       });
@@ -115,12 +115,12 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Tap to show relative - use the text to avoid hit test issues
         final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
         await tester.tap(find.text(absoluteText));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text('Due Yesterday'), findsOneWidget);
       });
@@ -136,12 +136,12 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Tap to show relative - use the text to avoid hit test issues
         final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
         await tester.tap(find.text(absoluteText));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.text('Overdue by 3 days'), findsOneWidget);
       });
@@ -159,18 +159,18 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
 
         // First tap - switch to relative
         await tester.tap(find.text(absoluteText));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
         expect(find.text('Due in 5 days'), findsOneWidget);
 
         // Second tap - switch back to absolute
         await tester.tap(find.text('Due in 5 days'));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
         expect(find.text(absoluteText), findsOneWidget);
       });
     });
@@ -185,7 +185,7 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Verify the icon exists and uses non-urgent color (from colorScheme)
         final icon = tester.widget<Icon>(find.byIcon(Icons.event_rounded));
@@ -204,14 +204,14 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // In absolute mode (default), "Due Today" should show for same-day
         expect(find.text('Due Today'), findsOneWidget);
 
         // Toggle to relative - should still show "Due Today"
         await tester.tap(find.text('Due Today'));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
         expect(find.text('Due Today'), findsOneWidget);
       });
     });
@@ -226,7 +226,7 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(DueDateText), findsOneWidget);
         expect(find.byIcon(Icons.event_rounded), findsOneWidget);
@@ -243,12 +243,12 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Tap to show relative
         final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
         await tester.tap(find.text(absoluteText));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should use "Due Tomorrow" not "Due in 1 days"
         expect(find.text('Due Tomorrow'), findsOneWidget);
@@ -266,12 +266,12 @@ void main() {
             child: DueDateText(dueDate: dueDate),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Tap to show relative
         final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
         await tester.tap(find.text(absoluteText));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should use "Due Yesterday" not "Overdue by 1 days"
         expect(find.text('Due Yesterday'), findsOneWidget);

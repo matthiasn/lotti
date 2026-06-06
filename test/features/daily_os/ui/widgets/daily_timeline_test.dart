@@ -17,6 +17,7 @@ import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/compressed_timeline_region.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_timeline.dart';
+import 'package:lotti/features/daily_os/ui/widgets/draggable_planned_block.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -551,8 +552,19 @@ void main() {
       );
       await tester.pump();
 
-      // Widget should render (test passes if no exception)
-      expect(find.byType(DailyTimeline), findsOneWidget);
+      // The highlighted planned block renders with the emphasized border
+      // (width 2 vs the default 1).
+      final blockContainer = tester.widget<AnimatedContainer>(
+        find
+            .descendant(
+              of: find.byType(DraggablePlannedBlock),
+              matching: find.byType(AnimatedContainer),
+            )
+            .first,
+      );
+      final border =
+          (blockContainer.decoration as BoxDecoration?)?.border as Border?;
+      expect(border?.top.width, 2);
     });
 
     testWidgets('renders both planned and actual blocks simultaneously', (
@@ -1810,10 +1822,47 @@ void main() {
         );
         await tester.pump();
 
-        // All three entries should render (parent + 2 overlapping nested children)
-        // The nested children should be in separate lanes within the parent
-        expect(find.bySemanticsLabel('Work'), findsNWidgets(3));
-        expect(find.byType(DailyTimeline), findsOneWidget);
+        // All three entries render (parent + 2 overlapping nested children).
+        final blocks = find.bySemanticsLabel('Work');
+        expect(blocks, findsNWidgets(3));
+
+        // Geometry: identify the parent (largest rect) and the two nested
+        // children, then assert genuine lane splitting.
+        final rects = [for (var i = 0; i < 3; i++) tester.getRect(blocks.at(i))]
+          ..sort(
+            (a, b) => (b.width * b.height).compareTo(a.width * a.height),
+          );
+        final parentRect = rects.first;
+        final childA = rects[1];
+        final childB = rects[2];
+
+        // Both children are inside the parent block.
+        for (final child in [childA, childB]) {
+          expect(
+            parentRect.left <= child.left &&
+                child.right <= parentRect.right &&
+                parentRect.top <= child.top &&
+                child.bottom <= parentRect.bottom,
+            isTrue,
+            reason: 'child $child not inside parent $parentRect',
+          );
+        }
+
+        // The overlapping children occupy disjoint horizontal lanes even
+        // though their time ranges (and so vertical ranges) overlap.
+        expect(
+          childA.right <= childB.left || childB.right <= childA.left,
+          isTrue,
+          reason: 'children share a lane: $childA vs $childB',
+        );
+        expect(
+          childA.top < childB.bottom && childB.top < childA.bottom,
+          isTrue,
+          reason: 'children should overlap vertically: $childA vs $childB',
+        );
+
+        // NOTE: nesting depth > 1 (a child of a child) is intentionally not
+        // rendered — _NestedChildBlock passes nestedChildren: const [].
       },
     );
 
@@ -2739,12 +2788,14 @@ void main() {
         );
         await tester.pump();
 
-        // The block with no category shows an empty semantics label.
-        final gestureDetectors = find.byType(GestureDetector);
-        expect(gestureDetectors, findsWidgets);
-
-        // Long press must not throw even when categoryId is null.
-        await tester.longPress(gestureDetectors.last);
+        // Long press must not throw even when categoryId is null. Target the
+        // detector that actually wires onLongPress instead of relying on
+        // widget-tree ordering.
+        final longPressTargets = find.byWidgetPredicate(
+          (w) => w is GestureDetector && w.onLongPress != null,
+        );
+        expect(longPressTargets, findsWidgets);
+        await tester.longPress(longPressTargets.first);
         await tester.pump();
 
         final container = ProviderScope.containerOf(

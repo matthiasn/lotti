@@ -162,7 +162,11 @@ void main() {
 
       // Tap right arrow to go to older release
       await tester.tap(find.byIcon(Icons.chevron_right));
-      await tester.pumpAndSettle();
+      // Drive the Wolt page transition + 300ms indicator animation with
+      // bounded pumps (Wolt's pagination animation is ~350ms; give margin).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Now showing second release (no NEW badge)
       expect(find.text('v0.9.970'), findsOneWidget);
@@ -263,7 +267,11 @@ void main() {
 
       // Go to older release
       await tester.tap(find.byIcon(Icons.chevron_right));
-      await tester.pumpAndSettle();
+      // Drive the Wolt page transition + 300ms indicator animation with
+      // bounded pumps (Wolt's pagination animation is ~350ms; give margin).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('v0.9.970'), findsOneWidget);
 
@@ -272,7 +280,11 @@ void main() {
 
       // Go back to newer release
       await tester.tap(find.byIcon(Icons.chevron_left));
-      await tester.pumpAndSettle();
+      // Drive the Wolt page transition + 300ms indicator animation with
+      // bounded pumps (Wolt's pagination animation is ~350ms; give margin).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('v0.9.980'), findsOneWidget);
     });
@@ -346,7 +358,11 @@ void main() {
 
       // Navigate to older release (maxViewedIndex becomes 1)
       await tester.tap(find.byIcon(Icons.chevron_right));
-      await tester.pumpAndSettle();
+      // Drive the Wolt page transition + 300ms indicator animation with
+      // bounded pumps (Wolt's pagination animation is ~350ms; give margin).
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Close via barrier
       await tester.tapAt(const Offset(5, 5));

@@ -182,7 +182,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
 
     // Due date branch should render an event icon
     expect(find.byIcon(Icons.event_rounded), findsOneWidget);
@@ -455,7 +455,7 @@ void main() {
 
     // Act
     await tester.tap(find.text('Test Task Title'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
 
     // Assert
     verify(
@@ -492,7 +492,7 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 100));
 
     final progressFinder = find.byType(CompactTaskProgress);
     expect(progressFinder, findsOneWidget);
@@ -525,7 +525,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // The formatted date should NOT be present
       expect(find.text(expectedTaskDateString), findsNothing);
@@ -548,7 +548,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // The formatted date should be present (from dateFrom in buildTask)
       expect(find.text(expectedTaskDateString), findsOneWidget);
@@ -569,7 +569,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Find the Row containing the date (date row layout)
       final rowFinder = find.ancestor(
@@ -594,7 +594,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Default should be false, so no date displayed
       expect(find.text(expectedTaskDateString), findsNothing);
@@ -638,7 +638,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Format should match yMMMd format for the locale
       expect(find.text(expectedDateString), findsOneWidget);
@@ -666,7 +666,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Due date should not be shown in date row when showDueDate is false
         expect(find.text(DateFormat.MMMd().format(dueDate)), findsNothing);
@@ -694,7 +694,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Due date should be shown with event icon and "Due:" prefix
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
@@ -721,7 +721,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Default should show due date with "Due:" prefix
       expect(
@@ -744,7 +744,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // No event icon should be shown when there's no due date
       expect(find.byIcon(Icons.event_rounded), findsNothing);
@@ -787,7 +787,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Verify both dates are present
       final creationDateText = DateFormat.yMMMd().format(creationDate);
@@ -834,7 +834,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Due date should NOT be shown for completed tasks
       expect(find.byIcon(Icons.event_rounded), findsNothing);
@@ -879,7 +879,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Due date should NOT be shown for rejected tasks
       expect(find.byIcon(Icons.event_rounded), findsNothing);
@@ -924,7 +924,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Due date SHOULD be shown for in-progress tasks
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
@@ -955,7 +955,7 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           // Initially shows absolute date
           final absoluteText = 'Due: ${DateFormat.yMMMd().format(dueDate)}';
@@ -963,13 +963,13 @@ void main() {
 
           // Tap the due-date text directly to avoid card tap hit-testing.
           await tester.tap(find.text(absoluteText));
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           expect(find.text(absoluteText), findsNothing);
           expect(find.text('Due in 5 days'), findsOneWidget);
 
           await tester.tap(find.text('Due in 5 days'));
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           expect(find.text(absoluteText), findsOneWidget);
         });
@@ -990,7 +990,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // With no cover art set, should render normally regardless of showCoverArt
       expect(find.text('Test Task Title'), findsOneWidget);
@@ -1010,7 +1010,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Should not have CoverArtThumbnail since there's no coverArtId
       expect(find.text('Test Task Title'), findsOneWidget);
@@ -1036,7 +1036,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Title should still be visible
       expect(find.text('Test Task Title'), findsOneWidget);
@@ -1091,7 +1091,7 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Should have CoverArtThumbnail since showCoverArt defaults to true
         expect(find.byType(CoverArtThumbnail), findsOneWidget);
@@ -1134,7 +1134,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Title should still be visible
       expect(find.text('Test Task Title'), findsOneWidget);
@@ -1190,7 +1190,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // CompactTaskProgress should be present
       expect(find.byType(CompactTaskProgress), findsOneWidget);
@@ -1252,7 +1252,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Label should be present
       expect(find.byType(LabelChip), findsOneWidget);
@@ -1298,7 +1298,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // CoverArtThumbnail should have the cropX value
       final thumbnailFinder = find.byType(CoverArtThumbnail);

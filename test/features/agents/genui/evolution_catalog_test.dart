@@ -31,6 +31,32 @@ Widget _buildCatalogWidget(CatalogItem item, Map<String, Object?> data) {
   );
 }
 
+/// Like [_buildCatalogWidget] but captures dispatched events into [events].
+Widget _buildCatalogWidgetWithEvents(
+  CatalogItem item,
+  Map<String, Object?> data, {
+  required List<UiEvent> events,
+}) {
+  return Builder(
+    builder: (context) {
+      final itemContext = CatalogItemContext(
+        data: data,
+        id: 'test-component',
+        type: item.name,
+        buildChild: (id, [dataContext]) => const SizedBox.shrink(),
+        dispatchEvent: events.add,
+        buildContext: context,
+        dataContext: DataContext(InMemoryDataModel(), DataPath.root),
+        getComponent: (_) => null,
+        getCatalogItem: (_) => null,
+        surfaceId: 'test-surface',
+        reportError: (_, _) {},
+      );
+      return item.widgetBuilder(itemContext);
+    },
+  );
+}
+
 void main() {
   group('buildEvolutionCatalog', () {
     test('contains all catalog items', () {
@@ -218,27 +244,14 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Builder(
-            builder: (context) {
-              final itemContext = CatalogItemContext(
-                data: <String, Object?>{
-                  'generalDirective': 'Test general directive',
-                  'reportDirective': 'Test report directive',
-                  'rationale': 'Test rationale',
-                },
-                id: 'test-component',
-                type: 'EvolutionProposal',
-                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
-                dispatchEvent: events.add,
-                buildContext: context,
-                dataContext: DataContext(InMemoryDataModel(), DataPath.root),
-                getComponent: (_) => null,
-                getCatalogItem: (_) => null,
-                surfaceId: 'test-surface',
-                reportError: (_, _) {},
-              );
-              return evolutionProposalItem.widgetBuilder(itemContext);
+          _buildCatalogWidgetWithEvents(
+            evolutionProposalItem,
+            <String, Object?>{
+              'generalDirective': 'Test general directive',
+              'reportDirective': 'Test report directive',
+              'rationale': 'Test rationale',
             },
+            events: events,
           ),
         ),
       );
@@ -256,27 +269,14 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Builder(
-            builder: (context) {
-              final itemContext = CatalogItemContext(
-                data: <String, Object?>{
-                  'generalDirective': 'Test general directive',
-                  'reportDirective': 'Test report directive',
-                  'rationale': 'Test rationale',
-                },
-                id: 'test-component',
-                type: 'EvolutionProposal',
-                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
-                dispatchEvent: events.add,
-                buildContext: context,
-                dataContext: DataContext(InMemoryDataModel(), DataPath.root),
-                getComponent: (_) => null,
-                getCatalogItem: (_) => null,
-                surfaceId: 'test-surface',
-                reportError: (_, _) {},
-              );
-              return evolutionProposalItem.widgetBuilder(itemContext);
+          _buildCatalogWidgetWithEvents(
+            evolutionProposalItem,
+            <String, Object?>{
+              'generalDirective': 'Test general directive',
+              'reportDirective': 'Test report directive',
+              'rationale': 'Test rationale',
             },
+            events: events,
           ),
         ),
       );
@@ -1480,26 +1480,13 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Builder(
-            builder: (context) {
-              final itemContext = CatalogItemContext(
-                data: <String, Object?>{
-                  'voiceDirective': 'Test voice.',
-                  'rationale': 'Test rationale.',
-                },
-                id: 'test-component',
-                type: 'SoulProposal',
-                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
-                dispatchEvent: events.add,
-                buildContext: context,
-                dataContext: DataContext(InMemoryDataModel(), DataPath.root),
-                getComponent: (_) => null,
-                getCatalogItem: (_) => null,
-                surfaceId: 'test-surface',
-                reportError: (_, _) {},
-              );
-              return soulProposalItem.widgetBuilder(itemContext);
+          _buildCatalogWidgetWithEvents(
+            soulProposalItem,
+            <String, Object?>{
+              'voiceDirective': 'Test voice.',
+              'rationale': 'Test rationale.',
             },
+            events: events,
           ),
         ),
       );
@@ -1519,26 +1506,13 @@ void main() {
 
       await tester.pumpWidget(
         makeTestableWidget(
-          Builder(
-            builder: (context) {
-              final itemContext = CatalogItemContext(
-                data: <String, Object?>{
-                  'voiceDirective': 'Test voice.',
-                  'rationale': 'Test rationale.',
-                },
-                id: 'test-component',
-                type: 'SoulProposal',
-                buildChild: (id, [dataContext]) => const SizedBox.shrink(),
-                dispatchEvent: events.add,
-                buildContext: context,
-                dataContext: DataContext(InMemoryDataModel(), DataPath.root),
-                getComponent: (_) => null,
-                getCatalogItem: (_) => null,
-                surfaceId: 'test-surface',
-                reportError: (_, _) {},
-              );
-              return soulProposalItem.widgetBuilder(itemContext);
+          _buildCatalogWidgetWithEvents(
+            soulProposalItem,
+            <String, Object?>{
+              'voiceDirective': 'Test voice.',
+              'rationale': 'Test rationale.',
             },
+            events: events,
           ),
         ),
       );
@@ -1727,29 +1701,16 @@ void main() {
 
     testWidgets('dispatches event on selection', (tester) async {
       final events = <UiEvent>[];
-      final widget = Builder(
-        builder: (context) {
-          final itemContext = CatalogItemContext(
-            data: {
-              'question': 'Which?',
-              'optionA': 'Warm phrasing.',
-              'optionB': 'Direct phrasing.',
-              'labelA': 'Warm',
-              'labelB': 'Direct',
-            },
-            id: 'test-component',
-            type: 'ABComparison',
-            buildChild: (id, [dataContext]) => const SizedBox.shrink(),
-            dispatchEvent: events.add,
-            buildContext: context,
-            dataContext: DataContext(InMemoryDataModel(), DataPath.root),
-            getComponent: (_) => null,
-            getCatalogItem: (_) => null,
-            surfaceId: 'test-surface',
-            reportError: (_, _) {},
-          );
-          return abComparisonCardItem.widgetBuilder(itemContext);
+      final widget = _buildCatalogWidgetWithEvents(
+        abComparisonCardItem,
+        {
+          'question': 'Which?',
+          'optionA': 'Warm phrasing.',
+          'optionB': 'Direct phrasing.',
+          'labelA': 'Warm',
+          'labelB': 'Direct',
         },
+        events: events,
       );
 
       await tester.pumpWidget(makeTestableWidget(widget));

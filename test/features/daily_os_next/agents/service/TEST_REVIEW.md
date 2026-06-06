@@ -71,7 +71,7 @@ them.
 
 ## Test quality improvements
 
-- [ ] [HIGH] Extract a shared `seedPlan` + `seedChangeSet` helper — plan service test
+- [x] [HIGH] Extract a shared `seedPlan` + `seedChangeSet` helper — plan service test — **RESOLVED:** one module-level `seedPlanEntity({status, blocks, capacityMinutes, scheduledMinutes, deletedAt})` + `seedChangeSetEntity({items, id})` mutate the shared `agentEntities` map; all seven group-local `seedPlan`/`seedPlanWithStatus`/`seedChangeSet` definitions are now thin wrappers preserving their exact per-group defaults (4231 → ~3990 lines).
 
 There are **7 distinct `seedPlan` definitions** (lines 951, 1472, 2730, 2999,
 3208, 3923, 4004) and a matching `seedChangeSet` (line 1502) repeated across
@@ -83,7 +83,7 @@ module-level `_seedPlan({DayPlanStatus, List<PlannedBlock>, String agentId})`
 and `_seedChangeSet({List<ChangeItem>})` that mutates the shared `agentEntities`
 map, eliminating ~600 lines of copy-paste setup.
 
-- [ ] [HIGH] Large `ChangeItem` inline constructions in plan service test (lines ~1948–1978, ~1994–2015, ~2047–2060, ~2293–2320, etc.)
+- [x] [HIGH] Large `ChangeItem` inline constructions in plan service test (lines ~1948–1978, ~1994–2015, ~2047–2060, ~2293–2320, etc.) — **RESOLVED (partially assessed):** `moveBlockItem`/`addBlockItem`/`dropBlockItem` are lifted to module scope (moveBlockItem gained a `type` override) and the agreed-status group's inline change-set now uses them via `seedChangeSetEntity(id:, items:)`. Most remaining inline `ChangeItem`s are deliberately malformed/bespoke fixtures (missing categoryId, forbidden category, pre-resolved copies) whose explicitness is the point of those tests.
 
 About **28 inline `ChangeItem(...)` constructions** (verified by grep) appear
 directly in test bodies alongside `seedChangeSet`. These should become named
@@ -182,7 +182,7 @@ Non-trivial only if there are future changes to the dropping logic.
 
 ## Coverage / missing-behavior gaps
 
-- [ ] [HIGH] `_applyItem` with `'move_block'` clearing taskId (no `taskId` key in args)
+- [x] [HIGH] `_applyItem` with `'move_block'` clearing taskId (no `taskId` key in args) — **RESOLVED:** new test seeds a block with `taskId: 'task-keep'`, applies a `move_block` whose args carry no `taskId` key, and asserts both the move and the retained taskId.
 
 `_applyItem` has three branches for `taskId` inside `move_block`: key absent
 (retain), key present with `null` value (clear), key present with string value
@@ -191,7 +191,7 @@ Non-trivial only if there are future changes to the dropping logic.
 mutations. The partial-move test at line 2382 (only `toEnd`) implicitly retains
 `taskId`, but does not assert on `taskId` value. Add a targeted assertion.
 
-- [ ] [HIGH] `acceptPlanDiff` with `move_block` that changes `type` via `args['type']`
+- [x] [HIGH] `acceptPlanDiff` with `move_block` that changes `type` via `args['type']` — **RESOLVED:** new test applies `moveBlockItem(type: 'manual')` and asserts the moved block's type flips to `PlannedBlockType.manual`.
 
 `_applyItem` calls `_argType(args) ?? block.type` to optionally override block
 type. No test exercises a `move_block` that carries a `type` override. Add a
