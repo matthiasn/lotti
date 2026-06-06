@@ -80,7 +80,8 @@ Runtime behavior:
 - The selected local plan date lives in `dailyOsNextSelectedDateProvider`
   (`state/selected_date_provider.dart`); `DailyOsNextRoot` watches it and keeps
   the date strip visible on Capture and Day surfaces, while the desktop
-  sidebar's month calendar drives the same provider from outside the tab.
+  sidebar's month calendar (shown beneath the active Daily OS nav row)
+  drives the same provider.
   Capture submissions use that selected date for day-agent routing, Reconcile
   carries it into pending decisions, and Drafting returns to the root after the
   plan persists so the date-aware shell remains in control. Background agent or
@@ -231,7 +232,7 @@ stateDiagram-v2
   handoff (v2 item 2): neutral fill and left border, a small category dot, a
   green check when done, and a mono `HH:mm–HH:mm · tracked` subtitle — never
   the dashed drafted outline, never a WhyChip. Drafted plan blocks carry a
-  dashed `DottedBorder` outline so the whole frame reads provisional;
+  dashed `DsDashedBorder` outline (a design-system primitive) so the whole frame reads provisional;
   committed blocks render solid. `DayBlock` opens `/tasks/<taskId>` for any
   planned or actual block whose `TimeBlock.taskId` is present; standalone
   calendar and buffer blocks stay inert.
@@ -359,14 +360,15 @@ flowchart LR
   Actual --> Tracked["tracked block treatment + TimeSpentCard"]
 ```
 
-The desktop navigation sidebar hosts a month calendar
-(`SidebarMonthCalendar` in the design system, wrapped by
-`DailyOsSidebarCalendar`): today is highlighted teal, days with a persisted
-plan carry a dot (`dailyOsPlanDaysProvider` — one batched
-`getEntitiesByIds` lookup over the month's deterministic
-`day_agent_plan:<dayId>` ids), and tapping a day selects it via
-`dailyOsNextSelectedDateProvider` and switches the shell to the Daily OS
-tab.
+While the Daily OS tab is active, its desktop sidebar row expands into a
+month calendar (`SidebarMonthCalendar` in the design system, wrapped by
+`DailyOsSidebarCalendar` and mounted through the destination's
+`expandedChildBuilder` — the same slot the Tasks row uses for saved
+filters): today is highlighted teal, days with a persisted plan carry a
+dot (`dailyOsPlanDaysProvider` — one batched `getEntitiesByIds` lookup
+over the month's deterministic `day_agent_plan:<dayId>` ids), and tapping
+a day selects it via `dailyOsNextSelectedDateProvider`, which the already
+visible Daily OS surface reacts to directly.
 
 ## Testing Strategy
 

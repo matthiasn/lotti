@@ -30,8 +30,6 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   /// Cleared whenever the selected date changes.
   bool _checkInRequested = false;
 
-  DateTime get _selectedDate => ref.read(dailyOsNextSelectedDateProvider);
-
   DateTime get _today {
     final now = clock.now();
     return DateTime(now.year, now.month, now.day);
@@ -46,7 +44,7 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     // so the prev/next chevrons can never drift past `firstDate` or
     // `lastDate` and trip a `showDatePicker` assertion. Day arithmetic
     // via the `DateTime` constructor stays DST-safe.
-    final selected = _selectedDate;
+    final selected = ref.read(dailyOsNextSelectedDateProvider);
     final picked = await showDatePicker(
       context: context,
       initialDate: selected,
@@ -84,24 +82,29 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     final asyncPlan = ref.watch(currentDraftPlanProvider(selectedDate));
     if (asyncPlan.hasValue) {
       final plan = asyncPlan.requireValue;
-      if (plan != null) return _buildSurface(plan);
+      if (plan != null) return _buildSurface(selectedDate, plan);
 
       final actualBlocks = ref.watch(
         dailyOsActualTimeBlocksProvider(selectedDate),
       );
-      return _buildSurface(null, actualBlocks: actualBlocks.value ?? const []);
+      return _buildSurface(
+        selectedDate,
+        null,
+        actualBlocks: actualBlocks.value ?? const [],
+      );
     }
     if (asyncPlan.hasError) return _ErrorShell(error: '${asyncPlan.error}');
     return const _LoadingShell();
   }
 
   Widget _buildSurface(
+    DateTime selectedDate,
     DraftPlan? plan, {
     List<TimeBlock> actualBlocks = const [],
   }) {
     final strip = _DateStrip(
-      selected: _selectedDate,
-      isToday: _selectedDate.isAtSameMomentAs(_today),
+      selected: selectedDate,
+      isToday: selectedDate.isAtSameMomentAs(_today),
       onPrev: () => _shiftDay(-1),
       onNext: () => _shiftDay(1),
       onPick: _pickDate,
@@ -109,7 +112,7 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     );
     if (plan != null) {
       return DayPage(
-        key: ValueKey(_selectedDate.toIso8601String()),
+        key: ValueKey(selectedDate.toIso8601String()),
         draft: plan,
         dateStrip: strip,
       );
@@ -120,8 +123,8 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     // 2). The footer CTA routes into Capture.
     if (actualBlocks.isNotEmpty && !_checkInRequested) {
       return DayPage(
-        key: ValueKey('empty-${_selectedDate.toIso8601String()}'),
-        draft: DraftPlan.emptyForDay(_selectedDate),
+        key: ValueKey('empty-${selectedDate.toIso8601String()}'),
+        draft: DraftPlan.emptyForDay(selectedDate),
         hasPlan: false,
         onCheckIn: () => setState(() => _checkInRequested = true),
         dateStrip: strip,
@@ -129,11 +132,11 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     }
     // No plan for the selected date — drop into Capture so the
     // user can start one for that day. Capture is keyed on
-    // [_selectedDate] so the submitted capture lands on the
+    // [selectedDate] so the submitted capture lands on the
     // chosen day's day-agent.
     return CapturePage(
-      key: ValueKey('capture-${_selectedDate.toIso8601String()}'),
-      forDate: _selectedDate,
+      key: ValueKey('capture-${selectedDate.toIso8601String()}'),
+      forDate: selectedDate,
       actualBlocks: actualBlocks,
       dateStrip: strip,
     );

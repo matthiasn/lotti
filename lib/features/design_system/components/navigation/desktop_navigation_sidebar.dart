@@ -63,7 +63,6 @@ class DesktopNavigationSidebar extends StatelessWidget {
     this.collapsed = false,
     this.collapsedWidth = 72,
     this.onToggleCollapsed,
-    this.belowDestinations,
     this.aboveSettings,
     this.belowSettings,
     super.key,
@@ -99,14 +98,6 @@ class DesktopNavigationSidebar extends StatelessWidget {
   /// Called when the toggle icon next to the logo is tapped. When null, the
   /// toggle icon is rendered but not interactive.
   final VoidCallback? onToggleCollapsed;
-
-  /// Optional widget rendered inside the scrollable nav column,
-  /// directly below the navigation destinations. The Lotti app uses
-  /// this slot to host the Daily OS month calendar (design handoff
-  /// sidebar spec — "the month calendar widget is retained").
-  /// Suppressed in [collapsed] mode — the grid doesn't fit the
-  /// icon-only column.
-  final Widget? belowDestinations;
 
   /// Optional widget rendered between the scrollable nav and the
   /// Settings row in the expanded layout. The Lotti app uses this slot
@@ -179,10 +170,6 @@ class DesktopNavigationSidebar extends StatelessWidget {
                     ],
                     if (i < destinations.length - 1)
                       SizedBox(height: tokens.spacing.step5),
-                  ],
-                  if (!collapsed && belowDestinations != null) ...[
-                    SizedBox(height: tokens.spacing.step6),
-                    belowDestinations!,
                   ],
                 ],
               ),

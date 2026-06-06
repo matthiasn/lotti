@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Task agents now maintain their own day-planning attention requests during
   normal wakes, resolving stale requests when tasks are done or no longer need
   scheduled time.
-- The desktop sidebar now shows a month calendar: today is highlighted, days
-  with a Daily OS plan carry a dot, and tapping a day jumps straight to it on
-  the Daily OS tab.
+- While the Daily OS tab is active, its desktop sidebar entry expands into a
+  month calendar: today is highlighted, days with a Daily OS plan carry a
+  dot, and tapping a day jumps straight to it.
 - Daily OS Next: a day with tracked time but no plan now opens on the Day
   timeline so recorded sessions are visible without drafting a plan first,
   with an honest "No plan yet" capacity strip and a "Speak a check-in" button

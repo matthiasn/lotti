@@ -6,9 +6,9 @@ import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/dashed_border.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
@@ -156,10 +156,7 @@ class _StatStrip extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final trackedMinutes = actualBlocks.fold<int>(
-      0,
-      (sum, block) => sum + block.duration.inMinutes,
-    );
+    final trackedMinutes = actualBlocks.totalMinutes;
     final ratio = CapacityDonut.ratioFor(
       draft.scheduledMinutes,
       draft.capacityMinutes,
@@ -231,20 +228,11 @@ class _TrackedLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final trackedMinutes = blocks.fold<int>(
-      0,
-      (sum, block) => sum + block.duration.inMinutes,
-    );
-    final doneCount = blocks
-        .where((block) => block.state == TimeBlockState.completed)
-        .map((block) => block.taskId ?? block.id)
-        .toSet()
-        .length;
     return DsPill(
       variant: DsPillVariant.filled,
       label: context.messages.dailyOsNextAgendaTrackedLegend(
-        formatMinutesCompact(trackedMinutes),
-        doneCount,
+        formatMinutesCompact(blocks.totalMinutes),
+        blocks.completedCount,
       ),
       labelColor: tokens.colors.text.lowEmphasis,
       leading: SizedBox.square(
@@ -329,7 +317,7 @@ class _AgendaEmptyState extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        DottedBorder(
+        DsDashedBorder(
           color: tokens.colors.decorative.level02,
           radius: tokens.radii.l,
           child: Padding(

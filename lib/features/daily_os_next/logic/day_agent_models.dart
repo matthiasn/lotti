@@ -296,6 +296,20 @@ class TimeBlock {
   }
 }
 
+/// Aggregations shared by the tracked-time surfaces ([TimeBlock] lists on
+/// the "Today so far" card, the agenda stat strip, and the tracked legend).
+extension TimeBlockListTotals on List<TimeBlock> {
+  /// Sum of the blocks' durations in minutes.
+  int get totalMinutes =>
+      fold(0, (sum, block) => sum + block.duration.inMinutes);
+
+  /// Completed sessions, de-duplicated by backing task (standalone
+  /// sessions fall back to the block id).
+  int get completedCount => where(
+    (block) => block.state == TimeBlockState.completed,
+  ).map((block) => block.taskId ?? block.id).toSet().length;
+}
+
 /// A coloured energy band shown behind the Day timeline.
 /// The agent emits these so the band positions stay coherent with
 /// scheduling decisions ("Pushed to 2pm because of your 9am meeting").

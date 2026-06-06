@@ -5,9 +5,9 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/time_format.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/capacity_donut.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/dashed_border.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/hold_to_confirm.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/lock_in_scene.dart';
+import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -146,7 +146,7 @@ class _RecapRow extends StatelessWidget {
     final color = categoryColorFromHex(item.category.colorHex);
     // Dashed outline = still a draft; the LockInScene settles these
     // rows into solid surfaces after sign-off.
-    return DottedBorder(
+    return DsDashedBorder(
       color: tokens.colors.decorative.level02,
       radius: tokens.radii.m,
       child: Container(

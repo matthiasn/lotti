@@ -64,15 +64,8 @@ class _TimeSpentCardState extends State<TimeSpentCard> {
         : sorted.sublist(sorted.length - maxRows);
     final hiddenCount = sorted.length - shown.length;
 
-    final totalMinutes = sorted.fold<int>(
-      0,
-      (sum, block) => sum + block.duration.inMinutes,
-    );
-    final doneCount = sorted
-        .where((block) => block.state == TimeBlockState.completed)
-        .map((block) => block.taskId ?? block.id)
-        .toSet()
-        .length;
+    final totalMinutes = sorted.totalMinutes;
+    final doneCount = sorted.completedCount;
 
     return Container(
       key: const Key('daily_os_time_spent_card'),

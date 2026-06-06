@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/dashed_border.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
+import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -152,7 +152,7 @@ class _HeardColumn extends ConsumerWidget {
         ),
         SizedBox(height: tokens.spacing.step4),
         if (items.isEmpty)
-          DottedBorder(
+          DsDashedBorder(
             color: tokens.colors.decorative.level02,
             radius: tokens.radii.m,
             child: Padding(
@@ -266,7 +266,7 @@ class _DefaultBehaviorHint extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return DottedBorder(
+    return DsDashedBorder(
       color: tokens.colors.decorative.level02,
       radius: tokens.radii.m,
       child: Padding(

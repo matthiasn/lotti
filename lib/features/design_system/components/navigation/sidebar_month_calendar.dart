@@ -108,14 +108,15 @@ class SidebarMonthCalendar extends StatelessWidget {
                 ),
               ),
             for (var i = 0; i < firstDayOffset; i++) const SizedBox.shrink(),
-            for (var day = 1; day <= daysInMonth; day++)
+            for (final cellDay in [
+              for (var day = 1; day <= daysInMonth; day++)
+                DateTime(month.year, month.month, day),
+            ])
               _DayCell(
-                day: DateTime(month.year, month.month, day),
-                isToday: DateTime(month.year, month.month, day) == todayDay,
-                isSelected: DateTime(month.year, month.month, day) == selected,
-                isMarked: marked.contains(
-                  DateTime(month.year, month.month, day),
-                ),
+                day: cellDay,
+                isToday: cellDay == todayDay,
+                isSelected: cellDay == selected,
+                isMarked: marked.contains(cellDay),
                 onTap: onDaySelected,
               ),
           ],

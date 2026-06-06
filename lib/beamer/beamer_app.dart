@@ -383,22 +383,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     final showSidebarWakeQueue =
         ref.watch(configFlagProvider(showSidebarWakeQueueFlag)).value ?? false;
 
-    // Month calendar under the nav items (design handoff sidebar spec) —
-    // only when the Daily OS tab exists, so tapping a day has a surface
-    // to land on.
-    var dailyOsIndex = -1;
-    for (var i = 0; i < destinations.length; i++) {
-      if (destinations[i].kind == _AppNavigationDestinationKind.dailyOs) {
-        dailyOsIndex = i;
-        break;
-      }
-    }
-    final sidebarCalendar = dailyOsIndex < 0
-        ? null
-        : DailyOsSidebarCalendar(
-            onOpenDay: (_) => navService.tapIndex(dailyOsIndex),
-          );
-
     return Scaffold(
       // Scaffold fills behind the outer ResizableDivider's 3 px reserved
       // SizedBox; without an explicit colour Flutter would paint the theme
@@ -443,7 +427,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             onToggleCollapsed: () => ref
                 .read(paneWidthControllerProvider.notifier)
                 .toggleSidebarCollapsed(),
-            belowDestinations: sidebarCalendar,
             aboveSettings: _DesktopSidebarAboveSettings(
               showWakeQueue: showSidebarWakeQueue,
             ),
@@ -570,6 +553,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         label: context.messages.navTabTitleCalendar,
         iconBuilder: ({required active}) =>
             Icon(active ? Icons.today_rounded : Icons.today_outlined),
+        // Month calendar (design handoff sidebar spec) renders beneath
+        // the row only while Daily OS is the active tab — same slot the
+        // Tasks destination uses for its saved-filters tree.
+        expandedChildBuilder: () => const DailyOsSidebarCalendar(),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.habits,

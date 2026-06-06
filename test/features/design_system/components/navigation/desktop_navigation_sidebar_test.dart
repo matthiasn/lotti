@@ -620,61 +620,6 @@ void main() {
     );
 
     testWidgets(
-      'belowDestinations slot renders inside the nav column under the last '
-      'destination in expanded mode and stays hidden in collapsed mode',
-      (tester) async {
-        const slotKey = Key('below-destinations-slot');
-        const slot = SizedBox(
-          key: slotKey,
-          height: 120,
-          child: Text('month calendar'),
-        );
-        final settings = DesktopSidebarDestination(
-          label: 'Settings',
-          iconBuilder: ({required bool active}) => const Icon(Icons.settings),
-        );
-
-        await tester.pumpWidget(
-          wrap(
-            DesktopNavigationSidebar(
-              destinations: buildDestinations(),
-              activeIndex: 0,
-              onDestinationSelected: (_) {},
-              settingsDestination: settings,
-              belowDestinations: slot,
-            ),
-          ),
-        );
-        await tester.pump();
-        expect(find.byKey(slotKey), findsOneWidget);
-
-        // Placement: below the last nav row, above the Settings row.
-        final habitsY = tester.getCenter(find.text('Habits')).dy;
-        final slotY = tester.getCenter(find.byKey(slotKey)).dy;
-        final settingsY = tester.getCenter(find.text('Settings')).dy;
-        expect(slotY, greaterThan(habitsY));
-        expect(slotY, lessThan(settingsY));
-
-        // Collapsed mode — the calendar grid doesn't fit the icon-only
-        // column, so the slot is suppressed.
-        await tester.pumpWidget(
-          wrap(
-            DesktopNavigationSidebar(
-              destinations: buildDestinations(),
-              activeIndex: 0,
-              onDestinationSelected: (_) {},
-              settingsDestination: settings,
-              belowDestinations: slot,
-              collapsed: true,
-            ),
-          ),
-        );
-        await tester.pump();
-        expect(find.byKey(slotKey), findsNothing);
-      },
-    );
-
-    testWidgets(
       'belowSettings slot renders BELOW the Settings row in expanded mode '
       'and stays hidden in collapsed mode',
       (tester) async {

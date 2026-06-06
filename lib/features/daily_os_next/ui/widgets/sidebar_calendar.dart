@@ -7,14 +7,13 @@ import 'package:lotti/features/design_system/components/navigation/sidebar_month
 
 /// Desktop-sidebar month calendar wired to the Daily OS Next state:
 /// plan-day dots come from [dailyOsPlanDaysProvider]; tapping a day
-/// selects it via [dailyOsNextSelectedDateProvider] and asks the host
-/// (via [onOpenDay]) to surface the Daily OS tab.
+/// selects it via [dailyOsNextSelectedDateProvider].
+///
+/// Rendered through the Daily OS destination's `expandedChildBuilder`,
+/// so it only exists while Daily OS is the active tab — the already
+/// visible Daily OS surface reacts to the selection directly.
 class DailyOsSidebarCalendar extends ConsumerStatefulWidget {
-  const DailyOsSidebarCalendar({required this.onOpenDay, super.key});
-
-  /// Called after the day selection is updated — the app shell uses
-  /// this to switch to the Daily OS navigation tab.
-  final ValueChanged<DateTime> onOpenDay;
+  const DailyOsSidebarCalendar({super.key});
 
   @override
   ConsumerState<DailyOsSidebarCalendar> createState() =>
@@ -51,10 +50,7 @@ class _DailyOsSidebarCalendarState
       markedDays: markedDays,
       onPreviousMonth: () => _shiftMonth(-1),
       onNextMonth: () => _shiftMonth(1),
-      onDaySelected: (day) {
-        ref.read(dailyOsNextSelectedDateProvider.notifier).select(day);
-        widget.onOpenDay(day);
-      },
+      onDaySelected: ref.read(dailyOsNextSelectedDateProvider.notifier).select,
     );
   }
 }

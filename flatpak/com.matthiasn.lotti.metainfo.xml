@@ -36,7 +36,7 @@
       <description>
           <p>Task agents now maintain their own day-planning attention requests during normal wakes, resolving stale requests when tasks are done or no longer need scheduled time.</p>
           <p>Slow-query logging now starts from persisted logging settings during startup, so enabled slow_queries and super_slow_queries files capture boot-time database work instead of waiting for the next settings toggle.</p>
-          <p>The desktop sidebar now shows a month calendar: today is highlighted, days with a Daily OS plan carry a dot, and tapping a day jumps straight to it on the Daily OS tab.</p>
+          <p>While the Daily OS tab is active, its desktop sidebar entry expands into a month calendar: today is highlighted, days with a Daily OS plan carry a dot, and tapping a day jumps straight to it.</p>
           <p>Daily OS Next: a day with tracked time but no plan now opens on the Day timeline so recorded sessions are visible without drafting a plan first, with an honest "No plan yet" capacity strip and a "Speak a check-in" button into Capture.</p>
           <p>Daily OS Next: a bounded "Today so far" card shows the day's recorded sessions on the Capture screen and on the empty Agenda tab, collapsing older sessions behind an expander.</p>
           <p>Daily OS Next: agenda items and day blocks now show whether they are backed by a task (blue link badge that opens the task) or are standalone time blocks, and standalone titles can be renamed inline.</p>

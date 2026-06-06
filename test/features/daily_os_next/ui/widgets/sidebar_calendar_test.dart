@@ -12,7 +12,6 @@ import '../../../../widget_test_utils.dart';
 void main() {
   group('DailyOsSidebarCalendar', () {
     Widget wrap({
-      required ValueChanged<DateTime> onOpenDay,
       Set<DateTime> planDays = const {},
       List<DateTime>? requestedMonths,
     }) {
@@ -24,11 +23,11 @@ void main() {
           }),
         ],
         child: makeTestableWidget2(
-          Material(
+          const Material(
             child: Center(
               child: SizedBox(
                 width: 280,
-                child: DailyOsSidebarCalendar(onOpenDay: onOpenDay),
+                child: DailyOsSidebarCalendar(),
               ),
             ),
           ),
@@ -45,7 +44,6 @@ void main() {
           final requested = <DateTime>[];
           await tester.pumpWidget(
             wrap(
-              onOpenDay: (_) {},
               planDays: {DateTime(2026, 5, 13)},
               requestedMonths: requested,
             ),
@@ -63,17 +61,15 @@ void main() {
     );
 
     testWidgets(
-      'tapping a day selects it in the provider and notifies the host',
+      'tapping a day selects it in the shared date provider',
       (tester) async {
         await withClock(Clock.fixed(DateTime(2026, 5, 24, 9)), () async {
-          final opened = <DateTime>[];
-          await tester.pumpWidget(wrap(onOpenDay: opened.add));
+          await tester.pumpWidget(wrap());
           await tester.pump();
 
           await tester.tap(find.text('13'));
           await tester.pump();
 
-          expect(opened, [DateTime(2026, 5, 13)]);
           final container = ProviderScope.containerOf(
             tester.element(find.byType(DailyOsSidebarCalendar)),
           );
@@ -91,7 +87,7 @@ void main() {
       await withClock(Clock.fixed(DateTime(2026, 5, 24, 9)), () async {
         final requested = <DateTime>[];
         await tester.pumpWidget(
-          wrap(onOpenDay: (_) {}, requestedMonths: requested),
+          wrap(requestedMonths: requested),
         );
         await tester.pump();
 

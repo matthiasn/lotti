@@ -2,10 +2,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/dashed_border.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
+import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -928,14 +928,14 @@ void main() {
         expect(
           find.ancestor(
             of: find.text('Drafted block'),
-            matching: find.byType(DottedBorder),
+            matching: find.byType(DsDashedBorder),
           ),
           findsOneWidget,
         );
         expect(
           find.ancestor(
             of: find.text('Committed block'),
-            matching: find.byType(DottedBorder),
+            matching: find.byType(DsDashedBorder),
           ),
           findsNothing,
         );

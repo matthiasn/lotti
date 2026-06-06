@@ -177,6 +177,14 @@ class _DayPageState extends ConsumerState<DayPage> {
     final actualBlocks = ref
         .watch(dailyOsActualTimeBlocksProvider(widget.draft.dayDate))
         .value;
+    // Inline rename is only offered when a real plan backs the surface.
+    final onRenameItem = widget.hasPlan
+        ? (AgendaItem item, String title) => unawaited(_renameItem(item, title))
+        : null;
+    final onRenameBlock = widget.hasPlan
+        ? (TimeBlock block, String title) =>
+              unawaited(_renameBlock(block, title))
+        : null;
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,
       body: SafeArea(
@@ -201,18 +209,12 @@ class _DayPageState extends ConsumerState<DayPage> {
                         draft: widget.draft,
                         actualBlocks: actualBlocks ?? const [],
                         hasPlan: widget.hasPlan,
-                        onRenameItem: widget.hasPlan
-                            ? (item, title) =>
-                                  unawaited(_renameItem(item, title))
-                            : null,
+                        onRenameItem: onRenameItem,
                       )
                     : DayTimeline(
                         draft: widget.draft,
                         actualBlocks: actualBlocks,
-                        onRenameBlock: widget.hasPlan
-                            ? (block, title) =>
-                                  unawaited(_renameBlock(block, title))
-                            : null,
+                        onRenameBlock: onRenameBlock,
                       ),
               ),
               if (widget.hasPlan)
