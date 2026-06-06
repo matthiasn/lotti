@@ -726,6 +726,59 @@ final class AgentTemplateServiceProvider
 String _$agentTemplateServiceHash() =>
     r'104340be1f31a3ca3b8a0e5b3726a0084969940b';
 
+/// The standing agreement authoring service.
+
+@ProviderFor(standingAgreementService)
+final standingAgreementServiceProvider = StandingAgreementServiceProvider._();
+
+/// The standing agreement authoring service.
+
+final class StandingAgreementServiceProvider
+    extends
+        $FunctionalProvider<
+          StandingAgreementService,
+          StandingAgreementService,
+          StandingAgreementService
+        >
+    with $Provider<StandingAgreementService> {
+  /// The standing agreement authoring service.
+  StandingAgreementServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'standingAgreementServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$standingAgreementServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<StandingAgreementService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  StandingAgreementService create(Ref ref) {
+    return standingAgreementService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(StandingAgreementService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<StandingAgreementService>(value),
+    );
+  }
+}
+
+String _$standingAgreementServiceHash() =>
+    r'2f3c97889efc7697a270dddad5ee1d763b7e8c0f';
+
 /// The soul document service.
 
 @ProviderFor(soulDocumentService)
