@@ -629,11 +629,37 @@ class MockNotificationScheduler extends Mock implements NotificationScheduler {}
 
 class MockOutboxService extends Mock implements OutboxService {}
 
-class FakeDashboardDefinition extends Fake implements DashboardDefinition {}
+class FakeDashboardDefinition extends Fake implements DashboardDefinition {
+  FakeDashboardDefinition({this.id = 'fake-dashboard-id', this.deletedAt});
+  @override
+  final String id;
+  @override
+  final DateTime? deletedAt;
+}
 
-class FakeHabitDefinition extends Fake implements HabitDefinition {}
+class FakeHabitDefinition extends Fake implements HabitDefinition {
+  FakeHabitDefinition({this.id = 'fake-habit-id', this.deletedAt});
+  @override
+  final String id;
+  @override
+  final DateTime? deletedAt;
+}
 
-class FakeCategoryDefinition extends Fake implements CategoryDefinition {}
+class FakeCategoryDefinition extends Fake implements CategoryDefinition {
+  FakeCategoryDefinition({this.id = 'fake-category-id', this.deletedAt});
+  @override
+  final String id;
+  @override
+  final DateTime? deletedAt;
+}
+
+class FakeMeasurableDataType extends Fake implements MeasurableDataType {
+  FakeMeasurableDataType({this.id = 'fake-measurable-id', this.deletedAt});
+  @override
+  final String id;
+  @override
+  final DateTime? deletedAt;
+}
 
 class FakeEntryText extends Fake implements EntryText {}
 
