@@ -55,6 +55,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
+          use_pypi: true
           fail_ci_if_error: true
           flags: standard
           name: standard-shard-${{ matrix.shard_label }}
@@ -89,6 +90,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
+          use_pypi: true
           fail_ci_if_error: true
           flags: glados
           files: coverage/lcov.info
@@ -107,5 +109,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
+          use_pypi: true
           fail_ci_if_error: true
           run_command: send-notifications

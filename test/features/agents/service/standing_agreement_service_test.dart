@@ -138,6 +138,27 @@ void main() {
 
       await expectLater(
         () => service.createAgreement(
+          agentId: '   ',
+          title: 'Blank agent id',
+          scope: StandingAgreementScope.fitness,
+          cadence: StandingAgreementCadence.weekly,
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      await expectLater(
+        () => service.createAgreement(
+          agreementId: '   ',
+          agentId: agentId,
+          title: 'Blank agreement id',
+          scope: StandingAgreementScope.fitness,
+          cadence: StandingAgreementCadence.weekly,
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
+
+      await expectLater(
+        () => service.createAgreement(
           agentId: agentId,
           title: 'Custom scope',
           scope: StandingAgreementScope.custom,

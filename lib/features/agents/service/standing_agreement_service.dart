@@ -67,12 +67,14 @@ class StandingAgreementService {
     DateTime? activeUntil,
     String? rationale,
   }) async {
-    final id = agreementId ?? _uuid.v4();
+    final id = agreementId == null
+        ? _uuid.v4()
+        : _requireNonBlank('agreementId', agreementId);
     final now = clock.now();
     final agreement =
         AgentDomainEntity.standingAgreement(
               id: id,
-              agentId: agentId,
+              agentId: _requireNonBlank('agentId', agentId),
               title: _requireNonBlank('title', title),
               scope: scope,
               cadence: cadence,
