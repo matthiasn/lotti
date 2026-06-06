@@ -1850,4 +1850,114 @@ void main() {
       );
     });
   });
+
+  group('findConfiguredKnownModel', () {
+    const knownId = 'gemini-2.5-flash';
+
+    AiConfigModel modelFor(String providerId, {String id = 'model-1'}) =>
+        AiTestDataFactory.createTestModel(
+          id: id,
+          providerModelId: knownId,
+          inferenceProviderId: providerId,
+        );
+
+    AiConfigInferenceProvider provider(
+      String id, {
+      InferenceProviderType type = InferenceProviderType.gemini,
+      String apiKey = 'key',
+    }) => AiTestDataFactory.createTestProvider(
+      id: id,
+      type: type,
+      apiKey: apiKey,
+    );
+
+    test('returns the model bound directly to the target provider', () {
+      final mine = modelFor('target-provider');
+      final result = findConfiguredKnownModel(
+        knownId,
+        providerId: 'target-provider',
+        providerType: InferenceProviderType.gemini,
+        existingModels: [mine],
+        providersById: const {},
+      );
+
+      expect(result, same(mine));
+    });
+
+    test(
+      'with multiple same-type providers only the usable one verifies',
+      () {
+        // Two foreign gemini providers own the model id; only the second is
+        // usable (non-empty API key), so its model must be the one returned.
+        final unusableModel = modelFor('dead-provider', id: 'model-dead');
+        final usableModel = modelFor('live-provider', id: 'model-live');
+
+        final result = findConfiguredKnownModel(
+          knownId,
+          providerId: 'target-provider',
+          providerType: InferenceProviderType.gemini,
+          existingModels: [unusableModel, usableModel],
+          providersById: {
+            'dead-provider': provider('dead-provider', apiKey: '   '),
+            'live-provider': provider('live-provider'),
+          },
+        );
+
+        expect(result, same(usableModel));
+      },
+    );
+
+    test('ignores a matching providerModelId owned by a different type', () {
+      // The id exists, but under an OpenAI provider: a Gemini FTUE setup
+      // must not treat it as already configured.
+      final foreign = modelFor('openai-provider');
+
+      final result = findConfiguredKnownModel(
+        knownId,
+        providerId: 'target-provider',
+        providerType: InferenceProviderType.gemini,
+        existingModels: [foreign],
+        providersById: {
+          'openai-provider': provider(
+            'openai-provider',
+            type: InferenceProviderType.openAi,
+          ),
+        },
+      );
+
+      expect(result, isNull);
+    });
+
+    test('ignores a model whose provider is missing from the map', () {
+      final orphan = modelFor('deleted-provider');
+
+      final result = findConfiguredKnownModel(
+        knownId,
+        providerId: 'target-provider',
+        providerType: InferenceProviderType.gemini,
+        existingModels: [orphan],
+        providersById: const {},
+      );
+
+      expect(result, isNull);
+    });
+
+    test('returns null when no model has the providerModelId', () {
+      final other = AiTestDataFactory.createTestModel(
+        id: 'model-other',
+        providerModelId: 'some-other-model',
+        inferenceProviderId: 'target-provider',
+      );
+
+      final result = findConfiguredKnownModel(
+        knownId,
+        providerId: 'target-provider',
+        providerType: InferenceProviderType.gemini,
+        existingModels: [other],
+        providersById: const {},
+      );
+
+      expect(result, isNull);
+    });
+  });
 }
