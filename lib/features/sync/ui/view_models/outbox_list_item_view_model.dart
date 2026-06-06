@@ -108,7 +108,7 @@ class OutboxListItemViewModel {
       attachmentValue: attachmentValue,
       attachmentIcon: attachmentIcon,
       semanticsLabel: semanticsLabel,
-      payloadSizeLabel: _formatBytes(item.payloadSize),
+      payloadSizeLabel: formatBytes(item.payloadSize),
     );
   }
 
@@ -177,7 +177,9 @@ class OutboxListItemViewModel {
     }
   }
 
-  static String? _formatBytes(int? bytes) {
+  /// Formats a byte count with B/KB/MB/GB thresholds; null in, null out.
+  @visibleForTesting
+  static String? formatBytes(int? bytes) {
     if (bytes == null) return null;
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) {
