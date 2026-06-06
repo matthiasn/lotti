@@ -37,13 +37,13 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/features/ai/providers/gemini_thinking_providers.dart` (18 lines) — `GeminiIncludeThoughts` is a `keepAlive: true` Riverpod notifier with `build()` (returns `false`), `toggle()` (flips state), and a `set includeThoughts` setter. This is testable with a `ProviderContainer`:
+- [x] **[HIGH]** `lib/features/ai/providers/gemini_thinking_providers.dart` (18 lines) — `GeminiIncludeThoughts` is a `keepAlive: true` Riverpod notifier with `build()` (returns `false`), `toggle()` (flips state), and a `set includeThoughts` setter. This is testable with a `ProviderContainer`: **RESOLVED:** new `gemini_thinking_providers_test.dart` covers the initial false state, `toggle()` round trip, the `includeThoughts` setter/getter, and keepAlive survival after the last listener closes.
   - Initial state is `false`.
   - `toggle()` changes state to `true`, then back to `false`.
   - Setting `includeThoughts = true` changes state.
   - `get includeThoughts` reflects current state.
   No test file exists for this file despite it being a non-generated (the `.g.dart` codegen wrapper is generated, but the logic file is hand-written).
-- [ ] **[HIGH]** `lib/features/ai/providers/gemini_inference_repository_provider.dart` (11 lines) — `geminiInferenceRepositoryProvider` is a one-liner `Provider` that wires `httpClientProvider` to `GeminiInferenceRepository`. The pattern is identical to `ollamaInferenceRepositoryProvider`. Following the `ollama` test pattern, a test should verify: (a) it returns a `GeminiInferenceRepository` instance, and (b) it uses the `httpClientProvider` override (inject `MockHttpClient`, confirm the repository holds a reference to it via a real method call).
+- [x] **[HIGH]** `lib/features/ai/providers/gemini_inference_repository_provider.dart` (11 lines) — `geminiInferenceRepositoryProvider` is a one-liner `Provider` that wires `httpClientProvider` to `GeminiInferenceRepository`. The pattern is identical to `ollamaInferenceRepositoryProvider`. Following the `ollama` test pattern, a test should verify: (a) it returns a `GeminiInferenceRepository` instance, and (b) it uses the `httpClientProvider` override (inject `MockHttpClient`, confirm the repository holds a reference to it via a real method call). **RESOLVED:** new `gemini_inference_repository_provider_test.dart` follows the ollama pattern — asserts the provider returns a `GeminiInferenceRepository` and proves the overridden `httpClientProvider` client is wired through by driving `generateImage` against a 403-stubbed mock and capturing the request URI.
 - [ ] **[LOW]** `test/features/ai/providers/ollama_inference_repository_provider_test.dart` — `httpClientProvider` is tested for `'returns a real http.Client and closes it on dispose'` (line 15–29). The test confirms disposal does not throw but does not confirm the client was actually closed (the underlying `http.Client.close()` method sets an internal flag). This is acceptable since the underlying `http.Client` does not expose an `isClosed` property.
 
 ---
