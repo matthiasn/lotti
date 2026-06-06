@@ -26,7 +26,7 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `lib/features/ai/util/known_models.dart` (930 lines) exceeds the 500-line soft limit by almost 2×. The file mixes three unrelated concerns that should each be their own module:
+- [x] **[HIGH]** `lib/features/ai/util/known_models.dart` (930 lines) exceeds the 500-line soft limit by almost 2×. The file mixes three unrelated concerns that should each be their own module:
   1. Data: model constant lists (`geminiModels`, `alibabaModels`, etc.) — ~650 lines
   2. Lookup utilities: `findXKnownModel`, `getXFtueKnownModels`, `generateModelId`, `isMlxAudio*` predicates — ~200 lines
   3. FTUE category/colour constants (`ftueGeminiColor`, `ftueOllamaCategoryColor`, …) and Riverpod-free UI constants — ~80 lines
@@ -35,6 +35,7 @@
   - `lib/features/ai/util/known_models_data.dart` — pure const lists, no functions
   - `lib/features/ai/util/known_models_lookup.dart` — `findXKnownModel`, `getXFtueKnownModels`, `generateModelId`, predicates
   - Keep FTUE category constants in the file they are consumed from (or a dedicated `ftue_constants.dart`).
+  **RESOLVED (adapted):** split via `part` files so the many importers and the single mirror test stay untouched — `known_models_data.dart` (const model lists, 597 lines) and `known_models_ftue.dart` (FTUE constants + `findXKnownModel`/`getXFtueKnownModels` lookups, 242 lines); the library file keeps `KnownModel`, `knownModelsByProvider`, the MLX-audio IDs/predicates, and `generateModelId` (111 lines).
   - Mirror-split test: `known_models_data_test.dart` (catalog assertions) + `known_models_lookup_test.dart` (Glados + finder tests).
 
 - [x] **[HIGH]** `test/features/ai/util/ai_error_utils_test.dart` (1119 lines) is 3× the impl (362 lines). The test class hierarchy at the top (lines 11–77) is sound, but the test body from line 202 onward has ~28 nearly identical `when()` stub blocks. A shared `_stubGenerateText(repo)` helper extracting the 8-argument `when` stub (repeated in every `sendMessage` test) would cut ~300 lines. **RESOLVED (stale):** the file no longer contains any `when()` stub blocks or mocks — it is now pure `categorizeError`/helper coverage, so there is no `_stubGenerateText` extraction left to do.
