@@ -880,8 +880,12 @@ class UnifiedAiInferenceRepository {
         final jsonObjects = extractJsonObjects(toolCall.function.arguments);
 
         if (jsonObjects.isEmpty) {
+          // Log metadata only — raw arguments can carry user content/PII
+          // and can be arbitrarily large.
           developer.log(
-            'No valid JSON found in arguments: ${toolCall.function.arguments}',
+            'No valid JSON found in arguments '
+            '(toolCallId=${toolCall.id}, '
+            'length=${toolCall.function.arguments.length})',
             name: 'UnifiedAiInferenceRepository',
           );
           continue;
@@ -1362,23 +1366,41 @@ UnifiedAiInferenceRepository unifiedAiInferenceRepository(Ref ref) {
 ///
 /// AI providers sometimes concatenate several JSON objects into one tool-call
 /// argument string; this splits them back apart. Text outside braces is
-/// ignored.
-///
-/// NOTE: This manual parsing logic may fail if a string field contains
-/// unmatched `{` or `}` characters. This is a known limitation but should be
-/// rare in practice since AI-generated reasons are typically well-formed.
+/// ignored. Braces inside JSON string literals (including escaped quotes)
+/// are ignored so a reason like `"The user selected {Item}"` does not skew
+/// the depth count.
 List<String> extractJsonObjects(String input) {
   final jsonObjects = <String>[];
   var depth = 0;
   var start = -1;
+  var inString = false;
+  var escaped = false;
 
   for (var i = 0; i < input.length; i++) {
-    if (input[i] == '{') {
+    final char = input[i];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+    if (inString) {
+      if (char == r'\') {
+        escaped = true;
+      } else if (char == '"') {
+        inString = false;
+      }
+      continue;
+    }
+    // Only treat quotes as string delimiters inside an object — stray
+    // quotes in the surrounding prose must not flip the string state.
+    if (char == '"' && depth > 0) {
+      inString = true;
+    } else if (char == '{') {
       if (depth == 0) {
         start = i;
       }
       depth++;
-    } else if (input[i] == '}') {
+    } else if (char == '}') {
       if (depth > 0) {
         depth--;
         if (depth == 0 && start != -1) {

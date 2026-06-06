@@ -184,10 +184,15 @@ class CaptureLayoutMetrics {
     final maximumSlotHeight = maximumSlotHeightFor(tokens);
     final availableForState =
         viewportHeight - _fixedVerticalChrome(tokens, phase);
-    final stateSlotHeight = availableForState.clamp(
-      minimumSlotHeight,
-      maximumSlotHeight,
-    );
+    // On extreme viewports/zoom levels the phase minimum can exceed the cap;
+    // widen the upper bound so clamp() never throws — the minimum wins, as it
+    // already does when the available space is smaller than the minimum.
+    final stateSlotHeight = availableForState
+        .clamp(
+          minimumSlotHeight,
+          math.max(minimumSlotHeight, maximumSlotHeight),
+        )
+        .toDouble();
 
     return CaptureLayoutMetrics(
       stateSlotHeight: stateSlotHeight,

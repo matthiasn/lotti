@@ -17,7 +17,7 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockHealthImport mockHealthImport;
 
-  setUp(() {
+  setUp(() async {
     mockJournalDb = MockJournalDb();
     mockHealthImport = MockHealthImport();
 
@@ -34,12 +34,17 @@ void main() {
       ),
     ).thenAnswer((_) async {});
 
-    getIt
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<HealthImport>(mockHealthImport);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockJournalDb)
+          ..registerSingleton<HealthImport>(mockHealthImport);
+      },
+    );
   });
 
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
 
   group('HealthSummary', () {
     testWidgets(

@@ -775,6 +775,7 @@ void main() {
     'self-echo suppression logs once per interval and resets the counter',
     () async {
       final bench = _GladosBench();
+      addTearDown(bench.dispose);
       final logMessages = <String>[];
       when(
         () => bench.logging.log(
@@ -839,7 +840,6 @@ void main() {
 
         await coordinator.stop();
       });
-      await bench.dispose();
     },
   );
 
@@ -848,6 +848,7 @@ void main() {
     'tearing down and leaves the coordinator retryable',
     () async {
       final bench = _GladosBench();
+      addTearDown(bench.dispose);
       final attachmentIndex = _SyncPathAttachmentIndex();
       final updateNotifications = MockUpdateNotifications();
       final flushGate = Completer<void>();
@@ -902,7 +903,6 @@ void main() {
       expect(coordinator.isRunning, isTrue);
       await coordinator.stop();
       await attachmentIndex.ctl.close();
-      await bench.dispose();
     },
   );
 
@@ -913,6 +913,7 @@ void main() {
     'generated live ingress filters room/status/self-echo before queueing',
     (scenario) async {
       final bench = _GladosBench();
+      addTearDown(bench.dispose);
       final ingestor = _FakeAttachmentIngestor(
         shouldThrow:
             scenario.ingestorKind == _GeneratedLiveIngestorKind.throwsError,
@@ -979,9 +980,7 @@ void main() {
           hasLength(scenario.expectedQueueCalls),
           reason: '$scenario',
         );
-      } finally {
-        await bench.dispose();
-      }
+      } finally {}
     },
     tags: 'glados',
   );

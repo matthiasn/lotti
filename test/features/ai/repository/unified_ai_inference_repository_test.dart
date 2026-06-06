@@ -7269,6 +7269,25 @@ Take into account the following task context:
       );
     });
 
+    test('ignores braces inside string literals', () {
+      expect(
+        extractJsonObjects('{"reason": "The user selected {Item}"}'),
+        ['{"reason": "The user selected {Item}"}'],
+      );
+      // Unbalanced brace inside a string must not open/close objects.
+      expect(
+        extractJsonObjects('{"a": "}"}{"b": 2}'),
+        ['{"a": "}"}', '{"b": 2}'],
+      );
+    });
+
+    test('handles escaped quotes inside string literals', () {
+      expect(
+        extractJsonObjects(r'{"a": "say \"hi\" {x}"}'),
+        [r'{"a": "say \"hi\" {x}"}'],
+      );
+    });
+
     glados.Glados(
       glados.any.jsonObjectsScenario,
       glados.ExploreConfig(numRuns: 120),

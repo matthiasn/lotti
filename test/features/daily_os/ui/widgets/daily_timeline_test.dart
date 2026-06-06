@@ -2788,9 +2788,14 @@ void main() {
         );
         await tester.pump();
 
-        // Long press must not throw even when categoryId is null.
-        final gestureDetectors = find.byType(GestureDetector);
-        await tester.longPress(gestureDetectors.last);
+        // Long press must not throw even when categoryId is null. Target the
+        // detector that actually wires onLongPress instead of relying on
+        // widget-tree ordering.
+        final longPressTargets = find.byWidgetPredicate(
+          (w) => w is GestureDetector && w.onLongPress != null,
+        );
+        expect(longPressTargets, findsWidgets);
+        await tester.longPress(longPressTargets.first);
         await tester.pump();
 
         final container = ProviderScope.containerOf(

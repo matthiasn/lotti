@@ -46,9 +46,10 @@ Future<void> _pumpFilter(
   JournalPageController Function()? controllerFactory,
   bool pumpAfterMount = true,
 }) async {
-  if (!GetIt.I.isRegistered<JournalDb>()) {
-    GetIt.I.registerSingleton<JournalDb>(mockDb);
+  if (GetIt.I.isRegistered<JournalDb>()) {
+    GetIt.I.unregister<JournalDb>();
   }
+  GetIt.I.registerSingleton<JournalDb>(mockDb);
   await tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       const EntryTypeFilter(),

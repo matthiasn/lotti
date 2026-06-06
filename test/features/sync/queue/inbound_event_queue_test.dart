@@ -874,7 +874,9 @@ void main() {
           await pumpEventQueue();
 
           if (scenario.anyMutation) {
-            expect(emissions, isNotEmpty, reason: '$scenario');
+            // Exactly one coalesced post-commit emission — duplicates would
+            // indicate the depth gate leaked intermediate notifications.
+            expect(emissions, hasLength(1), reason: '$scenario');
           } else {
             expect(emissions, isEmpty, reason: '$scenario');
           }
