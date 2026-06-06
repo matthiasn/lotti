@@ -17,7 +17,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../mocks/mocks.dart';
+import '../../../mocks/mocks.dart';
 
 // ---------------------------------------------------------------------------
 // Top-level private helpers used only by edge_cases group
