@@ -17,24 +17,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 
 // This matches the signature of the getter linkedFrom in TimeService
-class MockTask extends Mock implements Task {
-  // Constructor declared first for sort_constructors_first rule
-  MockTask(this.taskId);
-
-  final String taskId;
-
-  static final _fixedDate = DateTime(2022, 7, 7);
-
-  @override
-  Metadata get meta => Metadata(
-    id: taskId,
-    dateFrom: _fixedDate,
-    dateTo: _fixedDate,
-    createdAt: _fixedDate,
-    updatedAt: _fixedDate,
-  );
-}
-
 // Create a fake TaskProgressState for registerFallbackValue
 @immutable // Adding @immutable for equals and hashCode methods
 class FakeTaskProgressState implements TaskProgressState {
@@ -230,7 +212,7 @@ void main() {
     await container.read(taskProgressControllerProvider(id: testTaskId).future);
 
     // Mock the linkedFrom property
-    final mockTask = MockTask(testTaskId);
+    final mockTask = MockTask(date: DateTime(2022, 7, 7));
     when(() => mockTimeService.linkedFrom).thenReturn(mockTask);
 
     // Create a test journal entity
@@ -283,7 +265,10 @@ void main() {
     await container.read(taskProgressControllerProvider(id: testTaskId).future);
 
     // Mock the linkedFrom property with a different task ID
-    final mockTask = MockTask('different-task-id');
+    final mockTask = MockTask(
+      id: 'different-task-id',
+      date: DateTime(2022, 7, 7),
+    );
     when(() => mockTimeService.linkedFrom).thenReturn(mockTask);
 
     // Create a test journal entity
@@ -339,7 +324,7 @@ void main() {
           dateTo: dateFrom,
         ),
       );
-      final mockTask = MockTask(testTaskId);
+      final mockTask = MockTask(date: DateTime(2022, 7, 7));
       when(() => mockTimeService.linkedFrom).thenReturn(mockTask);
       when(() => mockTimeService.getCurrent()).thenReturn(live);
 

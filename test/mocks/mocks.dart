@@ -641,6 +641,31 @@ class FakeEventData extends Fake implements EventData {}
 
 class FakeTaskData extends Fake implements TaskData {}
 
+/// Task stand-in serving a fixed [data] payload and deterministic metadata —
+/// for tests that only read `data`/`meta`.
+class MockTask extends Mock implements Task {
+  MockTask({this.id = 'test-task-id', TaskData? data, DateTime? date})
+    // ignore: prefer_initializing_formals
+    : _data = data,
+      _date = date ?? DateTime(2024, 3, 15);
+
+  final String id;
+  final TaskData? _data;
+  final DateTime _date;
+
+  @override
+  TaskData get data => _data!;
+
+  @override
+  Metadata get meta => Metadata(
+    id: id,
+    createdAt: _date,
+    updatedAt: _date,
+    dateFrom: _date,
+    dateTo: _date,
+  );
+}
+
 class FakeMetadata extends Fake implements Metadata {}
 
 class FakeWhatsNewRelease extends Fake implements WhatsNewRelease {}

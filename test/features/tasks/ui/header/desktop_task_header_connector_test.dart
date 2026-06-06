@@ -34,6 +34,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
 import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
 
 class _FakeTaskProgressController extends TaskProgressController {
   _FakeTaskProgressController(this._state);
@@ -56,9 +57,6 @@ void main() {
   final now = DateTime(2026, 4, 20, 12);
 
   setUp(() async {
-    await getIt.reset();
-    getIt.allowReassignment = true;
-
     mockCache = MockEntitiesCacheService();
     mockEditorStateService = MockEditorStateService();
     mockJournalDb = MockJournalDb();
@@ -84,17 +82,25 @@ void main() {
           invocation.positionalArguments.first as List<LabelDefinition>,
     );
 
-    getIt
-      ..registerSingleton<EntitiesCacheService>(mockCache)
-      ..registerSingleton<EditorStateService>(mockEditorStateService)
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockJournalDb)
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+          ..registerSingleton<EntitiesCacheService>(mockCache)
+          ..registerSingleton<EditorStateService>(mockEditorStateService)
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+          // TaskProgressController resolves TimeService in a field
+          // initialiser, so every test that touches the estimate chip needs
+          // it registered even when it is never exercised.
+          ..registerSingleton<TimeService>(MockTimeService());
+      },
+    );
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(tearDownTestGetIt);
 
   Task buildTask({
     String id = 'task-1',
@@ -233,7 +239,8 @@ void main() {
       final task = buildTask();
 
       await tester.pumpWidget(pumpConnector(task: task));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(DesktopTaskHeader), findsOneWidget);
       expect(find.text('Test Task'), findsOneWidget);
@@ -269,7 +276,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(DesktopTaskHeader), findsNothing);
     });
@@ -283,7 +291,8 @@ void main() {
         final task = buildTask(categoryId: 'cat-1');
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Work'), findsOneWidget);
       },
@@ -294,7 +303,8 @@ void main() {
       final project = buildProject();
 
       await tester.pumpWidget(pumpConnector(task: task, project: project));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Alpha'), findsOneWidget);
     });
@@ -317,7 +327,8 @@ void main() {
         );
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Use document order (tree traversal) instead of `dx`. The new
         // single-row meta-layout shares a `Wrap` between priority/due/estimate
@@ -349,7 +360,8 @@ void main() {
         );
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Public'), findsOneWidget);
         expect(find.text('Private'), findsNothing);
@@ -372,7 +384,8 @@ void main() {
 
         await withClock(Clock.fixed(now), () async {
           await tester.pumpWidget(pumpConnector(task: task));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
         });
 
         // Due date chip renders with the default subdued styling, not the
@@ -390,7 +403,8 @@ void main() {
       final task = buildTask();
 
       await tester.pumpWidget(pumpConnector(task: task));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('No estimate'), findsOneWidget);
     });
@@ -401,7 +415,8 @@ void main() {
         final task = buildTask(estimate: const Duration(hours: 2));
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // When no progress has been computed yet (null progress state), the
         // chip still formats the pair with a zero tracked component — this
@@ -416,7 +431,8 @@ void main() {
         final task = buildTask(estimate: const Duration(minutes: 45));
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // 45-minute estimate pads hours with a leading zero.
         expect(find.text('00:00 / 00:45'), findsOneWidget);
@@ -431,12 +447,14 @@ void main() {
         final task = buildTask();
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The priority glyph is rendered inside the clickable badge in the
         // metadata row; tap its ancestor InkWell so the modal opens.
         await tester.tap(find.byType(TaskShowcasePriorityGlyph).first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Priority picker title "Select priority" is surfaced.
         expect(find.text('Select priority'), findsOneWidget);
@@ -449,10 +467,12 @@ void main() {
         final task = buildTask();
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.byType(TaskShowcasePriorityGlyph).first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Every enum variant should be rendered in the picker. (`P2`
         // appears twice — once in the header's own badge for the default
@@ -470,12 +490,14 @@ void main() {
         final task = buildTask();
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Default status is "Open" — the dropdown chip shows that label.
         // Tap the first "Open" text (the header chip, not the modal option).
         await tester.tap(find.text('Open').first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // TaskStatusModalContent renders the status list with labels like
         // "In Progress".
@@ -489,10 +511,12 @@ void main() {
         final task = buildTask();
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('unassigned'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // CategorySelectionModalContent renders with an empty category
         // list — verify that the header's own "unassigned" chip has been
@@ -509,10 +533,12 @@ void main() {
         final task = buildTask();
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('No project'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // No modal opened — the base connector is still the visible root.
         expect(find.byType(DesktopTaskHeaderConnector), findsOneWidget);
@@ -527,10 +553,12 @@ void main() {
         final task = buildTask();
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Add Label'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The label selection sliver mounts inside the modal once the
         // onAddLabelTap → _openLabelSelector path fires.
@@ -542,15 +570,6 @@ void main() {
       'estimate chip switches to the overtime tinted variant when '
       'tracked > estimate',
       (tester) async {
-        // The estimate chip's overtime branch reads the
-        // `taskProgressControllerProvider`, which instantiates a
-        // `TaskProgressController`. The real controller resolves
-        // `getIt<TimeService>()` in a field initialiser, so the fake — which
-        // extends the real class — needs that registration in place even
-        // though it never calls into it.
-        getIt.registerSingleton<TimeService>(MockTimeService());
-        addTearDown(() => getIt.unregister<TimeService>());
-
         final task = buildTask(estimate: const Duration(hours: 1));
 
         await tester.pumpWidget(
@@ -562,7 +581,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The pill renders the "tracked / estimate" pair, with progress
         // overrunning the estimate; the connector takes the overtime branch
@@ -578,10 +598,12 @@ void main() {
         final task = buildTask();
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('No estimate'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // showEstimatePicker surfaces a Cupertino timer picker and a Done
         // button.
@@ -595,10 +617,12 @@ void main() {
         final task = buildTask(estimate: const Duration(hours: 2));
 
         await tester.pumpWidget(pumpConnector(task: task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('00:00 / 02:00'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Done'), findsOneWidget);
       },
@@ -662,14 +686,17 @@ void main() {
         await tester.pumpWidget(
           pumpConnectorWithTracker(task: task, tracker: tracker),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.byType(TaskShowcasePriorityGlyph).first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Pick the P0 row in the picker.
         await tester.tap(find.text('P0'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(tracker.updateTaskPriorityCalls, equals(['P0']));
       },
@@ -684,15 +711,18 @@ void main() {
         await tester.pumpWidget(
           pumpConnectorWithTracker(task: task, tracker: tracker),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap the status chip (shows "Open" for a new task).
         await tester.tap(find.text('Open').first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap "In Progress" in the status picker.
         await tester.tap(find.text('In Progress'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(tracker.updateTaskStatusCalls, hasLength(1));
       },
@@ -707,16 +737,19 @@ void main() {
         await tester.pumpWidget(
           pumpConnectorWithTracker(task: task, tracker: tracker),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('No estimate'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The Cupertino timer picker starts at 00:00; tapping Done without
         // changing the value is still a valid "save 0" path from the
         // connector's perspective.
         await tester.tap(find.text('Done'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Either the estimate save happened (0 → 0 with no change calls)
         // or was skipped by the picker itself; the key coverage is that
@@ -735,13 +768,16 @@ void main() {
         await tester.pumpWidget(
           pumpConnectorWithTracker(task: task, tracker: tracker),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('No due date'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Done'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // When no initial due date is set, tapping Done unconditionally
         // commits the current picker value via controller.save(dueDate: ...).
@@ -760,14 +796,17 @@ void main() {
         await tester.pumpWidget(
           pumpConnectorWithTracker(task: task, tracker: tracker),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap the due-date chip — match its rendered label.
         await tester.tap(find.textContaining('Apr 25, 2026'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Clear'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(tracker.saveCalls, hasLength(1));
         expect(tracker.saveCalls.single['clearDueDate'], isTrue);
@@ -788,13 +827,16 @@ void main() {
         await tester.pumpWidget(
           pumpConnectorWithTracker(task: task, tracker: tracker),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('unassigned'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Focus'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(tracker.updateCategoryIdCalls, equals(['cat-pick']));
       },
@@ -831,13 +873,16 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('unassigned'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Focus'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Modal closed.
         expect(find.byType(CategorySelectionModalContent), findsNothing);
@@ -857,7 +902,8 @@ void main() {
         await tester.pumpWidget(
           pumpConnectorWithTracker(task: task, tracker: tracker),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Enter edit mode on the read-only title.
         await tester.tap(find.text('Test Task'));
@@ -882,7 +928,8 @@ void main() {
 
         await withClock(Clock.fixed(now), () async {
           await tester.pumpWidget(pumpConnector(task: task));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
         });
 
         // The due chip is present; overdue styling is exercised downstream.
@@ -897,7 +944,8 @@ void main() {
 
         await withClock(Clock.fixed(now), () async {
           await tester.pumpWidget(pumpConnector(task: task));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
         });
 
         // Either the urgency label or the date string is visible.
@@ -914,7 +962,8 @@ void main() {
 
         await withClock(Clock.fixed(now), () async {
           await tester.pumpWidget(pumpConnector(task: task));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
         });
 
         expect(find.byType(DesktopTaskHeader), findsOneWidget);
@@ -1002,12 +1051,14 @@ void main() {
         await tester.pumpWidget(
           wrapWithProjectApp(overrides: overrides, task: task),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // "No project" is the unassigned crumb; when categoryId is non-null
         // the connector passes a real onProjectTap callback (not null).
         await tester.tap(find.text('No project'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The project-selection modal opened.
         expect(find.byType(ProjectSelectionModalContent), findsOneWidget);
@@ -1045,14 +1096,17 @@ void main() {
         await tester.pumpWidget(
           wrapWithProjectApp(overrides: overrides, task: task),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('No project'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap the "No project" row (null selection).
         await tester.tap(find.text('No project').last);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         verify(() => projectRepo.unlinkTaskFromProject(task.id)).called(1);
       },
@@ -1091,14 +1145,17 @@ void main() {
         await tester.pumpWidget(
           wrapWithProjectApp(overrides: overrides, task: task),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('No project'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap the "Alpha Project" row in the picker.
         await tester.tap(find.text('Alpha Project'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         verify(
           () => projectRepo.linkTaskToProject(
@@ -1155,14 +1212,16 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The label pill is rendered (label name visible).
         expect(find.text('Urgent'), findsOneWidget);
 
         // Tapping the label fires onLabelTap → _openLabelSelector.
         await tester.tap(find.text('Urgent'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(LabelSelectionSliverContent), findsOneWidget);
       },
@@ -1215,11 +1274,13 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Open the estimate picker (initial duration is zero).
           await tester.tap(find.text('No estimate'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Directly invoke the picker's duration-changed callback to
           // simulate the user scrolling to 1 h — this ensures selectedDuration
@@ -1231,7 +1292,8 @@ void main() {
           picker.onTimerDurationChanged(const Duration(hours: 1));
 
           await tester.tap(find.text('Done'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Verify save was called with the new 1-hour estimate.
           expect(tracker.saveCalls, hasLength(1));

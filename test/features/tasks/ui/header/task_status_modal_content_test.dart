@@ -1,31 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_modal_content.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
-import 'package:mocktail/mocktail.dart';
+
+import '../../../../mocks/mocks.dart';
 
 // ---------------------------------------------------------------------------
 // Test doubles
 // ---------------------------------------------------------------------------
-
-class MockTask extends Mock implements Task {
-  MockTask(this._data);
-  final TaskData _data;
-
-  @override
-  TaskData get data => _data;
-
-  @override
-  Metadata get meta => Metadata(
-    id: 'test-task-id',
-    createdAt: DateTime(2024, 3, 15),
-    updatedAt: DateTime(2024, 3, 15),
-    dateFrom: DateTime(2024, 3, 15),
-    dateTo: DateTime(2024, 3, 15),
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -58,7 +41,7 @@ TaskStatus _makeStatus(String s) => switch (s) {
 };
 
 MockTask _makeTask(String status) => MockTask(
-  TaskData(
+  data: TaskData(
     status: _makeStatus(status),
     dateFrom: _testDate,
     dateTo: _testDate,
