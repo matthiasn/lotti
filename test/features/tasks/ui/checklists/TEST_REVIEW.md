@@ -25,7 +25,7 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `lib/features/tasks/ui/checklists/checklist_card.dart` — **1 070 lines**, exceeding the 1 000-line hard limit. The file contains 8 logically independent private classes with clean boundaries:
+- [x] **[HIGH]** `lib/features/tasks/ui/checklists/checklist_card.dart` — **1 070 lines**, exceeding the 1 000-line hard limit. The file contains 8 logically independent private classes with clean boundaries:
   - `_Header` (line 287) — full title/expand/filter header
   - `_SortingHeader` (line 432) — drag-mode stripped header
   - `_ProgressRow` (line 498) — ring + count label
@@ -35,6 +35,7 @@
   - `_Body` (line 809) — list + add field
   - `_AddItemField` (line 929) — pill input
   - free function `buildChecklistProgressRing` (line 1052)
+  **RESOLVED:** split via `part` files — header/progress/filter/menu widgets in `checklist_card_components.dart` and `_Body`/`_AddItemField`/`buildChecklistProgressRing` in `checklist_card_body.dart`; the library file is down to 288 lines.
 
   Natural split: extract `_AddItemField`, `_FilterStrip`, `_FilterTab`, `_ProgressRow`, `_TitleText`, `_HeaderMenu` into `checklist_card_components.dart` (≈ 500 ln) and keep `_Body`, `_SortingHeader`, `_Header`, and `ChecklistCard` in `checklist_card.dart` (≈ 570 ln). `buildChecklistProgressRing` could move to a `checklist_progress_ring.dart` helper.
 
