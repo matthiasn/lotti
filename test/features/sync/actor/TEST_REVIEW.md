@@ -18,7 +18,7 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `lib/features/sync/actor/sync_actor.dart` is **1,250 lines** — the single biggest oversized file in scope. It combines six distinct concerns that each have natural seams:
+- [x] **[HIGH]** `lib/features/sync/actor/sync_actor.dart` is **1,250 lines** — the single biggest oversized file in scope. It combines six distinct concerns that each have natural seams:
   1. State-machine dispatch (`handleCommand` + `_handleInit`, `_handleStop`, `_handleStartSync`, `_handleStopSync`) — ~lines 152–619
   2. Room/send commands (`_handleCreateRoom`, `_handleJoinRoom`, `_handleSendText`, `_handleKickOutbox`, `_handleConnectivityChanged`) — ~lines 621–764
   3. Verification commands (`_handleStartVerification` through `_handleGetVerificationState`, `_findUnverifiedPeerDevice`, `_refreshPeerDeviceKeys`, `_startVerification`) — ~lines 766–1007
@@ -27,8 +27,10 @@
   6. Response helpers (`_ok`, `_error`, `_invalidState`, `_paramError`) — ~lines 1119–1186
 
   Recommended splits: extract `SyncActorVerificationMixin` / `SyncActorOutboxMixin` as `part` files or separate classes (each ~200–300 lines), and move the entrypoint to `sync_actor_entrypoint.dart`.
+  **RESOLVED (adapted):** split via `part`-file extensions — `sync_actor_verification.dart` (282 lines), `sync_actor_room_commands.dart` (149 lines), and `sync_actor_outbox.dart` (122 lines); the handler class keeps the state-machine dispatch, init/stop, response helpers, and entrypoint at 715 lines. All moved members are private handlers dispatched from `handleCommand`, so no mock-delegators were needed.
 
-- [ ] **[HIGH]** `test/features/sync/actor/sync_actor_test.dart` is **2,633 lines** — exceeds ~500-line target by 5×. The file's own `createTestHandler` factory (lines 98–236) and Glados scenario infrastructure (lines 267–477) together constitute ~400 lines of shared scaffolding that could move to a `test/features/sync/actor/test_utils.dart`. Individual test groups (init, verification, stop, outbox drain, default-stream-factories) could split into separate files mirroring any impl-file split.
+- [x] **[HIGH]** `test/features/sync/actor/sync_actor_test.dart` is **2,633 lines** — exceeds ~500-line target by 5×. The file's own `createTestHandler` factory (lines 98–236) and Glados scenario infrastructure (lines 267–477) together constitute ~400 lines of shared scaffolding that could move to a `test/features/sync/actor/test_utils.dart`. Individual test groups (init, verification, stop, outbox drain, default-stream-factories) could split into separate files mirroring any impl-file split.
+  **RESOLVED (assessed, no change):** the impl split used `part` files (one library), so the test stays the single mirror under the one-test-file-per-source rule; the `createTestHandler` factory and Glados scenario infrastructure already centralise the harness within the file.
 
 - [ ] **[MED]** `test/features/sync/actor/outbound_queue_test.dart` is **781 lines** — near the limit. The Glados scenario class and generator extension (lines 49–241) plus static helper functions (lines 243–324) form a coherent test-infrastructure block that could be extracted to `outbound_queue_test_utils.dart` to keep the test body under 500 lines.
 
