@@ -24,10 +24,6 @@ import '../../../../widget_test_utils.dart';
 
 class MockClient extends Mock implements Client {}
 
-class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
-
-class MockKeyVerification extends Mock implements KeyVerification {}
-
 class _FakeDeviceKeys extends Fake implements DeviceKeys {}
 
 class _FakeMatrixUnverifiedController extends MatrixUnverifiedController {

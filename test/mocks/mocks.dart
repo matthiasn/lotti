@@ -101,6 +101,7 @@ import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
 import 'package:lotti/features/sync/gateway/matrix_sdk_gateway.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
+import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/matrix/matrix_message_sender.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
@@ -272,6 +273,8 @@ class MockSyncLifecycleCoordinator extends Mock
     implements SyncLifecycleCoordinator {}
 
 class MockKeyVerification extends Mock implements KeyVerification {}
+
+class MockKeyVerificationRunner extends Mock implements KeyVerificationRunner {}
 
 class MockUserActivityGate extends Mock implements UserActivityGate {}
 

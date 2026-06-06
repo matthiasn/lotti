@@ -170,12 +170,14 @@ void main() {
 
       // Enter valid Base64
       await tester.enterText(find.byType(TextField), validBase64);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap import button
       final context = tester.element(find.byType(BundleImportWidget));
       await tester.tap(find.text(context.messages.provisionedSyncImportButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify summary card is shown
       expect(find.text('https://matrix.example.com'), findsOneWidget);
@@ -203,12 +205,14 @@ void main() {
         find.byType(TextField),
         'definitely-not-valid-json-in-base64',
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap import button
       final context = tester.element(find.byType(BundleImportWidget));
       await tester.tap(find.text(context.messages.provisionedSyncImportButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should not show summary card
       expect(find.text('@alice:example.com'), findsNothing);
@@ -227,16 +231,19 @@ void main() {
 
       // Enter valid Base64 and import
       await tester.enterText(find.byType(TextField), validBase64);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       final context = tester.element(find.byType(BundleImportWidget));
       await tester.tap(find.text(context.messages.provisionedSyncImportButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap configure button
       await tester.tap(
         find.text(context.messages.provisionedSyncConfigureButton),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(pageIndexNotifier.value, 1);
 
@@ -260,12 +267,14 @@ void main() {
 
       // Enter invalid Base64 that decodes to non-JSON
       await tester.enterText(find.byType(TextField), invalidJsonBase64);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap import button
       final context = tester.element(find.byType(BundleImportWidget));
       await tester.tap(find.text(context.messages.provisionedSyncImportButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show error text in the TextField decoration
       // The error comes from FormatException when JSON parsing fails
@@ -286,10 +295,12 @@ void main() {
 
       // Enter invalid data and import to trigger error
       await tester.enterText(find.byType(TextField), invalidJsonBase64);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       final context = tester.element(find.byType(BundleImportWidget));
       await tester.tap(find.text(context.messages.provisionedSyncImportButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify error is shown
       var textField = tester.widget<TextField>(find.byType(TextField));
@@ -297,7 +308,8 @@ void main() {
 
       // Now type something new to clear the error
       await tester.enterText(find.byType(TextField), 'new text');
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Error should be cleared
       textField = tester.widget<TextField>(find.byType(TextField));
@@ -339,7 +351,8 @@ void main() {
 
       // Enter some text
       await tester.enterText(find.byType(TextField), 'some-text');
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Button should now be enabled (onPressed != null)
       final context = tester.element(find.byType(BundleImportWidget));
@@ -363,10 +376,12 @@ void main() {
 
       // Enter valid Base64 and import
       await tester.enterText(find.byType(TextField), validBase64);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       final context = tester.element(find.byType(BundleImportWidget));
       await tester.tap(find.text(context.messages.provisionedSyncImportButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify all summary labels are shown
       expect(
@@ -449,7 +464,8 @@ void main() {
       await tester.tap(
         find.text(context.messages.provisionedSyncPasteClipboard),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show the decoded bundle summary
       expect(find.text('https://matrix.example.com'), findsOneWidget);
@@ -516,10 +532,12 @@ void main() {
 
       // Import first bundle
       await tester.enterText(find.byType(TextField), validBase64);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       final context = tester.element(find.byType(BundleImportWidget));
       await tester.tap(find.text(context.messages.provisionedSyncImportButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('@alice:example.com'), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
