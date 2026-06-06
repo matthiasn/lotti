@@ -26,10 +26,12 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
@@ -39,6 +41,7 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 class TestableOutboxService extends OutboxService {
   TestableOutboxService({
@@ -344,10 +347,35 @@ void main() {
   late MockUserActivityService userActivityService;
   late Directory documentsDirectory;
   late TestableOutboxService service;
-  late bool hadDirectoryRegistered;
-  Directory? previousDirectory;
 
-  setUp(() {
+  /// Builds a [TestableOutboxService] wired to the shared file-level mocks;
+  /// only the parameters that actually vary between tests are exposed.
+  TestableOutboxService buildService({
+    UserActivityGate? activityGate,
+    bool? ownsActivityGate,
+    SyncSequenceLogService? sequenceLogService,
+    Future<void> Function(String path, String json)? saveJsonHandler,
+    Duration postDrainSettle = Duration.zero,
+  }) {
+    return TestableOutboxService(
+      syncDatabase: syncDatabase,
+      loggingService: loggingService,
+      vectorClockService: vectorClockService,
+      journalDb: journalDb,
+      documentsDirectory: documentsDirectory,
+      userActivityService: userActivityService,
+      repository: repository,
+      messageSender: messageSender,
+      processor: processor,
+      activityGate: activityGate,
+      ownsActivityGate: ownsActivityGate,
+      sequenceLogService: sequenceLogService,
+      saveJsonHandler: saveJsonHandler,
+      postDrainSettle: postDrainSettle,
+    );
+  }
+
+  setUp(() async {
     syncDatabase = MockSyncDatabase();
     loggingService = MockDomainLogger();
     repository = MockOutboxRepository();
@@ -359,15 +387,11 @@ void main() {
     documentsDirectory = Directory.systemTemp.createTempSync(
       'outbox_service_test_',
     );
-    hadDirectoryRegistered = getIt.isRegistered<Directory>();
-    if (hadDirectoryRegistered) {
-      previousDirectory = getIt<Directory>();
-      getIt.unregister<Directory>();
-    } else {
-      previousDirectory = null;
-    }
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<Directory>(documentsDirectory);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<Directory>(documentsDirectory);
+      },
+    );
 
     when(
       () => processor.processQueue(),
@@ -416,16 +440,7 @@ void main() {
       () => userActivityService.activityStream,
     ).thenAnswer((_) => const Stream<DateTime>.empty());
 
-    service = TestableOutboxService(
-      syncDatabase: syncDatabase,
-      loggingService: loggingService,
-      vectorClockService: vectorClockService,
-      journalDb: journalDb,
-      documentsDirectory: documentsDirectory,
-      userActivityService: userActivityService,
-      repository: repository,
-      messageSender: messageSender,
-      processor: processor,
+    service = buildService(
       activityGate: createGate(),
       ownsActivityGate: false,
     );
@@ -436,12 +451,7 @@ void main() {
     if (documentsDirectory.existsSync()) {
       documentsDirectory.deleteSync(recursive: true);
     }
-    if (getIt.isRegistered<Directory>()) {
-      getIt.unregister<Directory>();
-    }
-    if (hadDirectoryRegistered && previousDirectory != null) {
-      getIt.registerSingleton<Directory>(previousDirectory!);
-    }
+    await tearDownTestGetIt();
   });
 
   test('enqueueMessage logs SyncEntityDefinition', () async {
@@ -621,16 +631,7 @@ void main() {
     when(failingGate.waitUntilIdle).thenAnswer((_) async {});
     when(failingGate.dispose).thenAnswer((_) async {});
 
-    final failingService = TestableOutboxService(
-      syncDatabase: syncDatabase,
-      loggingService: loggingService,
-      vectorClockService: vectorClockService,
-      journalDb: journalDb,
-      documentsDirectory: documentsDirectory,
-      userActivityService: userActivityService,
-      repository: repository,
-      messageSender: messageSender,
-      processor: processor,
+    final failingService = buildService(
       activityGate: failingGate,
       ownsActivityGate: false,
       saveJsonHandler: (_, _) => Future.error(Exception('disk full')),
@@ -740,16 +741,7 @@ void main() {
         ..parent.createSync(recursive: true)
         ..writeAsStringSync(jsonEncode(notification.toJson()));
 
-      final svc = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final svc = buildService(
         sequenceLogService: sequenceLog,
       );
 
@@ -969,17 +961,7 @@ void main() {
           return 1;
         });
 
-        final testService = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
-        );
+        final testService = buildService();
 
         final sampleDate = DateTime.utc(2024);
         final metadata = Metadata(
@@ -1059,17 +1041,7 @@ void main() {
         },
       );
 
-      final testService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-      );
+      final testService = buildService();
 
       final sampleDate = DateTime.utc(2024);
       final metadata = Metadata(
@@ -1135,17 +1107,7 @@ void main() {
         },
       );
 
-      final testService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-      );
+      final testService = buildService();
 
       final now = DateTime.utc(2024);
       final link = EntryLink.basic(
@@ -1184,17 +1146,7 @@ void main() {
         },
       );
 
-      final testService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-      );
+      final testService = buildService();
 
       await testService.enqueueMessage(
         const SyncMessage.aiConfigDelete(id: 'cfg-1'),
@@ -1218,17 +1170,7 @@ void main() {
         },
       );
 
-      final testService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-      );
+      final testService = buildService();
 
       final now = DateTime.utc(2024);
       const linkVc = VectorClock({'hostA': 3});
@@ -1315,17 +1257,7 @@ void main() {
           return 1;
         });
 
-        final testService = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
-        );
+        final testService = buildService();
 
         final metadata = Metadata(
           id: 'entry-id',
@@ -1440,17 +1372,7 @@ void main() {
           return 1;
         });
 
-        final testService = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
-        );
+        final testService = buildService();
 
         final metadata = Metadata(
           id: 'entry-id',
@@ -1551,17 +1473,7 @@ void main() {
           return 1;
         });
 
-        final testService = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
-        );
+        final testService = buildService();
 
         // Setup: DB returns entry with latest VC (7)
         final metadata = Metadata(
@@ -1674,17 +1586,7 @@ void main() {
         return 1;
       });
 
-      final testService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
-      );
+      final testService = buildService();
 
       final newLink = EntryLink.basic(
         id: 'link-id',
@@ -1784,16 +1686,7 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      final testService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final testService = buildService(
         sequenceLogService: mockSequenceService,
       );
 
@@ -1886,16 +1779,7 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      final testService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final testService = buildService(
         sequenceLogService: mockSequenceService,
       );
 
@@ -1951,17 +1835,7 @@ void main() {
           () => syncDatabase.addOutboxItem(any()),
         ).thenAnswer((_) async => 2);
 
-        final testService = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
-        );
+        final testService = buildService();
 
         final metadata = Metadata(
           id: 'entry-id',
@@ -2050,17 +1924,7 @@ void main() {
           return Future<int>.value(2);
         });
 
-        final testService = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
-        );
+        final testService = buildService();
 
         final journalEntity = JournalEntity.journalEntry(
           meta: Metadata(
@@ -2155,16 +2019,7 @@ void main() {
           ),
         ).thenThrow(StateError('sequence log gone'));
 
-        final testService = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
+        final testService = buildService(
           sequenceLogService: sequenceLog,
         );
 
@@ -2234,16 +2089,7 @@ void main() {
           ),
         ).thenThrow(StateError('sequence log gone'));
 
-        final testService = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
+        final testService = buildService(
           sequenceLogService: sequenceLog,
         );
 
@@ -2336,17 +2182,7 @@ void main() {
           return Future<int>.value(2);
         });
 
-        final testService = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
-        );
+        final testService = buildService();
 
         final newLink = EntryLink.basic(
           id: 'link-id',
@@ -2436,16 +2272,7 @@ void main() {
           ),
         ).thenThrow(StateError('sequence log gone'));
 
-        final testService = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
+        final testService = buildService(
           sequenceLogService: sequenceLog,
         );
 
@@ -2513,17 +2340,7 @@ void main() {
           () => syncDatabase.addOutboxItem(any()),
         ).thenAnswer((_) async => 2);
 
-        final testService = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
-        );
+        final testService = buildService();
 
         final newLink = EntryLink.basic(
           id: 'link-id',
@@ -2611,16 +2428,7 @@ void main() {
 
       final gate = createGate();
 
-      final svc = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final svc = buildService(
         activityGate: gate,
       );
 
@@ -2644,16 +2452,7 @@ void main() {
 
       final gate = createGate();
 
-      final svc = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final svc = buildService(
         activityGate: gate,
       );
 
@@ -2677,16 +2476,7 @@ void main() {
 
       final gate = createGate();
 
-      final svc = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final svc = buildService(
         activityGate: gate,
       );
 
@@ -2705,16 +2495,7 @@ void main() {
 
       final gate = createGate();
 
-      final svc = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final svc = buildService(
         activityGate: gate,
       );
 
@@ -2765,16 +2546,7 @@ void main() {
 
         final gate = createGate();
 
-        final svc = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
+        final svc = buildService(
           activityGate: gate,
         );
 
@@ -2865,16 +2637,7 @@ void main() {
       when(() => client.onLoginStateChanged).thenReturn(cached);
       when(matrixService.isLoggedIn).thenReturn(false);
 
-      final svc = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final svc = buildService(
         activityGate: gate,
         ownsActivityGate: false,
       );
@@ -3092,16 +2855,7 @@ void main() {
       ).thenAnswer((_) async => true);
       final gate = createGate(canProcess: false);
 
-      final svc = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final svc = buildService(
         activityGate: gate,
         ownsActivityGate: false,
       );
@@ -3134,16 +2888,7 @@ void main() {
         return OutboxProcessingResult.none;
       });
 
-      final svc = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final svc = buildService(
         activityGate: gate,
         ownsActivityGate: false,
       );
@@ -3176,16 +2921,7 @@ void main() {
         return OutboxProcessingResult.none;
       });
 
-      final svc = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final svc = buildService(
         activityGate: gate,
         ownsActivityGate: false,
       );
@@ -3217,16 +2953,7 @@ void main() {
             return OutboxProcessingResult.none;
           });
 
-          final svc = TestableOutboxService(
-            syncDatabase: syncDatabase,
-            loggingService: loggingService,
-            vectorClockService: vectorClockService,
-            journalDb: journalDb,
-            documentsDirectory: documentsDirectory,
-            userActivityService: userActivityService,
-            repository: repository,
-            messageSender: messageSender,
-            processor: processor,
+          final svc = buildService(
             activityGate: gate,
             ownsActivityGate: false,
             postDrainSettle: const Duration(milliseconds: 50),
@@ -3268,16 +2995,7 @@ void main() {
         return OutboxProcessingResult.schedule(delay);
       });
 
-      final svc = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final svc = buildService(
         activityGate: gate,
         ownsActivityGate: false,
       );
@@ -3323,16 +3041,7 @@ void main() {
       final gate = createGate();
 
       // Custom testable service to capture enqueueNextSendRequest calls
-      final svc = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final svc = buildService(
         activityGate: gate,
         ownsActivityGate: false,
       );
@@ -6238,16 +5947,7 @@ void main() {
     });
 
     test('SyncAgentEntity enqueues fallback when saveJson fails', () async {
-      final failingService = TestableOutboxService(
-        syncDatabase: syncDatabase,
-        loggingService: loggingService,
-        vectorClockService: vectorClockService,
-        journalDb: journalDb,
-        documentsDirectory: documentsDirectory,
-        userActivityService: userActivityService,
-        repository: repository,
-        messageSender: messageSender,
-        processor: processor,
+      final failingService = buildService(
         activityGate: createGate(),
         ownsActivityGate: false,
         saveJsonHandler: (_, _) => Future.error(Exception('disk full')),
@@ -6444,16 +6144,7 @@ void main() {
             ),
           ).thenAnswer((_) async => 42);
 
-          final svc = TestableOutboxService(
-            syncDatabase: syncDatabase,
-            loggingService: loggingService,
-            vectorClockService: vectorClockService,
-            journalDb: journalDb,
-            documentsDirectory: documentsDirectory,
-            userActivityService: userActivityService,
-            repository: repository,
-            messageSender: messageSender,
-            processor: processor,
+          final svc = buildService(
             activityGate: createGate(),
             ownsActivityGate: false,
           );
@@ -6522,16 +6213,7 @@ void main() {
             return 0;
           });
 
-          final svc = TestableOutboxService(
-            syncDatabase: syncDatabase,
-            loggingService: loggingService,
-            vectorClockService: vectorClockService,
-            journalDb: journalDb,
-            documentsDirectory: documentsDirectory,
-            userActivityService: userActivityService,
-            repository: repository,
-            messageSender: messageSender,
-            processor: processor,
+          final svc = buildService(
             activityGate: createGate(),
             ownsActivityGate: false,
           );
@@ -6589,16 +6271,7 @@ void main() {
             ),
           ).thenAnswer((_) async => 0);
 
-          final svc = TestableOutboxService(
-            syncDatabase: syncDatabase,
-            loggingService: loggingService,
-            vectorClockService: vectorClockService,
-            journalDb: journalDb,
-            documentsDirectory: documentsDirectory,
-            userActivityService: userActivityService,
-            repository: repository,
-            messageSender: messageSender,
-            processor: processor,
+          final svc = buildService(
             activityGate: createGate(),
             ownsActivityGate: false,
           );
@@ -6645,16 +6318,7 @@ void main() {
             ),
           ).thenAnswer((_) async => throw StateError('db gone'));
 
-          final svc = TestableOutboxService(
-            syncDatabase: syncDatabase,
-            loggingService: loggingService,
-            vectorClockService: vectorClockService,
-            journalDb: journalDb,
-            documentsDirectory: documentsDirectory,
-            userActivityService: userActivityService,
-            repository: repository,
-            messageSender: messageSender,
-            processor: processor,
+          final svc = buildService(
             activityGate: createGate(),
             ownsActivityGate: false,
           );
@@ -6693,16 +6357,7 @@ void main() {
             ),
           ).thenAnswer((_) async => 0);
 
-          final svc = TestableOutboxService(
-            syncDatabase: syncDatabase,
-            loggingService: loggingService,
-            vectorClockService: vectorClockService,
-            journalDb: journalDb,
-            documentsDirectory: documentsDirectory,
-            userActivityService: userActivityService,
-            repository: repository,
-            messageSender: messageSender,
-            processor: processor,
+          final svc = buildService(
             activityGate: createGate(),
             ownsActivityGate: false,
           );
@@ -6940,16 +6595,7 @@ void main() {
           return OutboxProcessingResult.none;
         });
 
-        final svc = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
+        final svc = buildService(
           activityGate: gate,
           ownsActivityGate: false,
           postDrainSettle: Duration.zero,
@@ -7005,16 +6651,7 @@ void main() {
           return OutboxProcessingResult.none;
         });
 
-        final svc = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
+        final svc = buildService(
           activityGate: gate,
           ownsActivityGate: false,
           postDrainSettle: Duration.zero,
@@ -7338,16 +6975,7 @@ void main() {
           ..parent.createSync(recursive: true)
           ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
 
-        final svc = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
+        final svc = buildService(
           activityGate: createGate(),
           ownsActivityGate: false,
           sequenceLogService: sequenceLog,
@@ -7424,16 +7052,7 @@ void main() {
           ..parent.createSync(recursive: true)
           ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
 
-        final svc = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
+        final svc = buildService(
           activityGate: createGate(),
           ownsActivityGate: false,
           sequenceLogService: sequenceLog,
@@ -7495,16 +7114,7 @@ void main() {
           ..parent.createSync(recursive: true)
           ..writeAsStringSync(jsonEncode(journalEntity.toJson()));
 
-        final svc = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
+        final svc = buildService(
           activityGate: createGate(),
           ownsActivityGate: false,
           sequenceLogService: sequenceLog,
@@ -7557,16 +7167,7 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        final svc = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
+        final svc = buildService(
           activityGate: createGate(),
           ownsActivityGate: false,
           sequenceLogService: sequenceLog,
@@ -7643,16 +7244,7 @@ void main() {
           vectorClock: currentVc,
         );
 
-        final svc = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
+        final svc = buildService(
           activityGate: createGate(),
           ownsActivityGate: false,
           sequenceLogService: sequenceLog,
@@ -7714,16 +7306,7 @@ void main() {
           vectorClock: currentVc,
         );
 
-        final svc = TestableOutboxService(
-          syncDatabase: syncDatabase,
-          loggingService: loggingService,
-          vectorClockService: vectorClockService,
-          journalDb: journalDb,
-          documentsDirectory: documentsDirectory,
-          userActivityService: userActivityService,
-          repository: repository,
-          messageSender: messageSender,
-          processor: processor,
+        final svc = buildService(
           activityGate: createGate(),
           ownsActivityGate: false,
           sequenceLogService: sequenceLog,
