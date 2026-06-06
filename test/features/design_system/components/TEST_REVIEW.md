@@ -158,7 +158,7 @@ The only near-candidate is:
 
 - [x] **[HIGH]** `grouped_card_row_surface.dart` (96 lines, 0 tests) — `selected` → `selectedColor`, `_hovered` → `hoverColor`, `topOverlap`/`bottomOverlap` Positioned geometry, `onHoverChanged` callback, and the branch where `backgroundColor` is `null` (idle unselected). **RESOLVED:** covered by the new grouped_card_row_surface_test (see above).
 - [x] **[HIGH]** `design_system_grouped_list.dart` (39 lines, 0 tests) — token background color, border, corner radius, and `ClipRRect` clipping behavior. **RESOLVED:** covered by the new design_system_grouped_list_test (see above).
-- [ ] **[MED]** `design_system_list_palette.dart` (23 lines, 0 tests) — `activatedFill` return value and `activatedFillAlpha` constant.
+- [x] **[MED]** `design_system_list_palette.dart` (23 lines, 0 tests) — `activatedFill` return value and `activatedFillAlpha` constant. **RESOLVED:** covered by the new `design_system_list_palette_test.dart`.
 - [ ] **[MED]** `design_system_button.dart` — `secondary` and `ghost` variants have zero coverage. Danger-hover state not tested.
 - [ ] **[MED]** `design_system_time_calendar_picker.dart` — `_updateVisibleMonth` method (lines 213–218) called when `initialSelectedDate` changes externally via `didUpdateWidget` is not tested. `_CalendarMaterialCard` surface token and `_MonthButton` selected-state color also lack explicit tests.
 - [ ] **[MED]** `design_system_checkbox.dart` — `_CheckboxGlyphPainter` checkmark geometry (draw commands) not validated; the `checked` glyph-specific branch (`value == true`) differs from the indeterminate branch (`value == null`) in paint commands but tests only check `customPaint.painter isNotNull`.
