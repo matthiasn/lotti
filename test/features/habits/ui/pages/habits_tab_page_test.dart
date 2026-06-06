@@ -16,38 +16,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
-
-class MockHabitsController extends HabitsController {
-  MockHabitsController(this._state);
-
-  final HabitsState _state;
-  bool setTimeSpanCalled = false;
-  int? lastTimeSpan;
-
-  @override
-  HabitsState build() => _state;
-
-  @override
-  void setDisplayFilter(HabitDisplayFilter? displayFilter) {}
-
-  @override
-  void toggleShowSearch() {}
-
-  @override
-  void toggleShowTimeSpan() {}
-
-  @override
-  void toggleSelectedCategoryIds(String categoryId) {}
-
-  @override
-  void toggleZeroBased() {}
-
-  @override
-  Future<void> setTimeSpan(int timeSpanDays) async {
-    setTimeSpanCalled = true;
-    lastTimeSpan = timeSpanDays;
-  }
-}
+import '../../test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -120,7 +89,7 @@ void main() {
         ProviderScope(
           overrides: [
             habitsControllerProvider.overrideWith(
-              () => MockHabitsController(testState),
+              () => FakeHabitsController(testState),
             ),
           ],
           child: makeTestableWidgetWithScaffold(
@@ -172,7 +141,7 @@ void main() {
           ProviderScope(
             overrides: [
               habitsControllerProvider.overrideWith(
-                () => MockHabitsController(testState),
+                () => FakeHabitsController(testState),
               ),
             ],
             child: makeTestableWidgetWithScaffold(
@@ -205,7 +174,7 @@ void main() {
           ProviderScope(
             overrides: [
               habitsControllerProvider.overrideWith(
-                () => MockHabitsController(testState),
+                () => FakeHabitsController(testState),
               ),
             ],
             child: makeTestableWidgetWithScaffold(
@@ -237,7 +206,7 @@ void main() {
           ProviderScope(
             overrides: [
               habitsControllerProvider.overrideWith(
-                () => MockHabitsController(testState),
+                () => FakeHabitsController(testState),
               ),
             ],
             child: makeTestableWidgetWithScaffold(
@@ -267,7 +236,7 @@ void main() {
         ProviderScope(
           overrides: [
             habitsControllerProvider.overrideWith(
-              () => MockHabitsController(testState),
+              () => FakeHabitsController(testState),
             ),
           ],
           child: makeTestableWidgetWithScaffold(
@@ -296,7 +265,7 @@ void main() {
           ProviderScope(
             overrides: [
               habitsControllerProvider.overrideWith(
-                () => MockHabitsController(testState),
+                () => FakeHabitsController(testState),
               ),
             ],
             child: makeTestableWidgetWithScaffold(
@@ -330,7 +299,7 @@ void main() {
           ProviderScope(
             overrides: [
               habitsControllerProvider.overrideWith(
-                () => MockHabitsController(testState),
+                () => FakeHabitsController(testState),
               ),
             ],
             child: makeTestableWidgetWithScaffold(
