@@ -2,20 +2,20 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
-  late GetIt getIt;
   late MockOutboxService mockOutboxService;
   final fixedDate = DateTime(2024, 3, 15, 12);
 
@@ -46,20 +46,17 @@ void main() {
         status: SyncEntryStatus.initial,
       ),
     );
-
-    // Set up GetIt
-    getIt = GetIt.instance;
   });
 
-  setUp(() {
+  setUp(() async {
     // Set up a fresh mock for each test
     mockOutboxService = MockOutboxService();
 
-    // Register the mock with GetIt
-    if (getIt.isRegistered<OutboxService>()) {
-      getIt.unregister<OutboxService>();
-    }
-    getIt.registerSingleton<OutboxService>(mockOutboxService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<OutboxService>(mockOutboxService);
+      },
+    );
 
     // Set up default behavior
     when(
@@ -67,12 +64,7 @@ void main() {
     ).thenAnswer((_) async {});
   });
 
-  tearDown(() {
-    // Clear GetIt registrations
-    if (getIt.isRegistered<OutboxService>()) {
-      getIt.unregister<OutboxService>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   group('AiConfigRepository with mocks', () {
     late MockAiConfigDb mockDb;
@@ -306,20 +298,7 @@ void main() {
     late AiConfigRepository repository;
 
     setUp(() async {
-      // Set up a fresh mock for each test
-      mockOutboxService = MockOutboxService();
-
-      // Register the mock with GetIt
-      if (getIt.isRegistered<OutboxService>()) {
-        getIt.unregister<OutboxService>();
-      }
-      getIt.registerSingleton<OutboxService>(mockOutboxService);
-
-      // Set up default behavior
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
-
+      // The file-level setUp already registered a fresh MockOutboxService.
       db = AiConfigDb(inMemoryDatabase: true);
       repository = AiConfigRepository(db);
     });
@@ -830,17 +809,13 @@ void main() {
         ),
       ).thenReturn(null);
 
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt.unregister<DomainLogger>();
-      }
-      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+      getIt
+        ..unregister<DomainLogger>()
+        ..registerSingleton<DomainLogger>(mockDomainLogger);
     });
 
     tearDown(() async {
       await repository.close();
-      if (getIt.isRegistered<DomainLogger>()) {
-        getIt.unregister<DomainLogger>();
-      }
     });
 
     test(
@@ -1272,11 +1247,10 @@ void main() {
       mockOutboxService = MockOutboxService();
       repository = AiConfigRepository(mockDb);
 
-      // Register mock services
-      if (getIt.isRegistered<OutboxService>()) {
-        getIt.unregister<OutboxService>();
-      }
-      getIt.registerSingleton<OutboxService>(mockOutboxService);
+      // Swap in the group-local mock for the file-level registration.
+      getIt
+        ..unregister<OutboxService>()
+        ..registerSingleton<OutboxService>(mockOutboxService);
 
       // Setup default mocks
       when(
@@ -1309,9 +1283,6 @@ void main() {
 
     tearDown(() async {
       await repository.close();
-      if (getIt.isRegistered<OutboxService>()) {
-        getIt.unregister<OutboxService>();
-      }
     });
 
     test('should delete provider and all associated models', () async {
@@ -1737,14 +1708,12 @@ void main() {
     late MockOutboxService mockOutboxServiceInteg;
 
     setUp(() async {
-      // Set up a fresh mock for each test
+      // Set up a fresh mock for each test and swap it in for the
+      // file-level registration.
       mockOutboxServiceInteg = MockOutboxService();
-
-      // Register the mock with GetIt
-      if (getIt.isRegistered<OutboxService>()) {
-        getIt.unregister<OutboxService>();
-      }
-      getIt.registerSingleton<OutboxService>(mockOutboxServiceInteg);
+      getIt
+        ..unregister<OutboxService>()
+        ..registerSingleton<OutboxService>(mockOutboxServiceInteg);
 
       // Set up default behavior
       when(
@@ -1757,11 +1726,6 @@ void main() {
 
     tearDown(() async {
       await db.close();
-
-      // Clean up GetIt registrations
-      if (getIt.isRegistered<OutboxService>()) {
-        getIt.unregister<OutboxService>();
-      }
     });
 
     test('should store and retrieve multiple config types', () async {

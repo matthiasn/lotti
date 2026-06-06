@@ -3,16 +3,17 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 class FakeRequest extends Fake implements http.Request {}
 
@@ -1092,15 +1093,14 @@ data: [DONE]
       test('should throw after exceeding the parse error threshold', () async {
         // Arrange - register a logger so the threshold branch also logs.
         final mockDomainLogger = MockDomainLogger();
-        if (GetIt.instance.isRegistered<DomainLogger>()) {
-          GetIt.instance.unregister<DomainLogger>();
-        }
-        GetIt.instance.registerSingleton<DomainLogger>(mockDomainLogger);
-        addTearDown(() {
-          if (GetIt.instance.isRegistered<DomainLogger>()) {
-            GetIt.instance.unregister<DomainLogger>();
-          }
-        });
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt
+              ..unregister<DomainLogger>()
+              ..registerSingleton<DomainLogger>(mockDomainLogger);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
         when(
           () => mockDomainLogger.error(
             any<LogDomain>(),
@@ -1732,19 +1732,18 @@ data: not valid json 5
       const apiKey = 'test-api-key';
       late MockDomainLogger mockDomainLogger;
 
-      setUp(() {
+      setUp(() async {
         mockDomainLogger = MockDomainLogger();
-        if (GetIt.instance.isRegistered<DomainLogger>()) {
-          GetIt.instance.unregister<DomainLogger>();
-        }
-        GetIt.instance.registerSingleton<DomainLogger>(mockDomainLogger);
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt
+              ..unregister<DomainLogger>()
+              ..registerSingleton<DomainLogger>(mockDomainLogger);
+          },
+        );
       });
 
-      tearDown(() {
-        if (GetIt.instance.isRegistered<DomainLogger>()) {
-          GetIt.instance.unregister<DomainLogger>();
-        }
-      });
+      tearDown(tearDownTestGetIt);
 
       test('should log exception on unexpected error', () async {
         // Arrange

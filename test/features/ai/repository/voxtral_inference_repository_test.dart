@@ -5,9 +5,9 @@ import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -15,6 +15,7 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_utils/retry_fake_time.dart';
+import '../../../widget_test_utils.dart';
 
 class FakeRequest extends Fake implements http.Request {}
 
@@ -966,20 +967,18 @@ data: [DONE]
       const audioBase64 = 'base64_audio_data';
       late MockDomainLogger mockDomainLogger;
 
-      setUp(() {
+      setUp(() async {
         mockDomainLogger = MockDomainLogger();
-        // Register LoggingService in GetIt
-        if (GetIt.instance.isRegistered<DomainLogger>()) {
-          GetIt.instance.unregister<DomainLogger>();
-        }
-        GetIt.instance.registerSingleton<DomainLogger>(mockDomainLogger);
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt
+              ..unregister<DomainLogger>()
+              ..registerSingleton<DomainLogger>(mockDomainLogger);
+          },
+        );
       });
 
-      tearDown(() {
-        if (GetIt.instance.isRegistered<DomainLogger>()) {
-          GetIt.instance.unregister<DomainLogger>();
-        }
-      });
+      tearDown(tearDownTestGetIt);
 
       test('should log exception when model is not available', () async {
         // Arrange

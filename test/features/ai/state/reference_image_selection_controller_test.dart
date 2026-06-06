@@ -14,6 +14,7 @@ import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 enum _GeneratedReferenceImageSlot {
   first,
@@ -196,14 +197,15 @@ void main() {
         _waitForLoaded(container, taskId);
 
     setUp(() async {
-      await getIt.reset();
-      getIt.allowReassignment = true;
-
       // Create a temp directory to simulate the documents directory
       mockDocumentsDirectory = Directory.systemTemp.createTempSync(
         'ref_image_selection_ctrl_test_',
       );
-      getIt.registerSingleton<Directory>(mockDocumentsDirectory);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<Directory>(mockDocumentsDirectory);
+        },
+      );
 
       mockJournalRepo = MockJournalRepository();
 
@@ -226,7 +228,7 @@ void main() {
 
     tearDown(() async {
       container.dispose();
-      await getIt.reset();
+      await tearDownTestGetIt();
       try {
         mockDocumentsDirectory.deleteSync(recursive: true);
       } catch (_) {
