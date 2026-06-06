@@ -4163,46 +4163,128 @@ void main() {
       await setup.tearDown();
     });
 
+    group('Filter Management - toggle membership contract', () {
+      // All five toggle methods share one contract: toggling a value flips
+      // its membership in the corresponding selection set. One spec per
+      // method drives both directions.
+      final toggleSpecs =
+          <
+            ({
+              String method,
+              bool tasksTab,
+              void Function(JournalPageController controller, String value)
+              toggle,
+              void Function(JournalPageController controller)? prepareAdd,
+              bool Function(JournalPageState state, String value) contains,
+              String addValue,
+              String removeValue,
+              bool removeByDoubleToggle,
+            })
+          >[
+            (
+              method: 'toggleSelectedTaskStatus',
+              tasksTab: true,
+              toggle: (c, v) => c.toggleSelectedTaskStatus(v),
+              prepareAdd: null,
+              contains: (s, v) => s.selectedTaskStatuses.contains(v),
+              addValue: 'BLOCKED',
+              // OPEN is in the default set, so a single toggle removes it.
+              removeValue: 'OPEN',
+              removeByDoubleToggle: false,
+            ),
+            (
+              method: 'toggleSelectedCategoryIds',
+              tasksTab: true,
+              toggle: (c, v) => c.toggleSelectedCategoryIds(v),
+              prepareAdd: null,
+              contains: (s, v) => s.selectedCategoryIds.contains(v),
+              addValue: 'cat1',
+              removeValue: 'cat1',
+              removeByDoubleToggle: true,
+            ),
+            (
+              method: 'toggleSelectedLabelId',
+              tasksTab: true,
+              toggle: (c, v) => c.toggleSelectedLabelId(v),
+              prepareAdd: null,
+              contains: (s, v) => s.selectedLabelIds.contains(v),
+              addValue: 'label-A',
+              removeValue: 'label-A',
+              removeByDoubleToggle: true,
+            ),
+            (
+              method: 'toggleSelectedPriority',
+              tasksTab: true,
+              toggle: (c, v) => c.toggleSelectedPriority(v),
+              prepareAdd: null,
+              contains: (s, v) => s.selectedPriorities.contains(v),
+              addValue: 'P0',
+              removeValue: 'P0',
+              removeByDoubleToggle: true,
+            ),
+            (
+              method: 'toggleSelectedEntryTypes',
+              tasksTab: false,
+              toggle: (c, v) => c.toggleSelectedEntryTypes(v),
+              // Task is in the default set; clear first so the add is observable.
+              prepareAdd: (c) => c.clearSelectedEntryTypes(),
+              contains: (s, v) => s.selectedEntryTypes.contains(v),
+              addValue: 'Task',
+              removeValue: 'Task',
+              removeByDoubleToggle: false,
+            ),
+          ];
+
+      for (final spec in toggleSpecs) {
+        test('${spec.method} adds ${spec.addValue} when not present', () {
+          fakeAsync((async) {
+            final controller = container.read(
+              journalPageControllerProvider(spec.tasksTab).notifier,
+            );
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            spec.prepareAdd?.call(controller);
+            spec.toggle(controller, spec.addValue);
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            final state = container.read(
+              journalPageControllerProvider(spec.tasksTab),
+            );
+            expect(spec.contains(state, spec.addValue), isTrue);
+          });
+        });
+
+        test('${spec.method} removes ${spec.removeValue} when present', () {
+          fakeAsync((async) {
+            final controller = container.read(
+              journalPageControllerProvider(spec.tasksTab).notifier,
+            );
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            if (spec.removeByDoubleToggle) {
+              spec.toggle(controller, spec.removeValue);
+            }
+            spec.toggle(controller, spec.removeValue);
+
+            async.elapse(const Duration(milliseconds: 50));
+            async.flushMicrotasks();
+
+            final state = container.read(
+              journalPageControllerProvider(spec.tasksTab),
+            );
+            expect(spec.contains(state, spec.removeValue), isFalse);
+          });
+        });
+      }
+    });
+
     group('Filter Management - Task Status', () {
-      test('toggleSelectedTaskStatus adds status when not present', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          controller.toggleSelectedTaskStatus('BLOCKED');
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.selectedTaskStatuses.contains('BLOCKED'), isTrue);
-        });
-      });
-
-      test('toggleSelectedTaskStatus removes status when present', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          // OPEN is in the default set
-          controller.toggleSelectedTaskStatus('OPEN');
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.selectedTaskStatuses.contains('OPEN'), isFalse);
-        });
-      });
-
       test('selectSingleTaskStatus sets only one status', () {
         fakeAsync((async) {
           final controller = container.read(
@@ -4265,46 +4347,6 @@ void main() {
     });
 
     group('Filter Management - Category', () {
-      test('toggleSelectedCategoryIds adds category when not present', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          controller.toggleSelectedCategoryIds('cat1');
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.selectedCategoryIds.contains('cat1'), isTrue);
-        });
-      });
-
-      test('toggleSelectedCategoryIds removes category when present', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          controller
-            ..toggleSelectedCategoryIds('cat1')
-            ..toggleSelectedCategoryIds('cat1');
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.selectedCategoryIds.contains('cat1'), isFalse);
-        });
-      });
-
       test('selectedAllCategories clears all selected categories', () {
         fakeAsync((async) {
           when(() => mockEntitiesCacheService.sortedCategories).thenReturn([
@@ -4346,46 +4388,6 @@ void main() {
     });
 
     group('Filter Management - Labels', () {
-      test('toggleSelectedLabelId adds label when not present', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(false).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          controller.toggleSelectedLabelId('label-A');
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(false));
-          expect(state.selectedLabelIds, equals({'label-A'}));
-        });
-      });
-
-      test('toggleSelectedLabelId removes label when present', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(false).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          controller
-            ..toggleSelectedLabelId('label-A')
-            ..toggleSelectedLabelId('label-A');
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(false));
-          expect(state.selectedLabelIds, isEmpty);
-        });
-      });
-
       test('clearSelectedLabelIds removes all label filters', () {
         fakeAsync((async) {
           final controller = container.read(
@@ -4414,46 +4416,6 @@ void main() {
     });
 
     group('Filter Management - Priority', () {
-      test('toggleSelectedPriority adds priority when not present', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          controller.toggleSelectedPriority('P0');
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.selectedPriorities, contains('P0'));
-        });
-      });
-
-      test('toggleSelectedPriority removes priority when present', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(true).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          controller
-            ..toggleSelectedPriority('P0')
-            ..toggleSelectedPriority('P0');
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(true));
-          expect(state.selectedPriorities.contains('P0'), isFalse);
-        });
-      });
-
       test('clearSelectedPriorities removes all priorities', () {
         fakeAsync((async) {
           final controller = container.read(
@@ -4478,48 +4440,6 @@ void main() {
     });
 
     group('Filter Management - Entry Types', () {
-      test('toggleSelectedEntryTypes adds type when not present', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(false).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          // First clear then add specific type
-          controller
-            ..clearSelectedEntryTypes()
-            ..toggleSelectedEntryTypes('Task');
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(false));
-          expect(state.selectedEntryTypes.contains('Task'), isTrue);
-        });
-      });
-
-      test('toggleSelectedEntryTypes removes type when present', () {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(false).notifier,
-          );
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          // Task is in the default set, remove it
-          controller.toggleSelectedEntryTypes('Task');
-
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
-
-          final state = container.read(journalPageControllerProvider(false));
-          expect(state.selectedEntryTypes.contains('Task'), isFalse);
-        });
-      });
-
       test('selectSingleEntryType sets only one type', () {
         fakeAsync((async) {
           final controller = container.read(
