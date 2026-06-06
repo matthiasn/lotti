@@ -430,6 +430,379 @@ Map<String, dynamic> _$DayPlanEntityToJson(DayPlanEntity instance) =>
       'runtimeType': instance.$type,
     };
 
+AttentionRequestEntity _$AttentionRequestEntityFromJson(
+  Map<String, dynamic> json,
+) => AttentionRequestEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  kind: $enumDecode(_$AttentionRequestKindEnumMap, json['kind']),
+  title: json['title'] as String,
+  categoryId: json['categoryId'] as String,
+  requestedMinutes: (json['requestedMinutes'] as num).toInt(),
+  impact: (json['impact'] as num).toInt(),
+  urgency: (json['urgency'] as num).toInt(),
+  energyFit: $enumDecode(_$AttentionEnergyFitEnumMap, json['energyFit']),
+  evidenceRefs: (json['evidenceRefs'] as List<dynamic>)
+      .map((e) => AttentionEvidenceRef.fromJson(e as Map<String, dynamic>))
+      .toList(),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  scopeKind:
+      $enumDecodeNullable(
+        _$AttentionClaimScopeKindEnumMap,
+        json['scopeKind'],
+      ) ??
+      AttentionClaimScopeKind.day,
+  status:
+      $enumDecodeNullable(_$AttentionRequestStatusEnumMap, json['status']) ??
+      AttentionRequestStatus.pending,
+  rangeStart: json['rangeStart'] == null
+      ? null
+      : DateTime.parse(json['rangeStart'] as String),
+  rangeEnd: json['rangeEnd'] == null
+      ? null
+      : DateTime.parse(json['rangeEnd'] as String),
+  earliestStart: json['earliestStart'] == null
+      ? null
+      : DateTime.parse(json['earliestStart'] as String),
+  latestEnd: json['latestEnd'] == null
+      ? null
+      : DateTime.parse(json['latestEnd'] as String),
+  deadline: json['deadline'] == null
+      ? null
+      : DateTime.parse(json['deadline'] as String),
+  nextReviewAt: json['nextReviewAt'] == null
+      ? null
+      : DateTime.parse(json['nextReviewAt'] as String),
+  targetId: json['targetId'] as String?,
+  targetKind: json['targetKind'] as String?,
+  cadence: json['cadence'] as String?,
+  rationale: json['rationale'] as String?,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$AttentionRequestEntityToJson(
+  AttentionRequestEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'kind': _$AttentionRequestKindEnumMap[instance.kind]!,
+  'title': instance.title,
+  'categoryId': instance.categoryId,
+  'requestedMinutes': instance.requestedMinutes,
+  'impact': instance.impact,
+  'urgency': instance.urgency,
+  'energyFit': _$AttentionEnergyFitEnumMap[instance.energyFit]!,
+  'evidenceRefs': instance.evidenceRefs,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'scopeKind': _$AttentionClaimScopeKindEnumMap[instance.scopeKind]!,
+  'status': _$AttentionRequestStatusEnumMap[instance.status]!,
+  'rangeStart': instance.rangeStart?.toIso8601String(),
+  'rangeEnd': instance.rangeEnd?.toIso8601String(),
+  'earliestStart': instance.earliestStart?.toIso8601String(),
+  'latestEnd': instance.latestEnd?.toIso8601String(),
+  'deadline': instance.deadline?.toIso8601String(),
+  'nextReviewAt': instance.nextReviewAt?.toIso8601String(),
+  'targetId': instance.targetId,
+  'targetKind': instance.targetKind,
+  'cadence': instance.cadence,
+  'rationale': instance.rationale,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$AttentionRequestKindEnumMap = {
+  AttentionRequestKind.task: 'task',
+  AttentionRequestKind.project: 'project',
+  AttentionRequestKind.projectPhase: 'projectPhase',
+  AttentionRequestKind.outcome: 'outcome',
+  AttentionRequestKind.maintenance: 'maintenance',
+};
+
+const _$AttentionEnergyFitEnumMap = {
+  AttentionEnergyFit.low: 'low',
+  AttentionEnergyFit.neutral: 'neutral',
+  AttentionEnergyFit.high: 'high',
+};
+
+const _$AttentionClaimScopeKindEnumMap = {
+  AttentionClaimScopeKind.day: 'day',
+  AttentionClaimScopeKind.dateRange: 'dateRange',
+  AttentionClaimScopeKind.deadline: 'deadline',
+  AttentionClaimScopeKind.recurrence: 'recurrence',
+};
+
+const _$AttentionRequestStatusEnumMap = {
+  AttentionRequestStatus.pending: 'pending',
+  AttentionRequestStatus.withdrawn: 'withdrawn',
+  AttentionRequestStatus.awarded: 'awarded',
+  AttentionRequestStatus.rejected: 'rejected',
+};
+
+AttentionClaimDispositionEntity _$AttentionClaimDispositionEntityFromJson(
+  Map<String, dynamic> json,
+) => AttentionClaimDispositionEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  requestId: json['requestId'] as String,
+  status: $enumDecode(_$AttentionClaimStatusEnumMap, json['status']),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  awardId: json['awardId'] as String?,
+  planId: json['planId'] as String?,
+  changeSetId: json['changeSetId'] as String?,
+  reason: json['reason'] as String?,
+  nextReviewAt: json['nextReviewAt'] == null
+      ? null
+      : DateTime.parse(json['nextReviewAt'] as String),
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$AttentionClaimDispositionEntityToJson(
+  AttentionClaimDispositionEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'requestId': instance.requestId,
+  'status': _$AttentionClaimStatusEnumMap[instance.status]!,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'awardId': instance.awardId,
+  'planId': instance.planId,
+  'changeSetId': instance.changeSetId,
+  'reason': instance.reason,
+  'nextReviewAt': instance.nextReviewAt?.toIso8601String(),
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$AttentionClaimStatusEnumMap = {
+  AttentionClaimStatus.open: 'open',
+  AttentionClaimStatus.proposed: 'proposed',
+  AttentionClaimStatus.satisfied: 'satisfied',
+  AttentionClaimStatus.partiallySatisfied: 'partiallySatisfied',
+  AttentionClaimStatus.declined: 'declined',
+  AttentionClaimStatus.deferred: 'deferred',
+  AttentionClaimStatus.superseded: 'superseded',
+  AttentionClaimStatus.expired: 'expired',
+  AttentionClaimStatus.withdrawn: 'withdrawn',
+};
+
+AttentionAwardEntity _$AttentionAwardEntityFromJson(
+  Map<String, dynamic> json,
+) => AttentionAwardEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  requestId: json['requestId'] as String,
+  dayId: json['dayId'] as String,
+  planId: json['planId'] as String,
+  blockId: json['blockId'] as String,
+  categoryId: json['categoryId'] as String,
+  title: json['title'] as String,
+  startTime: DateTime.parse(json['startTime'] as String),
+  endTime: DateTime.parse(json['endTime'] as String),
+  rank: (json['rank'] as num).toInt(),
+  utilityScore: (json['utilityScore'] as num).toInt(),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  status:
+      $enumDecodeNullable(_$AttentionAwardStatusEnumMap, json['status']) ??
+      AttentionAwardStatus.proposed,
+  taskId: json['taskId'] as String?,
+  rationale: json['rationale'] as String?,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$AttentionAwardEntityToJson(
+  AttentionAwardEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'requestId': instance.requestId,
+  'dayId': instance.dayId,
+  'planId': instance.planId,
+  'blockId': instance.blockId,
+  'categoryId': instance.categoryId,
+  'title': instance.title,
+  'startTime': instance.startTime.toIso8601String(),
+  'endTime': instance.endTime.toIso8601String(),
+  'rank': instance.rank,
+  'utilityScore': instance.utilityScore,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'status': _$AttentionAwardStatusEnumMap[instance.status]!,
+  'taskId': instance.taskId,
+  'rationale': instance.rationale,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$AttentionAwardStatusEnumMap = {
+  AttentionAwardStatus.proposed: 'proposed',
+  AttentionAwardStatus.accepted: 'accepted',
+  AttentionAwardStatus.rejected: 'rejected',
+  AttentionAwardStatus.superseded: 'superseded',
+};
+
+StandingAgreementEntity _$StandingAgreementEntityFromJson(
+  Map<String, dynamic> json,
+) => StandingAgreementEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  title: json['title'] as String,
+  scope: $enumDecode(_$StandingAgreementScopeEnumMap, json['scope']),
+  cadence: $enumDecode(_$StandingAgreementCadenceEnumMap, json['cadence']),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  status:
+      $enumDecodeNullable(_$StandingAgreementStatusEnumMap, json['status']) ??
+      StandingAgreementStatus.active,
+  enforcement:
+      $enumDecodeNullable(
+        _$StandingAgreementEnforcementEnumMap,
+        json['enforcement'],
+      ) ??
+      StandingAgreementEnforcement.target,
+  approvalMode:
+      $enumDecodeNullable(
+        _$StandingAgreementApprovalModeEnumMap,
+        json['approvalMode'],
+      ) ??
+      StandingAgreementApprovalMode.ask,
+  categoryId: json['categoryId'] as String?,
+  targetId: json['targetId'] as String?,
+  targetKind: json['targetKind'] as String?,
+  customScope: json['customScope'] as String?,
+  customCadence: json['customCadence'] as String?,
+  minCount: (json['minCount'] as num?)?.toInt(),
+  maxCount: (json['maxCount'] as num?)?.toInt(),
+  minMinutes: (json['minMinutes'] as num?)?.toInt(),
+  maxMinutes: (json['maxMinutes'] as num?)?.toInt(),
+  preferredSessionMinutes: (json['preferredSessionMinutes'] as num?)?.toInt(),
+  canPreempt: json['canPreempt'] as bool? ?? false,
+  priority: (json['priority'] as num?)?.toInt() ?? 0,
+  preemptibleCategoryIds:
+      (json['preemptibleCategoryIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  protectedCategoryIds:
+      (json['protectedCategoryIds'] as List<dynamic>?)
+          ?.map((e) => e as String)
+          .toList() ??
+      const [],
+  evidenceRefs:
+      (json['evidenceRefs'] as List<dynamic>?)
+          ?.map((e) => AttentionEvidenceRef.fromJson(e as Map<String, dynamic>))
+          .toList() ??
+      const [],
+  activeFrom: json['activeFrom'] == null
+      ? null
+      : DateTime.parse(json['activeFrom'] as String),
+  activeUntil: json['activeUntil'] == null
+      ? null
+      : DateTime.parse(json['activeUntil'] as String),
+  rationale: json['rationale'] as String?,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$StandingAgreementEntityToJson(
+  StandingAgreementEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'title': instance.title,
+  'scope': _$StandingAgreementScopeEnumMap[instance.scope]!,
+  'cadence': _$StandingAgreementCadenceEnumMap[instance.cadence]!,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'status': _$StandingAgreementStatusEnumMap[instance.status]!,
+  'enforcement': _$StandingAgreementEnforcementEnumMap[instance.enforcement]!,
+  'approvalMode':
+      _$StandingAgreementApprovalModeEnumMap[instance.approvalMode]!,
+  'categoryId': instance.categoryId,
+  'targetId': instance.targetId,
+  'targetKind': instance.targetKind,
+  'customScope': instance.customScope,
+  'customCadence': instance.customCadence,
+  'minCount': instance.minCount,
+  'maxCount': instance.maxCount,
+  'minMinutes': instance.minMinutes,
+  'maxMinutes': instance.maxMinutes,
+  'preferredSessionMinutes': instance.preferredSessionMinutes,
+  'canPreempt': instance.canPreempt,
+  'priority': instance.priority,
+  'preemptibleCategoryIds': instance.preemptibleCategoryIds,
+  'protectedCategoryIds': instance.protectedCategoryIds,
+  'evidenceRefs': instance.evidenceRefs,
+  'activeFrom': instance.activeFrom?.toIso8601String(),
+  'activeUntil': instance.activeUntil?.toIso8601String(),
+  'rationale': instance.rationale,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$StandingAgreementScopeEnumMap = {
+  StandingAgreementScope.fitness: 'fitness',
+  StandingAgreementScope.sleep: 'sleep',
+  StandingAgreementScope.paperwork: 'paperwork',
+  StandingAgreementScope.taskWork: 'taskWork',
+  StandingAgreementScope.projectWork: 'projectWork',
+  StandingAgreementScope.maintenance: 'maintenance',
+  StandingAgreementScope.finances: 'finances',
+  StandingAgreementScope.custom: 'custom',
+};
+
+const _$StandingAgreementCadenceEnumMap = {
+  StandingAgreementCadence.daily: 'daily',
+  StandingAgreementCadence.weekly: 'weekly',
+  StandingAgreementCadence.monthly: 'monthly',
+  StandingAgreementCadence.quarterly: 'quarterly',
+  StandingAgreementCadence.yearly: 'yearly',
+  StandingAgreementCadence.custom: 'custom',
+};
+
+const _$StandingAgreementStatusEnumMap = {
+  StandingAgreementStatus.active: 'active',
+  StandingAgreementStatus.paused: 'paused',
+  StandingAgreementStatus.retired: 'retired',
+};
+
+const _$StandingAgreementEnforcementEnumMap = {
+  StandingAgreementEnforcement.preference: 'preference',
+  StandingAgreementEnforcement.target: 'target',
+  StandingAgreementEnforcement.nonNegotiable: 'nonNegotiable',
+};
+
+const _$StandingAgreementApprovalModeEnumMap = {
+  StandingAgreementApprovalMode.autoAccept: 'autoAccept',
+  StandingAgreementApprovalMode.ask: 'ask',
+  StandingAgreementApprovalMode.reject: 'reject',
+};
+
 AgentTemplateEntity _$AgentTemplateEntityFromJson(Map<String, dynamic> json) =>
     AgentTemplateEntity(
       id: json['id'] as String,

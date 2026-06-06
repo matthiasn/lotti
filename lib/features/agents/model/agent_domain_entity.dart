@@ -2,6 +2,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
@@ -183,6 +184,128 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     @Default(0) int scheduledMinutes,
     DateTime? deletedAt,
   }) = DayPlanEntity;
+
+  /// Event-sourced bid for the user's scarce attention.
+  ///
+  /// [agentId] is the requesting agent. A planner reads pending requests and
+  /// emits proposal/disposition records; the request itself is immutable and
+  /// evidence-backed so decisions can be audited from the log.
+  const factory AgentDomainEntity.attentionRequest({
+    required String id,
+    required String agentId,
+    required AttentionRequestKind kind,
+    required String title,
+    required String categoryId,
+    required int requestedMinutes,
+    required int impact,
+    required int urgency,
+    required AttentionEnergyFit energyFit,
+    required List<AttentionEvidenceRef> evidenceRefs,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    @Default(AttentionClaimScopeKind.day) AttentionClaimScopeKind scopeKind,
+    @Default(AttentionRequestStatus.pending) AttentionRequestStatus status,
+    DateTime? rangeStart,
+    DateTime? rangeEnd,
+    DateTime? earliestStart,
+    DateTime? latestEnd,
+    DateTime? deadline,
+    DateTime? nextReviewAt,
+    String? targetId,
+    String? targetKind,
+    String? cadence,
+    String? rationale,
+    DateTime? deletedAt,
+  }) = AttentionRequestEntity;
+
+  /// Planner/user/system disposition for an attention claim.
+  ///
+  /// The original [AttentionRequestEntity] remains auditable. Disposition
+  /// records project the current lifecycle state without mutating away the
+  /// request's original rationale and evidence.
+  const factory AgentDomainEntity.attentionClaimDisposition({
+    required String id,
+    required String agentId,
+    required String requestId,
+    required AttentionClaimStatus status,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    String? awardId,
+    String? planId,
+    String? changeSetId,
+    String? reason,
+    DateTime? nextReviewAt,
+    DateTime? deletedAt,
+  }) = AttentionClaimDispositionEntity;
+
+  /// Planner award proposal for a concrete plan block.
+  ///
+  /// Awards are proposal records: they describe the block the planner would
+  /// add, but schedule mutation still flows through the existing ChangeSet
+  /// gate.
+  const factory AgentDomainEntity.attentionAward({
+    required String id,
+    required String agentId,
+    required String requestId,
+    required String dayId,
+    required String planId,
+    required String blockId,
+    required String categoryId,
+    required String title,
+    required DateTime startTime,
+    required DateTime endTime,
+    required int rank,
+    required int utilityScore,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+    @Default(AttentionAwardStatus.proposed) AttentionAwardStatus status,
+    String? taskId,
+    String? rationale,
+    DateTime? deletedAt,
+  }) = AttentionAwardEntity;
+
+  /// Durable policy/goal the planner must consider across planning windows.
+  ///
+  /// Standing agreements are not per-day claims. They represent user-approved
+  /// norms such as "exercise 3x/week", "protect sleep wind-down", or "cap
+  /// paperwork time". Specialist agents may use them to emit concrete
+  /// [AttentionRequestEntity] claims; the day-planner reads them directly when
+  /// weighing claims and deciding whether a proposal can be auto-accepted,
+  /// should ask the user, or must be rejected.
+  const factory AgentDomainEntity.standingAgreement({
+    required String id,
+    required String agentId,
+    required String title,
+    required StandingAgreementScope scope,
+    required StandingAgreementCadence cadence,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    @Default(StandingAgreementStatus.active) StandingAgreementStatus status,
+    @Default(StandingAgreementEnforcement.target)
+    StandingAgreementEnforcement enforcement,
+    @Default(StandingAgreementApprovalMode.ask)
+    StandingAgreementApprovalMode approvalMode,
+    String? categoryId,
+    String? targetId,
+    String? targetKind,
+    String? customScope,
+    String? customCadence,
+    int? minCount,
+    int? maxCount,
+    int? minMinutes,
+    int? maxMinutes,
+    int? preferredSessionMinutes,
+    @Default(false) bool canPreempt,
+    @Default(0) int priority,
+    @Default([]) List<String> preemptibleCategoryIds,
+    @Default([]) List<String> protectedCategoryIds,
+    @Default([]) List<AttentionEvidenceRef> evidenceRefs,
+    DateTime? activeFrom,
+    DateTime? activeUntil,
+    String? rationale,
+    DateTime? deletedAt,
+  }) = StandingAgreementEntity;
 
   /// Agent template — reusable blueprint for agent instances.
   ///

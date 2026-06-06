@@ -938,24 +938,33 @@ final class AgentReportHistoryFamily extends $Family
 
 /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
 ///
-/// Returns the `text` field from the payload content map, or `null` if the
-/// payload doesn't exist or has no text.
+/// Legacy payloads return their `text` field directly. v2 prompt records
+/// (ADR 0020) store only the prompt's non-derivable halves — the log block
+/// is reconstructed on demand from the synced event log via
+/// [WakePromptReconstructor]. Returns `null` if the payload doesn't exist
+/// or has no renderable text.
 
 @ProviderFor(agentMessagePayloadText)
 final agentMessagePayloadTextProvider = AgentMessagePayloadTextFamily._();
 
 /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
 ///
-/// Returns the `text` field from the payload content map, or `null` if the
-/// payload doesn't exist or has no text.
+/// Legacy payloads return their `text` field directly. v2 prompt records
+/// (ADR 0020) store only the prompt's non-derivable halves — the log block
+/// is reconstructed on demand from the synced event log via
+/// [WakePromptReconstructor]. Returns `null` if the payload doesn't exist
+/// or has no renderable text.
 
 final class AgentMessagePayloadTextProvider
     extends $FunctionalProvider<AsyncValue<String?>, String?, FutureOr<String?>>
     with $FutureModifier<String?>, $FutureProvider<String?> {
   /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
   ///
-  /// Returns the `text` field from the payload content map, or `null` if the
-  /// payload doesn't exist or has no text.
+  /// Legacy payloads return their `text` field directly. v2 prompt records
+  /// (ADR 0020) store only the prompt's non-derivable halves — the log block
+  /// is reconstructed on demand from the synced event log via
+  /// [WakePromptReconstructor]. Returns `null` if the payload doesn't exist
+  /// or has no renderable text.
   AgentMessagePayloadTextProvider._({
     required AgentMessagePayloadTextFamily super.from,
     required String super.argument,
@@ -1001,12 +1010,15 @@ final class AgentMessagePayloadTextProvider
 }
 
 String _$agentMessagePayloadTextHash() =>
-    r'95b9c1d028dbfc17b9b14b68057bf7f61a4e7fca';
+    r'ae23f8c5b96b2e1f76c8549c383dd502795441ff';
 
 /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
 ///
-/// Returns the `text` field from the payload content map, or `null` if the
-/// payload doesn't exist or has no text.
+/// Legacy payloads return their `text` field directly. v2 prompt records
+/// (ADR 0020) store only the prompt's non-derivable halves — the log block
+/// is reconstructed on demand from the synced event log via
+/// [WakePromptReconstructor]. Returns `null` if the payload doesn't exist
+/// or has no renderable text.
 
 final class AgentMessagePayloadTextFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<String?>, String> {
@@ -1021,8 +1033,11 @@ final class AgentMessagePayloadTextFamily extends $Family
 
   /// Loads the text content of an [AgentMessagePayloadEntity] by its ID.
   ///
-  /// Returns the `text` field from the payload content map, or `null` if the
-  /// payload doesn't exist or has no text.
+  /// Legacy payloads return their `text` field directly. v2 prompt records
+  /// (ADR 0020) store only the prompt's non-derivable halves — the log block
+  /// is reconstructed on demand from the synced event log via
+  /// [WakePromptReconstructor]. Returns `null` if the payload doesn't exist
+  /// or has no renderable text.
 
   AgentMessagePayloadTextProvider call(String payloadId) =>
       AgentMessagePayloadTextProvider._(argument: payloadId, from: this);

@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as model;
+import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -499,6 +500,129 @@ void main() {
       expect(companion.updatedAt, Value(updatedAt));
     });
 
+    test(
+      'toEntityCompanion writes attention request type and scope subtype',
+      () {
+        final entity = AgentDomainEntity.attentionRequest(
+          id: 'attention-request-001',
+          agentId: 'task-agent-001',
+          kind: AttentionRequestKind.task,
+          title: 'Prep demo',
+          categoryId: 'work',
+          requestedMinutes: 45,
+          impact: 4,
+          urgency: 5,
+          energyFit: AttentionEnergyFit.high,
+          evidenceRefs: const [
+            AttentionEvidenceRef(
+              kind: AttentionEvidenceKind.task,
+              id: 'task-001',
+            ),
+          ],
+          scopeKind: AttentionClaimScopeKind.deadline,
+          createdAt: createdAt,
+          vectorClock: null,
+        );
+
+        final companion = AgentDbConversions.toEntityCompanion(entity);
+
+        expect(companion.id, const Value('attention-request-001'));
+        expect(companion.type, const Value(AgentEntityTypes.attentionRequest));
+        expect(companion.subtype, const Value('deadline'));
+        expect(companion.createdAt, Value(createdAt));
+        expect(companion.updatedAt, Value(createdAt));
+      },
+    );
+
+    test(
+      'toEntityCompanion writes claim disposition type and request subtype',
+      () {
+        final entity = AgentDomainEntity.attentionClaimDisposition(
+          id: 'attention-disposition-001',
+          agentId: 'planner-agent-001',
+          requestId: 'attention-request-001',
+          status: AttentionClaimStatus.deferred,
+          planId: 'day_agent_plan:dayplan-2026-05-25',
+          changeSetId: 'changeset-001',
+          reason: 'Revisit tomorrow.',
+          nextReviewAt: DateTime(2026, 5, 24, 18),
+          createdAt: createdAt,
+          vectorClock: null,
+        );
+
+        final companion = AgentDbConversions.toEntityCompanion(entity);
+
+        expect(companion.id, const Value('attention-disposition-001'));
+        expect(
+          companion.type,
+          const Value(AgentEntityTypes.attentionClaimDisposition),
+        );
+        expect(companion.subtype, const Value('attention-request-001'));
+        expect(companion.createdAt, Value(createdAt));
+        expect(companion.updatedAt, Value(createdAt));
+      },
+    );
+
+    test('toEntityCompanion writes attention award type and day subtype', () {
+      final entity = AgentDomainEntity.attentionAward(
+        id: 'attention-award-001',
+        agentId: 'day-agent-001',
+        requestId: 'attention-request-001',
+        dayId: 'dayplan-2026-05-25',
+        planId: 'day_agent_plan:dayplan-2026-05-25',
+        blockId: 'attention_block:dayplan-2026-05-25:attention-request-001',
+        categoryId: 'work',
+        title: 'Prep demo',
+        startTime: DateTime(2026, 5, 25, 9),
+        endTime: DateTime(2026, 5, 25, 9, 45),
+        rank: 1,
+        utilityScore: 5125,
+        createdAt: createdAt,
+        vectorClock: null,
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      expect(companion.id, const Value('attention-award-001'));
+      expect(companion.type, const Value(AgentEntityTypes.attentionAward));
+      expect(companion.subtype, const Value('dayplan-2026-05-25'));
+      expect(companion.createdAt, Value(createdAt));
+      expect(companion.updatedAt, Value(createdAt));
+    });
+
+    test(
+      'toEntityCompanion writes standing agreement type and scope subtype',
+      () {
+        final entity = AgentDomainEntity.standingAgreement(
+          id: 'standing-agreement-001',
+          agentId: 'fitness-agent-001',
+          title: 'Exercise three times per week',
+          scope: StandingAgreementScope.fitness,
+          cadence: StandingAgreementCadence.weekly,
+          enforcement: StandingAgreementEnforcement.nonNegotiable,
+          approvalMode: StandingAgreementApprovalMode.autoAccept,
+          minCount: 3,
+          minMinutes: 135,
+          preferredSessionMinutes: 45,
+          priority: 80,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        );
+
+        final companion = AgentDbConversions.toEntityCompanion(entity);
+
+        expect(companion.id, const Value('standing-agreement-001'));
+        expect(
+          companion.type,
+          const Value(AgentEntityTypes.standingAgreement),
+        );
+        expect(companion.subtype, const Value('fitness'));
+        expect(companion.createdAt, Value(createdAt));
+        expect(companion.updatedAt, Value(updatedAt));
+      },
+    );
+
     test('toLinkCompanion writes capture reconcile link types', () {
       final captureLink = model.AgentLink.captureToParsedItem(
         id: 'link-capture-item',
@@ -540,6 +664,52 @@ void main() {
       expect(
         planCompanion.type,
         const Value(AgentLinkTypes.captureToPlan),
+      );
+    });
+
+    test('toLinkCompanion writes attention negotiation link types', () {
+      final evidenceLink = model.AgentLink.attentionRequestEvidence(
+        id: 'link-attention-evidence',
+        fromId: 'attention-request-001',
+        toId: 'task-001',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final requestLink = model.AgentLink.attentionAwardRequest(
+        id: 'link-attention-award-request',
+        fromId: 'attention-award-001',
+        toId: 'attention-request-001',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final planLink = model.AgentLink.attentionAwardPlan(
+        id: 'link-attention-award-plan',
+        fromId: 'attention-award-001',
+        toId: 'day_agent_plan:dayplan-2026-05-25',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+
+      final evidenceCompanion = AgentDbConversions.toLinkCompanion(
+        evidenceLink,
+      );
+      final requestCompanion = AgentDbConversions.toLinkCompanion(requestLink);
+      final planCompanion = AgentDbConversions.toLinkCompanion(planLink);
+
+      expect(
+        evidenceCompanion.type,
+        const Value(AgentLinkTypes.attentionRequestEvidence),
+      );
+      expect(
+        requestCompanion.type,
+        const Value(AgentLinkTypes.attentionAwardRequest),
+      );
+      expect(
+        planCompanion.type,
+        const Value(AgentLinkTypes.attentionAwardPlan),
       );
     });
 

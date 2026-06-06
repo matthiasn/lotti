@@ -226,7 +226,7 @@ final class ProjectAgentWorkflowProvider
 }
 
 String _$projectAgentWorkflowHash() =>
-    r'514d729a91fdf599b4e7fc23e7473e1cc3a3c26b';
+    r'14f9bb2c5238508def93d9e1380bb619604bf625';
 
 /// The Daily OS day-agent workflow with all dependencies resolved.
 
@@ -277,4 +277,4 @@ final class DayAgentWorkflowProvider
   }
 }
 
-String _$dayAgentWorkflowHash() => r'd76ed33cd01aae7015f5d970c1275557260f3a1f';
+String _$dayAgentWorkflowHash() => r'f919071ee6cb4ce5477c5abc8824dadf92daf390';

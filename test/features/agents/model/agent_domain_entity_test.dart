@@ -5,6 +5,7 @@ import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -561,6 +562,161 @@ void main() {
         expect(plan.toJson()['runtimeType'], equals('dayPlan'));
         expect(plan.data.plannedBlocks.single.reason, isNotEmpty);
         expect(plan.energyBands.single.level, DayAgentEnergyLevel.high);
+      });
+
+      test('AttentionRequestEntity roundtrips bounded bid fields', () {
+        final original = AgentDomainEntity.attentionRequest(
+          id: 'attention-request-001',
+          agentId: 'task-agent-001',
+          kind: AttentionRequestKind.task,
+          title: 'Prep demo',
+          categoryId: 'work',
+          requestedMinutes: 45,
+          impact: 4,
+          urgency: 5,
+          energyFit: AttentionEnergyFit.high,
+          evidenceRefs: const [
+            AttentionEvidenceRef(
+              kind: AttentionEvidenceKind.task,
+              id: 'task-001',
+              label: 'Demo task',
+            ),
+          ],
+          scopeKind: AttentionClaimScopeKind.dateRange,
+          rangeStart: DateTime(2026, 5, 25),
+          rangeEnd: DateTime(2026, 5, 26),
+          earliestStart: DateTime(2026, 5, 25, 9),
+          latestEnd: DateTime(2026, 5, 25, 12),
+          deadline: DateTime(2026, 5, 25, 11),
+          nextReviewAt: DateTime(2026, 5, 24, 18),
+          targetId: 'task-001',
+          targetKind: 'task',
+          rationale: 'Deadline-bound preparation.',
+          createdAt: createdAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        final request = roundtripped as AttentionRequestEntity;
+        expect(request.toJson()['runtimeType'], equals('attentionRequest'));
+        expect(request.scopeKind, equals(AttentionClaimScopeKind.dateRange));
+        expect(request.status, equals(AttentionRequestStatus.pending));
+        expect(request.rangeStart, equals(DateTime(2026, 5, 25)));
+        expect(request.rangeEnd, equals(DateTime(2026, 5, 26)));
+        expect(request.nextReviewAt, equals(DateTime(2026, 5, 24, 18)));
+        expect(request.evidenceRefs.single.kind, AttentionEvidenceKind.task);
+      });
+
+      test('AttentionClaimDispositionEntity roundtrips lifecycle fields', () {
+        final original = AgentDomainEntity.attentionClaimDisposition(
+          id: 'attention-disposition-001',
+          agentId: 'planner-agent-001',
+          requestId: 'attention-request-001',
+          status: AttentionClaimStatus.deferred,
+          awardId: 'attention-award-001',
+          planId: 'day_agent_plan:dayplan-2026-05-25',
+          changeSetId: 'changeset-001',
+          reason: 'Needs a clearer window.',
+          nextReviewAt: DateTime(2026, 5, 24, 18),
+          createdAt: createdAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        final disposition = roundtripped as AttentionClaimDispositionEntity;
+        expect(
+          disposition.toJson()['runtimeType'],
+          equals('attentionClaimDisposition'),
+        );
+        expect(disposition.status, equals(AttentionClaimStatus.deferred));
+        expect(disposition.requestId, equals('attention-request-001'));
+        expect(disposition.nextReviewAt, equals(DateTime(2026, 5, 24, 18)));
+      });
+
+      test('AttentionAwardEntity roundtrips planner award fields', () {
+        final original = AgentDomainEntity.attentionAward(
+          id: 'attention-award-001',
+          agentId: 'day-agent-001',
+          requestId: 'attention-request-001',
+          dayId: 'dayplan-2026-05-25',
+          planId: 'day_agent_plan:dayplan-2026-05-25',
+          blockId: 'attention_block:dayplan-2026-05-25:request-001',
+          categoryId: 'work',
+          title: 'Prep demo',
+          startTime: DateTime(2026, 5, 25, 9),
+          endTime: DateTime(2026, 5, 25, 9, 45),
+          rank: 1,
+          utilityScore: 5125,
+          taskId: 'task-001',
+          rationale: 'Highest utility request.',
+          createdAt: createdAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        final award = roundtripped as AttentionAwardEntity;
+        expect(award.toJson()['runtimeType'], equals('attentionAward'));
+        expect(award.status, equals(AttentionAwardStatus.proposed));
+        expect(award.utilityScore, greaterThan(0));
+      });
+
+      test('StandingAgreementEntity roundtrips durable policy fields', () {
+        final original = AgentDomainEntity.standingAgreement(
+          id: 'standing-agreement-fitness-weekly',
+          agentId: 'fitness-agent-001',
+          title: 'Strength training three times per week',
+          scope: StandingAgreementScope.fitness,
+          cadence: StandingAgreementCadence.weekly,
+          enforcement: StandingAgreementEnforcement.nonNegotiable,
+          approvalMode: StandingAgreementApprovalMode.autoAccept,
+          categoryId: 'health',
+          targetId: 'habit-strength',
+          targetKind: 'habit',
+          minCount: 3,
+          minMinutes: 135,
+          preferredSessionMinutes: 45,
+          canPreempt: true,
+          priority: 90,
+          preemptibleCategoryIds: const ['admin'],
+          protectedCategoryIds: const ['sleep'],
+          evidenceRefs: const [
+            AttentionEvidenceRef(
+              kind: AttentionEvidenceKind.outcome,
+              id: 'fitness-outcome-001',
+              label: 'Strength target',
+            ),
+          ],
+          activeFrom: DateTime(2026, 5),
+          activeUntil: DateTime(2026, 8),
+          rationale: 'Protect baseline strength work.',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        final agreement = roundtripped as StandingAgreementEntity;
+        expect(
+          agreement.toJson()['runtimeType'],
+          equals('standingAgreement'),
+        );
+        expect(agreement.scope, equals(StandingAgreementScope.fitness));
+        expect(agreement.cadence, equals(StandingAgreementCadence.weekly));
+        expect(agreement.minCount, equals(3));
+        expect(agreement.minMinutes, equals(135));
+        expect(agreement.canPreempt, isTrue);
+        expect(
+          agreement.evidenceRefs.single.kind,
+          equals(AttentionEvidenceKind.outcome),
+        );
       });
     });
 

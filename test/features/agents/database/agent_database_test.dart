@@ -117,7 +117,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          11,
+          db.schemaVersion,
         );
 
         // Verify the new columns exist by querying them
@@ -233,7 +233,7 @@ void main() {
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        11,
+        db.schemaVersion,
       );
 
       // Verify the partial unique index exists.
@@ -486,7 +486,7 @@ void main() {
       final versionResult = await db.customSelect('PRAGMA user_version').get();
       expect(
         versionResult.first.read<int>('user_version'),
-        11,
+        db.schemaVersion,
       );
 
       // Verify the column exists by selecting it.
@@ -617,7 +617,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          11,
+          db.schemaVersion,
         );
 
         final indexes = await db
@@ -754,7 +754,7 @@ void main() {
             .get();
         expect(
           versionResult.first.read<int>('user_version'),
-          11,
+          db.schemaVersion,
         );
 
         // Verify wake_run_log soul columns exist and are readable.
@@ -898,7 +898,7 @@ void main() {
       addTearDown(db.close);
 
       final versionResult = await db.customSelect('PRAGMA user_version').get();
-      expect(versionResult.first.read<int>('user_version'), 11);
+      expect(versionResult.first.read<int>('user_version'), db.schemaVersion);
 
       final indexes = await db.customSelect('''
             SELECT name FROM sqlite_master WHERE type = 'index'
@@ -984,7 +984,10 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 11);
+        expect(
+          versionResult.first.read<int>('user_version'),
+          db.schemaVersion,
+        );
 
         final indexes = await db.customSelect('''
               SELECT name FROM sqlite_master WHERE type = 'index'
@@ -1120,7 +1123,10 @@ void main() {
         final versionResult = await db
             .customSelect('PRAGMA user_version')
             .get();
-        expect(versionResult.first.read<int>('user_version'), 11);
+        expect(
+          versionResult.first.read<int>('user_version'),
+          db.schemaVersion,
+        );
 
         // Rows survived the rebuild.
         final ids = await db
@@ -1170,6 +1176,173 @@ void main() {
             'idx_unique_soul_per_template',
           ]),
         );
+
+        await db.close();
+      },
+    );
+
+    test(
+      'v12 to v13 adds standing agreement projection table and indexes',
+      () async {
+        final dbFile = path.join(testDirectory.path, agentDbFileName);
+        final rawDb = sqlite3.open(dbFile);
+
+        rawDb
+          ..execute('''
+            CREATE TABLE agent_entities (
+              id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              subtype TEXT,
+              thread_id TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE agent_links (
+              id TEXT NOT NULL PRIMARY KEY,
+              from_id TEXT NOT NULL,
+              to_id TEXT NOT NULL,
+              type TEXT NOT NULL,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME,
+              serialized TEXT NOT NULL,
+              schema_version INTEGER NOT NULL DEFAULT 1
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE attention_claim_index (
+              request_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              scope_kind TEXT NOT NULL,
+              visibility_start DATETIME NOT NULL,
+              visibility_end DATETIME NOT NULL,
+              deadline DATETIME,
+              next_review_at DATETIME,
+              target_id TEXT,
+              target_kind TEXT,
+              updated_at DATETIME NOT NULL,
+              deleted_at DATETIME
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE wake_run_log (
+              run_key TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              reason TEXT NOT NULL,
+              reason_id TEXT,
+              thread_id TEXT NOT NULL,
+              status TEXT NOT NULL,
+              logical_change_key TEXT,
+              created_at DATETIME NOT NULL,
+              started_at DATETIME,
+              completed_at DATETIME,
+              error_message TEXT,
+              template_id TEXT,
+              template_version_id TEXT,
+              resolved_model_id TEXT,
+              soul_id TEXT,
+              soul_version_id TEXT,
+              user_rating REAL,
+              rated_at DATETIME
+            )
+          ''')
+          ..execute('''
+            CREATE TABLE saga_log (
+              operation_id TEXT NOT NULL PRIMARY KEY,
+              agent_id TEXT NOT NULL,
+              run_key TEXT NOT NULL,
+              phase TEXT NOT NULL,
+              status TEXT NOT NULL,
+              tool_name TEXT NOT NULL,
+              last_error TEXT,
+              created_at DATETIME NOT NULL,
+              updated_at DATETIME NOT NULL
+            )
+          ''')
+          ..execute('PRAGMA user_version = 12');
+        rawDb.dispose();
+
+        final db = AgentDatabase(
+          background: false,
+          documentsDirectoryProvider: () async => testDirectory,
+          tempDirectoryProvider: () async => testDirectory,
+        );
+        addTearDown(db.close);
+
+        final versionResult = await db
+            .customSelect('PRAGMA user_version')
+            .get();
+        expect(
+          versionResult.first.read<int>('user_version'),
+          db.schemaVersion,
+        );
+
+        final tables = await db.customSelect('''
+          SELECT name FROM sqlite_master
+          WHERE type = 'table' AND name = 'standing_agreement_index'
+        ''').get();
+        expect(tables, hasLength(1));
+
+        final indexes = await db.customSelect('''
+          SELECT name FROM sqlite_master
+          WHERE type = 'index'
+            AND tbl_name = 'standing_agreement_index'
+          ORDER BY name
+        ''').get();
+        expect(
+          indexes.map((row) => row.read<String>('name')).toList(),
+          containsAll(<String>[
+            'idx_standing_agreements_active_window',
+            'idx_standing_agreements_active_scope_window',
+          ]),
+        );
+
+        await db.customStatement('''
+          INSERT INTO standing_agreement_index (
+            agreement_id,
+            agent_id,
+            status,
+            scope,
+            cadence,
+            approval_mode,
+            enforcement,
+            active_from,
+            active_until,
+            priority,
+            updated_at
+          )
+          VALUES (
+            'agreement-1',
+            'fitness-agent-1',
+            'active',
+            'fitness',
+            'weekly',
+            'ask',
+            'target',
+            '2026-05-01',
+            '2026-06-01',
+            10,
+            '2026-05-01'
+          )
+        ''');
+
+        final rows = await db.customSelect('''
+          SELECT agreement_id FROM standing_agreement_index
+          WHERE status = 'active'
+            AND scope = 'fitness'
+            AND active_from < '2026-05-28'
+            AND active_until > '2026-05-27'
+        ''').get();
+        expect(rows.map((row) => row.read<String>('agreement_id')), [
+          'agreement-1',
+        ]);
 
         await db.close();
       },

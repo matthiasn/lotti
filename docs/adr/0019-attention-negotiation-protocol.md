@@ -2,6 +2,9 @@
 
 - Status: Accepted
 - Date: 2026-05-30
+- Amended by: ADR 0021, which reclassifies attention requests as
+  LLM-authored claims and the deterministic arbiter as a helper rather than the
+  canonical planner decision-maker.
 
 ## Context
 
@@ -31,13 +34,13 @@ hypothetical.
    `AgentLink` types on the existing synced graph. The exchange is
    Contract-Net-shaped (call-for-proposals → bid → award → inform).
 3. **No auction incentive-compatibility — but not blind trust.** All bidders are
-   sub-agents of one principal, so allocation collapses to a centralized utility
-   ranking (no Vickrey payments). But one principal does not make LLM agents
-   *calibrated*: they can overstate impact or misjudge urgency. So bids carry
-   **evidence references** (links to the task/project/day facts that justify
-   them) and **bounded fields**, and the planner **derives utility from those
-   facts**, not from agent-self-assigned scores. The arbiter is a bounded
-   heuristic, not optimal winner determination (which is NP-hard).
+   sub-agents of one principal, so there are no Vickrey-style payments. But one
+   principal does not make LLM agents *calibrated*: they can overstate impact or
+   misjudge urgency. So bids carry **evidence references** (links to the
+   task/project/day facts that justify them) and **bounded fields**. As amended
+   by ADR 0021, the planner LLM weighs those claims from an evidence brief;
+   deterministic code validates hard constraints and persistence, not the final
+   allocation judgment.
 4. **Non-negotiables are enforced by a deterministic verifier** over the
    projected graph during the `draft → agreed` transition — not by instructing
    the LLM. The minimal constraint language is recurrence + preemption priority
@@ -95,19 +98,25 @@ sequenceDiagram
 - Non-negotiables are guaranteed by code, not hoped-for via a prompt.
 - Interruptions are governed by VOI with real receptivity signals — the formal
   antidote to nagging.
-- Open: whether the primary abstraction is bidding vs blackboard-posting
-  (determines whether bid/award edge types are required); concrete VOI weighting;
-  calibration of the receptivity model.
+- Updated by ADR 0021: the primary abstraction is a structured claim on the
+  blackboard. Bid/award storage remains useful for provenance, but the day
+  planner LLM weighs claims. Deterministic code validates hard constraints and
+  persists decisions; deterministic ranking should only be added where a
+  concrete planner path needs it. Concrete VOI weighting and calibration of the
+  receptivity model remain open.
 
 ## Implementation Notes
 
-- Planned: attention requests, standing agreements, outcome tracking, and
-  planner auto-commit. The convergent log/projection substrate exists, but this
-  protocol is not implemented yet.
+- Implemented substrate: attention request/award/disposition records, durable
+  standing agreement records, and indexed local projections for planner-window
+  lookup without scanning the large `agent_entities` source table. Planned:
+  planner brief construction, LLM-mediated proposal generation, hard-constraint
+  verification, outcome tracking, and planner auto-commit.
 
 ## Related
 
 - `docs/daily_os_ai_runtime_architecture.md` (§5, §9, Thread A)
+- ADR 0021 (LLM-mediated attention claim weighing)
 - Hayes-Roth, "A Blackboard Architecture for Control" (1985); Contract Net
   Protocol; Sarne & Grosz (2013); U-Define (arXiv 2605.02765)
 - `lib/services/health_service.dart`, `lib/logic/health_import.dart`
