@@ -81,17 +81,17 @@ usually be higher-leverage than file-by-file fixes.
   files reach 8642 (`database_test`), 7766 (`sync_db_test`), 7743 (`outbox_service_test`), 7412
   (`agent_repository_test`), 7306 (`unified_ai_inference_repository_test`). Each report gives concrete
   split seams.
-- [ ] **[HIGH] `pumpAndSettle` overuse is the #1 test-speed lever.** Thousands of calls flagged
+- [x] **[HIGH] `pumpAndSettle` overuse is the #1 test-speed lever.** Thousands of calls flagged
   (e.g. 313 across one tasks/ui group, ~200+ in sync UI, 171 in daily_os widgets, 114 in one ai-settings
   file). Most are on static/stateless widgets and should become bounded `tester.pump()` — also removes
-  the 10s-default-timeout hang risk on never-settling animations.
+  the 10s-default-timeout hang risk on never-settling animations. **RESOLVED:** every named hotspot is swept (tasks/ui 313, sync UI, daily_os widgets, agents ui, journal ui, ai ui — ~700 unbounded settles bounded across chunks 2–4, with animation-coupled settles restored individually after verification by failure). The remaining repo-wide count is dominated by Wolt/filter-modal suites whose settles are animation-justified (per their per-directory reviews) plus a long tail of <15-call files; per-directory reports track any stragglers.
 - [ ] **[HIGH] Per-test DB / container / GetIt rebuilds → `setUpAll`/shared fixtures.** Biggest
   non-pumpAndSettle speed win: `database_test` opens a fresh seeded DB before each of ~219 tests,
   `sync_db_test` ~27, `agent_repository_test` ~199; Glados properties re-open in-memory DBs per run.
-- [ ] **[HIGH] One-test-file-per-source-file violations.** Sources with 2–6 test files each:
+- [x] **[HIGH] One-test-file-per-source-file violations.** Sources with 2–6 test files each:
   `image_import.dart` (×6), `label_assignment_processor.dart` (×6), `prompt_builder_helper.dart` (×4),
   `journal_page_controller.dart` (×3), plus many ×2 (`thinking_parser`, `room`/`sync_room_manager`,
-  `modern_create_entry_items`, `ai_config_repository`, …). Consolidate.
+  `modern_create_entry_items`, `ai_config_repository`, …). Consolidate. **RESOLVED:** all named violations are consolidated — `image_import` (×6→1), `label_assignment_processor` (×6→1), `prompt_builder_helper` (×4→1), `journal_page_controller` (×3→1, merged), `thinking_parser` (×2→1), `room`/`sync_room_manager` (room_test deleted), `modern_create_entry_items` (merged), `ai_config_repository` (×2→1). Verified by filename sweep.
 - [ ] **[MED] Inline mocks + inline GetIt boilerplate.** Pervasive inline `class Mock… extends Mock`
   duplicating `test/mocks/mocks.dart`, and hand-rolled `getIt.isRegistered/unregister/registerSingleton`
   instead of `setUpTestGetIt()`/`tearDownTestGetIt()`. Both a DRY and an in-suite-contamination concern.

@@ -135,14 +135,16 @@ void main() {
   group('CategoryBlockRow — expanded', () {
     testWidgets('shows TimeBlockEditor for each block', (tester) async {
       await pumpRow(tester, blocks: [testBlock], isExpanded: true);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(TimeBlockEditor), findsOneWidget);
     });
 
     testWidgets('shows "Add new time block" button', (tester) async {
       await pumpRow(tester, isExpanded: true);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Add new time block'), findsOneWidget);
     });
@@ -156,7 +158,8 @@ void main() {
         isExpanded: true,
         onBlocksChanged: (blocks) => result = blocks,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Add new time block'));
       await tester.pump();
@@ -182,7 +185,8 @@ void main() {
         isExpanded: true,
         onBlocksChanged: (blocks) => result = blocks,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the first delete button
       await tester.tap(find.byIcon(Icons.delete_outline_rounded).first);
@@ -218,7 +222,8 @@ void main() {
           isExpanded: true,
           onBlocksChanged: (blocks) => result = blocks,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Add new time block'));
         await tester.pump();
@@ -255,7 +260,8 @@ void main() {
           width: 500,
           onBlocksChanged: (blocks) => result = blocks,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Add new time block'));
         await tester.pump();
@@ -282,7 +288,8 @@ void main() {
           isExpanded: true,
           onBlocksChanged: (blocks) => result = blocks,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Add new time block'));
         await tester.pump();
@@ -319,7 +326,8 @@ void main() {
           width: 500,
           onBlocksChanged: (blocks) => result = blocks,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Add new time block'));
         await tester.pump();
@@ -351,7 +359,8 @@ void main() {
           width: 500,
           onBlocksChanged: (blocks) => result = blocks,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Add new time block'));
         await tester.pump();
@@ -391,7 +400,8 @@ void main() {
           isExpanded: true,
           onBlocksChanged: (blocks) => result = blocks,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Find the first TimeBlockEditor and tap the start time label to
         // open the picker, then change it — but that's complex. Instead,
@@ -443,7 +453,8 @@ void main() {
           isExpanded: true,
           onBlocksChanged: (blocks) => result = blocks,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final editors = tester.widgetList<TimeBlockEditor>(
           find.byType(TimeBlockEditor),

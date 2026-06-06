@@ -22,7 +22,8 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(historyData: createTestHistoryData(days: days)),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(TimeHistoryHeader), findsOneWidget);
 
@@ -37,7 +38,8 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(historyData: createTestHistoryData(days: days)),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Initially, day 15 should be selected - date label shows "January 15"
       expect(find.textContaining('Jan 15'), findsOneWidget);
@@ -45,7 +47,8 @@ void main() {
 
       // Tap on day 14 segment
       await tester.tap(find.text('14'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // After tapping, the date label should now show "January 14"
       expect(find.textContaining('Jan 14'), findsOneWidget);
@@ -56,7 +59,8 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(historyData: createTestHistoryData(days: days)),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The selected day (15) is wrapped in a filled, rounded pill.
       bool isSelectionPill(Widget widget) =>
@@ -107,7 +111,8 @@ void main() {
           plan: createTestPlan(date: DateTime(2026, 1, 5)),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show "Jan 2026" in the sticky month header
       expect(find.text('Jan 2026'), findsOneWidget);
@@ -166,7 +171,8 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(historyData: createTestHistoryData(days: days)),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final headerWidth = tester.getSize(find.byType(TimeHistoryHeader)).width;
       final chartWidth = days.length * daySegmentWidth;
@@ -185,7 +191,8 @@ void main() {
 
     testWidgets('displays formatted date with day name', (tester) async {
       await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // January 15, 2026 is a Thursday
       expect(find.textContaining('Thursday'), findsOneWidget);
@@ -223,7 +230,8 @@ void main() {
           child: const TimeHistoryHeader(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Initially no calls
       expect(trackingController.loadMoreDaysCallCount, 0);
@@ -282,7 +290,8 @@ void main() {
           plan: createTestPlan(date: DateTime(2026, 1, 2)),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show both months with years since they span different years
       expect(find.text('Dec 2025 | Jan 2026'), findsOneWidget);
@@ -320,7 +329,8 @@ void main() {
           plan: createTestPlan(date: DateTime(2025, 12, 2)),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show both months but only year on second: "Nov | Dec 2025"
       expect(find.text('Nov | Dec 2025'), findsOneWidget);
@@ -331,7 +341,8 @@ void main() {
       await tester.pumpWidget(
         createTestWidget(historyData: createTestHistoryData(days: days)),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Day 14 should be visible but not selected (day 15 is selected)
       expect(find.text('14'), findsOneWidget);
@@ -402,7 +413,8 @@ void main() {
             child: const TimeHistoryHeader(),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Initially showing yesterday - Today button should be visible
         expect(find.textContaining('Jan 14'), findsOneWidget);
@@ -411,7 +423,8 @@ void main() {
 
         // Tap the Today button
         await tester.tap(todayButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // After tapping, should navigate to today (Jan 15)
         expect(find.textContaining('Jan 15'), findsOneWidget);
