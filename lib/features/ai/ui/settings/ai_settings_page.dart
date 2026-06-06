@@ -662,23 +662,24 @@ class _AiSettingsPageState extends ConsumerState<AiSettingsPage>
       );
     }
     final tokens = context.designTokens;
-    final modelNamesById = <String, String>{};
-    for (final model in models) {
-      modelNamesById[model.id] = model.name;
-      modelNamesById.putIfAbsent(model.providerModelId, () => model.name);
-    }
     final providerTypeByProviderId = <String, InferenceProviderType>{
       for (final p in providers) p.id: p.inferenceProviderType,
     };
+    final modelNamesById = <String, String>{};
     final providerIdByModelId = <String, String>{};
     final modelsByProviderModelId = <String, List<AiConfigModel>>{};
     for (final model in models) {
+      modelNamesById[model.id] = model.name;
       providerIdByModelId[model.id] = model.inferenceProviderId;
       (modelsByProviderModelId[model.providerModelId] ??= <AiConfigModel>[])
           .add(model);
     }
+    // Legacy slots store provider-native ids; only fall back to those when
+    // the providerModelId is unique so an ambiguous id never resolves to an
+    // arbitrary row's name or provider.
     for (final entry in modelsByProviderModelId.entries) {
       if (entry.value.length == 1) {
+        modelNamesById.putIfAbsent(entry.key, () => entry.value.single.name);
         providerIdByModelId.putIfAbsent(
           entry.key,
           () => entry.value.single.inferenceProviderId,

@@ -180,13 +180,16 @@ Resolution for `resolveForCategory`:
 2. resolve it through `ProfileResolver.resolveByProfileId`
 
 Only the thinking slot is fatal. Optional slots resolve best-effort.
-Model slots store provider-native `providerModelId` strings, not the local
-model row IDs. When multiple synced model rows share the same
-`providerModelId`, provider resolution walks every candidate and uses the
-first provider row that still exists, has the required credentials, and matches
-the provider type that owns that known model ID. This is intentional sync
-hygiene: an orphaned duplicate row from another device must not abort an agent
-wake when a valid provider/model pair is still configured locally.
+Model slots store `AiConfigModel.id` (the local model row ID) with a legacy
+`providerModelId` fallback: `resolveInferenceProviderForProfileSlot` first
+tries an exact model-row ID match and only then falls back to the old
+provider-native lookup for profiles written before the migration. On the
+legacy path, when multiple synced model rows share the same `providerModelId`,
+provider resolution walks every candidate and uses the first provider row that
+still exists, has the required credentials, and matches the provider type that
+owns that known model ID. This is intentional sync hygiene: an orphaned
+duplicate row from another device must not abort an agent wake when a valid
+provider/model pair is still configured locally.
 
 Recording-triggered transcription has a direct fallback in
 `ProfileAutomationService`: it first tries the profile automation path above,

@@ -114,6 +114,11 @@ void main() {
     when(
       () => mockRepository.getConfigsByType(AiConfigType.prompt),
     ).thenAnswer((_) async => []);
+    // Saving a new provider runs a profile-upgrade pass after model
+    // prepopulation, which reads the existing inference profiles.
+    when(
+      () => mockRepository.getConfigsByType(AiConfigType.inferenceProfile),
+    ).thenAnswer((_) async => []);
 
     // Default category mock responses
     when(

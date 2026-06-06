@@ -75,13 +75,28 @@ class GeminiThinkingConfig {
   /// -   8192+            → `high`
   String _thinkingLevel({required String modelId}) {
     final mode = thinkingMode ?? _budgetToMode(thinkingBudget);
-    if (!isGemini3Flash(modelId)) {
+    return effectiveMode(modelId, mode).apiValue;
+  }
+
+  /// Collapses [mode] to the set of thinking levels supported by [modelId].
+  ///
+  /// Gemini 3 Flash supports all four levels. Other Gemini 3 models (Pro)
+  /// currently accept only `low` and `high`, so minimal/low collapse to
+  /// [GeminiThinkingMode.low] and medium/high to [GeminiThinkingMode.high].
+  /// Non-Gemini-3 model IDs are returned unchanged.
+  static GeminiThinkingMode effectiveMode(
+    String modelId,
+    GeminiThinkingMode mode,
+  ) {
+    if (isGemini3(modelId) && !isGemini3Flash(modelId)) {
       return switch (mode) {
-        GeminiThinkingMode.minimal || GeminiThinkingMode.low => 'low',
-        GeminiThinkingMode.medium || GeminiThinkingMode.high => 'high',
+        GeminiThinkingMode.minimal ||
+        GeminiThinkingMode.low => GeminiThinkingMode.low,
+        GeminiThinkingMode.medium ||
+        GeminiThinkingMode.high => GeminiThinkingMode.high,
       };
     }
-    return mode.apiValue;
+    return mode;
   }
 
   int _thinkingBudget() {

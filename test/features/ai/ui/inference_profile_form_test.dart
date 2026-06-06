@@ -1565,9 +1565,11 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
+        // Slots persist the canonical AiConfigModel.id, not the wire-level
+        // providerModelId.
         expect(
           fakeProfileController.savedProfiles.first.imageRecognitionModelId,
-          'models/vision',
+          'ir-1',
         );
       },
     );
@@ -1627,9 +1629,11 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
+        // Slots persist the canonical AiConfigModel.id, not the wire-level
+        // providerModelId.
         expect(
           fakeProfileController.savedProfiles.first.transcriptionModelId,
-          'models/whisper',
+          'tr-1',
         );
       },
     );
@@ -1689,10 +1693,113 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
+        // Slots persist the canonical AiConfigModel.id, not the wire-level
+        // providerModelId.
         expect(
           fakeProfileController.savedProfiles.first.imageGenerationModelId,
-          'models/imagen',
+          'ig-1',
         );
+      },
+    );
+  });
+
+  group('save-time slot normalization', () {
+    final visionModel =
+        AiConfig.model(
+              id: 'vision-row',
+              name: 'Vision Model',
+              providerModelId: 'models/vision',
+              inferenceProviderId: 'prov-1',
+              createdAt: DateTime(2024),
+              inputModalities: const [Modality.text, Modality.image],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+              supportsFunctionCalling: true,
+            )
+            as AiConfigModel;
+
+    AiConfigModel duplicateThinkingModel(String id) =>
+        AiConfig.model(
+              id: id,
+              name: 'Dup $id',
+              providerModelId: 'models/dup-thinking',
+              inferenceProviderId: 'prov-1',
+              createdAt: DateTime(2024),
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+              supportsFunctionCalling: true,
+            )
+            as AiConfigModel;
+
+    testWidgets(
+      'keeps image-analysis automation enabled when the slot resolves',
+      (tester) async {
+        final imageSkill = builtInSkills.firstWhere(
+          (s) => s.skillType == SkillType.imageAnalysis,
+        );
+        final profile = testInferenceProfile(
+          id: 'p-img-skill',
+          name: 'Image Skill Profile',
+          thinkingModelId: 'vision-row',
+          imageRecognitionModelId: 'vision-row',
+          skillAssignments: [
+            SkillAssignment(skillId: imageSkill.id, automate: true),
+          ],
+        );
+
+        await tester.pumpWidget(
+          buildSubject(existingProfile: profile, models: [visionModel]),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        final saved = fakeProfileController.savedProfiles.first;
+        // The slot resolves to a real model row, so the automated
+        // image-analysis assignment survives the save-time sanitizer.
+        final assignment = saved.skillAssignments.singleWhere(
+          (a) => a.skillId == imageSkill.id,
+        );
+        expect(assignment.automate, isTrue);
+      },
+    );
+
+    testWidgets(
+      'aborts the save with a toast when the thinking slot value is an '
+      'ambiguous legacy id',
+      (tester) async {
+        // Two model rows share the legacy providerModelId the profile's
+        // thinking slot still stores — persisting either would pick an
+        // arbitrary row, so the save must force a re-selection instead.
+        final profile = testInferenceProfile(
+          id: 'p-ambiguous',
+          name: 'Ambiguous Profile',
+          thinkingModelId: 'models/dup-thinking',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            existingProfile: profile,
+            models: [
+              duplicateThinkingModel('dup-a'),
+              duplicateThinkingModel('dup-b'),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(fakeProfileController.savedProfiles, isEmpty);
+        expect(find.text('A thinking model is required'), findsOneWidget);
       },
     );
   });

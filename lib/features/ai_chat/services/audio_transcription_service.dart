@@ -116,28 +116,19 @@ class AudioTranscriptionService {
     final useGeminiThinkingMode =
         provider.inferenceProviderType == InferenceProviderType.gemini &&
         GeminiThinkingConfig.isGemini3(model.providerModelId);
-    final stream = useGeminiThinkingMode
-        ? cloud.generateWithAudio(
-            _kTranscriptionPrompt,
-            model: model.providerModelId,
-            audioBase64: audioBase64,
-            baseUrl: provider.baseUrl,
-            apiKey: provider.apiKey,
-            provider: provider,
-            maxCompletionTokens: model.maxCompletionTokens,
-            speechDictionaryTerms: speechDictionaryTerms,
-            geminiThinkingMode: model.geminiThinkingMode,
-          )
-        : cloud.generateWithAudio(
-            _kTranscriptionPrompt,
-            model: model.providerModelId,
-            audioBase64: audioBase64,
-            baseUrl: provider.baseUrl,
-            apiKey: provider.apiKey,
-            provider: provider,
-            maxCompletionTokens: model.maxCompletionTokens,
-            speechDictionaryTerms: speechDictionaryTerms,
-          );
+    final stream = cloud.generateWithAudio(
+      _kTranscriptionPrompt,
+      model: model.providerModelId,
+      audioBase64: audioBase64,
+      baseUrl: provider.baseUrl,
+      apiKey: provider.apiKey,
+      provider: provider,
+      maxCompletionTokens: model.maxCompletionTokens,
+      speechDictionaryTerms: speechDictionaryTerms,
+      geminiThinkingMode: useGeminiThinkingMode
+          ? model.geminiThinkingMode
+          : null,
+    );
 
     await for (final chunk in stream) {
       final content = chunk.choices?.firstOrNull?.delta?.content ?? '';

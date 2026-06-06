@@ -407,32 +407,22 @@ class UnifiedAiInferenceRepository {
       final speechTerms = speechDictionaryTerms.isNotEmpty
           ? speechDictionaryTerms
           : null;
-      return provider.inferenceProviderType == InferenceProviderType.gemini
-          ? cloudRepo.generateWithAudio(
-              prompt,
-              model: model.providerModelId,
-              audioBase64: preparedAudio.base64,
-              baseUrl: provider.baseUrl,
-              apiKey: provider.apiKey,
-              provider: provider,
-              maxCompletionTokens: model.maxCompletionTokens,
-              stream: isAiStreamingEnabled,
-              audioFormat: preparedAudio.format,
-              speechDictionaryTerms: speechTerms,
-              geminiThinkingMode: model.geminiThinkingMode,
-            )
-          : cloudRepo.generateWithAudio(
-              prompt,
-              model: model.providerModelId,
-              audioBase64: preparedAudio.base64,
-              baseUrl: provider.baseUrl,
-              apiKey: provider.apiKey,
-              provider: provider,
-              maxCompletionTokens: model.maxCompletionTokens,
-              stream: isAiStreamingEnabled,
-              audioFormat: preparedAudio.format,
-              speechDictionaryTerms: speechTerms,
-            );
+      return cloudRepo.generateWithAudio(
+        prompt,
+        model: model.providerModelId,
+        audioBase64: preparedAudio.base64,
+        baseUrl: provider.baseUrl,
+        apiKey: provider.apiKey,
+        provider: provider,
+        maxCompletionTokens: model.maxCompletionTokens,
+        stream: isAiStreamingEnabled,
+        audioFormat: preparedAudio.format,
+        speechDictionaryTerms: speechTerms,
+        geminiThinkingMode:
+            provider.inferenceProviderType == InferenceProviderType.gemini
+            ? model.geminiThinkingMode
+            : null,
+      );
     } else if (images.isNotEmpty) {
       // No function calling tools for image analysis tasks
       // This prevents models from getting confused about their capabilities
@@ -441,28 +431,20 @@ class UnifiedAiInferenceRepository {
         name: 'UnifiedAiInferenceRepository',
       );
 
-      return provider.inferenceProviderType == InferenceProviderType.gemini
-          ? cloudRepo.generateWithImages(
-              prompt,
-              model: model.providerModelId,
-              temperature: temperature,
-              images: images,
-              baseUrl: provider.baseUrl,
-              apiKey: provider.apiKey,
-              provider: provider,
-              maxCompletionTokens: model.maxCompletionTokens,
-              geminiThinkingMode: model.geminiThinkingMode,
-            )
-          : cloudRepo.generateWithImages(
-              prompt,
-              model: model.providerModelId,
-              temperature: temperature,
-              images: images,
-              baseUrl: provider.baseUrl,
-              apiKey: provider.apiKey,
-              provider: provider,
-              maxCompletionTokens: model.maxCompletionTokens,
-            );
+      return cloudRepo.generateWithImages(
+        prompt,
+        model: model.providerModelId,
+        temperature: temperature,
+        images: images,
+        baseUrl: provider.baseUrl,
+        apiKey: provider.apiKey,
+        provider: provider,
+        maxCompletionTokens: model.maxCompletionTokens,
+        geminiThinkingMode:
+            provider.inferenceProviderType == InferenceProviderType.gemini
+            ? model.geminiThinkingMode
+            : null,
+      );
     } else {
       // No tools attached — checklist updates and task summaries are
       // handled by the agent system. Other response types (image analysis,

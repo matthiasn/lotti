@@ -1413,6 +1413,101 @@ void main() {
         }
       });
 
+      test(
+        'forwards the model row thinking mode to generateWithImages '
+        'for Gemini providers',
+        () async {
+          final tempDir = Directory.systemTemp.createTempSync('image_gemini');
+          overrideTempDirs.add(tempDir);
+          when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+          final imageEntity = JournalImage(
+            meta: _createMetadata(),
+            data: ImageData(
+              capturedAt: DateTime(2024, 3, 15, 10, 30),
+              imageId: 'test-image',
+              imageFile: 'test.jpg',
+              imageDirectory: '/images/',
+            ),
+          );
+          Directory('${tempDir.path}/images').createSync(recursive: true);
+          File(
+            '${tempDir.path}/images/test.jpg',
+          ).writeAsBytesSync(Uint8List.fromList([1, 2, 3, 4]));
+
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Image Analysis',
+            requiredInputData: [InputDataType.images],
+            aiResponseType: AiResponseType.imageAnalysis,
+          );
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gemini-3-flash-preview',
+            geminiThinkingMode: GeminiThinkingMode.high,
+          );
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.gemini,
+          );
+
+          _stubInferenceContext(
+            mockAiInputRepo: mockAiInputRepo,
+            mockAiConfigRepo: mockAiConfigRepo,
+            entity: imageEntity,
+            model: model,
+            provider: provider,
+            taskDetailsJson: '{"image": "test.jpg"}',
+          );
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockCloudInferenceRepo.generateWithImages(
+              any(),
+              provider: any(named: 'provider'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              images: any(named: 'images'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            ),
+          ).thenAnswer((_) => _createMockTextStream(['A cat']));
+          _stubCreateAiResponseEntry(mockAiInputRepo);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+
+          try {
+            await repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            );
+
+            verify(
+              () => mockCloudInferenceRepo.generateWithImages(
+                any(),
+                provider: any(named: 'provider'),
+                model: 'gemini-3-flash-preview',
+                temperature: any(named: 'temperature'),
+                images: any(named: 'images'),
+                baseUrl: any(named: 'baseUrl'),
+                apiKey: any(named: 'apiKey'),
+                maxCompletionTokens: any(named: 'maxCompletionTokens'),
+                geminiThinkingMode: GeminiThinkingMode.high,
+              ),
+            ).called(1);
+          } finally {
+            tempDir.deleteSync(recursive: true);
+          }
+        },
+      );
+
       test('rethrows when the image file is missing on disk', () async {
         // Point the documents directory at an empty temp dir WITHOUT creating
         // the image file, so _prepareImages' readAsBytes fails.
@@ -1642,6 +1737,106 @@ void main() {
           tempDir.deleteSync(recursive: true);
         }
       });
+
+      test(
+        'forwards the model row thinking mode to generateWithAudio '
+        'for Gemini providers',
+        () async {
+          final tempDir = Directory.systemTemp.createTempSync('audio_gemini');
+          overrideTempDirs.add(tempDir);
+          when(() => mockDirectory.path).thenReturn(tempDir.path);
+
+          final audioEntity = JournalAudio(
+            meta: _createMetadata(),
+            data: AudioData(
+              dateFrom: DateTime(2024, 3, 15, 10, 30),
+              dateTo: DateTime(2024, 3, 15, 10, 30),
+              audioFile: 'test.mp3',
+              audioDirectory: '/audio/',
+              duration: const Duration(seconds: 30),
+            ),
+          );
+          Directory('${tempDir.path}/audio').createSync(recursive: true);
+          File(
+            '${tempDir.path}/audio/test.mp3',
+          ).writeAsBytesSync(Uint8List.fromList([1, 2, 3]));
+
+          final promptConfig = _createPrompt(
+            id: 'prompt-1',
+            name: 'Audio Transcription',
+            requiredInputData: [InputDataType.audioFiles],
+            aiResponseType: AiResponseType.audioTranscription,
+          );
+          final model = _createModel(
+            id: 'model-1',
+            inferenceProviderId: 'provider-1',
+            providerModelId: 'gemini-3-flash-preview',
+            geminiThinkingMode: GeminiThinkingMode.medium,
+          );
+          final provider = _createProvider(
+            id: 'provider-1',
+            inferenceProviderType: InferenceProviderType.gemini,
+          );
+
+          _stubInferenceContext(
+            mockAiInputRepo: mockAiInputRepo,
+            mockAiConfigRepo: mockAiConfigRepo,
+            entity: audioEntity,
+            model: model,
+            provider: provider,
+            taskDetailsJson: '{"audio": "test.mp3"}',
+          );
+          when(
+            () => mockCloudInferenceRepo.generateWithAudio(
+              any(),
+              provider: any(named: 'provider'),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              stream: any(named: 'stream'),
+              audioFormat: any(named: 'audioFormat'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            ),
+          ).thenAnswer((_) => _createMockTextStream(['Hello']));
+          _stubCreateAiResponseEntry(mockAiInputRepo);
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
+          ).thenAnswer((_) async => []);
+
+          try {
+            await repository!.runInference(
+              entityId: 'test-id',
+              promptConfig: promptConfig,
+              onProgress: (_) {},
+              onStatusChange: (_) {},
+            );
+
+            verify(
+              () => mockCloudInferenceRepo.generateWithAudio(
+                any(),
+                provider: any(named: 'provider'),
+                model: 'gemini-3-flash-preview',
+                audioBase64: any(named: 'audioBase64'),
+                baseUrl: any(named: 'baseUrl'),
+                apiKey: any(named: 'apiKey'),
+                maxCompletionTokens: any(named: 'maxCompletionTokens'),
+                stream: any(named: 'stream'),
+                audioFormat: any(named: 'audioFormat'),
+                speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+                geminiThinkingMode: GeminiThinkingMode.medium,
+              ),
+            ).called(1);
+          } finally {
+            tempDir.deleteSync(recursive: true);
+          }
+        },
+      );
 
       test('handles reasoning model response with thoughts', () async {
         final taskEntity = Task(
@@ -7415,6 +7610,7 @@ AiConfigModel _createModel({
   required String id,
   required String inferenceProviderId,
   required String providerModelId,
+  GeminiThinkingMode geminiThinkingMode = GeminiThinkingMode.low,
 }) {
   return AiConfigModel(
     id: id,
@@ -7425,6 +7621,7 @@ AiConfigModel _createModel({
     inputModalities: [Modality.text],
     outputModalities: [Modality.text],
     isReasoningModel: false,
+    geminiThinkingMode: geminiThinkingMode,
   );
 }
 

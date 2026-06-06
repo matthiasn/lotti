@@ -18,15 +18,28 @@ Future<void> aiConfigInitialization(Ref ref) async {
     aiConfigRepository: aiConfigRepo,
   );
 
-  await profileService.seedDefaults();
-
+  // Backfill known models before seeding so that new default profiles can
+  // resolve their model slots to existing `AiConfigModel` rows right away.
   final modelService = ModelPrepopulationService(repository: aiConfigRepo);
   try {
     await modelService.backfillNewModels();
-    await profileService.upgradeExisting();
   } catch (error, stackTrace) {
     developer.log(
       'Failed to backfill known models: $error',
+      name: 'aiConfigInitialization',
+      stackTrace: stackTrace,
+    );
+  }
+
+  await profileService.seedDefaults();
+
+  // Isolated from the backfill try/catch so a flaky backfill never skips
+  // the profile upgrade pass.
+  try {
+    await profileService.upgradeExisting();
+  } catch (error, stackTrace) {
+    developer.log(
+      'Failed to upgrade inference profiles: $error',
       name: 'aiConfigInitialization',
       stackTrace: stackTrace,
     );

@@ -31,19 +31,15 @@ extension SkillPromptGenerationRunner on SkillInferenceRunner {
       profile: profile,
       overrideModelId: overrideModelId,
     );
-    final provider = target.provider;
-    final modelId = target.modelId;
+    // Unlike the optional transcription/image slots, the prompt-generation
+    // fallback is the profile's required thinking slot, so the resolved
+    // target always carries a provider and model id.
+    final provider = target.provider!;
+    final modelId = target.modelId!;
     final effectiveThinkingMode = _geminiThinkingModeForTarget(
       target,
       geminiThinkingMode,
     );
-    if (provider == null || modelId == null) {
-      developer.log(
-        'Profile missing prompt generation provider/model for $entryId',
-        name: _logTag,
-      );
-      return;
-    }
 
     await _withStatusTracking(
       entityId: entryId,

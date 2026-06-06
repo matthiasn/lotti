@@ -480,4 +480,151 @@ void main() {
       }
     }, tags: 'glados');
   });
+
+  group('resolveInferenceProviderForModelConfigId', () {
+    test('resolves the model row and its usable provider', () async {
+      final model = testAiModel(id: 'config-row-1');
+      when(
+        () => mockAiConfig.getConfigById('config-row-1'),
+      ).thenAnswer((_) async => model);
+      when(
+        () => mockAiConfig.getConfigById('provider-1'),
+      ).thenAnswer((_) async => testInferenceProvider());
+
+      final resolved = await resolveInferenceProviderForModelConfigId(
+        modelConfigId: 'config-row-1',
+        aiConfigRepository: mockAiConfig,
+      );
+
+      expect(resolved, isNotNull);
+      expect(resolved!.model.id, 'config-row-1');
+      expect(resolved.provider.id, 'provider-1');
+    });
+
+    test('returns null when the config id does not exist', () async {
+      when(
+        () => mockAiConfig.getConfigById('missing'),
+      ).thenAnswer((_) async => null);
+
+      final resolved = await resolveInferenceProviderForModelConfigId(
+        modelConfigId: 'missing',
+        aiConfigRepository: mockAiConfig,
+      );
+
+      expect(resolved, isNull);
+    });
+
+    test('returns null when the config id is not a model', () async {
+      when(
+        () => mockAiConfig.getConfigById('provider-as-model'),
+      ).thenAnswer((_) async => testInferenceProvider(id: 'provider-as-model'));
+
+      final resolved = await resolveInferenceProviderForModelConfigId(
+        modelConfigId: 'provider-as-model',
+        aiConfigRepository: mockAiConfig,
+      );
+
+      expect(resolved, isNull);
+    });
+
+    test('returns null when the parent provider is missing', () async {
+      when(
+        () => mockAiConfig.getConfigById('config-row-1'),
+      ).thenAnswer((_) async => testAiModel(id: 'config-row-1'));
+      when(
+        () => mockAiConfig.getConfigById('provider-1'),
+      ).thenAnswer((_) async => null);
+
+      final resolved = await resolveInferenceProviderForModelConfigId(
+        modelConfigId: 'config-row-1',
+        aiConfigRepository: mockAiConfig,
+      );
+
+      expect(resolved, isNull);
+    });
+
+    test(
+      'returns null when the parent provider has no API key',
+      () async {
+        when(
+          () => mockAiConfig.getConfigById('config-row-1'),
+        ).thenAnswer((_) async => testAiModel(id: 'config-row-1'));
+        when(
+          () => mockAiConfig.getConfigById('provider-1'),
+        ).thenAnswer((_) async => testInferenceProvider(apiKey: ''));
+
+        final resolved = await resolveInferenceProviderForModelConfigId(
+          modelConfigId: 'config-row-1',
+          aiConfigRepository: mockAiConfig,
+        );
+
+        expect(resolved, isNull);
+      },
+    );
+  });
+
+  group('resolveInferenceProviderForProfileSlot', () {
+    test('prefers an exact AiConfigModel.id match', () async {
+      // Two rows share the providerModelId; the slot stores the row id of
+      // the second one, which must win over the wire-level fallback.
+      final rowA = testAiModel(id: 'row-a', inferenceProviderId: 'provider-a');
+      final rowB = testAiModel(id: 'row-b');
+      when(
+        () => mockAiConfig.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => [rowA, rowB]);
+      when(
+        () => mockAiConfig.getConfigById('provider-1'),
+      ).thenAnswer((_) async => testInferenceProvider());
+
+      final resolved = await resolveInferenceProviderForProfileSlot(
+        modelId: 'row-b',
+        aiConfigRepository: mockAiConfig,
+      );
+
+      expect(resolved, isNotNull);
+      expect(resolved!.model.id, 'row-b');
+      expect(resolved.provider.id, 'provider-1');
+      // The exact-id path never falls through to the legacy candidate walk.
+      verifyNever(() => mockAiConfig.getConfigById('provider-a'));
+    });
+
+    test(
+      'falls back to the legacy providerModelId lookup for old slots',
+      () async {
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [testAiModel()]);
+        when(
+          () => mockAiConfig.getConfigById('provider-1'),
+        ).thenAnswer((_) async => testInferenceProvider());
+
+        final resolved = await resolveInferenceProviderForProfileSlot(
+          modelId: 'models/gemini-3-flash-preview',
+          aiConfigRepository: mockAiConfig,
+        );
+
+        expect(resolved, isNotNull);
+        expect(resolved!.model.id, 'model-1');
+      },
+    );
+
+    test(
+      'returns null when an exact-id match has an unusable provider',
+      () async {
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [testAiModel()]);
+        when(
+          () => mockAiConfig.getConfigById('provider-1'),
+        ).thenAnswer((_) async => testInferenceProvider(apiKey: ''));
+
+        final resolved = await resolveInferenceProviderForProfileSlot(
+          modelId: 'model-1',
+          aiConfigRepository: mockAiConfig,
+        );
+
+        expect(resolved, isNull);
+      },
+    );
+  });
 }

@@ -267,7 +267,10 @@ class CloudInferenceRepository {
     final reasoningEffort =
         provider?.inferenceProviderType == InferenceProviderType.gemini &&
             GeminiThinkingConfig.isGemini3(model)
-        ? _geminiReasoningEffort(geminiThinkingMode ?? GeminiThinkingMode.low)
+        ? _geminiReasoningEffort(
+            model,
+            geminiThinkingMode ?? GeminiThinkingMode.low,
+          )
         : null;
 
     if (tools != null && tools.isNotEmpty) {
@@ -460,7 +463,10 @@ class CloudInferenceRepository {
     final reasoningEffort =
         provider.inferenceProviderType == InferenceProviderType.gemini &&
             GeminiThinkingConfig.isGemini3(model)
-        ? _geminiReasoningEffort(geminiThinkingMode ?? GeminiThinkingMode.low)
+        ? _geminiReasoningEffort(
+            model,
+            geminiThinkingMode ?? GeminiThinkingMode.low,
+          )
         : null;
 
     return client
@@ -631,8 +637,15 @@ class CloudInferenceRepository {
     );
   }
 
-  ReasoningEffort _geminiReasoningEffort(GeminiThinkingMode mode) {
-    return switch (mode) {
+  /// Maps a [GeminiThinkingMode] to the OpenAI-compatible `reasoning_effort`
+  /// value for [model], collapsing modes that the model does not support
+  /// (non-Flash Gemini 3 only accepts low/high) via
+  /// [GeminiThinkingConfig.effectiveMode].
+  ReasoningEffort _geminiReasoningEffort(
+    String model,
+    GeminiThinkingMode mode,
+  ) {
+    return switch (GeminiThinkingConfig.effectiveMode(model, mode)) {
       GeminiThinkingMode.minimal => ReasoningEffort.minimal,
       GeminiThinkingMode.low => ReasoningEffort.low,
       GeminiThinkingMode.medium => ReasoningEffort.medium,

@@ -156,6 +156,106 @@ void main() {
     await dir.delete(recursive: true);
   });
 
+  test(
+    'forwards the model row thinking mode for Gemini 3 audio models',
+    () async {
+      // Isolated DB: the shared instance already carries a
+      // 'gemini-2.5-flash' row from earlier tests, which would win the
+      // batch-model selection over the Gemini 3 row under test.
+      final isolatedDb = AiConfigDb(inMemoryDatabase: true);
+      addTearDown(isolatedDb.close);
+      final aiRepo = AiConfigRepository(isolatedDb);
+      await aiRepo.saveConfig(
+        AiConfig.inferenceProvider(
+          id: 'p-g3',
+          baseUrl: 'http://localhost:1234',
+          apiKey: 'k',
+          name: 'Gemini',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          inferenceProviderType: InferenceProviderType.gemini,
+        ),
+        fromSync: true,
+      );
+      await aiRepo.saveConfig(
+        AiConfig.model(
+          id: 'm-g3',
+          name: 'gemini-3-flash',
+          providerModelId: 'gemini-3-flash-preview',
+          inferenceProviderId: 'p-g3',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          inputModalities: const [Modality.audio],
+          outputModalities: const [Modality.text],
+          isReasoningModel: true,
+          geminiThinkingMode: GeminiThinkingMode.medium,
+        ),
+        fromSync: true,
+      );
+
+      final dir = await Directory.systemTemp.createTemp('svc_test_');
+      final file = File('${dir.path}/a.m4a');
+      await file.writeAsBytes([1, 2, 3, 4]);
+
+      final mockCloud = MockCloudInferenceRepository();
+      when(
+        () => mockCloud.generateWithAudio(
+          any(),
+          model: any(named: 'model'),
+          audioBase64: any(named: 'audioBase64'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          provider: any(named: 'provider'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          overrideClient: any(named: 'overrideClient'),
+          tools: any(named: 'tools'),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
+        ),
+      ).thenAnswer(
+        (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
+          const CreateChatCompletionStreamResponse(
+            id: '1',
+            object: 'chat.completion.chunk',
+            created: 0,
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'hi'),
+              ),
+            ],
+          ),
+        ]),
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
+          cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final svc = container.read(audioTranscriptionServiceProvider);
+      final result = await svc.transcribe(file.path);
+
+      expect(result, 'hi');
+      // The Gemini 3 row's saved thinking mode reaches the cloud call.
+      verify(
+        () => mockCloud.generateWithAudio(
+          any(),
+          model: 'gemini-3-flash-preview',
+          audioBase64: any(named: 'audioBase64'),
+          baseUrl: any(named: 'baseUrl'),
+          apiKey: any(named: 'apiKey'),
+          provider: any(named: 'provider'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+          geminiThinkingMode: GeminiThinkingMode.medium,
+        ),
+      ).called(1);
+      await dir.delete(recursive: true);
+    },
+  );
+
   test('fallbacks to first audio-capable model when flash not found', () async {
     final aiRepo = AiConfigRepository(sharedDb);
     await aiRepo.saveConfig(

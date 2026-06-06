@@ -884,6 +884,82 @@ void main() {
         expect(capturedParams?.geminiThinkingMode, GeminiThinkingMode.high);
       },
     );
+
+    testWidgets(
+      'prompt generation marks the profile high-end thinking row as the '
+      'picker default via its AiConfigModel.id and collapses picking it '
+      'to a null override',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 10);
+        final provider = _buildProvider(id: 'p-a', name: 'Provider A', t: now);
+        final defaultModel = _buildModel(
+          id: 'm-default',
+          name: 'Default Thinker',
+          providerModelId: 'wire-a',
+          providerId: 'p-a',
+          modality: Modality.text,
+          t: now,
+        );
+        final otherModel = _buildModel(
+          id: 'm-other',
+          name: 'Other Thinker',
+          providerModelId: 'wire-b',
+          providerId: 'p-a',
+          modality: Modality.text,
+          t: now,
+        );
+        // The profile's high-end slot resolved to the actual model row, so
+        // the popup must match it by AiConfigModel.id — not by walking the
+        // wire-level providerModelId.
+        final profile = ResolvedProfile(
+          thinkingModelId: 'wire-a',
+          thinkingProvider: provider,
+          thinkingModel: defaultModel,
+        );
+        TriggerSkillParams? capturedParams;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testTaskEntity,
+              linkedFromId: null,
+            ),
+            overrides: [
+              ..._baseOverrides(
+                entity: testTaskEntity,
+                skill: testSkills.last,
+                models: [defaultModel, otherModel],
+                resolver: _FixedProfileResolver(profile),
+                configs: [defaultModel, otherModel, provider],
+              ),
+              triggerSkillProvider.overrideWith((ref, params) async {
+                capturedParams = params;
+              }),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Prompt Generation Skill'));
+        await tester.pumpAndSettle();
+
+        // Picker shows both text-capable rows.
+        expect(find.byType(InferenceModelPickerModal), findsOneWidget);
+        expect(find.text('Default Thinker'), findsOneWidget);
+        expect(find.text('Other Thinker'), findsOneWidget);
+
+        // Picking the default row collapses the override to null so the
+        // runner reads the profile slot.
+        await tester.tap(find.text('Default Thinker'));
+        await tester.pumpAndSettle();
+
+        expect(capturedParams, isNotNull);
+        expect(capturedParams!.overrideModelId, isNull);
+        expect(capturedParams!.geminiThinkingMode, isNull);
+      },
+    );
   });
 
   group('Image Generation Skill Handling', () {

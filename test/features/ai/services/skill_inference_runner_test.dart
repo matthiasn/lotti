@@ -746,6 +746,176 @@ void main() {
         expect(updatedEntity.data.transcripts!.last.model, 'whisper-1');
       });
 
+      test(
+        'forwards the resolved Gemini thinking mode for Gemini 3 targets',
+        () async {
+          final audioEntity = makeAudioEntity();
+          final audioDir = Directory('${tempDir.path}/audio');
+          await audioDir.create(recursive: true);
+          await File(
+            '${audioDir.path}/test.aac',
+          ).writeAsBytes([0x48, 0x65]);
+
+          final geminiModelRow = testAiModel(
+            id: 'gemini-3-row',
+            providerModelId: 'gemini-3-flash-preview',
+            inferenceProviderId: 'p-audio',
+          ).copyWith(geminiThinkingMode: GeminiThinkingMode.high);
+          final result = AutomationResult(
+            handled: true,
+            resolvedProfile: ResolvedProfile(
+              thinkingModelId: 'models/gemini-3-flash-preview',
+              thinkingProvider: testInferenceProvider(),
+              transcriptionModelId: 'gemini-3-flash-preview',
+              transcriptionProvider: testInferenceProvider(id: 'p-audio'),
+              transcriptionModel: geminiModelRow,
+            ),
+            skill: testSkill,
+            skillAssignment: const SkillAssignment(
+              skillId: 'skill-transcribe',
+              automate: true,
+            ),
+          );
+
+          when(
+            () => mockAiInputRepo.getEntity('audio-1'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockPromptBuilderHelper.getSpeechDictionaryTerms(
+              audioEntity,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([makeStreamChunk('Hello')]),
+          );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: result,
+          );
+
+          // The model row's saved default thinking mode reaches the cloud
+          // call because the target is a Gemini 3 model on a Gemini
+          // provider and no per-invocation override was given.
+          verify(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: 'gemini-3-flash-preview',
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              geminiThinkingMode: GeminiThinkingMode.high,
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'a per-invocation thinking mode override beats the model default',
+        () async {
+          final audioEntity = makeAudioEntity();
+          final audioDir = Directory('${tempDir.path}/audio');
+          await audioDir.create(recursive: true);
+          await File(
+            '${audioDir.path}/test.aac',
+          ).writeAsBytes([0x48, 0x65]);
+
+          final geminiModelRow = testAiModel(
+            id: 'gemini-3-row',
+            providerModelId: 'gemini-3-flash-preview',
+            inferenceProviderId: 'p-audio',
+          ).copyWith(geminiThinkingMode: GeminiThinkingMode.high);
+          final result = AutomationResult(
+            handled: true,
+            resolvedProfile: ResolvedProfile(
+              thinkingModelId: 'models/gemini-3-flash-preview',
+              thinkingProvider: testInferenceProvider(),
+              transcriptionModelId: 'gemini-3-flash-preview',
+              transcriptionProvider: testInferenceProvider(id: 'p-audio'),
+              transcriptionModel: geminiModelRow,
+            ),
+            skill: testSkill,
+            skillAssignment: const SkillAssignment(
+              skillId: 'skill-transcribe',
+              automate: true,
+            ),
+          );
+
+          when(
+            () => mockAiInputRepo.getEntity('audio-1'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockPromptBuilderHelper.getSpeechDictionaryTerms(
+              audioEntity,
+            ),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([makeStreamChunk('Hello')]),
+          );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: result,
+            geminiThinkingMode: GeminiThinkingMode.minimal,
+          );
+
+          verify(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: 'gemini-3-flash-preview',
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              geminiThinkingMode: GeminiThinkingMode.minimal,
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).called(1);
+        },
+      );
+
       test('returns early on empty transcription response', () async {
         final audioEntity = makeAudioEntity();
 

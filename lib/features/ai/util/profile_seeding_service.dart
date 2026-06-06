@@ -5,6 +5,7 @@ import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+import 'package:meta/meta.dart';
 
 /// Well-known IDs for default inference profiles (idempotent seeding).
 const profileGeminiFlashId = 'profile-gemini-flash-001';
@@ -100,7 +101,7 @@ class ProfileSeedingService {
         final sanitized = template.skillAssignments.where((a) {
           final skill = findBuiltInSkill(a.skillId);
           if (skill == null) return true; // keep unknown skills as-is
-          return _hasSlotForSkillType(upgraded, skill.skillType);
+          return hasSlotForSkillType(upgraded, skill.skillType, models);
         }).toList();
 
         if (sanitized.isNotEmpty) {
@@ -172,18 +173,60 @@ class ProfileSeedingService {
     return slotValue;
   }
 
-  /// Returns true when the profile has the model slot required by [skillType].
-  static bool _hasSlotForSkillType(
+  /// Returns true when the profile's slot for [skillType] points at a real
+  /// configured model row — by `AiConfigModel.id` or legacy
+  /// `providerModelId`. A non-null slot value alone is not enough:
+  /// `_withResolvedModelConfigIds` leaves unknown values untouched, and
+  /// re-enabling a default skill on a slot with no backing model row would
+  /// auto-enable broken automation.
+  ///
+  /// Visible for testing: the bundled default templates only carry
+  /// transcription and image-analysis assignments, so the remaining switch
+  /// arms are exercised directly.
+  @visibleForTesting
+  static bool hasSlotForSkillType(
     AiConfigInferenceProfile profile,
     SkillType skillType,
+    List<AiConfigModel> models,
   ) {
     return switch (skillType) {
-      SkillType.transcription => profile.transcriptionModelId != null,
-      SkillType.imageAnalysis => profile.imageRecognitionModelId != null,
-      SkillType.imageGeneration => profile.imageGenerationModelId != null,
-      SkillType.promptGeneration => true, // uses thinking model
-      SkillType.imagePromptGeneration => true, // uses thinking model
+      SkillType.transcription => _slotResolvesToModelRow(
+        profile.transcriptionModelId,
+        models,
+      ),
+      SkillType.imageAnalysis => _slotResolvesToModelRow(
+        profile.imageRecognitionModelId,
+        models,
+      ),
+      SkillType.imageGeneration => _slotResolvesToModelRow(
+        profile.imageGenerationModelId,
+        models,
+      ),
+      // Prompt-generation skills run on the thinking slot (the high-end
+      // slot falls back to it at resolution time).
+      SkillType.promptGeneration => _slotResolvesToModelRow(
+        profile.thinkingModelId,
+        models,
+      ),
+      SkillType.imagePromptGeneration => _slotResolvesToModelRow(
+        profile.thinkingModelId,
+        models,
+      ),
     };
+  }
+
+  /// True when [slotValue] matches a configured model row by exact
+  /// `AiConfigModel.id` or by legacy `providerModelId`. Ambiguous legacy
+  /// values (2+ rows) still count — the runtime resolver walks every
+  /// candidate — but values with no matching row at all do not.
+  static bool _slotResolvesToModelRow(
+    String? slotValue,
+    List<AiConfigModel> models,
+  ) {
+    if (slotValue == null) return false;
+    return models.any(
+      (model) => model.id == slotValue || model.providerModelId == slotValue,
+    );
   }
 
   /// The default profile definitions.

@@ -1797,7 +1797,8 @@ void main() {
     );
 
     test(
-      'generateWithAudio maps Gemini 3 thinking mode to reasoning effort',
+      'generateWithAudio collapses unsupported thinking modes for '
+      'non-Flash Gemini 3 models',
       () async {
         final geminiProvider =
             AiConfig.inferenceProvider(
@@ -1810,33 +1811,105 @@ void main() {
                 )
                 as AiConfigInferenceProvider;
 
-        when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
-          ),
-        ).thenAnswer((_) => const Stream.empty());
+        // Gemini 3 Pro only accepts low/high; minimal must collapse to low
+        // (mirroring GeminiThinkingConfig's thinkingLevel collapse).
+        const expectedByMode = {
+          GeminiThinkingMode.minimal: ReasoningEffort.low,
+          GeminiThinkingMode.low: ReasoningEffort.low,
+          GeminiThinkingMode.medium: ReasoningEffort.high,
+          GeminiThinkingMode.high: ReasoningEffort.high,
+        };
 
-        await repository
-            .generateWithAudio(
-              prompt,
-              model: 'models/gemini-3.1-pro-preview',
-              audioBase64: 'base64-audio-data',
-              baseUrl: geminiProvider.baseUrl,
-              apiKey: geminiProvider.apiKey,
-              provider: geminiProvider,
-              overrideClient: mockClient,
-              geminiThinkingMode: GeminiThinkingMode.minimal,
-            )
-            .toList();
+        for (final entry in expectedByMode.entries) {
+          when(
+            () => mockClient.createChatCompletionStream(
+              request: any(named: 'request'),
+            ),
+          ).thenAnswer((_) => const Stream.empty());
 
-        final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
-          ),
-        ).captured;
+          await repository
+              .generateWithAudio(
+                prompt,
+                model: 'models/gemini-3.1-pro-preview',
+                audioBase64: 'base64-audio-data',
+                baseUrl: geminiProvider.baseUrl,
+                apiKey: geminiProvider.apiKey,
+                provider: geminiProvider,
+                overrideClient: mockClient,
+                geminiThinkingMode: entry.key,
+              )
+              .toList();
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.reasoningEffort, ReasoningEffort.minimal);
+          final captured = verify(
+            () => mockClient.createChatCompletionStream(
+              request: captureAny(named: 'request'),
+            ),
+          ).captured;
+
+          final request = captured.first as CreateChatCompletionRequest;
+          expect(
+            request.reasoningEffort,
+            entry.value,
+            reason: 'mode ${entry.key} on Gemini 3 Pro',
+          );
+        }
+      },
+    );
+
+    test(
+      'generateWithAudio keeps all four reasoning efforts for Gemini 3 Flash',
+      () async {
+        final geminiProvider =
+            AiConfig.inferenceProvider(
+                  id: 'gemini-provider',
+                  name: 'Gemini',
+                  baseUrl: 'https://generativelanguage.googleapis.com',
+                  apiKey: 'test-api-key',
+                  createdAt: DateTime(2024, 3, 15),
+                  inferenceProviderType: InferenceProviderType.gemini,
+                )
+                as AiConfigInferenceProvider;
+
+        const expectedByMode = {
+          GeminiThinkingMode.minimal: ReasoningEffort.minimal,
+          GeminiThinkingMode.low: ReasoningEffort.low,
+          GeminiThinkingMode.medium: ReasoningEffort.medium,
+          GeminiThinkingMode.high: ReasoningEffort.high,
+        };
+
+        for (final entry in expectedByMode.entries) {
+          when(
+            () => mockClient.createChatCompletionStream(
+              request: any(named: 'request'),
+            ),
+          ).thenAnswer((_) => const Stream.empty());
+
+          await repository
+              .generateWithAudio(
+                prompt,
+                model: 'gemini-3-flash-preview',
+                audioBase64: 'base64-audio-data',
+                baseUrl: geminiProvider.baseUrl,
+                apiKey: geminiProvider.apiKey,
+                provider: geminiProvider,
+                overrideClient: mockClient,
+                geminiThinkingMode: entry.key,
+              )
+              .toList();
+
+          final captured = verify(
+            () => mockClient.createChatCompletionStream(
+              request: captureAny(named: 'request'),
+            ),
+          ).captured;
+
+          final request = captured.first as CreateChatCompletionRequest;
+          expect(
+            request.reasoningEffort,
+            entry.value,
+            reason: 'mode ${entry.key} on Gemini 3 Flash',
+          );
+        }
       },
     );
 

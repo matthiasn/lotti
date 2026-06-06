@@ -10,9 +10,7 @@ import 'package:lotti/widgets/selection/selection_option.dart';
 /// Model settings use this as the saved default for a model row. Invocation
 /// flows use the same content as a one-run override picker, preselected to the
 /// row default.
-class GeminiThinkingModePickerModal {
-  const GeminiThinkingModePickerModal._();
-
+abstract final class GeminiThinkingModePickerModal {
   static Future<GeminiThinkingMode?> show({
     required BuildContext context,
     required GeminiThinkingMode selectedMode,
