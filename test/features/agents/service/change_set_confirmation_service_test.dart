@@ -2322,13 +2322,58 @@ void main() {
           verify(
             () => mockDomainLogger.error(
               LogDomain.agentWorkflow,
-              any(that: contains('Tool dispatch failed for item 0')),
+              any(
+                that: allOf(
+                  contains('Tool dispatch failed for item 0'),
+                  // errorMessage set, not policy-denied -> toolError kind.
+                  contains('failureKind=toolError'),
+                ),
+              ),
               subDomain: any(named: 'subDomain'),
               stackTrace: any(named: 'stackTrace'),
             ),
           ).called(1);
         });
       });
+
+      test(
+        'logs policyDenied failure kind when dispatch is policy-denied',
+        () async {
+          final changeSet = makeChangeSetWith();
+
+          when(
+            () => mockToolDispatcher.dispatch(any(), any(), any()),
+          ).thenAnswer(
+            (_) async => const ToolExecutionResult(
+              success: false,
+              output: 'Denied by category policy',
+              policyDenied: true,
+            ),
+          );
+
+          when(
+            () => mockSyncService.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          await withClock(testClock, () async {
+            await service.confirmItem(changeSet, 0);
+
+            verify(
+              () => mockDomainLogger.error(
+                LogDomain.agentWorkflow,
+                any(
+                  that: allOf(
+                    contains('Tool dispatch failed for item 0'),
+                    contains('failureKind=policyDenied'),
+                  ),
+                ),
+                subDomain: any(named: 'subDomain'),
+                stackTrace: any(named: 'stackTrace'),
+              ),
+            ).called(1);
+          });
+        },
+      );
 
       test('logs skip message for already-rejected item on reject', () async {
         final changeSet = makeTestChangeSet(

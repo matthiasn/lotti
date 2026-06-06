@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:meta/meta.dart';
 
 /// Well-known feedback source identifiers.
 abstract final class FeedbackSources {
@@ -271,10 +272,11 @@ class FeedbackExtractionService {
 
   static bool _decisionHasExplanatoryContext(ChangeDecisionEntity decision) {
     if (_isMeaningfulSignalText(decision.rejectionReason)) return true;
-    return _argsContainExplanatoryContext(decision.args);
+    return argsContainExplanatoryContext(decision.args);
   }
 
-  static bool _argsContainExplanatoryContext(Map<String, dynamic>? args) {
+  @visibleForTesting
+  static bool argsContainExplanatoryContext(Map<String, dynamic>? args) {
     if (args == null || args.isEmpty) return false;
 
     const explanatoryKeys = {
@@ -390,9 +392,9 @@ class FeedbackExtractionService {
             ObservationCategory.grievance => FeedbackSentiment.negative,
             ObservationCategory.templateImprovement =>
               FeedbackSentiment.negative,
-            ObservationCategory.operational => _classifyTextSentiment(detail),
+            ObservationCategory.operational => classifyTextSentiment(detail),
           }
-        : _classifyTextSentiment(detail);
+        : classifyTextSentiment(detail);
 
     return ClassifiedFeedbackItem(
       sentiment: sentiment,
@@ -451,16 +453,17 @@ class FeedbackExtractionService {
   /// Scans the lowercase text for positive and negative indicator words/phrases
   /// and returns the dominant sentiment. Returns [FeedbackSentiment.neutral]
   /// when signals are balanced or absent.
-  static FeedbackSentiment _classifyTextSentiment(String text) {
+  @visibleForTesting
+  static FeedbackSentiment classifyTextSentiment(String text) {
     final lower = text.toLowerCase();
 
     var positiveScore = 0;
     var negativeScore = 0;
 
-    for (final keyword in _positiveKeywords) {
+    for (final keyword in positiveSentimentKeywords) {
       if (lower.contains(keyword)) positiveScore++;
     }
-    for (final keyword in _negativeKeywords) {
+    for (final keyword in negativeSentimentKeywords) {
       if (lower.contains(keyword)) negativeScore++;
     }
 
@@ -469,7 +472,8 @@ class FeedbackExtractionService {
     return FeedbackSentiment.neutral;
   }
 
-  static const _positiveKeywords = [
+  @visibleForTesting
+  static const positiveSentimentKeywords = [
     'success',
     'completed',
     'approved',
@@ -501,7 +505,8 @@ class FeedbackExtractionService {
     'stable',
   ];
 
-  static const _negativeKeywords = [
+  @visibleForTesting
+  static const negativeSentimentKeywords = [
     'fail',
     'error',
     'issue',
