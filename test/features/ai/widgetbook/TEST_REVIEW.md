@@ -17,7 +17,7 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `lib/features/ai/widgetbook/ai_shader_animations_widgetbook.dart` — **1234 lines**, the largest file in the entire `ai/` feature. The file mixes three distinct concerns:
+- [x] **[HIGH]** `lib/features/ai/widgetbook/ai_shader_animations_widgetbook.dart` — **1234 lines**, the largest file in the entire `ai/` feature. The file mixes three distinct concerns:
   1. **Public API** (lines 1–62): `buildAiWidgetbookFolder()`, `buildAiShaderAnimationsWidgetbookComponent()` — the widgetbook registration.
   2. **Pure envelope logic** (lines 293–320): `applyVoiceDbfsEnvelope()` and related constants (`voiceRecorderAmplitudeInterval`, `voiceRecorderReleaseDbPerSecond`) — pure math, `@visibleForTesting`.
   3. **Private widget classes** (lines 64–1233): `_VoiceShaderConfig`, `_ThinkingShaderConfig`, `_VoiceInputOrbUseCase`, `_VoiceRouteMatrixUseCase`, `_ThinkingLineUseCase`, `_ThinkingRouteMatrixUseCase`, `_ActionBarStudyUseCase`, `_WidgetbookCanvas`, and several state classes.
@@ -25,7 +25,7 @@
   Recommended split:
   - Extract the pure `applyVoiceDbfsEnvelope` logic and constants into `ai_voice_envelope.dart` (or into `lib/features/ai/util/pcm_amplitude.dart` if it fits there — check if `pcm_amplitude.dart` is the right home).
   - Extract private widget implementations into `ai_shader_animation_cases.dart` (or keep private in the widgetbook file — these are UI-only and not tested).
-  - Keep `ai_shader_animations_widgetbook.dart` as the public registration surface (~100 lines).
+  - Keep `ai_shader_animations_widgetbook.dart` as the public registration surface (~100 lines). **RESOLVED (adapted):** the private config + use-case widget classes moved to a `part` file `ai_shader_animation_cases.dart` (1 144 lines); the library file is the 93-line public registration surface and keeps the `@visibleForTesting` `applyVoiceDbfsEnvelope` + constants (the mirror test covers exactly that pure logic, so a move to `pcm_amplitude.dart` would have forced a test relocation for no gain).
 
 - [ ] **[LOW]** `test/features/ai/widgetbook/ai_shader_animations_widgetbook_test.dart` — 61 lines. No split needed; extend coverage instead.
 
