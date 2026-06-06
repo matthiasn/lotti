@@ -35,7 +35,7 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `ui/detail/panel_registry.dart:1` (631 lines) — contains five distinct concerns:
+- [x] **[HIGH]** `ui/detail/panel_registry.dart:1` (631 lines) — contains five distinct concerns: **RESOLVED:** concerns 4 and 5 moved to `detail_id_dispatch.dart` (Step-8 builders + DetailIdDispatch, 166 ln) and `ai_panel_dispatch.dart` (Step-9 builders + AiPanelDispatch/AiPanelSelection, 229 ln) as part files — external consumers keep importing `panel_registry.dart` (now 241 ln, target met) and the single mirror test stays valid. All 320 feature tests pass.
   1. `SettingsPanelSpec` / `kSettingsPanels` registry constant (lines 63–168)
   2. `panelSpecFor` resolver and `kSettingsPanelSwapDuration` constant (lines 172–184)
   3. Step-7 simple-leaf builder functions (lines 186–239)
