@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
 import 'package:lotti/features/whats_new/model/whats_new_release.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
@@ -91,6 +92,18 @@ void main() {
     container.dispose();
   });
 
+  /// Re-creates the mock service and container after seeding
+  /// SharedPreferences — the controller reads prefs during build, so the
+  /// seed must land before the container that builds it exists.
+  void remakeContainer({Map<String, Object> prefs = const {}}) {
+    SharedPreferences.setMockInitialValues(prefs);
+    container.dispose();
+    mockService = MockWhatsNewService();
+    container = ProviderContainer(
+      overrides: [whatsNewServiceProvider.overrideWithValue(mockService)],
+    );
+  }
+
   group('WhatsNewController', () {
     test('returns empty state when index is null', () async {
       when(() => mockService.fetchIndex()).thenAnswer((_) async => null);
@@ -130,16 +143,10 @@ void main() {
     });
 
     test('returns only unseen releases when some already seen', () async {
-      SharedPreferences.setMockInitialValues({
-        'whats_new_seen_0.9.970': true,
-      });
-
-      container.dispose();
-      mockService = MockWhatsNewService();
-      container = ProviderContainer(
-        overrides: [
-          whatsNewServiceProvider.overrideWithValue(mockService),
-        ],
+      remakeContainer(
+        prefs: {
+          'whats_new_seen_0.9.970': true,
+        },
       );
 
       when(
@@ -160,17 +167,11 @@ void main() {
     });
 
     test('returns empty state when all releases already seen', () async {
-      SharedPreferences.setMockInitialValues({
-        'whats_new_seen_0.9.980': true,
-        'whats_new_seen_0.9.970': true,
-      });
-
-      container.dispose();
-      mockService = MockWhatsNewService();
-      container = ProviderContainer(
-        overrides: [
-          whatsNewServiceProvider.overrideWithValue(mockService),
-        ],
+      remakeContainer(
+        prefs: {
+          'whats_new_seen_0.9.980': true,
+          'whats_new_seen_0.9.970': true,
+        },
       );
 
       when(
@@ -186,13 +187,7 @@ void main() {
     });
 
     test('markAllAsSeen updates state and preferences', () async {
-      container.dispose();
-      mockService = MockWhatsNewService();
-      container = ProviderContainer(
-        overrides: [
-          whatsNewServiceProvider.overrideWithValue(mockService),
-        ],
-      );
+      remakeContainer();
 
       when(
         () => mockService.fetchIndex(),
@@ -220,13 +215,7 @@ void main() {
     });
 
     test('markAsSeen removes specific release from state', () async {
-      container.dispose();
-      mockService = MockWhatsNewService();
-      container = ProviderContainer(
-        overrides: [
-          whatsNewServiceProvider.overrideWithValue(mockService),
-        ],
-      );
+      remakeContainer();
 
       when(
         () => mockService.fetchIndex(),
@@ -255,13 +244,7 @@ void main() {
     });
 
     test('markAllAsSeen does nothing when no content', () async {
-      container.dispose();
-      mockService = MockWhatsNewService();
-      container = ProviderContainer(
-        overrides: [
-          whatsNewServiceProvider.overrideWithValue(mockService),
-        ],
-      );
+      remakeContainer();
 
       when(() => mockService.fetchIndex()).thenAnswer((_) async => null);
 
@@ -273,18 +256,12 @@ void main() {
     });
 
     test('resetSeenStatus clears preferences and refreshes', () async {
-      SharedPreferences.setMockInitialValues({
-        'whats_new_seen_0.9.980': true,
-        'whats_new_seen_0.9.970': true,
-        'other_key': true,
-      });
-
-      container.dispose();
-      mockService = MockWhatsNewService();
-      container = ProviderContainer(
-        overrides: [
-          whatsNewServiceProvider.overrideWithValue(mockService),
-        ],
+      remakeContainer(
+        prefs: {
+          'whats_new_seen_0.9.980': true,
+          'whats_new_seen_0.9.970': true,
+          'other_key': true,
+        },
       );
 
       when(
@@ -477,6 +454,83 @@ void main() {
 
       // Should not have checked version or fetched releases
       verifyNever(() => mockService.fetchIndex());
+    });
+  });
+
+  group('isNewerVersion', () {
+    test('worked examples across part boundaries', () {
+      expect(WhatsNewController.isNewerVersion('0.9.804', '0.9.802'), isTrue);
+      expect(WhatsNewController.isNewerVersion('0.9.802', '0.9.804'), isFalse);
+      expect(WhatsNewController.isNewerVersion('0.9.802', '0.9.802'), isFalse);
+      expect(WhatsNewController.isNewerVersion('1.0.0', '0.9.999'), isTrue);
+      expect(WhatsNewController.isNewerVersion('100.0.0', '0.9.980'), isTrue);
+      // More parts on equal prefix counts as newer.
+      expect(WhatsNewController.isNewerVersion('1.0.0.1', '1.0.0'), isTrue);
+      // Unparseable parts are treated as 0.
+      expect(WhatsNewController.isNewerVersion('1.x.0', '1.0.0'), isFalse);
+      expect(WhatsNewController.isNewerVersion('1.1.0', '1.x.0'), isTrue);
+    });
+
+    glados.Glados3<int, int, int>(
+      glados.IntAnys(glados.any).intInRange(0, 100),
+      glados.IntAnys(glados.any).intInRange(0, 100),
+      glados.IntAnys(glados.any).intInRange(0, 100),
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'irreflexive, asymmetric, and bump-sensitive over generated versions',
+      (major, minor, patch) {
+        final version = '$major.$minor.$patch';
+
+        // A version is never newer than itself.
+        expect(WhatsNewController.isNewerVersion(version, version), isFalse);
+
+        // Bumping any single part makes it newer — and the comparison is
+        // asymmetric.
+        final bumps = [
+          '${major + 1}.$minor.$patch',
+          '$major.${minor + 1}.$patch',
+          '$major.$minor.${patch + 1}',
+        ];
+        for (final bumped in bumps) {
+          expect(
+            WhatsNewController.isNewerVersion(bumped, version),
+            isTrue,
+            reason: '$bumped vs $version',
+          );
+          expect(
+            WhatsNewController.isNewerVersion(version, bumped),
+            isFalse,
+            reason: '$version vs $bumped',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('version gating through build', () {
+    test('skips releases newer than the installed app version', () async {
+      // The PackageInfo mock reports 99.99.99 — a 100.0.0 release is from
+      // the future and must be filtered out, while 0.9.980 still shows.
+      final futureRelease = WhatsNewRelease(
+        version: '100.0.0',
+        date: DateTime(2027),
+        title: 'Future Update',
+        folder: '100.0.0',
+      );
+
+      when(
+        () => mockService.fetchIndex(),
+      ).thenAnswer((_) async => [futureRelease, testRelease1]);
+      when(
+        () => mockService.fetchContent(testRelease1),
+      ).thenAnswer((_) async => testContent1);
+
+      final state = await container.read(whatsNewControllerProvider.future);
+
+      expect(state.unseenContent, hasLength(1));
+      expect(state.unseenContent.single.release.version, '0.9.980');
+      verifyNever(() => mockService.fetchContent(futureRelease));
     });
   });
 }

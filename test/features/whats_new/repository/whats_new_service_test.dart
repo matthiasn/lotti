@@ -351,6 +351,27 @@ Fixed some bugs.
           ),
         ).called(1);
       });
+
+      test('returns null and logs parse error on invalid JSON', () async {
+        when(
+          () => mockHttpClient.get(
+            any(),
+            headers: any(named: 'headers'),
+          ),
+        ).thenAnswer((_) async => http.Response('not json {', 200));
+
+        final releases = await service.fetchIndex();
+
+        expect(releases, isNull);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.whatsNew,
+            any<Object>(that: isA<FormatException>()),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'fetchIndex.parse',
+          ),
+        ).called(1);
+      });
     });
   });
 }

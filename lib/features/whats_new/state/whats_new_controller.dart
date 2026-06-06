@@ -7,6 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:meta/meta.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -88,7 +89,7 @@ class WhatsNewController extends _$WhatsNewController {
       final unseenReleases = <WhatsNewContent>[];
       for (final release in releases) {
         // Skip releases newer than the installed version
-        if (_isNewerVersion(release.version, currentVersion)) {
+        if (isNewerVersion(release.version, currentVersion)) {
           continue;
         }
 
@@ -116,7 +117,10 @@ class WhatsNewController extends _$WhatsNewController {
   /// Returns true if [releaseVersion] is newer than [installedVersion].
   ///
   /// Compares semantic version strings like "0.9.804" vs "0.9.802".
-  bool _isNewerVersion(String releaseVersion, String installedVersion) {
+  /// Static and public-for-tests so the comparison can be exercised
+  /// directly (it gates which releases are shown).
+  @visibleForTesting
+  static bool isNewerVersion(String releaseVersion, String installedVersion) {
     final releaseParts = releaseVersion.split('.').map(int.tryParse).toList();
     final installedParts = installedVersion
         .split('.')
