@@ -44,6 +44,7 @@ abstract final class TaskAgentToolNames {
   static const setTaskStatus = 'set_task_status';
   static const getRelatedTaskDetails = 'get_related_task_details';
   static const requestAttention = 'request_attention';
+  static const resolveAttentionRequest = 'resolve_attention_request';
 
   // Task splitting tools.
   static const createFollowUpTask = 'create_follow_up_task';
@@ -605,6 +606,58 @@ class AgentToolRegistry {
           'energyFit',
           'rationale',
         ],
+        'additionalProperties': false,
+      },
+    ),
+    AgentToolDefinition(
+      name: TaskAgentToolNames.resolveAttentionRequest,
+      description:
+          "Resolve one of this task agent's own active attention requests "
+          'when it is no longer an accurate planner ask. Use this after '
+          'checking the Attention Requests section. If the task is done, mark '
+          'the request satisfied. If the task no longer needs calendar time, '
+          'withdraw it. If the task still needs attention but the ask changed, '
+          'call request_attention with the new concrete ask instead; that '
+          'supersedes the old own request.',
+      parameters: {
+        'type': 'object',
+        'properties': {
+          'requestId': {
+            'type': 'string',
+            'description':
+                'The active attention request id from the Attention Requests '
+                'section. Must belong to this task agent.',
+          },
+          'status': {
+            'type': 'string',
+            'enum': [
+              'withdrawn',
+              'satisfied',
+              'partiallySatisfied',
+              'deferred',
+            ],
+            'description':
+                'How to resolve the active request: withdrawn when no time is '
+                'needed, satisfied when completed by actual work, '
+                'partiallySatisfied when some need remains, or deferred when '
+                'it should be reconsidered later.',
+          },
+          'reason': {
+            'type': 'string',
+            'minLength': 1,
+            'maxLength': 500,
+            'description':
+                'One concise evidence-backed sentence explaining why the '
+                'request is being resolved.',
+          },
+          'nextReviewAt': {
+            'type': 'string',
+            'description':
+                'Optional ISO-8601 time for reconsideration, mainly for '
+                'deferred or partiallySatisfied requests.',
+          },
+        },
+        'required': ['requestId', 'status', 'reason'],
         'additionalProperties': false,
       },
     ),

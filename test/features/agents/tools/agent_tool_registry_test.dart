@@ -28,8 +28,8 @@ void main() {
   });
 
   group('AgentToolRegistry.taskAgentTools', () {
-    test('contains exactly 19 tool definitions', () {
-      expect(AgentToolRegistry.taskAgentTools, hasLength(19));
+    test('contains exactly 20 tool definitions', () {
+      expect(AgentToolRegistry.taskAgentTools, hasLength(20));
     });
 
     test('all tools have non-empty name and description', () {
@@ -596,6 +596,51 @@ void main() {
         expect(
           AgentToolRegistry.deferredTools,
           isNot(contains(TaskAgentToolNames.requestAttention)),
+        );
+      });
+    });
+
+    group('resolve_attention_request', () {
+      late AgentToolDefinition tool;
+
+      setUp(() {
+        tool = AgentToolRegistry.taskAgentTools.firstWhere(
+          (t) => t.name == TaskAgentToolNames.resolveAttentionRequest,
+        );
+      });
+
+      test('has correct name and maintenance description', () {
+        expect(tool.name, equals(TaskAgentToolNames.resolveAttentionRequest));
+        expect(tool.description, contains('own active attention requests'));
+        expect(tool.description, contains('request_attention'));
+      });
+
+      test('requires request id, status, and reason', () {
+        final required = tool.parameters['required'] as List;
+        expect(required, containsAll(['requestId', 'status', 'reason']));
+
+        final properties = tool.parameters['properties'] as Map;
+        expect((properties['requestId'] as Map)['type'], equals('string'));
+        expect((properties['reason'] as Map)['maxLength'], equals(500));
+      });
+
+      test('declares safe task-agent disposition statuses', () {
+        final properties = tool.parameters['properties'] as Map;
+        expect(
+          (properties['status'] as Map)['enum'],
+          equals([
+            'withdrawn',
+            'satisfied',
+            'partiallySatisfied',
+            'deferred',
+          ]),
+        );
+      });
+
+      test('is immediate, not a user-confirmed deferred tool', () {
+        expect(
+          AgentToolRegistry.deferredTools,
+          isNot(contains(TaskAgentToolNames.resolveAttentionRequest)),
         );
       });
     });

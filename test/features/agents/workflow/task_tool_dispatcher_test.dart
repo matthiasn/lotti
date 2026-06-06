@@ -881,6 +881,45 @@ void main() {
           },
         );
 
+        test(
+          'does not supersede another agent claim targeting this task',
+          () async {
+            when(
+              () => localAgentRepository.getAttentionClaimsForTarget(
+                targetKind: 'task',
+                targetId: taskId,
+              ),
+            ).thenAnswer(
+              (_) async => [
+                _makeAttentionRequest(
+                  id: 'attention-other-agent',
+                  agentId: 'project-agent-001',
+                  taskId: taskId,
+                  categoryId: 'work',
+                  requestedMinutes: 30,
+                ),
+              ],
+            );
+
+            final result = await withClock(Clock.fixed(now), () {
+              return localDispatcher.dispatch(
+                TaskAgentToolNames.requestAttention,
+                args,
+                taskId,
+              );
+            });
+
+            expect(result.success, isTrue);
+
+            final captured =
+                verify(
+                      () => localSyncService.upsertEntity(captureAny()),
+                    ).captured.single
+                    as AgentDomainEntity;
+            expect(captured, isA<AttentionRequestEntity>());
+          },
+        );
+
         test('rejects invalid required fields without writing', () async {
           final cases = <Map<String, dynamic>, String>{
             {...args, 'impact': 'high'}: '"impact" must be an integer.',
@@ -1056,6 +1095,126 @@ void main() {
             expect(disposition.status, AttentionClaimStatus.superseded);
           },
         );
+
+        test('resolves an own active attention request', () async {
+          when(
+            () => localAgentRepository.getAttentionClaimsForTarget(
+              targetKind: 'task',
+              targetId: taskId,
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _makeAttentionRequest(
+                id: 'attention-own',
+                agentId: requesterAgentId,
+                taskId: taskId,
+                categoryId: 'work',
+              ),
+            ],
+          );
+
+          final result = await withClock(Clock.fixed(now), () {
+            return localDispatcher.dispatch(
+              TaskAgentToolNames.resolveAttentionRequest,
+              {
+                'requestId': 'attention-own',
+                'status': 'withdrawn',
+                'reason': 'Task no longer needs scheduled calendar time.',
+                'nextReviewAt': '2026-05-30T09:00:00.000',
+              },
+              taskId,
+            );
+          });
+
+          expect(result.success, isTrue);
+          expect(result.output, contains('attention-own'));
+
+          final disposition =
+              verify(
+                    () => localSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AttentionClaimDispositionEntity;
+          expect(disposition.agentId, requesterAgentId);
+          expect(disposition.requestId, 'attention-own');
+          expect(disposition.status, AttentionClaimStatus.withdrawn);
+          expect(
+            disposition.reason,
+            'Task no longer needs scheduled calendar time.',
+          );
+          expect(disposition.nextReviewAt, DateTime(2026, 5, 30, 9));
+          expect(disposition.createdAt, now);
+        });
+
+        test('rejects resolving another agent attention request', () async {
+          when(
+            () => localAgentRepository.getAttentionClaimsForTarget(
+              targetKind: 'task',
+              targetId: taskId,
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _makeAttentionRequest(
+                id: 'attention-other',
+                agentId: 'project-agent-001',
+                taskId: taskId,
+                categoryId: 'work',
+              ),
+            ],
+          );
+
+          final result = await localDispatcher.dispatch(
+            TaskAgentToolNames.resolveAttentionRequest,
+            {
+              'requestId': 'attention-other',
+              'status': 'withdrawn',
+              'reason': 'No longer relevant.',
+            },
+            taskId,
+          );
+
+          expect(result.success, isFalse);
+          expect(result.errorMessage, 'Attention request not found');
+          verifyNever(() => localSyncService.upsertEntity(any()));
+        });
+
+        test('rejects invalid attention request resolution fields', () async {
+          final cases = <Map<String, dynamic>, String>{
+            {
+              'status': 'withdrawn',
+              'reason': 'No longer relevant.',
+            }: '"requestId" is required.',
+            {
+              'requestId': 'attention-own',
+              'reason': 'No longer relevant.',
+            }: '"status" is required.',
+            {
+              'requestId': 'attention-own',
+              'status': 'proposed',
+              'reason': 'No longer relevant.',
+            }: '"status" must be one of',
+            {
+              'requestId': 'attention-own',
+              'status': 'withdrawn',
+            }: '"reason" is required.',
+            {
+              'requestId': 'attention-own',
+              'status': 'deferred',
+              'reason': 'Review later.',
+              'nextReviewAt': 'later',
+            }: '"nextReviewAt" must be a valid ISO-8601 date/time.',
+          };
+
+          for (final entry in cases.entries) {
+            final result = await localDispatcher.dispatch(
+              TaskAgentToolNames.resolveAttentionRequest,
+              entry.key,
+              taskId,
+            );
+            expect(result.success, isFalse, reason: entry.value);
+            expect(result.output, contains(entry.value), reason: entry.value);
+          }
+          verifyNever(() => localSyncService.upsertEntity(any()));
+        });
       });
     });
 

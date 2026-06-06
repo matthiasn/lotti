@@ -17,6 +17,7 @@ import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/decision_events.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/service/attention_claim_maintenance_service.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
@@ -409,7 +410,10 @@ class TaskAgentWorkflow {
       _log('task not found in journal — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'Task not found');
     }
-    final taskAttentionClaims = await _attentionClaimsForTask(taskId);
+    final taskAttentionContext = await _maintainAndLoadAttentionClaims(
+      agentId: agentId,
+      taskId: taskId,
+    );
 
     // 5. Assemble conversation context (the ledger was fetched before
     // compaction, which consumes its resolved entries as decision events).
@@ -426,7 +430,8 @@ class TaskAgentWorkflow {
       triggerTokens: triggerTokens,
       taskId: taskId,
       ledger: ledger,
-      attentionClaims: taskAttentionClaims,
+      attentionClaims: taskAttentionContext.claims,
+      task: taskAttentionContext.task,
       timeService: getIt<TimeService>(),
       // Only attach the compacted log when we're actually using it (the inline
       // log was dropped); otherwise the full inline log already carries it.
@@ -1580,6 +1585,7 @@ to keep the user-facing suggestion list clean and trustworthy:
     required String taskId,
     ProposalLedger ledger = const ProposalLedger.empty(),
     List<AttentionRequestEntity> attentionClaims = const [],
+    Task? task,
     TimeService? timeService,
     String? compactedTaskLog,
   }) async {
@@ -1595,7 +1601,7 @@ to keep the user-facing suggestion list clean and trustworthy:
 
     // Inject label context and correction examples.
     try {
-      final taskEntity = await journalDb.journalEntityById(taskId);
+      final taskEntity = task ?? await journalDb.journalEntityById(taskId);
       if (taskEntity is Task) {
         // Label context for the assign_task_labels tool.
         final labelContext = await TaskLabelHandler.buildLabelContext(
@@ -1705,7 +1711,10 @@ to keep the user-facing suggestion list clean and trustworthy:
       );
     }
 
-    final attentionSection = _formatTaskAttentionRequests(attentionClaims);
+    final attentionSection = _formatTaskAttentionRequests(
+      attentionClaims,
+      agentId: agentId,
+    );
     if (attentionSection.isNotEmpty) {
       buffer.write(attentionSection);
     }
@@ -1782,7 +1791,8 @@ to keep the user-facing suggestion list clean and trustworthy:
     }
 
     buffer.writeln(
-      'Analyze the current state and call tools if needed. If the report '
+      'Analyze the current state, maintain any attention requests, and call '
+      'tools if needed. If the report '
       'would materially change, call `update_report` with the full updated '
       'report; otherwise finish with a brief plain-text note. '
       'Add observations if warranted.',
@@ -1810,12 +1820,48 @@ to keep the user-facing suggestion list clean and trustworthy:
     }
   }
 
-  String _formatTaskAttentionRequests(List<AttentionRequestEntity> claims) {
+  Future<({List<AttentionRequestEntity> claims, Task? task})>
+  _maintainAndLoadAttentionClaims({
+    required String agentId,
+    required String taskId,
+    Task? task,
+  }) async {
+    var resolvedTask = task;
+    try {
+      if (resolvedTask == null) {
+        final entity = await journalDb.journalEntityById(taskId);
+        if (entity is Task) resolvedTask = entity;
+      }
+      if (resolvedTask != null) {
+        await AttentionClaimMaintenanceService(
+          agentRepository: agentRepository,
+          syncService: syncService,
+        ).settleTerminalTaskClaims(agentId: agentId, task: resolvedTask);
+      }
+    } catch (e, s) {
+      _logError(
+        'failed to maintain task attention requests',
+        error: e,
+        stackTrace: s,
+      );
+    }
+    return (
+      claims: await _attentionClaimsForTask(taskId),
+      task: resolvedTask,
+    );
+  }
+
+  String _formatTaskAttentionRequests(
+    List<AttentionRequestEntity> claims, {
+    required String agentId,
+  }) {
     if (claims.isEmpty) return '';
     final rows = [
       for (final claim in claims)
         {
           'id': claim.id,
+          'agentId': claim.agentId,
+          'ownedByThisAgent': claim.agentId == agentId,
           'title': claim.title,
           'requestedMinutes': claim.requestedMinutes,
           'impact': claim.impact,
@@ -1834,10 +1880,14 @@ to keep the user-facing suggestion list clean and trustworthy:
           ..writeln()
           ..writeln(
             'These active requests are already visible to the day planner. '
-            'Do not call `request_attention` again for an equivalent ask; '
-            'call it only when the task now needs a materially different '
-            'ask (for example amount, impact, urgency, energy fit, scope, '
-            'timing window, review time, or rationale).',
+            'Maintain only rows where ownedByThisAgent is true. If one of '
+            'your requests is no longer needed, call '
+            '`resolve_attention_request` with withdrawn or satisfied. If the '
+            'task still needs attention but the ask materially changed (for '
+            'example amount, impact, urgency, energy fit, scope, timing '
+            'window, review time, or rationale), call `request_attention` '
+            'with the new ask; it supersedes your old active request. Do not '
+            'call `request_attention` again for an equivalent ask.',
           )
           ..writeln()
           ..writeln('```json')

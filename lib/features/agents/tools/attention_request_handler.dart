@@ -137,7 +137,10 @@ class AttentionRequestHandler {
       targetKind: _taskTargetKind,
       targetId: task.id,
     );
-    final matching = existing
+    final ownExisting = existing
+        .where((claim) => claim.agentId == requestingAgentId)
+        .toList(growable: false);
+    final matching = ownExisting
         .where(
           (claim) => _matchesRequest(
             claim,
@@ -162,7 +165,7 @@ class AttentionRequestHandler {
     // equivalent claims, so duplicates can't accumulate.
     final canonical = matching.isEmpty ? null : matching.first;
     final claimsToSupersede = [
-      for (final claim in existing)
+      for (final claim in ownExisting)
         if (canonical == null || claim.id != canonical.id) claim,
     ];
 
@@ -235,6 +238,88 @@ class AttentionRequestHandler {
         createdAt: now,
         vectorClock: null,
       ),
+    );
+  }
+
+  Future<ToolExecutionResult> resolve(
+    Task task,
+    Map<String, dynamic> args,
+  ) async {
+    if (requestingAgentId.trim().isEmpty) {
+      return const ToolExecutionResult(
+        success: false,
+        output:
+            'Error: resolve_attention_request is missing the requesting agent id.',
+        errorMessage: 'Missing requesting agent id',
+      );
+    }
+
+    final requestId = _requiredString(args, 'requestId');
+    final status = _optionalEnum(
+      args,
+      'status',
+      const [
+        AttentionClaimStatus.withdrawn,
+        AttentionClaimStatus.satisfied,
+        AttentionClaimStatus.partiallySatisfied,
+        AttentionClaimStatus.deferred,
+      ],
+    );
+    final reason = _requiredString(args, 'reason');
+    final nextReviewAt = _optionalDateTime(args, 'nextReviewAt');
+    final validationErrors = [
+      requestId.error,
+      status.error,
+      if (status.value == null) '"status" is required.',
+      reason.error,
+      nextReviewAt.error,
+    ].whereType<String>();
+    if (validationErrors.isNotEmpty) {
+      return ToolExecutionResult(
+        success: false,
+        output: 'Error: ${validationErrors.first}',
+        errorMessage: validationErrors.first,
+      );
+    }
+
+    final activeClaims = await agentRepository.getAttentionClaimsForTarget(
+      targetKind: _taskTargetKind,
+      targetId: task.id,
+    );
+    final claim = activeClaims
+        .where(
+          (candidate) =>
+              candidate.id == requestId.value &&
+              candidate.agentId == requestingAgentId,
+        )
+        .firstOrNull;
+    if (claim == null) {
+      return ToolExecutionResult(
+        success: false,
+        output:
+            'Error: active attention request ${requestId.value} was not found '
+            'for this task agent.',
+        errorMessage: 'Attention request not found',
+      );
+    }
+
+    final now = clock.now();
+    await syncService.upsertEntity(
+      AgentDomainEntity.attentionClaimDisposition(
+        id: _uuid.v4(),
+        agentId: requestingAgentId,
+        requestId: claim.id,
+        status: status.value!,
+        reason: reason.value,
+        nextReviewAt: nextReviewAt.value,
+        createdAt: now,
+        vectorClock: null,
+      ),
+    );
+
+    return ToolExecutionResult(
+      success: true,
+      output: 'Attention request resolved: ${claim.id}',
     );
   }
 

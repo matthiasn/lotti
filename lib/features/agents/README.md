@@ -770,6 +770,9 @@ Task agents have three immediate local tools:
 - `record_observations`
 - `request_attention` *(writes an evidence-backed `AttentionRequestEntity`
   into the synced agent log; it does not mutate the task or calendar directly)*
+- `resolve_attention_request` *(writes an auditable
+  `AttentionClaimDispositionEntity` for one of this agent's own active
+  planner requests)*
 
 The current deferred task tools are:
 
@@ -799,6 +802,16 @@ planner, not a user-visible task/calendar mutation. Non-local task writes go
 through `AgentToolExecutor`, which enforces the agent's allowed category set,
 captures post-write vector clocks when a journal entity changes, and persists
 audit messages for tool actions and tool results.
+
+Attention claims are producer-maintained. Task, project, health, and standing
+agreement agents should call `request_attention` during their own scheduled or
+event-driven wakes when their facts change or a planning horizon approaches.
+Task agents inspect active requests on each wake; terminal tasks
+deterministically satisfy or withdraw their own outstanding claims, and the
+LLM can call `resolve_attention_request` or a fresh `request_attention` for
+nuanced changes.
+The day planner only reads already-materialized claim projections; it does not
+fan out and wake producer agents synchronously during drafting.
 
 `ChangeSetBuilder` is responsible for the deferred path. It:
 
