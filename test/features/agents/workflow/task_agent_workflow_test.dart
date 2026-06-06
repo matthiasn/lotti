@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -2485,6 +2486,17 @@ void main() {
               };
           when(() => mockConversationManager.messages).thenReturn([]);
 
+          // The old-report deletion is the last side effect of the
+          // fire-and-forget _embedAgentReport future; completing a
+          // Completer from its stub lets the test await the pipeline
+          // deterministically instead of draining the event queue.
+          final embedPipelineDone = Completer<void>();
+          when(
+            () => mockEmbeddingStore.deleteEntityEmbeddings('old-report'),
+          ).thenAnswer((_) async {
+            if (!embedPipelineDone.isCompleted) embedPipelineDone.complete();
+          });
+
           final result = await workflowWithEmbeddings.execute(
             agentIdentity: testAgentIdentity,
             runKey: runKey,
@@ -2493,7 +2505,12 @@ void main() {
           );
 
           expect(result.success, isTrue);
-          await pumpEventQueue();
+          await embedPipelineDone.future.timeout(
+            const Duration(seconds: 5),
+            onTimeout: () => throw TimeoutException(
+              'embedding pipeline never deleted the old report embedding',
+            ),
+          );
 
           verify(
             () => mockEmbeddingRepository.embed(
@@ -2587,6 +2604,11 @@ void main() {
 
           // The wake itself still succeeds — embedding is best-effort.
           expect(result.success, isTrue);
+          // No Completer hook is possible here: the throwing lookup is the
+          // last observable call and its catch handler produces no further
+          // side effects. pumpEventQueue is a bounded deterministic drain
+          // (Duration.zero turns, not real waiting), acceptable for letting
+          // the swallowed error settle before the verifyNever checks.
           await pumpEventQueue();
 
           // The throwing lookup short-circuits before any embed/delete call.
