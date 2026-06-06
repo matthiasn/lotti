@@ -2455,15 +2455,31 @@ void main() {
           dateTo: testDate.add(const Duration(hours: 10, minutes: 5)),
         );
 
+        // Baseline: nothing recorded against the work budget yet.
+        final before = container
+            .read(unifiedDailyOsDataControllerProvider(date: testDate))
+            .value!
+            .budgetProgress
+            .firstWhere((p) => p.categoryId == 'cat-work');
+        expect(before.recordedDuration, Duration.zero);
+
         // Simulate timer starting by emitting on stream
         timerStreamController.add(timerEntry);
 
         // Allow stream listener to process
         async.flushMicrotasks();
 
-        // Verify the state was updated (the subscription listener was called)
-        // The controller should have processed the timer event
-        verify(() => mockTimeService.getStream()).called(greaterThan(0));
+        // The live timer entry's elapsed time lands in the budget.
+        final after = container
+            .read(unifiedDailyOsDataControllerProvider(date: testDate))
+            .value!
+            .budgetProgress
+            .firstWhere((p) => p.categoryId == 'cat-work');
+        expect(after.recordedDuration, const Duration(minutes: 5));
+        expect(
+          after.contributingEntries.map((e) => e.meta.id),
+          contains('timer-entry-1'),
+        );
       });
     });
 
@@ -3835,6 +3851,79 @@ void main() {
         verify(() => mockDayPlanRepository.getDayPlan(testDate)).called(2);
       });
     });
+
+    test(
+      'coalesces a notification arriving while a refresh is in flight',
+      () {
+        fakeAsync((async) {
+          var planCalls = 0;
+          final gates = <Completer<DayPlanEntry?>>[];
+          when(
+            () => mockDayPlanRepository.getDayPlan(testDate),
+          ).thenAnswer((_) {
+            planCalls++;
+            if (planCalls == 1) {
+              // Initial load resolves immediately.
+              return Future.value(createTestPlan());
+            }
+            // Refresh fetches block until released by the test.
+            final gate = Completer<DayPlanEntry?>();
+            gates.add(gate);
+            return gate.future;
+          });
+          when(
+            () => mockDb.sortedCalendarEntries(
+              rangeStart: any(named: 'rangeStart'),
+              rangeEnd: any(named: 'rangeEnd'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          container.read(
+            unifiedDailyOsDataControllerProvider(date: testDate).future,
+          );
+          async.flushMicrotasks();
+          expect(planCalls, 1);
+
+          // First notification starts a refresh that blocks on the gate.
+          updateStreamController.add({planId});
+          async.flushMicrotasks();
+          expect(planCalls, 2);
+
+          // A second notification while the fetch is in flight must NOT
+          // start a concurrent fetch — it only marks _pendingRefresh.
+          updateStreamController.add({planId});
+          async.flushMicrotasks();
+          expect(planCalls, 2);
+
+          // Releasing the in-flight fetch triggers exactly one coalesced
+          // follow-up fetch (the do-while loop).
+          gates[0].complete(createTestPlan());
+          async.flushMicrotasks();
+          expect(planCalls, 3);
+
+          // The coalesced fetch's result lands in the state.
+          gates[1].complete(
+            createTestPlan(
+              plannedBlocks: [
+                PlannedBlock(
+                  id: 'block-coalesced',
+                  categoryId: 'cat-work',
+                  startTime: DateTime(2026, 1, 15, 9),
+                  endTime: DateTime(2026, 1, 15, 10),
+                ),
+              ],
+            ),
+          );
+          async.flushMicrotasks();
+          expect(planCalls, 3);
+
+          final state = container.read(
+            unifiedDailyOsDataControllerProvider(date: testDate),
+          );
+          expect(state.value?.dayPlan.data.plannedBlocks, hasLength(1));
+        });
+      },
+    );
 
     test('refreshes on task notifications to pick up newly due tasks', () {
       fakeAsync((async) {
