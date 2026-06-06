@@ -302,7 +302,10 @@ class DayAgentWorkflow {
         strategy: strategy,
       );
 
-      if (_requiresCaptureParse(triggerTokens: triggerTokens)) {
+      if (_requiresCaptureParse(
+        triggerTokens: triggerTokens,
+        captureContext: captureContext,
+      )) {
         if (!strategy.didPersistCaptureParse) {
           final captureId = captureIdFromTriggerTokens(triggerTokens)!;
           final retryUsage = await _forceCaptureParseIfMissing(
@@ -1146,8 +1149,10 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
 
   bool _requiresCaptureParse({
     required Set<String> triggerTokens,
+    required _CaptureContext? captureContext,
   }) {
     return captureService != null &&
+        captureContext != null &&
         captureIdFromTriggerTokens(triggerTokens) != null &&
         draftingDayIdFromTriggerTokens(triggerTokens) == null &&
         refineDayIdFromTriggerTokens(triggerTokens) == null;

@@ -1093,6 +1093,40 @@ void main() {
       );
 
       test(
+        'does not force parsing when the submitted capture is unavailable',
+        () async {
+          final captureService = MockDayAgentCaptureService();
+          when(() => captureService.getCapture('capture-1')).thenAnswer(
+            (_) async => null,
+          );
+
+          final result = await execute(
+            workflow(captureService: captureService),
+            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+          );
+
+          expect(result.success, isTrue);
+          expect(conversationRepository.sendMessageCalls, hasLength(1));
+          final userPayload =
+              jsonDecode(conversationRepository.lastUserMessage!)
+                  as Map<String, dynamic>;
+          expect(userPayload.containsKey('capture'), isFalse);
+          verify(
+            () => captureService.getCapture('capture-1'),
+          ).called(1);
+          verifyNever(
+            () => captureService.executeTool(
+              agentId: any(named: 'agentId'),
+              threadId: any(named: 'threadId'),
+              runKey: any(named: 'runKey'),
+              toolName: DayAgentToolNames.parseCaptureToItems,
+              args: any(named: 'args'),
+            ),
+          );
+        },
+      );
+
+      test(
         'fails the wake when parsing persists zero items',
         () async {
           final captureService = MockDayAgentCaptureService();

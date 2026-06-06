@@ -155,9 +155,11 @@ class DayAgentStrategy extends ConversationStrategy {
     if (!result.success) return false;
     try {
       final decoded = jsonDecode(result.output);
-      return decoded is Map &&
-          decoded['items'] is List &&
-          (decoded['items'] as List).isNotEmpty;
+      if (decoded is Map) {
+        final items = decoded['items'];
+        return items is List && items.isNotEmpty;
+      }
+      return false;
     } catch (_) {
       return false;
     }
