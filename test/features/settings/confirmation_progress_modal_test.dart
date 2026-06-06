@@ -9,6 +9,35 @@ import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import '../../mocks/mocks.dart';
 import '../../widget_test_utils.dart';
 
+/// Hosts a button that triggers [showModal] with the page's BuildContext —
+/// the MaterialApp/localization/Scaffold chrome shared by every test here.
+Future<void> _pumpModalHost(
+  WidgetTester tester, {
+  required Future<void> Function(BuildContext context) showModal,
+}) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: MediaQuery(
+        data: const MediaQueryData(size: Size(800, 600)),
+        child: Scaffold(
+          body: Builder(
+            builder: (context) {
+              return ElevatedButton(
+                onPressed: () async {
+                  await showModal(context);
+                },
+                child: const Text('Show Modal'),
+              );
+            },
+          ),
+        ),
+      ),
+    ),
+  );
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -25,36 +54,21 @@ void main() {
 
   group('ConfirmationProgressModal', () {
     testWidgets('shows confirmation page with correct content', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(800, 600)),
-            child: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      await ConfirmationProgressModal.show(
-                        context: context,
-                        message: 'Are you sure you want to delete this?',
-                        confirmLabel: 'Delete',
-                        progressBuilder: (context) => const Text('Progress...'),
-                        operation: () async {
-                          await Future<void>.delayed(
-                            const Duration(milliseconds: 100),
-                          );
-                        },
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalHost(
+        tester,
+        showModal: (context) async {
+          await ConfirmationProgressModal.show(
+            context: context,
+            message: 'Are you sure you want to delete this?',
+            confirmLabel: 'Delete',
+            progressBuilder: (context) => const Text('Progress...'),
+            operation: () async {
+              await Future<void>.delayed(
+                const Duration(milliseconds: 100),
+              );
+            },
+          );
+        },
       );
 
       // Tap to show modal
@@ -74,37 +88,22 @@ void main() {
     testWidgets('shows non-destructive modal without warning icon', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(800, 600)),
-            child: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      await ConfirmationProgressModal.show(
-                        context: context,
-                        message: 'Continue with this action?',
-                        confirmLabel: 'Continue',
-                        progressBuilder: (context) => const Text('Progress...'),
-                        operation: () async {
-                          await Future<void>.delayed(
-                            const Duration(milliseconds: 100),
-                          );
-                        },
-                        isDestructive: false,
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalHost(
+        tester,
+        showModal: (context) async {
+          await ConfirmationProgressModal.show(
+            context: context,
+            message: 'Continue with this action?',
+            confirmLabel: 'Continue',
+            progressBuilder: (context) => const Text('Progress...'),
+            operation: () async {
+              await Future<void>.delayed(
+                const Duration(milliseconds: 100),
+              );
+            },
+            isDestructive: false,
+          );
+        },
       );
 
       // Tap to show modal
@@ -120,32 +119,17 @@ void main() {
     testWidgets('cancels operation when cancel button is pressed', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(800, 600)),
-            child: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      await ConfirmationProgressModal.show(
-                        context: context,
-                        message: 'Test message',
-                        confirmLabel: 'Confirm',
-                        progressBuilder: (context) => const Text('Progress...'),
-                        operation: () async {},
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalHost(
+        tester,
+        showModal: (context) async {
+          await ConfirmationProgressModal.show(
+            context: context,
+            message: 'Test message',
+            confirmLabel: 'Confirm',
+            progressBuilder: (context) => const Text('Progress...'),
+            operation: () async {},
+          );
+        },
       );
 
       // Tap to show modal
@@ -162,32 +146,17 @@ void main() {
     });
 
     testWidgets('cancels operation when tapping outside modal', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(800, 600)),
-            child: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      await ConfirmationProgressModal.show(
-                        context: context,
-                        message: 'Test message',
-                        confirmLabel: 'Confirm',
-                        progressBuilder: (context) => const Text('Progress...'),
-                        operation: () async {},
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalHost(
+        tester,
+        showModal: (context) async {
+          await ConfirmationProgressModal.show(
+            context: context,
+            message: 'Test message',
+            confirmLabel: 'Confirm',
+            progressBuilder: (context) => const Text('Progress...'),
+            operation: () async {},
+          );
+        },
       );
 
       // Tap to show modal
@@ -206,43 +175,28 @@ void main() {
       var operationCalled = false;
       var confirmed = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(800, 600)),
-            child: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      confirmed = await ConfirmationProgressModal.show(
-                        context: context,
-                        message: 'Test message',
-                        confirmLabel: 'Confirm',
-                        progressBuilder: (context) => const Column(
-                          children: [
-                            CircularProgressIndicator(),
-                            SizedBox(height: 16),
-                            Text('Processing...'),
-                          ],
-                        ),
-                        operation: () async {
-                          operationCalled = true;
-                          await Future<void>.delayed(
-                            const Duration(milliseconds: 200),
-                          );
-                        },
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  );
-                },
-              ),
+      await _pumpModalHost(
+        tester,
+        showModal: (context) async {
+          confirmed = await ConfirmationProgressModal.show(
+            context: context,
+            message: 'Test message',
+            confirmLabel: 'Confirm',
+            progressBuilder: (context) => const Column(
+              children: [
+                CircularProgressIndicator(),
+                SizedBox(height: 16),
+                Text('Processing...'),
+              ],
             ),
-          ),
-        ),
+            operation: () async {
+              operationCalled = true;
+              await Future<void>.delayed(
+                const Duration(milliseconds: 200),
+              );
+            },
+          );
+        },
       );
 
       // Tap to show modal
@@ -271,37 +225,22 @@ void main() {
       final enabledNotifier = ValueNotifier<bool>(false);
       var operationRan = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(800, 600)),
-            child: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      await ConfirmationProgressModal.show(
-                        context: context,
-                        message: 'Enable sync?',
-                        confirmLabel: 'Confirm',
-                        progressBuilder: (context) => const SizedBox.shrink(),
-                        operation: () async {
-                          operationRan = true;
-                        },
-                        isDestructive: false,
-                        isConfirmEnabled: () => enabledNotifier.value,
-                        confirmEnabledListenable: enabledNotifier,
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalHost(
+        tester,
+        showModal: (context) async {
+          await ConfirmationProgressModal.show(
+            context: context,
+            message: 'Enable sync?',
+            confirmLabel: 'Confirm',
+            progressBuilder: (context) => const SizedBox.shrink(),
+            operation: () async {
+              operationRan = true;
+            },
+            isDestructive: false,
+            isConfirmEnabled: () => enabledNotifier.value,
+            confirmEnabledListenable: enabledNotifier,
+          );
+        },
       );
 
       await tester.tap(find.text('Show Modal'));
@@ -332,44 +271,28 @@ void main() {
     ) async {
       var confirmed = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(800, 600)),
-            child: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      confirmed = await ConfirmationProgressModal.show(
-                        context: context,
-                        message: 'Test message',
-                        confirmLabel: 'Confirm',
-                        closeOnComplete: false,
-                        progressBuilder: (progressContext) => Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('Operation done'),
-                            const SizedBox(height: 8),
-                            ElevatedButton(
-                              onPressed: () =>
-                                  Navigator.of(progressContext).pop(),
-                              child: const Text('Dismiss'),
-                            ),
-                          ],
-                        ),
-                        operation: () async {},
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  );
-                },
-              ),
+      await _pumpModalHost(
+        tester,
+        showModal: (context) async {
+          confirmed = await ConfirmationProgressModal.show(
+            context: context,
+            message: 'Test message',
+            confirmLabel: 'Confirm',
+            closeOnComplete: false,
+            progressBuilder: (progressContext) => Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text('Operation done'),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(progressContext).pop(),
+                  child: const Text('Dismiss'),
+                ),
+              ],
             ),
-          ),
-        ),
+            operation: () async {},
+          );
+        },
       );
 
       await tester.tap(find.text('Show Modal'));
@@ -393,36 +316,21 @@ void main() {
     testWidgets('uses correct styling for destructive operations', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(800, 600)),
-            child: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      await ConfirmationProgressModal.show(
-                        context: context,
-                        message: 'Delete this item?',
-                        confirmLabel: 'Delete',
-                        progressBuilder: (context) => const Text('Progress...'),
-                        operation: () async {
-                          await Future<void>.delayed(
-                            const Duration(milliseconds: 100),
-                          );
-                        },
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalHost(
+        tester,
+        showModal: (context) async {
+          await ConfirmationProgressModal.show(
+            context: context,
+            message: 'Delete this item?',
+            confirmLabel: 'Delete',
+            progressBuilder: (context) => const Text('Progress...'),
+            operation: () async {
+              await Future<void>.delayed(
+                const Duration(milliseconds: 100),
+              );
+            },
+          );
+        },
       );
 
       // Tap to show modal
@@ -449,37 +357,22 @@ void main() {
     testWidgets('uses correct styling for non-destructive operations', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(800, 600)),
-            child: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      await ConfirmationProgressModal.show(
-                        context: context,
-                        message: 'Continue with this action?',
-                        confirmLabel: 'Continue',
-                        progressBuilder: (context) => const Text('Progress...'),
-                        operation: () async {
-                          await Future<void>.delayed(
-                            const Duration(milliseconds: 100),
-                          );
-                        },
-                        isDestructive: false,
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalHost(
+        tester,
+        showModal: (context) async {
+          await ConfirmationProgressModal.show(
+            context: context,
+            message: 'Continue with this action?',
+            confirmLabel: 'Continue',
+            progressBuilder: (context) => const Text('Progress...'),
+            operation: () async {
+              await Future<void>.delayed(
+                const Duration(milliseconds: 100),
+              );
+            },
+            isDestructive: false,
+          );
+        },
       );
 
       // Tap to show modal
@@ -506,34 +399,19 @@ void main() {
     testWidgets('handles operation exceptions gracefully', (tester) async {
       var confirmed = false;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(800, 600)),
-            child: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      confirmed = await ConfirmationProgressModal.show(
-                        context: context,
-                        message: 'Test message',
-                        confirmLabel: 'Confirm',
-                        progressBuilder: (context) => const Text('Progress...'),
-                        operation: () async {
-                          throw Exception('Test exception');
-                        },
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalHost(
+        tester,
+        showModal: (context) async {
+          confirmed = await ConfirmationProgressModal.show(
+            context: context,
+            message: 'Test message',
+            confirmLabel: 'Confirm',
+            progressBuilder: (context) => const Text('Progress...'),
+            operation: () async {
+              throw Exception('Test exception');
+            },
+          );
+        },
       );
 
       // Tap to show modal
@@ -553,32 +431,17 @@ void main() {
     });
 
     testWidgets('modal is dismissible with barrier tap', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: MediaQuery(
-            data: const MediaQueryData(size: Size(800, 600)),
-            child: Scaffold(
-              body: Builder(
-                builder: (context) {
-                  return ElevatedButton(
-                    onPressed: () async {
-                      await ConfirmationProgressModal.show(
-                        context: context,
-                        message: 'Test message',
-                        confirmLabel: 'Confirm',
-                        progressBuilder: (context) => const Text('Progress...'),
-                        operation: () async {},
-                      );
-                    },
-                    child: const Text('Show Modal'),
-                  );
-                },
-              ),
-            ),
-          ),
-        ),
+      await _pumpModalHost(
+        tester,
+        showModal: (context) async {
+          await ConfirmationProgressModal.show(
+            context: context,
+            message: 'Test message',
+            confirmLabel: 'Confirm',
+            progressBuilder: (context) => const Text('Progress...'),
+            operation: () async {},
+          );
+        },
       );
 
       // Tap to show modal
