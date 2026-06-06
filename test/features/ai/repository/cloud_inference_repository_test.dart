@@ -14,7 +14,6 @@ import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
     show GeminiInferenceRepository, GeneratedImage;
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
-import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/utils/platform.dart' as platform;
@@ -26,9 +25,6 @@ import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
 class MockOpenAIClient extends Mock implements OpenAIClient {}
-
-class MockOllamaInferenceRepository extends Mock
-    implements OllamaInferenceRepository {}
 
 class MockGeminiInferenceRepository extends Mock
     implements GeminiInferenceRepository {}

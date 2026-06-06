@@ -61,6 +61,7 @@ import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
+import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
 import 'package:lotti/features/ai/repository/vector_search_repository.dart';
@@ -840,6 +841,11 @@ class MockUnifiedAiInferenceRepository extends Mock
     implements UnifiedAiInferenceRepository {}
 
 class MockConversationManager extends Mock implements ConversationManager {}
+
+class MockConversationStrategy extends Mock implements ConversationStrategy {}
+
+class MockOllamaInferenceRepository extends Mock
+    implements OllamaInferenceRepository {}
 
 class MockAgentToolExecutor extends Mock implements AgentToolExecutor {}
 

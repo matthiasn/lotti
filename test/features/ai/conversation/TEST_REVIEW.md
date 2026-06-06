@@ -17,9 +17,9 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` at **1812 lines** is the single most oversized test file in the entire scope. The core issue is copy-paste: every one of the ~18 `sendMessage` sub-tests re-declares the identical 8-argument `when(() => mockOllamaRepo.generateTextWithMessages(...))` stub (lines 157–168, 211–222, 274–285, 325–336, 399–410, 503–514, 588–599, 670–681, 711–722, 816–827, 914–925, 984–995, 1082–1093, 1218–1229, 1317–1328, 1401–1412, 1489–1500, 1551–1562, 1657–1668, 1696–1707). Extracting a `_stubGenerateText(mock, {Stream? stream})` helper would reduce the file by at least 300 lines.
+- [x] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` at **1812 lines** is the single most oversized test file in the entire scope. The core issue is copy-paste: every one of the ~18 `sendMessage` sub-tests re-declares the identical 8-argument `when(() => mockOllamaRepo.generateTextWithMessages(...))` stub (lines 157–168, 211–222, 274–285, 325–336, 399–410, 503–514, 588–599, 670–681, 711–722, 816–827, 914–925, 984–995, 1082–1093, 1218–1229, 1317–1328, 1401–1412, 1489–1500, 1551–1562, 1657–1668, 1696–1707). Extracting a `_stubGenerateText(mock, {Stream? stream})` helper would reduce the file by at least 300 lines. **RESOLVED:** shared `_stubGenerateText(mock)` helper replaces all 19 copies of the 8-argument stub.
 
-- [ ] **[HIGH]** `test/features/ai/conversation/conversation_manager_test.dart` at **1126 lines** vs a 351-line impl. The two Glados properties at the bottom (lines 902–1074) are excellent and correctly-tagged. The first ~800 lines of static tests contain several near-duplicate assistant-message scenarios (lines 537–656) that test orthogonal flag combinations without using a loop or parameterized helper. A `_assertAssistantMessage(manager, {content, toolCalls, expectedEvent})` helper would reduce this section by ~100 lines.
+- [x] **[HIGH]** `test/features/ai/conversation/conversation_manager_test.dart` at **1126 lines** vs a 351-line impl. The two Glados properties at the bottom (lines 902–1074) are excellent and correctly-tagged. The first ~800 lines of static tests contain several near-duplicate assistant-message scenarios (lines 537–656) that test orthogonal flag combinations without using a loop or parameterized helper. A `_assertAssistantMessage(manager, {content, toolCalls, expectedEvent})` helper would reduce this section by ~100 lines. **RESOLVED:** the four assistant-message scenarios are now one parameterized loop over (description, content, toolCalls, expected event) cases.
 
   Concrete split seam: `ConversationManager` (351 lines) is cleanly bounded. The `ConversationEvent` sealed class hierarchy (lines 225–351, ~127 lines) and the `ConversationStrategy` / `ConversationAction` declarations (lines 332–351) could be extracted to a `conversation_events.dart` and `conversation_strategy.dart` respectively, keeping `conversation_manager.dart` under 250 lines and enabling per-file test mirroring.
 
@@ -29,7 +29,7 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` lines 15–18 define `MockOllamaInferenceRepository` and `MockConversationStrategy` inline:
+- [x] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` lines 15–18 define `MockOllamaInferenceRepository` and `MockConversationStrategy` inline: **RESOLVED:** `MockOllamaInferenceRepository` and `MockConversationStrategy` moved to `test/mocks/mocks.dart`; the duplicate in cloud_inference_repository_test removed too.
   ```dart
   class MockOllamaInferenceRepository extends Mock
       implements OllamaInferenceRepository {}
@@ -37,7 +37,7 @@
   ```
   Neither exists in `test/mocks/mocks.dart`. Per the centralized-mocks rule they must be added there. `MockConversationManager` already exists in `mocks.dart` (line 708), so the pattern is established — just `OllamaInferenceRepository` and `ConversationStrategy` are missing.
 
-- [ ] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` — the repeated 8-argument mock stub (see File size section above) violates the "Mock setup must not dwarf test logic" rule. In several tests the stub setup (8–12 lines) dominates over the actual assertion (1–3 lines), e.g. lines 910–978 (`'handles errors during API call'`) has 13 lines of mock setup and only 5 lines of assertions. A shared `_stubGenerateText` helper would fix this across all sendMessage tests.
+- [x] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` — the repeated 8-argument mock stub (see File size section above) violates the "Mock setup must not dwarf test logic" rule. In several tests the stub setup (8–12 lines) dominates over the actual assertion (1–3 lines), e.g. lines 910–978 (`'handles errors during API call'`) has 13 lines of mock setup and only 5 lines of assertions. A shared `_stubGenerateText` helper would fix this across all sendMessage tests. **RESOLVED:** `_stubGenerateText` reduces each stub to 1–3 lines, so assertions dominate again.
 
 - [ ] **[MED]** `test/features/ai/conversation/conversation_repository_test.dart` lines 706–811 (tool call accumulation tests) assert only `expect(manager!.messages.length, 2)` after the accumulation. This proves the conversation was created and a response recorded, but does **not** verify the accumulated argument string. Because `ChatCompletionMessage` is a sealed class the serialized tool call cannot be directly inspected via the message object — however the test could add the assistant message to a local `ConversationManager` directly and then call `getMessagesForRequest()` and verify the tool call JSON via `toJson()`. The current assertion is essentially a smoke test.
 
@@ -53,7 +53,7 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[HIGH]** `lib/features/ai/conversation/conversation_manager.dart` — `_trimHistoryIfNeeded` (lines 178–212) is a pure reducer over the `_messages` list: given any history length, maxHistorySize, and presence of a system message, the invariants are:
+- [x] **[HIGH]** `lib/features/ai/conversation/conversation_manager.dart` — `_trimHistoryIfNeeded` (lines 178–212) is a pure reducer over the `_messages` list: given any history length, maxHistorySize, and presence of a system message, the invariants are: **RESOLVED (assessed, no change):** the item itself concludes the existing Glados properties already cover these invariants (“No gap here”).
   - at most one truncation notice
   - `messages.length <= max(maxHistorySize, minimumRetainedSize)`
   - system message stays first when present
@@ -73,7 +73,7 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/features/ai/conversation/conversation_repository.dart` line 117–119: the OpenAI temperature override logic:
+- [x] **[HIGH]** `lib/features/ai/conversation/conversation_repository.dart` line 117–119: the OpenAI temperature override logic: **RESOLVED:** added tests capturing the temperature argument — openAi provider forces 1.0, ollama passes the caller's 0.2 through.
   ```dart
   final effectiveTemperature =
       provider.inferenceProviderType == InferenceProviderType.openAi
@@ -82,7 +82,7 @@
   ```
   There is **no test** that verifies an OpenAI provider forces `temperature = 1.0` while another provider passes through the caller-supplied value. Add a test that uses an `openAi` provider and verifies the temperature argument received by `generateTextWithMessages` is `1.0`, and another with an `ollama` provider using a custom value.
 
-- [ ] **[HIGH]** `lib/features/ai/conversation/conversation_repository.dart` line 98: the `toolChoice` parameter is documented ("the hook the Task Agent uses to force a terminal `update_report` call") but **there is no test** that passes a non-null `toolChoice` and verifies it is forwarded to `generateTextWithMessages`. Add a test that supplies `ChatCompletionToolChoiceOption.named('update_report')` and verifies the mock was called with that `toolChoice`.
+- [x] **[HIGH]** `lib/features/ai/conversation/conversation_repository.dart` line 98: the `toolChoice` parameter is documented ("the hook the Task Agent uses to force a terminal `update_report` call") but **there is no test** that passes a non-null `toolChoice` and verifies it is forwarded to `generateTextWithMessages`. Add a test that supplies `ChatCompletionToolChoiceOption.named('update_report')` and verifies the mock was called with that `toolChoice`. **RESOLVED:** added a test forwarding `ChatCompletionToolChoiceOption.tool(update_report)` and capturing it off `generateTextWithMessages`.
 
 - [ ] **[MED]** `lib/features/ai/conversation/conversation_repository.dart` — `deleteConversation` (lines 384–387) is tested by the basic `'deleteConversation removes conversation'` test. However, there is no test that verifies `dispose()` is called on the removed manager (stream cleanup). A test that listens to `manager.events` before deletion and then checks the stream closes after `deleteConversation` would strengthen cleanup guarantees.
 
@@ -94,7 +94,7 @@
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` — the ~18 copy-paste `when` stubs (see File size section) each instantiate a `StreamController` and close it, driving the async machinery through a real event loop. Replacing common stubs with `Stream.fromIterable([...])` (as done in some tests, e.g. lines 1566–1596) instead of explicit `StreamController` + `add` + `close` sequences eliminates per-test overhead and avoids potential stream-teardown races described in `test/README.md`.
+- [x] **[HIGH]** `test/features/ai/conversation/conversation_repository_test.dart` — the ~18 copy-paste `when` stubs (see File size section) each instantiate a `StreamController` and close it, driving the async machinery through a real event loop. Replacing common stubs with `Stream.fromIterable([...])` (as done in some tests, e.g. lines 1566–1596) instead of explicit `StreamController` + `add` + `close` sequences eliminates per-test overhead and avoids potential stream-teardown races described in `test/README.md`. **RESOLVED:** the duplicated stubs are centralized and the 8 simple add-then-close controllers now use `Stream.fromIterable`; the remaining controllers interleave strategy stubs or multi-phase emission and stay explicit.
 
 - [ ] **[MED]** `test/features/ai/conversation/conversation_repository_test.dart` line 1781 — `await completer.future.timeout(const Duration(milliseconds: 50))` uses real wall-clock time. A `Completer`-based pattern that blocks the test runner for up to 50 ms per run is avoided by the `expectLater`+`emitsError` pattern.
 

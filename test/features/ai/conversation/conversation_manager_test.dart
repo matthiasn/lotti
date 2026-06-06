@@ -535,123 +535,92 @@ void main() {
     });
 
     group('Assistant Message Handling', () {
-      test('addAssistantMessage with only content', () {
-        fakeAsync((async) {
-          final events = <ConversationEvent>[];
-          manager.events.listen(events.add);
+      const sampleToolCalls = [
+        ChatCompletionMessageToolCall(
+          id: 'tool-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'test_function',
+            arguments: '{"arg": "value"}',
+          ),
+        ),
+      ];
 
-          manager.addAssistantMessage(
-            content: 'This is the assistant response',
-          );
-          async.flushMicrotasks();
-
-          expect(manager.messages.length, 1);
-          expect(
-            manager.messages.first.role,
-            ChatCompletionMessageRole.assistant,
-          );
-          expect(
-            manager.messages.first.content,
-            'This is the assistant response',
-          );
-
-          expect(events.length, 1);
-          expect(events.first, isA<AssistantMessageEvent>());
-          final assistantEvent = events.first as AssistantMessageEvent;
-          expect(assistantEvent.message, 'This is the assistant response');
-        });
-      });
-
-      test('addAssistantMessage with only tool calls', () {
-        fakeAsync((async) {
-          final events = <ConversationEvent>[];
-          manager.events.listen(events.add);
-
-          final toolCalls = [
-            const ChatCompletionMessageToolCall(
-              id: 'tool-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'test_function',
-                arguments: '{"arg": "value"}',
+      test('emits the right event per content/toolCalls combination', () {
+        // (description, content, toolCalls, expected event type or null).
+        // Tool calls take priority over content; an empty assistant message
+        // emits nothing.
+        final cases =
+            <
+              (
+                String,
+                String?,
+                List<ChatCompletionMessageToolCall>?,
+                Type?,
+              )
+            >[
+              (
+                'content only',
+                'This is the assistant response',
+                null,
+                AssistantMessageEvent,
               ),
-            ),
-          ];
-
-          manager.addAssistantMessage(
-            toolCalls: toolCalls,
-          );
-
-          async.flushMicrotasks();
-
-          expect(manager.messages.length, 1);
-          expect(
-            manager.messages.first.role,
-            ChatCompletionMessageRole.assistant,
-          );
-          expect(manager.messages.first.content, isNull);
-          // Tool calls were provided in the addAssistantMessage call
-
-          expect(events.length, 1);
-          expect(events.first, isA<ToolCallsEvent>());
-          final toolCallsEvent = events.first as ToolCallsEvent;
-          expect(toolCallsEvent.calls, toolCalls);
-        });
-      });
-
-      test('addAssistantMessage with both content and tool calls', () {
-        fakeAsync((async) {
-          final events = <ConversationEvent>[];
-          manager.events.listen(events.add);
-
-          final toolCalls = [
-            const ChatCompletionMessageToolCall(
-              id: 'tool-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'test_function',
-                arguments: '{"arg": "value"}',
+              ('tool calls only', null, sampleToolCalls, ToolCallsEvent),
+              (
+                'content and tool calls',
+                'Executing function',
+                sampleToolCalls,
+                ToolCallsEvent,
               ),
-            ),
-          ];
+              ('neither content nor tool calls', null, null, null),
+            ];
 
-          manager.addAssistantMessage(
-            content: 'Executing function',
-            toolCalls: toolCalls,
-          );
+        for (final (description, content, toolCalls, expectedEvent) in cases) {
+          fakeAsync((async) {
+            final caseManager = ConversationManager(
+              conversationId: 'assistant-$description',
+              maxHistorySize: 50,
+            );
+            addTearDown(caseManager.dispose);
+            final events = <ConversationEvent>[];
+            caseManager.events.listen(events.add);
 
-          async.flushMicrotasks();
+            caseManager.addAssistantMessage(
+              content: content,
+              toolCalls: toolCalls,
+            );
+            async.flushMicrotasks();
 
-          expect(manager.messages.length, 1);
-          expect(manager.messages.first.content, 'Executing function');
-          // Both content and tool calls were provided
+            expect(caseManager.messages.length, 1, reason: description);
+            expect(
+              caseManager.messages.first.role,
+              ChatCompletionMessageRole.assistant,
+              reason: description,
+            );
+            expect(
+              caseManager.messages.first.content,
+              content,
+              reason: description,
+            );
 
-          // Should emit tool calls event (takes priority over content)
-          expect(events.length, 1);
-          expect(events.first, isA<ToolCallsEvent>());
-        });
-      });
-
-      test('addAssistantMessage with neither content nor tool calls', () {
-        fakeAsync((async) {
-          final events = <ConversationEvent>[];
-          manager.events.listen(events.add);
-
-          manager.addAssistantMessage();
-
-          async.flushMicrotasks();
-
-          expect(manager.messages.length, 1);
-          expect(
-            manager.messages.first.role,
-            ChatCompletionMessageRole.assistant,
-          );
-          expect(manager.messages.first.content, isNull);
-          // Neither content nor tool calls were provided
-
-          // No event should be emitted for empty assistant message
-          expect(events, isEmpty);
-        });
+            if (expectedEvent == null) {
+              expect(events, isEmpty, reason: description);
+            } else {
+              expect(events.length, 1, reason: description);
+              expect(
+                events.first.runtimeType,
+                expectedEvent,
+                reason: description,
+              );
+              if (events.first case final AssistantMessageEvent event) {
+                expect(event.message, content, reason: description);
+              }
+              if (events.first case final ToolCallsEvent event) {
+                expect(event.calls, toolCalls, reason: description);
+              }
+            }
+          });
+        }
       });
     });
 
