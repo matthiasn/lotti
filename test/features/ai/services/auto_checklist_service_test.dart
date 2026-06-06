@@ -9,16 +9,17 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(Exception('Fallback exception'));
-    registerFallbackValue(StackTrace.empty);
-    registerFallbackValue(FakeChecklistItemData());
   });
 
   group('AutoChecklistService Tests', () {
@@ -27,17 +28,21 @@ void main() {
     late MockDomainLogger mockDomainLogger;
     late MockJournalDb mockJournalDb;
 
-    setUp(() {
+    setUp(() async {
       mockChecklistRepository = MockChecklistRepository();
       mockDomainLogger = MockDomainLogger();
       mockJournalDb = MockJournalDb();
 
-      // Register mock services with GetIt
-      getIt
-        ..reset()
-        ..registerSingleton<ChecklistRepository>(mockChecklistRepository)
-        ..registerSingleton<DomainLogger>(mockDomainLogger)
-        ..registerSingleton<JournalDb>(mockJournalDb);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockJournalDb)
+            ..unregister<DomainLogger>()
+            ..registerSingleton<DomainLogger>(mockDomainLogger)
+            ..registerSingleton<ChecklistRepository>(mockChecklistRepository);
+        },
+      );
 
       service = AutoChecklistService(
         journalDb: mockJournalDb,
@@ -45,6 +50,8 @@ void main() {
         checklistRepository: mockChecklistRepository,
       );
     });
+
+    tearDown(tearDownTestGetIt);
 
     group('shouldAutoCreate', () {
       test('returns true when task has no existing checklists', () async {

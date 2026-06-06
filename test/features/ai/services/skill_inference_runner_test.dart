@@ -31,6 +31,7 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
 
 enum _GeneratedPromptStreamPartKind { text, whitespace, empty }
@@ -535,13 +536,16 @@ void main() {
 
     // Create temp directory for file I/O tests.
     tempDir = await Directory.systemTemp.createTemp('skill_runner_test_');
-    await getIt.reset();
-    getIt.registerSingleton<Directory>(tempDir);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<Directory>(tempDir);
+      },
+    );
   });
 
   tearDown(() async {
     container.dispose();
-    await getIt.reset();
+    await tearDownTestGetIt();
     if (tempDir.existsSync()) {
       tempDir.deleteSync(recursive: true);
     }
@@ -3038,6 +3042,7 @@ void main() {
           final mockPersistenceLogic = MockPersistenceLogic();
           getIt
             ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..unregister<DomainLogger>()
             ..registerSingleton<DomainLogger>(mockLoggingService);
 
           when(
@@ -3186,6 +3191,7 @@ void main() {
           final mockPersistenceLogic = MockPersistenceLogic();
           getIt
             ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..unregister<DomainLogger>()
             ..registerSingleton<DomainLogger>(mockLoggingService);
 
           when(
@@ -3457,6 +3463,7 @@ void main() {
           final mockPersistenceLogic = MockPersistenceLogic();
           getIt
             ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..unregister<DomainLogger>()
             ..registerSingleton<DomainLogger>(mockLoggingService);
 
           when(
@@ -3568,6 +3575,7 @@ void main() {
           final mockPersistenceLogic = MockPersistenceLogic();
           getIt
             ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..unregister<DomainLogger>()
             ..registerSingleton<DomainLogger>(mockLoggingService);
 
           when(
@@ -3733,9 +3741,9 @@ void main() {
             ).thenAnswer((_) async => true);
           }
 
-          if (!getIt.isRegistered<DomainLogger>()) {
-            getIt.registerSingleton<DomainLogger>(mockLoggingService);
-          }
+          getIt
+            ..unregister<DomainLogger>()
+            ..registerSingleton<DomainLogger>(mockLoggingService);
 
           when(
             () => mockJournalRepo.getJournalEntityById('task-ref'),
@@ -3950,9 +3958,9 @@ void main() {
         'receives null and falls back to empty context',
         () {
           // Ensure DomainLogger is available (provider reads getIt for it).
-          if (!getIt.isRegistered<DomainLogger>()) {
-            getIt.registerSingleton<DomainLogger>(mockLoggingService);
-          }
+          getIt
+            ..unregister<DomainLogger>()
+            ..registerSingleton<DomainLogger>(mockLoggingService);
 
           final testContainer = ProviderContainer(
             overrides: [
@@ -3983,9 +3991,9 @@ void main() {
           if (!getIt.isRegistered<AgentDatabase>()) {
             getIt.registerSingleton<AgentDatabase>(MockAgentDatabase());
           }
-          if (!getIt.isRegistered<DomainLogger>()) {
-            getIt.registerSingleton<DomainLogger>(mockLoggingService);
-          }
+          getIt
+            ..unregister<DomainLogger>()
+            ..registerSingleton<DomainLogger>(mockLoggingService);
 
           final testContainer = ProviderContainer(
             overrides: [
