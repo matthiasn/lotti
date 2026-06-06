@@ -2189,6 +2189,70 @@ void main() {
         expect(reads, greaterThanOrEqualTo(2));
       },
     );
+
+    test(
+      'a plan whose updatedAt equals the baseline does not supersede and '
+      'the poll times out',
+      () {
+        const agentId = 'agent-equal-ts';
+        final dayId = dayAgentIdForDate(_asOf);
+        final baselineAt = _asOf;
+        stubIdentity(agentId);
+        stubEnqueueOk();
+        when(
+          () => bench.journalDb.getCategoryById(any()),
+        ).thenAnswer((_) async => null);
+
+        // Every read (baseline and all polls) returns the same updatedAt —
+        // the guard is `isAfter`, so an equal timestamp must never satisfy
+        // the supersede branch.
+        when(
+          () => bench.planService.draftPlanForDay(
+            agentId: any(named: 'agentId'),
+            dayId: any(named: 'dayId'),
+          ),
+        ).thenAnswer(
+          (_) async => buildDayPlan(
+            agentId: agentId,
+            dayId: dayId,
+            updatedAt: baselineAt,
+          ),
+        );
+
+        Object? error;
+        fakeAsync((async) {
+          final fakeClock = async.getClock(_asOf);
+          withClock(fakeClock, () {
+            bench.adapter
+                .draftDayPlan(
+                  captureId: const CaptureId('cap'),
+                  decidedTaskIds: const [],
+                  dayDate: _asOf,
+                )
+                .catchError((Object e) {
+                  error = e;
+                  return DraftPlan(
+                    dayDate: _asOf,
+                    blocks: const [],
+                    bands: const [],
+                    capacityMinutes: 0,
+                    scheduledMinutes: 0,
+                  );
+                });
+          });
+          // Run past the 60s draft timeout.
+          async
+            ..elapse(const Duration(seconds: 61))
+            ..flushMicrotasks();
+        });
+
+        expect(error, isA<DayAgentInteractionException>());
+        expect(
+          (error! as DayAgentInteractionException).message,
+          contains('Timed out'),
+        );
+      },
+    );
   });
 
   group('RealDayAgent.proposePlanDiff cancellation', () {
