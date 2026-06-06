@@ -55,7 +55,7 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `test/features/tasks/ui/widgets/task_action_bar_test.dart` defines two service stand-ins inline:
+- [x] **[HIGH]** `test/features/tasks/ui/widgets/task_action_bar_test.dart` defines two service stand-ins inline: **RESOLVED (already covered):** both stand-ins carry doc comments with exactly this rationale — `_FakeTimeService` explains that `MockTimeService` cannot stub the `linkedFrom` field read, and `_StubAudioRecorderController` explains it avoids booting the platform-plugin-backed recorder repository.
   - `_FakeTimeService` (lines 31–73): a full in-file `TimeService` implementation.
   - `_StubAudioRecorderController` (lines 78–83): an inline `AudioRecorderController` subclass.
 
@@ -81,11 +81,11 @@ No strong Glados candidates exist in this subdir. The widgets are largely presen
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `lib/features/tasks/ui/widgets/task_detail_back_leading.dart` (38 ln) — **no test file**. The widget listens to `NavService.desktopTaskDetailStack` (a `ValueNotifier<List<String>>`) and shows a `GlassBackButton` only when the stack depth > 1. The branch logic (`stack.length <= 1 → SizedBox.shrink`, otherwise `GlassBackButton`) and the `popDesktopTaskDetail()` tap action are completely untested.
+- [x] **[HIGH]** `lib/features/tasks/ui/widgets/task_detail_back_leading.dart` (38 ln) — **no test file**. The widget listens to `NavService.desktopTaskDetailStack` (a `ValueNotifier<List<String>>`) and shows a `GlassBackButton` only when the stack depth > 1. The branch logic (`stack.length <= 1 → SizedBox.shrink`, otherwise `GlassBackButton`) and the `popDesktopTaskDetail()` tap action are completely untested. **RESOLVED:** new `task_detail_back_leading_test.dart` covers the hidden state (empty/one-entry stack), the visible state with the pop-on-tap verify, and live reaction to stack pushes/pops via the ValueNotifier.
 
-- [ ] **[HIGH]** `lib/features/tasks/ui/widgets/task_showcase_palette.dart` (47 ln) — **no test file**. The file exports 12 static color-mapping methods each forwarding to design-system tokens. While each is a one-liner, the full palette surface provides semantic guarantees (e.g. `success` maps to `alert.success.defaultColor`, `highText` maps to `colors.text.highEmphasis`). A snapshot test verifying each palette color against the expected token in both light and dark themes would catch token regressions.
+- [x] **[HIGH]** `lib/features/tasks/ui/widgets/task_showcase_palette.dart` (47 ln) — **no test file**. The file exports 12 static color-mapping methods each forwarding to design-system tokens. While each is a one-liner, the full palette surface provides semantic guarantees (e.g. `success` maps to `alert.success.defaultColor`, `highText` maps to `colors.text.highEmphasis`). A snapshot test verifying each palette color against the expected token in both light and dark themes would catch token regressions. **RESOLVED:** new `task_showcase_palette_test.dart` pins all 14 palette entries to their token paths under both light and dark `DesignSystemTheme`s, plus a guard that the two themes resolve different colors.
 
-- [ ] **[HIGH]** `lib/features/tasks/ui/widgets/task_showcase_shared_widgets.dart` (766 ln) — the test file only exercises 5–6 of the >15 exported widgets. Notably untested:
+- [x] **[HIGH]** `lib/features/tasks/ui/widgets/task_showcase_shared_widgets.dart` (766 ln) — the test file only exercises 5–6 of the >15 exported widgets. Notably untested: **RESOLVED:** added tests for `TaskShowcaseHeroBanner` (height, bridge CustomPaint, token clip radius), `TaskShowcaseWaveform` (bar count + 8+24·sample heights), `TaskShowcaseDesktopActionBar` (timer pill, all four round actions, FAB), `TaskShowcasePriorityGlyph` (per-priority SVG asset pin), and `TaskShowcaseSectionPill` active/inactive fill+foreground colors.
   - `TaskShowcaseHeroBanner` (cover-art background + overlay)
   - `TaskShowcaseWaveform` (custom `CustomPainter`)
   - `TaskShowcaseDesktopActionBar` (sticky desktop controls)
