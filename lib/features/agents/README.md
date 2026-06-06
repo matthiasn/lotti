@@ -800,6 +800,12 @@ through `AgentToolExecutor`, which enforces the agent's allowed category set,
 captures post-write vector clocks when a journal entity changes, and persists
 audit messages for tool actions and tool results.
 
+Attention claims are producer-maintained. Task, project, health, and standing
+agreement agents should call `request_attention` during their own scheduled or
+event-driven wakes when their facts change or a planning horizon approaches.
+The day planner only reads already-materialized claim projections; it does not
+fan out and wake producer agents synchronously during drafting.
+
 `ChangeSetBuilder` is responsible for the deferred path. It:
 
 - explodes batch tools into individually reviewable items
