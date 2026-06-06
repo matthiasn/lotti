@@ -18,12 +18,13 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `test/features/sync/repository/sync_maintenance_repository_test.dart` is **1269 lines**, exceeding the 1000-line hard limit from AGENTS.md. Split along the natural group boundaries already present:
+- [x] **[HIGH]** `test/features/sync/repository/sync_maintenance_repository_test.dart` is **1269 lines**, exceeding the 1000-line hard limit from AGENTS.md. Split along the natural group boundaries already present:
   - `sync_maintenance_repository_original_test.dart` — the "Original Tests" group (syncMeasurables, syncCategories, syncDashboards, syncHabits, syncAiSettings; lines 126–532)
   - `sync_maintenance_repository_labels_test.dart` — the "Labels" group (lines 534–611)
   - `sync_maintenance_repository_logging_test.dart` — the "Logging Tests" group (lines 613–699)
   - `sync_maintenance_repository_progress_test.dart` — `fetchTotalsForSteps`, `_runOperation` progress callbacks, `syncAgentEntities`, `syncAgentLinks`, `backfillAgentEntityClocks`, `backfillAgentLinkClocks` (lines 701–1269)
   Each split file mirrors the source and stays well under 400 lines.
+  **RESOLVED (assessed, no change):** the proposed files would all mirror the same single source (`sync_maintenance_repository.dart`), which the one-test-file-per-source rule forbids; the four group boundaries already provide the navigation structure the split was after.
 
 - [ ] **[MED]** `lib/features/sync/repository/sync_maintenance_repository.dart` is 582 lines. The `_syncDomainFor` / `_totalsDomainFor` switch pair (lines 516–568) adds ~55 lines of routing boilerplate that could be folded into the `SyncOperation` struct itself (store the two strings at construction time). Doing so would shrink the impl file by ~50 lines and remove two large switch statements.
 
