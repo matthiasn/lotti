@@ -33,7 +33,7 @@ jobs:
         run: dart pub global activate very_good_cli
       - name: Run Flutter tests
         run: very_good test --coverage
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti

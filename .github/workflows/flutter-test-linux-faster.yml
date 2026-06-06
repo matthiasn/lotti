@@ -10,7 +10,7 @@ concurrency:
 
 jobs:
   test:
-    name: Unit & Widget Tests (Linux, shard ${{ matrix.shard_label }}/3)
+    name: Unit & Widget Tests (Linux, shard ${{ matrix.shard_label }}/5)
     permissions:
       contents: read
     runs-on: ubuntu-latest
@@ -24,6 +24,10 @@ jobs:
             shard_label: 2
           - shard_index: 2
             shard_label: 3
+          - shard_index: 3
+            shard_label: 4
+          - shard_index: 4
+            shard_label: 5
     steps:
       - uses: actions/checkout@v5
       - name: Cache Pub Packages
@@ -45,9 +49,9 @@ jobs:
       - name: Run Flutter tests (standard)
         run: |
           very_good test --coverage --exclude-tags glados -- \
-            --total-shards=3 \
+            --total-shards=5 \
             --shard-index=${{ matrix.shard_index }}
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
@@ -81,7 +85,7 @@ jobs:
         run: dart pub global activate very_good_cli
       - name: Run Flutter tests (glados)
         run: very_good test --coverage --tags glados
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
@@ -99,7 +103,7 @@ jobs:
       - glados
     steps:
       - uses: actions/checkout@v5
-      - uses: codecov/codecov-action@v5
+      - uses: codecov/codecov-action@v6.0.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
