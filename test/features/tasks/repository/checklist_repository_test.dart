@@ -16,6 +16,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -64,24 +65,30 @@ void main() {
     );
   });
 
-  setUp(() {
+  setUp(() async {
     mockJournalDb = MockJournalDb();
     mockPersistenceLogic = MockPersistenceLogic();
     mockDomainLogger = MockDomainLogger();
 
-    getIt
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-      ..registerSingleton<DomainLogger>(mockDomainLogger);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockJournalDb)
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockDomainLogger)
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      },
+    );
 
     // Create ProviderContainer
     container = ProviderContainer();
     repository = ChecklistRepository();
   });
 
-  tearDown(() {
+  tearDown(() async {
     container.dispose();
-    getIt.reset();
+    await tearDownTestGetIt();
   });
 
   group('createChecklist', () {
@@ -367,52 +374,6 @@ void main() {
           subDomain: 'createChecklistEntry',
         ),
       ).called(1);
-    });
-  });
-
-  group('completeChecklistItemsForTask', () {
-    late ChecklistItem checklistItem;
-
-    setUp(() {
-      checklistItem = ChecklistItem(
-        meta: testTask.meta.copyWith(id: 'item-1'),
-        data: const ChecklistItemData(
-          title: 'Item 1',
-          isChecked: false,
-          linkedChecklists: ['checklist-1'],
-        ),
-      );
-
-      when(() => mockJournalDb.entriesForIds(any())).thenAnswer((invocation) {
-        final ids = invocation.positionalArguments.first as List<String>;
-        final rows = ids
-            .map((id) {
-              if (id == 'item-1') {
-                return toDbEntity(checklistItem);
-              }
-              return null;
-            })
-            .whereType<JournalDbEntity>()
-            .toList();
-
-        // Central MockSelectable returns the given rows from .get()
-        return MockSelectable<JournalDbEntity>(rows);
-      });
-      when(() => mockJournalDb.journalEntityById(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments.first == 'item-1'
-            ? checklistItem
-            : null,
-      );
-
-      when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer(
-        (invocation) async => invocation.positionalArguments[0] as Metadata,
-      );
-      when(
-        () => mockPersistenceLogic.updateDbEntity(
-          any(),
-          linkedId: any(named: 'linkedId'),
-        ),
-      ).thenAnswer((_) async => true);
     });
   });
 
