@@ -10,63 +10,8 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
 import '../../../../test_helper.dart';
-
-/// Mock controller that returns a fixed state for testing.
-class _MockReferenceImageSelectionController
-    extends ReferenceImageSelectionController {
-  _MockReferenceImageSelectionController(this._fixedState);
-
-  final ReferenceImageSelectionState _fixedState;
-
-  @override
-  ReferenceImageSelectionState build({required String taskId}) {
-    return _fixedState;
-  }
-
-  @override
-  void toggleImageSelection(String imageId) {
-    // No-op for tests
-  }
-
-  @override
-  void clearSelection() {
-    // No-op for tests
-  }
-
-  @override
-  Future<List<ProcessedReferenceImage>> processSelectedImages() async {
-    return [];
-  }
-}
-
-/// Mock controller that tracks toggleImageSelection calls.
-class _TrackingMockReferenceImageSelectionController
-    extends ReferenceImageSelectionController {
-  _TrackingMockReferenceImageSelectionController(this._fixedState);
-
-  final ReferenceImageSelectionState _fixedState;
-  final List<String> toggledImageIds = [];
-
-  @override
-  ReferenceImageSelectionState build({required String taskId}) {
-    return _fixedState;
-  }
-
-  @override
-  void toggleImageSelection(String imageId) {
-    toggledImageIds.add(imageId);
-  }
-
-  @override
-  void clearSelection() {
-    // No-op for tests
-  }
-
-  @override
-  Future<List<ProcessedReferenceImage>> processSelectedImages() async {
-    return [];
-  }
-}
+import '../../../../widget_test_utils.dart';
+import 'test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -94,20 +39,21 @@ void main() {
   }
 
   setUp(() async {
-    await getIt.reset();
-    getIt.allowReassignment = true;
-
     // Create a temp directory to simulate the documents directory
     mockDocumentsDirectory = Directory.systemTemp.createTempSync(
       'ref_image_selection_test_',
     );
 
-    // Register temp directory for getDocumentsDirectory()
-    getIt.registerSingleton<Directory>(mockDocumentsDirectory);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        // Register temp directory for getDocumentsDirectory()
+        getIt.registerSingleton<Directory>(mockDocumentsDirectory);
+      },
+    );
   });
 
   tearDown(() async {
-    await getIt.reset();
+    await tearDownTestGetIt();
     try {
       mockDocumentsDirectory.deleteSync(recursive: true);
     } catch (_) {
@@ -127,7 +73,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(loadingState),
+              () => FakeReferenceImageSelectionController(loadingState),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -151,7 +97,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(emptyState),
+              () => FakeReferenceImageSelectionController(emptyState),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -180,7 +126,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(stateWithImages),
+              () => FakeReferenceImageSelectionController(stateWithImages),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -213,7 +159,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(stateWithSelection),
+              () => FakeReferenceImageSelectionController(stateWithSelection),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -239,7 +185,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(stateWithImages),
+              () => FakeReferenceImageSelectionController(stateWithImages),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -268,7 +214,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(stateWithSelection),
+              () => FakeReferenceImageSelectionController(stateWithSelection),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -295,7 +241,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(processingState),
+              () => FakeReferenceImageSelectionController(processingState),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -329,7 +275,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(stateWithImages),
+              () => FakeReferenceImageSelectionController(stateWithImages),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -360,7 +306,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(stateWithSelection),
+              () => FakeReferenceImageSelectionController(stateWithSelection),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -386,7 +332,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(stateWithImages),
+              () => FakeReferenceImageSelectionController(stateWithImages),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -418,7 +364,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(stateAtMax),
+              () => FakeReferenceImageSelectionController(stateAtMax),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -443,7 +389,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(emptyState),
+              () => FakeReferenceImageSelectionController(emptyState),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -476,7 +422,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(stateWithImages),
+              () => FakeReferenceImageSelectionController(stateWithImages),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -504,7 +450,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(stateWithImages),
+              () => FakeReferenceImageSelectionController(stateWithImages),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -535,7 +481,7 @@ void main() {
               referenceImageSelectionControllerProvider(
                 taskId: testTaskId,
               ).overrideWith(
-                () => _MockReferenceImageSelectionController(stateWithImages),
+                () => FakeReferenceImageSelectionController(stateWithImages),
               ),
             ],
             child: ReferenceImageSelectionWidget(
@@ -585,7 +531,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(errorState),
+              () => FakeReferenceImageSelectionController(errorState),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -619,7 +565,7 @@ void main() {
         ],
       );
 
-      final trackingController = _TrackingMockReferenceImageSelectionController(
+      final trackingController = FakeReferenceImageSelectionController(
         stateWithImages,
       );
 
@@ -678,7 +624,7 @@ void main() {
         },
       );
 
-      final trackingController = _TrackingMockReferenceImageSelectionController(
+      final trackingController = FakeReferenceImageSelectionController(
         stateAtMax,
       );
 
@@ -731,7 +677,7 @@ void main() {
         selectedImageIds: const {'img-1'},
       );
 
-      final trackingController = _TrackingMockReferenceImageSelectionController(
+      final trackingController = FakeReferenceImageSelectionController(
         stateWithSelection,
       );
 
@@ -781,7 +727,7 @@ void main() {
               referenceImageSelectionControllerProvider(
                 taskId: testTaskId,
               ).overrideWith(
-                () => _MockReferenceImageSelectionController(stateWithImages),
+                () => FakeReferenceImageSelectionController(stateWithImages),
               ),
             ],
             child: SingleChildScrollView(
@@ -814,7 +760,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(errorState),
+              () => FakeReferenceImageSelectionController(errorState),
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -849,7 +795,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(
+              () => FakeReferenceImageSelectionController(
                 stateWithLinkedImage,
               ),
             ),
@@ -882,7 +828,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testTaskId,
             ).overrideWith(
-              () => _MockReferenceImageSelectionController(stateWithDirectOnly),
+              () => FakeReferenceImageSelectionController(stateWithDirectOnly),
             ),
           ],
           child: ReferenceImageSelectionWidget(
