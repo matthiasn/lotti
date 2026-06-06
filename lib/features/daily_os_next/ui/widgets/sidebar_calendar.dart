@@ -55,10 +55,15 @@ class _DailyOsSidebarCalendarState
 
     // Indent to the nav rows' inner content padding so the month title
     // lines up with the destination icons instead of hugging the
-    // sidebar's outer edge.
+    // sidebar's outer edge; the top inset gives the month title some
+    // breathing room below the active DailyOS row.
+    final tokens = context.designTokens;
     return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: context.designTokens.spacing.step5,
+      padding: EdgeInsets.fromLTRB(
+        tokens.spacing.step5,
+        tokens.spacing.step4,
+        tokens.spacing.step5,
+        0,
       ),
       child: SidebarMonthCalendar(
         month: _month,
