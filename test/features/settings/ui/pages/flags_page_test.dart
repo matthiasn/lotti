@@ -343,45 +343,6 @@ void main() {
     });
   });
 
-  group('FlagsPage — agent compaction flag', () {
-    testWidgets(
-      'renders the compaction flag with localized title, description, and '
-      'compress icon',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final context = tester.element(find.byType(FlagsPage));
-        await tester.enterText(
-          find.byType(DesignSystemSearch),
-          context.messages.configFlagEnableAgentCompaction,
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final item = find.widgetWithText(
-          DesignSystemListItem,
-          context.messages.configFlagEnableAgentCompaction,
-        );
-        expect(item, findsOneWidget);
-        expect(
-          find.text(
-            context.messages.configFlagEnableAgentCompactionDescription,
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: item,
-            matching: find.byIcon(Icons.compress_rounded),
-          ),
-          findsOneWidget,
-        );
-      },
-    );
-  });
-
   group('FlagsPage — fork healing flag', () {
     testWidgets(
       'renders the fork-healing flag with localized title, description, and '
@@ -746,13 +707,8 @@ void main() {
         // (not the X button) — both must converge on the same
         // "list is restored" outcome.
         await tester.enterText(find.byType(DesignSystemSearch), '');
-<<<<<<< HEAD
-        await tester.pumpAndSettle();
-        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
-=======
         await tester.pump(const Duration(milliseconds: 100));
-        expect(find.byType(DesignSystemListItem), findsNWidgets(13));
->>>>>>> e0c073b82 (test: shared modal host for confirmation tests and flags page hygiene)
+        expect(find.byType(DesignSystemListItem), findsNWidgets(12));
       },
     );
 

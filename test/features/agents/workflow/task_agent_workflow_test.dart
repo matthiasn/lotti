@@ -957,7 +957,7 @@ void main() {
       test('system prompt contains scaffold and template directives', () async {
         String? capturedSystemMessage;
         // Override createConversation to capture the system message.
-        final capturingRepo = CapturingConversationRepository(
+        final capturingRepo = MockConversationRepository(
           mockConversationManager,
           onSystemMessage: (msg) => capturedSystemMessage = msg,
         );
@@ -1019,7 +1019,7 @@ void main() {
           ).thenAnswer((_) async => splitVersion);
 
           String? capturedSystemMessage;
-          final capturingRepo = CapturingConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
@@ -1084,7 +1084,7 @@ void main() {
           ).thenAnswer((_) async => splitVersion);
 
           String? capturedSystemMessage;
-          final capturingRepo = CapturingConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
@@ -1160,7 +1160,7 @@ void main() {
           ).thenAnswer((_) async => soulVersion);
 
           String? capturedSystemMessage;
-          final capturingRepo = CapturingConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
@@ -1234,7 +1234,7 @@ void main() {
           ).thenAnswer((_) async => null);
 
           String? capturedSystemMessage;
-          final capturingRepo = CapturingConversationRepository(
+          final capturingRepo = MockConversationRepository(
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );

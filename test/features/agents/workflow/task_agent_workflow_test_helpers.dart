@@ -112,27 +112,6 @@ class MockConversationRepository extends ConversationRepository {
   }
 }
 
-/// Like [MockConversationRepository] but captures the system message passed
-/// to createConversation.
-class CapturingConversationRepository extends MockConversationRepository {
-  // ignore: use_super_parameters
-  CapturingConversationRepository(
-    MockConversationManager mockManager, {
-    required this.onSystemMessage,
-  }) : super(mockManager);
-
-  final void Function(String?) onSystemMessage;
-
-  @override
-  String createConversation({
-    String? systemMessage,
-    int maxTurns = 20,
-  }) {
-    onSystemMessage(systemMessage);
-    return 'test-conv-id';
-  }
-}
-
 /// Like [MockConversationRepository] but returns null from getConversation,
 /// simulating a scenario where the conversation was already cleaned up.
 class NullManagerConversationRepository extends MockConversationRepository {
