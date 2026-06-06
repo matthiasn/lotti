@@ -16,9 +16,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockTaskProgressRepository extends Mock
-    implements TaskProgressRepository {}
-
 // This matches the signature of the getter linkedFrom in TimeService
 class MockTask extends Mock implements Task {
   // Constructor declared first for sort_constructors_first rule

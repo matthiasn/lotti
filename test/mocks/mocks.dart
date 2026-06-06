@@ -49,6 +49,7 @@ import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/database/objectbox_ops.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
@@ -108,6 +109,7 @@ import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -410,6 +412,11 @@ class MockHttpClient extends Mock implements http.Client {}
 class MockFts5Db extends Mock implements Fts5Db {}
 
 class MockTimeService extends Mock implements TimeService {}
+
+class MockTaskProgressRepository extends Mock
+    implements TaskProgressRepository {}
+
+class MockAiConfigDb extends Mock implements AiConfigDb {}
 
 class MockLoggingService extends Mock implements LoggingService {
   MockLoggingService() {

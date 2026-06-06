@@ -18,8 +18,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 
-class MockAiConfigDb extends Mock implements AiConfigDb {}
-
 void main() {
   late MockDomainLogger mockLoggingService;
   late MockAiConfigRepository mockAiConfigRepository;
