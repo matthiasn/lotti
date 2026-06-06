@@ -399,6 +399,94 @@ void main() {
 
       expect(inferenceTriggered, isFalse);
     });
+
+    testWidgets(
+      'shouldTriggerOnInit=false suppresses the trigger but still subscribes '
+      'to an existing inference',
+      (tester) async {
+        // shouldTriggerOnInit=false with showExisting=false takes initState's
+        // else branch: no triggerNewInference call, but it DOES run
+        // _subscribeToExistingInference. Rendering still uses the controller
+        // state (not _streamProgress), unlike showExisting=true.
+        var triggerCount = 0;
+
+        final container = ProviderContainer(
+          overrides: [
+            unifiedAiInferenceRepositoryProvider.overrideWithValue(
+              mockRepository,
+            ),
+            aiConfigByIdProvider(testPromptId).overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            categoryRepositoryProvider.overrideWithValue(
+              mockCategoryRepository,
+            ),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {
+              triggerCount++;
+            }),
+          ],
+        );
+
+        // Start an active inference so _subscribeToExistingInference finds
+        // a progress stream to attach to.
+        final activeNotifier = container.read(
+          activeInferenceControllerProvider(
+            entityId: testEntityId,
+            // ignore: deprecated_member_use_from_same_package
+            aiResponseType: AiResponseType.taskSummary,
+          ).notifier,
+        )..startInference(promptId: testPromptId);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(
+              localizationsDelegates: [
+                AppLocalizations.delegate,
+                GlobalMaterialLocalizations.delegate,
+              ],
+              home: Scaffold(
+                body: UnifiedAiProgressContent(
+                  entityId: testEntityId,
+                  promptId: testPromptId,
+                  shouldTriggerOnInit: false,
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Post-frame callback + async subscribe.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+
+        // No inference was triggered despite showExisting being false.
+        expect(triggerCount, 0);
+
+        // The else branch subscribed to the active inference's broadcast
+        // progress stream.
+        final activeData = container.read(
+          activeInferenceControllerProvider(
+            entityId: testEntityId,
+            // ignore: deprecated_member_use_from_same_package
+            aiResponseType: AiResponseType.taskSummary,
+          ),
+        );
+        expect(activeData!.progressStreamController.hasListener, isTrue);
+
+        // Streamed progress is NOT rendered: with showExisting=false the
+        // build uses controllerState.message, not _streamProgress.
+        activeNotifier.updateProgress('Streamed but hidden');
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(find.textContaining('Streamed but hidden'), findsNothing);
+
+        // Unmount and dispose in-body so cacheFor timers are cancelled
+        // before the pending-timer check.
+        await tester.pumpWidget(const SizedBox());
+        container.dispose();
+      },
+    );
   });
 
   group('UnifiedAiProgressContent - showExisting and activeInference', () {
@@ -2012,6 +2100,95 @@ Generate a widget that renders a login form.''',
           find.byType(DesignSystemToast),
         );
         expect(toast.tone, DesignSystemToastTone.success);
+      },
+    );
+
+    testWidgets(
+      'intermediate progress events update status text, bar value and '
+      'percentage (lines 530-533, 596-608)',
+      (tester) async {
+        // A StreamController lets us assert the UI between individual events,
+        // which Stream.fromIterable cannot (all events flush in one pump).
+        // It is closed within the test so the `await for` loop completes
+        // finitely, keeping the group's no-open-controllers guarantee.
+        final progressController = StreamController<OllamaPullProgress>();
+        when(
+          () => mockCloudRepository.installModel(any(), any()),
+        ).thenAnswer((_) => progressController.stream);
+
+        await pumpInstallDialog(
+          tester,
+          modelName: 'llama3',
+          providers: [makeOllama()],
+        );
+
+        await tester.tap(find.text('Install'));
+        // Bounded pumps until the installing UI shows: the provider .future
+        // read and the stream subscription need a few event-loop turns.
+        for (var i = 0; i < 20; i++) {
+          if (find.text('Installing model...').evaluate().isNotEmpty) break;
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        expect(find.text('Installing model...'), findsOneWidget);
+
+        // Manifest pull at progress 0: status renders, the bar is at 0, and
+        // the percentage line is suppressed by the `_progress > 0` guard.
+        progressController.add(
+          const OllamaPullProgress(status: 'pulling manifest', progress: 0),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('pulling manifest'), findsOneWidget);
+        expect(
+          tester
+              .widget<LinearProgressIndicator>(
+                find.byType(LinearProgressIndicator),
+              )
+              .value,
+          0,
+        );
+        expect(find.textContaining('%'), findsNothing);
+
+        // Mid-download event replaces the status and renders the percentage.
+        progressController.add(
+          const OllamaPullProgress(status: 'downloading', progress: 0.42),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('downloading'), findsOneWidget);
+        expect(find.text('pulling manifest'), findsNothing);
+        expect(
+          tester
+              .widget<LinearProgressIndicator>(
+                find.byType(LinearProgressIndicator),
+              )
+              .value,
+          closeTo(0.42, 1e-9),
+        );
+        expect(find.text('42.0%'), findsOneWidget);
+
+        // A later event overwrites the previous progress (toStringAsFixed(1)
+        // rounding at line 607: 0.875 → 87.5%).
+        progressController.add(
+          const OllamaPullProgress(
+            status: 'verifying sha256 digest',
+            progress: 0.875,
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('verifying sha256 digest'), findsOneWidget);
+        expect(find.text('87.5%'), findsOneWidget);
+        expect(find.text('42.0%'), findsNothing);
+
+        // Closing the stream completes the `await for` → success path pops
+        // the dialog (same bounded-pump pattern as the success test above).
+        await progressController.close();
+        for (var i = 0; i < 20; i++) {
+          if (find.byType(OllamaModelInstallDialog).evaluate().isEmpty) break;
+          await tester.pump(const Duration(milliseconds: 50));
+        }
+        expect(find.byType(OllamaModelInstallDialog), findsNothing);
       },
     );
 
