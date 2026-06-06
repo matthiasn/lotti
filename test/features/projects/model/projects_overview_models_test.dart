@@ -926,6 +926,29 @@ void main() {
       },
       tags: 'glados',
     );
+
+    glados.Glados<Set<String>>(
+      glados.any.categoryIdSet,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'equality and hashCode follow set equality, not insertion order',
+      (ids) {
+        final query = ProjectsQuery(categoryIds: ids);
+        // Same elements in reversed insertion order: still equal.
+        final reordered = ProjectsQuery(
+          categoryIds: Set<String>.from(ids.toList().reversed),
+        );
+        expect(reordered, query);
+        expect(reordered.hashCode, query.hashCode);
+
+        // Adding a guaranteed-absent element breaks equality.
+        final widened = ProjectsQuery(
+          categoryIds: {...ids, '_definitely_not_generated_'},
+        );
+        expect(widened == query, isFalse);
+      },
+      tags: 'glados',
+    );
   });
 
   group('applyProjectsFilter — properties', () {
@@ -1020,5 +1043,50 @@ void main() {
       },
       tags: 'glados',
     );
+
+    glados.Glados<ProjectsFilter>(
+      glados.any.projectsFilter,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'filtering is idempotent: re-applying the same filter is a no-op',
+      (filter) {
+        List<List<String>> shape(List<ProjectCategoryGroup> groups) => [
+          for (final group in groups)
+            [for (final p in group.projects) p.project.meta.id],
+        ];
+
+        final once = applyProjectsFilter(snapshot, filter);
+        final twice = applyProjectsFilter(
+          ProjectsOverviewSnapshot(groups: once),
+          filter,
+        );
+
+        expect(shape(twice), shape(once));
+      },
+      tags: 'glados',
+    );
+
+    test('a filter selecting every status id equals the identity result', () {
+      const allStatuses = ProjectsFilter(
+        selectedStatusIds: {
+          ProjectStatusFilterIds.open,
+          ProjectStatusFilterIds.active,
+          ProjectStatusFilterIds.onHold,
+          ProjectStatusFilterIds.completed,
+          ProjectStatusFilterIds.archived,
+        },
+      );
+
+      final all = applyProjectsFilter(snapshot, allStatuses);
+      final identity = applyProjectsFilter(snapshot, const ProjectsFilter());
+
+      expect(all.length, identity.length);
+      for (var i = 0; i < all.length; i++) {
+        expect(
+          all[i].projects.map((p) => p.project.meta.id),
+          identity[i].projects.map((p) => p.project.meta.id),
+        );
+      }
+    });
   });
 }
