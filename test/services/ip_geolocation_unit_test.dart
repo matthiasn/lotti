@@ -78,25 +78,6 @@ void main() {
       });
     });
 
-    group('Constants Validation', () {
-      test('IP location accuracy is set to 50km', () {
-        // The constant is private, but we can verify it through the returned data
-        // by checking that IP-based locations always have 50000m accuracy
-        expect(50000, equals(50000)); // 50km in meters
-      });
-
-      test('Timeout is reasonable', () {
-        // The timeout is set to 5 seconds which is reasonable for API calls
-        expect(const Duration(seconds: 5).inSeconds, equals(5));
-      });
-
-      test('API URLs are HTTPS', () {
-        // Both APIs should use HTTPS for security
-        expect('https://ipapi.co/json/', contains('https://'));
-        expect('https://ip-api.com/json', contains('https://'));
-      });
-    });
-
     group('Error Logging', () {
       test('Logging service is called on errors', () {
         // Verify that the mock logging service is properly registered

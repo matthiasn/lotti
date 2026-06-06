@@ -203,9 +203,18 @@ void main() {
     });
 
     group('Initial State', () {
-      test('should initialize with empty state', () {
-        expect(updateNotifications, isNotNull);
-        expect(updateNotifications, isA<UpdateNotifications>());
+      test('exposes broadcast streams that have emitted nothing yet', () {
+        fakeAsync((async) {
+          expect(updateNotifications.updateStream.isBroadcast, isTrue);
+          expect(updateNotifications.localUpdateStream.isBroadcast, isTrue);
+
+          final events = <Set<String>>[];
+          updateNotifications.updateStream.listen(events.add);
+          async.flushMicrotasks();
+
+          // Nothing has been notified yet: subscribing emits no events.
+          expect(events, isEmpty);
+        });
       });
     });
 
