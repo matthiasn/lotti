@@ -22,13 +22,12 @@ import 'package:lotti/features/ai/ui/widgets/ai_error_display.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
     show categoryRepositoryProvider;
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-import '../../../widget_test_utils.dart' show resolveTestTheme;
+import '../../../widget_test_utils.dart'
+    show resolveTestTheme, setUpTestGetIt, tearDownTestGetIt;
 import '../test_utils.dart';
 
 /// Helper to create override for UnifiedAiController with a specific state.
@@ -68,7 +67,6 @@ class _TestInferenceStatusController extends InferenceStatusController {
 void main() {
   late AiConfigPrompt testPromptConfig;
   late MockUnifiedAiInferenceRepository mockRepository;
-  late MockDomainLogger mockLoggingService;
   late MockCloudInferenceRepository mockCloudRepository;
   late MockCategoryRepository mockCategoryRepository;
 
@@ -79,7 +77,7 @@ void main() {
     registerFallbackValue(fallbackJournalEntity);
   });
 
-  setUp(() {
+  setUp(() async {
     final testDate = DateTime(2024, 3, 15, 10, 30);
     testPromptConfig =
         AiConfig.prompt(
@@ -99,33 +97,11 @@ void main() {
             as AiConfigPrompt;
 
     mockRepository = MockUnifiedAiInferenceRepository();
-    mockLoggingService = MockDomainLogger();
     mockCloudRepository = MockCloudInferenceRepository();
     mockCategoryRepository = MockCategoryRepository();
 
-    // Set up GetIt
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    getIt.registerSingleton<DomainLogger>(mockLoggingService);
-
-    // Mock logging methods
-    when(
-      () => mockLoggingService.log(
-        any<LogDomain>(),
-        any<String>(),
-        subDomain: any(named: 'subDomain'),
-      ),
-    ).thenReturn(null);
-
-    when(
-      () => mockLoggingService.error(
-        any<LogDomain>(),
-        any<Object>(),
-        stackTrace: any<StackTrace>(named: 'stackTrace'),
-        subDomain: any(named: 'subDomain'),
-      ),
-    ).thenAnswer((_) async {});
+    // Registers core services (including a test-env DomainLogger) in GetIt.
+    await setUpTestGetIt();
 
     // Mock repository getActivePromptsForContext
     when(
@@ -140,11 +116,7 @@ void main() {
     ).thenAnswer((_) => Stream.value(null));
   });
 
-  tearDown(() {
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   Widget buildTestWidget(
     Widget child, {

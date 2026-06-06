@@ -9,17 +9,15 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/unified_ai_controller.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart' show setUpTestGetIt, tearDownTestGetIt;
 
 void main() {
   late AiConfigPrompt testPromptConfig;
   late MockUnifiedAiInferenceRepository mockRepository;
-  late MockDomainLogger mockLoggingService;
   late MockCloudInferenceRepository mockCloudRepository;
 
   setUpAll(() {
@@ -27,7 +25,7 @@ void main() {
     registerFallbackValue(InferenceStatus.idle);
   });
 
-  setUp(() {
+  setUp(() async {
     final now = DateTime(2024, 3, 15, 10);
     testPromptConfig =
         AiConfig.prompt(
@@ -47,40 +45,13 @@ void main() {
             as AiConfigPrompt;
 
     mockRepository = MockUnifiedAiInferenceRepository();
-    mockLoggingService = MockDomainLogger();
     mockCloudRepository = MockCloudInferenceRepository();
 
-    // Set up GetIt
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    getIt.registerSingleton<DomainLogger>(mockLoggingService);
-
-    // Mock logging methods
-    when(
-      () => mockLoggingService.log(
-        any<LogDomain>(),
-        any<String>(),
-        subDomain: any(named: 'subDomain'),
-      ),
-    ).thenReturn(null);
-
-    when(
-      () => mockLoggingService.error(
-        any<LogDomain>(),
-        any<Object>(),
-        stackTrace: any<StackTrace>(named: 'stackTrace'),
-        subDomain: any(named: 'subDomain'),
-      ),
-    ).thenReturn(null);
+    // Registers core services (including a test-env DomainLogger) in GetIt.
+    await setUpTestGetIt();
   });
 
-  tearDown(() {
-    // Unregister LoggingService after each test to ensure a clean state
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   test('Controller state updates correctly during inference', () async {
     const testEntityId = 'test-entity-1';
