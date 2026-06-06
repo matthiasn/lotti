@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -12,7 +11,6 @@ import 'package:lotti/features/agents/state/soul_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -1544,7 +1542,10 @@ void main() {
         // container.invalidate() forces a re-fetch so the new value is used.
         var activeVersion = v1;
 
-        final container = ProviderContainer(
+        final (:widget, :container) = makeTestableWidgetWithContainer(
+          const AgentSoulDetailPage(soulId: 'soul-reseed'),
+          mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+          theme: DesignSystemTheme.light(),
           overrides: [
             soulDocumentServiceProvider.overrideWithValue(mockSoulService),
             soulDocumentProvider.overrideWith(
@@ -1570,20 +1571,7 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: MediaQuery(
-              data: const MediaQueryData(size: Size(390, 844)),
-              child: MaterialApp(
-                theme: DesignSystemTheme.light(),
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: const AgentSoulDetailPage(soulId: 'soul-reseed'),
-              ),
-            ),
-          ),
-        );
+        await tester.pumpWidget(widget);
         await tester.pumpAndSettle();
 
         // Confirm original voice directive is seeded.

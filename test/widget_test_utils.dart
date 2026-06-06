@@ -302,6 +302,42 @@ Widget makeTestableWidgetNoScroll(
   );
 }
 
+/// Like [makeTestableWidgetNoScroll], but exposes the [ProviderContainer] so
+/// tests can read or invalidate providers mid-test (e.g. to simulate a
+/// background refresh). The container is the caller's responsibility to
+/// dispose — typically via `addTearDown(result.container.dispose)`.
+({Widget widget, ProviderContainer container}) makeTestableWidgetWithContainer(
+  Widget child, {
+  List<Override> overrides = const [],
+  MediaQueryData? mediaQueryData,
+  ThemeData? theme,
+}) {
+  final container = ProviderContainer(overrides: overrides);
+  final mq = mediaQueryData ?? phoneMediaQueryData;
+
+  return (
+    container: container,
+    widget: UncontrolledProviderScope(
+      container: container,
+      child: MediaQuery(
+        data: mq,
+        child: MaterialApp(
+          theme: resolveTestTheme(theme),
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            FormBuilderLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: child,
+        ),
+      ),
+    ),
+  );
+}
+
 void expectTextStyle(TextStyle actual, TextStyle expected, Color color) {
   expect(actual.fontFamily, expected.fontFamily);
   expect(actual.fontSize, expected.fontSize);
