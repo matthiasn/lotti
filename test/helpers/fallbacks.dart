@@ -343,6 +343,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(Uri());
   registerFallbackValue(<String>{});
   registerFallbackValue(DateTime(2024));
+  registerFallbackValue(EntryFlag.none);
   registerFallbackValue(Float32List(0));
   registerFallbackValue(<int>[]);
   registerFallbackValue(<String>[]);
