@@ -2,7 +2,7 @@ part of 'gemini_inference_repository.dart';
 
 /// Image-generation path of [GeminiInferenceRepository].
 extension GeminiImageGeneration on GeminiInferenceRepository {
-  Future<GeneratedImage> generateImage({
+  Future<GeneratedImage> generateImageImpl({
     required String prompt,
     required String model,
     required AiConfigInferenceProvider provider,

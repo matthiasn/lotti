@@ -3,6 +3,8 @@ part of 'gemini_inference_repository.dart';
 /// Multi-turn (message-history) streaming path of
 /// [GeminiInferenceRepository].
 extension GeminiMultiTurnInference on GeminiInferenceRepository {
+  /// Implementation behind [GeminiInferenceRepository.generateTextWithMessages]
+  /// — the public method stays on the class so consumers can mock it.
   /// Generates text with full conversation history for multi-turn interactions.
   ///
   /// This method supports:
@@ -27,7 +29,7 @@ extension GeminiMultiTurnInference on GeminiInferenceRepository {
   /// [turnIndex] provides the current turn number for generating unique
   /// tool call IDs that don't collide across conversation turns. This prevents
   /// signature/name lookup errors when replaying multi-turn function calls.
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessagesImpl({
     required List<ChatCompletionMessage> messages,
     required String model,
     required double temperature,

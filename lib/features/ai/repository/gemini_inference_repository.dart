@@ -557,6 +557,52 @@ class GeminiInferenceRepository {
       usage: usage,
     );
   }
+
+  /// Multi-turn streaming over an explicit message history. Thin delegator
+  /// to [GeminiMultiTurnInference.generateTextWithMessagesImpl] so the
+  /// method remains a mockable class member.
+  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
+    required List<ChatCompletionMessage> messages,
+    required String model,
+    required double temperature,
+    required GeminiThinkingConfig thinkingConfig,
+    required AiConfigInferenceProvider provider,
+    Map<String, String>? thoughtSignatures,
+    String? systemMessage,
+    int? maxCompletionTokens,
+    List<ChatCompletionTool>? tools,
+    ThoughtSignatureCollector? signatureCollector,
+    int? turnIndex,
+  }) => generateTextWithMessagesImpl(
+    messages: messages,
+    model: model,
+    temperature: temperature,
+    thinkingConfig: thinkingConfig,
+    provider: provider,
+    thoughtSignatures: thoughtSignatures,
+    systemMessage: systemMessage,
+    maxCompletionTokens: maxCompletionTokens,
+    tools: tools,
+    signatureCollector: signatureCollector,
+    turnIndex: turnIndex,
+  );
+
+  /// Image generation. Thin delegator to
+  /// [GeminiImageGeneration.generateImageImpl] so the method remains a
+  /// mockable class member.
+  Future<GeneratedImage> generateImage({
+    required String prompt,
+    required String model,
+    required AiConfigInferenceProvider provider,
+    String? systemMessage,
+    List<ProcessedReferenceImage>? referenceImages,
+  }) => generateImageImpl(
+    prompt: prompt,
+    model: model,
+    provider: provider,
+    systemMessage: systemMessage,
+    referenceImages: referenceImages,
+  );
 }
 
 // ---------------------------------------------------------------------------
