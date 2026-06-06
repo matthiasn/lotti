@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados2;
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
@@ -124,6 +125,47 @@ void main() {
       expect(mergedClock.vclock, containsPair('another-host', 10));
       expect(mergedClock.vclock, containsPair(host, anything));
     });
+
+    // ── Property: merge invariants over generated (counter, previous) pairs.
+    // The merged clock must contain every foreign key unchanged, and the
+    // local host entry must dominate both the local counter and any stale
+    // local entry embedded in the previous clock.
+    glados2.Glados2(
+      glados2.IntAnys(glados2.any).intInRange(0, 200),
+      glados2.IntAnys(glados2.any).intInRange(0, 300),
+      glados2.ExploreConfig(numRuns: 60),
+    ).test('getNextVectorClock merge invariants', (
+      localCounter,
+      previousLocal,
+    ) async {
+      await getIt.reset();
+      final db = SettingsDb(inMemoryDatabase: true);
+      getIt.registerSingleton<SettingsDb>(db);
+      final svc = VectorClockService();
+      await svc.initialized;
+      await svc.setNextAvailableCounter(localCounter);
+      final host = await svc.getHost();
+
+      final previous = VectorClock({
+        'host-a': localCounter % 7,
+        'host-b': previousLocal % 11,
+        host!: previousLocal,
+      });
+
+      final merged = await svc.getNextVectorClock(previous: previous);
+
+      // Every foreign entry carries over unchanged.
+      expect(merged.vclock['host-a'], localCounter % 7);
+      expect(merged.vclock['host-b'], previousLocal % 11);
+      // The local entry dominates both inputs: it is >= the local counter
+      // and strictly greater than the previous clock's local entry.
+      final local = merged.vclock[host]!;
+      expect(local, greaterThanOrEqualTo(localCounter));
+      expect(local, greaterThan(previousLocal));
+      // No keys beyond previous + local host.
+      expect(merged.vclock.keys.toSet(), {'host-a', 'host-b', host});
+      await db.close();
+    }, tags: 'glados');
 
     test('getNextVectorClock uses counter value in clock', () async {
       await service.setNextAvailableCounter(100);

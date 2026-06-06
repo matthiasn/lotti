@@ -11,23 +11,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
 
-class MockDBusClient extends Mock implements DBusClient {}
-
-class MockDBusRemoteObject extends Mock implements DBusRemoteObject {}
-
-class MockDBusSignal extends Mock implements DBusSignal {}
-
-class FakeDBusObjectPath extends Fake implements DBusObjectPath {
-  FakeDBusObjectPath(this.value);
-
-  @override
-  final String value;
-
-  @override
-  String toString() => value;
-}
-
-class FakeDBusSignature extends Fake implements DBusSignature {}
+import 'portal_test_doubles.dart';
 
 void main() {
   group('ScreenshotPortalService', () {

@@ -3,42 +3,9 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/notification_stream.dart';
 
-/// A simple wrapper around a real broadcast stream controller that exposes the
-/// same [updateStream] getter as [UpdateNotifications], but without debouncing.
-class TestNotifications implements UpdateNotifications {
-  final _controller = StreamController<Set<String>>.broadcast();
-
-  @override
-  Stream<Set<String>> get updateStream => _controller.stream;
-
-  @override
-  Stream<Set<String>> get localUpdateStream => _controller.stream;
-
-  @override
-  Stream<Set<String>> get syncUpdateStream => _controller.stream;
-
-  void emit(Set<String> ids) {
-    _controller.add(ids);
-  }
-
-  @override
-  void notify(Set<String> affectedIds, {bool fromSync = false}) {
-    emit(affectedIds);
-  }
-
-  @override
-  void notifyUiOnly(Set<String> affectedIds) {
-    emit(affectedIds);
-  }
-
-  @override
-  Future<void> dispose() async {
-    await _controller.close();
-  }
-}
+import '../test_utils/test_notifications.dart';
 
 enum _GeneratedNotificationStreamOperationKind {
   matching,

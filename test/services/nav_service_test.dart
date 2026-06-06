@@ -350,7 +350,10 @@ void main() {
 
     glados.Glados(
       glados.any.navScenario,
-      glados.ExploreConfig(numRuns: 120),
+      // 80 runs cover the bounded path/index input space; each run spins up
+      // four StreamControllers and a real in-memory SettingsDb, so the count
+      // dominates this test's wall-clock (review speed item).
+      glados.ExploreConfig(numRuns: 80),
     ).test('matches generated enabled-tab navigation invariants', (
       scenario,
     ) async {

@@ -14,6 +14,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
+import '../widget_test_utils.dart' show setUpTestGetIt, tearDownTestGetIt;
 
 enum _GeneratedEditorStateOperationKind {
   saveTempState,
@@ -105,14 +106,7 @@ void main() {
       registerFallbackValue(FakeQuillController());
     });
 
-    setUp(() {
-      if (getIt.isRegistered<JournalDb>()) {
-        getIt.unregister<JournalDb>();
-      }
-      if (getIt.isRegistered<EditorDb>()) {
-        getIt.unregister<EditorDb>();
-      }
-
+    setUp(() async {
       mockJournalDb = MockJournalDb();
       mockEditorDb = MockEditorDb();
 
@@ -141,18 +135,30 @@ void main() {
         () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
       ).thenAnswer((_) => FakeJournalEntitiesQuery(const <JournalDbEntity>[]));
 
-      getIt
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<EditorDb>(mockEditorDb);
+      // Central GetIt harness; swap in this file's JournalDb mock and add
+      // the EditorDb registration on top.
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockJournalDb)
+            ..registerSingleton<EditorDb>(mockEditorDb);
+        },
+      );
 
       editorStateService = EditorStateService();
     });
 
-    tearDown(EasyDebounce.cancelAll);
+    tearDown(() async {
+      EasyDebounce.cancelAll();
+      await tearDownTestGetIt();
+    });
 
     glados.Glados(
       glados.any.editorStateScenario,
-      glados.ExploreConfig(numRuns: 160),
+      // 100 runs is the Glados default and adequate here: the input space is
+      // bounded by 3 entry ids x 3 operation kinds.
+      glados.ExploreConfig(),
     ).test('matches generated edit and save sequence invariants', (scenario) {
       fakeAsync((async) {
         final service = EditorStateService();

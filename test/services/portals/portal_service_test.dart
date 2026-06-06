@@ -9,24 +9,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
 
-class MockDBusClient extends Mock implements DBusClient {}
-
-class MockDBusRemoteObject extends Mock implements DBusRemoteObject {}
-
-class MockDBusIntrospectNode extends Mock implements DBusIntrospectNode {}
-
-class MockDBusIntrospectInterface extends Mock
-    implements DBusIntrospectInterface {}
-
-class FakeDBusObjectPath extends Fake implements DBusObjectPath {
-  FakeDBusObjectPath(this.value);
-
-  @override
-  final String value;
-
-  @override
-  String toString() => value;
-}
+import 'portal_test_doubles.dart';
 
 // Test implementation of PortalService for testing abstract class
 class TestPortalService extends PortalService {
