@@ -181,7 +181,7 @@ void main() {
   group('AgentSettingsPage', () {
     testWidgets('shows Stats tab by default', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       expect(
@@ -207,7 +207,7 @@ void main() {
         );
 
         await tester.pumpWidget(buildSubject(agents: [agent]));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(AgentSettingsPage));
         // Stats tab → generic "Agents" title.
@@ -218,7 +218,7 @@ void main() {
         );
 
         await tester.tap(find.text(context.messages.agentInstancesTitle));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Instances tab → "Agent Instances" in the AppBar.
         expect(
@@ -245,11 +245,11 @@ void main() {
       await tester.pumpWidget(
         buildSubject(templates: [laura, tom]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Title + subtitle are rendered together via `Text.rich`, so the
       // text widget's plain text is `'Laura  ·  models/gemini-3-flash-preview'`.
@@ -266,11 +266,11 @@ void main() {
 
     testWidgets('shows empty state when no templates', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(
         find.text(context.messages.agentTemplatesEmptyFiltered),
@@ -290,12 +290,12 @@ void main() {
       await tester.pumpWidget(
         buildSubject(agents: [agent]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Tap on Instances tab
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentInstancesTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Worker Agent'), findsOneWidget);
     });
@@ -321,7 +321,7 @@ void main() {
           subjectTitles: const {'task-1': 'Wake dashboard polish'},
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       expect(
@@ -331,7 +331,7 @@ void main() {
       expect(find.text('1'), findsOneWidget);
 
       await tester.tap(find.text(context.messages.agentPendingWakesTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Subject title + agent display name share a single Text.rich
       // in the shared row, so use `findRichText: true` to match through it.
@@ -370,7 +370,7 @@ void main() {
           pendingWakes: [wake],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(IndexedStack), findsOneWidget);
       expect(
@@ -392,12 +392,12 @@ void main() {
       await tester.pumpWidget(
         buildSubject(evolutions: [session]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Switch to Instances tab
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentInstancesTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(
         find.text(context.messages.agentEvolutionSessionTitle(3)),
@@ -415,11 +415,11 @@ void main() {
       await tester.pumpWidget(
         buildSubject(templates: [template]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(
         find.text(context.messages.agentTemplateKindTaskAgent),
@@ -446,11 +446,11 @@ void main() {
       await tester.pumpWidget(
         buildSubject(templates: [improverTemplate]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(
         find.text(context.messages.agentTemplateKindImprover),
@@ -460,11 +460,11 @@ void main() {
 
     testWidgets('has FAB for creating templates', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
     });
@@ -519,6 +519,9 @@ void main() {
           ],
         ),
       );
+      // Genuine settle: the page's async providers (including the throwing
+      // templates future) must fully resolve before the tab swap, and the
+      // error panel only builds once the transition completes.
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentSettingsPage));
@@ -588,11 +591,11 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // The new shared listing renders the active version as a compact
       // mono cell ("v3") in the row's metaRight slot, not the legacy
@@ -605,11 +608,13 @@ void main() {
       beamToNamedOverride = (path) => navigatedPath = path;
 
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
-      await tester.pumpAndSettle();
+      // The per-tab FAB swaps once the TabBarView transition completes.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       await tester.tap(find.byIcon(Icons.add_rounded));
 
@@ -629,11 +634,11 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(templates: [template]));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentTemplatesTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       await tester.tap(
         find.textContaining('Nav Template', findRichText: true),
@@ -670,11 +675,11 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(AgentSettingsPage));
         await tester.tap(find.text(context.messages.agentTemplatesTitle));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         if (expectVisible) {
           expect(pendingPurpleIcon(), findsOneWidget);
@@ -695,11 +700,11 @@ void main() {
       await tester.pumpWidget(
         buildSubject(souls: [soul]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentSoulsTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.text('Laura Soul'), findsOneWidget);
       // Souls list now renders the shared `SoulAvatar` initial-tile
@@ -711,11 +716,11 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentSoulsTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(
         find.text(context.messages.agentSoulsEmptyFiltered),
@@ -725,11 +730,11 @@ void main() {
 
     testWidgets('shows FAB on Souls tab for creating souls', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentSoulsTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // The DesignSystemFloatingActionButton exposes the per-tab label
       // through its `semanticLabel` (used by both screen readers and
@@ -751,11 +756,13 @@ void main() {
       beamToNamedOverride = (path) => navigatedPath = path;
 
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentSoulsTitle));
-      await tester.pumpAndSettle();
+      // The per-tab FAB swaps once the TabBarView transition completes.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       await tester.tap(find.byIcon(Icons.add_rounded));
 
@@ -772,11 +779,11 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(souls: [soul]));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentSoulsTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       await tester.tap(find.text('Nav Soul'));
       expect(navigatedPath, '/settings/agents/souls/soul-nav');
@@ -844,11 +851,11 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       final context = tester.element(find.byType(AgentSettingsPage));
       await tester.tap(find.text(context.messages.agentSoulsTitle));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // The shared row renders the active version as a mono `vN` cell.
       expect(find.text('v5'), findsOneWidget);
@@ -868,7 +875,7 @@ void main() {
       addTearDown(() => getIt.unregister<NavService>());
 
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
 
       await tester.tap(find.byIcon(Icons.chevron_left));
       await tester.pump();
@@ -914,7 +921,7 @@ void main() {
         (tester) async {
           routeNotifier.value = routeFor('/settings/agents/templates');
           await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           final context = tester.element(find.byType(AgentSettingsPage));
           expect(
@@ -933,7 +940,7 @@ void main() {
         (tester) async {
           routeNotifier.value = routeFor('/settings/agents/pending-wakes');
           await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           expect(find.byType(AgentPendingWakesPage), findsOneWidget);
           expect(find.byType(TokenStatsTab), findsNothing);
@@ -946,7 +953,7 @@ void main() {
         (tester) async {
           routeNotifier.value = routeFor('/settings/agents/templates');
           await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           final context = tester.element(find.byType(AgentSettingsPage));
           expect(
@@ -958,7 +965,7 @@ void main() {
           // pick up the souls empty-state without a fresh pumpWidget
           // (i.e. same widget instance).
           routeNotifier.value = routeFor('/settings/agents/souls');
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           expect(
             find.text(context.messages.agentSoulsEmptyFiltered),
@@ -979,7 +986,7 @@ void main() {
         (tester) async {
           routeNotifier.value = routeFor('/settings/agents/templates');
           await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           final context = tester.element(find.byType(AgentSettingsPage));
           // Tab labels only appear inside the in-page tab bar — the
@@ -1005,7 +1012,7 @@ void main() {
         (tester) async {
           routeNotifier.value = routeFor('/settings/agents');
           await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           // Stats tab content is on stage when the URL has no
           // per-tab segment, so the parent tree row stays a usable
@@ -1023,7 +1030,7 @@ void main() {
           // promote this to Templates via prefix-only matching.
           routeNotifier.value = routeFor('/settings/agents/templates-archive');
           await tester.pumpWidget(buildSubject());
-          await tester.pumpAndSettle();
+          await tester.pump(const Duration(milliseconds: 100));
 
           expect(find.byType(TokenStatsTab), findsOneWidget);
         },
@@ -1092,7 +1099,7 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // The Templates empty-state copy is the active-tab signal.
         var ctx = tester.element(find.byType(AgentSettingsPage));
@@ -1105,7 +1112,7 @@ void main() {
         // on the existing _AgentSettingsPageState. The Souls empty
         // state should now be on stage.
         _InitialTabHarnessState.current!.swap(AgentSettingsTab.souls);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         ctx = tester.element(find.byType(AgentSettingsPage));
         expect(find.text(ctx.messages.agentSoulsEmptyFiltered), findsOneWidget);
@@ -1123,7 +1130,7 @@ void main() {
             overrides: buildOverrides(),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // The body must wrap an AgentSettingsPage carrying the same
         // initialTab, and that page must land on the Souls tab.
@@ -1167,7 +1174,7 @@ void main() {
             overrides: buildOverrides(),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // Souls tab body (the local fallback) is on stage; sibling
         // bodies are not.
@@ -1205,7 +1212,7 @@ void main() {
         beamToNamedOverride = (path) => beamedPath = path;
 
         await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(AgentSettingsPage));
 
@@ -1236,7 +1243,7 @@ void main() {
         addTearDown(tester.view.reset);
 
         await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
 
         // The tab strip lives in a horizontally scrolling view inside a
         // LayoutBuilder; the inner Row holds one SizedBox per tab.
@@ -1265,7 +1272,7 @@ void main() {
         // scrollable slack. The Instances tab still resolves on tap.
         final context = tester.element(find.byType(AgentSettingsPage));
         await tester.tap(find.text(context.messages.agentInstancesTitle));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
         expect(
           find.text(context.messages.agentInstancesPageTitle),
           findsOneWidget,

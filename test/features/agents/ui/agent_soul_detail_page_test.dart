@@ -106,7 +106,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildCreateSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
       expect(
@@ -139,7 +140,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildCreateSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
       final createButton = find.text(context.messages.createButton);
@@ -159,7 +161,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildCreateSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
 
@@ -215,7 +218,8 @@ void main() {
       );
 
       await tester.pumpWidget(buildCreateSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
 
@@ -242,7 +246,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text(context.messages.createButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       verify(
         () => mockSoulService.createSoul(
@@ -280,7 +285,8 @@ void main() {
           activeVersion: version,
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
       expect(
@@ -298,7 +304,8 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(soulId: 'soul-tabs'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
       expect(
@@ -334,13 +341,20 @@ void main() {
           versionHistory: [v1, v0],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
 
       // Switch to Info tab.
       await tester.tap(find.text(context.messages.agentSoulInfoTab));
-      await tester.pumpAndSettle();
+      // The Info tab content builds lazily; after the transition two more
+      // frames let its chained async providers (section future, then
+      // per-item futures) deliver data.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      await tester.pump();
 
       expect(
         find.text(context.messages.agentSoulVersionHistoryTitle),
@@ -406,11 +420,18 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
       await tester.tap(find.text(context.messages.agentSoulInfoTab));
-      await tester.pumpAndSettle();
+      // The Info tab content builds lazily; after the transition two more
+      // frames let its chained async providers (section future, then
+      // per-item futures) deliver data.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      await tester.pump();
 
       expect(
         find.text(context.messages.agentSoulAssignedTemplatesTitle),
@@ -445,11 +466,18 @@ void main() {
           versionHistory: [activeVersion, archivedVersion],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
       await tester.tap(find.text(context.messages.agentSoulInfoTab));
-      await tester.pumpAndSettle();
+      // The Info tab content builds lazily; after the transition two more
+      // frames let its chained async providers (section future, then
+      // per-item futures) deliver data.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      await tester.pump();
 
       // Archived version should have a restore button.
       expect(find.byIcon(Icons.restore), findsOneWidget);
@@ -480,7 +508,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
       expect(
@@ -493,11 +522,18 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(soulId: 'soul-del'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
       await tester.tap(find.text(context.messages.agentSoulInfoTab));
-      await tester.pumpAndSettle();
+      // The Info tab content builds lazily; after the transition two more
+      // frames let its chained async providers (section future, then
+      // per-item futures) deliver data.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      await tester.pump();
 
       expect(find.byIcon(Icons.delete_outline), findsOneWidget);
       expect(find.text(context.messages.deleteButton), findsOneWidget);
@@ -507,14 +543,22 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(soulId: 'soul-del'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
       await tester.tap(find.text(context.messages.agentSoulInfoTab));
-      await tester.pumpAndSettle();
+      // The Info tab content builds lazily; after the transition two more
+      // frames let its chained async providers (section future, then
+      // per-item futures) deliver data.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.byIcon(Icons.delete_outline));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(
         find.text(context.messages.agentSoulDeleteConfirmTitle),
@@ -532,7 +576,8 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(soulId: 'soul-dirty'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
 
@@ -581,7 +626,8 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(soulId: 'soul-save'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
 
@@ -599,7 +645,8 @@ void main() {
 
       // Tap save.
       await tester.tap(find.text(context.messages.agentTemplateSaveNewVersion));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       verify(
         () => mockSoulService.updateSoulAndCreateVersion(
@@ -642,6 +689,8 @@ void main() {
           ],
         ),
       );
+      // Genuine settle: the sync-throwing soul provider only surfaces its
+      // error state through settle-style pumping (riverpod retry scheduling).
       await tester.pumpAndSettle();
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
@@ -658,21 +707,30 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(soulId: 'soul-del-confirm'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
 
       // Switch to Info tab and tap delete.
       await tester.tap(find.text(context.messages.agentSoulInfoTab));
-      await tester.pumpAndSettle();
+      // The Info tab content builds lazily; after the transition two more
+      // frames let its chained async providers (section future, then
+      // per-item futures) deliver data.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.byIcon(Icons.delete_outline));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Confirm the dialog by tapping the delete button.
       // The dialog has a delete button distinct from the one on the page.
       await tester.tap(find.text(context.messages.deleteButton).last);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       verify(() => mockSoulService.deleteSoul('soul-del-confirm')).called(1);
     });
@@ -685,20 +743,29 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(soulId: 'soul-del-fail'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
 
       // Switch to Info tab and tap delete.
       await tester.tap(find.text(context.messages.agentSoulInfoTab));
-      await tester.pumpAndSettle();
+      // The Info tab content builds lazily; after the transition two more
+      // frames let its chained async providers (section future, then
+      // per-item futures) deliver data.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.byIcon(Icons.delete_outline));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Confirm delete in the dialog.
       await tester.tap(find.text(context.messages.deleteButton).last);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Error snackbar should appear.
       expect(find.text(context.messages.commonError), findsOneWidget);
@@ -736,23 +803,32 @@ void main() {
           versionHistory: [activeVersion, archivedVersion],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
 
       // Switch to Info tab.
       await tester.tap(find.text(context.messages.agentSoulInfoTab));
-      await tester.pumpAndSettle();
+      // The Info tab content builds lazily; after the transition two more
+      // frames let its chained async providers (section future, then
+      // per-item futures) deliver data.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      await tester.pump();
 
       // Tap the restore icon on the archived version.
       await tester.tap(find.byIcon(Icons.restore));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Confirm the rollback dialog.
       await tester.tap(
         find.text(context.messages.agentSoulRollbackAction).last,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       verify(
         () => mockSoulService.rollbackToVersion(
@@ -792,23 +868,32 @@ void main() {
           versionHistory: [activeVersion, archivedVersion],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
 
       // Switch to Info tab.
       await tester.tap(find.text(context.messages.agentSoulInfoTab));
-      await tester.pumpAndSettle();
+      // The Info tab content builds lazily; after the transition two more
+      // frames let its chained async providers (section future, then
+      // per-item futures) deliver data.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      await tester.pump();
 
       // Tap the restore icon on the archived version.
       await tester.tap(find.byIcon(Icons.restore));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Confirm the rollback dialog.
       await tester.tap(
         find.text(context.messages.agentSoulRollbackAction).last,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Error snackbar should appear.
       expect(find.text(context.messages.commonError), findsOneWidget);
@@ -832,7 +917,8 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(soulId: 'soul-save-fail'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
 
@@ -850,7 +936,8 @@ void main() {
 
       // Tap save.
       await tester.tap(find.text(context.messages.agentTemplateSaveNewVersion));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Error snackbar should appear.
       expect(find.text(context.messages.commonError), findsOneWidget);
@@ -865,7 +952,8 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(soulId: 'soul-nav'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
 
@@ -876,7 +964,8 @@ void main() {
       );
 
       await tester.tap(find.text(context.messages.agentSoulReviewTitle));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(capturedRoute, '/settings/agents/souls/soul-nav/review');
     });
@@ -894,7 +983,8 @@ void main() {
       ).thenThrow(Exception('create failed'));
 
       await tester.pumpWidget(buildCreateSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
 
@@ -922,7 +1012,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text(context.messages.createButton));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Error snackbar should appear.
       expect(find.text(context.messages.commonError), findsOneWidget);
@@ -932,11 +1023,18 @@ void main() {
       await tester.pumpWidget(
         buildEditSubject(soulId: 'soul-evo-history'),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       final context = tester.element(find.byType(AgentSoulDetailPage));
       await tester.tap(find.text(context.messages.agentSoulInfoTab));
-      await tester.pumpAndSettle();
+      // The Info tab content builds lazily; after the transition two more
+      // frames let its chained async providers (section future, then
+      // per-item futures) deliver data.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump();
+      await tester.pump();
 
       expect(
         find.text(context.messages.agentSoulEvolutionHistoryTitle),
@@ -960,13 +1058,18 @@ void main() {
             assignedTemplateIds: [],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         final context = tester.element(find.byType(AgentSoulDetailPage));
 
         // Switch to Info tab.
         await tester.tap(find.text(context.messages.agentSoulInfoTab));
-        await tester.pumpAndSettle();
+        // Lazy tab content: two more frames for chained async providers.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
+        await tester.pump();
 
         expect(
           find.text(context.messages.agentTemplateNoneAssigned),
@@ -979,7 +1082,8 @@ void main() {
       'cancel button in create mode calls navigateBackFromAgent (beamBack)',
       (tester) async {
         await tester.pumpWidget(buildCreateSubject());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         final context = tester.element(find.byType(AgentSoulDetailPage));
         final cancelFinder = find.text(context.messages.cancelButton);
@@ -987,7 +1091,8 @@ void main() {
 
         await tester.ensureVisible(cancelFinder);
         await tester.tap(cancelFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // navigateBackFromAgent sees /settings/agents path and calls beamBack.
         verify(() => mockNavService.beamBack()).called(1);
@@ -998,7 +1103,8 @@ void main() {
       'cancel button in edit mode (dirty state) calls navigateBackFromAgent',
       (tester) async {
         await tester.pumpWidget(buildEditSubject(soulId: 'soul-cancel-dirty'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         final context = tester.element(find.byType(AgentSoulDetailPage));
 
@@ -1024,7 +1130,8 @@ void main() {
         expect(cancelFinder, findsOneWidget);
         await tester.ensureVisible(cancelFinder);
         await tester.tap(cancelFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // navigateBackFromAgent sees /settings/agents path and calls beamBack.
         verify(() => mockNavService.beamBack()).called(greaterThanOrEqualTo(1));
@@ -1035,7 +1142,8 @@ void main() {
       'tone bounds onChange triggers dirty-state detection',
       (tester) async {
         await tester.pumpWidget(buildEditSubject(soulId: 'soul-tone'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         final context = tester.element(find.byType(AgentSoulDetailPage));
 
@@ -1068,7 +1176,8 @@ void main() {
       'coaching style onChange triggers dirty-state detection',
       (tester) async {
         await tester.pumpWidget(buildEditSubject(soulId: 'soul-coaching'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         final context = tester.element(find.byType(AgentSoulDetailPage));
 
@@ -1099,7 +1208,8 @@ void main() {
       'anti-sycophancy onChange triggers dirty-state detection',
       (tester) async {
         await tester.pumpWidget(buildEditSubject(soulId: 'soul-anti-syco'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         final context = tester.element(find.byType(AgentSoulDetailPage));
 
@@ -1130,16 +1240,22 @@ void main() {
       'cancel in delete dialog dismisses dialog without calling deleteSoul',
       (tester) async {
         await tester.pumpWidget(buildEditSubject(soulId: 'soul-del-cancel'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         final context = tester.element(find.byType(AgentSoulDetailPage));
 
         // Open Info tab and trigger delete dialog.
         await tester.tap(find.text(context.messages.agentSoulInfoTab));
-        await tester.pumpAndSettle();
+        // Lazy tab content: two more frames for chained async providers.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
+        await tester.pump();
 
         await tester.tap(find.byIcon(Icons.delete_outline));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Confirm the dialog is shown.
         expect(
@@ -1149,7 +1265,8 @@ void main() {
 
         // Tap the cancel button inside the dialog.
         await tester.tap(find.text(context.messages.cancelButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Dialog must be dismissed and deleteSoul must NOT have been called.
         expect(
@@ -1185,16 +1302,22 @@ void main() {
             versionHistory: [activeVersion, archivedVersion],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         final context = tester.element(find.byType(AgentSoulDetailPage));
 
         // Navigate to Info tab and open rollback dialog.
         await tester.tap(find.text(context.messages.agentSoulInfoTab));
-        await tester.pumpAndSettle();
+        // Lazy tab content: two more frames for chained async providers.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
+        await tester.pump();
 
         await tester.tap(find.byIcon(Icons.restore));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Dialog title should be visible.
         expect(
@@ -1204,7 +1327,8 @@ void main() {
 
         // Tap cancel — first occurrence is in the dialog.
         await tester.tap(find.text(context.messages.cancelButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Dialog dismissed; rollback service must not have been called.
         verifyNever(
@@ -1306,6 +1430,8 @@ void main() {
             ],
           ),
         );
+        // Genuine settle: erroring providers only surface their error
+        // state through settle-style pumping (riverpod retry scheduling).
         await tester.pumpAndSettle();
 
         final context = tester.element(find.byType(AgentSoulDetailPage));
@@ -1351,6 +1477,8 @@ void main() {
             ],
           ),
         );
+        // Genuine settle: erroring providers only surface their error
+        // state through settle-style pumping (riverpod retry scheduling).
         await tester.pumpAndSettle();
 
         final context = tester.element(find.byType(AgentSoulDetailPage));
@@ -1458,11 +1586,16 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         final context = tester.element(find.byType(AgentSoulDetailPage));
         await tester.tap(find.text(context.messages.agentSoulInfoTab));
-        await tester.pumpAndSettle();
+        // Lazy tab content: two more frames for chained async providers.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
+        await tester.pump();
 
         // The card shows the session title — must find it in the tree.
         expect(
@@ -1510,6 +1643,8 @@ void main() {
             ],
           ),
         );
+        // Genuine settle: erroring providers only surface their error
+        // state through settle-style pumping (riverpod retry scheduling).
         await tester.pumpAndSettle();
 
         final context = tester.element(find.byType(AgentSoulDetailPage));
@@ -1572,7 +1707,8 @@ void main() {
         addTearDown(container.dispose);
 
         await tester.pumpWidget(widget);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // Confirm original voice directive is seeded.
         expect(find.text('Original voice'), findsOneWidget);
@@ -1580,7 +1716,8 @@ void main() {
         // Simulate active version changing (e.g. after rollback).
         activeVersion = v2;
         container.invalidate(activeSoulVersionProvider('soul-reseed'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         // The voice directive field must now show the new version's value.
         expect(find.text('Updated voice after rollback'), findsOneWidget);

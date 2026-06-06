@@ -245,7 +245,7 @@ already covered). No new Glados tests recommended.
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `test/features/agents/ui/agent_template_detail_page_test.dart` — 57 calls
+- [x] **[HIGH]** `test/features/agents/ui/agent_template_detail_page_test.dart` — 57 calls
   to `pumpAndSettle` across 49 tests. Each navigates a `NestedScrollView` +
   `TabBarView` layout. The 12 calls to `scrollUntilVisible` each call
   `pumpAndSettle` internally. Tests that navigate to the Stats tab (e.g.
@@ -257,7 +257,7 @@ already covered). No new Glados tests recommended.
   `pumpAndSettle` with `tester.pump(const Duration(milliseconds: 100))` after the
   async action completes.
 
-- [ ] **[HIGH]** `test/features/agents/ui/agent_settings_page_test.dart` — 57 calls to
+- [x] **[HIGH]** `test/features/agents/ui/agent_settings_page_test.dart` — 57 calls to
   `pumpAndSettle` for 34 tests in a file that wraps `AgentSettingsPage`, which
   embeds `TokenStatsTab`, `AgentInstancesList`, and `SidebarWakeQueue`. Each
   full-page pump-and-settle resolves multiple async providers. **Impact**: up to
@@ -265,7 +265,7 @@ already covered). No new Glados tests recommended.
   using a shared `ProviderContainer` for tests that don't mutate state between
   assertions.
 
-- [ ] **[HIGH]** `test/features/agents/ui/agent_soul_detail_page_test.dart` — 74 calls to
+- [x] **[HIGH]** `test/features/agents/ui/agent_soul_detail_page_test.dart` — 74 calls to
   `pumpAndSettle` across 38 tests. Many edit-mode tests navigate tabs and scroll
   to find UI elements, contributing 2–4 `pumpAndSettle` calls each. Replacing
   intermediate navigation `pumpAndSettle` with `tester.pump(Duration(seconds: 1))`
