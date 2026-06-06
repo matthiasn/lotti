@@ -12,6 +12,7 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 /// Dispatches confirmed project-agent change-set items to project-domain
@@ -103,7 +104,7 @@ class ProjectToolDispatcher {
 
     final reason = args['reason'] as String?;
     final now = clock.now();
-    final parsedStatus = _parseProjectStatus(
+    final parsedStatus = parseProjectStatus(
       statusValue,
       reason: reason,
       now: now,
@@ -118,7 +119,7 @@ class ProjectToolDispatcher {
       );
     }
 
-    if (_isSameSemanticStatus(project.data.status, parsedStatus)) {
+    if (isSameSemanticStatus(project.data.status, parsedStatus)) {
       return ToolExecutionResult(
         success: true,
         output: 'Project already has status ${parsedStatus.label}',
@@ -172,7 +173,7 @@ class ProjectToolDispatcher {
 
     final now = clock.now();
     final rawPriority = args['priority'];
-    final priority = _parseTaskPriority(rawPriority);
+    final priority = parseTaskPriority(rawPriority);
     if (rawPriority != null && priority == null) {
       return const ToolExecutionResult(
         success: false,
@@ -316,7 +317,8 @@ class ProjectToolDispatcher {
     }
   }
 
-  static TaskPriority? _parseTaskPriority(Object? rawPriority) {
+  @visibleForTesting
+  static TaskPriority? parseTaskPriority(Object? rawPriority) {
     if (rawPriority == null) return TaskPriority.p2Medium;
     if (rawPriority is! String) return null;
 
@@ -329,7 +331,8 @@ class ProjectToolDispatcher {
     };
   }
 
-  static ProjectStatus? _parseProjectStatus(
+  @visibleForTesting
+  static ProjectStatus? parseProjectStatus(
     String rawStatus, {
     required String? reason,
     required DateTime now,
@@ -376,7 +379,8 @@ class ProjectToolDispatcher {
     };
   }
 
-  static bool _isSameSemanticStatus(
+  @visibleForTesting
+  static bool isSameSemanticStatus(
     ProjectStatus current,
     ProjectStatus next,
   ) {

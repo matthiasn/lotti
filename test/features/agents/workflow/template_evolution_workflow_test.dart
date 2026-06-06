@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/classified_feedback.dart';
@@ -871,6 +872,84 @@ void main() {
       expect(result, isNull);
       // Session should NOT be cleaned up on error — caller can retry.
     });
+
+    test(
+      'recovers when createVersion throws after the version was committed '
+      '(post-commit sync failure)',
+      () async {
+        // createVersion throws, but the version actually landed: the
+        // active version matches the proposal's directives and the
+        // evolution-agent author, so _createVersionIdempotent must return
+        // it instead of rethrowing.
+        final committedVersion = makeTestTemplateVersion(
+          id: 'committed-ver',
+          version: 2,
+          directives: 'New text',
+          generalDirective: 'New text',
+          authoredBy: AgentAuthors.evolutionAgent,
+        );
+
+        when(
+          () => mockTemplateService.createVersion(
+            templateId: any(named: 'templateId'),
+            directives: any(named: 'directives'),
+            authoredBy: any(named: 'authoredBy'),
+            generalDirective: any(named: 'generalDirective'),
+            reportDirective: any(named: 'reportDirective'),
+          ),
+        ).thenThrow(StateError('post-commit sync failure'));
+        when(
+          () => mockTemplateService.getActiveVersion(kTestTemplateId),
+        ).thenAnswer((_) async => committedVersion);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => null);
+
+        final strategy = EvolutionStrategy();
+        final manager = ConversationManager(conversationId: 'conv-1')
+          ..initialize();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'propose_directives',
+            arguments:
+                '{"general_directive":"New text","report_directive":"","rationale":"R"}',
+          ),
+        );
+        manager.addAssistantMessage(toolCalls: [toolCall]);
+        await strategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: manager,
+        );
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+        );
+
+        workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+          sessionId: 'session-1',
+          templateId: kTestTemplateId,
+          conversationId: 'test-conv-id',
+          strategy: strategy,
+          modelId: 'model',
+        );
+
+        final result = await workflow.approveProposal(sessionId: 'session-1');
+
+        // Approval succeeds with the already-committed version.
+        expect(result, isNotNull);
+        expect(result!.id, 'committed-ver');
+        expect(workflow.activeSessions, isEmpty);
+      },
+    );
 
     test('completes even when session entity not found in DB', () async {
       final newVersion = makeTestTemplateVersion(
