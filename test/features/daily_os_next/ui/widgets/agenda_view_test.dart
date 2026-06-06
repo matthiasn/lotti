@@ -277,26 +277,44 @@ void main() {
       expect(find.byType(CapacityDonut), findsOneWidget);
     });
 
-    testWidgets('empty agenda renders the dashed "No plan yet" hint card', (
-      tester,
-    ) async {
-      final draft = DraftPlan(
-        dayDate: DateTime(2026, 5, 26),
-        blocks: const [],
-        bands: const [],
-        capacityMinutes: 240,
-        scheduledMinutes: 0,
-        agendaItems: const [],
-      );
-      await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
+    testWidgets(
+      'no-plan day renders the dashed "No plan yet" hint card; a real '
+      'plan with zero agenda items does not',
+      (tester) async {
+        final draft = DraftPlan(
+          dayDate: DateTime(2026, 5, 26),
+          blocks: const [],
+          bands: const [],
+          capacityMinutes: 240,
+          scheduledMinutes: 0,
+          agendaItems: const [],
+        );
+        await tester.pumpWidget(
+          _wrap(AgendaView(draft: draft, hasPlan: false)),
+        );
 
-      final messages = tester.element(find.byType(AgendaView)).messages;
-      expect(find.text(messages.dailyOsNextAgendaNoPlanTitle), findsOneWidget);
-      expect(find.text(messages.dailyOsNextAgendaNoPlanBody), findsOneWidget);
-      expect(find.byType(AgendaCard), findsNothing);
-      // No tracked time -> no TimeSpentCard either.
-      expect(find.byType(TimeSpentCard), findsNothing);
-    });
+        final messages = tester.element(find.byType(AgendaView)).messages;
+        expect(
+          find.text(messages.dailyOsNextAgendaNoPlanTitle),
+          findsOneWidget,
+        );
+        expect(
+          find.text(messages.dailyOsNextAgendaNoPlanBody),
+          findsOneWidget,
+        );
+        expect(find.byType(AgendaCard), findsNothing);
+        // No tracked time -> no TimeSpentCard either.
+        expect(find.byType(TimeSpentCard), findsNothing);
+
+        // With a real (if empty) plan the no-plan copy would be a lie —
+        // only the stat strip remains.
+        await tester.pumpWidget(_wrap(AgendaView(draft: draft)));
+        expect(
+          find.text(messages.dailyOsNextAgendaNoPlanTitle),
+          findsNothing,
+        );
+      },
+    );
 
     testWidgets(
       'no-plan day stays honest: eyebrow, tracked summary, legend, and '

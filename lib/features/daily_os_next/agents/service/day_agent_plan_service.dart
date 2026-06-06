@@ -469,6 +469,12 @@ class DayAgentPlanService {
     required String blockId,
     required String title,
   }) async {
+    final trimmedTitle = title.trim();
+    if (trimmedTitle.isEmpty) {
+      throw const DayAgentCaptureException(
+        'block title must not be blank',
+      );
+    }
     await _requireIdentity(agentId);
     final plan = await draftPlanForDay(agentId: agentId, dayId: dayId);
     if (plan == null) {
@@ -494,7 +500,7 @@ class DayAgentPlanService {
     final renamedBlocks = [
       for (final candidate in plan.data.plannedBlocks)
         if (candidate.id == blockId)
-          candidate.copyWith(title: title)
+          candidate.copyWith(title: trimmedTitle)
         else
           candidate,
     ];

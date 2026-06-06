@@ -25,10 +25,12 @@ class DailyOsNextRoot extends ConsumerStatefulWidget {
 }
 
 class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
-  /// Set when the user taps the empty Day surface's "Speak a check-in"
-  /// CTA — forces Capture even though the day has tracked time.
-  /// Cleared whenever the selected date changes.
-  bool _checkInRequested = false;
+  /// Day for which the user tapped the empty Day surface's "Speak a
+  /// check-in" CTA — forces Capture for that day even though it has
+  /// tracked time. Comparing against the current selection (instead of
+  /// listening + resetting a flag) means no `setState` inside a
+  /// provider listener and an automatic reset on date change.
+  DateTime? _checkInDate;
 
   DateTime get _today {
     final now = clock.now();
@@ -71,22 +73,24 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
   @override
   Widget build(BuildContext context) {
     // Day selection lives in a provider so the desktop sidebar's
-    // month calendar can drive it; the check-in override resets on
-    // every selection change.
-    ref.listen(dailyOsNextSelectedDateProvider, (previous, next) {
-      if (previous != next && _checkInRequested) {
-        setState(() => _checkInRequested = false);
-      }
-    });
+    // month calendar can drive it.
     final selectedDate = ref.watch(dailyOsNextSelectedDateProvider);
     final asyncPlan = ref.watch(currentDraftPlanProvider(selectedDate));
     if (asyncPlan.hasValue) {
       final plan = asyncPlan.requireValue;
       if (plan != null) return _buildSurface(selectedDate, plan);
 
+      // Wait for the tracked-time projection before choosing between
+      // Capture and the empty Day surface — rendering on a coerced
+      // empty list would flash Capture and then flip once the
+      // recorded sessions arrive. Errors fall through as "no tracked
+      // time" so a failing projection never blocks the ritual.
       final actualBlocks = ref.watch(
         dailyOsActualTimeBlocksProvider(selectedDate),
       );
+      if (actualBlocks.isLoading && !actualBlocks.hasValue) {
+        return const _LoadingShell();
+      }
       return _buildSurface(
         selectedDate,
         null,
@@ -121,12 +125,12 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     // surface in its empty mode so the recorded sessions are visible
     // on the timeline without creating a plan first (handoff v2 item
     // 2). The footer CTA routes into Capture.
-    if (actualBlocks.isNotEmpty && !_checkInRequested) {
+    if (actualBlocks.isNotEmpty && _checkInDate != selectedDate) {
       return DayPage(
         key: ValueKey('empty-${selectedDate.toIso8601String()}'),
         draft: DraftPlan.emptyForDay(selectedDate),
         hasPlan: false,
-        onCheckIn: () => setState(() => _checkInRequested = true),
+        onCheckIn: () => setState(() => _checkInDate = selectedDate),
         dateStrip: strip,
       );
     }

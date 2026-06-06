@@ -1529,8 +1529,8 @@
     }
   },
   "dailyOsNextAgendaCapacityOver": "SOBRECARGADO",
-  "dailyOsNextAgendaNoPlanBody": "Tu tiempo registrado está aquí de todos modos: habla un check-in y prepararé un día a su alrededor.",
-  "dailyOsNextAgendaNoPlanSummary": "{duration} registrado hasta ahora. Habla un check-in y prepararé un día a su alrededor.",
+  "dailyOsNextAgendaNoPlanBody": "Tu tiempo registrado está aquí de todos modos: habla un check-in y prepararé un día a tu alrededor.",
+  "dailyOsNextAgendaNoPlanSummary": "{duration} registrado hasta ahora. Habla un check-in y prepararé un día a tu alrededor.",
   "dailyOsNextAgendaNoPlanTitle": "Aún no hay plan para hoy.",
   "dailyOsNextAgendaStateDone": "Hecho",
   "dailyOsNextAgendaStateInProgress": "En curso",
@@ -1549,7 +1549,7 @@
       }
     }
   },
-  "dailyOsNextAgendaTrackedLegend": "Registrado · {duration} · {completedCount} hechas",
+  "dailyOsNextAgendaTrackedLegend": "Registrado · {duration} · {completedCount, plural, =1{1 hecha} other{{completedCount} hechas}}",
   "dailyOsNextCaptureCaptured": "Entendido.",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Se denegó el permiso del micrófono.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "No hay ninguna sesión en tiempo real activa.",
@@ -1679,6 +1679,7 @@
   "dailyOsNextRefineStatusListening": "Escuchando…",
   "dailyOsNextRefineStatusThinking": "✦ Reformando el plan…",
   "dailyOsNextRefineTitle": "Refinar el plan",
+  "dailyOsNextRenameFailed": "No se pudo renombrar: inténtalo de nuevo.",
   "dailyOsNextShutdownCarryoverDrop": "Descartar",
   "dailyOsNextShutdownCarryoverDropped": "Descartado",
   "dailyOsNextShutdownCarryoverOverline": "PASA A MAÑANA",
@@ -1772,7 +1773,7 @@
   "dailyOsNextTimelineTracked": "registrado",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesión anterior} other{{count} sesiones anteriores}}",
   "dailyOsNextTimeSpentShowLess": "Mostrar menos",
-  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} hechas",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount, plural, =1{1 hecha} other{{completedCount} hechas}}",
   "dailyOsNextTimeSpentTitle": "HOY HASTA AHORA",
   "dailyOsNextTimeSpentTitlePast": "TIEMPO REGISTRADO",
   "dailyOsNextTriageConfirmDefer": "Aplazado",

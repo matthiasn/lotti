@@ -1679,6 +1679,7 @@
   "dailyOsNextRefineStatusListening": "Höre zu…",
   "dailyOsNextRefineStatusThinking": "✦ Plan wird überarbeitet…",
   "dailyOsNextRefineTitle": "Plan anpassen",
+  "dailyOsNextRenameFailed": "Umbenennen fehlgeschlagen — versuch es nochmal.",
   "dailyOsNextShutdownCarryoverDrop": "Verwerfen",
   "dailyOsNextShutdownCarryoverDropped": "Verworfen",
   "dailyOsNextShutdownCarryoverOverline": "BLEIBT OFFEN",

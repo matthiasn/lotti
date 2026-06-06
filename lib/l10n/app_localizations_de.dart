@@ -3494,6 +3494,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get dailyOsNextRefineTitle => 'Plan anpassen';
 
   @override
+  String get dailyOsNextRenameFailed =>
+      'Umbenennen fehlgeschlagen — versuch es nochmal.';
+
+  @override
   String get dailyOsNextShutdownCarryoverDrop => 'Verwerfen';
 
   @override

@@ -16,25 +16,35 @@ void main() {
       expect(formatMinutesCompact(480), '8h');
     });
 
+    test('negative durations keep a single leading sign', () {
+      expect(formatMinutesCompact(-1), '-1m');
+      expect(formatMinutesCompact(-60), '-1h');
+      expect(formatMinutesCompact(-65), '-1h 5m');
+    });
+
     glados.Glados(
-      glados.IntAnys(glados.any).intInRange(0, 24 * 60 * 7),
+      glados.IntAnys(glados.any).intInRange(-24 * 60, 24 * 60 * 7),
       glados.ExploreConfig(numRuns: 120),
     ).test('round-trips back to the original minute count', (minutes) {
       final label = formatMinutesCompact(minutes);
-      final match = RegExp(r'^(?:(\d+)h)?\s?(?:(\d+)m)?$').firstMatch(label);
+      final match = RegExp(
+        r'^(-)?(?:(\d+)h)?\s?(?:(\d+)m)?$',
+      ).firstMatch(label);
       expect(match, isNotNull, reason: 'unparseable label "$label"');
-      final hours = int.tryParse(match!.group(1) ?? '') ?? 0;
-      final mins = int.tryParse(match.group(2) ?? '') ?? 0;
+      final sign = match!.group(1) == null ? 1 : -1;
+      final hours = int.tryParse(match.group(2) ?? '') ?? 0;
+      final mins = int.tryParse(match.group(3) ?? '') ?? 0;
       expect(
-        hours * 60 + mins,
+        sign * (hours * 60 + mins),
         minutes,
         reason: '"$label" should encode $minutes minutes',
       );
+      final magnitude = minutes.abs();
       // Compact rule: no "0m" suffix on whole hours, no "0h" prefix.
-      if (minutes >= 60 && minutes % 60 == 0) {
+      if (magnitude >= 60 && magnitude % 60 == 0) {
         expect(label.endsWith('h'), isTrue, reason: label);
       }
-      if (minutes < 60) {
+      if (magnitude < 60) {
         expect(label.contains('h'), isFalse, reason: label);
       }
     }, tags: 'glados');

@@ -1549,7 +1549,7 @@
       }
     }
   },
-  "dailyOsNextAgendaTrackedLegend": "Înregistrat · {duration} · {completedCount} finalizate",
+  "dailyOsNextAgendaTrackedLegend": "Înregistrat · {duration} · {completedCount, plural, =1{1 finalizată} few{{completedCount} finalizate} other{{completedCount} de finalizate}}",
   "dailyOsNextCaptureCaptured": "Am înțeles.",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "Permisiunea pentru microfon a fost refuzată.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "Nu există nicio sesiune în timp real activă.",
@@ -1679,6 +1679,7 @@
   "dailyOsNextRefineStatusListening": "Ascult…",
   "dailyOsNextRefineStatusThinking": "✦ Reorganizez planul…",
   "dailyOsNextRefineTitle": "Reglează planul",
+  "dailyOsNextRenameFailed": "Redenumirea nu a reușit — încercați din nou.",
   "dailyOsNextShutdownCarryoverDrop": "Renunță",
   "dailyOsNextShutdownCarryoverDropped": "Renunțat",
   "dailyOsNextShutdownCarryoverOverline": "SE REPORTEAZĂ",
@@ -1772,7 +1773,7 @@
   "dailyOsNextTimelineTracked": "înregistrat",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 sesiune anterioară} few{{count} sesiuni anterioare} other{{count} de sesiuni anterioare}}",
   "dailyOsNextTimeSpentShowLess": "Afișează mai puțin",
-  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} finalizate",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount, plural, =1{1 finalizată} few{{completedCount} finalizate} other{{completedCount} de finalizate}}",
   "dailyOsNextTimeSpentTitle": "AZI PÂNĂ ACUM",
   "dailyOsNextTimeSpentTitlePast": "TIMP ÎNREGISTRAT",
   "dailyOsNextTriageConfirmDefer": "Amânat",

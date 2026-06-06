@@ -18,6 +18,8 @@ import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/plan_view_toggle.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/processing_category_filter_button.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -147,25 +149,46 @@ class _DayPageState extends ConsumerState<DayPage> {
   /// each of its linked blocks, then refreshes the plan projection.
   Future<void> _renameItem(AgendaItem item, String title) async {
     final agent = ref.read(dayAgentProvider);
-    var plan = widget.draft;
-    for (final blockId in item.linkedBlockIds) {
-      plan = await agent.renameBlock(
-        plan: plan,
-        blockId: blockId,
-        title: title,
-      );
+    try {
+      var plan = widget.draft;
+      for (final blockId in item.linkedBlockIds) {
+        plan = await agent.renameBlock(
+          plan: plan,
+          blockId: blockId,
+          title: title,
+        );
+      }
+    } catch (_) {
+      _showRenameFailedToast();
+      return;
+    } finally {
+      // Re-project even on partial failure so the UI reflects whatever
+      // was persisted before the error.
+      ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
     }
-    ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
   }
 
   Future<void> _renameBlock(TimeBlock block, String title) async {
     final agent = ref.read(dayAgentProvider);
-    await agent.renameBlock(
-      plan: widget.draft,
-      blockId: block.id,
-      title: title,
-    );
+    try {
+      await agent.renameBlock(
+        plan: widget.draft,
+        blockId: block.id,
+        title: title,
+      );
+    } catch (_) {
+      _showRenameFailedToast();
+      return;
+    }
     ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
+  }
+
+  void _showRenameFailedToast() {
+    if (!mounted) return;
+    context.showToast(
+      tone: DesignSystemToastTone.error,
+      title: context.messages.dailyOsNextRenameFailed,
+    );
   }
 
   @override

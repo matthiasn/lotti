@@ -3168,7 +3168,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
-    return 'Suivi · $duration · $completedCount terminées';
+    String _temp0 = intl.Intl.pluralLogic(
+      completedCount,
+      locale: localeName,
+      other: '$completedCount terminées',
+      one: '1 terminée',
+    );
+    return 'Suivi · $duration · $_temp0';
   }
 
   @override
@@ -3509,6 +3515,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get dailyOsNextRefineTitle => 'Affiner le plan';
 
   @override
+  String get dailyOsNextRenameFailed => 'Impossible de renommer — réessaie.';
+
+  @override
   String get dailyOsNextShutdownCarryoverDrop => 'Abandonner';
 
   @override
@@ -3688,7 +3697,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
-    return '$duration · $completedCount terminées';
+    String _temp0 = intl.Intl.pluralLogic(
+      completedCount,
+      locale: localeName,
+      other: '$completedCount terminées',
+      one: '1 terminée',
+    );
+    return '$duration · $_temp0';
   }
 
   @override

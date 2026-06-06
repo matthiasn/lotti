@@ -23,6 +23,7 @@ class DailyOsSidebarCalendar extends ConsumerStatefulWidget {
 class _DailyOsSidebarCalendarState
     extends ConsumerState<DailyOsSidebarCalendar> {
   late DateTime _month;
+  DateTime? _lastSelected;
 
   @override
   void initState() {
@@ -40,6 +41,14 @@ class _DailyOsSidebarCalendarState
   @override
   Widget build(BuildContext context) {
     final selectedDay = ref.watch(dailyOsNextSelectedDateProvider);
+    // Snap the visible month whenever the selection changes — from this
+    // calendar or from any other surface (date strip, picker) — so the
+    // selected day never sits off-screen. Plain field writes during
+    // build: the widget is already rebuilding from the watch above.
+    if (_lastSelected != selectedDay) {
+      _lastSelected = selectedDay;
+      _month = DateTime(selectedDay.year, selectedDay.month);
+    }
     final markedDays =
         ref.watch(dailyOsPlanDaysProvider(_month)).value ?? const <DateTime>{};
 

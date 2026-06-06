@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
@@ -53,7 +55,12 @@ class _TimeSpentCardState extends State<TimeSpentCard> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final maxRows = widget.maxRows ?? (isDesktopLayout(context) ? 3 : 2);
+    // Guard against non-positive overrides — sublist math below needs
+    // at least one visible row.
+    final maxRows = math.max(
+      1,
+      widget.maxRows ?? (isDesktopLayout(context) ? 3 : 2),
+    );
 
     final sorted = [...widget.blocks]
       ..sort((a, b) => a.start.compareTo(b.start));

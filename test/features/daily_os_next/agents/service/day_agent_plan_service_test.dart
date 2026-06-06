@@ -2837,6 +2837,40 @@ void main() {
         },
       );
 
+      test('rejects blank titles and persists trimmed ones', () async {
+        seedRenamablePlan();
+
+        await expectLater(
+          createService().renameBlock(
+            agentId: _agentId,
+            dayId: _dayId,
+            blockId: 'block-standalone',
+            title: '   ',
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('must not be blank'),
+            ),
+          ),
+        );
+        expect(upsertedEntities, isEmpty);
+
+        final renamed = await createService().renameBlock(
+          agentId: _agentId,
+          dayId: _dayId,
+          blockId: 'block-standalone',
+          title: '  Lunch with Sarah  ',
+        );
+        expect(
+          renamed.data.plannedBlocks
+              .singleWhere((b) => b.id == 'block-standalone')
+              .title,
+          'Lunch with Sarah',
+        );
+      });
+
       test('rejects task-linked blocks — rename the task instead', () async {
         seedRenamablePlan();
 

@@ -73,7 +73,9 @@ class AgendaView extends StatelessWidget {
             ),
             SizedBox(height: tokens.spacing.step3),
           ],
-          if (draft.agendaItems.isEmpty)
+          // "No plan yet" copy only when there genuinely is no plan;
+          // a real plan with zero agenda items keeps just the strip.
+          if (draft.agendaItems.isEmpty && !hasPlan)
             _AgendaEmptyState(actualBlocks: actualBlocks),
         ],
       ),

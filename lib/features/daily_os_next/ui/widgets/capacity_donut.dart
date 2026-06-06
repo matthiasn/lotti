@@ -137,13 +137,19 @@ class _DonutPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = _stroke
         ..strokeCap = StrokeCap.round;
-      canvas.drawArc(
-        rect,
-        -math.pi / 2,
-        clamped * 2 * math.pi,
-        false,
-        ring,
-      );
+      // A full 2π arc with a round cap renders unreliably on some
+      // backends (overlapping start/end points) — draw a circle instead.
+      if (clamped >= 1.0) {
+        canvas.drawCircle(center, radius, ring);
+      } else {
+        canvas.drawArc(
+          rect,
+          -math.pi / 2,
+          clamped * 2 * math.pi,
+          false,
+          ring,
+        );
+      }
     }
 
     // Over-capacity amount continues past the clamped end at half alpha.
@@ -153,13 +159,18 @@ class _DonutPainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = _stroke
         ..strokeCap = StrokeCap.round;
-      canvas.drawArc(
-        rect,
-        -math.pi / 2 + clamped * 2 * math.pi,
-        (ratio - 1).clamp(0.0, 1.0) * 2 * math.pi,
-        false,
-        overPaint,
-      );
+      final overSweep = (ratio - 1).clamp(0.0, 1.0);
+      if (overSweep >= 1.0) {
+        canvas.drawCircle(center, radius, overPaint);
+      } else {
+        canvas.drawArc(
+          rect,
+          -math.pi / 2 + clamped * 2 * math.pi,
+          overSweep * 2 * math.pi,
+          false,
+          overPaint,
+        );
+      }
     }
   }
 

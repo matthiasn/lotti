@@ -3490,6 +3490,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextRefineTitle => 'Upravit plán';
 
   @override
+  String get dailyOsNextRenameFailed =>
+      'Přejmenování se nepovedlo — zkus to znovu.';
+
+  @override
   String get dailyOsNextShutdownCarryoverDrop => 'Zahodit';
 
   @override

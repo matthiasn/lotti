@@ -81,6 +81,28 @@ void main() {
       },
     );
 
+    testWidgets(
+      'visible month snaps to the selection when another surface changes it',
+      (tester) async {
+        await withClock(Clock.fixed(DateTime(2026, 5, 24, 9)), () async {
+          await tester.pumpWidget(wrap());
+          await tester.pump();
+          expect(find.text('May 2026'), findsOneWidget);
+
+          final container = ProviderScope.containerOf(
+            tester.element(find.byType(DailyOsSidebarCalendar)),
+          );
+          container
+              .read(dailyOsNextSelectedDateProvider.notifier)
+              .select(DateTime(2026, 7, 4));
+          await tester.pump();
+
+          expect(find.text('July 2026'), findsOneWidget);
+          expect(find.text('May 2026'), findsNothing);
+        });
+      },
+    );
+
     testWidgets('month chevrons page the visible month and refetch dots', (
       tester,
     ) async {

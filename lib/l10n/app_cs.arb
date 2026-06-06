@@ -1488,6 +1488,7 @@
   "dailyOsNextRefineStatusListening": "Poslouchám…",
   "dailyOsNextRefineStatusThinking": "✦ Přepracovávám plán…",
   "dailyOsNextRefineTitle": "Upravit plán",
+  "dailyOsNextRenameFailed": "Přejmenování se nepovedlo — zkus to znovu.",
   "dailyOsNextShutdownCarryoverDrop": "Zahodit",
   "dailyOsNextShutdownCarryoverDropped": "Zahozeno",
   "dailyOsNextShutdownCarryoverOverline": "PŘEVÁDÍ SE",

@@ -1916,6 +1916,7 @@
   "dailyOsNextRefineStatusListening": "Listening…",
   "dailyOsNextRefineStatusThinking": "✦ Reworking the plan…",
   "dailyOsNextRefineTitle": "Refine the plan",
+  "dailyOsNextRenameFailed": "Couldn't rename — try again.",
   "dailyOsNextShutdownCarryoverDrop": "Drop",
   "dailyOsNextShutdownCarryoverDropped": "Dropped",
   "dailyOsNextShutdownCarryoverOverline": "CARRIES FORWARD",

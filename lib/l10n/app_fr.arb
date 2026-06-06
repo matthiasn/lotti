@@ -1549,7 +1549,7 @@
       }
     }
   },
-  "dailyOsNextAgendaTrackedLegend": "Suivi · {duration} · {completedCount} terminées",
+  "dailyOsNextAgendaTrackedLegend": "Suivi · {duration} · {completedCount, plural, =1{1 terminée} other{{completedCount} terminées}}",
   "dailyOsNextCaptureCaptured": "C'est noté.",
   "dailyOsNextCaptureErrorMicrophonePermissionDenied": "L’autorisation du micro a été refusée.",
   "dailyOsNextCaptureErrorNoActiveRealtimeSession": "Aucune session en temps réel active.",
@@ -1679,6 +1679,7 @@
   "dailyOsNextRefineStatusListening": "À l'écoute…",
   "dailyOsNextRefineStatusThinking": "✦ Réorganisation en cours…",
   "dailyOsNextRefineTitle": "Affiner le plan",
+  "dailyOsNextRenameFailed": "Impossible de renommer — réessaie.",
   "dailyOsNextShutdownCarryoverDrop": "Abandonner",
   "dailyOsNextShutdownCarryoverDropped": "Abandonné",
   "dailyOsNextShutdownCarryoverOverline": "REPORTÉ",
@@ -1770,9 +1771,9 @@
   "dailyOsNextTimelineShowPaged": "Afficher plan et réel en balayage",
   "dailyOsNextTimelineSwipeHint": "Balaye vers le réel · pince verticalement pour zoomer",
   "dailyOsNextTimelineTracked": "suivi",
-  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 session précédente} other{{count} sessions précédentes}}",
+  "dailyOsNextTimeSpentEarlierSessions": "{count, plural, =1{1 session précédente} other{{count} sessions précédentes}}",
   "dailyOsNextTimeSpentShowLess": "Afficher moins",
-  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount} terminées",
+  "dailyOsNextTimeSpentSummary": "{duration} · {completedCount, plural, =1{1 terminée} other{{completedCount} terminées}}",
   "dailyOsNextTimeSpentTitle": "AUJOURD'HUI",
   "dailyOsNextTimeSpentTitlePast": "TEMPS SUIVI",
   "dailyOsNextTriageConfirmDefer": "Reporté",

@@ -222,6 +222,51 @@ void main() {
       },
     );
 
+    testWidgets(
+      'a failing inline rename surfaces the error toast instead of an '
+      'unhandled exception',
+      (tester) async {
+        _setSurface(tester);
+        final agent = RecordingDayAgent(renameError: StateError('db down'));
+        // One standalone agenda item (no taskId) -> editable title.
+        final draft = DraftPlan(
+          dayDate: DateTime(2026, 5, 26),
+          blocks: const [],
+          bands: const [],
+          capacityMinutes: 240,
+          scheduledMinutes: 120,
+          agendaItems: const [
+            AgendaItem(
+              id: 'item_1',
+              title: 'Standalone block',
+              category: _category,
+              linkedBlockIds: ['blk_1'],
+            ),
+          ],
+        );
+        await tester.pumpWidget(
+          _wrap(
+            DayPage(draft: draft),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Standalone block'));
+        await tester.pump();
+        await tester.enterText(
+          find.byKey(const Key('daily_os_editable_title_field')),
+          'Renamed',
+        );
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pump();
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayPage)).messages;
+        expect(find.text(messages.dailyOsNextRenameFailed), findsOneWidget);
+      },
+    );
+
     testWidgets('dateStrip widget replaces the default title', (tester) async {
       _setSurface(tester);
       await tester.pumpWidget(

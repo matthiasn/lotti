@@ -3134,11 +3134,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get dailyOsNextAgendaNoPlanBody =>
-      'Tu tiempo registrado está aquí de todos modos: habla un check-in y prepararé un día a su alrededor.';
+      'Tu tiempo registrado está aquí de todos modos: habla un check-in y prepararé un día a tu alrededor.';
 
   @override
   String dailyOsNextAgendaNoPlanSummary(String duration) {
-    return '$duration registrado hasta ahora. Habla un check-in y prepararé un día a su alrededor.';
+    return '$duration registrado hasta ahora. Habla un check-in y prepararé un día a tu alrededor.';
   }
 
   @override
@@ -3163,7 +3163,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
-    return 'Registrado · $duration · $completedCount hechas';
+    String _temp0 = intl.Intl.pluralLogic(
+      completedCount,
+      locale: localeName,
+      other: '$completedCount hechas',
+      one: '1 hecha',
+    );
+    return 'Registrado · $duration · $_temp0';
   }
 
   @override
@@ -3504,6 +3510,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextRefineTitle => 'Refinar el plan';
 
   @override
+  String get dailyOsNextRenameFailed =>
+      'No se pudo renombrar: inténtalo de nuevo.';
+
+  @override
   String get dailyOsNextShutdownCarryoverDrop => 'Descartar';
 
   @override
@@ -3682,7 +3692,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
-    return '$duration · $completedCount hechas';
+    String _temp0 = intl.Intl.pluralLogic(
+      completedCount,
+      locale: localeName,
+      other: '$completedCount hechas',
+      one: '1 hecha',
+    );
+    return '$duration · $_temp0';
   }
 
   @override

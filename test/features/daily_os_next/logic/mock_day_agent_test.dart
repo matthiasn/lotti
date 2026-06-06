@@ -285,6 +285,38 @@ void main() {
         },
       );
 
+      test('rejects blank titles and trims persisted ones', () async {
+        final plan = await agent.draftDayPlan(
+          captureId: const CaptureId('cap'),
+          decidedTaskIds: const ['t_deck_review'],
+          dayDate: DateTime(2026, 5, 25),
+        );
+        final standalone = plan.blocks.firstWhere(
+          (b) =>
+              (b.taskId == null || b.taskId!.isEmpty) &&
+              b.type != TimeBlockType.buffer,
+        );
+
+        expect(
+          () => agent.renameBlock(
+            plan: plan,
+            blockId: standalone.id,
+            title: '   ',
+          ),
+          throwsStateError,
+        );
+
+        final renamed = await agent.renameBlock(
+          plan: plan,
+          blockId: standalone.id,
+          title: '  Trimmed title  ',
+        );
+        expect(
+          renamed.blocks.singleWhere((b) => b.id == standalone.id).title,
+          'Trimmed title',
+        );
+      });
+
       test('rejects unknown block ids', () async {
         final plan = await agent.draftDayPlan(
           captureId: const CaptureId('cap'),

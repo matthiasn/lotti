@@ -127,6 +127,7 @@ void main() {
         ),
       );
 
+      final semanticsHandle = tester.ensureSemantics();
       final messages = tester.element(find.byType(CapacityDonut)).messages;
       final node = tester.getSemantics(find.byType(CapacityDonut));
       expect(
@@ -134,6 +135,7 @@ void main() {
         contains(messages.dailyOsNextAgendaSummary('4h', '8h')),
       );
       expect(node.value, '50%');
+      semanticsHandle.dispose();
     });
   });
 }

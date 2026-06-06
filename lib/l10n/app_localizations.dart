@@ -5898,6 +5898,12 @@ abstract class AppLocalizations {
   /// **'Refine the plan'**
   String get dailyOsNextRefineTitle;
 
+  /// No description provided for @dailyOsNextRenameFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t rename — try again.'**
+  String get dailyOsNextRenameFailed;
+
   /// No description provided for @dailyOsNextShutdownCarryoverDrop.
   ///
   /// In en, this message translates to:

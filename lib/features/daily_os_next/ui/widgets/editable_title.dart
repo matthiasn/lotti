@@ -77,7 +77,6 @@ class _EditableTitleState extends State<EditableTitle> {
           extentOffset: widget.value.length,
         );
     });
-    _focusNode.requestFocus();
   }
 
   void _save() {
@@ -121,6 +120,11 @@ class _EditableTitleState extends State<EditableTitle> {
             key: const Key('daily_os_editable_title_field'),
             controller: _controller,
             focusNode: _focusNode,
+            // The field mounts on the edit-mode rebuild; autofocus asks
+            // for focus once it is attached, which is reliable across
+            // platforms (a synchronous requestFocus from the tap handler
+            // can fire before the field exists).
+            autofocus: true,
             style: style,
             decoration: InputDecoration(
               isDense: true,

@@ -98,6 +98,9 @@ void main() {
         await tester.tap(find.byIcon(Icons.chevron_right_rounded));
         await tester.pump();
         await tester.pump();
+        // Third frame: the tracked-time projection resolves before the
+        // root chooses between Capture and the empty Day surface.
+        await tester.pump();
 
         expect(find.text('May 27, 2026'), findsOneWidget);
         expect(requestedDates, contains(DateTime(2026, 5, 27)));
@@ -369,6 +372,7 @@ void main() {
           await tester.tap(find.byIcon(Icons.chevron_left_rounded));
           await tester.pump();
           await tester.pump();
+          await tester.pump();
 
           expect(find.text('May 25, 2026'), findsOneWidget);
           expect(requestedDates, contains(DateTime(2026, 5, 25)));
@@ -445,10 +449,12 @@ void main() {
           await tester.tap(find.byIcon(Icons.chevron_right_rounded));
           await tester.pump();
           await tester.pump();
+          await tester.pump();
           expect(find.text('May 27, 2026'), findsOneWidget);
 
           // Long-press the date label → snaps back to "Today".
           await tester.longPress(find.text('May 27, 2026'));
+          await tester.pump();
           await tester.pump();
           await tester.pump();
 

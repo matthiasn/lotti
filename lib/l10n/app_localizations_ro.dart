@@ -3174,7 +3174,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String dailyOsNextAgendaTrackedLegend(String duration, int completedCount) {
-    return 'Înregistrat · $duration · $completedCount finalizate';
+    String _temp0 = intl.Intl.pluralLogic(
+      completedCount,
+      locale: localeName,
+      other: '$completedCount de finalizate',
+      few: '$completedCount finalizate',
+      one: '1 finalizată',
+    );
+    return 'Înregistrat · $duration · $_temp0';
   }
 
   @override
@@ -3516,6 +3523,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextRefineTitle => 'Reglează planul';
 
   @override
+  String get dailyOsNextRenameFailed =>
+      'Redenumirea nu a reușit — încercați din nou.';
+
+  @override
   String get dailyOsNextShutdownCarryoverDrop => 'Renunță';
 
   @override
@@ -3695,7 +3706,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
-    return '$duration · $completedCount finalizate';
+    String _temp0 = intl.Intl.pluralLogic(
+      completedCount,
+      locale: localeName,
+      other: '$completedCount de finalizate',
+      few: '$completedCount finalizate',
+      one: '1 finalizată',
+    );
+    return '$duration · $_temp0';
   }
 
   @override
