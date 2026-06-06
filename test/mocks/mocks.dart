@@ -527,6 +527,17 @@ class MockRealtimeTranscriptionService extends Mock
 
 class MockNavService extends Mock implements NavService {}
 
+/// Recording variant of [MockNavService]: captures beamToNamed paths so
+/// tests can assert navigation without stubbing.
+class RecordingMockNavService extends Mock implements NavService {
+  final List<String> navigationHistory = [];
+
+  @override
+  void beamToNamed(String path, {Object? data}) {
+    navigationHistory.add(path);
+  }
+}
+
 class MockNotificationService extends Mock implements NotificationService {}
 
 class MockNotificationsDb extends Mock implements NotificationsDb {}

@@ -41,63 +41,24 @@ import 'package:mocktail/mocktail.dart';
 import 'package:research_package/model.dart';
 
 import '../../../../../mocks/mocks.dart'
-    show MockJournalDb, MockUpdateNotifications;
+    show
+        MockEntitiesCacheService,
+        MockJournalDb,
+        MockTimeService,
+        MockUpdateNotifications,
+        RecordingMockNavService;
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
 
-class MockNavService extends Mock implements NavService {
-  final List<String> navigationHistory = [];
-
-  @override
-  void beamToNamed(String path, {Object? data}) {
-    navigationHistory.add(path);
-  }
-}
-
-class MockTimeService implements TimeService {
-  JournalEntity? _linkedFrom;
-
-  @override
-  JournalEntity? get linkedFrom => _linkedFrom;
-
-  @override
-  Stream<JournalEntity?> getStream() {
-    return Stream.value(null);
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
-  @override
-  CategoryDefinition? getCategoryById(String? categoryId) {
-    return categoryId != null
-        ? CategoryDefinition(
-            id: 'test-category-id',
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            name: 'Test Category',
-            vectorClock: null,
-            private: false,
-            active: true,
-            color: '#FF0000',
-          )
-        : null;
-  }
-}
-
 void main() {
-  late MockNavService mockNavService;
+  late RecordingMockNavService mockNavService;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockTimeService mockTimeService;
 
   setUp(() {
-    mockNavService = MockNavService();
+    mockNavService = RecordingMockNavService();
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockTimeService = MockTimeService();
-
-    getIt.allowReassignment = true;
 
     // Create temp directory for tests
     final tempDir = Directory.systemTemp.createTempSync('journal_card_test');
@@ -119,8 +80,27 @@ void main() {
       ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<TimeService>(mockTimeService)
+      ..registerSingleton<NavService>(mockNavService)
       ..registerSingleton<Directory>(tempDir)
       ..registerSingleton<JournalDb>(mockJournalDb);
+
+    when(() => mockTimeService.linkedFrom).thenReturn(null);
+    when(mockTimeService.getStream).thenAnswer((_) => Stream.value(null));
+    when(
+      () => mockEntitiesCacheService.getCategoryById(any()),
+    ).thenReturn(
+      CategoryDefinition(
+        id: 'test-category-id',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        name: 'Test Category',
+        vectorClock: null,
+        private: false,
+        active: true,
+        color: '#FF0000',
+      ),
+    );
+    when(() => mockEntitiesCacheService.getCategoryById(null)).thenReturn(null);
   });
 
   tearDown(() async {
@@ -423,7 +403,6 @@ void main() {
 
     testWidgets('navigates to task detail on tap', (tester) async {
       final taskEntry = testTask;
-      getIt.registerSingleton<NavService>(mockNavService);
 
       await tester.pumpWidget(
         makeTestableWidget(
@@ -442,7 +421,6 @@ void main() {
 
     testWidgets('navigates to journal detail on tap', (tester) async {
       final testEntry = testTextEntry;
-      getIt.registerSingleton<NavService>(mockNavService);
 
       await tester.pumpWidget(
         makeTestableWidget(
@@ -846,8 +824,6 @@ void main() {
       });
 
       testWidgets('navigates to checklist detail on tap', (tester) async {
-        getIt.registerSingleton<NavService>(mockNavService);
-
         await tester.pumpWidget(
           makeTestableWidget(
             ModernJournalCard(item: testChecklist),
@@ -864,8 +840,6 @@ void main() {
       });
 
       testWidgets('navigates to event detail on tap', (tester) async {
-        getIt.registerSingleton<NavService>(mockNavService);
-
         await tester.pumpWidget(
           makeTestableWidget(
             ModernJournalCard(item: testEvent),
@@ -882,8 +856,6 @@ void main() {
       });
 
       testWidgets('navigates to AI response detail on tap', (tester) async {
-        getIt.registerSingleton<NavService>(mockNavService);
-
         await tester.pumpWidget(
           makeTestableWidget(
             ModernJournalCard(item: testAiResponse),

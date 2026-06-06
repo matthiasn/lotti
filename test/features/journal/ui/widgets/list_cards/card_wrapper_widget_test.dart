@@ -19,51 +19,9 @@ import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../../../mocks/mocks.dart';
 import '../../../../../test_helper.dart';
 import '../../../../../widget_test_utils.dart';
-
-class MockEntitiesCacheService extends Mock implements EntitiesCacheService {
-  @override
-  CategoryDefinition? getCategoryById(String? id) {
-    return id == 'test-category-id'
-        ? CategoryDefinition(
-            id: 'test-category-id',
-            createdAt: DateTime(2024, 1, 15, 12),
-            updatedAt: DateTime(2024, 1, 15, 12),
-            name: 'Test Category',
-            vectorClock: null,
-            private: false,
-            active: true,
-            color: '#FF0000',
-          )
-        : null;
-  }
-}
-
-class MockNavService extends Mock implements NavService {
-  final List<String> navigationHistory = [];
-
-  @override
-  void beamToNamed(String path, {Object? data}) {
-    navigationHistory.add(path);
-  }
-}
-
-class MockTimeService implements TimeService {
-  JournalEntity? _linkedFrom;
-
-  @override
-  JournalEntity? get linkedFrom => _linkedFrom;
-
-  @override
-  Stream<JournalEntity?> getStream() {
-    return Stream.value(null);
-  }
-
-  // Implement other required methods with default implementations
-  @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
-}
 
 void main() {
   late JournalEntry testJournalEntry;
@@ -71,25 +29,44 @@ void main() {
   late JournalEvent testEvent;
   late JournalImage testImage;
   late MockEntitiesCacheService mockEntitiesCacheService;
-  late MockNavService mockNavService;
+  late RecordingMockNavService mockNavService;
   late MockTimeService mockTimeService;
   late Directory mockDirectory;
 
   setUp(() {
     mockEntitiesCacheService = MockEntitiesCacheService();
-    mockNavService = MockNavService();
+    mockNavService = RecordingMockNavService();
     mockTimeService = MockTimeService();
     // Create and register mock directory for image tests
     final tempDir = Directory.systemTemp.createTempSync('card_wrapper_test');
     mockDirectory = tempDir;
 
     // Register mock services
-    getIt.allowReassignment = true;
     getIt
       ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
       ..registerSingleton<TimeService>(mockTimeService)
       ..registerSingleton<NavService>(mockNavService)
       ..registerSingleton<Directory>(mockDirectory);
+
+    when(() => mockTimeService.linkedFrom).thenReturn(null);
+    when(mockTimeService.getStream).thenAnswer((_) => Stream.value(null));
+    when(
+      () => mockEntitiesCacheService.getCategoryById(any()),
+    ).thenReturn(null);
+    when(
+      () => mockEntitiesCacheService.getCategoryById('test-category-id'),
+    ).thenReturn(
+      CategoryDefinition(
+        id: 'test-category-id',
+        createdAt: DateTime(2024, 1, 15, 12),
+        updatedAt: DateTime(2024, 1, 15, 12),
+        name: 'Test Category',
+        vectorClock: null,
+        private: false,
+        active: true,
+        color: '#FF0000',
+      ),
+    );
 
     // Create test data with fixed dates (never use DateTime.now() in tests)
     final now = DateTime(2024, 1, 15, 12);
