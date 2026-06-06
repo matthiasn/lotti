@@ -52,14 +52,15 @@ void main() {
   late MockEntitiesCacheService mockCache;
 
   setUp(() async {
-    await getIt.reset();
     mockCache = MockEntitiesCacheService();
-    getIt.registerSingleton<EntitiesCacheService>(mockCache);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<EntitiesCacheService>(mockCache);
+      },
+    );
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(tearDownTestGetIt);
 
   Widget pumpFilter(JournalPageState state) {
     fakeController = FakeJournalPageController(state);
