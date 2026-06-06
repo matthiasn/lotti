@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:matrix/encryption.dart';
@@ -14,6 +15,39 @@ class VerificationEmojisRow extends StatelessWidget {
 
   final Iterable<KeyVerificationEmoji>? emojis;
 
+  /// Builds one fixed-width emoji + label cell per entry; empty for a
+  /// null or empty sequence. Pure so the cell contract is property-testable
+  /// without pumping a widget tree.
+  @visibleForTesting
+  static List<Widget> buildEmojiCells(
+    Iterable<KeyVerificationEmoji>? emojis, {
+    TextStyle? nameStyle,
+  }) {
+    return [
+      ...?emojis?.map(
+        (emoji) => Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 4,
+            vertical: 6,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                emoji.emoji,
+                style: const TextStyle(fontSize: 40),
+              ),
+              Text(
+                emoji.name,
+                style: nameStyle,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Wrap(
@@ -21,29 +55,7 @@ class VerificationEmojisRow extends StatelessWidget {
       runAlignment: WrapAlignment.center,
       spacing: 8,
       runSpacing: 8,
-      children: [
-        ...?emojis?.map(
-          (emoji) => Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 4,
-              vertical: 6,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  emoji.emoji,
-                  style: const TextStyle(fontSize: 40),
-                ),
-                Text(
-                  emoji.name,
-                  style: context.textTheme.bodySmall,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      children: buildEmojiCells(emojis, nameStyle: context.textTheme.bodySmall),
     );
   }
 }

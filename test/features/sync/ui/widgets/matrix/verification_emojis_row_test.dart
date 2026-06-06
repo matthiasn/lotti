@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_emojis_row.dart';
 import 'package:matrix/encryption.dart';
 
@@ -103,5 +104,37 @@ void main() {
         expect(cellTops.length, greaterThan(1));
       },
     );
+  });
+
+  group('VerificationEmojisRow.buildEmojiCells — properties', () {
+    // The Matrix SAS emoji table has 64 entries; any index list maps to
+    // exactly one cell per entry carrying that entry's glyph and name.
+    glados.Glados<List<int>>(
+      glados.any.list(glados.any.intInRange(0, 64)),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'builds exactly one cell per emoji with the matching glyph and name',
+      (indices) {
+        final emojis = [
+          for (final index in indices) KeyVerificationEmoji(index),
+        ];
+
+        final cells = VerificationEmojisRow.buildEmojiCells(emojis);
+
+        expect(cells, hasLength(indices.length));
+        for (var i = 0; i < cells.length; i++) {
+          final column = (cells[i] as Padding).child! as Column;
+          final glyph = column.children[0] as Text;
+          final name = column.children[1] as Text;
+          expect(glyph.data, emojis[i].emoji);
+          expect(name.data, emojis[i].name);
+        }
+      },
+      tags: 'glados',
+    );
+
+    test('null input builds no cells', () {
+      expect(VerificationEmojisRow.buildEmojiCells(null), isEmpty);
+    });
   });
 }

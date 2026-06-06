@@ -15,10 +15,10 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
-import '../../../../helpers/fallbacks.dart';
-import '../../../../mocks/mocks.dart';
-import '../../../../mocks/sync_config_test_mocks.dart';
-import '../../../../widget_test_utils.dart';
+import '../../../../../helpers/fallbacks.dart';
+import '../../../../../mocks/mocks.dart';
+import '../../../../../mocks/sync_config_test_mocks.dart';
+import '../../../../../widget_test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Shared test helpers
