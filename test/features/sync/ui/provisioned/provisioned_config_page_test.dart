@@ -19,7 +19,6 @@ import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_secondary_button.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
-import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
