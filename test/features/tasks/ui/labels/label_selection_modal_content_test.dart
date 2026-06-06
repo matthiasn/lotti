@@ -10,16 +10,14 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../test_helper.dart';
-
-class _MockLabelsRepository extends Mock implements LabelsRepository {}
-
-class _MockEntitiesCacheService extends Mock implements EntitiesCacheService {}
+import '../../../../widget_test_utils.dart';
 
 void main() {
-  late _MockLabelsRepository repository;
-  late _MockEntitiesCacheService cacheService;
+  late MockLabelsRepository repository;
+  late MockEntitiesCacheService cacheService;
 
   final testLabels = [
     testLabelDefinition1.copyWith(
@@ -53,13 +51,16 @@ void main() {
   });
 
   setUp(() async {
-    repository = _MockLabelsRepository();
-    cacheService = _MockEntitiesCacheService();
+    repository = MockLabelsRepository();
+    cacheService = MockEntitiesCacheService();
 
-    await getIt.reset();
-    getIt
-      ..registerSingleton<LabelsRepository>(repository)
-      ..registerSingleton<EntitiesCacheService>(cacheService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<LabelsRepository>(repository)
+          ..registerSingleton<EntitiesCacheService>(cacheService);
+      },
+    );
 
     when(
       () => cacheService.filterLabelsForCategory(
@@ -74,9 +75,7 @@ void main() {
     when(() => cacheService.getLabelById(any())).thenReturn(null);
   });
 
-  tearDown(() async {
-    await getIt.reset();
-  });
+  tearDown(tearDownTestGetIt);
 
   Widget buildWidget({
     required List<String> initialLabelIds,
