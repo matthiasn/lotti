@@ -558,6 +558,16 @@ void main() {
 
       final result = await execute(workflow(), triggerTokens: {dayId});
 
+      // The throwing load path is actually exercised: if the workflow stopped
+      // calling getAttentionPlanningInputsForWindow, this test would no longer
+      // be proving the failure is absorbed.
+      verify(
+        () => repository.getAttentionPlanningInputsForWindow(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).called(1);
+
       // The load failure degrades to empty inputs, so the section is omitted
       // entirely (it is only rendered when non-empty) and the wake still
       // succeeds rather than propagating the error.
