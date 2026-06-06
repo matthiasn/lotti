@@ -11,6 +11,9 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/content_extraction_helper.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+part 'ollama_image_analysis.dart';
+part 'ollama_model_management.dart';
+
 /// Repository for Ollama-specific inference operations
 ///
 /// This class handles all Ollama-related functionality including:
@@ -207,83 +210,6 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     );
   }
 
-  /// Generate image analysis using Ollama's chat API
-  ///
-  /// This method handles the specific requirements for Ollama image analysis:
-  /// - Validates input parameters
-  /// - Uses the unified /api/chat endpoint with image support
-  /// - Handles Ollama-specific response format
-  /// - Provides comprehensive error handling
-  Stream<CreateChatCompletionStreamResponse> generateWithImages({
-    required String prompt,
-    required String model,
-    required double temperature,
-    required List<String> images,
-    required AiConfigInferenceProvider provider,
-    int? maxCompletionTokens,
-    String? systemMessage,
-  }) {
-    // Validate inputs
-    _validateOllamaRequest(
-      prompt: prompt,
-      model: model,
-      temperature: temperature,
-      maxCompletionTokens: maxCompletionTokens,
-    );
-    if (images.isEmpty) {
-      throw Exception('At least one image is required');
-    }
-
-    // Warm up the model if this is an image analysis request
-    if (images.isNotEmpty) {
-      warmUpModel(model, provider.baseUrl);
-    }
-
-    // Build messages with images for chat endpoint
-    final messages = [
-      if (systemMessage != null)
-        {
-          'role': 'system',
-          'content': systemMessage,
-        },
-      {
-        'role': 'user',
-        'content': prompt,
-        'images': images,
-      },
-    ];
-
-    final requestBody = {
-      'model': model,
-      'messages': messages,
-      'stream': true, // Use streaming for consistency
-      'options': {
-        'temperature': temperature,
-        'num_predict': ?maxCompletionTokens,
-      },
-    };
-
-    final timeout = Duration(
-      seconds: images.isNotEmpty
-          ? ollamaImageAnalysisTimeoutSeconds
-          : ollamaDefaultTimeoutSeconds,
-    );
-
-    return _streamChatRequest(
-      requestBody: requestBody,
-      timeout: timeout,
-      retryContext: 'Ollama image analysis',
-      timeoutErrorMessage:
-          'Request timed out after ${timeout.inSeconds} seconds. This can happen when the model is loading for the first time or is very large. Please try again - subsequent requests should be faster.',
-      provider: provider,
-      model: model,
-    );
-  }
-
-  /// Generate text using Ollama's unified chat API
-  ///
-  /// This method uses the /api/chat endpoint for all text generation,
-  /// with optional tool support for models that have function calling capabilities.
   Stream<CreateChatCompletionStreamResponse> _generateTextWithChat({
     required String prompt,
     required String model,
@@ -690,141 +616,6 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     }
     if (maxCompletionTokens != null && maxCompletionTokens <= 0) {
       throw Exception('maxCompletionTokens must be positive');
-    }
-  }
-
-  /// Install a model in Ollama with progress tracking
-  Stream<OllamaPullProgress> installModel(
-    String modelName,
-    String baseUrl,
-  ) async* {
-    const installTimeout = Duration(minutes: 10); // 10 minutes for large models
-
-    final request = http.Request(
-      'POST',
-      Uri.parse('$baseUrl/api/pull'),
-    );
-    request.headers['Content-Type'] = ollamaContentType;
-    request.body = jsonEncode({'name': modelName});
-
-    // Use a timeout for the entire send operation
-    final streamedResponse = await _retryWithExponentialBackoff(
-      operation: () async {
-        return _httpClient.send(request).timeout(installTimeout);
-      },
-      maxRetries: 3,
-      baseDelay: retryBaseDelay,
-      context: 'model installation',
-      timeoutErrorMessage:
-          'Model installation timed out after ${installTimeout.inMinutes} minutes. This may be due to a slow connection or a large model. Please check your internet connection and try again.',
-      networkErrorMessage:
-          'Network error during model installation. Please check your connection and that the Ollama server is running.',
-    );
-
-    if (streamedResponse.statusCode != httpStatusOk) {
-      developer.log(
-        'Model installation failed: HTTP ${streamedResponse.statusCode}',
-        name: 'OllamaInferenceRepository',
-      );
-      throw Exception(
-        'Failed to start model installation. (HTTP ${streamedResponse.statusCode}) Please check your Ollama installation and try again.',
-      );
-    }
-
-    await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
-      final lines = chunk.split('\n').where((line) => line.trim().isNotEmpty);
-
-      for (final line in lines) {
-        Map<String, dynamic> data;
-        try {
-          data = jsonDecode(line) as Map<String, dynamic>;
-        } catch (e) {
-          // Skip malformed JSON lines
-          continue;
-        }
-
-        if (data.containsKey('error')) {
-          final errorMessage = data['error'] as String;
-          developer.log(
-            'Model installation error: $errorMessage',
-            name: 'OllamaInferenceRepository',
-          );
-          // Provide more specific error messages
-          if (errorMessage.contains('not found')) {
-            throw Exception('Model installation failed: Model not found.');
-          } else if (errorMessage.contains('disk full')) {
-            throw Exception(
-              'Model installation failed: Disk is full. Please free up space and try again.',
-            );
-          } else if (errorMessage.contains('connection refused')) {
-            throw Exception(
-              'Model installation failed: Connection refused. Is the Ollama server running?',
-            );
-          } else {
-            throw Exception(
-              'Model installation failed. Please check your Ollama installation and try again.',
-            );
-          }
-        }
-
-        final status = data['status'] is String ? data['status'] as String : '';
-        final total = data['total'] is int ? data['total'] as int : 0;
-        final completed = data['completed'] is int
-            ? data['completed'] as int
-            : 0;
-
-        yield OllamaPullProgress(
-          status: status,
-          progress: total > 0 ? (completed / total) : 0.0,
-        );
-      }
-    }
-  }
-
-  /// Warm up a model by sending a simple request to load it into memory
-  Future<void> warmUpModel(String modelName, String baseUrl) async {
-    try {
-      developer.log(
-        'Warming up model: $modelName',
-        name: 'OllamaInferenceRepository',
-      );
-
-      final response = await _httpClient
-          .post(
-            Uri.parse('$baseUrl$ollamaChatEndpoint'),
-            headers: {
-              'Content-Type': ollamaContentType,
-            },
-            body: jsonEncode({
-              'model': modelName,
-              'messages': [
-                {'role': 'user', 'content': 'Hello'},
-              ],
-              'stream': false,
-            }),
-          )
-          .timeout(const Duration(seconds: 60));
-
-      if (response.statusCode != httpStatusOk) {
-        developer.log(
-          'Warning: Model warm-up failed: HTTP ${response.statusCode}',
-          name: 'OllamaInferenceRepository',
-        );
-        return; // Don't throw, just log warning
-      }
-
-      developer.log(
-        'Model warmed up successfully: $modelName',
-        name: 'OllamaInferenceRepository',
-      );
-    } catch (e, stackTrace) {
-      developer.log(
-        'Warning: Model warm-up failed',
-        error: e,
-        stackTrace: stackTrace,
-        name: 'OllamaInferenceRepository',
-      );
-      // Don't throw, just log warning
     }
   }
 }
