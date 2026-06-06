@@ -21,11 +21,12 @@
 
 ## File size / split opportunities
 
-- [ ] **[HIGH]** `chat_recorder_controller.dart` at 806 lines is the most oversized file in the scope. Natural split seams:
+- [x] **[HIGH]** `chat_recorder_controller.dart` at 806 lines is the most oversized file in the scope. Natural split seams:
   - `ChatRecorderState` + `ChatRecorderConfig` + `ChatRecorderErrorType` + `_AppLifecycleObserver` → `chat_recorder_state.dart` (~80 ln)
   - `ChatRecorderController` batch-recording path (`start`, `stopAndTranscribe`, `_transcribe`, `_cleanupInternal`, amplitude subscription) → `chat_recorder_controller.dart` (~450 ln)
   - `ChatRecorderController` realtime path (`startRealtime`, `stopRealtime`) → `chat_realtime_recorder_controller.dart` or a mixin/extension (~250 ln)
   - The test file at 3340 lines should mirror the split; realtime group tests naturally form a second file.
+  **RESOLVED (adapted):** the state/config/observer types moved to the `part` file `chat_recorder_state.dart` (96 lines; controller file down to 722). The batch/realtime method split is not possible without decomposing the `Notifier` itself: `state` is `@protected`, so state-writing methods cannot move to extensions or mixins (established constraint from the evolution-controller split), and both paths share the controller's private session fields. The 3 340-line test stays the single mirror per the one-test-file-per-source rule.
 - [ ] **[MED]** `chat_session_controller_test.dart` at 1492 lines has naturally grouped sections (streaming, error, flush, finalize edge cases). Splitting at `sendMessage` streaming/flush group versus basic CRUD group would yield two ~700-line files without losing coverage.
 - [ ] **[LOW]** `chat_sessions_controller.dart` (200 ln) and `chat_stream_utils.dart` (198 ln) are within acceptable range.
 
