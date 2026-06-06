@@ -181,12 +181,17 @@ void main() {
       await getIt.reset();
     });
 
-    testWidgets('modal shows Date & Time Range title', (tester) async {
+    /// Opens the modal for the default [testTextEntry] with a tracked
+    /// controller override — the common case across this file.
+    Future<void> openDefaultModal(WidgetTester tester) async {
       final (override, _) = createEntryControllerOverrideWithTracker(
         testTextEntry,
       );
-
       await _openModal(tester, override: override);
+    }
+
+    testWidgets('modal shows Date & Time Range title', (tester) async {
+      await openDefaultModal(tester);
 
       expect(find.text('Date & Time Range'), findsOneWidget);
     });
@@ -194,11 +199,7 @@ void main() {
     testWidgets('modal displays dateFrom and dateTo formatted values', (
       tester,
     ) async {
-      final (override, _) = createEntryControllerOverrideWithTracker(
-        testTextEntry,
-      );
-
-      await _openModal(tester, override: override);
+      await openDefaultModal(tester);
 
       // Both date fields show the formatted entry dates.
       final formattedFrom = dfShorter.format(testTextEntry.meta.dateFrom);
@@ -219,11 +220,7 @@ void main() {
     testWidgets('modal displays duration label and computed duration', (
       tester,
     ) async {
-      final (override, _) = createEntryControllerOverrideWithTracker(
-        testTextEntry,
-      );
-
-      await _openModal(tester, override: override);
+      await openDefaultModal(tester);
 
       // Duration label is shown.
       expect(find.text('Duration:'), findsOneWidget);
@@ -315,11 +312,7 @@ void main() {
     testWidgets('picker page shows Cancel / Now / Done buttons', (
       tester,
     ) async {
-      final (override, _) = createEntryControllerOverrideWithTracker(
-        testTextEntry,
-      );
-
-      await _openModal(tester, override: override);
+      await openDefaultModal(tester);
 
       // Navigate to picker page.
       final formattedFrom = dfShorter.format(testTextEntry.meta.dateFrom);
@@ -436,11 +429,7 @@ void main() {
       tester,
     ) async {
       // Navigate into the picker page and verify the sticky bar content.
-      final (override, _) = createEntryControllerOverrideWithTracker(
-        testTextEntry,
-      );
-
-      await _openModal(tester, override: override);
+      await openDefaultModal(tester);
 
       // Tap dateTo to enter picker page.
       final formattedTo = dfShorter.format(testTextEntry.meta.dateTo);

@@ -52,6 +52,7 @@ import 'package:share_plus_platform_interface/share_plus_platform_interface.dart
     show SharePlatform;
 
 import '../../../../../../helpers/fake_entry_controller.dart';
+import '../../../../../../helpers/fake_linked_entries_controller.dart';
 import '../../../../../../mocks/mocks.dart';
 import '../../../../../../test_data/test_data.dart';
 import '../../../../../../test_helper.dart';
@@ -830,7 +831,7 @@ void main() {
           overrides: [
             linkedEntriesControllerProvider(
               id: 'parent-1',
-            ).overrideWith(_FakeLinkedEntriesController.new),
+            ).overrideWith(FakeLinkedEntriesController.new),
           ],
           child: ModernToggleHiddenItem(link: link),
         ),
@@ -859,7 +860,7 @@ void main() {
           overrides: [
             linkedEntriesControllerProvider(
               id: 'parent-1',
-            ).overrideWith(_FakeLinkedEntriesController.new),
+            ).overrideWith(FakeLinkedEntriesController.new),
           ],
           child: ModernToggleHiddenItem(link: link),
         ),
@@ -882,7 +883,7 @@ void main() {
         hidden: false,
       );
 
-      final controller = _TrackingLinkedEntriesController();
+      final controller = FakeLinkedEntriesController();
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -2843,32 +2844,6 @@ bool _listEquals(List<String> a, List<String> b) {
   }
 
   return true;
-}
-
-class _FakeLinkedEntriesController extends LinkedEntriesController {
-  @override
-  Future<List<EntryLink>> build({required String id}) async => [];
-
-  @override
-  Future<void> updateLink(EntryLink link) async {}
-
-  @override
-  Future<void> removeLink({required String toId}) async {}
-}
-
-class _TrackingLinkedEntriesController extends LinkedEntriesController {
-  final List<EntryLink> updateLinkCalls = [];
-
-  @override
-  Future<List<EntryLink>> build({required String id}) async => [];
-
-  @override
-  Future<void> updateLink(EntryLink link) async {
-    updateLinkCalls.add(link);
-  }
-
-  @override
-  Future<void> removeLink({required String toId}) async {}
 }
 
 /// EntryController that returns a fixed entry (used by ModernLabelsItem tests).

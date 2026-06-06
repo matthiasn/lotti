@@ -20,6 +20,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../../helpers/fake_linked_entries_controller.dart';
 import '../../../../../../mocks/mocks.dart';
 import '../../../../../../test_data/test_data.dart';
 import '../../../../../../widget_test_utils.dart';
@@ -511,7 +512,7 @@ void main() {
             () => _TestEntryController(textEntry()),
           ),
           linkedEntriesControllerProvider(id: linkedFromId).overrideWith(
-            _FakeLinkedEntriesController.new,
+            FakeLinkedEntriesController.new,
           ),
         ],
       ];
@@ -570,15 +571,4 @@ void main() {
       expect(find.byIcon(Icons.visibility_rounded), findsOneWidget);
     });
   });
-}
-
-class _FakeLinkedEntriesController extends LinkedEntriesController {
-  @override
-  Future<List<EntryLink>> build({required String id}) async => [];
-
-  @override
-  Future<void> updateLink(EntryLink link) async {}
-
-  @override
-  Future<void> removeLink({required String toId}) async {}
 }
