@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
@@ -9,12 +8,11 @@ import 'package:lotti/features/design_system/components/navigation/resizable_div
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
@@ -25,22 +23,13 @@ void main() {
   var mockJournalDb = MockJournalDb();
 
   group('DashboardDefinitionPage Widget Tests - ', () {
-    setUpAll(() {
-      registerFallbackValue(FakeDashboardDefinition());
-    });
+    setUpAll(registerAllFallbackValues);
 
-    setUp(() {
+    setUp(() async {
       mockJournalDb = mockJournalDbWithMeasurableTypes([
         measurableWater,
         measurableChocolate,
       ]);
-
-      final mockEntitiesCacheService = MockEntitiesCacheService();
-      final mockUpdateNotifications = MockUpdateNotifications();
-
-      when(
-        () => mockUpdateNotifications.updateStream,
-      ).thenAnswer((_) => const Stream.empty());
 
       when(
         mockJournalDb.getAllCategories,
@@ -52,25 +41,20 @@ void main() {
         () => mockNavService.desktopSelectedDashboardId,
       ).thenReturn(ValueNotifier<String?>(null));
 
-      final mockSettingsDb = MockSettingsDb();
-      when(() => mockSettingsDb.itemByKey(any())).thenAnswer((_) async => null);
-      when(
-        () => mockSettingsDb.itemsByKeys(any()),
-      ).thenAnswer((_) async => <String, String?>{});
-      when(
-        () => mockSettingsDb.saveSettingsItem(any(), any()),
-      ).thenAnswer((_) async => 1);
-
-      getIt
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<SettingsDb>(mockSettingsDb)
-        ..registerSingleton<LoggingService>(LoggingService())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<NavService>(mockNavService);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockJournalDb)
+            ..registerSingleton<UserActivityService>(UserActivityService())
+            ..registerSingleton<EntitiesCacheService>(
+              MockEntitiesCacheService(),
+            )
+            ..registerSingleton<NavService>(mockNavService);
+        },
+      );
     });
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     testWidgets('dashboard list page is displayed with two test dashboards', (
       tester,
@@ -91,7 +75,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       verify(mockJournalDb.getAllDashboards).called(1);
 
@@ -104,7 +89,8 @@ void main() {
       expect(categoryFilterFinder, findsOneWidget);
 
       await tester.tap(categoryFilterFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
     });
 
     testWidgets('page shows title from localization', (tester) async {
@@ -124,7 +110,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // The page should show the Insights title (renamed from "Dashboards"
       // to match the Figma nav label).
@@ -157,7 +144,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Alpha should appear before Zebra
       final alphaFinder = find.text('Alpha Dashboard');
@@ -189,14 +177,16 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Tap filter button to open modal
       final categoryFilterFinder = find.byKey(
         const Key('dashboard_category_filter'),
       );
       await tester.tap(categoryFilterFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
 
       // Modal should show category chip
       expect(find.text(categoryMindfulness.name), findsOneWidget);
@@ -228,7 +218,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Both dashboards should be visible initially
       expect(find.text(testDashboardName), findsOneWidget);
@@ -239,17 +230,20 @@ void main() {
         const Key('dashboard_category_filter'),
       );
       await tester.tap(categoryFilterFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
 
       // Tap the category chip to filter
       final categoryChip = find.text(categoryMindfulness.name);
       expect(categoryChip, findsOneWidget);
       await tester.tap(categoryChip);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Close the modal
       await tester.tapAt(Offset.zero);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
 
       // Only dashboard with category should be visible
       expect(find.text(testDashboardName), findsOneWidget);
@@ -279,7 +273,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       // Only active dashboard should be visible
       expect(find.text(testDashboardName), findsOneWidget);
@@ -300,7 +295,8 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
         expect(
@@ -375,7 +371,8 @@ void main() {
           mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(ResizableDivider), findsOneWidget);
 

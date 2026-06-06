@@ -14,45 +14,31 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   late MockJournalDb mockJournalDb;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockUpdateNotifications mockUpdateNotifications;
 
-  setUp(() {
+  setUp(() async {
     mockJournalDb = MockJournalDb();
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockUpdateNotifications = MockUpdateNotifications();
 
-    // Reset GetIt for each test
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    if (getIt.isRegistered<EntitiesCacheService>()) {
-      getIt.unregister<EntitiesCacheService>();
-    }
-    if (getIt.isRegistered<UpdateNotifications>()) {
-      getIt.unregister<UpdateNotifications>();
-    }
-
-    getIt
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockJournalDb)
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+          ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
+      },
+    );
   });
 
-  tearDown(() {
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-    if (getIt.isRegistered<EntitiesCacheService>()) {
-      getIt.unregister<EntitiesCacheService>();
-    }
-    if (getIt.isRegistered<UpdateNotifications>()) {
-      getIt.unregister<UpdateNotifications>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   group('MeasurableDataTypeController', () {
     test('returns cached data type when available', () async {
@@ -308,7 +294,7 @@ void main() {
 
       // Emit an update that contains our type id — triggers _listen().
       streamController.add({typeId});
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       final updated = await container.read(
         measurableChartDataControllerProvider(params).future,
@@ -352,7 +338,7 @@ void main() {
 
       // Emit an event for a different id — should NOT trigger a re-fetch.
       streamController.add({'other-id'});
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(fetchCount, equals(countAfterBuild));
     });
