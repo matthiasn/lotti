@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_toast_widgetbook.dart';
 
@@ -26,6 +27,9 @@ void main() {
       // is hosted in a lazily-built ListView.
       expect(find.text('Variant Matrix'), findsOneWidget);
       expect(find.text('Title Only Variant'), findsOneWidget);
+      // The visible sections actually contain rendered toasts, not just
+      // their headers.
+      expect(find.byType(DesignSystemToast), findsWidgets);
 
       final listView = find.byType(ListView);
       await tester.scrollUntilVisible(
@@ -37,6 +41,7 @@ void main() {
         ),
       );
       expect(find.text('With Action'), findsOneWidget);
+      expect(find.byType(DesignSystemToast), findsWidgets);
 
       await tester.scrollUntilVisible(
         find.text('With Countdown'),
@@ -47,10 +52,12 @@ void main() {
         ),
       );
       expect(find.text('With Countdown'), findsOneWidget);
+      expect(find.byType(DesignSystemToast), findsWidgets);
 
       // Cleanup: drain animation controllers from the live countdown bars
       // so the test doesn't tear down with pending Timers.
       await tester.pump(const Duration(seconds: 10));
+      expect(tester.takeException(), isNull);
     });
   });
 }

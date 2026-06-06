@@ -23,6 +23,15 @@ void main() {
       );
 
       expect(find.byType(DesignSystemBrandLogo), findsOneWidget);
+
+      // The rendered logo honours its configured height.
+      final logo = tester.widget<DesignSystemBrandLogo>(
+        find.byType(DesignSystemBrandLogo),
+      );
+      expect(
+        tester.getSize(find.byType(DesignSystemBrandLogo)).height,
+        logo.height,
+      );
     });
   });
 }

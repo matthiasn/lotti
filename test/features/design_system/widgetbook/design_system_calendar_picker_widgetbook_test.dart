@@ -65,7 +65,8 @@ void main() {
       // Feb may be outside the visible month rail viewport — scroll it in.
       final febFinder = find.text('Feb');
       await tester.ensureVisible(febFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(febFinder);
       await tester.pump();
 
@@ -77,7 +78,8 @@ void main() {
 
       // Tap day 20 inside the picker grid.
       await tester.ensureVisible(dayInPicker('20'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(dayInPicker('20'));
       await tester.pump();
 
@@ -104,7 +106,8 @@ void main() {
       // Navigate to December 2025 via the month rail.
       final decFinder = find.text('Dec');
       await tester.ensureVisible(decFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(decFinder);
       await tester.pump();
 
@@ -113,7 +116,8 @@ void main() {
       // Tap Today button to return to January 2026.
       final todayFinder = dayInPicker('Today');
       await tester.ensureVisible(todayFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(todayFinder);
       await tester.pump();
 
@@ -128,7 +132,8 @@ void main() {
       // Select day 22 inside the picker (unique enough to not clash).
       final day22 = dayInPicker('22');
       await tester.ensureVisible(day22);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(day22);
       await tester.pump();
 
@@ -155,7 +160,8 @@ void main() {
         expect(monthLabel, findsOneWidget);
 
         await tester.ensureVisible(monthLabel);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(monthLabel);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 250));
