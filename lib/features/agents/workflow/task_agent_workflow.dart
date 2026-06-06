@@ -410,7 +410,7 @@ class TaskAgentWorkflow {
       _log('task not found in journal — aborting wake', subDomain: 'execute');
       return const WakeResult(success: false, error: 'Task not found');
     }
-    final taskAttentionClaims = await _maintainAndLoadAttentionClaims(
+    final taskAttentionContext = await _maintainAndLoadAttentionClaims(
       agentId: agentId,
       taskId: taskId,
     );
@@ -430,7 +430,8 @@ class TaskAgentWorkflow {
       triggerTokens: triggerTokens,
       taskId: taskId,
       ledger: ledger,
-      attentionClaims: taskAttentionClaims,
+      attentionClaims: taskAttentionContext.claims,
+      task: taskAttentionContext.task,
       timeService: getIt<TimeService>(),
       // Only attach the compacted log when we're actually using it (the inline
       // log was dropped); otherwise the full inline log already carries it.
@@ -1584,6 +1585,7 @@ to keep the user-facing suggestion list clean and trustworthy:
     required String taskId,
     ProposalLedger ledger = const ProposalLedger.empty(),
     List<AttentionRequestEntity> attentionClaims = const [],
+    Task? task,
     TimeService? timeService,
     String? compactedTaskLog,
   }) async {
@@ -1599,7 +1601,7 @@ to keep the user-facing suggestion list clean and trustworthy:
 
     // Inject label context and correction examples.
     try {
-      final taskEntity = await journalDb.journalEntityById(taskId);
+      final taskEntity = task ?? await journalDb.journalEntityById(taskId);
       if (taskEntity is Task) {
         // Label context for the assign_task_labels tool.
         final labelContext = await TaskLabelHandler.buildLabelContext(
@@ -1818,17 +1820,23 @@ to keep the user-facing suggestion list clean and trustworthy:
     }
   }
 
-  Future<List<AttentionRequestEntity>> _maintainAndLoadAttentionClaims({
+  Future<({List<AttentionRequestEntity> claims, Task? task})>
+  _maintainAndLoadAttentionClaims({
     required String agentId,
     required String taskId,
+    Task? task,
   }) async {
+    var resolvedTask = task;
     try {
-      final entity = await journalDb.journalEntityById(taskId);
-      if (entity is Task) {
+      if (resolvedTask == null) {
+        final entity = await journalDb.journalEntityById(taskId);
+        if (entity is Task) resolvedTask = entity;
+      }
+      if (resolvedTask != null) {
         await AttentionClaimMaintenanceService(
           agentRepository: agentRepository,
           syncService: syncService,
-        ).settleTerminalTaskClaims(agentId: agentId, task: entity);
+        ).settleTerminalTaskClaims(agentId: agentId, task: resolvedTask);
       }
     } catch (e, s) {
       _logError(
@@ -1837,7 +1845,10 @@ to keep the user-facing suggestion list clean and trustworthy:
         stackTrace: s,
       );
     }
-    return _attentionClaimsForTask(taskId);
+    return (
+      claims: await _attentionClaimsForTask(taskId),
+      task: resolvedTask,
+    );
   }
 
   String _formatTaskAttentionRequests(

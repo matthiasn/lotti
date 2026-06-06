@@ -128,6 +128,9 @@ void main() {
 
     expect(result.inspectedClaims, 1);
     expect(result.settledClaims, 0);
+    // Terminal task with no owned claims still reports the projected
+    // disposition so callers can distinguish it from a non-terminal task.
+    expect(result.status, AttentionClaimStatus.satisfied);
     verifyNever(() => syncService.upsertEntity(any()));
   });
 }

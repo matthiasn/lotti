@@ -4758,6 +4758,28 @@ void main() {
         ),
       );
 
+      test(
+        'reuses task loaded for attention maintenance when rendering prompt',
+        () async {
+          stubFullExecutePathLocal();
+          when(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).thenAnswer((_) async => taskWithCategory);
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockJournalDb.journalEntityById(taskId),
+          ).called(1);
+        },
+      );
+
       /// Sets up sendMessage to dispatch a tool call and capture the result.
       Future<WakeResult> executeWithToolCallOnRealTask(
         String toolName,

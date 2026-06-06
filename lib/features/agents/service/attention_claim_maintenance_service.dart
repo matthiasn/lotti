@@ -42,6 +42,7 @@ class AttentionClaimMaintenanceService {
     if (ownClaims.isEmpty) {
       return AttentionClaimMaintenanceResult(
         inspectedClaims: activeClaims.length,
+        status: projectedStatus,
       );
     }
 
