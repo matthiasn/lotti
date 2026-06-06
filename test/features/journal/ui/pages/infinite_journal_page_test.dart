@@ -192,6 +192,8 @@ void main() {
           flaggedStatuses: [1, 0],
           ids: null,
           limit: 50,
+          offset: any(named: 'offset'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenAnswer((_) async => [testTextEntry]);
 
@@ -236,6 +238,8 @@ void main() {
           flaggedStatuses: [1, 0],
           ids: null,
           limit: 50,
+          offset: any(named: 'offset'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenAnswer((_) async => [testTask]);
 
@@ -276,6 +280,8 @@ void main() {
           flaggedStatuses: [1, 0],
           ids: null,
           limit: 50,
+          offset: any(named: 'offset'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenAnswer((_) async => [testWeightEntry]);
 
@@ -346,6 +352,8 @@ void main() {
             flaggedStatuses: [1, 0],
             ids: null,
             limit: 50,
+            offset: any(named: 'offset'),
+            categoryIds: any(named: 'categoryIds'),
           ),
         ).thenAnswer((_) async => [testMeasurementChocolateEntry]);
 
@@ -412,6 +420,8 @@ void main() {
           flaggedStatuses: [1, 0],
           ids: null,
           limit: 50,
+          offset: any(named: 'offset'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenAnswer((_) async => [testMeasuredCoverageEntry]);
 
@@ -460,6 +470,8 @@ void main() {
           flaggedStatuses: [1, 0],
           ids: null,
           limit: 50,
+          offset: any(named: 'offset'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenAnswer((_) async => []);
 
@@ -484,6 +496,8 @@ void main() {
           flaggedStatuses: [1, 0],
           ids: null,
           limit: 50,
+          offset: any(named: 'offset'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenAnswer((_) async => [testTextEntry]);
 
@@ -532,6 +546,8 @@ void main() {
           flaggedStatuses: [1, 0],
           ids: null,
           limit: 50,
+          offset: any(named: 'offset'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenAnswer((_) async => entries);
 
@@ -566,6 +582,8 @@ void main() {
           flaggedStatuses: [1, 0],
           ids: null,
           limit: 50,
+          offset: any(named: 'offset'),
+          categoryIds: any(named: 'categoryIds'),
         ),
       ).thenAnswer((_) async => [privateEntry]);
 
