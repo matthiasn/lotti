@@ -12,6 +12,7 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 part 'gemini_multiturn_inference.dart';
+part 'gemini_chunk_factories.dart';
 part 'gemini_image_generation.dart';
 
 /// Gemini inference over raw HTTP with OpenAI-compatible streaming output.

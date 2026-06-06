@@ -171,7 +171,7 @@ class _VersionTile extends ConsumerWidget {
                 developer.log(
                   'Rollback failed',
                   name: 'AgentSoulDetailPage',
-                  error: e.runtimeType,
+                  error: e,
                   stackTrace: s,
                 );
                 if (!context.mounted) return;

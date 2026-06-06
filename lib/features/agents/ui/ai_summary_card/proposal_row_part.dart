@@ -55,7 +55,7 @@ class _ProposalRowState extends ConsumerState<_ProposalRow>
     // mobile it's the only swipe affordance besides the gradient
     // backdrop. The only opt-out is system reduce-motion.
     if (_wiggleScheduled || widget.isResolved || !widget.isFirst) return;
-    if (MediaQuery.of(context).disableAnimations) {
+    if (MediaQuery.disableAnimationsOf(context)) {
       _wiggleScheduled = true;
       return;
     }
