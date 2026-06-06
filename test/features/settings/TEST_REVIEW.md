@@ -90,8 +90,8 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `sliver_box_adapter_page.dart` (109 lines) — **no test file**. `SliverBoxAdapterPage` is used as the chrome wrapper by at least `FlagsPage`, `HealthImportPage`, `LoggingSettingsPage`, etc. The `fillRemaining` flag, `showBackButton`, and scroll-behavior branches are all untested.
-- [ ] **[HIGH]** `outbox_badge.dart` (63 lines) — **no test file**. `OutboxBadgeIcon` contains a `Consumer` that reads `outboxStateControllerProvider` and `matrixLoginControllerProvider` and applies a grayscale color filter; the color-filter / normal-icon branch is untested.
+- [x] **[HIGH]** `sliver_box_adapter_page.dart` (109 lines) — **no test file**. `SliverBoxAdapterPage` is used as the chrome wrapper by at least `FlagsPage`, `HealthImportPage`, `LoggingSettingsPage`, etc. The `fillRemaining` flag, `showBackButton`, and scroll-behavior branches are all untested.
+- [x] **[HIGH]** `outbox_badge.dart` (63 lines) — **no test file**. `OutboxBadgeIcon` contains a `Consumer` that reads `outboxStateControllerProvider` and `matrixLoginControllerProvider` and applies a grayscale color filter; the color-filter / normal-icon branch is untested.
 - [ ] **[MED]** `form_text_field.dart` (43 lines) — **no test file**. The `fieldRequired` validation branch (empty-field error path) is untested.
 - [ ] **[MED]** `form_switch.dart` (36 lines) — **no test file**.
 - [ ] **[MED]** `entity_detail_card.dart` / `settings_card.dart` — **no test files**. Both are tiny (27 / 49 lines) decorator widgets — a single snapshot / rendering test per file would provide coverage.
