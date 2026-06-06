@@ -33,15 +33,12 @@ import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/widgets/ui/lotti_animated_checkbox.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
-
-class MockPlayerState extends Mock implements PlayerState {}
 
 // Mock EntryController for testing
 class FakeEntryController extends EntryController {
@@ -569,7 +566,8 @@ void main() {
 
           // Tap button to show modal
           await tester.tap(find.text('Show Modal'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Verify modal is shown and state is updated
           state = container.read(audioRecorderControllerProvider);
@@ -592,7 +590,8 @@ void main() {
 
         // Show modal
         await tester.tap(find.text('Show Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final container = ProviderScope.containerOf(
           tester.element(find.byType(ElevatedButton)),
@@ -615,7 +614,8 @@ void main() {
         await pumpShowModalTrigger(tester);
 
         await tester.tap(find.text('Show Modal'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final container = ProviderScope.containerOf(
           tester.element(find.byType(ElevatedButton)),
@@ -653,11 +653,14 @@ void main() {
             ],
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+
+          await tester.pump(const Duration(milliseconds: 300));
           await tester.pump(const Duration(milliseconds: 250));
 
-          final stopControlsFinder =
-              find.byKey(const ValueKey('stop_controls'));
+          final stopControlsFinder = find.byKey(
+            const ValueKey('stop_controls'),
+          );
           expect(stopControlsFinder, findsOneWidget);
           expect(find.text('STOP'), findsOneWidget);
           expect(
@@ -695,11 +698,14 @@ void main() {
             ],
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+
+          await tester.pump(const Duration(milliseconds: 300));
           await tester.pump(const Duration(milliseconds: 250));
 
-          final stopControlsFinder =
-              find.byKey(const ValueKey('stop_controls'));
+          final stopControlsFinder = find.byKey(
+            const ValueKey('stop_controls'),
+          );
           expect(stopControlsFinder, findsOneWidget);
           expect(find.text('STOP'), findsOneWidget);
         },
@@ -717,7 +723,9 @@ void main() {
           linkedId: 'test-linked-id',
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         final recordButton = find.byKey(const ValueKey('record'));
         expect(recordButton, findsOneWidget);
@@ -751,7 +759,9 @@ void main() {
             ],
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+
+          await tester.pump(const Duration(milliseconds: 300));
           await tester.pump();
 
           final container = ProviderScope.containerOf(
@@ -788,7 +798,9 @@ void main() {
             ],
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byType(Switch), findsOneWidget);
         },
@@ -806,7 +818,9 @@ void main() {
             ],
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+
+          await tester.pump(const Duration(milliseconds: 300));
 
           final switchWidget = find.byType(Switch);
           expect(switchWidget, findsOneWidget);
@@ -910,7 +924,9 @@ void main() {
             ],
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(
             find.text('Hello this is a test transcription'),
@@ -954,7 +970,8 @@ void main() {
 
         expect(find.text('STOP'), findsOneWidget);
         await tester.tap(find.text('STOP'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(stopRealtimeCalled, isTrue);
       });
@@ -993,7 +1010,8 @@ void main() {
 
         expect(find.text('CANCEL'), findsOneWidget);
         await tester.tap(find.text('CANCEL'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(cancelRealtimeCalled, isTrue);
       });
@@ -1026,7 +1044,9 @@ void main() {
           ],
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Toggle to realtime mode first
         final switchWidget = find.byType(Switch);
@@ -1066,7 +1086,9 @@ void main() {
           ],
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(Switch), findsNothing);
       });

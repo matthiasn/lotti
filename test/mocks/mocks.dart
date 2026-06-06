@@ -1003,6 +1003,8 @@ class MockSpeechDictionaryService extends Mock
 /// speech recorder.
 class MockPlayer extends Mock implements Player {}
 
+class MockPlayerState extends Mock implements PlayerState {}
+
 /// Mock for the MediaKit [PlayerStream] exposing event streams such as
 /// `duration`.
 class MockPlayerStream extends Mock implements PlayerStream {}
