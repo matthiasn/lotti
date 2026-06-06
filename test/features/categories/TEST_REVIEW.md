@@ -92,7 +92,7 @@
 
 - [x] **[HIGH]** `lib/features/categories/ui/widgets/category_color_icon.dart` (51 lines) — no test file exists. This widget renders the colored circle icon used throughout the app. Missing coverage of: rendering with valid hex color, fallback for null/empty color, luminance-based text color selection (dark vs. light background).
 
-- [ ] **[HIGH]** `lib/features/categories/ui/widgets/category_icon_compact.dart` (153 lines) — no test file exists. This widget is used in several places (task items, journal entries). Missing coverage of: rendering with icon set, rendering without icon (fallback character), different size variants, color application.
+- [x] **[HIGH]** `lib/features/categories/ui/widgets/category_icon_compact.dart` (153 lines) — no test file exists. This widget is used in several places (task items, journal entries). Missing coverage of: rendering with icon set, rendering without icon (fallback character), different size variants, color application.
 
 - [ ] **[MED]** `lib/features/categories/ui/widgets/category_type_card.dart` (63 lines) — no test file exists. A small widget but used as the selection tile in the category picker; behaviors (selection state, tap callback) are untested.
 
