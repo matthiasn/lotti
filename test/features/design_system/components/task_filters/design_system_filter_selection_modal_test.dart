@@ -76,7 +76,10 @@ void main() {
       );
       await tester.ensureVisible(doneButton);
       await tester.tap(doneButton);
-      await tester.pumpAndSettle();
+      // Wolt sheet exit animation has a bounded duration; the modal
+      // future completes on pop, so two bounded pumps suffice.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(
         result?.statusField?.selectedIds,
@@ -142,7 +145,10 @@ void main() {
     await tester.tap(
       find.byKey(const ValueKey('design-system-filter-selection-apply')),
     );
-    await tester.pumpAndSettle();
+    // Wolt sheet exit animation has a bounded duration; the modal
+    // future completes on pop, so two bounded pumps suffice.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
 
     expect(result, {'work'});
   });
@@ -226,7 +232,10 @@ void main() {
       await tester.tap(
         find.byKey(const ValueKey('design-system-filter-selection-apply')),
       );
-      await tester.pumpAndSettle();
+      // Wolt sheet exit animation has a bounded duration; the modal
+      // future completes on pop, so two bounded pumps suffice.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(result, {'high'});
     },
@@ -304,7 +313,10 @@ void main() {
       );
       await tester.ensureVisible(applyButton);
       await tester.tap(applyButton);
-      await tester.pumpAndSettle();
+      // Wolt sheet exit animation has a bounded duration; the modal
+      // future completes on pop, so two bounded pumps suffice.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Verify the returned set reflects both the add and the remove
       expect(result, {'closed'});
@@ -430,7 +442,10 @@ void main() {
       );
       await tester.ensureVisible(doneButton);
       await tester.tap(doneButton);
-      await tester.pumpAndSettle();
+      // Wolt sheet exit animation has a bounded duration; the modal
+      // future completes on pop, so two bounded pumps suffice.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(result, {'work', 'personal'});
     },

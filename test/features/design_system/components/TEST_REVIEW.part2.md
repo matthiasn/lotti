@@ -57,7 +57,7 @@
 
 ## Test quality improvements
 
-- [ ] **[HIGH]** `task_list_items/design_system_task_list_item_test.dart` lines 228–348: Four separate `testWidgets` bodies for `priority P0`, `P1`, `P2`, `P3` each pump a fresh widget and assert on colour and icon. These are copy-paste permutations. Convert to a single parameterised loop:
+- [x] **[HIGH]** `task_list_items/design_system_task_list_item_test.dart` lines 228–348: Four separate `testWidgets` bodies for `priority P0`, `P1`, `P2`, `P3` each pump a fresh widget and assert on colour and icon. These are copy-paste permutations. Convert to a single parameterised loop:
   ```dart
   for (final (priority, expectedColor, icon) in [...]) {
     await _pumpTaskListItem(tester, DesignSystemTaskListItem(priority: priority, ...));
@@ -66,7 +66,7 @@
   ```
   Similarly the three per-status icon tests (lines 455–498: `blocked`/`open`/`onHold`) are also prime candidates for a loop.
 
-- [ ] **[HIGH]** `task_filters/design_system_task_filter_action_bar_save_test.dart` — `_pumpBar()` at line 43 always calls `await tester.pumpAndSettle()`. Tests that only check whether the Save button is *hidden* (`findsNothing`, line 59) do not need the menu to animate — `await tester.pump()` suffices for the initial render. The 11 `pumpAndSettle` calls translate to up to 110 s of virtual timeout if any animation never settles.
+- [x] **[HIGH]** `task_filters/design_system_task_filter_action_bar_save_test.dart` — `_pumpBar()` at line 43 always calls `await tester.pumpAndSettle()`. Tests that only check whether the Save button is *hidden* (`findsNothing`, line 59) do not need the menu to animate — `await tester.pump()` suffices for the initial render. The 11 `pumpAndSettle` calls translate to up to 110 s of virtual timeout if any animation never settles.
 
 - [ ] **[MED]** `task_filters/design_system_task_filter_sheet_test.dart` lines 634–829: Five widget tests that render `DesignSystemTaskFilterSheet` with a fresh inline `DesignSystemTaskFilterState` each time and call `makeTestableWidgetWithScaffold` ad-hoc. These could share a `_pumpSheetWithState(tester, state, {onChanged})` helper (similar to the existing `_pumpTaskFilterSheet` which pumps both sheet + action bar). This would reduce duplication and normalise the test setup.
 
@@ -82,7 +82,7 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[HIGH]** `DesignSystemTaskFilterState` pure logic in `design_system_task_filter_sheet.dart`:
+- [x] **[HIGH]** `DesignSystemTaskFilterState` pure logic in `design_system_task_filter_sheet.dart`:
   - `togglePriority` / `selectPriority` / `appliedCount` / `clearAll` / `removeSelection` all operate on structured collections with rich invariants. Example invariant: `forAll(state, id) { state.togglePriority(id).togglePriority(id).selectedPriorityIds == state.selectedPriorityIds }` (double-toggle is identity for concrete ids). Another: `state.clearAll().appliedCount == 0`. A `_GeneratedFilterScenario` Glados test covering random combinations of fields, selections, and operations would find edge cases the existing hand-crafted tests miss.
   - The `fromJson(toJson())` round-trip is hand-tested for a small fixture. A Glados round-trip property with a generated `DesignSystemTaskFilterState` would cover all optional fields and boundary values automatically.
 
@@ -98,11 +98,11 @@ Glados does **not** apply to the widget/UI tests in this group.
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[HIGH]** `navigation/design_system_showcase_mobile_chrome.dart` (120 lines) — no test file. Renders a fixed-size 402×874 chrome frame with a theme-aware border and background. At minimum: a smoke test asserting the `SizedBox` dimensions and border colour in light/dark themes.
+- [x] **[HIGH]** `navigation/design_system_showcase_mobile_chrome.dart` (120 lines) — no test file. Renders a fixed-size 402×874 chrome frame with a theme-aware border and background. At minimum: a smoke test asserting the `SizedBox` dimensions and border colour in light/dark themes.
 
-- [ ] **[HIGH]** `navigation/desktop_detail_empty_state.dart` (41 lines) — no test file. Trivial widget but untested; a single test verifying the message text and icon colour from tokens takes < 20 lines.
+- [x] **[HIGH]** `navigation/desktop_detail_empty_state.dart` (41 lines) — no test file. Trivial widget but untested; a single test verifying the message text and icon colour from tokens takes < 20 lines.
 
-- [ ] **[HIGH]** `task_filters/design_system_filter_shared.dart` (382 lines) — no co-located test. Contains `stripTrailingColon` (pure function with two branches), `DesignSystemFilterPalette.fromTokens` (which has a dark/light branch, ad-hoc constants), and `DesignSystemFilterActionButton` (a widget). None are tested at the `design_system` component level (the external test in `projects_filter_sheet_state_test.dart` covers only `stripTrailingColon` minimally).
+- [x] **[HIGH]** `task_filters/design_system_filter_shared.dart` (382 lines) — no co-located test. Contains `stripTrailingColon` (pure function with two branches), `DesignSystemFilterPalette.fromTokens` (which has a dark/light branch, ad-hoc constants), and `DesignSystemFilterActionButton` (a widget). None are tested at the `design_system` component level (the external test in `projects_filter_sheet_state_test.dart` covers only `stripTrailingColon` minimally).
 
 - [ ] **[MED]** `task_filters/design_system_task_filter_sheet.dart` — `DesignSystemTaskFilterState.selectAgentFilter`, `selectSearchMode`, and `toggleValue` (pure-logic methods on lines 436–459) have **no unit tests inside `design_system_task_filter_sheet_test.dart`**. They are tested in `test/features/tasks/ui/filtering/tasks_filter_sheet_state_test.dart` but the canonical unit tests should live alongside the model. Add a `group('DesignSystemTaskFilterState agent/search/toggle mutations', ...)` section in `design_system_task_filter_sheet_test.dart`.
 
@@ -118,9 +118,9 @@ Glados does **not** apply to the widget/UI tests in this group.
 
 ## Test execution speed opportunities
 
-- [ ] **[HIGH]** `task_filters/design_system_task_filter_action_bar_save_test.dart` — 11 calls to `pumpAndSettle()`. Every test is routed through `_pumpBar()` which calls `pumpAndSettle()` unconditionally (line 43). Six of the 10 tests tap the save button and call `pumpAndSettle()` again (post-popup). Replace with `tester.pump(const Duration(milliseconds: 250))` using a bounded animation duration everywhere the popup open/close animation is the only thing in flight. **Impact: ~10 × (up to 10 s savings per potential timeout) → consistently faster by several seconds per run**.
+- [x] **[HIGH]** `task_filters/design_system_task_filter_action_bar_save_test.dart` — 11 calls to `pumpAndSettle()`. Every test is routed through `_pumpBar()` which calls `pumpAndSettle()` unconditionally (line 43). Six of the 10 tests tap the save button and call `pumpAndSettle()` again (post-popup). Replace with `tester.pump(const Duration(milliseconds: 250))` using a bounded animation duration everywhere the popup open/close animation is the only thing in flight. **Impact: ~10 × (up to 10 s savings per potential timeout) → consistently faster by several seconds per run**.
 
-- [ ] **[HIGH]** `task_filters/design_system_filter_selection_modal_test.dart` — 11 `pumpAndSettle()` calls. Modal-open calls (e.g., lines 63, 133, 201, 283, 417, 610) wait for the Wolt sheet entry animation to settle. These are necessary. However, post-`tap(applyButton)` calls (lines 79, 145, 229, 307, 433) that wait for the modal to close could use `tester.pump(const Duration(milliseconds: 300))` — the Wolt sheet exit animation has a known bounded duration. **Impact: up to 5 tests save ≈1–2 s each → ~5–10 s total per run**.
+- [x] **[HIGH]** `task_filters/design_system_filter_selection_modal_test.dart` — 11 `pumpAndSettle()` calls. Modal-open calls (e.g., lines 63, 133, 201, 283, 417, 610) wait for the Wolt sheet entry animation to settle. These are necessary. However, post-`tap(applyButton)` calls (lines 79, 145, 229, 307, 433) that wait for the modal to close could use `tester.pump(const Duration(milliseconds: 300))` — the Wolt sheet exit animation has a known bounded duration. **Impact: up to 5 tests save ≈1–2 s each → ~5–10 s total per run**.
 
 - [ ] **[MED]** `task_filters/design_system_task_filter_sheet_test.dart` — 6 real `pumpAndSettle()` calls. Lines 477/482/487 are `ensureVisible` + `pumpAndSettle` pairs in a single test. Since `ensureVisible` only pumps a scroll, `pump()` after each is sufficient. Lines 863/877/918 (save popup) match the action-bar pattern above. **Impact: each swap saves ~1–2 s**.
 
