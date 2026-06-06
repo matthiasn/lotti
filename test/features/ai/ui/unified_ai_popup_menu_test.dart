@@ -224,7 +224,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
       expect(find.byIcon(Icons.assistant_rounded), findsOneWidget);
@@ -248,7 +250,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
       expect(find.byIcon(Icons.assistant_rounded), findsNothing);
@@ -284,7 +288,8 @@ void main() {
 
       // Complete to avoid hanging test
       completer.complete(false);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     testWidgets('shows nothing on error', (tester) async {
@@ -304,7 +309,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
       expect(find.byIcon(Icons.assistant_rounded), findsNothing);
@@ -333,11 +340,14 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Act
       await tester.tap(find.byIcon(Icons.assistant_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert - check for the skills list
       expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
@@ -369,7 +379,9 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Assert — the GlassActionButton branch is taken, not the
         // standard IconButton branch, and the icon adopts the passed color.
@@ -382,7 +394,8 @@ void main() {
 
         // Act — tapping the glass button opens the unified AI modal.
         await tester.tap(find.byType(GlassActionButton));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Assert — onTap wired through to UnifiedAiModal.show.
         expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
@@ -410,7 +423,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
       expect(find.text('Audio Transcription Skill'), findsOneWidget);
@@ -439,7 +454,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert - section header should be present
       expect(find.text('Skills'), findsOneWidget);
@@ -466,7 +483,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert - empty skills renders only a placeholder SizedBox
       expect(find.byType(DesignSystemListItem), findsNothing);
@@ -498,7 +517,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Act
       await tester.tap(find.text('Audio Transcription Skill'));
@@ -542,7 +563,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
       expect(find.text('No Description Skill'), findsOneWidget);
@@ -582,7 +605,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
       final listItem = tester.widget<DesignSystemListItem>(
@@ -623,7 +648,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Two dividers between three rows; both opaque before hover.
         final dividersBefore = tester.widgetList<Divider>(find.byType(Divider));
@@ -641,7 +667,8 @@ void main() {
         await gesture.moveTo(
           tester.getCenter(find.text(testSkills[1].name)),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final dividersAfter = tester
             .widgetList<Divider>(find.byType(Divider))
@@ -651,7 +678,8 @@ void main() {
 
         // Move pointer away — dividers return to default color.
         await gesture.moveTo(const Offset(-100, -100));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final dividersFinal = tester
             .widgetList<Divider>(find.byType(Divider))
@@ -688,7 +716,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Three skills → two dividers, both opaque before hover.
         expect(find.byType(Divider), findsNWidgets(2));
@@ -701,7 +730,8 @@ void main() {
         addTearDown(gesture.removePointer);
         await gesture.addPointer(location: Offset.zero);
         await gesture.moveTo(tester.getCenter(find.text(testSkills[2].name)));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final hovered = tester
             .widgetList<Divider>(find.byType(Divider))
@@ -719,20 +749,23 @@ void main() {
           testSkills[0],
           testSkills[1],
         ];
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.text(testSkills[2].name), findsNothing);
 
         // Park the pointer in dead space so that re-adding the skill below
         // does not re-hover it under the (otherwise stationary) cursor,
         // which would confound the divider assertion.
         await gesture.moveTo(const Offset(-500, -500));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Re-add the previously-hovered skill. If the ref.listen callback
         // had cleared the hover, this row's divider is opaque. A retained
         // stale _hoveredSkillId would instead paint divider[1] transparent.
         container.read(skillsSource.notifier).state = testSkills;
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final restored = tester
             .widgetList<Divider>(find.byType(Divider))
@@ -763,7 +796,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Hover, then tap — exercises both the hover-enter callback and
         // the onTap path on the same row.
@@ -775,9 +809,11 @@ void main() {
         await gesture.moveTo(
           tester.getCenter(find.text(testSkills[2].name)),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text(testSkills[2].name));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(selected?.id, testSkills[2].id);
       },
@@ -814,11 +850,14 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Act
       await tester.tap(find.text('Show Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert - Look for the skills list
       expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
@@ -858,7 +897,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Act - tap button and immediately dispose widget (simulating navigation away)
       await tester.tap(find.text('Show Modal'));
@@ -907,11 +948,14 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Act
       await tester.tap(find.text('Show Modal with ScrollController'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert - Modal should open
       expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
@@ -941,18 +985,22 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Act - Open the modal
       await tester.tap(find.byIcon(Icons.assistant_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify modal is open
       expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
 
       // Select a skill
       await tester.tap(find.text('Prompt Generation Skill'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert - Modal should be closed
       expect(find.byType(UnifiedAiSkillsList), findsNothing);
@@ -1000,15 +1048,19 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Open the modal
         await tester.tap(find.byIcon(Icons.assistant_rounded));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap the image generation skill
         await tester.tap(find.text('Generate Cover Art'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Modal should close without showing CoverArtSkillModal since there's
         // no linked task
@@ -1082,11 +1134,14 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Open the modal
         await tester.tap(find.byIcon(Icons.assistant_rounded));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap the image generation skill
         await tester.tap(find.text('Generate Cover Art'));
@@ -1134,12 +1189,15 @@ void main() {
                 ),
               ),
             );
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
             await tester.tap(find.byIcon(Icons.assistant_rounded));
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
             await tester.tap(find.text(variant.skillName));
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
             // Picker is mounted and lists both slot-capable models;
             // the wrong-modality decoy is absent because the popup
@@ -1183,12 +1241,15 @@ void main() {
                 ],
               ),
             );
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
             await tester.tap(find.byIcon(Icons.assistant_rounded));
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
             await tester.tap(find.text(variant.skillName));
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
             // No picker — short-circuit took the single-model path.
             // Skills list closed as part of the tap handler.
@@ -1236,19 +1297,23 @@ void main() {
                 ],
               ),
             );
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
             await tester.tap(find.byIcon(Icons.assistant_rounded));
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
             await tester.tap(find.text(variant.skillName));
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
             // Tap the default-badged row (modelA) — the popup should
             // fire the trigger with overrideModelId: null because the
             // picked id matches the computed defaultModelId.
             expect(find.byType(InferenceModelPickerModal), findsOneWidget);
             await tester.tap(find.text(fx.modelA.name));
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
             expect(capturedParams, isNotNull);
             expect(capturedParams!.entityId, fx.entity.id);
@@ -1288,14 +1353,18 @@ void main() {
                 ],
               ),
             );
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
             await tester.tap(find.byIcon(Icons.assistant_rounded));
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
             await tester.tap(find.text(variant.skillName));
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
             await tester.tap(find.text(fx.modelB.name));
-            await tester.pumpAndSettle();
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
 
             expect(capturedParams, isNotNull);
             expect(capturedParams!.overrideModelId, fx.modelB.id);
@@ -1382,12 +1451,15 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.byIcon(Icons.assistant_rounded));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(find.text(_transcriptionOverrideVariant.skillName));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The Task's profile was resolved via resolveForTask, keyed by the
         // task id — never via resolveForCategory.
@@ -1398,7 +1470,8 @@ void main() {
         // the override to null because it matches the resolved default.
         expect(find.byType(InferenceModelPickerModal), findsOneWidget);
         await tester.tap(find.text(modelA.name));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(capturedParams, isNotNull);
         expect(capturedParams!.entityId, taskEntity.id);

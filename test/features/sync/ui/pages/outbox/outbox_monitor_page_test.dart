@@ -132,7 +132,8 @@ void main() {
       );
 
       await _pumpOutboxMonitorPage(tester, mock: mock);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.byKey(const ValueKey('syncFilter-pending')),
@@ -152,13 +153,15 @@ void main() {
       expect(find.byType(OutboxListItem), findsNWidgets(1));
 
       await tester.tap(find.text('Success'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Success · 1 item'), findsOneWidget);
       expect(find.byType(OutboxListItem), findsNWidgets(1));
 
       await tester.tap(find.text('Error'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final errorItems = tester
           .widgetList<OutboxListItem>(find.byType(OutboxListItem))
@@ -190,16 +193,19 @@ void main() {
         when(() => mock.deleteOutboxItemById(1)).thenAnswer((_) async => 1);
 
         await _pumpOutboxMonitorPage(tester, mock: mock);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Error'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final deleteButtonFinder = find.byKey(const ValueKey('outboxDelete-1'));
         expect(deleteButtonFinder, findsOneWidget);
 
         await tester.tap(deleteButtonFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.textContaining('delete this sync item'), findsOneWidget);
         expect(find.text('DELETE'), findsOneWidget);
@@ -226,12 +232,15 @@ void main() {
       when(() => mock.deleteOutboxItemById(42)).thenAnswer((_) async => 1);
 
       await _pumpOutboxMonitorPage(tester, mock: mock);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Error'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byKey(const ValueKey('outboxDelete-42')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('DELETE'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -261,12 +270,15 @@ void main() {
       ).thenThrow(Exception('DB offline'));
 
       await _pumpOutboxMonitorPage(tester, mock: mock);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Error'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byKey(const ValueKey('outboxDelete-43')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('DELETE'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -293,12 +305,15 @@ void main() {
       when(() => mock.updateOutboxItem(any())).thenAnswer((_) async => 1);
 
       await _pumpOutboxMonitorPage(tester, mock: mock);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Error'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byKey(const ValueKey('outboxRetry-77')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('RETRY NOW'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -328,12 +343,15 @@ void main() {
       ).thenThrow(Exception('DB offline'));
 
       await _pumpOutboxMonitorPage(tester, mock: mock);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Error'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byKey(const ValueKey('outboxRetry-78')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('RETRY NOW'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -345,7 +363,8 @@ void main() {
       final mock = _prepareMock(items: const <OutboxItem>[]);
 
       await _pumpOutboxMonitorPage(tester, mock: mock);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Outbox is clear'), findsOneWidget);
       expect(find.textContaining('0 items'), findsOneWidget);
@@ -363,7 +382,8 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
       completer.complete(const <OutboxItem>[]);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Outbox is clear'), findsOneWidget);
     });
@@ -405,7 +425,8 @@ void main() {
         });
 
         await _pumpOutboxMonitorPage(tester, mock: mock);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(fetchCount, 1);
 
         // The page must mount a RefreshIndicator so users can pull to
@@ -445,16 +466,20 @@ void main() {
       when(() => mock.deleteOutboxItemById(99)).thenAnswer((_) async => 1);
 
       await _pumpOutboxMonitorPage(tester, mock: mock);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(fetchCount, 1);
 
       await tester.tap(find.text('Error'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byKey(const ValueKey('outboxDelete-99')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('DELETE'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => mock.deleteOutboxItemById(99)).called(1);
       // Initial init() fetch + post-delete refresh.
@@ -482,7 +507,8 @@ void main() {
           );
 
           await _pumpOutboxMonitorPage(tester, mock: mock);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byType(OutboxVolumeChart), findsOneWidget);
           expect(find.byType(TimeSeriesBarChart), findsOneWidget);
@@ -496,7 +522,8 @@ void main() {
           final mock = _prepareMock(items: const <OutboxItem>[]);
 
           await _pumpOutboxMonitorPage(tester, mock: mock);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byType(TimeSeriesBarChart), findsNothing);
           expect(find.text('Daily sync volume'), findsNothing);
@@ -570,7 +597,8 @@ void main() {
           );
 
           await _pumpOutboxMonitorPage(tester, mock: mock);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byType(TimeSeriesBarChart), findsOneWidget);
           expect(find.text('Daily sync volume'), findsOneWidget);

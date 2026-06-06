@@ -215,7 +215,8 @@ void main() {
         ),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   group('UnifiedAiProgressContent - Basic UI States', () {
@@ -286,7 +287,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Invalid prompt configuration'), findsOneWidget);
     });
@@ -319,7 +322,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Invalid prompt configuration'), findsOneWidget);
     });
@@ -360,7 +365,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Give some time for any async operations
       await tester.pump(const Duration(milliseconds: 100));
@@ -554,7 +561,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find and tap retry button if it exists
       final retryButton = find.text('Retry');
@@ -663,7 +672,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the widget handles the error properly
       expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
@@ -720,7 +731,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The dispose method should have cleaned up the subscription
       expect(find.byType(UnifiedAiProgressContent), findsNothing);
@@ -778,7 +791,8 @@ void main() {
       );
 
       // Use pumpAndSettle to let FutureBuilder complete
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
     });
@@ -818,7 +832,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
     });
@@ -873,7 +889,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify dialog title
       expect(find.text('Model Not Installed'), findsOneWidget);
@@ -905,7 +923,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap cancel
       await tester.tap(find.text('Cancel'));
@@ -1020,7 +1040,9 @@ Digital painting of a vibrant sunset over misty mountains, warm orange and purpl
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show copy button for image prompt generation
       expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
@@ -1081,7 +1103,9 @@ Implement OAuth 2.0 authentication flow in Flutter using the oauth2 package.''',
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show copy button for prompt generation
       expect(find.byIcon(Icons.copy_rounded), findsOneWidget);
@@ -1160,7 +1184,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.byIcon(Icons.copy_rounded));
         await tester.pump();
@@ -1223,7 +1249,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should show AiErrorDisplay with a retry button
         expect(find.byType(AiErrorDisplay), findsOneWidget);
@@ -1443,7 +1471,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // showExisting mode with ModelNotInstalledException → OllamaModelInstallDialog
         expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
@@ -1529,14 +1559,17 @@ Generate a widget that renders a login form.''',
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The string-based fallback dialog should be shown
       expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
 
       // Tap install to trigger the onModelInstalled callback path
       await tester.tap(find.text('Install'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // triggerNewInferenceProvider should have been called via onModelInstalled
       expect(triggerCalled, isTrue);
@@ -1584,7 +1617,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap install – "Installing model..." state is set first (line 497-500)
         await tester.tap(find.text('Install'));
@@ -1594,7 +1629,8 @@ Generate a widget that renders a login form.''',
 
         // pumpAndSettle drives the async chain: provider.future → installModel throws
         // → catch (lines 548-566): strips 'Exception: ', sets _error, _isInstalling=false
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // After error: _isInstalling=false so Install button is back (lines 620-628)
         expect(find.text('Install'), findsOneWidget);
@@ -1635,7 +1671,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap install – _installModel immediately sets _isInstalling=true via setState
         await tester.tap(find.text('Install'));
@@ -1680,7 +1718,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap install – starts _installModel which sets _isInstalling=true
         await tester.tap(find.text('Install'));
@@ -1688,7 +1728,8 @@ Generate a widget that renders a login form.''',
         expect(find.text('Installing model...'), findsOneWidget);
 
         // After pumpAndSettle, the async chain completes and Install button returns
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.text('Install'), findsOneWidget);
       },
     );
@@ -1721,7 +1762,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap install to trigger the error path
         await tester.tap(find.text('Install'));
@@ -1729,7 +1772,9 @@ Generate a widget that renders a login form.''',
         // "Installing model..." is shown while async runs (lines 596-604)
         expect(find.text('Installing model...'), findsOneWidget);
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // After error: _isInstalling=false so Install button is shown again (lines 548-566)
         expect(find.text('Install'), findsOneWidget);
@@ -1769,7 +1814,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // First install attempt
         await tester.tap(find.text('Install'));
@@ -1778,7 +1825,9 @@ Generate a widget that renders a login form.''',
         expect(find.text('Install'), findsNothing);
         expect(find.text('Installing model...'), findsOneWidget);
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
         // After error: _isInstalling=false, Install button re-appears (lines 620-628)
         expect(find.text('Install'), findsOneWidget);
 
@@ -1834,7 +1883,9 @@ Generate a widget that renders a login form.''',
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // AiErrorDisplay must be shown
       expect(find.byType(AiErrorDisplay), findsOneWidget);
@@ -1928,7 +1979,9 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // OllamaModelInstallDialog should appear for ModelNotInstalledException
         expect(find.byType(OllamaModelInstallDialog), findsOneWidget);
@@ -1936,7 +1989,8 @@ Generate a widget that renders a login form.''',
 
         // Tap install → _installModel → onModelInstalled → _handleModelInstalled
         await tester.tap(find.text('Install'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // triggerNewInferenceProvider must have been called (lines 143-148)
         expect(triggerCalled, isTrue);
@@ -1974,14 +2028,18 @@ Generate a widget that renders a login form.''',
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Tap install – _installModel is called, installModel throws, catch runs (line 560)
         await tester.tap(find.text('Install'));
         await tester.pump();
         expect(find.text('Installing model...'), findsOneWidget);
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Error state: Install button is back (lines 620-628)
         expect(find.text('Install'), findsOneWidget);
@@ -2154,7 +2212,8 @@ Generate a widget that renders a login form.''',
         );
 
         await tester.tap(find.text('Install'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The thrown Exception message (Exception: prefix stripped at line 560).
         expect(
@@ -2186,7 +2245,8 @@ Generate a widget that renders a login form.''',
         );
 
         await tester.tap(find.text('Install'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // "Exception: " prefix stripped (line 560) → only "Error: boom" remains.
         expect(find.text('Error: boom'), findsOneWidget);
@@ -2289,7 +2349,8 @@ Generate a widget that renders a login form.''',
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     }
 
     // Each error shape routes install completion through a different callback;
@@ -2334,7 +2395,8 @@ Generate a widget that renders a login form.''',
         expect(triggerCount, 1);
 
         await tester.tap(find.text('Install'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The successful install invoked onModelInstalled, which called
         // triggerNewInferenceProvider a second time.

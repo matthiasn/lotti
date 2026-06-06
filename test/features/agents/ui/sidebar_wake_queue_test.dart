@@ -91,7 +91,8 @@ void main() {
       expect(find.byIcon(Icons.open_in_new_rounded), findsNothing);
 
       completer.complete(const []);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     },
   );
 
@@ -101,7 +102,8 @@ void main() {
     'is queued',
     (tester) async {
       await tester.pumpWidget(buildSubject(const []));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       expect(
@@ -147,7 +149,8 @@ void main() {
           ),
         ]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     final element = tester.element(find.byType(SidebarWakeQueue));
@@ -189,7 +192,8 @@ void main() {
           ),
         ]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     final element = tester.element(find.byType(SidebarWakeQueue));
@@ -219,11 +223,13 @@ void main() {
           ),
         ]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     });
 
     await tester.tap(find.text('Laura'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(captured, '/settings/agents/instances/agent-xyz');
   });
@@ -244,11 +250,13 @@ void main() {
             ),
           ]),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       await tester.tap(find.byIcon(Icons.open_in_new_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(captured, kSidebarWakeQueueListRoute);
     },
@@ -274,14 +282,16 @@ void main() {
             agentService: agentService,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
         find.byTooltip(element.messages.sidebarWakesCancelTooltip),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => agentService.cancelPendingWake('agent-pending')).called(1);
       verifyNever(() => agentService.clearScheduledWake(any()));
@@ -337,8 +347,10 @@ void main() {
         // Two pumps: one for the initial build, one for the title
         // futures to settle and the row to rebuild with the resolved
         // project title.
-        await tester.pumpAndSettle();
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       expect(find.text('Platform refresh'), findsOneWidget);
@@ -384,10 +396,12 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         controller.add('GLaDOS');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.text('GLaDOS'), findsOneWidget);
         expect(find.text('Task Agent'), findsNothing);
       });
@@ -420,14 +434,16 @@ void main() {
             agentService: agentService,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
         find.byTooltip(element.messages.sidebarWakesCancelTooltip),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => agentService.clearScheduledWake('agent-scheduled'),
@@ -473,11 +489,13 @@ void main() {
             ),
           ]),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       await tester.tap(find.text('Laura'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => mockNav.setIndex(6)).called(1);
       verify(
@@ -523,11 +541,13 @@ void main() {
             ),
           ]),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       await tester.tap(find.text('Kit'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verifyNever(() => mockNav.setIndex(any()));
       expect(mockDelegate.beamed, ['/settings/agents/instances/agent-stay']);
@@ -570,11 +590,13 @@ void main() {
             ),
           ]),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       await tester.tap(find.byIcon(Icons.open_in_new_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => mockNav.setIndex(6)).called(1);
       verify(
@@ -608,7 +630,8 @@ void main() {
             agentService: agentService,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
@@ -655,14 +678,16 @@ void main() {
             agentService: agentService,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       await tester.tap(
         find.byTooltip(element.messages.sidebarWakesCancelTooltip),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Spinner has reset even though the cancel future errored.
       expect(find.byType(CircularProgressIndicator), findsNothing);
@@ -696,7 +721,8 @@ void main() {
             agentService: agentService,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
@@ -752,7 +778,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       // Header includes the running wake in the count.
@@ -783,7 +810,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
@@ -822,14 +850,16 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
       final cancelTooltip = element.messages.sidebarWakesCancelTooltip;
 
       await tester.tap(find.byTooltip(cancelTooltip));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => agentService.abortRunningWake('agent-already-stopped'),
@@ -866,7 +896,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       final element = tester.element(find.byType(SidebarWakeQueue));
@@ -926,10 +957,12 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         controller.add('GLaDOS');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.text('GLaDOS'), findsOneWidget);
         expect(find.text('snapshot fallback'), findsNothing);
       });
@@ -971,7 +1004,8 @@ void main() {
               ],
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
         });
       }
 
@@ -1008,11 +1042,13 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       });
 
       await tester.tap(find.text('Live wake'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(captured, '/settings/agents/instances/agent-running');
     },

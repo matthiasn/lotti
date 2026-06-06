@@ -64,7 +64,8 @@ void main() {
   group('InferenceProfileForm', () {
     testWidgets('shows create title when no existing profile', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Create Profile'), findsOneWidget);
     });
@@ -78,7 +79,8 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(existingProfile: profile));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Edit Profile'), findsOneWidget);
     });
@@ -91,7 +93,8 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(existingProfile: profile));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Name should be pre-filled.
       final nameField = find.widgetWithText(TextFormField, 'My Profile');
@@ -107,7 +110,8 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Desktop toggle should be on.
       final switchTile = tester.widget<SwitchListTile>(desktopToggle);
@@ -116,7 +120,8 @@ void main() {
 
     testWidgets('shows all five model slot fields', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Thinking *'), findsOneWidget);
       expect(find.text('Thinking (High-End)'), findsOneWidget);
@@ -127,7 +132,8 @@ void main() {
 
     testWidgets('shows save button in app bar', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Save'), findsOneWidget);
     });
@@ -188,18 +194,21 @@ void main() {
 
     testWidgets('validates name is required', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap save without entering a name.
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('A profile name is required'), findsOneWidget);
     });
 
     testWidgets('shows desktop-only toggle with description', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Scroll down to the desktop toggle (may be off-screen with 5 slots).
       await tester.scrollUntilVisible(
@@ -207,7 +216,8 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Desktop Only'), findsOneWidget);
       expect(
@@ -222,7 +232,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify each model slot label and its placeholder are present.
       // Use scrollUntilVisible since the ListView may not render all at once.
@@ -238,7 +249,8 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.text(label), findsOneWidget);
       }
       // At least the visible slots should show placeholders.
@@ -249,7 +261,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Enter a name to pass validation.
       await tester.enterText(
@@ -259,7 +272,8 @@ void main() {
 
       // Tap save — no thinking model selected.
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.text('A thinking model is required'),
@@ -301,7 +315,8 @@ void main() {
           providers: [provider],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Enter name.
       await tester.enterText(
@@ -311,15 +326,18 @@ void main() {
 
       // Tap the thinking model slot InkWell to open picker.
       await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Select the model.
       await tester.tap(find.text('Flash'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap save.
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the profile was saved.
       expect(fakeProfileController.savedProfiles, hasLength(1));
@@ -341,11 +359,13 @@ void main() {
       await tester.pumpWidget(
         buildSubject(existingProfile: existingProfile),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap save — has name and thinking model from existing profile.
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Error snackbar should appear.
       expect(find.text('Error'), findsOneWidget);
@@ -379,7 +399,8 @@ void main() {
           models: [thinkingModel],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The model name should be shown in the thinking slot.
       expect(find.text('Gemini Pro'), findsOneWidget);
@@ -398,7 +419,8 @@ void main() {
       await tester.pumpWidget(
         buildSubject(existingProfile: profile),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The raw model ID should be displayed as fallback.
       expect(find.text('models/unknown-model'), findsOneWidget);
@@ -431,14 +453,16 @@ void main() {
           models: [thinkingModel],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Initially the model name is shown.
       expect(find.text('Flash'), findsOneWidget);
 
       // Tap the clear button.
       await tester.tap(find.byIcon(Icons.clear));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Model name should be gone, placeholder shown.
       expect(find.text('Flash'), findsNothing);
@@ -448,7 +472,8 @@ void main() {
 
     testWidgets('desktop-only toggle changes value', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final desktopToggle = find.widgetWithText(
         SwitchListTile,
@@ -461,7 +486,8 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Initially off.
       var switchTile = tester.widget<SwitchListTile>(desktopToggle);
@@ -469,7 +495,8 @@ void main() {
 
       // Toggle on.
       await tester.tap(desktopToggle);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       switchTile = tester.widget<SwitchListTile>(desktopToggle);
       expect(switchTile.value, isTrue);
@@ -477,7 +504,8 @@ void main() {
 
     testWidgets('description field is shown and editable', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Description'), findsOneWidget);
 
@@ -485,7 +513,8 @@ void main() {
         find.widgetWithText(TextFormField, 'Description'),
         'A helpful profile',
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('A helpful profile'), findsOneWidget);
     });
@@ -520,12 +549,14 @@ void main() {
       await tester.pumpWidget(
         buildSubject(models: [thinkingModel, otherModel]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Open the thinking model picker by tapping the InkWell wrapping the slot.
       // The first InputDecorator is the thinking slot.
       await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Only the thinking model should appear (filtered by supportsFunctionCalling).
       expect(find.text('Thinking Model'), findsOneWidget);
@@ -560,11 +591,13 @@ void main() {
           providers: [provider],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Open the thinking model picker.
       await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Provider name should appear as part of the subtitle.
       expect(find.textContaining('Google AI'), findsOneWidget);
@@ -599,11 +632,13 @@ void main() {
           models: [thinkingModel],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Open the thinking model picker.
       await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Selected model should show a check icon.
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
@@ -668,7 +703,8 @@ void main() {
 
       Future<void> openThinkingPicker(WidgetTester tester) async {
         await tester.tap(find.byType(InkWell).first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       }
 
       // Scope the TextField finder to the search field inside the
@@ -691,7 +727,8 @@ void main() {
               providers: [googleProvider, anthropicProvider],
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           await openThinkingPicker(tester);
 
           // All three rows visible before any input.
@@ -721,7 +758,8 @@ void main() {
               providers: [googleProvider, anthropicProvider],
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           await openThinkingPicker(tester);
 
           await tester.enterText(searchTextField(), 'Google');
@@ -747,7 +785,8 @@ void main() {
               providers: [googleProvider, anthropicProvider],
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           await openThinkingPicker(tester);
 
           await tester.enterText(searchTextField(), 'zzz-nope');
@@ -771,7 +810,8 @@ void main() {
               providers: [googleProvider, anthropicProvider],
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           await openThinkingPicker(tester);
 
           await tester.enterText(searchTextField(), 'sonnet');
@@ -808,7 +848,8 @@ void main() {
       await tester.pumpWidget(
         buildSubject(models: [thinkingModel]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Enter name.
       await tester.enterText(
@@ -824,13 +865,16 @@ void main() {
 
       // Select thinking model.
       await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Flash'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Save.
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(fakeProfileController.savedProfiles, hasLength(1));
       expect(
@@ -857,7 +901,8 @@ void main() {
       await tester.pumpWidget(
         buildSubject(models: [thinkingModel]),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Enter name.
       await tester.enterText(
@@ -867,9 +912,11 @@ void main() {
 
       // Select thinking model.
       await tester.tap(find.byType(InkWell).first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('Flash'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Scroll down and enable desktop-only toggle.
       final desktopToggle = find.widgetWithText(
@@ -881,10 +928,12 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(desktopToggle);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Scroll back up to Save button.
       await tester.scrollUntilVisible(
@@ -892,11 +941,13 @@ void main() {
         -200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Save.
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(fakeProfileController.savedProfiles, hasLength(1));
       expect(fakeProfileController.savedProfiles.first.desktopOnly, isTrue);
@@ -917,11 +968,13 @@ void main() {
         );
 
         await tester.pumpWidget(buildSubject(existingProfile: profile));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Save without changes.
         await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
         expect(
@@ -936,7 +989,8 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll down to find the skills section.
         await tester.scrollUntilVisible(
@@ -944,7 +998,8 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Automated Skills'), findsOneWidget);
 
@@ -963,7 +1018,8 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll to skill assignments.
         await tester.scrollUntilVisible(
@@ -971,7 +1027,8 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // All SwitchListTiles for skills should be disabled (no model set).
         // Find skill tiles (not the desktop-only toggle).
@@ -1002,7 +1059,8 @@ void main() {
           );
 
           await tester.pumpWidget(buildSubject(existingProfile: profile));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Scroll to skill assignments.
           await tester.scrollUntilVisible(
@@ -1010,7 +1068,8 @@ void main() {
             200,
             scrollable: find.byType(Scrollable).first,
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Transcription skill tiles should be enabled.
           final transcriptionSkills = builtInSkills.where(
@@ -1057,7 +1116,8 @@ void main() {
               models: [thinkingModel],
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Scroll to the first transcription skill.
           final firstTranscriptionSkill = builtInSkills.firstWhere(
@@ -1068,13 +1128,15 @@ void main() {
             200,
             scrollable: find.byType(Scrollable).first,
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Toggle the skill on.
           await tester.tap(
             find.widgetWithText(SwitchListTile, firstTranscriptionSkill.name),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Scroll back to Save.
           await tester.scrollUntilVisible(
@@ -1082,11 +1144,13 @@ void main() {
             -200,
             scrollable: find.byType(Scrollable).first,
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Save.
           await tester.tap(find.text('Save'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(fakeProfileController.savedProfiles, hasLength(1));
           final saved = fakeProfileController.savedProfiles.first;
@@ -1115,7 +1179,8 @@ void main() {
         );
 
         await tester.pumpWidget(buildSubject(existingProfile: profile));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll to skill assignments.
         await tester.scrollUntilVisible(
@@ -1123,7 +1188,8 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The toggle for the transcribe skill should be on.
         final tileFinder = find.widgetWithText(
@@ -1140,11 +1206,13 @@ void main() {
           -200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Save without changes.
         await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
         final saved = fakeProfileController.savedProfiles.first;
@@ -1160,7 +1228,8 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(buildSubject());
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll to skill assignments.
         await tester.scrollUntilVisible(
@@ -1168,7 +1237,8 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should show "Requires Transcription model to be set".
         expect(
@@ -1187,7 +1257,8 @@ void main() {
         );
 
         await tester.pumpWidget(buildSubject(existingProfile: profile));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll to skill assignments.
         await tester.scrollUntilVisible(
@@ -1195,7 +1266,8 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should show "Uses Transcription model".
         expect(
@@ -1248,7 +1320,8 @@ void main() {
           models: [thinkingModel, proModel],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The regular thinking model should be shown.
       expect(find.text('Flash'), findsOneWidget);
@@ -1259,7 +1332,8 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Gemini Pro'), findsOneWidget);
     });
 
@@ -1303,7 +1377,8 @@ void main() {
           models: [thinkingModel, proModel],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Scroll to the high-end slot and select a model.
       await tester.scrollUntilVisible(
@@ -1311,7 +1386,8 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the high-end thinking slot (second InkWell).
       final highEndSlot = find.ancestor(
@@ -1319,11 +1395,13 @@ void main() {
         matching: find.byType(InkWell),
       );
       await tester.tap(highEndSlot.first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Select Gemini Pro.
       await tester.tap(find.text('Gemini Pro'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Scroll back to Save.
       await tester.scrollUntilVisible(
@@ -1331,11 +1409,13 @@ void main() {
         -200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Save.
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(fakeProfileController.savedProfiles, hasLength(1));
       final saved = fakeProfileController.savedProfiles.first;
@@ -1351,11 +1431,13 @@ void main() {
       await tester.pumpWidget(
         buildSubject(existingProfile: existingProfile),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap save — has name and thinking model from existing profile.
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the saved profile kept the original ID.
       expect(fakeProfileController.savedProfiles, hasLength(1));
@@ -1432,7 +1514,8 @@ void main() {
             models: [thinkingModel, imageRecognitionModel],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll to the Image Recognition slot.
         await tester.scrollUntilVisible(
@@ -1440,7 +1523,8 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Open the image recognition picker.
         final irSlot = find.ancestor(
@@ -1449,11 +1533,13 @@ void main() {
         );
         await tester.ensureVisible(irSlot.first);
         await tester.tap(irSlot.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Select the vision model.
         await tester.tap(find.text('Vision Model'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll back to save.
         await tester.scrollUntilVisible(
@@ -1461,10 +1547,12 @@ void main() {
           -200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
         expect(
@@ -1488,7 +1576,8 @@ void main() {
             models: [thinkingModel, transcriptionModel],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll to the Transcription slot.
         await tester.scrollUntilVisible(
@@ -1496,7 +1585,8 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Open the transcription picker.
         final trSlot = find.ancestor(
@@ -1505,11 +1595,13 @@ void main() {
         );
         await tester.ensureVisible(trSlot.first);
         await tester.tap(trSlot.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Select the whisper model.
         await tester.tap(find.text('Whisper'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll back to save.
         await tester.scrollUntilVisible(
@@ -1517,10 +1609,12 @@ void main() {
           -200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
         expect(
@@ -1544,7 +1638,8 @@ void main() {
             models: [thinkingModel, imageGenerationModel],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll to the Image Generation slot.
         await tester.scrollUntilVisible(
@@ -1552,7 +1647,8 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Open the image generation picker.
         final igSlot = find.ancestor(
@@ -1561,11 +1657,13 @@ void main() {
         );
         await tester.ensureVisible(igSlot.first);
         await tester.tap(igSlot.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Select the imagen model.
         await tester.tap(find.text('Imagen'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll back to save.
         await tester.scrollUntilVisible(
@@ -1573,10 +1671,12 @@ void main() {
           -200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
         expect(
@@ -1611,7 +1711,8 @@ void main() {
           knownNodes: [knownNode],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Scroll to the pinning dropdown.
       await tester.scrollUntilVisible(
@@ -1619,14 +1720,17 @@ void main() {
         200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Open the dropdown and pick Device X.
       await tester.tap(find.text('Not pinned (no auto-trigger)'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Device X').last);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Scroll to save button.
       await tester.scrollUntilVisible(
@@ -1634,10 +1738,12 @@ void main() {
         -200,
         scrollable: find.byType(Scrollable).first,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Save'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(fakeProfileController.savedProfiles, hasLength(1));
       expect(
@@ -1685,11 +1791,13 @@ void main() {
             models: [thinkingModel],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Save without changes.
         await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
         final saved = fakeProfileController.savedProfiles.first;
@@ -1726,10 +1834,12 @@ void main() {
             models: [thinkingModel],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
         final saved = fakeProfileController.savedProfiles.first;
@@ -1783,7 +1893,8 @@ void main() {
             models: [thinkingModel],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll to skill assignments.
         await tester.scrollUntilVisible(
@@ -1791,7 +1902,8 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Verify the toggle is currently ON.
         final tileFinder = find.widgetWithText(
@@ -1803,7 +1915,8 @@ void main() {
 
         // Toggle it OFF.
         await tester.tap(tileFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         tile = tester.widget<SwitchListTile>(tileFinder);
         expect(tile.value, isFalse);
@@ -1814,10 +1927,12 @@ void main() {
           -200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
         final saved = fakeProfileController.savedProfiles.first;
@@ -1860,7 +1975,8 @@ void main() {
             models: [thinkingModel],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll to the skills section.
         await tester.scrollUntilVisible(
@@ -1868,7 +1984,8 @@ void main() {
           200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Find the "Transcribe (Task Context)" tile and toggle it ON.
         // That skill is the same SkillType.transcription, so the first
@@ -1879,7 +1996,8 @@ void main() {
         );
         await tester.ensureVisible(contextTileFinder);
         await tester.tap(contextTileFinder);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll to save.
         await tester.scrollUntilVisible(
@@ -1887,10 +2005,12 @@ void main() {
           -200,
           scrollable: find.byType(Scrollable).first,
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Save'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
         final saved = fakeProfileController.savedProfiles.first;
@@ -1959,7 +2079,8 @@ void main() {
         // Resolve the future so pending-timer guards don't trip on
         // teardown.
         completer.complete(null);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       },
     );
 
@@ -1973,7 +2094,8 @@ void main() {
             resolveConfig: () async => null,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.text('Profile not found'), findsOneWidget);
       },
     );
@@ -1999,7 +2121,8 @@ void main() {
             resolveConfig: () async => wrongType,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.text('Profile not found'), findsOneWidget);
       },
     );
@@ -2041,7 +2164,8 @@ void main() {
             resolveConfig: () async => profile,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.byType(InferenceProfileForm), findsOneWidget);
         expect(find.text('Edit Profile'), findsOneWidget);
       },
