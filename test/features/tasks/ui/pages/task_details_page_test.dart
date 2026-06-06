@@ -17,7 +17,6 @@ import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
-import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
@@ -36,28 +35,12 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../../../../helpers/path_provider.dart';
+import '../../../../helpers/stub_audio_recorder_controller.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/change_set_factories.dart';
 import '../../../agents/test_data/entity_factories.dart';
-
-/// Stand-in audio recorder controller so widget tests pumping the task
-/// details page (which now hosts [TaskActionBar], which watches
-/// [audioRecorderControllerProvider]) don't try to boot the real
-/// recorder repository — that depends on platform plugins not present
-/// in the test runtime.
-class _StubAudioRecorderController extends AudioRecorderController {
-  @override
-  AudioRecorderState build() => AudioRecorderState(
-    status: AudioRecorderStatus.stopped,
-    progress: Duration.zero,
-    vu: -20,
-    dBFS: -160,
-    showIndicator: false,
-    modalVisible: false,
-  );
-}
 
 /// Minimal [DropItem] implementation for widget tests that invoke
 /// the [DropTarget.onDragDone] callback directly.
@@ -78,7 +61,7 @@ class _FakeDropItem extends Fake implements DropItem {
 
 List<Override> _taskDetailsPageOverrides() => [
   audioRecorderControllerProvider.overrideWith(
-    _StubAudioRecorderController.new,
+    StubAudioRecorderController.new,
   ),
 ];
 
@@ -228,7 +211,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
 
       // test task displays progress bar (now in Labels row)
       final progressBarFinder = find.byType(LinearProgressIndicator);
@@ -281,7 +266,8 @@ void main() {
             overrides: _taskDetailsPageOverrides(),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The nested messenger is mounted inside the TaskDetailsPage
         // subtree, so a context resolving via ScaffoldMessenger.of from
@@ -426,7 +412,9 @@ void main() {
             entryId: testTextEntry.meta.id,
           );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
       for (
         var i = 0;
         i < 20 &&
@@ -472,7 +460,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+
+      await tester.pump(const Duration(milliseconds: 300));
       for (
         var i = 0;
         i < 20 &&
@@ -504,6 +494,8 @@ void main() {
           ],
         ),
       );
+      // Full settle: the page-load chain (async providers + entrance
+      // animations) must finish before the focus intent is published.
       await tester.pumpAndSettle();
 
       expect(find.text('Set estimate to 30 minutes'), findsOneWidget);
@@ -823,7 +815,9 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await tester.pump();
+
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byType(EmptyScaffoldWithTitle), findsOneWidget);
           expect(find.byType(TaskActionBar), findsNothing);
@@ -940,7 +934,9 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Locate the DropTarget that wraps the task detail body.
         final dropTargetFinder = find.descendant(
@@ -983,7 +979,9 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+
+        await tester.pump(const Duration(milliseconds: 300));
 
         final dropTargetFinder = find.descendant(
           of: find.byType(TaskDetailsPage),
@@ -1136,6 +1134,8 @@ void main() {
         );
 
         // Allow the full tree (including suggestions section) to settle.
+        // Full settle: the page-load chain (async providers + entrance
+        // animations) must finish before the focus intent is published.
         await tester.pumpAndSettle();
 
         // Confirm suggestions section is rendered.

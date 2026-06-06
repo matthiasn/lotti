@@ -11,7 +11,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/ui/settings/services/ai_setup_prompt_service.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
-import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -26,6 +25,7 @@ import 'package:matrix/encryption.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../helpers/stub_audio_recorder_controller.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
 import '../widget_test_utils.dart';
@@ -36,18 +36,6 @@ class _MockUserActivityService extends Mock implements UserActivityService {}
 class _MockAiSetupPromptService extends AiSetupPromptService {
   @override
   Future<bool> build() async => false;
-}
-
-class _TestAudioRecorderController extends AudioRecorderController {
-  @override
-  AudioRecorderState build() => AudioRecorderState(
-    status: AudioRecorderStatus.stopped,
-    progress: Duration.zero,
-    vu: -20,
-    dBFS: -160,
-    showIndicator: false,
-    modalVisible: false,
-  );
 }
 
 // Simple test location for wrapping AppScreen
@@ -187,7 +175,7 @@ Widget _buildTestRouterApp({
   return ProviderScope(
     overrides: [
       audioRecorderControllerProvider.overrideWith(
-        _TestAudioRecorderController.new,
+        StubAudioRecorderController.new,
       ),
       ...overrides,
     ],

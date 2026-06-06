@@ -196,18 +196,68 @@ void main() {
     );
   }
 
+  testWidgets(
+    'FAB invokes onCreateTaskPressed with the single selected category',
+    (tester) async {
+      String? receivedCategoryId;
+      var calls = 0;
+      await tester.pumpWidget(
+        buildSubject(
+          state: state(),
+          onCreateTaskPressed: (ref, categoryId) async {
+            calls++;
+            receivedCategoryId = categoryId;
+          },
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.byType(DesignSystemFloatingActionButton));
+      await tester.pump();
+
+      expect(calls, 1);
+      // Exactly one selected category — it threads through to the callback.
+      expect(receivedCategoryId, 'cat-1');
+    },
+  );
+
+  testWidgets(
+    'FAB passes a null category when several categories are selected',
+    (tester) async {
+      String? receivedCategoryId = 'sentinel';
+      await tester.pumpWidget(
+        buildSubject(
+          state: state(selectedCategoryIds: const {'cat-1', 'cat-2'}),
+          onCreateTaskPressed: (ref, categoryId) async {
+            receivedCategoryId = categoryId;
+          },
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.byType(DesignSystemFloatingActionButton));
+      await tester.pump();
+
+      expect(receivedCategoryId, isNull);
+    },
+  );
+
   testWidgets('search updates, filter modal opens, and row taps navigate', (
     tester,
   ) async {
     await tester.pumpWidget(buildSubject(state: state()));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.enterText(find.byType(TextField), 'agentic');
     await tester.pump();
     expect(fakeController.searchStringCalls, contains('agentic'));
 
     await tester.tap(find.byIcon(Icons.filter_list_rounded));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.text('Tasks Filter'), findsOneWidget);
 
     final rowTapTarget = find.ancestor(
@@ -242,7 +292,8 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(state: state()));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Write migration'), findsOneWidget);
       expect(find.text('Validate grouping'), findsOneWidget);
@@ -277,7 +328,8 @@ void main() {
           },
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.textContaining('Active label filters'), findsOneWidget);
       // "Focus" label appears both in the active-filters chip row above the
@@ -318,7 +370,8 @@ void main() {
         mediaQueryData: const MediaQueryData(size: Size(400, 844)),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Header should still render at compact width
     expect(find.text('Tasks'), findsOneWidget);
@@ -346,10 +399,12 @@ void main() {
         // Do NOT provide onCreateTaskPressed — exercises default path
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     await tester.tap(find.byIcon(Icons.add_rounded));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     verify(
       () => mockNavService.beamToNamed('/tasks/new-task', data: null),
@@ -364,7 +419,8 @@ void main() {
         state: state(),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(DesignSystemBottomNavigationFabPadding), findsOneWidget);
     expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
@@ -390,7 +446,8 @@ void main() {
         mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // The selected task row should receive the selectedTaskId prop,
     // which triggers visual highlighting in desktop mode.
@@ -418,7 +475,8 @@ void main() {
         mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Change selected task and verify the notifier drives a rebuild
     selectedNotifier.value = 'task-2';
@@ -434,7 +492,8 @@ void main() {
     'so the list is swapped atomically without a visible blank flash',
     (tester) async {
       await tester.pumpWidget(buildSubject(state: state()));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Trigger pull-to-refresh by dragging the scroll view down enough
       // for RefreshIndicator to fire.
@@ -443,7 +502,8 @@ void main() {
         const Offset(0, 300),
         1000,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(fakeController.refreshQueryCalled, greaterThanOrEqualTo(1));
       expect(
@@ -461,7 +521,8 @@ void main() {
     'only drags the list below it',
     (tester) async {
       await tester.pumpWidget(buildSubject(state: state()));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final headerFinder = find.byType(TabSectionHeader);
       final refreshFinder = find.byType(RefreshIndicator);
@@ -497,7 +558,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(ActiveFilterChip), findsNothing);
       },
@@ -515,7 +577,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The only ActiveFilterChip rendered is the OPEN status chip.
         expect(find.byType(ActiveFilterChip), findsOneWidget);
@@ -547,7 +610,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Category chip uses the category's name from EntitiesCacheService.
         expect(find.byType(ActiveFilterChip), findsOneWidget);
@@ -580,7 +644,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(ActiveFilterChip), findsOneWidget);
         final chip = tester.widget<ActiveFilterChip>(
@@ -613,7 +678,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Exactly one ActiveFilterChip for the label (the TaskLabelQuickFilter
         // below the chip row renders its own non-ActiveFilterChip control).
@@ -644,7 +710,8 @@ void main() {
             ),
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // 2 statuses + 2 priorities + 1 category + 1 label = 6 chips.
         expect(find.byType(ActiveFilterChip), findsNWidgets(6));
@@ -685,7 +752,8 @@ void main() {
           seed: const [],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.textContaining('· '), findsNothing);
     });
@@ -705,7 +773,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('· In progress · P0'), findsOneWidget);
       },
@@ -723,7 +792,8 @@ void main() {
             seed: const [],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.textContaining('· '), findsNothing);
       },
@@ -740,7 +810,8 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(state: state()));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('No tasks match your search.'), findsOneWidget);
     },
@@ -750,7 +821,8 @@ void main() {
     'clear and submit on the search header route through setSearchString',
     (tester) async {
       await tester.pumpWidget(buildSubject(state: state()));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Pull the wired callbacks straight off the header to avoid
       // flakiness from the search bar's internal show-clear-when-non-empty
@@ -779,7 +851,8 @@ void main() {
       );
 
       await tester.pumpWidget(buildSubject(state: stateWithDistances));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Layout-time success here means itemBuilder ran and the
       // showDistances branch was taken without throwing — the same
@@ -811,7 +884,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(ActiveFilterChip), findsOneWidget);
       final chip = tester.widget<ActiveFilterChip>(
@@ -843,7 +917,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(ActiveFilterChip), findsOneWidget);
       final chip = tester.widget<ActiveFilterChip>(
@@ -864,7 +939,8 @@ void main() {
       // builders against a live BuildContext, then inspect the returned
       // widget tree to confirm both wire a Padding > Center > spinner.
       await tester.pumpWidget(buildSubject(state: state()));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final pagedList = tester.widget<PagedSliverList<int, JournalEntity>>(
         find.byType(PagedSliverList<int, JournalEntity>),
