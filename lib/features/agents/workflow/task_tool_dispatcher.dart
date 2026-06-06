@@ -178,6 +178,9 @@ class TaskToolDispatcher {
       case TaskAgentToolNames.requestAttention:
         return _handleRequestAttention(taskEntity, args);
 
+      case TaskAgentToolNames.resolveAttentionRequest:
+        return _handleResolveAttentionRequest(taskEntity, args);
+
       default:
         return ToolExecutionResult(
           success: false,
@@ -631,5 +634,28 @@ class TaskToolDispatcher {
       requestingAgentId: agentId,
     );
     return handler.handle(task, args);
+  }
+
+  Future<ToolExecutionResult> _handleResolveAttentionRequest(
+    Task task,
+    Map<String, dynamic> args,
+  ) async {
+    final repository = agentRepository;
+    final sync = syncService;
+    final agentId = requestingAgentId;
+    if (repository == null || sync == null || agentId == null) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: resolve_attention_request is not configured.',
+        errorMessage: 'resolve_attention_request is not configured',
+      );
+    }
+
+    final handler = AttentionRequestHandler(
+      agentRepository: repository,
+      syncService: sync,
+      requestingAgentId: agentId,
+    );
+    return handler.resolve(task, args);
   }
 }

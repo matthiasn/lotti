@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1016]
+### Added
+- Task agents now maintain their own day-planning attention requests during
+  normal wakes, resolving stale requests when tasks are done or no longer need
+  scheduled time.
+
 ## [0.9.1015]
 ### Added
 - The linked entries "Filter & Sort" modal now has a "Show flagged entries

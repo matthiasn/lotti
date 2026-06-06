@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -3787,11 +3788,86 @@ void main() {
           message,
           contains('amount, impact, urgency, energy fit, scope'),
         );
+        expect(message, contains('resolve_attention_request'));
         expect(message, contains('"id": "attn-1"'));
+        expect(message, contains('"agentId": "$agentId"'));
+        expect(message, contains('"ownedByThisAgent": true'));
         expect(message, contains('"requestedMinutes": 90'));
         expect(message, contains('"energyFit": "high"'));
         expect(message, contains('"scopeKind": "dateRange"'));
         expect(message, contains('"deadline": "2026-05-26T12:00:00.000Z"'));
+      });
+
+      test('satisfies own active attention requests for done tasks', () async {
+        final now = DateTime(2026, 5, 26, 8);
+        final claim =
+            AgentDomainEntity.attentionRequest(
+                  id: 'attn-done',
+                  agentId: agentId,
+                  kind: AttentionRequestKind.task,
+                  title: 'Finish tax packet',
+                  categoryId: 'work',
+                  requestedMinutes: 90,
+                  impact: 5,
+                  urgency: 4,
+                  energyFit: AttentionEnergyFit.high,
+                  evidenceRefs: const [
+                    AttentionEvidenceRef(
+                      kind: AttentionEvidenceKind.task,
+                      id: 'task-9',
+                      label: 'Tax packet',
+                    ),
+                  ],
+                  targetId: taskId,
+                  targetKind: 'task',
+                  rationale: 'Due soon and still needs a focused block.',
+                  createdAt: DateTime.utc(2026, 5, 24, 8),
+                  vectorClock: null,
+                )
+                as AttentionRequestEntity;
+        final upserts = <AgentDomainEntity>[];
+        when(() => mockSyncService.upsertEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          upserts.add(
+            invocation.positionalArguments.single as AgentDomainEntity,
+          );
+        });
+        when(() => mockJournalDb.journalEntityById(taskId)).thenAnswer(
+          (_) async => Task(
+            data: TaskData(
+              status: TaskStatus.done(
+                id: 'status-done',
+                createdAt: now,
+                utcOffset: 0,
+              ),
+              title: 'Tax packet',
+              statusHistory: const [],
+              dateTo: now,
+              dateFrom: now,
+            ),
+            meta: Metadata(
+              id: taskId,
+              createdAt: now,
+              dateFrom: now,
+              dateTo: now,
+              updatedAt: now,
+              categoryId: 'work',
+            ),
+          ),
+        );
+
+        await withClock(Clock.fixed(now), () {
+          return executeAndCaptureMessage(attentionClaims: [claim]);
+        });
+
+        final dispositions = upserts
+            .whereType<AttentionClaimDispositionEntity>()
+            .toList(growable: false);
+        expect(dispositions, hasLength(1));
+        expect(dispositions.single.requestId, 'attn-done');
+        expect(dispositions.single.status, AttentionClaimStatus.satisfied);
+        expect(dispositions.single.createdAt, now);
       });
 
       test('absorbs a failure loading attention requests', () async {
@@ -3943,7 +4019,8 @@ void main() {
 
             const guardHeader = '## Open Proposal Guard';
             const finalInstruction =
-                'Analyze the current state and call tools if needed.';
+                'Analyze the current state, maintain any attention requests, '
+                'and call tools if needed.';
             final guardIndex = message!.indexOf(guardHeader);
             final finalInstructionIndex = message.indexOf(finalInstruction);
             expect(guardIndex, greaterThanOrEqualTo(0));

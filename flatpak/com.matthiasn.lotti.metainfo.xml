@@ -32,6 +32,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="0.9.1016" date="2026-06-06">
+      <description>
+          <p>Task agents now maintain their own day-planning attention requests during normal wakes, resolving stale requests when tasks are done or no longer need scheduled time.</p>
+      </description>
+    </release>
     <release version="0.9.1015" date="2026-06-04">
       <description>
           <p>The linked entries "Filter and Sort" modal now has a "Show flagged entries only" toggle that narrows the list below a task to flagged entries, updating immediately when the toggle or an entry's flag changes.</p>

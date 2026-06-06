@@ -251,6 +251,9 @@ Runtime behavior:
   agent must not wake task/project/health agents during drafting to manufacture
   fresh claims; producer agents maintain claims ahead of time during their own
   wake lifecycle, and drafting reads only the already-materialized projection.
+  Task-agent wakes now resolve their own stale claims when terminal task state
+  makes the request obsolete, and can use `resolve_attention_request` for
+  LLM-mediated claim maintenance.
 - Wakes consume any `scheduledWakeAt` timestamp that is no longer in the future
   so app restart does not replay an already-fired scheduled wake.
 - Future Daily OS Next commit, agenda, and shutdown tools should be added
