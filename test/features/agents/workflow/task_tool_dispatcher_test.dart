@@ -880,6 +880,182 @@ void main() {
             expect(captured.last, isA<AttentionRequestEntity>());
           },
         );
+
+        test('rejects invalid required fields without writing', () async {
+          final cases = <Map<String, dynamic>, String>{
+            {...args, 'impact': 'high'}: '"impact" must be an integer.',
+            {...args, 'impact': 9}: '"impact" must be between 1 and 5.',
+            {...args, 'requestedMinutes': 0}:
+                '"requestedMinutes" must be between 1 and 1440.',
+            ({...args}..remove('energyFit')): '"energyFit" is required.',
+            {...args, 'energyFit': ''}:
+                '"energyFit" must be a non-empty string.',
+            {...args, 'energyFit': 'turbo'}: '"energyFit" must be one of',
+            ({...args}..remove('rationale')): '"rationale" is required.',
+          };
+
+          for (final entry in cases.entries) {
+            final result = await withClock(Clock.fixed(now), () {
+              return localDispatcher.dispatch(
+                TaskAgentToolNames.requestAttention,
+                entry.key,
+                taskId,
+              );
+            });
+            expect(result.success, isFalse, reason: entry.value);
+            expect(result.output, contains(entry.value), reason: entry.value);
+            expect(result.errorMessage, isNotNull, reason: entry.value);
+          }
+          verifyNever(() => localSyncService.upsertEntity(any()));
+        });
+
+        test('rejects malformed optional date/time arguments', () async {
+          final cases = <Map<String, dynamic>, String>{
+            {...args, 'earliestStart': 5}:
+                '"earliestStart" must be an ISO-8601 string.',
+            {...args, 'deadline': 'not-a-date'}:
+                '"deadline" must be a valid ISO-8601 date/time.',
+          };
+
+          for (final entry in cases.entries) {
+            final result = await withClock(Clock.fixed(now), () {
+              return localDispatcher.dispatch(
+                TaskAgentToolNames.requestAttention,
+                entry.key,
+                taskId,
+              );
+            });
+            expect(result.success, isFalse, reason: entry.value);
+            expect(result.output, contains(entry.value), reason: entry.value);
+          }
+          verifyNever(() => localSyncService.upsertEntity(any()));
+        });
+
+        test('rejects latestEnd after the deadline', () async {
+          final result = await withClock(Clock.fixed(now), () {
+            return localDispatcher.dispatch(
+              TaskAgentToolNames.requestAttention,
+              {
+                ...args,
+                'latestEnd': '2026-05-30T17:00:00.000',
+                'deadline': '2026-05-29T12:00:00.000',
+              },
+              taskId,
+            );
+          });
+
+          expect(result.success, isFalse);
+          expect(
+            result.output,
+            contains('latestEnd cannot be after the deadline.'),
+          );
+          verifyNever(() => localSyncService.upsertEntity(any()));
+        });
+
+        test('rejects an unknown scopeKind', () async {
+          final result = await withClock(Clock.fixed(now), () {
+            return localDispatcher.dispatch(
+              TaskAgentToolNames.requestAttention,
+              {...args, 'scopeKind': 'galaxy'},
+              taskId,
+            );
+          });
+
+          expect(result.success, isFalse);
+          expect(result.output, contains('"scopeKind" must be one of'));
+          verifyNever(() => localSyncService.upsertEntity(any()));
+        });
+
+        test('derives the title from the task when none is supplied', () async {
+          final result = await withClock(Clock.fixed(now), () {
+            return localDispatcher.dispatch(
+              TaskAgentToolNames.requestAttention,
+              ({...args}..remove('title')),
+              taskId,
+            );
+          });
+
+          expect(result.success, isTrue);
+          final request =
+              verify(
+                    () => localSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AttentionRequestEntity;
+          expect(request.title, 'Schedule: Test Task');
+        });
+
+        test('falls back to a generic title for a blank task title', () async {
+          when(
+            () => localJournalDb.journalEntityById(taskId),
+          ).thenAnswer(
+            (_) async => _makeTestTask(taskId, title: '', categoryId: 'work'),
+          );
+
+          final result = await withClock(Clock.fixed(now), () {
+            return localDispatcher.dispatch(
+              TaskAgentToolNames.requestAttention,
+              ({...args}..remove('title')),
+              taskId,
+            );
+          });
+
+          expect(result.success, isTrue);
+          final request =
+              verify(
+                    () => localSyncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as AttentionRequestEntity;
+          expect(request.title, 'Schedule task work');
+        });
+
+        test(
+          'collapses pre-existing duplicate equivalent claims to one',
+          () async {
+            when(
+              () => localAgentRepository.getAttentionClaimsForTarget(
+                targetKind: 'task',
+                targetId: taskId,
+              ),
+            ).thenAnswer(
+              (_) async => [
+                _makeAttentionRequest(
+                  id: 'attention-canonical',
+                  agentId: requesterAgentId,
+                  taskId: taskId,
+                  categoryId: 'work',
+                ),
+                _makeAttentionRequest(
+                  id: 'attention-duplicate',
+                  agentId: requesterAgentId,
+                  taskId: taskId,
+                  categoryId: 'work',
+                ),
+              ],
+            );
+
+            final result = await withClock(Clock.fixed(now), () {
+              return localDispatcher.dispatch(
+                TaskAgentToolNames.requestAttention,
+                args,
+                taskId,
+              );
+            });
+
+            // The first match is kept; the duplicate is superseded, and no
+            // fresh request is written.
+            expect(result.success, isTrue);
+            expect(result.output, contains('attention-canonical'));
+
+            final captured = verify(
+              () => localSyncService.upsertEntity(captureAny()),
+            ).captured.cast<AgentDomainEntity>().toList();
+            expect(captured, hasLength(1));
+            final disposition =
+                captured.single as AttentionClaimDispositionEntity;
+            expect(disposition.requestId, 'attention-duplicate');
+            expect(disposition.status, AttentionClaimStatus.superseded);
+          },
+        );
       });
     });
 

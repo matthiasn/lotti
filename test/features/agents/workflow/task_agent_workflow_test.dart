@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
@@ -2780,6 +2781,8 @@ void main() {
         String linkedTasksJson = '{}',
         Set<String> triggerTokens = const {},
         bool throwOnLinkedContextBuild = false,
+        List<AttentionRequestEntity> attentionClaims = const [],
+        bool throwOnAttentionLoad = false,
       }) async {
         List<AiLinkedTaskContext> parseLinkedTasks(dynamic rawRows) {
           if (rawRows is! List) return const <AiLinkedTaskContext>[];
@@ -2841,6 +2844,23 @@ void main() {
         when(
           () => mockAiInputRepository.buildLinkedToContext(taskId),
         ).thenAnswer((_) async => linkedTo);
+        if (throwOnAttentionLoad) {
+          when(
+            () => mockAgentRepository.getAttentionClaimsForTarget(
+              targetKind: any(named: 'targetKind'),
+              targetId: any(named: 'targetId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenThrow(Exception('attention load failed'));
+        } else {
+          when(
+            () => mockAgentRepository.getAttentionClaimsForTarget(
+              targetKind: any(named: 'targetKind'),
+              targetId: any(named: 'targetId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => attentionClaims);
+        }
         when(
           () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
         ).thenAnswer((_) async => [geminiModel]);
@@ -3695,6 +3715,69 @@ void main() {
           expect(message, contains('(no content)'));
         },
       );
+
+      test('renders active attention requests into the user message', () async {
+        final claim =
+            AgentDomainEntity.attentionRequest(
+                  id: 'attn-1',
+                  agentId: agentId,
+                  kind: AttentionRequestKind.task,
+                  title: 'Finish tax packet',
+                  categoryId: 'work',
+                  requestedMinutes: 90,
+                  impact: 5,
+                  urgency: 4,
+                  energyFit: AttentionEnergyFit.high,
+                  evidenceRefs: const [
+                    AttentionEvidenceRef(
+                      kind: AttentionEvidenceKind.task,
+                      id: 'task-9',
+                      label: 'Tax packet',
+                    ),
+                  ],
+                  scopeKind: AttentionClaimScopeKind.dateRange,
+                  earliestStart: DateTime.utc(2026, 5, 25, 9),
+                  latestEnd: DateTime.utc(2026, 5, 25, 17),
+                  deadline: DateTime.utc(2026, 5, 26, 12),
+                  targetId: taskId,
+                  targetKind: 'task',
+                  rationale: 'Due soon and still needs a focused block.',
+                  createdAt: DateTime.utc(2026, 5, 24, 8),
+                  vectorClock: null,
+                )
+                as AttentionRequestEntity;
+
+        final message = await executeAndCaptureMessage(
+          attentionClaims: [claim],
+        );
+
+        expect(message, isNotNull);
+        expect(message, contains('## Attention Requests For This Task'));
+        // Guidance lists every field the dedup handler matches on.
+        expect(
+          message,
+          contains('amount, impact, urgency, energy fit, scope'),
+        );
+        expect(message, contains('"id": "attn-1"'));
+        expect(message, contains('"requestedMinutes": 90'));
+        expect(message, contains('"energyFit": "high"'));
+        expect(message, contains('"scopeKind": "dateRange"'));
+        expect(message, contains('"deadline": "2026-05-26T12:00:00.000Z"'));
+      });
+
+      test('absorbs a failure loading attention requests', () async {
+        final message = await executeAndCaptureMessage(
+          throwOnAttentionLoad: true,
+        );
+
+        // The wake still produces a prompt, just without the attention
+        // section — the load failure is swallowed.
+        expect(message, isNotNull);
+        expect(
+          message,
+          isNot(contains('## Attention Requests For This Task')),
+        );
+      });
 
       group('proposal ledger', () {
         LedgerEntry openEntry({
