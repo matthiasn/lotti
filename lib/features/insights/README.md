@@ -144,9 +144,9 @@ on tap.
 - `test/database/insights_performance_test.dart` — 10k-entry benchmark for
   the cold fetch and the in-memory preset-switch budget.
 - `test/features/insights/ui/time_analysis_screenshots_test.dart` — renders
-  ten scenarios at desktop size with real fonts into
-  `screenshots/insights/` (gitignored) for design review; assertions guard
-  rendering, the PNGs feed critique rounds.
+  ten scenarios at desktop size with real fonts for design review
+  (opt-in: `LOTTI_SCREENSHOT_DIR=<dir> fvm flutter test …` — the font
+  loading leaks process-wide, so it never runs in normal suites).
 
 ## Future work (deliberately out of v1)
 

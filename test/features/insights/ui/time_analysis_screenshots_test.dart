@@ -6,7 +6,9 @@
 /// test — there are no stored baselines; the assertions only guard that
 /// each scenario renders without exceptions.
 ///
-/// Run: `fvm flutter test test/features/insights/ui/time_analysis_screenshots_test.dart`
+/// Opt-in (real-font loading leaks process-wide — see `main`). Run:
+/// `LOTTI_SCREENSHOT_DIR=/tmp/insights fvm flutter test \
+///   test/features/insights/ui/time_analysis_screenshots_test.dart`
 library;
 
 import 'dart:io';
@@ -145,6 +147,28 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  // OPT-IN ONLY. The harness loads real fonts via FontLoader, which
+  // registers them process-wide with no way to unload. Under very_good's
+  // single-isolate test optimizer that changes text metrics for every
+  // unrelated test that happens to run afterwards (intrinsic widths
+  // shrink from blocky-test-font to real-font sizes), breaking
+  // layout-measuring assertions in other features. So the harness only
+  // runs when explicitly requested for design review.
+  final captureEnabled =
+      Platform.environment['LOTTI_CAPTURE_SCREENSHOTS'] == 'true' ||
+      Platform.environment.containsKey('LOTTI_SCREENSHOT_DIR');
+  if (!captureEnabled) {
+    test(
+      'screenshot harness (opt-in)',
+      () {},
+      skip:
+          'Design-review screenshots are opt-in: run with '
+          'LOTTI_SCREENSHOT_DIR=<dir> (or LOTTI_CAPTURE_SCREENSHOTS=true) '
+          'because the real-font loading leaks process-wide.',
+    );
+    return;
+  }
+
   setUpAll(() async {
     // Widget tests render the blocky FlutterTest font unless the bundled
     // families are loaded explicitly — the screenshots are for design

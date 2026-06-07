@@ -408,7 +408,11 @@ If tests work with real time but fail with fake time:
 
 Widget tests can produce real-looking PNGs for design review — see
 `test/features/insights/ui/time_analysis_screenshots_test.dart` for the
-canonical harness. The three ingredients:
+canonical harness. **Such harnesses must be opt-in** (env-gated, e.g.
+`LOTTI_SCREENSHOT_DIR`): `FontLoader` registers fonts process-wide with no
+unload, and under very_good's single-isolate optimizer that silently
+changes text metrics — and therefore intrinsic widths — for every test
+that runs afterwards. The three ingredients:
 
 1. **Real fonts.** Tests render the blocky FlutterTest font by default.
    Load the bundled families with `FontLoader` in `setUpAll`, reading the

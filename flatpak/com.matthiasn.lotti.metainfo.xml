@@ -32,10 +32,14 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
-    <release version="0.9.1016" date="2026-06-06">
+    <release version="0.9.1017" date="2026-06-07">
       <description>
           <p>New desktop "Time Analysis" dashboard under Daily OS, opened from a sidebar entry beneath the month calendar onto the full screen: see where your time went per category and per day, with quick range presets (1d, 7d, 30d, MTD, YTD, last month), a custom date range, a daily/cumulative chart toggle, headline totals, optional focus categories, and a precise per-category table. Range switching is instantaneous even with years of entries, and private entries stay hidden unless the private flag is on.</p>
           <p>Time tracked on entries created before mid-2024 could show up as "Uncategorized" in time-by-category views; the category data is now backfilled once on upgrade.</p>
+      </description>
+    </release>
+    <release version="0.9.1016" date="2026-06-06">
+      <description>
           <p>Categories: a new opt-in "Day planning" switch controls which categories are available for selection in the day plan — nothing is available by default.</p>
           <p>Projects: a new "Monitoring" status for projects that are not closed but have no time actively scheduled.</p>
           <p>Task agents now maintain their own day-planning attention requests during normal wakes, resolving stale requests when tasks are done or no longer need scheduled time.</p>

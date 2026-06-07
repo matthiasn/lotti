@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.1016]
+## [0.9.1017]
 ### Added
 - New desktop "Time Analysis" dashboard under Daily OS, opened from a
   sidebar entry beneath the month calendar onto the full screen: see where
@@ -15,6 +15,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   categories" split the headline into focus vs. other time. Range
   switching is instantaneous even with years of entries, and private
   entries stay hidden unless the private flag is on.
+
+### Fixed
+- Time tracked on entries created before mid-2024 could show up as
+  "Uncategorized" in time-by-category views (including the Daily OS time
+  history): the denormalized category column is now backfilled once from
+  the stored entry data.
+
+## [0.9.1016]
+### Added
 - Categories have a new "Day planning" switch. Day-plan category selection is
   strictly opt-in: only categories with the switch turned on are offered in
   the day plan — nothing is available by default.
@@ -49,10 +58,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   headers).
 
 ### Fixed
-- Time tracked on entries created before mid-2024 could show up as
-  "Uncategorized" in time-by-category views (including the Daily OS time
-  history): the denormalized category column is now backfilled once from
-  the stored entry data.
 - Slow-query logging now starts from persisted logging settings during startup,
   so enabled `slow_queries` and `super_slow_queries` files capture boot-time
   database work instead of waiting for the next settings toggle.
