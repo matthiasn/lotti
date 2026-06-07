@@ -375,6 +375,13 @@ class AudioWaveformService {
     }
   }
 
+  /// Test-only seam for the pure peak/RMS-blend downsampling math.
+  @visibleForTesting
+  List<double> debugNormalizeWaveform({
+    required Waveform waveform,
+    required int targetBuckets,
+  }) => _normalizeWaveform(waveform: waveform, targetBuckets: targetBuckets);
+
   List<double> _normalizeWaveform({
     required Waveform waveform,
     required int targetBuckets,
