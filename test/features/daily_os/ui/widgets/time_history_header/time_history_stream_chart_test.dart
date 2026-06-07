@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:graphic/graphic.dart';
 import 'package:lotti/features/daily_os/state/time_history_header_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/time_history_stream_chart.dart';
@@ -619,6 +620,24 @@ void main() {
         expect(find.byType(Chart<StreamChartItem>), findsOneWidget);
         // The chart is wrapped in ClipRect + Transform.scale.
         expect(find.byType(ClipRect), findsOneWidget);
+
+        // Data-level assertion: the chart received exactly the items
+        // buildChartData derives for these days/categories — two days x
+        // two category slots, conserving each day's minutes.
+        final chart = tester.widget<Chart<StreamChartItem>>(
+          find.byType(Chart<StreamChartItem>),
+        );
+        expect(
+          chart.data,
+          TimeHistoryStreamChart.buildChartData(
+            days: days,
+            categoryOrder: testCategories.keys,
+          ),
+        );
+        expect(
+          chart.data.fold<int>(0, (acc, item) => acc + item.minutes),
+          4 * 60, // 3h on Jan 15 + 1h on Jan 14
+        );
       },
     );
 
@@ -810,6 +829,99 @@ void main() {
         // sortedCategories was queried to build category list (line 155–156).
         verify(() => mockCache.sortedCategories).called(greaterThan(0));
       },
+    );
+  });
+
+  group('pure chart functions — properties', () {
+    glados.Glados<int>(
+      glados.any.intInRange(0, 3000),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'computeEffectiveScaleMinutes clamps to [6h, 24h] and is identity '
+      'inside the band',
+      (minutes) {
+        final result = TimeHistoryStreamChart.computeEffectiveScaleMinutes(
+          Duration(minutes: minutes),
+        );
+        expect(result, inInclusiveRange(360.0, 1440.0));
+        // Identity inside the band; exact clamp at the edges.
+        final expected = minutes < 360
+            ? 360.0
+            : minutes > 1440
+            ? 1440.0
+            : minutes.toDouble();
+        expect(result, expected, reason: 'minutes=$minutes');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        0,
+        6,
+        // Per day: minutes for cat-a/cat-b plus uncategorized.
+        glados.CombinableAny(glados.any).combine3(
+          glados.any.intInRange(0, 300),
+          glados.any.intInRange(0, 300),
+          glados.any.intInRange(0, 120),
+          (int a, int b, int u) => (a: a, b: b, u: u),
+        ),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'buildChartData conserves per-day minutes and keeps every x-slot '
+      'category-complete',
+      (dayMinutes) {
+        final days = <DayTimeSummary>[
+          for (var i = 0; i < dayMinutes.length; i++)
+            DayTimeSummary(
+              day: DateTime(2024, 1, 10 + i, 12),
+              durationByCategoryId: {
+                'cat-a': Duration(minutes: dayMinutes[i].a),
+                'cat-b': Duration(minutes: dayMinutes[i].b),
+                if (dayMinutes[i].u > 0)
+                  null: Duration(minutes: dayMinutes[i].u),
+              },
+              total: Duration(
+                minutes: dayMinutes[i].a + dayMinutes[i].b + dayMinutes[i].u,
+              ),
+            ),
+        ];
+
+        final items = TimeHistoryStreamChart.buildChartData(
+          days: days,
+          categoryOrder: const ['cat-a', 'cat-b'],
+        );
+
+        if (days.isEmpty) {
+          expect(items, isEmpty);
+          return;
+        }
+
+        final hasUncategorized = dayMinutes.any((d) => d.u > 0);
+        final categoriesPerDay = hasUncategorized ? 3 : 2;
+
+        // Every day contributes the same category slots (SymmetricModifier
+        // requirement), and the per-x minute sum conserves the day total.
+        final byX = <double, List<StreamChartItem>>{};
+        for (final item in items) {
+          byX.putIfAbsent(item.x, () => []).add(item);
+        }
+        expect(byX, hasLength(days.length));
+        for (var i = 0; i < dayMinutes.length; i++) {
+          // Newest→oldest input maps to oldest→newest x.
+          final x = (days.length - 1 - i) + 0.5;
+          final slot = byX[x]!;
+          expect(slot, hasLength(categoriesPerDay), reason: 'x=$x');
+          final total = slot.fold<int>(0, (acc, it) => acc + it.minutes);
+          expect(
+            total,
+            dayMinutes[i].a + dayMinutes[i].b + dayMinutes[i].u,
+            reason: 'day $i conservation',
+          );
+        }
+      },
+      tags: 'glados',
     );
   });
 }

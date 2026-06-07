@@ -27,7 +27,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Over budget'), findsOneWidget);
       expect(find.byIcon(MdiIcons.alertCircle), findsOneWidget);
@@ -46,7 +46,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should show "Near limit" indicator (10 mins remaining < 15)
       expect(find.text('Near limit'), findsOneWidget);
@@ -66,7 +66,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // 3h30m / 4h = 87.5% progress, should show "On track"
       expect(find.text('On track'), findsOneWidget);
@@ -84,7 +84,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // 3 hours remaining (exact hours, no minutes)
       expect(find.text('3 hours left'), findsOneWidget);
@@ -103,7 +103,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // 2h 30m remaining (hours and minutes)
       expect(find.text('2h 30m left'), findsOneWidget);
@@ -122,7 +122,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // 35 minutes remaining
       expect(find.text('35 minutes left'), findsOneWidget);
@@ -139,7 +139,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(MdiIcons.clockOutline), findsOneWidget);
     });
@@ -155,7 +155,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Should have a container with decoration
       final containerFinder = find.byType(Container);

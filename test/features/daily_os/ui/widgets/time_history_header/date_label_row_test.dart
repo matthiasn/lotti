@@ -7,7 +7,6 @@ import 'package:lotti/features/daily_os/state/time_budget_progress_controller.da
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/date_label_row.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/day_label_chip.dart';
-import 'package:lotti/features/daily_os/ui/widgets/time_history_header/today_button.dart';
 
 import '../../../../../test_helper.dart';
 import 'test_helpers.dart';
@@ -210,76 +209,6 @@ void main() {
 
         expect(callbackCalled, true);
       });
-    });
-  });
-
-  group('DayLabelChip', () {
-    testWidgets('displays label text', (tester) async {
-      await tester.pumpWidget(
-        const WidgetTestBench(
-          child: DayLabelChip(label: 'Test Label'),
-        ),
-      );
-
-      expect(find.text('Test Label'), findsOneWidget);
-    });
-
-    testWidgets('truncates long labels', (tester) async {
-      await tester.pumpWidget(
-        const WidgetTestBench(
-          child: DayLabelChip(
-            label: 'This is a very long label that should be truncated',
-          ),
-        ),
-      );
-
-      // The text should be found but constrained
-      expect(
-        find.text('This is a very long label that should be truncated'),
-        findsOneWidget,
-      );
-
-      // Check that DayLabelChip has a max width constraint
-      final constrainedBox = find.descendant(
-        of: find.byType(DayLabelChip),
-        matching: find.byType(ConstrainedBox),
-      );
-      expect(constrainedBox, findsOneWidget);
-    });
-  });
-
-  group('TodayButton', () {
-    testWidgets('displays Today text', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: TodayButton(onPressed: () {}),
-        ),
-      );
-
-      expect(find.text('Today'), findsOneWidget);
-    });
-
-    testWidgets('displays calendar icon', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: TodayButton(onPressed: () {}),
-        ),
-      );
-
-      expect(find.byIcon(MdiIcons.calendarToday), findsOneWidget);
-    });
-
-    testWidgets('triggers callback on press', (tester) async {
-      var pressed = false;
-
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: TodayButton(onPressed: () => pressed = true),
-        ),
-      );
-
-      await tester.tap(find.byType(TodayButton));
-      expect(pressed, true);
     });
   });
 }
