@@ -24,6 +24,8 @@ void main() {
     required List<AgentDomainEntity> souls,
     Map<String, AgentDomainEntity?> versionsBySoulId = const {},
   }) async {
+    // setSurfaceSize asserts `inTest`, so it must run per test — a
+    // setUpAll hoist is not possible with the test binding.
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
@@ -142,5 +144,139 @@ void main() {
 
     expect(find.text('Alpha'), findsOneWidget);
     expect(find.text('Beta'), findsNothing);
+  });
+
+  testWidgets('switching Sort to Recent orders newest updates first', (
+    tester,
+  ) async {
+    // Names are deliberately the inverse of recency: "Alpha" is the
+    // *oldest* and "Zeta" the *newest*. Under the default Name sort
+    // "Alpha" renders above "Zeta", so switching to Recent (which must
+    // surface the newest first) flips the order observably — proving the
+    // page's recent sort-axis wiring actually drives the ordering.
+    await pumpPage(
+      tester,
+      souls: [
+        makeTestSoulDocument(
+          id: 'soul-alpha',
+          agentId: 'soul-alpha',
+          displayName: 'Alpha',
+          updatedAt: DateTime(2025),
+        ),
+        makeTestSoulDocument(
+          id: 'soul-zeta',
+          agentId: 'soul-zeta',
+          displayName: 'Zeta',
+          updatedAt: DateTime(2026, 6),
+        ),
+      ],
+    );
+
+    final ctx = tester.element(find.byType(AgentSoulsPage));
+
+    // Default Name sort: alphabetical, so "Alpha" is above "Zeta".
+    expect(
+      tester.getTopLeft(find.text('Alpha')).dy <
+          tester.getTopLeft(find.text('Zeta')).dy,
+      isTrue,
+    );
+
+    // Open the Sort popover (the button shows the current axis label,
+    // "Name") and switch to Recent. `.last` targets the popover entry
+    // rather than the toolbar button that still shows the old label.
+    await tester.tap(find.text(ctx.messages.agentInstancesSortName));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text(ctx.messages.agentInstancesSortRecent).last,
+    );
+    await tester.pumpAndSettle();
+
+    // Recent sort: newest (Zeta, 2026) is now above oldest (Alpha, 2025).
+    expect(
+      tester.getTopLeft(find.text('Zeta')).dy <
+          tester.getTopLeft(find.text('Alpha')).dy,
+      isTrue,
+    );
+  });
+
+  testWidgets('switching Sort to Oldest orders earliest updates first', (
+    tester,
+  ) async {
+    // Names match recency here so the default Name sort already happens to
+    // agree with Recent; switching to Oldest must invert to earliest-first.
+    await pumpPage(
+      tester,
+      souls: [
+        makeTestSoulDocument(
+          id: 'soul-alpha',
+          agentId: 'soul-alpha',
+          displayName: 'Alpha',
+          updatedAt: DateTime(2026, 6),
+        ),
+        makeTestSoulDocument(
+          id: 'soul-zeta',
+          agentId: 'soul-zeta',
+          displayName: 'Zeta',
+          updatedAt: DateTime(2025),
+        ),
+      ],
+    );
+
+    final ctx = tester.element(find.byType(AgentSoulsPage));
+
+    // Default Name sort: "Alpha" above "Zeta".
+    expect(
+      tester.getTopLeft(find.text('Alpha')).dy <
+          tester.getTopLeft(find.text('Zeta')).dy,
+      isTrue,
+    );
+
+    await tester.tap(find.text(ctx.messages.agentInstancesSortName));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text(ctx.messages.agentInstancesSortOldest).last,
+    );
+    await tester.pumpAndSettle();
+
+    // Oldest sort: earliest (Zeta, 2025) is now above latest (Alpha, 2026).
+    expect(
+      tester.getTopLeft(find.text('Zeta')).dy <
+          tester.getTopLeft(find.text('Alpha')).dy,
+      isTrue,
+    );
+  });
+
+  testWidgets('default name sort orders souls case-insensitively', (
+    tester,
+  ) async {
+    // Three souls with mixed-case names. The default sort axis is Name,
+    // whose comparator lower-cases both titles, so the rendered order must
+    // be alphabetical irrespective of letter case: apple < Banana < cherry.
+    await pumpPage(
+      tester,
+      souls: [
+        makeTestSoulDocument(
+          id: 'soul-cherry',
+          agentId: 'soul-cherry',
+          displayName: 'cherry',
+        ),
+        makeTestSoulDocument(
+          id: 'soul-apple',
+          agentId: 'soul-apple',
+          displayName: 'apple',
+        ),
+        makeTestSoulDocument(
+          id: 'soul-banana',
+          agentId: 'soul-banana',
+          displayName: 'Banana',
+        ),
+      ],
+    );
+
+    final appleY = tester.getTopLeft(find.text('apple')).dy;
+    final bananaY = tester.getTopLeft(find.text('Banana')).dy;
+    final cherryY = tester.getTopLeft(find.text('cherry')).dy;
+    expect(appleY < bananaY, isTrue);
+    expect(bananaY < cherryY, isTrue);
   });
 }

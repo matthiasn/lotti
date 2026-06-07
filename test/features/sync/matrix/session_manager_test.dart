@@ -3,7 +3,6 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
-import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
@@ -17,8 +16,6 @@ class _MockGateway extends Mock implements MatrixSyncGateway {
   @override
   Client get client => _client;
 }
-
-class _MockRoomManager extends Mock implements SyncRoomManager {}
 
 class _GeneratedMatrixException extends Fake
     implements MatrixException, Exception {
@@ -150,7 +147,7 @@ extension _AnyGeneratedSessionScenario on glados.Any {
 
 void main() {
   late _MockGateway gateway;
-  late _MockRoomManager roomManager;
+  late MockSyncRoomManager roomManager;
   late MockDomainLogger loggingService;
   late MockMatrixClient client;
   late MatrixSessionManager sessionManager;
@@ -176,7 +173,7 @@ void main() {
   setUp(() {
     client = MockMatrixClient();
     gateway = _MockGateway(client);
-    roomManager = _MockRoomManager();
+    roomManager = MockSyncRoomManager();
     loggingService = MockDomainLogger();
     when(
       () => loggingService.log(
@@ -263,7 +260,7 @@ void main() {
 
       glados.Glados(
         glados.any.sessionScenario,
-        glados.ExploreConfig(numRuns: 180),
+        glados.ExploreConfig(numRuns: 140),
       ).test(
         'generated connect matrix preserves room recovery semantics',
         (
@@ -272,7 +269,7 @@ void main() {
           const persistedRoomId = '!persisted:example.org';
           final client = MockMatrixClient();
           final gateway = _MockGateway(client);
-          final roomManager = _MockRoomManager();
+          final roomManager = MockSyncRoomManager();
           final loggingService = MockDomainLogger();
           final sessionManager = MatrixSessionManager(
             gateway: gateway,

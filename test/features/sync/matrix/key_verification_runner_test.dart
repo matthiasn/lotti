@@ -15,9 +15,8 @@ import '../../../mocks/mocks.dart';
 
 // ignore_for_file: cascade_invocations, unnecessary_lambdas
 
-class _MockKeyVerification extends Mock implements KeyVerification {}
-
-class _MockDeviceKeys extends Mock implements DeviceKeys {}
+// MockKeyVerification and MockDeviceKeys come from the centralized
+// test/mocks/mocks.dart.
 
 enum _GeneratedVerificationStepKind {
   ready,
@@ -107,18 +106,26 @@ extension _AnyGeneratedVerificationScenario on glados.Any {
           .map(_GeneratedVerificationScenario.new);
 }
 
+/// Creates the synchronous broadcast controller every runner test publishes
+/// state changes through, registering its closure as a test teardown. Must be
+/// called from within a test body so [addTearDown] is in scope.
+StreamController<KeyVerificationRunner> _runnerController() {
+  final controller = StreamController<KeyVerificationRunner>.broadcast(
+    sync: true,
+  );
+  addTearDown(controller.close);
+  return controller;
+}
+
 void main() {
   group('KeyVerificationRunner', () {
     test(
       'publishes emoji state changes and stops when verification completes',
       () {
-        final controller = StreamController<KeyVerificationRunner>.broadcast(
-          sync: true,
-        );
-        addTearDown(controller.close);
+        final controller = _runnerController();
 
         fakeAsync((async) {
-          final verification = _MockKeyVerification();
+          final verification = MockKeyVerification();
           final steps = Queue<String?>.from([
             null,
             'm.key.verification.key',
@@ -173,13 +180,10 @@ void main() {
     test(
       'invokes completion callback exactly once when done state changes',
       () {
-        final controller = StreamController<KeyVerificationRunner>.broadcast(
-          sync: true,
-        );
-        addTearDown(controller.close);
+        final controller = _runnerController();
 
         fakeAsync((async) {
-          final verification = _MockKeyVerification();
+          final verification = MockKeyVerification();
           when(
             () => verification.lastStep,
           ).thenReturn('m.key.verification.key');
@@ -223,13 +227,10 @@ void main() {
       'generated SDK updates publish only real state changes and restore '
       'the previous handler at terminal states',
       (scenario) {
-        final controller = StreamController<KeyVerificationRunner>.broadcast(
-          sync: true,
-        );
-        addTearDown(controller.close);
+        final controller = _runnerController();
 
         fakeAsync((async) {
-          final verification = _MockKeyVerification();
+          final verification = MockKeyVerification();
           String? currentStep;
           var currentDone = false;
           var currentEmojis = [KeyVerificationEmoji(1)];
@@ -337,13 +338,10 @@ void main() {
     test(
       'delegates accept and cancel actions to the key verification object',
       () {
-        final controller = StreamController<KeyVerificationRunner>.broadcast(
-          sync: true,
-        );
-        addTearDown(controller.close);
+        final controller = _runnerController();
 
         fakeAsync((async) {
-          final verification = _MockKeyVerification();
+          final verification = MockKeyVerification();
           when(
             () => verification.acceptVerification(),
           ).thenAnswer((_) => Future<void>.value());
@@ -460,7 +458,7 @@ void main() {
         requests: requestCachedController.stream,
       );
 
-      final request = _MockKeyVerification();
+      final request = MockKeyVerification();
       when(() => request.lastStep).thenReturn(null);
       when(() => request.sasEmojis).thenReturn([]);
       when(() => request.deviceId).thenReturn('device-123');
@@ -503,13 +501,10 @@ void main() {
 
   group('KeyVerificationRunner - SDK onUpdate forwarding', () {
     test('forwards SDK onUpdate to the previous handler', () {
-      final controller = StreamController<KeyVerificationRunner>.broadcast(
-        sync: true,
-      );
-      addTearDown(controller.close);
+      final controller = _runnerController();
 
       fakeAsync((async) {
-        final verification = _MockKeyVerification();
+        final verification = MockKeyVerification();
         void Function()? capturedOnUpdate;
         void Function()? storedOnUpdate;
         when(() => verification.lastStep).thenReturn(null);
@@ -544,13 +539,10 @@ void main() {
     });
 
     test('cancel step stops the timer', () {
-      final controller = StreamController<KeyVerificationRunner>.broadcast(
-        sync: true,
-      );
-      addTearDown(controller.close);
+      final controller = _runnerController();
 
       fakeAsync((async) {
-        final verification = _MockKeyVerification();
+        final verification = MockKeyVerification();
         final steps = Queue<String?>.from([
           null,
           'm.key.verification.cancel',
@@ -589,8 +581,8 @@ void main() {
   group('verifyMatrixDevice', () {
     test('starts verification and publishes runner state', () async {
       final service = MockMatrixService();
-      final deviceKeys = _MockDeviceKeys();
-      final verification = _MockKeyVerification();
+      final deviceKeys = MockDeviceKeys();
+      final verification = MockKeyVerification();
       final runnerController =
           StreamController<KeyVerificationRunner>.broadcast(sync: true);
 

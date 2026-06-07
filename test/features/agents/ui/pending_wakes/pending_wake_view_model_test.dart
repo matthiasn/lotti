@@ -282,6 +282,48 @@ void main() {
 
       expect(vms, isEmpty);
     });
+
+    test(
+      'resolves the title from the task slot when both task and project '
+      'slots are set',
+      () async {
+        // Worked example of the slot-priority rule in `_subjectEntryId`:
+        // activeTaskId is consulted before activeProjectId, so the title
+        // comes from the task subject even when a project subject also has
+        // a (different) title. Without the priority rule this would resolve
+        // to the project title instead.
+        final record = PendingWakeRecord(
+          agent: makeTestIdentity(
+            id: 'agent-both',
+            agentId: 'agent-both',
+            displayName: 'Both Slots Agent',
+          ),
+          state: makeTestState(
+            id: 'state-both',
+            agentId: 'agent-both',
+            slots: const AgentSlots(
+              activeTaskId: 'task-both',
+              activeProjectId: 'project-both',
+            ),
+          ),
+          type: PendingWakeType.pending,
+          dueAt: DateTime(2026, 4, 3, 10),
+        );
+
+        final vms = await _readPendingWakeVms(
+          records: [record],
+          subjectTitles: const {
+            'task-both': 'Task Title Wins',
+            'project-both': 'Project Title Loses',
+          },
+        );
+
+        expect(vms, hasLength(1));
+        // Task slot title becomes the row title; agent name drops to subtitle.
+        expect(vms.single.title, 'Task Title Wins');
+        expect(vms.single.subtitle, 'Both Slots Agent');
+      },
+    );
   });
 }
 

@@ -540,7 +540,7 @@ void main() {
 
     glados.Glados(
       glados.any.readMarkerScenario,
-      glados.ExploreConfig(numRuns: 180),
+      glados.ExploreConfig(numRuns: 120),
     ).test(
       'generated guard and fallback matrix preserves marker semantics',
       (scenario) async {

@@ -63,8 +63,11 @@ void main() {
 
       const loader = FileSyncJournalEntityLoader();
 
-      expect(
-        () => loader.load(jsonPath: '../${path.basename(externalFile.path)}'),
+      // load() is async, so the FileSystemException raised by
+      // resolveJsonCandidateFile surfaces as a rejected Future rather than a
+      // synchronous throw. Await the rejection explicitly.
+      await expectLater(
+        loader.load(jsonPath: '../${path.basename(externalFile.path)}'),
         throwsA(isA<FileSystemException>()),
       );
 

@@ -30,5 +30,13 @@ void main() {
     test('syncLoggingDomain has expected value', () {
       expect(syncLoggingDomain, 'MATRIX_SYNC');
     });
+
+    test('attachmentEncodingKey has expected value', () {
+      expect(attachmentEncodingKey, 'com.lotti.encoding');
+    });
+
+    test('attachmentEncodingGzip has expected value', () {
+      expect(attachmentEncodingGzip, 'gzip');
+    });
   });
 }

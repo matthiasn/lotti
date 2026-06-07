@@ -191,8 +191,6 @@ void main() {
       (tester) async {
         final runningController = StreamController<bool>.broadcast();
         addTearDown(runningController.close);
-        final refreshController = StreamController<int>.broadcast();
-        addTearDown(refreshController.close);
 
         final identity = makeTestIdentity();
         final pending = makePending(
@@ -200,44 +198,30 @@ void main() {
           toolName: 'set_task_status',
           humanSummary: 'Set status to GROOMED',
         );
-        final populated = UnifiedSuggestionList(
+        var currentSuggestions = UnifiedSuggestionList(
           open: [pending],
           activity: const [],
         );
-        var currentSuggestions = populated;
 
         await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            mediaQueryData: desktopMediaQueryData,
-            overrides: [
-              configFlagProvider.overrideWith(
-                (ref, flagName) => Stream.value(
-                  flagName != enableAiSummaryTtsFlag,
-                ),
-              ),
-              taskAgentProvider.overrideWith((ref, id) async => identity),
-              agentReportProvider.overrideWith((ref, agentId) async => null),
-              templateForAgentProvider.overrideWith(
-                (ref, agentId) async => null,
-              ),
-              agentStateProvider.overrideWith((ref, agentId) async => null),
-              agentIsRunningProvider.overrideWith((ref, agentId) async* {
-                yield false;
-                yield* runningController.stream;
-              }),
-              unifiedSuggestionListProvider.overrideWith((ref, taskId) async {
-                final isRunning =
-                    ref.watch(agentIsRunningProvider(identity.agentId)).value ??
-                    false;
-                return isRunning
-                    ? const UnifiedSuggestionList.empty()
-                    : currentSuggestions;
-              }),
-            ],
-            child: const SingleChildScrollView(
-              child: AiSummaryCard(taskId: AgentTestBench.taskId),
-            ),
-          ),
+          AgentTestBench(
+            // The running flag is driven from a controller so the test can
+            // step the agent through running → idle. The suggestion list
+            // reacts to that flag: it empties while the agent runs, and the
+            // shell's merge logic must keep the unresolved row visible.
+            isRunningOverride: (ref, agentId) async* {
+              yield false;
+              yield* runningController.stream;
+            },
+            suggestionListOverride: (ref, taskId) async {
+              final isRunning =
+                  ref.watch(agentIsRunningProvider(identity.agentId)).value ??
+                  false;
+              return isRunning
+                  ? const UnifiedSuggestionList.empty()
+                  : currentSuggestions;
+            },
+          ).build(),
         );
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
@@ -275,36 +259,19 @@ void main() {
       );
 
       await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          mediaQueryData: desktopMediaQueryData,
-          overrides: [
-            configFlagProvider.overrideWith(
-              (ref, flagName) => Stream.value(
-                flagName != enableAiSummaryTtsFlag,
-              ),
-            ),
-            taskAgentProvider.overrideWith((ref, id) async => identity),
-            agentReportProvider.overrideWith((ref, agentId) async => null),
-            templateForAgentProvider.overrideWith(
-              (ref, agentId) async => null,
-            ),
-            agentStateProvider.overrideWith((ref, agentId) async => null),
-            agentIsRunningProvider.overrideWith((ref, agentId) async* {
-              yield false;
-              yield* runningController.stream;
-            }),
-            unifiedSuggestionListProvider.overrideWith((ref, taskId) async {
-              ref.watch(agentIsRunningProvider(identity.agentId));
-              return UnifiedSuggestionList(
-                open: [pending],
-                activity: const [],
-              );
-            }),
-          ],
-          child: const SingleChildScrollView(
-            child: AiSummaryCard(taskId: AgentTestBench.taskId),
-          ),
-        ),
+        AgentTestBench(
+          isRunningOverride: (ref, agentId) async* {
+            yield false;
+            yield* runningController.stream;
+          },
+          suggestionListOverride: (ref, taskId) async {
+            ref.watch(agentIsRunningProvider(identity.agentId));
+            return UnifiedSuggestionList(
+              open: [pending],
+              activity: const [],
+            );
+          },
+        ).build(),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -838,6 +805,52 @@ void main() {
       expect(find.text('Dismissed'), findsOneWidget);
       final bodyText = tester.widget<Text>(find.text('"Stale row"'));
       expect(bodyText.style?.decoration, TextDecoration.lineThrough);
+    });
+
+    testWidgets('retracted entries also render dimmed with strikethrough', (
+      tester,
+    ) async {
+      // The `lineThrough`/`dimmed` arm fires for both `rejected` and
+      // `retracted`; this covers the agent-withdrawn (`retracted`) status
+      // that the rejected case above doesn't reach. A retracted entry is
+      // not user-confirmed, so `_ResolvedTag` renders "Dismissed".
+      final bench = AgentTestBench(
+        suggestions: UnifiedSuggestionList(
+          open: const [],
+          activity: [
+            makeLedgerEntry(
+              id: 'retracted',
+              status: ChangeItemStatus.retracted,
+              humanSummary: 'Add: "Redundant row"',
+              toolName: 'add_checklist_item',
+            ),
+          ],
+        ),
+      );
+
+      await tester.pumpWidget(bench.build());
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.tap(find.textContaining('History · 1'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Dismissed'), findsOneWidget);
+      final bodyText = tester.widget<Text>(find.text('"Redundant row"'));
+      expect(bodyText.style?.decoration, TextDecoration.lineThrough);
+
+      // The body is rendered dimmed (Opacity 0.45) on resolved-rejected
+      // and resolved-retracted rows alike.
+      final opacity = tester.widget<Opacity>(
+        find
+            .ancestor(
+              of: find.text('"Redundant row"'),
+              matching: find.byType(Opacity),
+            )
+            .first,
+      );
+      expect(opacity.opacity, 0.45);
     });
   });
   group('AiSummaryCard – Confirm-all busy spinner', () {

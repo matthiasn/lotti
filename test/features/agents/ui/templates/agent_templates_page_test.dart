@@ -25,7 +25,11 @@ void main() {
     WidgetTester tester, {
     required List<AgentDomainEntity> templates,
     Set<String> pending = const {},
+    AgentDomainEntity? Function(String templateId)? versionFor,
+    Exception? templatesError,
   }) async {
+    // setSurfaceSize asserts `inTest`, so it must run per test — a
+    // setUpAll hoist is not possible with the test binding.
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
@@ -33,10 +37,14 @@ void main() {
         const Scaffold(body: AgentTemplatesPage()),
         mediaQueryData: const MediaQueryData(size: Size(1200, 900)),
         overrides: [
-          agentTemplatesProvider.overrideWith((ref) async => templates),
+          agentTemplatesProvider.overrideWith((ref) async {
+            if (templatesError != null) throw templatesError;
+            return templates;
+          }),
           activeTemplateVersionProvider.overrideWith(
-            (ref, templateId) async =>
-                makeTestTemplateVersion(agentId: templateId),
+            (ref, templateId) async => versionFor != null
+                ? versionFor(templateId)
+                : makeTestTemplateVersion(agentId: templateId),
           ),
           templatesPendingReviewProvider.overrideWith((ref) async => pending),
         ],
@@ -365,6 +373,141 @@ void main() {
       await tester.tap(matches.first);
       await tester.pumpAndSettle();
       expect(navigated, '/settings/agents/templates/tpl-alpha');
+    },
+  );
+
+  testWidgets(
+    'template without an active version renders no version pill',
+    (tester) async {
+      // `activeTemplateVersionProvider` resolves to null, so
+      // `metaRight` stays null and the `vN` text must be absent while the
+      // row itself still renders.
+      await pumpPage(
+        tester,
+        templates: [
+          makeTestTemplate(
+            id: 'tpl-noversion',
+            agentId: 'tpl-noversion',
+            displayName: 'Unpublished',
+          ),
+        ],
+        versionFor: (_) => null,
+      );
+
+      expect(
+        find.textContaining('Unpublished', findRichText: true),
+        findsAtLeast(1),
+      );
+      // No `vN` meta pill for a template with no published version.
+      expect(find.text('v1'), findsNothing);
+      expect(find.text('v7'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'template with an empty modelId still renders its title',
+    (tester) async {
+      // The subtitle is bound to the (non-null) modelId; an empty modelId
+      // must not break rendering of the title or the row.
+      await pumpPage(
+        tester,
+        templates: [
+          makeTestTemplate(
+            id: 'tpl-nomodel',
+            agentId: 'tpl-nomodel',
+            displayName: 'No Model',
+            modelId: '',
+          ),
+        ],
+      );
+
+      expect(
+        find.textContaining('No Model', findRichText: true),
+        findsAtLeast(1),
+      );
+      expect(find.text('v1'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'templateImprover kind renders its localized kind pill',
+    (tester) async {
+      await pumpPage(
+        tester,
+        templates: [
+          makeTestTemplate(
+            id: 'tpl-improver',
+            agentId: 'tpl-improver',
+            displayName: 'Improver',
+            kind: AgentTemplateKind.templateImprover,
+          ),
+        ],
+      );
+
+      final ctx = tester.element(find.byType(AgentTemplatesPage));
+      expect(
+        find.text(ctx.messages.agentTemplateKindImprover),
+        findsAtLeast(1),
+      );
+    },
+  );
+
+  testWidgets(
+    'templateImprover row is matched by its Kind filter option',
+    (tester) async {
+      // Two distinct kinds make the Kind filter axis appear; selecting the
+      // Template Improver option must keep the improver row and hide the
+      // task row, exercising `_matchRow` for the templateImprover branch.
+      await pumpPage(
+        tester,
+        templates: [
+          makeTestTemplate(id: 'task', agentId: 'task', displayName: 'Task A'),
+          makeTestTemplate(
+            id: 'improver',
+            agentId: 'improver',
+            displayName: 'Improver B',
+            kind: AgentTemplateKind.templateImprover,
+          ),
+        ],
+      );
+
+      final ctx = tester.element(find.byType(AgentTemplatesPage));
+      await tester.tap(find.text(ctx.messages.agentInstancesToolbarFilters));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.text(ctx.messages.agentTemplateKindImprover).last,
+      );
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(20, 20));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('Improver B', findRichText: true),
+        findsAtLeast(1),
+      );
+      expect(
+        find.textContaining('Task A', findRichText: true),
+        findsNothing,
+      );
+    },
+  );
+
+  testWidgets(
+    'templates provider error renders the common error copy, not a crash',
+    (tester) async {
+      await pumpPage(
+        tester,
+        templates: const [],
+        templatesError: Exception('boom'),
+      );
+
+      final ctx = tester.element(find.byType(AgentTemplatesPage));
+      expect(find.text(ctx.messages.commonError), findsOneWidget);
+      // The toolbar / empty-filtered copy must not appear in the error shell.
+      expect(
+        find.text(ctx.messages.agentTemplatesEmptyFiltered),
+        findsNothing,
+      );
     },
   );
 }

@@ -18,20 +18,24 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** All files in this directory are tiny (11–24 lines each). No split needed.
+- [x] **[LOW]** All files in this directory are tiny (11–24 lines each). No split needed.
+  **RESOLVED:** Confirmed on disk: `gemini_inference_repository_provider.dart` (11 lines), `gemini_thinking_providers.dart` (18 lines), `ollama_inference_repository_provider.dart` (24 lines). Each is a single Riverpod provider / notifier; nothing to split. Non-actionable observation, no change.
 
 ---
 
 ## Test quality improvements
 
-- [ ] **[MED]** `test/features/ai/providers/ollama_inference_repository_provider_test.dart:32–56` — the `'builds an OllamaInferenceRepository wired to the http client'` test is the best test in this directory: it actually drives `warmUpModel` through the injected mock and captures the outbound request. The `MockHttpClient` stub uses `thenAnswer((_) async => http.Response('{"done":true}', 200))`. This is a concrete, meaningful assertion. No issue here.
-- [ ] **[LOW]** `ollama_inference_repository_provider_test.dart:73–85` — `'returns the cached repository instance on repeated reads'` checks `identical(first, second)`. This is a provider caching smoke test. It is valuable and not a smoke-only test because the identity check confirms memoization. Keep.
+- [x] **[MED]** `test/features/ai/providers/ollama_inference_repository_provider_test.dart:32–56` — the `'builds an OllamaInferenceRepository wired to the http client'` test is the best test in this directory: it actually drives `warmUpModel` through the injected mock and captures the outbound request. The `MockHttpClient` stub uses `thenAnswer((_) async => http.Response('{"done":true}', 200))`. This is a concrete, meaningful assertion. No issue here.
+  **RESOLVED:** Verified at `ollama_inference_repository_provider_test.dart:33–72`. The test stubs `mockClient.post` with `http.Response('{"done":true}', 200)`, drives `warmUpModel('gemma:2b', 'http://localhost:11434')`, and `verify`/`captureAny`s the outbound request, asserting `uri == 'http://localhost:11434/api/chat'` and `body contains 'gemma:2b'`. Concrete, meaningful, mocked I/O. Non-actionable observation, no change.
+- [x] **[LOW]** `ollama_inference_repository_provider_test.dart:73–85` — `'returns the cached repository instance on repeated reads'` checks `identical(first, second)`. This is a provider caching smoke test. It is valuable and not a smoke-only test because the identity check confirms memoization. Keep.
+  **RESOLVED:** Verified at `ollama_inference_repository_provider_test.dart:74–85`. `identical(first, second)` proves the `Provider` memoizes its built repository across reads — a real behavioral guarantee, not a build-only smoke check. Non-actionable observation, no change.
 
 ---
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[LOW]** All three files are thin Riverpod providers with no pure logic. Glados does not apply here.
+- [x] **[LOW]** All three files are thin Riverpod providers with no pure logic. Glados does not apply here.
+  **RESOLVED:** Confirmed: `geminiInferenceRepositoryProvider`/`ollamaInferenceRepositoryProvider` only wire `httpClientProvider` into a repository constructor, and `GeminiIncludeThoughts` is a boolean toggle notifier. There is no pure function over a non-trivial input domain to property-test. Non-actionable observation, no change.
 
 ---
 
@@ -44,13 +48,15 @@
   - `get includeThoughts` reflects current state.
   No test file exists for this file despite it being a non-generated (the `.g.dart` codegen wrapper is generated, but the logic file is hand-written).
 - [x] **[HIGH]** `lib/features/ai/providers/gemini_inference_repository_provider.dart` (11 lines) — `geminiInferenceRepositoryProvider` is a one-liner `Provider` that wires `httpClientProvider` to `GeminiInferenceRepository`. The pattern is identical to `ollamaInferenceRepositoryProvider`. Following the `ollama` test pattern, a test should verify: (a) it returns a `GeminiInferenceRepository` instance, and (b) it uses the `httpClientProvider` override (inject `MockHttpClient`, confirm the repository holds a reference to it via a real method call). **RESOLVED:** new `gemini_inference_repository_provider_test.dart` follows the ollama pattern — asserts the provider returns a `GeminiInferenceRepository` and proves the overridden `httpClientProvider` client is wired through by driving `generateImage` against a 403-stubbed mock and capturing the request URI.
-- [ ] **[LOW]** `test/features/ai/providers/ollama_inference_repository_provider_test.dart` — `httpClientProvider` is tested for `'returns a real http.Client and closes it on dispose'` (line 15–29). The test confirms disposal does not throw but does not confirm the client was actually closed (the underlying `http.Client.close()` method sets an internal flag). This is acceptable since the underlying `http.Client` does not expose an `isClosed` property.
+- [x] **[LOW]** `test/features/ai/providers/ollama_inference_repository_provider_test.dart` — `httpClientProvider` is tested for `'returns a real http.Client and closes it on dispose'` (line 15–29). The test confirms disposal does not throw but does not confirm the client was actually closed (the underlying `http.Client.close()` method sets an internal flag). This is acceptable since the underlying `http.Client` does not expose an `isClosed` property.
+  **RESOLVED:** Verified at `ollama_inference_repository_provider_test.dart:15–29`. The provider returns a real `package:http` `Client`, which exposes no public `isClosed`/closed-state accessor, so asserting on actual close-state would require mocking the very client the test means to construct. The test still asserts the meaningful guarantees this provider owns: it returns an `http.Client`, memoizes it (`identical`), and disposing the container runs `ref.onDispose(client.close)` without throwing. Non-actionable observation, no change.
 
 ---
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** `ollama_inference_repository_provider_test.dart` — the provider test creates a real `ProviderContainer` per test, which is cheap. The mock HTTP client avoids any network I/O. No improvements needed.
+- [x] **[LOW]** `ollama_inference_repository_provider_test.dart` — the provider test creates a real `ProviderContainer` per test, which is cheap. The mock HTTP client avoids any network I/O. No improvements needed.
+  **RESOLVED:** Confirmed: each test constructs a local `ProviderContainer` with `addTearDown(container.dispose)`, and the only `post`/`send` call paths go through a `MockHttpClient`, so no test performs real network I/O or sleeps. No fake-time or speed concern. Non-actionable observation, no change.
 
 ---
 

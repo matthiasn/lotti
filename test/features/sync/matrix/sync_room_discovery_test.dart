@@ -10,11 +10,9 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockClient extends Mock implements Client {}
-
+// MockMatrixClient and MockStrippedStateEvent come from the centralized
+// test/mocks/mocks.dart. RoomSummary has no centralized mock, so it is local.
 class MockRoomSummary extends Mock implements RoomSummary {}
-
-class MockStrippedStateEvent extends Mock implements StrippedStateEvent {}
 
 class _GeneratedRoomDiscoveryCase {
   const _GeneratedRoomDiscoveryCase({
@@ -210,7 +208,7 @@ void main() {
 
   group('discoverSyncRooms', () {
     test('returns empty list when client has no rooms', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       when(() => client.rooms).thenReturn([]);
 
       final results = await service.discoverSyncRooms(client);
@@ -226,7 +224,7 @@ void main() {
     });
 
     test('filters out unencrypted rooms', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoom(
         id: '!unencrypted:server',
         encrypted: false,
@@ -241,7 +239,7 @@ void main() {
     });
 
     test('filters out public rooms', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoom(
         id: '!public:server',
         encrypted: true,
@@ -256,7 +254,7 @@ void main() {
     });
 
     test('filters out rooms without Lotti markers or content', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoom(
         id: '!regular:server',
         encrypted: true,
@@ -276,7 +274,7 @@ void main() {
     ).test(
       'generated room discovery filters candidates and preserves sort order',
       (scenario) async {
-        final client = MockClient();
+        final client = MockMatrixClient();
         final casesByRoomId = <String, _GeneratedRoomDiscoveryCase>{};
         final rooms = <Room>[];
 
@@ -344,7 +342,7 @@ void main() {
     );
 
     test('includes rooms with Lotti state marker', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoom(
         id: '!marked:server',
         name: 'Marked Room',
@@ -364,7 +362,7 @@ void main() {
     });
 
     test('includes rooms with Lotti sync content', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoom(
         id: '!content:server',
         name: 'Content Room',
@@ -384,7 +382,7 @@ void main() {
     });
 
     test('sorts results by confidence descending', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final roomBoth = _createMockRoom(
         id: '!both:server',
         name: 'Both Markers',
@@ -426,7 +424,7 @@ void main() {
     });
 
     test('sorts by creation date when confidence is equal', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final olderRoom = _createMockRoom(
         id: '!older:server',
         name: 'Older Room',
@@ -455,7 +453,7 @@ void main() {
     });
 
     test('handles rooms with null creation date', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final roomWithDate = _createMockRoom(
         id: '!dated:server',
         encrypted: true,
@@ -483,7 +481,7 @@ void main() {
 
   group('hasExistingSyncRooms', () {
     test('returns false when no sync rooms exist', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       when(() => client.rooms).thenReturn([]);
 
       final result = await service.hasExistingSyncRooms(client);
@@ -492,7 +490,7 @@ void main() {
     });
 
     test('returns true when sync rooms exist', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoom(
         id: '!sync:server',
         encrypted: true,
@@ -511,7 +509,7 @@ void main() {
   group('markRoomAsLottiSync', () {
     test('sets room state with correct type and content', () async {
       final room = MockRoom();
-      final client = MockClient();
+      final client = MockMatrixClient();
 
       when(() => room.id).thenReturn('!room:server');
       when(() => room.client).thenReturn(client);
@@ -552,7 +550,7 @@ void main() {
 
     test('logs exception when marking fails', () async {
       final room = MockRoom();
-      final client = MockClient();
+      final client = MockMatrixClient();
 
       when(() => room.id).thenReturn('!room:server');
       when(() => room.client).thenReturn(client);
@@ -580,7 +578,7 @@ void main() {
 
   group('sync content detection', () {
     test('detects room with syncMessageType msgtype', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoomWithEvents(
         id: '!msgtype:server',
         encrypted: true,
@@ -601,7 +599,7 @@ void main() {
     });
 
     test('detects room with base64 encoded sync payload', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final syncPayload = {'runtimeType': 'journalEntity', 'id': 'test-id'};
       final base64Payload = base64.encode(
         utf8.encode(json.encode(syncPayload)),
@@ -628,7 +626,7 @@ void main() {
     });
 
     test('does not detect room with non-sync messages', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoomWithEvents(
         id: '!regular:server',
         encrypted: true,
@@ -649,7 +647,7 @@ void main() {
     });
 
     test('handles getTimeline errors gracefully', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = MockRoom();
       final summary = MockRoomSummary();
 
@@ -683,7 +681,7 @@ void main() {
 
   group('room metadata extraction', () {
     test('extracts room name when present', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoom(
         id: '!named:server',
         name: 'My Sync Room',
@@ -700,7 +698,7 @@ void main() {
     });
 
     test('returns null name when room name is empty', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoom(
         id: '!unnamed:server',
         encrypted: true,
@@ -716,7 +714,7 @@ void main() {
     });
 
     test('extracts member count from summary', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoom(
         id: '!members:server',
         encrypted: true,
@@ -733,7 +731,7 @@ void main() {
     });
 
     test('defaults member count to 1 when null', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoom(
         id: '!nomembers:server',
         encrypted: true,
@@ -750,7 +748,7 @@ void main() {
     });
 
     test('extracts creation time from room create event when Event', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final createdAt = DateTime(2025, 6, 15, 10, 30);
       final room = _createMockRoom(
         id: '!created:server',
@@ -768,7 +766,7 @@ void main() {
     });
 
     test('returns null createdAt when state is not Event type', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoom(
         id: '!nocreate:server',
         encrypted: true,
@@ -785,7 +783,7 @@ void main() {
     });
 
     test('handles missing create event gracefully', () async {
-      final client = MockClient();
+      final client = MockMatrixClient();
       final room = _createMockRoom(
         id: '!nocreate:server',
         encrypted: true,

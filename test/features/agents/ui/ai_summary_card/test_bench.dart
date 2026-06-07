@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -53,6 +56,9 @@ class AgentTestBench {
     this._taskAgentService,
     this._mlxAudioChannel,
     this._mediaQueryData = desktopMediaQueryData,
+    this._provideAgentIdentity = false,
+    this._isRunningOverride,
+    this._suggestionListOverride,
   });
 
   static const String taskId = 'task-001';
@@ -69,6 +75,23 @@ class AgentTestBench {
   final MockTaskAgentService? _taskAgentService;
   final MlxAudioChannel? _mlxAudioChannel;
   final MediaQueryData _mediaQueryData;
+
+  /// When true, also overrides [agentIdentityProvider] (read by the
+  /// internals panel) so navigation into the panel resolves without
+  /// hitting real infrastructure. The shell otherwise only needs
+  /// [taskAgentProvider]; navigation tests opt into this.
+  final bool _provideAgentIdentity;
+
+  /// Replaces the default static `agentIsRunningProvider` override.
+  /// Used by lifecycle tests that drive the running flag from a
+  /// [StreamController] to exercise the running-agent refresh merge.
+  final Stream<bool> Function(Ref ref, String agentId)? _isRunningOverride;
+
+  /// Replaces the default static `unifiedSuggestionListProvider`
+  /// override. Used by tests whose suggestion list reacts to the
+  /// running flag (e.g. empties while the agent runs).
+  final FutureOr<UnifiedSuggestionList> Function(Ref ref, String taskId)?
+  _suggestionListOverride;
 
   Widget build() {
     final identity = makeTestIdentity();
@@ -88,14 +111,16 @@ class AgentTestBench {
           (ref, agentId) async => _template,
         ),
         agentIsRunningProvider.overrideWith(
-          (ref, agentId) => Stream.value(_isRunning),
+          _isRunningOverride ?? (ref, agentId) => Stream.value(_isRunning),
         ),
         agentStateProvider.overrideWith(
           (ref, agentId) async => _state,
         ),
         unifiedSuggestionListProvider.overrideWith(
-          (ref, taskId) async => _suggestions,
+          _suggestionListOverride ?? (ref, taskId) async => _suggestions,
         ),
+        if (_provideAgentIdentity)
+          agentIdentityProvider.overrideWith((ref, id) async => identity),
         if (_confirmationService != null)
           changeSetConfirmationServiceProvider.overrideWith(
             (ref) => _confirmationService,

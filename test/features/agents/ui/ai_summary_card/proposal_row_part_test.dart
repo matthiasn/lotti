@@ -141,6 +141,71 @@ void main() {
     );
 
     testWidgets(
+      'the first pending row runs the wiggle hint on a standard viewport',
+      (tester) async {
+        // Default desktop bench → animations enabled → the wiggle hint is
+        // scheduled in didChangeDependencies. After the 350ms start delay
+        // the controller forwards, peeking the row right then left. The
+        // peek translates the row's container, so we read the live
+        // transform rather than letting pumpAndSettle complete it.
+        final pending = makePending(
+          id: 'p1',
+          toolName: 'set_task_status',
+          humanSummary: 'Set status to GROOMED',
+        );
+        final bench = AgentTestBench(
+          suggestions: UnifiedSuggestionList(
+            open: [pending],
+            activity: const [],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        // Resolve the async suggestion list → the first row mounts and the
+        // wiggle's 350ms start Timer is created.
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The row is mounted (its body text is on screen) before we read
+        // the transform, so a null transform below would be a real
+        // failure rather than a not-yet-built row.
+        expect(find.text('Status'), findsOneWidget);
+
+        Matrix4? rowTransform() {
+          for (final c in tester.widgetList<AnimatedContainer>(
+            find.byType(AnimatedContainer),
+          )) {
+            if (c.transform != null) return c.transform;
+          }
+          return null;
+        }
+
+        // Before the start delay elapses the row sits at rest (the
+        // backdrop AnimatedContainer carries no transform; the row's
+        // transform is the identity translation).
+        expect(rowTransform()!.getTranslation().x, 0);
+
+        // Fire the 350ms start Timer; the controller's forward(from:0)
+        // runs during the timer callback, so the frame it lands on still
+        // reads ~0 (the ticker's start time is "now").
+        await tester.pump(const Duration(milliseconds: 350));
+
+        // One more frame advances ~150ms into the first easeInOutSine leg
+        // (out to +14). The offset is now strictly positive, proving the
+        // controller is forwarding.
+        await tester.pump(const Duration(milliseconds: 150));
+        final peekX = rowTransform()!.getTranslation().x;
+        expect(peekX, greaterThan(0));
+        expect(peekX, lessThanOrEqualTo(14));
+
+        // Let the full 1600ms sequence finish; the row settles back to
+        // rest (the trailing left-peek leg returns to 0).
+        await tester.pump(const Duration(milliseconds: 1600));
+        expect(rowTransform()!.getTranslation().x, 0);
+      },
+    );
+
+    testWidgets(
       'a partial left swipe surfaces the Reject intent label and close icon',
       (tester) async {
         final pending = makePending(
@@ -187,6 +252,95 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
         verifyNever(() => service.rejectItem(any(), any()));
         verifyNever(() => service.confirmItem(any(), any()));
+      },
+    );
+  });
+  group('AiSummaryCard – compact-width proposal row', () {
+    // A phone-width viewport (< _proposalRowCompactWidth = 600) where the
+    // row drops its explicit confirm/reject buttons and relies on swipe
+    // alone. Animations stay disabled so the wiggle hint doesn't add its
+    // own offset on top of the drag.
+    const compactPhone = MediaQueryData(
+      size: Size(420, 800),
+      disableAnimations: true,
+    );
+
+    testWidgets(
+      'hides the action buttons and confirms via a right swipe',
+      (tester) async {
+        final pending = makePending(
+          id: 'p1',
+          toolName: 'set_task_status',
+          humanSummary: 'Set status to GROOMED',
+        );
+        final service = MockChangeSetConfirmationService();
+        when(() => service.confirmItem(any(), any())).thenAnswer(
+          (_) async => const ToolExecutionResult(success: true, output: 'ok'),
+        );
+        final notifier = MockUpdateNotifications();
+        final bench = AgentTestBench(
+          mediaQueryData: compactPhone,
+          confirmationService: service,
+          updateNotifications: notifier,
+          suggestions: UnifiedSuggestionList(
+            open: [pending],
+            activity: const [],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The compact branch replaces `_RowActions` with SizedBox.shrink,
+        // so neither tap-confirm nor tap-reject buttons are rendered.
+        expect(find.byIcon(Icons.check_rounded), findsNothing);
+        expect(find.byIcon(Icons.close_rounded), findsNothing);
+
+        // Swiping the row right past the trigger still confirms, proving
+        // the gesture path is the only affordance on narrow viewports.
+        await tester.drag(find.text('Status'), const Offset(150, 0));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(() => service.confirmItem(pending.changeSet, 0)).called(1);
+        verify(() => notifier.notify(any())).called(1);
+      },
+    );
+
+    testWidgets(
+      'rejects via a left swipe on the compact layout',
+      (tester) async {
+        final pending = makePending(
+          id: 'p1',
+          toolName: 'set_task_status',
+          humanSummary: 'Set status to GROOMED',
+        );
+        final service = MockChangeSetConfirmationService();
+        when(
+          () => service.rejectItem(any(), any()),
+        ).thenAnswer((_) async => true);
+        final notifier = MockUpdateNotifications();
+        final bench = AgentTestBench(
+          mediaQueryData: compactPhone,
+          confirmationService: service,
+          updateNotifications: notifier,
+          suggestions: UnifiedSuggestionList(
+            open: [pending],
+            activity: const [],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.drag(find.text('Status'), const Offset(-150, 0));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        verify(() => service.rejectItem(pending.changeSet, 0)).called(1);
+        verify(() => notifier.notify(any())).called(1);
       },
     );
   });

@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/pending_wakes/agent_pending_wakes_page.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -108,6 +109,58 @@ void main() {
       );
       // Countdown lands in the trailing slot via the page-scoped ticker.
       expect(find.text('02:05'), findsOneWidget);
+    });
+  });
+
+  testWidgets('renders the localized kind pill for every AgentKinds value', (
+    tester,
+  ) async {
+    final now = DateTime(2026, 3, 31, 9);
+    // (kind constant, localized-label resolver) for each known kind. The
+    // page renders one pill per row using `pendingWakeKindLabel`, so the
+    // localized label must appear once per kind, distinct from one another.
+    final kindLabelOf = <String, String Function(AppLocalizations)>{
+      AgentKinds.taskAgent: (m) => m.agentInstancesKindTaskAgent,
+      AgentKinds.dayAgent: (m) => m.agentTemplateKindDayAgent,
+      AgentKinds.projectAgent: (m) => m.agentTemplateKindProjectAgent,
+      AgentKinds.templateImprover: (m) => m.agentTemplateKindImprover,
+    };
+
+    await withClock(Clock(() => now), () async {
+      // One row per kind. Distinct display names keep the row titles unique
+      // so a kind label can never be confused with a fallback title.
+      final kinds = kindLabelOf.keys.toList();
+      await pumpPage(
+        tester,
+        records: [
+          for (final (index, kind) in kinds.indexed)
+            _record(
+              agentId: 'agent-$index',
+              displayName: 'Agent $index',
+              type: PendingWakeType.pending,
+              dueAt: now.add(Duration(minutes: index + 1)),
+              kind: kind,
+            ),
+        ],
+      );
+
+      final messages = tester
+          .element(find.byType(AgentPendingWakesPage))
+          .messages;
+      // Every kind's localized label must render exactly once (one pill per
+      // row), and the four labels must all be distinct strings so the test
+      // genuinely distinguishes the kinds.
+      final renderedLabels = <String>{};
+      for (final kind in kinds) {
+        final label = kindLabelOf[kind]!(messages);
+        renderedLabels.add(label);
+        expect(
+          find.text(label),
+          findsOneWidget,
+          reason: 'kind pill missing for $kind ($label)',
+        );
+      }
+      expect(renderedLabels, hasLength(kinds.length));
     });
   });
 
@@ -228,11 +281,20 @@ void main() {
         find.text(ctx.messages.agentPendingWakesGroupByType).last,
       );
       await tester.pumpAndSettle();
-      // The toolbar can briefly emit a transient 4.4px RenderFlex overflow
-      // while the popover-driven re-layout shrinks the search field; the
-      // settled frame is clean (verified: the other former drains in this
-      // file never fired). Drain the cosmetic mid-animation exception.
-      tester.takeException();
+      // The toolbar can briefly emit a transient sub-pixel RenderFlex
+      // overflow while the popover-driven re-layout shrinks the search
+      // field; the settled frame is clean (verified: the other former
+      // drains in this file never fired). Drain the cosmetic mid-animation
+      // exception, but assert it is *only* that known overflow so a real,
+      // unrelated exception can never be silently swallowed here.
+      final swallowed = tester.takeException();
+      if (swallowed != null) {
+        expect(
+          swallowed.toString(),
+          contains('overflowed'),
+          reason: 'unexpected exception swallowed after group-by popover',
+        );
+      }
 
       // Both type labels should now appear as group headers
       // (in addition to the per-row pills).
@@ -668,6 +730,31 @@ void main() {
     });
 
     testWidgets(
+      'renders the elapsed pill in H:MM:SS once the run crosses one hour',
+      (tester) async {
+        final now = DateTime(2026, 5, 5, 21);
+        final ongoing = [
+          OngoingWakeRecord(
+            agentId: 'agent-long',
+            title: 'Long runner',
+            // 1h 30m 07s ago → the elapsed pill must add the hour cell.
+            startedAt: now.subtract(
+              const Duration(hours: 1, minutes: 30, seconds: 7),
+            ),
+          ),
+        ];
+        await withClock(Clock(() => now), () async {
+          await pumpPage(tester, records: const [], ongoing: ongoing);
+        });
+
+        // Below-hour MM:SS form must NOT appear for a >1h run; the hour cell
+        // is present.
+        expect(find.text('01:30:07'), findsOneWidget);
+        expect(find.text('30:07'), findsNothing);
+      },
+    );
+
+    testWidgets(
       'tapping a running instance row beams to its instance detail page',
       (tester) async {
         final now = DateTime(2026, 5, 5, 21);
@@ -707,5 +794,54 @@ void main() {
         findsNothing,
       );
     });
+
+    testWidgets(
+      'block is suppressed (no crash, no toast) when the provider errors',
+      (tester) async {
+        // The page reads `ongoingAsync.value ?? const []`, so an errored
+        // ongoing provider must degrade to no running block — the rest of
+        // the page (the listing + its empty state) still renders, and no
+        // error toast leaks to the user.
+        final now = DateTime(2026, 5, 5, 21);
+        await withClock(Clock(() => now), () async {
+          await tester.binding.setSurfaceSize(const Size(1600, 900));
+          addTearDown(() => tester.binding.setSurfaceSize(null));
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              const AgentPendingWakesPage(),
+              mediaQueryData: const MediaQueryData(size: Size(1600, 900)),
+              overrides: [
+                pendingWakeRecordsProvider.overrideWith(
+                  (ref) async => const <PendingWakeRecord>[],
+                ),
+                ongoingWakeRecordsProvider.overrideWith(
+                  (ref) async => throw StateError('ongoing boom'),
+                ),
+                pendingWakeTargetTitleProvider.overrideWith(
+                  (ref, String? entryId) async => null,
+                ),
+              ],
+            ),
+          );
+          await tester.pumpAndSettle();
+        });
+
+        final element = tester.element(find.byType(AgentPendingWakesPage));
+        // No running block heading rendered for the errored provider.
+        expect(
+          find.text(element.messages.agentPendingWakesRunningHeading(1)),
+          findsNothing,
+        );
+        // The listing still rendered its empty-state copy — the page did
+        // not crash or get replaced by an error shell.
+        expect(
+          find.text(element.messages.agentPendingWakesEmptyFiltered),
+          findsOneWidget,
+        );
+        // The error must not surface as a toast / unhandled exception.
+        expect(find.text(element.messages.commonError), findsNothing);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

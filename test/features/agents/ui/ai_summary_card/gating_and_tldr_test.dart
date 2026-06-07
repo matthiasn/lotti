@@ -1,8 +1,4 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
-import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 
 import '../../../../test_helper.dart';
@@ -124,35 +120,19 @@ void main() {
     testWidgets('tapping the agent name pushes the AgentInternalsPanel route', (
       tester,
     ) async {
-      final identity = makeTestIdentity();
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
-          overrides: [
-            taskAgentProvider.overrideWith((ref, id) async => identity),
-            agentReportProvider.overrideWith(
-              (ref, agentId) async => makeTestReport(tldr: 'Tldr.'),
-            ),
-            templateForAgentProvider.overrideWith(
-              (ref, agentId) async => null,
-            ),
-            agentIsRunningProvider.overrideWith(
-              (ref, agentId) => Stream.value(false),
-            ),
-            agentStateProvider.overrideWith((ref, agentId) async => null),
-            unifiedSuggestionListProvider.overrideWith(
-              (ref, taskId) async => const UnifiedSuggestionList.empty(),
-            ),
-            agentIdentityProvider.overrideWith((ref, id) async => identity),
-          ],
-          child: const SingleChildScrollView(
-            child: AiSummaryCard(taskId: 'task-001'),
-          ),
-        ),
+      // `provideAgentIdentity: true` adds the `agentIdentityProvider`
+      // override the pushed `AgentInternalsPanel` reads; the rest of the
+      // provider wiring comes straight from `AgentTestBench`.
+      final bench = AgentTestBench(
+        report: makeTestReport(tldr: 'Tldr.'),
+        provideAgentIdentity: true,
       );
+      await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text(identity.displayName));
+      // The subtitle falls through to the identity display name (no
+      // template), which is what the header renders as the tappable name.
+      await tester.tap(find.text(makeTestIdentity().displayName));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -162,35 +142,14 @@ void main() {
     testWidgets('Open agent internals pill (under expanded report) opens it', (
       tester,
     ) async {
-      final identity = makeTestIdentity();
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
-          overrides: [
-            taskAgentProvider.overrideWith((ref, id) async => identity),
-            agentReportProvider.overrideWith(
-              (ref, agentId) async => makeTestReport(
-                tldr: 'Tldr.',
-                content: '## Goal\nShip.\n',
-              ),
-            ),
-            templateForAgentProvider.overrideWith(
-              (ref, agentId) async => null,
-            ),
-            agentIsRunningProvider.overrideWith(
-              (ref, agentId) => Stream.value(false),
-            ),
-            agentStateProvider.overrideWith((ref, agentId) async => null),
-            unifiedSuggestionListProvider.overrideWith(
-              (ref, taskId) async => const UnifiedSuggestionList.empty(),
-            ),
-            agentIdentityProvider.overrideWith((ref, id) async => identity),
-          ],
-          child: const SingleChildScrollView(
-            child: AiSummaryCard(taskId: 'task-001'),
-          ),
+      final bench = AgentTestBench(
+        report: makeTestReport(
+          tldr: 'Tldr.',
+          content: '## Goal\nShip.\n',
         ),
+        provideAgentIdentity: true,
       );
+      await tester.pumpWidget(bench.build());
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('Read more'));
