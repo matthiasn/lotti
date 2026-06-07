@@ -49,3 +49,4 @@ Each ADR should contain:
 - [`0019-attention-negotiation-protocol.md`](./0019-attention-negotiation-protocol.md)
 - [`0020-agent-input-capture.md`](./0020-agent-input-capture.md)
 - [`0021-llm-mediated-attention-claim-weighing.md`](./0021-llm-mediated-attention-claim-weighing.md)
+- [`0022-long-lived-daily-os-planner.md`](./0022-long-lived-daily-os-planner.md)
