@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/theming/model/theme_definitions.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/themes/theme.dart';
 
 void main() {
@@ -305,6 +306,9 @@ void main() {
       expect(decoration.border, isA<OutlineInputBorder>());
       final border = decoration.border! as OutlineInputBorder;
       expect(border.borderRadius, isA<BorderRadius>());
+      // The radius value itself is the behavior worth pinning, not just the type.
+      expect(border.borderRadius.topLeft.x, equals(inputBorderRadius));
+      expect(border.borderRadius.bottomRight.y, equals(inputBorderRadius));
     });
 
     test('creates decoration with error border', () {
@@ -355,6 +359,16 @@ void main() {
       );
 
       expect(decoration.suffixIcon, equals(suffixIcon));
+    });
+  });
+
+  group('searchLabelStyle', () {
+    test('uses secondary text color, medium font size, and w200 weight', () {
+      final style = searchLabelStyle();
+
+      expect(style.color, equals(secondaryTextColor));
+      expect(style.fontSize, equals(fontSizeMedium));
+      expect(style.fontWeight, equals(FontWeight.w200));
     });
   });
 }
