@@ -10,6 +10,7 @@ import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
+import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -286,6 +287,36 @@ void main() {
     registerFallbackValue(Duration.zero);
   });
 
+  /// Builds a [BackfillRequestService] on the shared mocks, forwarding only
+  /// the knobs a test overrides (nulls fall through to SyncTuning defaults)
+  /// and registering disposal automatically.
+  BackfillRequestService buildService({
+    Directory? documentsDirectory,
+    QueuePipelineCoordinator? queueCoordinator,
+    DomainLogger? domainLogger,
+    Duration? requestInterval,
+    int? maxBatchSize,
+    Duration? missingDebounce,
+    Duration? amnestyWindow,
+  }) {
+    final service = BackfillRequestService(
+      sequenceLogService: mockSequenceService,
+      syncDatabase: mockSyncDatabase,
+      outboxService: mockOutboxService,
+      vectorClockService: mockVcService,
+      loggingService: mockLogging,
+      documentsDirectory: documentsDirectory,
+      queueCoordinator: queueCoordinator,
+      domainLogger: domainLogger,
+      requestInterval: requestInterval,
+      maxBatchSize: maxBatchSize,
+      missingDebounce: missingDebounce,
+      amnestyWindow: amnestyWindow,
+    );
+    addTearDown(service.dispose);
+    return service;
+  }
+
   setUp(() {
     // Set up SharedPreferences with backfill enabled
     SharedPreferences.setMockInitialValues({'backfill_enabled': true});
@@ -342,14 +373,7 @@ void main() {
       'retires exhausted requested entries before loading the missing batch '
       'so a permanently stuck gap does not block the watermark indefinitely',
       () async {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
-        );
-        addTearDown(service.dispose);
+        final service = buildService();
 
         // `processFullBackfill` runs with `useLimits: false`, which calls
         // `getMissingEntries` (not the `WithLimits` variant); stub the
@@ -388,14 +412,7 @@ void main() {
       'touches sync_db (avoids the 2-minute no-op storm captured in the '
       '2026-05-12 desktop slow-query log)',
       () async {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
-        );
-        addTearDown(service.dispose);
+        final service = buildService();
 
         when(
           () => mockSequenceService.hasActionableEntries(),
@@ -448,15 +465,9 @@ void main() {
       'hints (request_count bumped but last_requested_at never set) or that '
       'age out of the request window before hitting the cap still get retired',
       () async {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           amnestyWindow: const Duration(days: 3),
         );
-        addTearDown(service.dispose);
 
         when(
           () => mockSequenceService.getMissingEntries(
@@ -478,12 +489,7 @@ void main() {
 
     test('timer fires at configured interval', () {
       fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(seconds: 30),
         );
 
@@ -543,12 +549,7 @@ void main() {
       'backfill fires',
       () {
         fakeAsync((async) {
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             requestInterval: const Duration(seconds: 10),
           );
 
@@ -588,13 +589,7 @@ void main() {
       'processFullBackfill bypasses the debounce — a user-initiated '
       'full backfill must not be silently held back for 10 minutes',
       () async {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
-        );
+        final service = buildService();
 
         when(
           () => mockSequenceService.getMissingEntries(
@@ -630,12 +625,7 @@ void main() {
 
     test('sends backfill requests for missing entries', () {
       fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(seconds: 10),
         );
 
@@ -694,12 +684,7 @@ void main() {
     ).test(
       'manual full backfill requests the generated first unqueued batch',
       (scenario) async {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           maxBatchSize: scenario.maxBatchSize,
         );
 
@@ -792,12 +777,7 @@ void main() {
             () => coordinator.isBridgeInFlight,
           ).thenReturn(scenario.bridgeInFlight);
 
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             queueCoordinator: coordinator,
             maxBatchSize: scenario.maxBatchSize,
             missingDebounce: const Duration(minutes: 7),
@@ -905,12 +885,7 @@ void main() {
 
     test('nudge sends backfill requests immediately', () {
       fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(minutes: 10),
         );
 
@@ -951,12 +926,7 @@ void main() {
     test('respects maxBatchSize limit', () {
       fakeAsync((async) {
         const maxBatch = 2;
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(seconds: 5),
           maxBatchSize: maxBatch,
         );
@@ -1007,12 +977,7 @@ void main() {
 
     test('skips processing when no host ID available', () {
       fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(seconds: 5),
         );
 
@@ -1049,12 +1014,7 @@ void main() {
 
     test('does not process if already processing', () {
       fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(seconds: 5),
         );
 
@@ -1098,12 +1058,7 @@ void main() {
 
     test('does not run after dispose', () {
       fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(seconds: 5),
         );
 
@@ -1146,12 +1101,7 @@ void main() {
 
     test('handles errors gracefully', () {
       fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(seconds: 5),
         );
 
@@ -1203,12 +1153,7 @@ void main() {
 
     test('processFullBackfill uses getMissingEntries without host filtering', () {
       fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(minutes: 5),
         );
 
@@ -1265,12 +1210,7 @@ void main() {
         // Disable backfill
         SharedPreferences.setMockInitialValues({'backfill_enabled': false});
 
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(seconds: 5),
         );
 
@@ -1298,12 +1238,7 @@ void main() {
 
     test('filters out already-queued entries from outbox', () {
       fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(seconds: 5),
         );
 
@@ -1358,12 +1293,7 @@ void main() {
 
     test('returns zero when all entries already queued', () {
       fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(seconds: 5),
         );
 
@@ -1402,12 +1332,7 @@ void main() {
 
     test('automatic backfill paginates past a fully queued first page', () {
       fakeAsync((async) {
-        final service = BackfillRequestService(
-          sequenceLogService: mockSequenceService,
-          syncDatabase: mockSyncDatabase,
-          outboxService: mockOutboxService,
-          vectorClockService: mockVcService,
-          loggingService: mockLogging,
+        final service = buildService(
           requestInterval: const Duration(seconds: 5),
           maxBatchSize: 2,
         );
@@ -1468,12 +1393,7 @@ void main() {
     group('processReRequest', () {
       test('sends backfill requests for entries in requested status', () {
         fakeAsync((async) {
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             requestInterval: const Duration(minutes: 5),
             maxBatchSize: 50,
           );
@@ -1529,12 +1449,7 @@ void main() {
 
       test('returns zero when no requested entries', () {
         fakeAsync((async) {
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             requestInterval: const Duration(minutes: 5),
           );
 
@@ -1558,12 +1473,7 @@ void main() {
 
       test('skips entries already queued in outbox', () {
         fakeAsync((async) {
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             requestInterval: const Duration(minutes: 5),
             maxBatchSize: 50,
           );
@@ -1618,12 +1528,7 @@ void main() {
 
       test('paginates past a fully queued first page', () {
         fakeAsync((async) {
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             requestInterval: const Duration(minutes: 5),
             maxBatchSize: 2,
           );
@@ -1682,12 +1587,7 @@ void main() {
 
       test('returns zero when no host ID available', () {
         fakeAsync((async) {
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             requestInterval: const Duration(minutes: 5),
           );
 
@@ -1711,12 +1611,7 @@ void main() {
 
       test('handles errors gracefully and returns partial count', () {
         fakeAsync((async) {
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             requestInterval: const Duration(minutes: 5),
             maxBatchSize: 50,
           );
@@ -1750,12 +1645,7 @@ void main() {
 
       test('does not process if already processing', () {
         fakeAsync((async) {
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             requestInterval: const Duration(seconds: 5),
             maxBatchSize: 50,
           );
@@ -1797,12 +1687,7 @@ void main() {
 
       test('does not run after dispose', () {
         fakeAsync((async) {
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             requestInterval: const Duration(minutes: 5),
           );
 
@@ -1838,12 +1723,7 @@ void main() {
                 ..createSync(recursive: true)
                 ..writeAsStringSync('{"stale":"link"}');
 
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             documentsDirectory: tmp,
             requestInterval: const Duration(minutes: 5),
             maxBatchSize: 50,
@@ -1915,12 +1795,7 @@ void main() {
                 ..createSync(recursive: true)
                 ..writeAsStringSync('{"stale":"journal"}');
 
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             documentsDirectory: tmp,
             requestInterval: const Duration(minutes: 5),
             maxBatchSize: 50,
@@ -1985,12 +1860,7 @@ void main() {
               ..createSync(recursive: true)
               ..writeAsStringSync('keep-me');
 
-            final service = BackfillRequestService(
-              sequenceLogService: mockSequenceService,
-              syncDatabase: mockSyncDatabase,
-              outboxService: mockOutboxService,
-              vectorClockService: mockVcService,
-              loggingService: mockLogging,
+            final service = buildService(
               documentsDirectory: tmp,
               requestInterval: const Duration(minutes: 5),
               maxBatchSize: 50,
@@ -2036,12 +1906,7 @@ void main() {
 
       test('paginates through all requested entries', () {
         fakeAsync((async) {
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             requestInterval: const Duration(minutes: 5),
             maxBatchSize: 2, // Small batch size to test pagination
           );
@@ -2134,15 +1999,9 @@ void main() {
             final coordinator = MockQueuePipelineCoordinator();
             when(() => coordinator.isBridgeInFlight).thenReturn(true);
 
-            final service = BackfillRequestService(
-              sequenceLogService: mockSequenceService,
-              syncDatabase: mockSyncDatabase,
-              outboxService: mockOutboxService,
-              vectorClockService: mockVcService,
-              loggingService: mockLogging,
+            final service = buildService(
               queueCoordinator: coordinator,
             );
-            addTearDown(service.dispose);
 
             service.nudge();
             async.flushMicrotasks();
@@ -2169,15 +2028,9 @@ void main() {
             final coordinator = MockQueuePipelineCoordinator();
             when(() => coordinator.isBridgeInFlight).thenReturn(false);
 
-            final service = BackfillRequestService(
-              sequenceLogService: mockSequenceService,
-              syncDatabase: mockSyncDatabase,
-              outboxService: mockOutboxService,
-              vectorClockService: mockVcService,
-              loggingService: mockLogging,
+            final service = buildService(
               queueCoordinator: coordinator,
             );
-            addTearDown(service.dispose);
 
             service.nudge();
             async.flushMicrotasks();
@@ -2195,15 +2048,9 @@ void main() {
           final coordinator = MockQueuePipelineCoordinator();
           when(() => coordinator.isBridgeInFlight).thenReturn(true);
 
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             queueCoordinator: coordinator,
           );
-          addTearDown(service.dispose);
 
           await service.processFullBackfill();
 
@@ -2238,15 +2085,9 @@ void main() {
               () => mockSequenceService.markAsRequested(any()),
             ).thenAnswer((_) async {});
 
-            final service = BackfillRequestService(
-              sequenceLogService: mockSequenceService,
-              syncDatabase: mockSyncDatabase,
-              outboxService: mockOutboxService,
-              vectorClockService: mockVcService,
-              loggingService: mockLogging,
+            final service = buildService(
               requestInterval: const Duration(minutes: 10),
             );
-            addTearDown(service.dispose);
 
             service.nudgeAfterDrain();
             async.flushMicrotasks();
@@ -2284,16 +2125,10 @@ void main() {
               ),
             ).thenAnswer((_) async => []);
 
-            final service = BackfillRequestService(
-              sequenceLogService: mockSequenceService,
-              syncDatabase: mockSyncDatabase,
-              outboxService: mockOutboxService,
-              vectorClockService: mockVcService,
-              loggingService: mockLogging,
+            final service = buildService(
               requestInterval: const Duration(minutes: 10),
               missingDebounce: const Duration(minutes: 7),
             );
-            addTearDown(service.dispose);
 
             service.nudgeAfterDrain();
             async.flushMicrotasks();
@@ -2351,16 +2186,10 @@ void main() {
               ),
             ).thenAnswer((_) async => []);
 
-            final service = BackfillRequestService(
-              sequenceLogService: mockSequenceService,
-              syncDatabase: mockSyncDatabase,
-              outboxService: mockOutboxService,
-              vectorClockService: mockVcService,
-              loggingService: mockLogging,
+            final service = buildService(
               queueCoordinator: coordinator,
               requestInterval: const Duration(minutes: 10),
             );
-            addTearDown(service.dispose);
 
             service.start();
             async.flushMicrotasks();
@@ -2432,17 +2261,11 @@ void main() {
               () => mockSequenceService.markAsRequested(any()),
             ).thenAnswer((_) async {});
 
-            final service = BackfillRequestService(
-              sequenceLogService: mockSequenceService,
-              syncDatabase: mockSyncDatabase,
-              outboxService: mockOutboxService,
-              vectorClockService: mockVcService,
-              loggingService: mockLogging,
+            final service = buildService(
               queueCoordinator: coordinator,
               requestInterval: const Duration(minutes: 10),
               missingDebounce: const Duration(minutes: 5),
             );
-            addTearDown(service.dispose);
 
             service.start();
             async.flushMicrotasks();
@@ -2510,12 +2333,7 @@ void main() {
               ),
             ).thenAnswer((_) async => []);
 
-            final service = BackfillRequestService(
-              sequenceLogService: mockSequenceService,
-              syncDatabase: mockSyncDatabase,
-              outboxService: mockOutboxService,
-              vectorClockService: mockVcService,
-              loggingService: mockLogging,
+            final service = buildService(
               queueCoordinator: coordinator,
               requestInterval: const Duration(minutes: 10),
             );
@@ -2577,12 +2395,7 @@ void main() {
               ..createSync(recursive: true)
               ..writeAsStringSync('{"stale":"notif"}');
 
-            final service = BackfillRequestService(
-              sequenceLogService: mockSequenceService,
-              syncDatabase: mockSyncDatabase,
-              outboxService: mockOutboxService,
-              vectorClockService: mockVcService,
-              loggingService: mockLogging,
+            final service = buildService(
               documentsDirectory: tmp,
               requestInterval: const Duration(minutes: 5),
               maxBatchSize: 50,
@@ -2667,18 +2480,12 @@ void main() {
           });
 
           // Pass mockLogging as the domainLogger so _trace() calls reach it.
-          final service = BackfillRequestService(
-            sequenceLogService: mockSequenceService,
-            syncDatabase: mockSyncDatabase,
-            outboxService: mockOutboxService,
-            vectorClockService: mockVcService,
-            loggingService: mockLogging,
+          final service = buildService(
             domainLogger: mockLogging,
             documentsDirectory: tmp,
             requestInterval: const Duration(minutes: 5),
             maxBatchSize: 50,
           );
-          addTearDown(service.dispose);
 
           final requestedEntries = [
             _createRequestedLogItemWithPayload(

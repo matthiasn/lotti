@@ -869,6 +869,24 @@ extension _AnyGeneratedBackfillResponseScenario on glados.Any {
       );
 }
 
+/// Stubs the sequence-log lookup for ([hostId], [counter]) to return
+/// [logItem], and `enqueueMessage` as a no-op — the shared preamble of the
+/// per-payload-type handleBackfillRequest tests.
+void _stubRequestLookup(
+  MockSyncSequenceLogService sequenceService,
+  MockOutboxService outboxService, {
+  required String hostId,
+  required int counter,
+  required SyncSequenceLogItem logItem,
+}) {
+  when(
+    () => sequenceService.getEntryByHostAndCounter(hostId, counter),
+  ).thenAnswer((_) async => logItem);
+  when(
+    () => outboxService.enqueueMessage(any()),
+  ).thenAnswer((_) async {});
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -1311,6 +1329,45 @@ void main() {
             ),
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'covering fallback gives up when the covering row has no entryId '
+      '(a gap-materialized placeholder cannot be re-sent)',
+      () async {
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: bobHostId, counter: 3),
+          ],
+          requesterId: requesterId,
+        );
+
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 3),
+        ).thenAnswer((_) async => null);
+        // The nearest covering row exists but carries no entryId — the
+        // valid DB state for rows materialized by gap detection.
+        when(
+          () => mockSequenceService.getNearestCoveringEntry(bobHostId, 3),
+        ).thenAnswer(
+          (_) async => _createLogItem(bobHostId, 5),
+        );
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        await handler.handleBackfillRequest(request);
+
+        // The fallback returns null on the entryId-less row: no payload and
+        // no hint are enqueued, and the loop does not continue past it.
+        verify(
+          () => mockSequenceService.getNearestCoveringEntry(bobHostId, 3),
+        ).called(1);
+        verifyNever(
+          () => mockSequenceService.getNearestCoveringEntry(bobHostId, 6),
+        );
+        verifyNever(() => mockOutboxService.enqueueMessage(any()));
       },
     );
 
@@ -2082,6 +2139,56 @@ void main() {
       );
     });
 
+    test(
+      'rate limit window resets after backfillResponseRateWindow elapses',
+      () async {
+        final windowStart = DateTime(2026, 5, 25, 9);
+        final afterWindow = windowStart.add(
+          SyncTuning.backfillResponseRateWindow + const Duration(seconds: 1),
+        );
+        handler =
+            BackfillResponseHandler(
+                journalDb: mockJournalDb,
+                sequenceLogService: mockSequenceService,
+                outboxService: mockOutboxService,
+                loggingService: mockLogging,
+                vectorClockService: mockVcService,
+                responseCooldown: Duration.zero,
+              )
+              // Saturated window armed in the past...
+              ..windowStart = windowStart
+              ..responsesInWindow = SyncTuning.backfillResponseRateLimit;
+
+        const request = SyncBackfillRequest(
+          entries: [
+            BackfillRequestEntry(hostId: bobHostId, counter: 1),
+          ],
+          requesterId: requesterId,
+        );
+        when(
+          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 1),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockSequenceService.getNearestCoveringEntry(bobHostId, 1),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        // ...but the clock has moved past the window: processing resumes.
+        await withClock(
+          Clock.fixed(afterWindow),
+          () => handler.handleBackfillRequest(request),
+        );
+
+        verify(
+          () => mockSequenceService.getEntryByHostAndCounter(bobHostId, 1),
+        ).called(1);
+        // The bookkeeping restarted: a fresh window at the new instant.
+        expect(handler.windowStart, afterWindow);
+      },
+    );
+
     test('cleans expired cooldown entries at batch start', () async {
       final now = DateTime(2026, 5, 25, 9);
 
@@ -2399,17 +2506,17 @@ void main() {
         payloadType: SyncSequencePayloadType.entryLink,
       );
 
-      when(
-        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 10),
-      ).thenAnswer((_) async => logItem);
+      _stubRequestLookup(
+        mockSequenceService,
+        mockOutboxService,
+        hostId: aliceHostId,
+        counter: 10,
+        logItem: logItem,
+      );
 
       when(
         () => mockJournalDb.entryLinkById('deleted-link-id'),
       ).thenAnswer((_) async => null);
-
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
 
       const request = SyncBackfillRequest(
         entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 10)],
@@ -2449,17 +2556,17 @@ void main() {
         vectorClock: const VectorClock({aliceHostId: 20}),
       );
 
-      when(
-        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
-      ).thenAnswer((_) async => logItem);
+      _stubRequestLookup(
+        mockSequenceService,
+        mockOutboxService,
+        hostId: aliceHostId,
+        counter: 20,
+        logItem: logItem,
+      );
 
       when(
         () => mockJournalDb.entryLinkById('existing-link-id'),
       ).thenAnswer((_) async => link);
-
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
 
       const request = SyncBackfillRequest(
         entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 20)],
@@ -2491,17 +2598,17 @@ void main() {
 
         final link = _createEntryLink('existing-link-id');
 
-        when(
-          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
-        ).thenAnswer((_) async => logItem);
+        _stubRequestLookup(
+          mockSequenceService,
+          mockOutboxService,
+          hostId: aliceHostId,
+          counter: 20,
+          logItem: logItem,
+        );
 
         when(
           () => mockJournalDb.entryLinkById('existing-link-id'),
         ).thenAnswer((_) async => link);
-
-        when(
-          () => mockOutboxService.enqueueMessage(any()),
-        ).thenAnswer((_) async {});
 
         const request = SyncBackfillRequest(
           entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 20)],
@@ -2542,17 +2649,17 @@ void main() {
           vectorClock: const VectorClock({aliceHostId: 50}),
         );
 
-        when(
-          () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
-        ).thenAnswer((_) async => logItem);
+        _stubRequestLookup(
+          mockSequenceService,
+          mockOutboxService,
+          hostId: aliceHostId,
+          counter: 20,
+          logItem: logItem,
+        );
 
         when(
           () => mockJournalDb.entryLinkById('existing-link-id'),
         ).thenAnswer((_) async => link);
-
-        when(
-          () => mockOutboxService.enqueueMessage(any()),
-        ).thenAnswer((_) async {});
 
         const request = SyncBackfillRequest(
           entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 20)],
@@ -2849,17 +2956,17 @@ void main() {
         payloadType: SyncSequencePayloadType.agentEntity,
       );
 
-      when(
-        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 10),
-      ).thenAnswer((_) async => logItem);
+      _stubRequestLookup(
+        mockSequenceService,
+        mockOutboxService,
+        hostId: aliceHostId,
+        counter: 10,
+        logItem: logItem,
+      );
 
       when(
         () => mockAgentRepository.getEntity('missing-agent-id'),
       ).thenAnswer((_) async => null);
-
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
 
       const request = SyncBackfillRequest(
         entries: [
@@ -2984,17 +3091,17 @@ void main() {
         payloadType: SyncSequencePayloadType.agentLink,
       );
 
-      when(
-        () => mockSequenceService.getEntryByHostAndCounter(aliceHostId, 20),
-      ).thenAnswer((_) async => logItem);
+      _stubRequestLookup(
+        mockSequenceService,
+        mockOutboxService,
+        hostId: aliceHostId,
+        counter: 20,
+        logItem: logItem,
+      );
 
       when(
         () => mockAgentRepository.getLinkById('missing-link-id'),
       ).thenAnswer((_) async => null);
-
-      when(
-        () => mockOutboxService.enqueueMessage(any()),
-      ).thenAnswer((_) async {});
 
       const request = SyncBackfillRequest(
         entries: [
