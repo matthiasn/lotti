@@ -219,4 +219,43 @@ void main() {
       tags: 'glados',
     );
   });
+
+  group('AudioRecordingSignalLevel.fromDbfs — Glados properties', () {
+    glados.Glados<int>(
+      glados.IntAnys(glados.any).intInRange(-2000, 200),
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'normalized stays in [0, 1], is monotonic in dBFS, and clipping '
+      'triggers strictly above -3 dBFS',
+      (decivalue) {
+        final dbfs = decivalue / 10.0; // -200.0 .. 20.0 dBFS
+        final level = AudioRecordingSignalLevel.fromDbfs(dbfs);
+
+        expect(level.normalized, greaterThanOrEqualTo(0.0));
+        expect(level.normalized, lessThanOrEqualTo(1.0));
+        expect(level.isClipping, dbfs > -3, reason: 'dBFS=$dbfs');
+
+        // Monotonic: a quieter signal never normalizes higher.
+        final quieter = AudioRecordingSignalLevel.fromDbfs(dbfs - 1);
+        expect(
+          quieter.normalized,
+          lessThanOrEqualTo(level.normalized),
+          reason: 'dBFS=$dbfs',
+        );
+      },
+      tags: 'glados',
+    );
+
+    test('non-finite inputs collapse to silent, non-clipping', () {
+      for (final dbfs in [
+        double.nan,
+        double.infinity,
+        double.negativeInfinity,
+      ]) {
+        final level = AudioRecordingSignalLevel.fromDbfs(dbfs);
+        expect(level.normalized, 0);
+        expect(level.isClipping, isFalse);
+      }
+    });
+  });
 }
