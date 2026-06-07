@@ -522,10 +522,12 @@ void main() {
       ScheduledWakeEntity record({
         ScheduledWakeStatus status = ScheduledWakeStatus.pending,
         DateTime? scheduledAt,
+        String agentId = kTestAgentId,
+        String? id,
       }) {
         return AgentDomainEntity.scheduledWake(
-              id: 'scheduled_wake:$kTestAgentId:day:$dayId',
-              agentId: kTestAgentId,
+              id: id ?? 'scheduled_wake:$agentId:day:$dayId',
+              agentId: agentId,
               scheduledAt: scheduledAt ?? now,
               status: status,
               reason: WakeReason.scheduled.name,
@@ -577,6 +579,70 @@ void main() {
           });
         });
       });
+
+      test(
+        'a failing record is swallowed and the next record still fires',
+        () {
+          fakeAsync((async) {
+            withClock(Clock.fixed(now), () {
+              final failing = record(
+                agentId: 'agent-fail',
+                id: 'wake-fail',
+              );
+              final healthy = record(
+                agentId: 'agent-ok',
+                id: 'wake-ok',
+              );
+              final notifiedAgentIds = <String>[];
+
+              when(
+                () => repository.getDueScheduledAgentStates(any()),
+              ).thenAnswer((_) async => []);
+              when(
+                () => repository.getDueScheduledWakeRecords(any()),
+              ).thenAnswer((_) async => [failing, healthy]);
+              // The first record blows up at enqueue time; the second is fine.
+              when(
+                () => orchestrator.enqueueManualWake(
+                  agentId: any(named: 'agentId'),
+                  reason: any(named: 'reason'),
+                  triggerTokens: any(named: 'triggerTokens'),
+                  workspaceKey: any(named: 'workspaceKey'),
+                ),
+              ).thenAnswer((invocation) {
+                if (invocation.namedArguments[#agentId] == 'agent-fail') {
+                  throw StateError('enqueue blew up');
+                }
+              });
+              when(
+                () => syncService.upsertEntity(any()),
+              ).thenAnswer((_) async {});
+
+              final manager = ScheduledWakeManager(
+                repository: repository,
+                orchestrator: orchestrator,
+                syncService: syncService,
+                checkInterval: const Duration(minutes: 1),
+                onPersistedStateChanged: notifiedAgentIds.add,
+              )..start();
+              async.flushMicrotasks();
+
+              // The healthy record is consumed despite the earlier failure.
+              final consumed =
+                  verify(
+                        () => syncService.upsertEntity(captureAny()),
+                      ).captured.single
+                      as ScheduledWakeEntity;
+              expect(consumed.id, 'wake-ok');
+              expect(consumed.status, ScheduledWakeStatus.consumed);
+              // The failed record never reached the consume/notify steps.
+              expect(notifiedAgentIds, ['agent-ok']);
+
+              manager.stop();
+            });
+          });
+        },
+      );
 
       test('an already-consumed record is never returned as due', () {
         // The Drift due-query filters status='pending'; the repository fake

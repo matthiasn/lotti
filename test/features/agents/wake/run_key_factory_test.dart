@@ -299,6 +299,59 @@ void main() {
 
         expect(actual, equals(expected));
       });
+
+      test('inserts the workspace segment when workspaceKey is non-null', () {
+        const agentId = 'agent-1';
+        const reason = 'scheduled';
+        const workspaceKey = 'day:dayplan-2024-03-15';
+        final ts = DateTime(2024, 3, 15, 10, 30);
+        final expected = _sha256(
+          '$agentId|$reason|$workspaceKey|${ts.toIso8601String()}',
+        );
+
+        final actual = RunKeyFactory.forManual(
+          agentId: agentId,
+          reason: reason,
+          timestamp: ts,
+          workspaceKey: workspaceKey,
+        );
+
+        expect(actual, equals(expected));
+      });
+
+      test('omitted workspaceKey stays byte-identical to a null one', () {
+        final ts = DateTime(2024, 3, 15, 10, 30);
+        final withoutKey = RunKeyFactory.forManual(
+          agentId: 'agent-1',
+          reason: 'scheduled',
+          timestamp: ts,
+        );
+        final withNullKey = RunKeyFactory.forManual(
+          agentId: 'agent-1',
+          reason: 'scheduled',
+          timestamp: ts,
+        );
+
+        expect(withoutKey, equals(withNullKey));
+      });
+
+      test('same-tick wakes for different workspaces do not collide', () {
+        final ts = DateTime(2024, 3, 15, 10, 30);
+        final dayA = RunKeyFactory.forManual(
+          agentId: 'daily_os_planner',
+          reason: 'scheduled',
+          timestamp: ts,
+          workspaceKey: 'day:dayplan-2024-03-15',
+        );
+        final dayB = RunKeyFactory.forManual(
+          agentId: 'daily_os_planner',
+          reason: 'scheduled',
+          timestamp: ts,
+          workspaceKey: 'day:dayplan-2024-03-16',
+        );
+
+        expect(dayA, isNot(equals(dayB)));
+      });
     });
 
     group('operationId', () {

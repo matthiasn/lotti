@@ -1146,5 +1146,45 @@ void main() {
       // No mutation happened, so no persisted-state notification fires.
       expect(changedTokens, isEmpty);
     });
+
+    test(
+      'rejects a template that is not an active day-agent template',
+      () async {
+        when(
+          () => agentService.getAgent(dailyOsPlannerAgentId),
+        ).thenAnswer((_) async => null);
+        final projectTemplate = makeTestTemplate(
+          id: dayAgentTemplateId,
+          agentId: dayAgentTemplateId,
+          kind: AgentTemplateKind.projectAgent,
+        );
+        when(
+          () => repository.getEntity(dayAgentTemplateId),
+        ).thenAnswer((_) async => projectTemplate);
+
+        await expectLater(
+          service.getOrCreatePlannerAgent(),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('not an active day-agent template'),
+            ),
+          ),
+        );
+
+        verifyNever(
+          () => agentService.createAgent(
+            agentId: any(named: 'agentId'),
+            kind: any(named: 'kind'),
+            displayName: any(named: 'displayName'),
+            config: any(named: 'config'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+        // A rejected creation makes no persisted-state notification.
+        expect(changedTokens, isEmpty);
+      },
+    );
   });
 }

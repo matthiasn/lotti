@@ -5802,6 +5802,111 @@ void main() {
     });
   });
 
+  // ── getDueScheduledWakeRecords ─────────────────────────────────────────────
+
+  group('getDueScheduledWakeRecords', () {
+    ScheduledWakeEntity makeScheduledWake({
+      required String id,
+      required DateTime scheduledAt,
+      ScheduledWakeStatus status = ScheduledWakeStatus.pending,
+      String agentId = testAgentId,
+      String workspaceKey = 'day:dayplan-2026-04-01',
+      List<String> triggerTokens = const ['planning_day:dayplan-2026-04-01'],
+      DateTime? deletedAt,
+    }) {
+      return AgentDomainEntity.scheduledWake(
+            id: id,
+            agentId: agentId,
+            scheduledAt: scheduledAt,
+            status: status,
+            reason: WakeReason.scheduled.name,
+            updatedAt: testDate,
+            vectorClock: const VectorClock({'node-1': 7}),
+            triggerTokens: triggerTokens,
+            workspaceKey: workspaceKey,
+            deletedAt: deletedAt,
+          )
+          as ScheduledWakeEntity;
+    }
+
+    test(
+      'returns pending records whose scheduledAt is before or equal to now, '
+      'mapped with their day context',
+      () async {
+        final now = DateTime(2026, 4, 1, 12);
+
+        await repo.upsertEntity(
+          makeScheduledWake(
+            id: 'wake-past',
+            scheduledAt: DateTime(2026, 4, 1, 11),
+          ),
+        );
+        await repo.upsertEntity(
+          makeScheduledWake(id: 'wake-now', scheduledAt: now),
+        );
+        // Future — must not be returned.
+        await repo.upsertEntity(
+          makeScheduledWake(
+            id: 'wake-future',
+            scheduledAt: DateTime(2026, 4, 1, 13),
+          ),
+        );
+
+        final result = await repo.getDueScheduledWakeRecords(now);
+
+        expect(result.map((r) => r.id), containsAll(['wake-past', 'wake-now']));
+        expect(result.map((r) => r.id), isNot(contains('wake-future')));
+        final past = result.firstWhere((r) => r.id == 'wake-past');
+        expect(past.workspaceKey, 'day:dayplan-2026-04-01');
+        expect(past.triggerTokens, ['planning_day:dayplan-2026-04-01']);
+        expect(past.status, ScheduledWakeStatus.pending);
+      },
+    );
+
+    test('excludes records that are no longer pending', () async {
+      final now = DateTime(2026, 4, 1, 12);
+      await repo.upsertEntity(
+        makeScheduledWake(
+          id: 'wake-consumed',
+          scheduledAt: DateTime(2026, 4, 1, 11),
+          status: ScheduledWakeStatus.consumed,
+        ),
+      );
+
+      final result = await repo.getDueScheduledWakeRecords(now);
+
+      expect(result, isEmpty);
+    });
+
+    test('excludes soft-deleted records', () async {
+      final now = DateTime(2026, 4, 1, 12);
+      await repo.upsertEntity(
+        makeScheduledWake(
+          id: 'wake-deleted',
+          scheduledAt: DateTime(2026, 4, 1, 11),
+          deletedAt: DateTime(2026, 4, 1, 11, 30),
+        ),
+      );
+
+      final result = await repo.getDueScheduledWakeRecords(now);
+
+      expect(result, isEmpty);
+    });
+
+    test('returns empty list when nothing is due', () async {
+      await repo.upsertEntity(
+        makeScheduledWake(
+          id: 'wake-future-only',
+          scheduledAt: DateTime(2026, 5),
+        ),
+      );
+
+      final result = await repo.getDueScheduledWakeRecords(DateTime(2026, 4));
+
+      expect(result, isEmpty);
+    });
+  });
+
   // ── getEntitiesWithNullVectorClock / countEntitiesWithNullVectorClock ──────
 
   group('getEntitiesWithNullVectorClock', () {

@@ -187,13 +187,17 @@ void main() {
         // The user-facing message is exactly the canonical text for the
         // resolved type — never raw exception output.
         const friendly = {
-          SyncErrorType.database: 'Failed to access local data. '
+          SyncErrorType.database:
+              'Failed to access local data. '
               'Please try again.',
-          SyncErrorType.network: 'Network connection issue. '
+          SyncErrorType.network:
+              'Network connection issue. '
               'Please check your internet connection.',
-          SyncErrorType.outbox: 'Failed to queue sync items. '
+          SyncErrorType.outbox:
+              'Failed to queue sync items. '
               'Please try again.',
-          SyncErrorType.unknown: 'An unexpected error occurred. '
+          SyncErrorType.unknown:
+              'An unexpected error occurred. '
               'Please try again.',
         };
         expect(error.message, friendly[error.type], reason: 'msg="$message"');
