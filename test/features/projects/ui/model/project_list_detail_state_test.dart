@@ -76,7 +76,7 @@ void main() {
         expect(filtered, hasLength(1));
       });
 
-      test('filters by selected project statuses', () {
+      test('status filter keeps projects matching the selected status', () {
         final filtered = state
             .copyWith(
               filter: state.filter.copyWith(
@@ -86,8 +86,10 @@ void main() {
             .visibleProjects;
 
         expect(filtered, hasLength(2));
+      });
 
-        final activeFiltered = state
+      test('status filter yields nothing when no project has the status', () {
+        final filtered = state
             .copyWith(
               filter: state.filter.copyWith(
                 selectedStatusIds: {ProjectStatusFilterIds.active},
@@ -95,7 +97,7 @@ void main() {
             )
             .visibleProjects;
 
-        expect(activeFiltered, isEmpty);
+        expect(filtered, isEmpty);
       });
 
       test('filters by selected categories', () {
@@ -121,6 +123,15 @@ void main() {
         final updated = state.copyWith(selectedProjectId: 'nonexistent');
 
         expect(updated.selectedProject?.project.meta.id, 'p1');
+      });
+
+      test('returns null when data.projects is empty', () {
+        final updated = state.copyWith(
+          data: makeTestProjectListData(projects: []),
+        );
+
+        expect(updated.selectedProject, isNull);
+        expect(updated.visibleProjects, isEmpty);
       });
 
       test('returns null when no projects are visible', () {
