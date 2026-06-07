@@ -1,4 +1,6 @@
+import 'package:collection/collection.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/tasks/ui/labels/label_ui_utils.dart';
@@ -136,4 +138,112 @@ void main() {
       expect(result.items.map((l) => l.name), ['aardvark', 'Alpha', 'beta']);
     });
   });
+
+  group('buildSelectorLabelList properties', () {
+    glados.Glados2(
+      glados.any.labelSpecList,
+      glados.any.searchTerm,
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'filtered list is a sorted subset of the union matching the search',
+      (specs, searchLower) {
+        final available = [
+          for (final (i, spec) in specs.indexed)
+            if (i.isEven) spec.toLabel(i),
+        ];
+        final assigned = [
+          for (final (i, spec) in specs.indexed)
+            if (i.isOdd) spec.toLabel(i),
+        ];
+
+        final result = buildSelectorLabelList(
+          available: available,
+          assignedDefs: assigned,
+          selectedIds: {for (final l in assigned) l.id},
+          searchLower: searchLower,
+        );
+
+        final union = buildUnionLabels(available, assigned);
+        final unionIds = union.map((l) => l.id).toSet();
+        final reason = 'specs=$specs search="$searchLower"';
+
+        // availableIds mirrors exactly the available list.
+        expect(
+          result.availableIds,
+          available.map((l) => l.id).toSet(),
+          reason: reason,
+        );
+
+        // Every produced item comes from the union and matches the search.
+        for (final item in result.items) {
+          expect(unionIds, contains(item.id), reason: reason);
+          expect(
+            item.name.toLowerCase().contains(searchLower) ||
+                (item.description?.toLowerCase().contains(searchLower) ??
+                    false),
+            isTrue,
+            reason: '$reason item=${item.id}',
+          );
+        }
+
+        // Nothing matching was dropped.
+        final expectedMatchCount = union
+            .where(
+              (l) =>
+                  l.name.toLowerCase().contains(searchLower) ||
+                  (l.description?.toLowerCase().contains(searchLower) ?? false),
+            )
+            .length;
+        expect(result.items, hasLength(expectedMatchCount), reason: reason);
+
+        // Strict A-Z ordering, independent of selection state.
+        for (var i = 1; i < result.items.length; i++) {
+          expect(
+            compareAsciiLowerCase(
+              result.items[i - 1].name,
+              result.items[i].name,
+            ),
+            lessThanOrEqualTo(0),
+            reason: reason,
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+class _GeneratedLabelSpec {
+  const _GeneratedLabelSpec({required this.name, this.description});
+
+  final String name;
+  final String? description;
+
+  LabelDefinition toLabel(int index) =>
+      _label('id-$index', name: name, description: description);
+
+  @override
+  String toString() =>
+      '_GeneratedLabelSpec(name: $name, description: $description)';
+}
+
+extension _AnyLabelSpec on glados.Any {
+  glados.Generator<String> get _word =>
+      glados.StringAnys(this).stringOf('abuz');
+
+  glados.Generator<_GeneratedLabelSpec> get labelSpec =>
+      glados.CombinableAny(this).combine2(
+        _word,
+        _word,
+        (String name, String desc) => _GeneratedLabelSpec(
+          name: name.isEmpty ? 'x' : name,
+          description: desc.isEmpty ? null : desc,
+        ),
+      );
+
+  glados.Generator<List<_GeneratedLabelSpec>> get labelSpecList =>
+      glados.ListAnys(this).listWithLengthInRange(0, 8, labelSpec);
+
+  glados.Generator<String> get searchTerm =>
+      glados.StringAnys(this).stringOf('abuz');
 }

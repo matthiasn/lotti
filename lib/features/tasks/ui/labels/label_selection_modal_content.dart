@@ -52,11 +52,17 @@ class _LabelSelectionSliverContentState
   Future<bool> apply() async {
     final repository = ref.read(labelsRepositoryProvider);
     final ids = _selectedLabelIds.toList();
-    final result = await repository.setLabels(
-      journalEntityId: widget.entryId,
-      labelIds: ids,
-    );
-    return result ?? false;
+    try {
+      final result = await repository.setLabels(
+        journalEntityId: widget.entryId,
+        labelIds: ids,
+      );
+      return result ?? false;
+    } catch (_) {
+      // The repository logs its own failures; the modal only needs the
+      // boolean outcome to decide whether to close.
+      return false;
+    }
   }
 
   @override
