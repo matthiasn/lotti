@@ -307,6 +307,8 @@ getGlobalTokenUsageSince: SELECT * FROM agent_entities WHERE type = 'wakeTokenUs
 
 getDueScheduledAgentStates: SELECT * FROM agent_entities WHERE type = 'agentState' AND deleted_at IS NULL AND json_extract(serialized, '$.scheduledWakeAt') IS NOT NULL AND json_extract(serialized, '$.scheduledWakeAt') <= :nowIso;
 
+getDueScheduledWakeRecords: SELECT * FROM agent_entities WHERE type = 'scheduledWake' AND deleted_at IS NULL AND json_extract(serialized, '$.status') = 'pending' AND json_extract(serialized, '$.scheduledAt') IS NOT NULL AND json_extract(serialized, '$.scheduledAt') <= :nowIso;
+
 getAgentEntitiesWithNullVectorClock: SELECT * FROM agent_entities WHERE json_extract(serialized, '$.vectorClock') IS NULL ORDER BY created_at ASC;
 
 countAgentEntitiesWithNullVectorClock: SELECT COUNT(*) AS cnt FROM agent_entities WHERE json_extract(serialized, '$.vectorClock') IS NULL;

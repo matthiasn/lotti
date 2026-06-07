@@ -331,6 +331,56 @@ void main() {
     );
 
     test(
+      'returns only captures for the selected day under one planner (ADR 0022)',
+      () async {
+        // Simulate the post-flip world: one identity owns captures for several
+        // days. The provider must surface only the selected date's workspace.
+        const agentId = 'daily_os_planner';
+        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.dayAgent,
+          ),
+        );
+        final today =
+            AgentDomainEntity.capture(
+                  id: 'cap-today',
+                  agentId: agentId,
+                  transcript: 'today',
+                  capturedAt: forDate,
+                  createdAt: forDate,
+                  vectorClock: null,
+                  dayId: 'dayplan-2026-05-25',
+                )
+                as CaptureEntity;
+        final otherDay =
+            AgentDomainEntity.capture(
+                  id: 'cap-other',
+                  agentId: agentId,
+                  transcript: 'other day',
+                  capturedAt: DateTime(2026, 5, 26, 9),
+                  createdAt: DateTime(2026, 5, 26, 9),
+                  vectorClock: null,
+                  dayId: 'dayplan-2026-05-26',
+                )
+                as CaptureEntity;
+        when(
+          () => agentRepository.getEntitiesByAgentId(
+            agentId,
+            type: AgentEntityTypes.capture,
+          ),
+        ).thenAnswer((_) async => [today, otherDay]);
+
+        final rows = await makeContainer().read(
+          capturesForDateProvider(forDate).future,
+        );
+
+        expect(rows.map((r) => r.capture.id), ['cap-today']);
+      },
+    );
+
+    test(
       'leaves audio null when the capture has no audioRef',
       () async {
         const agentId = 'day-agent-003';

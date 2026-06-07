@@ -458,6 +458,44 @@ void main() {
       expect(parsed.matchedTaskId, 'task-001');
     });
 
+    test('scheduledWake writes type/subtype and roundtrips through a row', () {
+      final entity = AgentDomainEntity.scheduledWake(
+        id: 'scheduled_wake:$agentId:day:dayplan-2026-05-25',
+        agentId: agentId,
+        scheduledAt: DateTime(2026, 5, 25, 8, 30),
+        status: ScheduledWakeStatus.pending,
+        reason: 'scheduled',
+        updatedAt: updatedAt,
+        vectorClock: const VectorClock({'node-a': 2}),
+        triggerTokens: const ['planning_day:dayplan-2026-05-25'],
+        workspaceKey: 'day:dayplan-2026-05-25',
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+      expect(companion.type, const Value(AgentEntityTypes.scheduledWake));
+      expect(companion.subtype, const Value('pending'));
+      expect(companion.updatedAt, Value(updatedAt));
+
+      final row = AgentEntity(
+        id: entity.id,
+        agentId: agentId,
+        type: AgentEntityTypes.scheduledWake,
+        subtype: 'pending',
+        createdAt: updatedAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<ScheduledWakeEntity>());
+      final wake = result as ScheduledWakeEntity;
+      expect(wake.scheduledAt, DateTime(2026, 5, 25, 8, 30));
+      expect(wake.workspaceKey, 'day:dayplan-2026-05-25');
+      expect(wake.triggerTokens, ['planning_day:dayplan-2026-05-25']);
+      expect(wake.status, ScheduledWakeStatus.pending);
+    });
+
     test('toEntityCompanion writes dayPlan type, subtype, and timestamps', () {
       final entity = AgentDomainEntity.dayPlan(
         id: 'day_agent_plan:dayplan-2026-05-25',

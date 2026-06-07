@@ -355,8 +355,14 @@ extension WakeDrainEngine on WakeOrchestrator {
         // — direct edit or task-agent propagated child update — keeps the
         // standard 120 s drain so user-visible task edits land promptly.
         if (job.reason == WakeReason.subscription.name &&
-            queue.hasQueuedJobFor(job.agentId)) {
-          final hasDirectQueued = queue.hasDirectQueuedJobFor(job.agentId);
+            queue.hasQueuedJobFor(
+              job.agentId,
+              workspaceKey: job.workspaceKey,
+            )) {
+          final hasDirectQueued = queue.hasDirectQueuedJobFor(
+            job.agentId,
+            workspaceKey: job.workspaceKey,
+          );
           final morningDeadline = !hasDirectQueued
               ? nextOccurrenceOf(
                   clock.now(),

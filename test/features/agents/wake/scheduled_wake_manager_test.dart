@@ -247,6 +247,11 @@ void main() {
     repository = MockAgentRepository();
     orchestrator = MockWakeOrchestrator();
     syncService = MockAgentSyncService();
+    // Default: no persisted scheduled-wake records. Individual record tests
+    // override this.
+    when(
+      () => repository.getDueScheduledWakeRecords(any()),
+    ).thenAnswer((_) async => []);
   });
 
   ScheduledWakeManager createAndStart({
@@ -287,6 +292,9 @@ void main() {
             when(
               () => generatedRepository.getDueScheduledAgentStates(any()),
             ).thenAnswer((_) async => states);
+            when(
+              () => generatedRepository.getDueScheduledWakeRecords(any()),
+            ).thenAnswer((_) async => []);
             when(() => generatedSyncService.upsertEntity(any())).thenAnswer((
               invocation,
             ) async {
@@ -394,6 +402,9 @@ void main() {
               repositoryChecks++;
               return <AgentStateEntity>[];
             });
+            when(
+              () => generatedRepository.getDueScheduledWakeRecords(any()),
+            ).thenAnswer((_) async => []);
 
             final manager = ScheduledWakeManager(
               repository: generatedRepository,
@@ -500,6 +511,166 @@ void main() {
           );
 
           manager.stop();
+        });
+      });
+    });
+
+    group('persisted scheduled-wake records (ADR 0022)', () {
+      const dayId = 'dayplan-2024-03-15';
+      final now = DateTime(2024, 3, 15, 10, 30);
+
+      ScheduledWakeEntity record({
+        ScheduledWakeStatus status = ScheduledWakeStatus.pending,
+        DateTime? scheduledAt,
+        String agentId = kTestAgentId,
+        String? id,
+      }) {
+        return AgentDomainEntity.scheduledWake(
+              id: id ?? 'scheduled_wake:$agentId:day:$dayId',
+              agentId: agentId,
+              scheduledAt: scheduledAt ?? now,
+              status: status,
+              reason: WakeReason.scheduled.name,
+              updatedAt: now,
+              vectorClock: null,
+              triggerTokens: ['planning_day:$dayId'],
+              workspaceKey: 'day:$dayId',
+            )
+            as ScheduledWakeEntity;
+      }
+
+      test('fires a due record with its day context and consumes it', () {
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => []);
+            when(
+              () => repository.getDueScheduledWakeRecords(any()),
+            ).thenAnswer((_) async => [record()]);
+            when(
+              () => syncService.upsertEntity(any()),
+            ).thenAnswer((_) async {});
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            // The wake restores with the record's workspace key + tokens —
+            // not a context-less scheduled wake.
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: WakeReason.scheduled.name,
+                triggerTokens: {'planning_day:$dayId'},
+                workspaceKey: 'day:$dayId',
+              ),
+            ).called(1);
+
+            // The record is flipped to consumed (not hard-deleted).
+            final consumed =
+                verify(
+                      () => syncService.upsertEntity(captureAny()),
+                    ).captured.single
+                    as ScheduledWakeEntity;
+            expect(consumed.status, ScheduledWakeStatus.consumed);
+            expect(consumed.consumedAt, now);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test(
+        'a failing record is swallowed and the next record still fires',
+        () {
+          fakeAsync((async) {
+            withClock(Clock.fixed(now), () {
+              final failing = record(
+                agentId: 'agent-fail',
+                id: 'wake-fail',
+              );
+              final healthy = record(
+                agentId: 'agent-ok',
+                id: 'wake-ok',
+              );
+              final notifiedAgentIds = <String>[];
+
+              when(
+                () => repository.getDueScheduledAgentStates(any()),
+              ).thenAnswer((_) async => []);
+              when(
+                () => repository.getDueScheduledWakeRecords(any()),
+              ).thenAnswer((_) async => [failing, healthy]);
+              // The first record blows up at enqueue time; the second is fine.
+              when(
+                () => orchestrator.enqueueManualWake(
+                  agentId: any(named: 'agentId'),
+                  reason: any(named: 'reason'),
+                  triggerTokens: any(named: 'triggerTokens'),
+                  workspaceKey: any(named: 'workspaceKey'),
+                ),
+              ).thenAnswer((invocation) {
+                if (invocation.namedArguments[#agentId] == 'agent-fail') {
+                  throw StateError('enqueue blew up');
+                }
+              });
+              when(
+                () => syncService.upsertEntity(any()),
+              ).thenAnswer((_) async {});
+
+              final manager = ScheduledWakeManager(
+                repository: repository,
+                orchestrator: orchestrator,
+                syncService: syncService,
+                checkInterval: const Duration(minutes: 1),
+                onPersistedStateChanged: notifiedAgentIds.add,
+              )..start();
+              async.flushMicrotasks();
+
+              // The healthy record is consumed despite the earlier failure.
+              final consumed =
+                  verify(
+                        () => syncService.upsertEntity(captureAny()),
+                      ).captured.single
+                      as ScheduledWakeEntity;
+              expect(consumed.id, 'wake-ok');
+              expect(consumed.status, ScheduledWakeStatus.consumed);
+              // The failed record never reached the consume/notify steps.
+              expect(notifiedAgentIds, ['agent-ok']);
+
+              manager.stop();
+            });
+          });
+        },
+      );
+
+      test('an already-consumed record is never returned as due', () {
+        // The Drift due-query filters status='pending'; the repository fake
+        // models that by returning only pending records. A consumed record
+        // must therefore not re-fire.
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(
+              () => repository.getDueScheduledAgentStates(any()),
+            ).thenAnswer((_) async => []);
+            when(
+              () => repository.getDueScheduledWakeRecords(any()),
+            ).thenAnswer((_) async => []);
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            verifyNever(
+              () => orchestrator.enqueueManualWake(
+                agentId: any(named: 'agentId'),
+                reason: any(named: 'reason'),
+                triggerTokens: any(named: 'triggerTokens'),
+                workspaceKey: any(named: 'workspaceKey'),
+              ),
+            );
+
+            manager.stop();
+          });
         });
       });
     });

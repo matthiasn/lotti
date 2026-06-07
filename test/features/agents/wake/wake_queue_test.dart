@@ -17,6 +17,12 @@ enum _GeneratedWakeQueueAgentSlot { first, second, third }
 
 enum _GeneratedWakeQueueTokenSlot { first, second, third, fourth }
 
+/// Workspace partition for a generated job. `none` maps to a `null`
+/// workspace key (task/project agents); `dayA`/`dayB` are two day workspaces
+/// under one planner identity — generated independently of the agent slot so
+/// the model exercises "same agent, different workspace" partitioning.
+enum _GeneratedWakeQueueWorkspaceSlot { none, dayA, dayB }
+
 final _generatedWakeQueueBase = DateTime(2026, 5, 18, 10);
 
 String _generatedWakeQueueRunKey(_GeneratedWakeQueueRunKeySlot slot) =>
@@ -28,18 +34,27 @@ String _generatedWakeQueueAgentId(_GeneratedWakeQueueAgentSlot slot) =>
 String _generatedWakeQueueToken(_GeneratedWakeQueueTokenSlot slot) =>
     'generated-wake-token-${slot.name}';
 
+String? _generatedWakeQueueWorkspace(_GeneratedWakeQueueWorkspaceSlot slot) =>
+    switch (slot) {
+      _GeneratedWakeQueueWorkspaceSlot.none => null,
+      _GeneratedWakeQueueWorkspaceSlot.dayA => 'day:dayplan-2026-05-18',
+      _GeneratedWakeQueueWorkspaceSlot.dayB => 'day:dayplan-2026-05-19',
+    };
+
 class _GeneratedWakeQueueOperation {
   const _GeneratedWakeQueueOperation({
     required this.kind,
     required this.runKeySlot,
     required this.agentSlot,
     required this.tokenSlot,
+    required this.workspaceSlot,
   });
 
   final _GeneratedWakeQueueOperationKind kind;
   final _GeneratedWakeQueueRunKeySlot runKeySlot;
   final _GeneratedWakeQueueAgentSlot agentSlot;
   final _GeneratedWakeQueueTokenSlot tokenSlot;
+  final _GeneratedWakeQueueWorkspaceSlot workspaceSlot;
 
   String get runKey => _generatedWakeQueueRunKey(runKeySlot);
 
@@ -47,11 +62,14 @@ class _GeneratedWakeQueueOperation {
 
   String get token => _generatedWakeQueueToken(tokenSlot);
 
+  String? get workspaceKey => _generatedWakeQueueWorkspace(workspaceSlot);
+
   @override
   String toString() {
     return '_GeneratedWakeQueueOperation('
         'kind: $kind, runKeySlot: $runKeySlot, '
-        'agentSlot: $agentSlot, tokenSlot: $tokenSlot)';
+        'agentSlot: $agentSlot, tokenSlot: $tokenSlot, '
+        'workspaceSlot: $workspaceSlot)';
   }
 }
 
@@ -71,11 +89,13 @@ class _GeneratedWakeQueueModelJob {
     required this.runKey,
     required this.agentId,
     required Set<String> triggerTokens,
+    required this.workspaceKey,
   }) : triggerTokens = Set<String>.of(triggerTokens);
 
   final String runKey;
   final String agentId;
   final Set<String> triggerTokens;
+  final String? workspaceKey;
 }
 
 class _GeneratedWakeQueueModel {
@@ -98,22 +118,29 @@ extension _AnyGeneratedWakeQueueScenario on glados.Any {
   glados.Generator<_GeneratedWakeQueueTokenSlot> get wakeQueueTokenSlot =>
       glados.AnyUtils(this).choose(_GeneratedWakeQueueTokenSlot.values);
 
+  glados.Generator<_GeneratedWakeQueueWorkspaceSlot>
+  get wakeQueueWorkspaceSlot =>
+      glados.AnyUtils(this).choose(_GeneratedWakeQueueWorkspaceSlot.values);
+
   glados.Generator<_GeneratedWakeQueueOperation> get wakeQueueOperation =>
-      glados.CombinableAny(this).combine4(
+      glados.CombinableAny(this).combine5(
         wakeQueueOperationKind,
         wakeQueueRunKeySlot,
         wakeQueueAgentSlot,
         wakeQueueTokenSlot,
+        wakeQueueWorkspaceSlot,
         (
           _GeneratedWakeQueueOperationKind kind,
           _GeneratedWakeQueueRunKeySlot runKeySlot,
           _GeneratedWakeQueueAgentSlot agentSlot,
           _GeneratedWakeQueueTokenSlot tokenSlot,
+          _GeneratedWakeQueueWorkspaceSlot workspaceSlot,
         ) => _GeneratedWakeQueueOperation(
           kind: kind,
           runKeySlot: runKeySlot,
           agentSlot: agentSlot,
           tokenSlot: tokenSlot,
+          workspaceSlot: workspaceSlot,
         ),
       );
 
@@ -138,6 +165,7 @@ void main() {
     String reason = 'subscription',
     Set<String>? triggerTokens,
     String? reasonId,
+    String? workspaceKey,
     DateTime? createdAt,
   }) {
     return WakeJob(
@@ -146,6 +174,7 @@ void main() {
       reason: reason,
       triggerTokens: triggerTokens ?? {'tok-a'},
       reasonId: reasonId,
+      workspaceKey: workspaceKey,
       createdAt: createdAt ?? testDate,
     );
   }
@@ -404,6 +433,111 @@ void main() {
       });
     });
 
+    group('workspace partitioning (ADR 0022)', () {
+      const dayA = 'day:dayplan-2026-05-18';
+      const dayB = 'day:dayplan-2026-05-19';
+
+      test(
+        'a day-B manual wake does not drop a queued day-A draft job',
+        () {
+          queue
+            ..enqueue(
+              makeJob(runKey: 'a-draft', workspaceKey: dayA),
+            )
+            ..enqueue(
+              makeJob(runKey: 'b-capture', workspaceKey: dayB),
+            );
+
+          // Superseding a day-B wake removes only day-B jobs.
+          final removed = queue.removeByAgent('agent-1', workspaceKey: dayB);
+
+          expect(removed.map((j) => j.runKey), ['b-capture']);
+          expect(queue.length, 1);
+          expect(queue.dequeue()!.runKey, 'a-draft');
+        },
+      );
+
+      test('a same-workspace manual wake still supersedes its own day', () {
+        queue
+          ..enqueue(makeJob(runKey: 'a-draft-old', workspaceKey: dayA))
+          ..enqueue(makeJob(runKey: 'b-draft', workspaceKey: dayB));
+
+        final removed = queue.removeByAgent('agent-1', workspaceKey: dayA);
+
+        expect(removed.map((j) => j.runKey), ['a-draft-old']);
+        expect(queue.dequeue()!.runKey, 'b-draft');
+      });
+
+      test('mergeTokens only merges into the matching workspace', () {
+        queue
+          ..enqueue(
+            makeJob(
+              runKey: 'a',
+              workspaceKey: dayA,
+              triggerTokens: {'tok-a'},
+            ),
+          )
+          ..enqueue(
+            makeJob(
+              runKey: 'b',
+              workspaceKey: dayB,
+              triggerTokens: {'tok-b'},
+            ),
+          );
+
+        final merged = queue.mergeTokens(
+          'agent-1',
+          {'tok-x'},
+          workspaceKey: dayB,
+        );
+
+        expect(merged, isTrue);
+        final first = queue.dequeue()!;
+        final second = queue.dequeue()!;
+        expect(first.triggerTokens, {'tok-a'});
+        expect(second.triggerTokens, containsAll(['tok-b', 'tok-x']));
+      });
+
+      test('null workspace partitions only with null', () {
+        queue
+          ..enqueue(makeJob(runKey: 'null-job'))
+          ..enqueue(makeJob(runKey: 'day-job', workspaceKey: dayA));
+
+        // A null-workspace supersede (e.g. a task agent) never touches a
+        // day-scoped planner job.
+        final removed = queue.removeByAgent('agent-1');
+        expect(removed.map((j) => j.runKey), ['null-job']);
+        expect(queue.dequeue()!.runKey, 'day-job');
+      });
+
+      test('allWorkspaces removes every job for the agent', () {
+        queue
+          ..enqueue(makeJob(runKey: 'null-job'))
+          ..enqueue(makeJob(runKey: 'a-job', workspaceKey: dayA))
+          ..enqueue(makeJob(runKey: 'b-job', workspaceKey: dayB));
+
+        final removed = queue.removeByAgent('agent-1', allWorkspaces: true);
+
+        expect(removed, hasLength(3));
+        expect(queue.isEmpty, isTrue);
+      });
+
+      test(
+        'hasQueuedJobFor and hasDirectQueuedJobFor are workspace-scoped',
+        () {
+          queue.enqueue(makeJob(runKey: 'a', workspaceKey: dayA));
+
+          expect(queue.hasQueuedJobFor('agent-1', workspaceKey: dayA), isTrue);
+          expect(queue.hasQueuedJobFor('agent-1', workspaceKey: dayB), isFalse);
+          expect(queue.hasQueuedJobFor('agent-1'), isFalse);
+          expect(
+            queue.hasDirectQueuedJobFor('agent-1', workspaceKey: dayA),
+            isTrue,
+          );
+        },
+      );
+    });
+
     glados.Glados(
       glados.any.wakeQueueScenario,
       glados.ExploreConfig(numRuns: 160),
@@ -422,6 +556,7 @@ void main() {
                   runKey: operation.runKey,
                   agentId: operation.agentId,
                   triggerTokens: {operation.token},
+                  workspaceKey: operation.workspaceKey,
                 ),
               );
             }
@@ -432,6 +567,7 @@ void main() {
                 agentId: operation.agentId,
                 reason: 'subscription',
                 triggerTokens: {operation.token},
+                workspaceKey: operation.workspaceKey,
                 createdAt: _generatedWakeQueueBase.add(
                   Duration(seconds: index),
                 ),
@@ -458,29 +594,42 @@ void main() {
             );
 
           case _GeneratedWakeQueueOperationKind.mergeTokens:
+            // Merge partitions by (agentId, workspaceKey): only a job in the
+            // same workspace coalesces.
             final expected = model.queue
-                .where((job) => job.agentId == operation.agentId)
+                .where(
+                  (job) =>
+                      job.agentId == operation.agentId &&
+                      job.workspaceKey == operation.workspaceKey,
+                )
                 .firstOrNull;
             expected?.triggerTokens.add(operation.token);
 
             final merged = generatedQueue.mergeTokens(
               operation.agentId,
               {operation.token},
+              workspaceKey: operation.workspaceKey,
             );
 
             expect(merged, expected != null, reason: '$scenario');
 
           case _GeneratedWakeQueueOperationKind.removeByAgent:
+            // Remove partitions by (agentId, workspaceKey): a day-A wake must
+            // not drop another day's queued work under one identity.
             final removed = <_GeneratedWakeQueueModelJob>[];
             model.queue.removeWhere((job) {
-              if (job.agentId == operation.agentId) {
+              if (job.agentId == operation.agentId &&
+                  job.workspaceKey == operation.workspaceKey) {
                 removed.add(job);
                 return true;
               }
               return false;
             });
 
-            final actual = generatedQueue.removeByAgent(operation.agentId);
+            final actual = generatedQueue.removeByAgent(
+              operation.agentId,
+              workspaceKey: operation.workspaceKey,
+            );
 
             expect(
               actual.map((job) => job.runKey).toList(),

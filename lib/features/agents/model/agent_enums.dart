@@ -128,6 +128,16 @@ enum WakeReason {
   transcriptionComplete,
 }
 
+/// Lifecycle status of a persisted scheduled-wake record (ADR 0022).
+enum ScheduledWakeStatus {
+  /// Not yet fired; the scheduled-wake manager will enqueue it once due.
+  pending,
+
+  /// Already enqueued by the manager. Kept (not hard-deleted) for audit and so
+  /// a concurrent device's flip converges via LWW rather than resurrecting it.
+  consumed,
+}
+
 /// Status of an evolution session.
 enum EvolutionSessionStatus {
   /// Session is currently in progress.

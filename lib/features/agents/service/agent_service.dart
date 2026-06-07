@@ -44,22 +44,29 @@ class AgentService {
   /// 2. Creates an initial [AgentStateEntity] with revision 0.
   /// 3. Links the agent to its state via an [AgentStateLink].
   ///
+  /// When [agentId] is provided, the identity, state, and link ids are all
+  /// derived deterministically from it. Singleton identities (e.g. the Daily
+  /// OS planner, ADR 0022) use this so concurrent creation on different
+  /// devices writes byte-identical entity ids and converges via LWW instead
+  /// of producing duplicates. When omitted, fresh UUIDs are minted.
+  ///
   /// Returns the [AgentIdentityEntity].
   Future<AgentIdentityEntity> createAgent({
     required String kind,
     required String displayName,
     required AgentConfig config,
     Set<String> allowedCategoryIds = const {},
+    String? agentId,
   }) async {
-    final agentId = _uuid.v4();
-    final stateId = _uuid.v4();
-    final linkId = _uuid.v4();
+    final resolvedAgentId = agentId ?? _uuid.v4();
+    final stateId = agentId != null ? '$agentId:state' : _uuid.v4();
+    final linkId = agentId != null ? '$agentId:state-link' : _uuid.v4();
     final now = clock.now();
 
     final identity =
         AgentDomainEntity.agent(
-              id: agentId,
-              agentId: agentId,
+              id: resolvedAgentId,
+              agentId: resolvedAgentId,
               kind: kind,
               displayName: displayName,
               lifecycle: AgentLifecycle.active,
@@ -76,7 +83,7 @@ class AgentService {
     final state =
         AgentDomainEntity.agentState(
               id: stateId,
-              agentId: agentId,
+              agentId: resolvedAgentId,
               slots: const AgentSlots(),
               updatedAt: now,
               vectorClock: null,
@@ -85,7 +92,7 @@ class AgentService {
 
     final link = AgentLink.agentState(
       id: linkId,
-      fromId: agentId,
+      fromId: resolvedAgentId,
       toId: stateId,
       createdAt: now,
       updatedAt: now,
@@ -99,7 +106,8 @@ class AgentService {
     });
 
     developer.log(
-      'Created agent ${DomainLogger.sanitizeId(agentId)} (kind: $kind)',
+      'Created agent ${DomainLogger.sanitizeId(resolvedAgentId)} '
+      '(kind: $kind)',
       name: 'AgentService',
     );
 
@@ -138,7 +146,8 @@ class AgentService {
   /// for the same agent from the in-memory wake queue.
   void cancelPendingWake(String agentId) {
     orchestrator.clearThrottle(agentId);
-    orchestrator.queue.removeByAgent(agentId);
+    // Cancel-all: drop every queued job for the agent across all workspaces.
+    orchestrator.queue.removeByAgent(agentId, allWorkspaces: true);
   }
 
   /// Abort the in-flight wake for [agentId], if any.

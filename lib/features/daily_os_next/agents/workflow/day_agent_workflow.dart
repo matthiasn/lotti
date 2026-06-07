@@ -22,8 +22,11 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/daily_os_planner_wake_context.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
@@ -138,15 +141,58 @@ class DayAgentWorkflow {
       return const WakeResult(success: false, error: 'No agent state found');
     }
 
-    final dayId = state.slots.activeDayId;
+    // Day workspace resolution (ADR 0022 Decisions 3–4): the wake's trigger
+    // tokens are authoritative. A capture-submitted wake carries no day token,
+    // so its day resolves from the capture's own `dayId` scope; the per-day
+    // `activeDayId` slot remains a last-resort fallback until the identity
+    // cutover removes per-day identities.
+    final dayResolution = resolvePlannerWakeDay(triggerTokens);
+    if (dayResolution.isAmbiguous) {
+      final candidates = dayResolution.candidates.toList()..sort();
+      return WakeResult(
+        success: false,
+        error: 'Ambiguous day workspace in trigger tokens: $candidates',
+      );
+    }
+    // Token day first, then the legacy per-day slot. Only when neither yields a
+    // day (a capture-only wake under one planner, where the slot is gone) do we
+    // load the capture to resolve its own `dayId` scope — avoiding a redundant
+    // capture read in the common per-day path.
+    var dayId = dayResolution.dayId ?? state.slots.activeDayId;
     if (dayId == null || dayId.isEmpty) {
+      final captureResolution = await _dayIdFromCaptureTokens(
+        agentId: agentId,
+        triggerTokens: triggerTokens,
+      );
+      if (captureResolution.isAmbiguous) {
+        final candidates = captureResolution.candidates.toList()..sort();
+        return WakeResult(
+          success: false,
+          error: 'Ambiguous day workspace across captures: $candidates',
+        );
+      }
+      dayId = captureResolution.dayId;
+    }
+    final resolvedDayId = dayId;
+    if (resolvedDayId == null || resolvedDayId.isEmpty) {
       return const WakeResult(success: false, error: 'No active day ID');
     }
 
-    final dayDate = _dateFromDayId(dayId);
+    final dayDate = _dateFromDayId(resolvedDayId);
     if (dayDate == null) {
-      return WakeResult(success: false, error: 'Invalid active day ID $dayId');
+      return WakeResult(
+        success: false,
+        error: 'Invalid active day ID $resolvedDayId',
+      );
     }
+
+    final wakeContext = DailyOsPlannerWakeContext.fromTokens(
+      plannerAgentId: agentId,
+      dayId: resolvedDayId,
+      runKey: runKey,
+      threadId: threadId,
+      triggerTokens: triggerTokens,
+    );
 
     final observations = await agentRepository.getMessagesByKind(
       agentId,
@@ -218,23 +264,21 @@ class DayAgentWorkflow {
     final captureContext = await _captureContext(
       agentIdentity: agentIdentity,
       planDate: dayDate,
-      triggerTokens: triggerTokens,
+      wakeContext: wakeContext,
     );
     final draftingContext = await _draftingContext(
       agentIdentity: agentIdentity,
-      dayId: dayId,
-      triggerTokens: triggerTokens,
+      wakeContext: wakeContext,
       captureContext: captureContext,
     );
     final refineContext = await _refineContext(
       agentIdentity: agentIdentity,
-      dayId: dayId,
-      triggerTokens: triggerTokens,
+      wakeContext: wakeContext,
     );
     final attentionPlanning = await _attentionPlanningContext(dayDate);
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
-      dayId: dayId,
+      dayId: resolvedDayId,
       planDate: dayDate,
       now: now,
       triggerTokens: triggerTokens,
@@ -272,6 +316,7 @@ class DayAgentWorkflow {
           agentId: agentId,
           threadId: threadId,
           runKey: runKey,
+          dayId: resolvedDayId,
           toolName: toolName,
           args: args,
         ),
@@ -306,11 +351,14 @@ class DayAgentWorkflow {
       );
 
       if (_requiresCaptureParse(
-        triggerTokens: triggerTokens,
+        wakeContext: wakeContext,
         captureContext: captureContext,
       )) {
         if (!strategy.didPersistCaptureParse) {
-          final captureId = captureIdFromTriggerTokens(triggerTokens)!;
+          // The resolved capture context is the single source of truth for
+          // which capture this wake parses; re-extracting from the token set
+          // would be non-deterministic under merged multi-capture sets.
+          final captureId = captureContext!.capture.id;
           final retryUsage = await _forceCaptureParseIfMissing(
             conversationId: conversationId,
             modelId: modelId,
@@ -329,10 +377,7 @@ class DayAgentWorkflow {
         }
       }
 
-      if (_requiresDraftDayPlan(
-        dayId: dayId,
-        triggerTokens: triggerTokens,
-      )) {
+      if (_requiresDraftDayPlan(wakeContext: wakeContext)) {
         if (!strategy.didPersistDraftDayPlan) {
           final retryUsage = await _forceDraftDayPlanIfMissing(
             conversationId: conversationId,
@@ -405,7 +450,7 @@ class DayAgentWorkflow {
       });
       onPersistedStateChanged
         ?..call(agentId)
-        ..call(dayId);
+        ..call(resolvedDayId);
 
       _log('day-agent wake completed', subDomain: 'execute');
       return const WakeResult(success: true);
@@ -438,6 +483,7 @@ class DayAgentWorkflow {
     required String agentId,
     required String threadId,
     required String runKey,
+    required String dayId,
     required String toolName,
     required Map<String, dynamic> args,
   }) async {
@@ -527,7 +573,11 @@ class DayAgentWorkflow {
       );
     }
 
-    final wakeCountKey = _scheduledWakeCountKey(now);
+    // Cap is keyed by (dayId, date) so an active multi-day planner can still
+    // pre-warm each day; a single calendar-date key would let three planned
+    // days exhaust one shared budget (ADR 0022 Decision 12).
+    final wakeCountKey = _scheduledWakeCountKey(now, dayId);
+    final workspaceKey = dayAgentWorkspaceKey(dayId);
     try {
       await syncService.runInTransaction(() async {
         final state = await agentRepository.getAgentState(agentId);
@@ -542,9 +592,28 @@ class DayAgentWorkflow {
           );
         }
 
+        // Persist the pre-warm as a day-scoped scheduled-wake record rather
+        // than the single, clobberable AgentState.scheduledWakeAt: a
+        // long-lived planner has several outstanding day wakes, and each must
+        // restore with its own workspace + trigger tokens. The deterministic
+        // id overwrites a prior pending pre-warm for the same day.
+        await syncService.upsertEntity(
+          AgentDomainEntity.scheduledWake(
+            id: scheduledWakeRecordId(agentId, workspaceKey: workspaceKey),
+            agentId: agentId,
+            scheduledAt: scheduledAt,
+            status: ScheduledWakeStatus.pending,
+            reason: WakeReason.scheduled.name,
+            updatedAt: now,
+            vectorClock: null,
+            triggerTokens: [dayAgentPlanningDayToken(dayId)],
+            workspaceKey: workspaceKey,
+          ),
+        );
+
+        // The cap counter still lives on the per-agent state.
         await syncService.upsertEntity(
           state.copyWith(
-            scheduledWakeAt: scheduledAt,
             updatedAt: now,
             toolCounterByKey: _nextToolCounterByKey(
               state.toolCounterByKey,
@@ -751,22 +820,23 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
   }
 
   bool _requiresDraftDayPlan({
-    required String dayId,
-    required Set<String> triggerTokens,
+    required DailyOsPlannerWakeContext wakeContext,
   }) {
-    return planService != null &&
-        draftingDayIdFromTriggerTokens(triggerTokens) == dayId;
+    return planService != null && wakeContext.isDraftingWake;
   }
 
   bool _requiresCaptureParse({
-    required Set<String> triggerTokens,
+    required DailyOsPlannerWakeContext wakeContext,
     required _CaptureContext? captureContext,
   }) {
+    // A non-null capture context already implies a capture token resolved to
+    // a loadable capture owned by this agent. Drafting/refine checks are
+    // workspace-filtered: ambiguous multi-day token sets are rejected before
+    // this point, so any mode token present belongs to the resolved day.
     return captureService != null &&
         captureContext != null &&
-        captureIdFromTriggerTokens(triggerTokens) != null &&
-        draftingDayIdFromTriggerTokens(triggerTokens) == null &&
-        refineDayIdFromTriggerTokens(triggerTokens) == null;
+        !wakeContext.isDraftingWake &&
+        !wakeContext.isRefineWake;
   }
 
   Future<InferenceUsage?> _forceCaptureParseIfMissing({
@@ -913,6 +983,32 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     return DateTime.tryParse(dayId.substring(prefix.length));
   }
 
+  /// Resolves the day workspace from a capture-submitted wake's captures.
+  ///
+  /// A capture wake carries no `planning_day:`/`drafting:`/`refine:` token, so
+  /// its day comes from the capture's own `dayId` scope (ADR 0022). Loads each
+  /// `capture_submitted:` capture owned by [agentId] and collects the distinct
+  /// days; more than one distinct day is reported as ambiguous so the wake can
+  /// fail fast rather than pick arbitrarily.
+  Future<PlannerWakeDayResolution> _dayIdFromCaptureTokens({
+    required String agentId,
+    required Set<String> triggerTokens,
+  }) async {
+    final service = captureService;
+    if (service == null) return const PlannerWakeDayResolution(candidates: {});
+    final captureIds = captureIdsFromTriggerTokens(triggerTokens);
+    if (captureIds.isEmpty) {
+      return const PlannerWakeDayResolution(candidates: {});
+    }
+    final days = <String>{};
+    for (final captureId in captureIds) {
+      final capture = await service.getCapture(captureId);
+      if (capture == null || capture.agentId != agentId) continue;
+      days.add(captureDayId(capture));
+    }
+    return PlannerWakeDayResolution(candidates: days);
+  }
+
   static String _extractPayloadText(AgentMessagePayloadEntity? payload) {
     if (payload == null) return '(no content)';
     final text = payload.content['text'];
@@ -926,16 +1022,21 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     int nextCount,
   ) {
     const prefix = 'day_agent_set_next_wake:';
+    // Keys are `day_agent_set_next_wake:<dayId>:<date>`. Garbage-collect only
+    // stale prior-date counters, keeping every day's counter for the current
+    // date so interleaved multi-day planning does not reset another day's cap.
+    final todaySuffix = wakeCountKey.substring(wakeCountKey.lastIndexOf(':'));
     return {
       for (final entry in current.entries)
-        if (!entry.key.startsWith(prefix) || entry.key == wakeCountKey)
+        if (!entry.key.startsWith(prefix) || entry.key.endsWith(todaySuffix))
           entry.key: entry.value,
       wakeCountKey: nextCount,
     };
   }
 
-  static String _scheduledWakeCountKey(DateTime now) {
-    return 'day_agent_set_next_wake:${now.toIso8601String().substring(0, 10)}';
+  static String _scheduledWakeCountKey(DateTime now, String dayId) {
+    return 'day_agent_set_next_wake:$dayId:'
+        '${now.toIso8601String().substring(0, 10)}';
   }
 }
 

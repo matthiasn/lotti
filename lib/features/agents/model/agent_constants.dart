@@ -41,6 +41,7 @@ abstract final class AgentEntityTypes {
   static const agentMessage = 'agentMessage';
   static const agentReport = 'agentReport';
   static const agentReportHead = 'agentReportHead';
+  static const scheduledWake = 'scheduledWake';
   static const projectRecommendation = 'projectRecommendation';
   static const agentTemplateVersion = 'agentTemplateVersion';
   static const agentTemplateHead = 'agentTemplateHead';
@@ -73,3 +74,12 @@ String? formatIsoDate(DateTime? date) {
 
 String evolutionSessionRecapId(String sessionId) =>
     'evolution-session-recap-$sessionId';
+
+/// Deterministic id for a `ScheduledWakeEntity`, one per
+/// `(agentId, workspaceKey)` (ADR 0022 Decision 12).
+///
+/// Re-scheduling the same workspace's wake overwrites the prior record (LWW)
+/// rather than accumulating; a `null` workspace is the agent's single global
+/// scheduled wake.
+String scheduledWakeRecordId(String agentId, {String? workspaceKey}) =>
+    'scheduled_wake:$agentId:${workspaceKey ?? 'global'}';

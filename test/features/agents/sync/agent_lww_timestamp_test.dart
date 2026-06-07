@@ -55,6 +55,19 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
     expected: _updated,
   ),
   (
+    label: 'scheduledWake',
+    entity: AgentDomainEntity.scheduledWake(
+      id: 'scheduled_wake:agent-1:global',
+      agentId: 'agent-1',
+      scheduledAt: _created,
+      status: ScheduledWakeStatus.pending,
+      reason: 'scheduled',
+      updatedAt: _updated,
+      vectorClock: null,
+    ),
+    expected: _updated,
+  ),
+  (
     label: 'capture',
     entity: AgentDomainEntity.capture(
       id: 'capture-1',
@@ -260,7 +273,7 @@ void main() {
     test('covers every AgentDomainEntity variant', () {
       // Guards the data table above: if a variant is added (and classified in
       // the exhaustive `map`), this count must be bumped with a new case.
-      expect(_cases.length, 27);
+      expect(_cases.length, 28);
     });
   });
 }

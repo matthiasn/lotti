@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/get_it.dart';
@@ -254,6 +255,9 @@ void main() {
 
         expect(capture.id, startsWith('capture_'));
         expect(capture.transcript, 'buy milk and prep demo');
+        // The capture is stamped with its day workspace (ADR 0022), derived
+        // from capturedAt.
+        expect(capture.dayId, 'dayplan-2026-05-25');
         expect(upsertedEntities.single, isA<CaptureEntity>());
         expect(notifications, containsAll([_agentId, capture.id]));
         final captured =
@@ -261,6 +265,7 @@ void main() {
                   () => orchestrator.enqueueManualWake(
                     agentId: _agentId,
                     reason: 'capture_submitted',
+                    workspaceKey: 'day:dayplan-2026-05-25',
                     triggerTokens: captureAny(named: 'triggerTokens'),
                   ),
                 ).captured.single

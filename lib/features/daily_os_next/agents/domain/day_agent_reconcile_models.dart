@@ -2,33 +2,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 
-/// Wake trigger token prefix used when a capture should be parsed.
-const dayAgentCaptureSubmittedPrefix = 'capture_submitted:';
-
-/// Wake scheduling reason used when a capture was submitted.
-const dayAgentCaptureSubmittedReason = 'capture_submitted';
-
-/// Wake trigger token prefix used to request a day-plan drafting wake.
-// TODO(day-agent): hoist drafting + capture + refine token helpers into a
-// shared `day_agent_trigger_tokens.dart` once Commit adds another family.
-const dayAgentDraftingPrefix = 'drafting:';
-
-/// Wake scheduling reason used when a draft is requested.
-const dayAgentDraftingReason = 'drafting';
-
-/// Wake trigger token prefix used to request a day-plan refine wake.
-const dayAgentRefinePrefix = 'refine:';
-
-/// Wake scheduling reason used when a refine is requested.
-const dayAgentRefineReason = 'refine';
-
-/// Wake trigger token prefix used to advertise a task the UI considers
-/// "decided" (one the user said yes to and wants placed in the day plan).
-const dayAgentDecidedTaskPrefix = 'decided_task:';
-
-/// Wake trigger token prefix used to advertise a parsed capture item the UI
-/// considers "decided" but which does not have a persisted task ID yet.
-const dayAgentDecidedCaptureItemPrefix = 'decided_capture_item:';
+// Wake trigger-token vocabulary and extractors live in
+// `day_agent_trigger_tokens.dart`.
 
 /// Minimum score that becomes an auto-linked match.
 const dayAgentHighConfidenceThreshold = 0.75;
@@ -200,103 +175,6 @@ class DayAgentCorpusMatch {
     'categoryId': categoryId,
     'due': due?.toIso8601String(),
   };
-}
-
-/// Creates the capture-submitted wake trigger token.
-String dayAgentCaptureSubmittedToken(String captureId) {
-  return '$dayAgentCaptureSubmittedPrefix$captureId';
-}
-
-/// Extracts the first submitted capture ID from a trigger-token set.
-///
-/// The returned ID is trimmed of surrounding whitespace so equality checks
-/// downstream (e.g. against `CaptureEntity.id`) match canonical form.
-String? captureIdFromTriggerTokens(Set<String> triggerTokens) {
-  for (final token in triggerTokens) {
-    if (token.startsWith(dayAgentCaptureSubmittedPrefix)) {
-      final captureId = token
-          .substring(dayAgentCaptureSubmittedPrefix.length)
-          .trim();
-      if (captureId.isNotEmpty) return captureId;
-    }
-  }
-  return null;
-}
-
-/// Creates the drafting wake trigger token for [dayId].
-String dayAgentDraftingToken(String dayId) {
-  return '$dayAgentDraftingPrefix$dayId';
-}
-
-/// Extracts the first drafting-target day ID from a trigger-token set.
-///
-/// The returned ID is trimmed of surrounding whitespace so equality checks
-/// downstream (e.g. against `AgentSlots.activeDayId`) match canonical form.
-String? draftingDayIdFromTriggerTokens(Set<String> triggerTokens) {
-  for (final token in triggerTokens) {
-    if (token.startsWith(dayAgentDraftingPrefix)) {
-      final dayId = token.substring(dayAgentDraftingPrefix.length).trim();
-      if (dayId.isNotEmpty) return dayId;
-    }
-  }
-  return null;
-}
-
-/// Creates the refine wake trigger token for [dayId].
-String dayAgentRefineToken(String dayId) {
-  return '$dayAgentRefinePrefix$dayId';
-}
-
-/// Extracts the first refine-target day ID from a trigger-token set.
-///
-/// The returned ID is trimmed of surrounding whitespace so equality checks
-/// downstream match canonical form.
-String? refineDayIdFromTriggerTokens(Set<String> triggerTokens) {
-  for (final token in triggerTokens) {
-    if (token.startsWith(dayAgentRefinePrefix)) {
-      final dayId = token.substring(dayAgentRefinePrefix.length).trim();
-      if (dayId.isNotEmpty) return dayId;
-    }
-  }
-  return null;
-}
-
-/// Creates the decided-task trigger token for [taskId].
-String dayAgentDecidedTaskToken(String taskId) {
-  return '$dayAgentDecidedTaskPrefix$taskId';
-}
-
-/// Creates the decided capture-item trigger token for [parsedItemId].
-String dayAgentDecidedCaptureItemToken(String parsedItemId) {
-  return '$dayAgentDecidedCaptureItemPrefix$parsedItemId';
-}
-
-/// Extracts every decided-task ID advertised on a trigger-token set.
-///
-/// Returns IDs trimmed of surrounding whitespace, in iteration order of the
-/// input set. Skips prefix-only and whitespace-only tokens. Returns an empty
-/// list when no decided-task tokens are present.
-List<String> decidedTaskIdsFromTriggerTokens(Set<String> triggerTokens) =>
-    _idsForPrefix(triggerTokens, dayAgentDecidedTaskPrefix);
-
-/// Extracts every decided capture-item ID advertised on a trigger-token set.
-///
-/// These IDs refer to parsed capture items rather than journal tasks. They let
-/// drafting carry approved NEW/unlinked items forward so the model can create
-/// tasks before placing them.
-List<String> decidedCaptureItemIdsFromTriggerTokens(
-  Set<String> triggerTokens,
-) => _idsForPrefix(triggerTokens, dayAgentDecidedCaptureItemPrefix);
-
-List<String> _idsForPrefix(Set<String> tokens, String prefix) {
-  final out = <String>[];
-  for (final token in tokens) {
-    if (token.startsWith(prefix)) {
-      final id = token.substring(prefix.length).trim();
-      if (id.isNotEmpty) out.add(id);
-    }
-  }
-  return out;
 }
 
 /// Converts a task row to a pending-decision projection.

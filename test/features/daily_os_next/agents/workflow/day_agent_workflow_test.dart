@@ -18,6 +18,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
@@ -342,6 +343,159 @@ void main() {
       expect(conversationRepository.lastUserMessage, isNull);
       expect(upsertedEntities, isEmpty);
     });
+
+    test(
+      'resolves the day from a planning_day token without the legacy slot',
+      () async {
+        // Empty slot proves the wake derives its day from trigger tokens
+        // (ADR 0022), not from state.slots.activeDayId.
+        currentState = state(activeDayId: '');
+
+        final result = await execute(
+          workflow(),
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+        );
+
+        expect(result.success, isTrue);
+        final sent =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, Object?>;
+        expect(sent['dayId'], dayId);
+      },
+    );
+
+    test(
+      'fails fast when trigger tokens claim conflicting day workspaces',
+      () async {
+        final result = await execute(
+          workflow(),
+          triggerTokens: {
+            dayAgentDraftingToken('dayplan-2026-05-25'),
+            dayAgentRefineToken('dayplan-2026-05-26'),
+          },
+        );
+
+        expect(result.success, isFalse);
+        expect(result.error, contains('Ambiguous day workspace'));
+        // Nothing ran: no conversation, no persisted entities.
+        expect(conversationRepository.lastUserMessage, isNull);
+        expect(upsertedEntities, isEmpty);
+      },
+    );
+
+    test(
+      'a capture-only wake resolves its day from the capture, not the slot',
+      () async {
+        // Empty slot + only a capture token: the day must come from the
+        // capture's own dayId scope (ADR 0022), not state.slots.activeDayId.
+        currentState = state(activeDayId: '');
+        final captureService = MockDayAgentCaptureService();
+        when(() => captureService.getCapture('capture-1')).thenAnswer(
+          (_) async => makeTestCapture(
+            id: 'capture-1',
+            agentId: agentId,
+            transcript: 'buy milk',
+            capturedAt: DateTime(2026, 5, 25, 7),
+            createdAt: DateTime(2026, 5, 25, 7),
+            dayId: dayId,
+          ),
+        );
+        when(
+          () => captureService.buildTaskCorpusSnapshot(
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            day: any(named: 'day'),
+          ),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => captureService.parsedItemsForCapture('capture-1'),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => captureService.executeTool(
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            toolName: DayAgentToolNames.parseCaptureToItems,
+            args: any(named: 'args'),
+          ),
+        ).thenAnswer(
+          (_) async => DayAgentDirectToolResult.success(const {
+            'captureId': 'capture-1',
+            'items': [
+              {
+                'kind': 'newTask',
+                'title': 'buy milk',
+                'categoryId': 'home',
+                'confidenceScore': 0.4,
+              },
+            ],
+          }),
+        );
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.parseCaptureToItems,
+            args: const {
+              'captureId': 'capture-1',
+              'items': [
+                {
+                  'kind': 'newTask',
+                  'title': 'buy milk',
+                  'categoryId': 'home',
+                  'confidenceScore': 0.4,
+                },
+              ],
+            },
+          ),
+        ];
+
+        final result = await execute(
+          workflow(captureService: captureService),
+          triggerTokens: {dayAgentCaptureSubmittedToken('capture-1')},
+        );
+
+        expect(result.success, isTrue);
+        final sent =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, Object?>;
+        expect(sent['dayId'], dayId);
+      },
+    );
+
+    test(
+      'a capture-only wake is ambiguous when its captures span two days',
+      () async {
+        currentState = state(activeDayId: '');
+        final captureService = MockDayAgentCaptureService();
+        when(() => captureService.getCapture('cap-a')).thenAnswer(
+          (_) async => makeTestCapture(
+            id: 'cap-a',
+            agentId: agentId,
+            dayId: 'dayplan-2026-05-25',
+          ),
+        );
+        when(() => captureService.getCapture('cap-b')).thenAnswer(
+          (_) async => makeTestCapture(
+            id: 'cap-b',
+            agentId: agentId,
+            dayId: 'dayplan-2026-05-26',
+          ),
+        );
+
+        final result = await execute(
+          workflow(captureService: captureService),
+          triggerTokens: {
+            dayAgentCaptureSubmittedToken('cap-a'),
+            dayAgentCaptureSubmittedToken('cap-b'),
+          },
+        );
+
+        expect(result.success, isFalse);
+        expect(
+          result.error,
+          contains('Ambiguous day workspace across captures'),
+        );
+        expect(conversationRepository.lastUserMessage, isNull);
+      },
+    );
 
     test(
       'record_observations is handled by the strategy and never routed to '
@@ -785,13 +939,38 @@ void main() {
           ],
         );
 
+        // set_next_wake persists a day-scoped ScheduledWakeEntity record
+        // (ADR 0022 Decision 12) rather than the clobberable state slot.
+        final scheduledRecord = upsertedEntities
+            .whereType<ScheduledWakeEntity>()
+            .single;
+        expect(scheduledRecord.scheduledAt, DateTime(2026, 5, 25, 8, 30));
+        expect(scheduledRecord.status, ScheduledWakeStatus.pending);
+        expect(scheduledRecord.workspaceKey, dayAgentWorkspaceKey(dayId));
+        expect(
+          scheduledRecord.triggerTokens,
+          contains(dayAgentPlanningDayToken(dayId)),
+        );
+        expect(
+          scheduledRecord.id,
+          scheduledWakeRecordId(
+            agentId,
+            workspaceKey: dayAgentWorkspaceKey(dayId),
+          ),
+        );
+        // No state carries scheduledWakeAt anymore; the cap counter is
+        // re-keyed by (dayId, date) and the stale prior-date entry is GC'd.
         final scheduledState = upsertedEntities
             .whereType<AgentStateEntity>()
-            .firstWhere((state) => state.scheduledWakeAt != null);
-        expect(scheduledState.scheduledWakeAt, DateTime(2026, 5, 25, 8, 30));
+            .firstWhere(
+              (state) => state.toolCounterByKey.keys.any(
+                (k) => k.startsWith('day_agent_set_next_wake:'),
+              ),
+            );
+        expect(scheduledState.scheduledWakeAt, isNull);
         expect(scheduledState.toolCounterByKey, {
           'unrelated_tool:host-a': 9,
-          'day_agent_set_next_wake:2026-05-25': 1,
+          'day_agent_set_next_wake:$dayId:2026-05-25': 1,
         });
         expect(scheduledState.processedCounterByHost, isEmpty);
 
@@ -2129,18 +2308,15 @@ void main() {
           conversationRepository.toolResponses.single,
           contains(scenario.expectedResponse),
         );
-        expect(
-          upsertedEntities.whereType<AgentStateEntity>().any(
-            (state) => state.scheduledWakeAt != null,
-          ),
-          isFalse,
-        );
+        // A rejected set_next_wake persists no scheduled-wake record.
+        expect(upsertedEntities.whereType<ScheduledWakeEntity>(), isEmpty);
       });
     }
 
     test('rejects scheduled wakes after the daily cap is reached', () async {
+      // Cap key is now (dayId, date)-scoped (ADR 0022 Decision 12).
       currentState = state(
-        toolCounterByKey: const {'day_agent_set_next_wake:2026-05-25': 4},
+        toolCounterByKey: {'day_agent_set_next_wake:$dayId:2026-05-25': 4},
       );
       conversationRepository.toolCalls = [
         _toolCall(
@@ -2159,12 +2335,8 @@ void main() {
         conversationRepository.toolResponses.single,
         contains('daily scheduled-wake cap reached'),
       );
-      expect(
-        upsertedEntities.whereType<AgentStateEntity>().any(
-          (state) => state.scheduledWakeAt != null,
-        ),
-        isFalse,
-      );
+      // The cap blocks both the record and any state mutation for the wake.
+      expect(upsertedEntities.whereType<ScheduledWakeEntity>(), isEmpty);
     });
 
     test(

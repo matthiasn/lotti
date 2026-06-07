@@ -7,8 +7,8 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -97,6 +97,7 @@ void main() {
       () => orchestrator.enqueueManualWake(
         agentId: any(named: 'agentId'),
         reason: any(named: 'reason'),
+        workspaceKey: any(named: 'workspaceKey'),
         triggerTokens: any(named: 'triggerTokens'),
       ),
     ).thenReturn(null);
@@ -199,7 +200,8 @@ void main() {
         () => orchestrator.enqueueManualWake(
           agentId: agentId,
           reason: WakeReason.creation.name,
-          triggerTokens: {dayId},
+          workspaceKey: dayAgentWorkspaceKey(dayId),
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
         ),
       ).called(1);
       expect(changedTokens, [agentId, dayId]);
@@ -335,6 +337,7 @@ void main() {
         () => orchestrator.enqueueManualWake(
           agentId: any(named: 'agentId'),
           reason: any(named: 'reason'),
+          workspaceKey: any(named: 'workspaceKey'),
           triggerTokens: any(named: 'triggerTokens'),
         ),
       );
@@ -408,7 +411,11 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentDraftingReason,
-              triggerTokens: {dayAgentDraftingToken(dayId)},
+              workspaceKey: any(named: 'workspaceKey'),
+              triggerTokens: {
+                dayAgentPlanningDayToken(dayId),
+                dayAgentDraftingToken(dayId),
+              },
             ),
           ).called(1);
         },
@@ -434,7 +441,9 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentDraftingReason,
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: {
+                dayAgentPlanningDayToken(dayId),
                 dayAgentDraftingToken(dayId),
                 dayAgentCaptureSubmittedToken('capture-42'),
               },
@@ -463,7 +472,11 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentDraftingReason,
-              triggerTokens: {dayAgentDraftingToken(dayId)},
+              workspaceKey: any(named: 'workspaceKey'),
+              triggerTokens: {
+                dayAgentPlanningDayToken(dayId),
+                dayAgentDraftingToken(dayId),
+              },
             ),
           ).called(1);
         },
@@ -486,6 +499,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: any(named: 'agentId'),
               reason: any(named: 'reason'),
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: any(named: 'triggerTokens'),
             ),
           );
@@ -510,7 +524,9 @@ void main() {
           () => orchestrator.enqueueManualWake(
             agentId: agentId,
             reason: dayAgentDraftingReason,
+            workspaceKey: any(named: 'workspaceKey'),
             triggerTokens: {
+              dayAgentPlanningDayToken(dayId),
               dayAgentDraftingToken(dayId),
               dayAgentDecidedTaskToken('task-1'),
               dayAgentDecidedTaskToken('task-2'),
@@ -539,7 +555,9 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentDraftingReason,
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: {
+                dayAgentPlanningDayToken(dayId),
                 dayAgentDraftingToken(dayId),
                 dayAgentDecidedCaptureItemToken('parsed-1'),
                 dayAgentDecidedCaptureItemToken('parsed-2'),
@@ -570,7 +588,9 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentDraftingReason,
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: {
+                dayAgentPlanningDayToken(dayId),
                 dayAgentDraftingToken(dayId),
                 dayAgentCaptureSubmittedToken('capture-99'),
                 dayAgentDecidedTaskToken('task-7'),
@@ -598,7 +618,9 @@ void main() {
           () => orchestrator.enqueueManualWake(
             agentId: agentId,
             reason: dayAgentDraftingReason,
+            workspaceKey: any(named: 'workspaceKey'),
             triggerTokens: {
+              dayAgentPlanningDayToken(dayId),
               dayAgentDraftingToken(dayId),
               dayAgentDecidedTaskToken('task-1'),
               dayAgentDecidedTaskToken('task-2'),
@@ -627,7 +649,9 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentDraftingReason,
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: {
+                dayAgentPlanningDayToken(dayId),
                 dayAgentDraftingToken(dayId),
                 dayAgentDecidedTaskToken('task-1'),
               },
@@ -693,6 +717,7 @@ void main() {
           expect(capture.id, startsWith('refine_capture:'));
           expect(capture.transcript, 'move lunch to 1pm');
           expect(capture.capturedAt, now);
+          expect(capture.dayId, dayId);
           expect(changedTokens, [capture.id]);
 
           final tokens =
@@ -700,14 +725,58 @@ void main() {
                     () => orchestrator.enqueueManualWake(
                       agentId: agentId,
                       reason: dayAgentRefineReason,
+                      workspaceKey: any(named: 'workspaceKey'),
                       triggerTokens: captureAny(named: 'triggerTokens'),
                     ),
                   ).captured.single
                   as Set<String>;
           expect(tokens, {
+            dayAgentPlanningDayToken(dayId),
             dayAgentRefineToken(dayId),
             dayAgentCaptureSubmittedToken(capture.id),
           });
+        },
+      );
+
+      test(
+        'a near-midnight refine stamps the PLAN day, not the capture-time day',
+        () async {
+          // Refining tomorrow's plan at 23:30 today: the capture must be
+          // bucketed to the plan day (ADR 0022), not the calendar day the user
+          // happened to speak on, so capturesForDateProvider surfaces it on the
+          // right day.
+          const planDayId = 'dayplan-2026-05-26';
+          final planDate = DateTime(2026, 5, 26, 9);
+          final lateNight = DateTime(2026, 5, 25, 23, 30);
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: planDayId,
+            ),
+          ).thenAnswer((_) async => identity());
+          when(
+            () => repository.getEntity(dayAgentPlanEntityId(planDayId)),
+          ).thenAnswer(
+            (_) async =>
+                seedPlan().copyWith(id: dayAgentPlanEntityId(planDayId)),
+          );
+
+          await withClock(
+            Clock.fixed(lateNight),
+            () => service.enqueueRefineWake(
+              dayDate: planDate,
+              transcript: 'shift standup earlier',
+            ),
+          );
+
+          final capture =
+              verify(
+                    () => syncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as CaptureEntity;
+          expect(capture.capturedAt, lateNight);
+          // Stamped with the plan day, not dayplan-2026-05-25.
+          expect(capture.dayId, planDayId);
         },
       );
 
@@ -733,7 +802,11 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentRefineReason,
-              triggerTokens: {dayAgentRefineToken(dayId)},
+              workspaceKey: any(named: 'workspaceKey'),
+              triggerTokens: {
+                dayAgentPlanningDayToken(dayId),
+                dayAgentRefineToken(dayId),
+              },
             ),
           ).called(1);
         },
@@ -760,6 +833,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: any(named: 'agentId'),
               reason: any(named: 'reason'),
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: any(named: 'triggerTokens'),
             ),
           );
@@ -788,6 +862,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: any(named: 'agentId'),
               reason: any(named: 'reason'),
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: any(named: 'triggerTokens'),
             ),
           );
@@ -860,7 +935,11 @@ void main() {
           () => orchestrator.enqueueManualWake(
             agentId: agentId,
             reason: dayAgentRefineReason,
-            triggerTokens: {dayAgentRefineToken(dayId)},
+            workspaceKey: any(named: 'workspaceKey'),
+            triggerTokens: {
+              dayAgentPlanningDayToken(dayId),
+              dayAgentRefineToken(dayId),
+            },
           ),
         ).called(statuses.length);
       });
@@ -873,6 +952,7 @@ void main() {
         () => orchestrator.enqueueManualWake(
           agentId: agentId,
           reason: WakeReason.reanalysis.name,
+          workspaceKey: any(named: 'workspaceKey'),
         ),
       ).called(1);
       final logMessage =
@@ -951,6 +1031,159 @@ void main() {
           errorMessage,
           contains('failed to restore day-agent runtime state'),
         );
+      },
+    );
+  });
+
+  group('getOrCreatePlannerAgent', () {
+    final plannerTemplate = makeTestTemplate(
+      id: dayAgentTemplateId,
+      agentId: dayAgentTemplateId,
+      kind: AgentTemplateKind.dayAgent,
+      modelId: 'models/day',
+      profileId: 'profile-day',
+    );
+
+    test('returns the existing planner without creating a new one', () async {
+      final existing = identity(id: dailyOsPlannerAgentId);
+      when(
+        () => agentService.getAgent(dailyOsPlannerAgentId),
+      ).thenAnswer((_) async => existing);
+
+      final result = await service.getOrCreatePlannerAgent();
+
+      expect(result, existing);
+      verifyNever(
+        () => agentService.createAgent(
+          agentId: any(named: 'agentId'),
+          kind: any(named: 'kind'),
+          displayName: any(named: 'displayName'),
+          config: any(named: 'config'),
+          allowedCategoryIds: any(named: 'allowedCategoryIds'),
+        ),
+      );
+    });
+
+    test(
+      'creates the planner with the deterministic id and no day slot',
+      () async {
+        final created = identity(id: dailyOsPlannerAgentId);
+        when(
+          () => agentService.getAgent(dailyOsPlannerAgentId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => repository.getEntity(dayAgentTemplateId),
+        ).thenAnswer((_) async => plannerTemplate);
+        when(
+          () => agentService.createAgent(
+            agentId: any(named: 'agentId'),
+            kind: any(named: 'kind'),
+            displayName: any(named: 'displayName'),
+            config: any(named: 'config'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer((_) async => created);
+
+        final result = await withClock(
+          Clock.fixed(now),
+          service.getOrCreatePlannerAgent,
+        );
+
+        expect(result, created);
+        // Mocktail records captured named args in signature-declaration
+        // order (kind, then agentId), not call order.
+        final createCall = verify(
+          () => agentService.createAgent(
+            agentId: captureAny(named: 'agentId'),
+            kind: captureAny(named: 'kind'),
+            displayName: any(named: 'displayName'),
+            config: any(named: 'config'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).captured;
+        expect(createCall[0], AgentKinds.dayAgent);
+        expect(createCall[1], dailyOsPlannerAgentId);
+
+        // The planner gets a template assignment but NO AgentDayLink: a day
+        // is a workspace carried by wake tokens, not part of identity.
+        final links = verify(
+          () => syncService.upsertLink(captureAny()),
+        ).captured.cast<AgentLink>();
+        expect(links.whereType<AgentDayLink>(), isEmpty);
+        final templateLink = links.whereType<TemplateAssignmentLink>().single;
+        expect(templateLink.toId, dailyOsPlannerAgentId);
+        verifyNever(
+          () => orchestrator.enqueueManualWake(
+            agentId: any(named: 'agentId'),
+            reason: any(named: 'reason'),
+            workspaceKey: any(named: 'workspaceKey'),
+            triggerTokens: any(named: 'triggerTokens'),
+          ),
+        );
+      },
+    );
+
+    test('is idempotent under a concurrent in-transaction create', () async {
+      final existing = identity(id: dailyOsPlannerAgentId);
+      // First lookup misses; the in-transaction recheck finds a peer's write.
+      final responses = <AgentIdentityEntity?>[null, existing];
+      when(
+        () => agentService.getAgent(dailyOsPlannerAgentId),
+      ).thenAnswer((_) async => responses.removeAt(0));
+
+      final result = await service.getOrCreatePlannerAgent();
+
+      expect(result, existing);
+      verifyNever(
+        () => agentService.createAgent(
+          agentId: any(named: 'agentId'),
+          kind: any(named: 'kind'),
+          displayName: any(named: 'displayName'),
+          config: any(named: 'config'),
+          allowedCategoryIds: any(named: 'allowedCategoryIds'),
+        ),
+      );
+      // No mutation happened, so no persisted-state notification fires.
+      expect(changedTokens, isEmpty);
+    });
+
+    test(
+      'rejects a template that is not an active day-agent template',
+      () async {
+        when(
+          () => agentService.getAgent(dailyOsPlannerAgentId),
+        ).thenAnswer((_) async => null);
+        final projectTemplate = makeTestTemplate(
+          id: dayAgentTemplateId,
+          agentId: dayAgentTemplateId,
+          kind: AgentTemplateKind.projectAgent,
+        );
+        when(
+          () => repository.getEntity(dayAgentTemplateId),
+        ).thenAnswer((_) async => projectTemplate);
+
+        await expectLater(
+          service.getOrCreatePlannerAgent(),
+          throwsA(
+            isA<StateError>().having(
+              (error) => error.message,
+              'message',
+              contains('not an active day-agent template'),
+            ),
+          ),
+        );
+
+        verifyNever(
+          () => agentService.createAgent(
+            agentId: any(named: 'agentId'),
+            kind: any(named: 'kind'),
+            displayName: any(named: 'displayName'),
+            config: any(named: 'config'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+        // A rejected creation makes no persisted-state notification.
+        expect(changedTokens, isEmpty);
       },
     );
   });

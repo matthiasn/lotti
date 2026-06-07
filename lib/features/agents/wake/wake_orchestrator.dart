@@ -484,20 +484,23 @@ class WakeOrchestrator {
     required String agentId,
     required String reason,
     Set<String> triggerTokens = const {},
+    String? workspaceKey,
   }) {
     // Manual wakes bypass and clear the throttle gate so the user's action
     // takes effect immediately.
     clearThrottle(agentId);
 
-    // Remove any pending subscription-driven jobs for this agent — the manual
-    // wake supersedes them, preventing a double-run where both the queued
-    // subscription job and the manual job execute back-to-back.
-    queue.removeByAgent(agentId);
+    // Remove pending jobs the manual wake supersedes — scoped to its own
+    // workspace so a day-A manual wake under one planner does not cancel
+    // queued day-B work (ADR 0022). For single-workspace agents the workspace
+    // is null and this is the same agent-wide superseding as before.
+    queue.removeByAgent(agentId, workspaceKey: workspaceKey);
 
     final now = clock.now();
     final runKey = RunKeyFactory.forManual(
       agentId: agentId,
       reason: reason,
+      workspaceKey: workspaceKey,
       timestamp: now,
     );
 
@@ -506,6 +509,7 @@ class WakeOrchestrator {
       agentId: agentId,
       reason: reason,
       triggerTokens: triggerTokens,
+      workspaceKey: workspaceKey,
       createdAt: now,
     );
 

@@ -111,13 +111,17 @@ final capturesForDateProvider = FutureProvider.autoDispose
 
       final agent = await dayAgentService.getDayAgentForDate(date);
       if (agent == null) return const <CaptureWithAudio>[];
+      final dayId = dayAgentIdForDate(date);
       final rows = await agentRepository.getEntitiesByAgentId(
         agent.agentId,
         type: AgentEntityTypes.capture,
       );
+      // Day-scope the list (ADR 0022): under one planner owning many days the
+      // agent owns every day's captures, so filter to this date's workspace.
+      // captureDayId derives the day for legacy captures with no dayId.
       final captures = rows
           .whereType<CaptureEntity>()
-          .where((c) => c.deletedAt == null)
+          .where((c) => c.deletedAt == null && captureDayId(c) == dayId)
           .toList();
       final out = <CaptureWithAudio>[];
       for (final capture in captures) {

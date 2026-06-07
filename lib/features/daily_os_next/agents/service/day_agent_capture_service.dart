@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
@@ -143,14 +144,19 @@ class DayAgentCaptureService {
     }
 
     final now = clock.now();
+    final effectiveCapturedAt = capturedAt ?? now;
     final capture =
         AgentDomainEntity.capture(
               id: 'capture_${_uuid.v4()}',
               agentId: agentId,
               transcript: trimmed,
-              capturedAt: capturedAt ?? now,
+              capturedAt: effectiveCapturedAt,
               createdAt: now,
               vectorClock: null,
+              // Stamp the day workspace explicitly (ADR 0022) so the capture
+              // is queryable by day and a parse wake can resolve its day from
+              // the capture even when one planner owns many days.
+              dayId: dayAgentIdForDate(effectiveCapturedAt),
               audioRef: _blankToNull(audioRef),
             )
             as CaptureEntity;
@@ -167,6 +173,10 @@ class DayAgentCaptureService {
       agentId: agentId,
       reason: dayAgentCaptureSubmittedReason,
       triggerTokens: {dayAgentCaptureSubmittedToken(capture.id)},
+      // Partition the parse wake by the capture's day workspace (ADR 0022) so
+      // it never supersedes or merges with another day's queued work under one
+      // planner.
+      workspaceKey: dayAgentWorkspaceKey(captureDayId(capture)),
     );
 
     return capture;

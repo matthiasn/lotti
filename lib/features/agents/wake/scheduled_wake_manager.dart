@@ -89,10 +89,13 @@ class ScheduledWakeManager {
         }
       }
 
-      if (dueStates.isNotEmpty) {
+      final recordsEnqueued = await _processDueRecords(now);
+
+      if (dueStates.isNotEmpty || recordsEnqueued > 0) {
         _log(
           'processed ${dueStates.length} due agents: '
-          '$enqueued enqueued, $fastForwarded fast-forwarded',
+          '$enqueued enqueued, $fastForwarded fast-forwarded; '
+          '$recordsEnqueued scheduled-wake record(s) fired',
         );
       }
     } catch (e, s) {
@@ -100,6 +103,45 @@ class ScheduledWakeManager {
     } finally {
       _isChecking = false;
     }
+  }
+
+  /// Fire pending [ScheduledWakeEntity] records that are due (ADR 0022).
+  ///
+  /// Each record carries its own workspace key and trigger tokens, so the
+  /// enqueued wake restores full day context — unlike the context-less
+  /// `scheduledWakeAt` path. After enqueuing, the record is flipped to
+  /// [ScheduledWakeStatus.consumed] in place (not hard-deleted) so a
+  /// concurrent device's flip converges via LWW instead of resurrecting it.
+  Future<int> _processDueRecords(DateTime now) async {
+    final dueRecords = await _repository.getDueScheduledWakeRecords(now);
+    var enqueued = 0;
+    for (final record in dueRecords) {
+      try {
+        _orchestrator.enqueueManualWake(
+          agentId: record.agentId,
+          reason: record.reason,
+          triggerTokens: record.triggerTokens.toSet(),
+          workspaceKey: record.workspaceKey,
+        );
+        await _syncService.upsertEntity(
+          record.copyWith(
+            status: ScheduledWakeStatus.consumed,
+            consumedAt: now,
+            updatedAt: now,
+          ),
+        );
+        onPersistedStateChanged?.call(record.agentId);
+        enqueued++;
+      } catch (e, s) {
+        _logError(
+          'failed to fire scheduled-wake record '
+          '${DomainLogger.sanitizeId(record.id)}',
+          error: e,
+          stackTrace: s,
+        );
+      }
+    }
+    return enqueued;
   }
 
   /// Whether this agent can be fast-forwarded instead of fully woken.

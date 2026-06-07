@@ -7,6 +7,7 @@ class WakeJob {
     required Set<String> triggerTokens,
     required this.createdAt,
     this.reasonId,
+    this.workspaceKey,
     this.hasDirectMatch = true,
   }) : triggerTokens = Set<String>.of(triggerTokens);
 
@@ -15,6 +16,15 @@ class WakeJob {
 
   /// The agent that should be woken.
   final String agentId;
+
+  /// Optional workspace partition within the agent (ADR 0022).
+  ///
+  /// `null` for single-workspace agents (task, project, improver). The Daily
+  /// OS planner owns many day workspaces under one identity and tags each job
+  /// with `day:<dayId>` so that superseding, dedupe, and token-merge partition
+  /// per day instead of per agent. `null` partitions only with `null`, so
+  /// non-workspace agents are never affected by a planner job and vice versa.
+  final String? workspaceKey;
 
   /// Wake trigger category: currently `'subscription'`, `'creation'`,
   /// or `'reanalysis'`.
@@ -78,8 +88,13 @@ class WakeQueue {
     return _queue.removeAt(0);
   }
 
-  /// Merge [tokens] into the `triggerTokens` of the first queued job whose
-  /// `agentId` matches [agentId].
+  /// Merge [tokens] into the `triggerTokens` of the first queued job that
+  /// matches [agentId] **and** [workspaceKey].
+  ///
+  /// Partitioning by workspace is what keeps one planner's day-A and day-B
+  /// jobs from coalescing once a single identity owns many days (ADR 0022).
+  /// `workspaceKey` defaults to `null`, which matches only `null`-workspace
+  /// jobs — so task/project agents merge exactly as before.
   ///
   /// When [isDirect] is `true`, also upgrades the job's
   /// [WakeJob.hasDirectMatch] to `true` — a direct match coalescing onto a
@@ -92,10 +107,11 @@ class WakeQueue {
   bool mergeTokens(
     String agentId,
     Set<String> tokens, {
+    String? workspaceKey,
     bool isDirect = false,
   }) {
     for (final job in _queue) {
-      if (job.agentId == agentId) {
+      if (job.agentId == agentId && job.workspaceKey == workspaceKey) {
         job.triggerTokens.addAll(tokens);
         if (isDirect) job.hasDirectMatch = true;
         return true;
@@ -104,30 +120,44 @@ class WakeQueue {
     return false;
   }
 
-  /// Whether any queued job for [agentId] carries at least one direct
-  /// fast-throttle match. The orchestrator uses this when queued follow-up
-  /// work remains after a wake: digest-deferred propagated-only queues wait
-  /// until the next 06:00, while a fast-bearing queue keeps the 120 s drain so
-  /// the user sees task edits reflected promptly.
-  bool hasDirectQueuedJobFor(String agentId) =>
-      _queue.any((job) => job.agentId == agentId && job.hasDirectMatch);
+  /// Whether any queued job for [agentId] in [workspaceKey] carries at least
+  /// one direct fast-throttle match. The orchestrator uses this when queued
+  /// follow-up work remains after a wake: digest-deferred propagated-only
+  /// queues wait until the next 06:00, while a fast-bearing queue keeps the
+  /// 120 s drain so the user sees task edits reflected promptly.
+  bool hasDirectQueuedJobFor(String agentId, {String? workspaceKey}) =>
+      _queue.any(
+        (job) =>
+            job.agentId == agentId &&
+            job.workspaceKey == workspaceKey &&
+            job.hasDirectMatch,
+      );
 
-  /// Whether any queued job exists for [agentId], regardless of provenance.
-  bool hasQueuedJobFor(String agentId) =>
-      _queue.any((job) => job.agentId == agentId);
+  /// Whether any queued job exists for [agentId] in [workspaceKey], regardless
+  /// of provenance.
+  bool hasQueuedJobFor(String agentId, {String? workspaceKey}) => _queue.any(
+    (job) => job.agentId == agentId && job.workspaceKey == workspaceKey,
+  );
 
-  /// Remove all queued jobs for [agentId] and return them.
+  /// Remove queued jobs for [agentId] and return them.
   ///
-  /// Used when a manual wake supersedes pending subscription wakes — the
-  /// manual run replaces any queued work for the same agent.
-  List<WakeJob> removeByAgent(String agentId) {
+  /// By default removes only jobs matching [workspaceKey] (a manual wake
+  /// supersedes pending work in its own workspace). Set [allWorkspaces] to
+  /// drop every job for the agent regardless of workspace — used by an
+  /// explicit cancel-all (e.g. `AgentService.cancelPendingWake`). For
+  /// single-workspace agents the two are equivalent because all their jobs
+  /// carry a `null` workspace.
+  List<WakeJob> removeByAgent(
+    String agentId, {
+    String? workspaceKey,
+    bool allWorkspaces = false,
+  }) {
     final removed = <WakeJob>[];
     _queue.removeWhere((job) {
-      if (job.agentId == agentId) {
-        removed.add(job);
-        return true;
-      }
-      return false;
+      if (job.agentId != agentId) return false;
+      if (!allWorkspaces && job.workspaceKey != workspaceKey) return false;
+      removed.add(job);
+      return true;
     });
     return removed;
   }

@@ -5056,6 +5056,14 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
     ).asyncMap(agentEntities.mapFromRow);
   }
 
+  Selectable<AgentEntity> getDueScheduledWakeRecords(String nowIso) {
+    return customSelect(
+      'SELECT * FROM agent_entities WHERE type = \'scheduledWake\' AND deleted_at IS NULL AND json_extract(serialized, \'\$.status\') = \'pending\' AND json_extract(serialized, \'\$.scheduledAt\') IS NOT NULL AND json_extract(serialized, \'\$.scheduledAt\') <= ?1',
+      variables: [Variable<String>(nowIso)],
+      readsFrom: {agentEntities},
+    ).asyncMap(agentEntities.mapFromRow);
+  }
+
   Selectable<AgentEntity> getAgentEntitiesWithNullVectorClock() {
     return customSelect(
       'SELECT * FROM agent_entities WHERE json_extract(serialized, \'\$.vectorClock\') IS NULL ORDER BY created_at ASC',
