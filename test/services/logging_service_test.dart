@@ -360,53 +360,57 @@ void main() {
     });
   });
 
-  test('config flag listener dynamically toggles logging', () async {
-    // Create a StreamController to control the flag stream
-    final flagController = StreamController<bool>();
-    final slowQueryController = StreamController<bool>();
-    addTearDown(flagController.close);
-    addTearDown(slowQueryController.close);
+  test('config flag listener dynamically toggles logging', () {
+    // Driven entirely under `fakeAsync` so the stream-flag round-trips are
+    // flushed via virtual microtasks instead of real-time `Future.delayed`
+    // waits. File writes use the synchronous test-env sink, so a microtask
+    // flush is enough to land each line on disk.
+    fakeAsync((async) {
+      final controlled = makeControlledService();
+      final svc = controlled.service;
+      final flagController = controlled.logging;
 
-    when(
-      () => journalDb.watchConfigFlag(enableLoggingFlag),
-    ).thenAnswer((_) => flagController.stream);
-    when(
-      () => journalDb.watchConfigFlag(logSlowQueriesFlag),
-    ).thenAnswer((_) => slowQueryController.stream);
+      unawaited(svc.listenToConfigFlag());
+      // Drain the subscription setup so the flag listeners are attached.
+      async.flushMicrotasks();
 
-    final svc = LoggingService();
-    unawaited(svc.listenToConfigFlag());
+      // Initially disabled (isTestEnv = true means _enableLogging = false)
+      svc.captureEvent('should be skipped', domain: 'TOGGLE');
+      async.flushMicrotasks();
 
-    // Initially disabled (isTestEnv = true means _enableLogging = false)
-    svc.captureEvent('should be skipped', domain: 'TOGGLE');
-    await Future<void>.delayed(Duration.zero);
+      expect(_findLogFile(tempDocs), isNull);
 
-    expect(_findLogFile(tempDocs), isNull);
+      // Enable logging via config flag
+      flagController.add(true);
+      async.flushMicrotasks();
 
-    // Enable logging via config flag
-    flagController.add(true);
-    await Future<void>.delayed(Duration.zero);
+      svc.captureEvent('should be logged', domain: 'TOGGLE');
+      unawaited(svc.flushAllForTest());
+      async.flushMicrotasks();
 
-    svc.captureEvent('should be logged', domain: 'TOGGLE');
-    await svc.flushAllForTest();
+      final logFile = _findLogFile(tempDocs);
+      expect(
+        logFile,
+        isNotNull,
+        reason: 'Log file should exist after enabling',
+      );
+      final content = logFile!.readAsStringSync();
+      expect(content.contains('TOGGLE: should be logged'), isTrue);
+      // The skipped event should NOT be in the file
+      expect(content.contains('should be skipped'), isFalse);
 
-    final logFile = _findLogFile(tempDocs);
-    expect(logFile, isNotNull, reason: 'Log file should exist after enabling');
-    final content = logFile!.readAsStringSync();
-    expect(content.contains('TOGGLE: should be logged'), isTrue);
-    // The skipped event should NOT be in the file
-    expect(content.contains('should be skipped'), isFalse);
+      // Disable logging via config flag
+      flagController.add(false);
+      async.flushMicrotasks();
 
-    // Disable logging via config flag
-    flagController.add(false);
-    await Future<void>.delayed(Duration.zero);
+      svc.captureEvent('should be skipped again', domain: 'TOGGLE');
+      unawaited(svc.flushAllForTest());
+      async.flushMicrotasks();
 
-    svc.captureEvent('should be skipped again', domain: 'TOGGLE');
-    await svc.flushAllForTest();
-
-    // File content should not contain the disabled event
-    final content2 = logFile.readAsStringSync();
-    expect(content2.contains('should be skipped again'), isFalse);
+      // File content should not contain the disabled event
+      final content2 = logFile.readAsStringSync();
+      expect(content2.contains('should be skipped again'), isFalse);
+    });
   });
 
   test(
