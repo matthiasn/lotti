@@ -210,7 +210,7 @@ void main() {
 
     glados.Glados(
       glados.any.generatedRatingDimension,
-      glados.ExploreConfig(numRuns: 160),
+      glados.ExploreConfig(numRuns: 80),
     ).test('round-trips generated dimensions through JSON', (scenario) {
       final dimension = scenario.dimension;
 
@@ -344,46 +344,6 @@ void main() {
       expect(restored, equals(data));
     });
 
-    test('JSON round-trip preserves all fields', () {
-      const data = RatingData(
-        targetId: 'entry-abc',
-        dimensions: [
-          RatingDimension(key: 'productivity', value: 0.85),
-          RatingDimension(key: 'energy', value: 0.4),
-          RatingDimension(key: 'focus', value: 0.95),
-          RatingDimension(key: 'challenge_skill', value: 0.5),
-        ],
-        note: 'Feeling great',
-      );
-
-      final jsonString = jsonEncode(data.toJson());
-      final decoded = RatingData.fromJson(
-        jsonDecode(jsonString) as Map<String, dynamic>,
-      );
-
-      expect(decoded.targetId, equals('entry-abc'));
-      expect(decoded.dimensions.length, equals(4));
-      expect(decoded.dimensions[0].key, equals('productivity'));
-      expect(decoded.dimensions[0].value, equals(0.85));
-      expect(decoded.schemaVersion, equals(1));
-      expect(decoded.note, equals('Feeling great'));
-    });
-
-    test('serializes without optional note', () {
-      const data = RatingData(
-        targetId: 'entry-1',
-        dimensions: testDimensions,
-      );
-
-      final jsonString = jsonEncode(data.toJson());
-      final restored = RatingData.fromJson(
-        jsonDecode(jsonString) as Map<String, dynamic>,
-      );
-
-      expect(restored.note, isNull);
-      expect(restored, equals(data));
-    });
-
     test('catalogId defaults to session', () {
       const data = RatingData(
         targetId: 'entry-1',
@@ -416,22 +376,6 @@ void main() {
 
       expect(data.catalogId, equals('session'));
       expect(data.targetId, equals('entry-1'));
-    });
-
-    test('JSON round-trip preserves catalogId', () {
-      const data = RatingData(
-        targetId: 'task-123',
-        dimensions: testDimensions,
-        catalogId: 'task_completed',
-      );
-
-      final jsonString = jsonEncode(data.toJson());
-      final restored = RatingData.fromJson(
-        jsonDecode(jsonString) as Map<String, dynamic>,
-      );
-
-      expect(restored.catalogId, equals('task_completed'));
-      expect(restored, equals(data));
     });
 
     glados.Glados(

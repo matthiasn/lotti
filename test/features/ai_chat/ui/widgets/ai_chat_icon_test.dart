@@ -153,6 +153,17 @@ void main() {
 
       expect(find.byType(ChatInterface), findsOneWidget);
       expect(find.text('Please select a single category'), findsNothing);
+
+      // The core contract: the modal forwards the journal page's selected
+      // category into the chat interface.
+      expect(
+        tester.widget<ChatInterface>(find.byType(ChatInterface)).categoryId,
+        categoryId,
+      );
+      // ...which is also what the session was created against.
+      verify(
+        () => mockChatRepository.createSession(categoryId: categoryId),
+      ).called(1);
     });
 
     testWidgets('modal shares controller state with parent (via '

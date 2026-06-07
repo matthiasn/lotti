@@ -60,7 +60,8 @@ void main() {
     await tester.tap(
       find.text(context.messages.settingsMatrixDiagnosticShowButton),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(
       find.text(context.messages.settingsMatrixDiagnosticDialogTitle),
@@ -103,13 +104,15 @@ void main() {
     await tester.tap(
       find.text(context.messages.settingsMatrixDiagnosticShowButton),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Tap the copy button
     await tester.tap(
       find.text(context.messages.settingsMatrixDiagnosticCopyButton),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(clipboardText, isNotNull);
     expect(clipboardText, contains('TESTDEVICE'));
@@ -137,7 +140,8 @@ void main() {
     await tester.tap(
       find.text(context.messages.settingsMatrixDiagnosticShowButton),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Dialog should be visible
     expect(find.byType(AlertDialog), findsOneWidget);
@@ -146,7 +150,8 @@ void main() {
     await tester.tap(
       find.text(context.messages.tasksLabelsDialogClose),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Dialog should be dismissed
     expect(find.byType(AlertDialog), findsNothing);

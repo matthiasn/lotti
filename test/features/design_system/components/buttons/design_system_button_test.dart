@@ -128,6 +128,109 @@ void main() {
       );
     });
 
+    testWidgets('renders the danger hover state from tokens', (tester) async {
+      const buttonKey = Key('danger-hover');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemButton(
+            key: buttonKey,
+            label: 'Danger',
+            variant: DesignSystemButtonVariant.danger,
+            forcedState: DesignSystemButtonVisualState.hover,
+            onPressed: _noop,
+          ),
+          theme: DesignSystemTheme.light(),
+        ),
+      );
+
+      final ink = tester.widget<Ink>(
+        find.descendant(of: find.byKey(buttonKey), matching: find.byType(Ink)),
+      );
+      final decoration = ink.decoration! as ShapeDecoration;
+      expect(decoration.color, dsTokensLight.colors.alert.error.hover);
+    });
+
+    // Idle foreground/background for every variant under both themes — the
+    // full variant matrix from _ButtonVariantSpec, token-resolved per theme.
+    for (final (themeName, theme, tokens) in [
+      ('light', DesignSystemTheme.light(), dsTokensLight),
+      ('dark', DesignSystemTheme.dark(), dsTokensDark),
+    ]) {
+      testWidgets('idle variant colors resolve from $themeName tokens', (
+        tester,
+      ) async {
+        final expected = {
+          DesignSystemButtonVariant.primary: (
+            fg: tokens.colors.text.onInteractiveAlert,
+            bg: tokens.colors.interactive.enabled,
+          ),
+          DesignSystemButtonVariant.secondary: (
+            fg: tokens.colors.text.highEmphasis,
+            bg: tokens.colors.surface.enabled,
+          ),
+          DesignSystemButtonVariant.tertiary: (
+            fg: tokens.colors.interactive.enabled,
+            bg: null,
+          ),
+          DesignSystemButtonVariant.danger: (
+            fg: tokens.colors.text.onInteractiveAlert,
+            bg: tokens.colors.alert.error.defaultColor,
+          ),
+          DesignSystemButtonVariant.dangerSecondary: (
+            fg: tokens.colors.alert.error.defaultColor,
+            bg: tokens.colors.surface.enabled,
+          ),
+          DesignSystemButtonVariant.dangerTertiary: (
+            fg: tokens.colors.alert.error.defaultColor,
+            bg: null,
+          ),
+        };
+        expect(expected.keys, containsAll(DesignSystemButtonVariant.values));
+
+        for (final variant in DesignSystemButtonVariant.values) {
+          final buttonKey = Key('variant-${variant.name}');
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              DesignSystemButton(
+                key: buttonKey,
+                label: variant.name,
+                variant: variant,
+                onPressed: _noop,
+              ),
+              theme: theme,
+            ),
+          );
+
+          final ink = tester.widget<Ink>(
+            find.descendant(
+              of: find.byKey(buttonKey),
+              matching: find.byType(Ink),
+            ),
+          );
+          final decoration = ink.decoration! as ShapeDecoration;
+          final spec = expected[variant]!;
+          expect(
+            decoration.color,
+            spec.bg ?? Colors.transparent,
+            reason: '$themeName ${variant.name} background',
+          );
+          expect(
+            find.descendant(
+              of: find.byKey(buttonKey),
+              matching: find.byWidgetPredicate(
+                (widget) =>
+                    widget is DefaultTextStyle &&
+                    widget.style.color == spec.fg,
+              ),
+            ),
+            findsWidgets,
+            reason: '$themeName ${variant.name} foreground',
+          );
+        }
+      });
+    }
+
     testWidgets('applies token-driven disabled opacity to danger buttons', (
       tester,
     ) async {

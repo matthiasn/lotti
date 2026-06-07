@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -114,6 +115,83 @@ void main() {
   tearDown(() async {
     await updateStreamController.close();
     await tearDownTestGetIt();
+  });
+
+  group('debugInsertItemAt (pure insertion/move logic)', () {
+    glados.Glados3(
+      glados.IntAnys(glados.any).intInRange(0, 6),
+      glados.IntAnys(glados.any).intInRange(-2, 9),
+      glados.IntAnys(glados.any).intInRange(0, 4),
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'inserted exactly once, never duplicated, order of others preserved',
+      (existingCount, rawTarget, mode) {
+        final controller = ChecklistController(
+          (id: 'checklist-1', taskId: null),
+        );
+        final existing = List.generate(existingCount, (i) => 'item-$i');
+        // mode 0: explicit index; 1: after a target item (or appended when
+        // the target is missing); 2: append (no target); 3: move an
+        // EXISTING id instead of inserting a new one.
+        final itemId = mode == 3 && existing.isNotEmpty
+            ? existing[rawTarget.abs() % existing.length]
+            : 'item-new';
+        final targetItemId = mode == 1
+            ? (existing.isNotEmpty && rawTarget >= 0
+                  ? existing[rawTarget % existing.length]
+                  : 'missing-item')
+            : null;
+
+        final result = controller.debugInsertItemAt(
+          existing,
+          itemId,
+          targetIndex: mode == 0 ? rawTarget : null,
+          targetItemId: targetItemId,
+        );
+        final reason =
+            'existing=$existing itemId=$itemId mode=$mode raw=$rawTarget';
+
+        // The id appears exactly once.
+        expect(
+          result.where((id) => id == itemId),
+          hasLength(1),
+          reason: reason,
+        );
+        // Length: +1 for a new id, unchanged for a move.
+        expect(
+          result.length,
+          existing.contains(itemId) ? existing.length : existing.length + 1,
+          reason: reason,
+        );
+        // Relative order of all other items is preserved.
+        expect(
+          result.where((id) => id != itemId).toList(),
+          existing.where((id) => id != itemId).toList(),
+          reason: reason,
+        );
+        // Mode-specific placement contracts.
+        if (mode == 0) {
+          final others = existing.toList()..remove(itemId);
+          expect(
+            result.indexOf(itemId),
+            rawTarget.clamp(0, others.length),
+            reason: reason,
+          );
+        }
+        if (mode == 1 && targetItemId != null) {
+          final targetIdx = result.indexOf(targetItemId);
+          if (targetIdx != -1) {
+            expect(result.indexOf(itemId), targetIdx + 1, reason: reason);
+          } else {
+            expect(result.last, itemId, reason: reason);
+          }
+        }
+        if (mode == 2) {
+          expect(result.last, itemId, reason: reason);
+        }
+      },
+      tags: 'glados',
+    );
   });
 
   group('ChecklistController', () {
@@ -449,6 +527,61 @@ void main() {
                 ),
               ).captured.single
               as ChecklistData;
+
+      test(
+        'updateItemOrder persists the given order directly',
+        () async {
+          final notifier = await bootstrap();
+
+          await notifier.updateItemOrder(
+            const ['item-3', 'item-1', 'item-2'],
+          );
+
+          expect(
+            captureUpdate().linkedChecklistItems,
+            ['item-3', 'item-1', 'item-2'],
+          );
+        },
+      );
+
+      test(
+        'updateChecklist is a no-op while the provider has no value yet',
+        () async {
+          // Never stub journalEntityById to resolve: keep the async build
+          // pending so state.value is null when the mutation fires.
+          when(
+            () => mockDb.journalEntityById('checklist-1'),
+          ).thenAnswer((_) => Completer<JournalEntity?>().future);
+
+          final container = ProviderContainer(
+            overrides: [
+              journalRepositoryProvider.overrideWithValue(
+                mockJournalRepository,
+              ),
+              checklistRepositoryProvider.overrideWithValue(
+                mockChecklistRepository,
+              ),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          final notifier = container.read(
+            checklistControllerProvider((
+              id: 'checklist-1',
+              taskId: 'task-1',
+            )).notifier,
+          );
+
+          await notifier.updateChecklist((c) => c);
+
+          verifyNever(
+            () => mockChecklistRepository.updateChecklist(
+              checklistId: any(named: 'checklistId'),
+              data: any(named: 'data'),
+            ),
+          );
+        },
+      );
 
       test('reorders item to target index position', () async {
         final notifier = await bootstrap();

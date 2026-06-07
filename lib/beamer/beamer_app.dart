@@ -56,10 +56,18 @@ import 'package:matrix/matrix.dart';
 
 /// Check if the app is running inside Flatpak sandbox
 bool _isRunningInFlatpak() {
+  final override = debugIsRunningInFlatpakOverride;
+  if (override != null) return override;
   return Platform.isLinux &&
       (Platform.environment['FLATPAK_ID'] != null &&
           Platform.environment['FLATPAK_ID']!.isNotEmpty);
 }
+
+/// Test-only override for the Flatpak sandbox detection. `null` (default)
+/// uses the real `Platform.environment` check; tests set true/false to pin
+/// the branch regardless of host.
+@visibleForTesting
+bool? debugIsRunningInFlatpakOverride;
 
 /// True when the tasks tab is active and the tasks beamer location points
 /// at a `/tasks/<uuid>` task detail. Used by both shells: the mobile shell
@@ -72,6 +80,14 @@ bool isTaskDetailRoute(BeamLocation<dynamic>? location, int activeTabIndex) {
   if (activeTabIndex != 0) return false;
   if (location is! TasksLocation) return false;
   return isUuid(location.state.pathParameters['taskId']);
+}
+
+/// Clamps a raw navigation index into `[0, itemCount - 1]` so a stale index
+/// from the nav stream cannot go out of bounds when feature flags shrink the
+/// destinations list.
+int clampNavigationIndex({required int rawIndex, required int itemCount}) {
+  if (rawIndex < 0) return 0;
+  return rawIndex > itemCount - 1 ? itemCount - 1 : rawIndex;
 }
 
 enum _AppNavigationDestinationKind {
@@ -286,9 +302,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 
         // Clamp index to valid range to prevent out of bounds errors
         // when flags are toggled and items list shrinks
-        final index = rawIndex < 0
-            ? 0
-            : (rawIndex > itemCount - 1 ? itemCount - 1 : rawIndex);
+        final index = clampNavigationIndex(
+          rawIndex: rawIndex,
+          itemCount: itemCount,
+        );
 
         final isWide = isDesktopLayout(context);
         navService.isDesktopMode = isWide;

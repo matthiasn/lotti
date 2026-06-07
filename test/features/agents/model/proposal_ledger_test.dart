@@ -3,6 +3,8 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 
+import '../test_utils.dart';
+
 // ── Generators ────────────────────────────────────────────────────────────────
 
 extension _AnyChangeItemStatus on glados.Any {
@@ -10,47 +12,30 @@ extension _AnyChangeItemStatus on glados.Any {
       glados.AnyUtils(this).choose(ChangeItemStatus.values);
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-LedgerEntry _makeLedgerEntry({
-  ChangeItemStatus status = ChangeItemStatus.pending,
-}) {
-  return LedgerEntry(
-    changeSetId: 'cs-001',
-    itemIndex: 0,
-    toolName: 'set_task_priority',
-    args: const <String, dynamic>{'priority': 'P1'},
-    humanSummary: 'Change priority to P1',
-    fingerprint: 'fp-abc123',
-    status: status,
-    createdAt: DateTime(2024, 3, 15),
-  );
-}
-
 void main() {
   group('LedgerEntry.isOpen', () {
     test('is true when status is pending', () {
-      final entry = _makeLedgerEntry();
+      final entry = makeLedgerEntry();
       expect(entry.isOpen, isTrue);
     });
 
     test('is false when status is confirmed', () {
-      final entry = _makeLedgerEntry(status: ChangeItemStatus.confirmed);
+      final entry = makeLedgerEntry(status: ChangeItemStatus.confirmed);
       expect(entry.isOpen, isFalse);
     });
 
     test('is false when status is rejected', () {
-      final entry = _makeLedgerEntry(status: ChangeItemStatus.rejected);
+      final entry = makeLedgerEntry(status: ChangeItemStatus.rejected);
       expect(entry.isOpen, isFalse);
     });
 
     test('is false when status is deferred', () {
-      final entry = _makeLedgerEntry(status: ChangeItemStatus.deferred);
+      final entry = makeLedgerEntry(status: ChangeItemStatus.deferred);
       expect(entry.isOpen, isFalse);
     });
 
     test('is false when status is retracted', () {
-      final entry = _makeLedgerEntry(status: ChangeItemStatus.retracted);
+      final entry = makeLedgerEntry(status: ChangeItemStatus.retracted);
       expect(entry.isOpen, isFalse);
     });
 
@@ -60,7 +45,7 @@ void main() {
     ).test(
       'isOpen is true if and only if status == pending',
       (status) {
-        final entry = _makeLedgerEntry(status: status);
+        final entry = makeLedgerEntry(status: status);
         expect(
           entry.isOpen,
           equals(status == ChangeItemStatus.pending),
@@ -83,7 +68,7 @@ void main() {
     });
 
     test('is false when open has entries', () {
-      final entry = _makeLedgerEntry();
+      final entry = makeLedgerEntry();
       final ledger = ProposalLedger(
         open: [entry],
         resolved: const [],
@@ -92,7 +77,7 @@ void main() {
     });
 
     test('is false when resolved has entries', () {
-      final entry = _makeLedgerEntry(status: ChangeItemStatus.confirmed);
+      final entry = makeLedgerEntry(status: ChangeItemStatus.confirmed);
       final ledger = ProposalLedger(
         open: const [],
         resolved: [entry],
@@ -101,8 +86,8 @@ void main() {
     });
 
     test('is false when both open and resolved are non-empty', () {
-      final openEntry = _makeLedgerEntry();
-      final resolvedEntry = _makeLedgerEntry(status: ChangeItemStatus.rejected);
+      final openEntry = makeLedgerEntry();
+      final resolvedEntry = makeLedgerEntry(status: ChangeItemStatus.rejected);
       final ledger = ProposalLedger(
         open: [openEntry],
         resolved: [resolvedEntry],
@@ -113,7 +98,7 @@ void main() {
 
   group('LedgerEntry fields', () {
     test('optional fields default to null', () {
-      final entry = _makeLedgerEntry();
+      final entry = makeLedgerEntry();
       expect(entry.resolvedAt, isNull);
       expect(entry.resolvedBy, isNull);
       expect(entry.verdict, isNull);

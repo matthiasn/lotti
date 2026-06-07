@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
+import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'evolution_chat_state.g.dart';
@@ -358,6 +359,11 @@ class EvolutionChatState extends _$EvolutionChatState {
   static bool _isImplicitApprovalMessage(String text) =>
       _implicitApprovalPattern.hasMatch(text.trim());
 
+  /// Test seam for the implicit-approval matcher — pure regex, no state.
+  @visibleForTesting
+  static bool debugIsImplicitApprovalMessage(String text) =>
+      _isImplicitApprovalMessage(text);
+
   static bool _hasNonEmptyText(String? text) =>
       text?.trim().isNotEmpty ?? false;
 
@@ -368,6 +374,11 @@ class EvolutionChatState extends _$EvolutionChatState {
       proposal.rationale.trim(),
     ].join('\n---\n');
   }
+
+  /// Test seam for the proposal fingerprint — pure string join, no state.
+  @visibleForTesting
+  static String debugProposalKey(PendingProposal proposal) =>
+      _proposalKey(proposal);
 
   List<EvolutionChatMessage> _renderProposalSurface({
     required ActiveEvolutionSession? session,

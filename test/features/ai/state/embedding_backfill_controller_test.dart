@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -1269,5 +1270,61 @@ void main() {
       expect(embeddedText, contains('Labels: active'));
       expect(embeddedText, isNot(contains('deleted')));
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Glados property for the _processEntities counter arithmetic: for any
+  // generated per-entity outcome sequence (embed / skip / throw), the final
+  // counters and progress must satisfy the documented invariants.
+  // ---------------------------------------------------------------------------
+  group('backfillCategories — counter properties', () {
+    glados.Glados(
+      glados.any.list(glados.IntAnys(glados.any).intInRange(0, 3)),
+      glados.ExploreConfig(numRuns: 60),
+    ).test('counters always reconcile for any outcome sequence', (
+      outcomes,
+    ) async {
+      // outcome per entity: 0 = embeds, 1 = skipped (entity missing),
+      // 2 = fails (lookup throws).
+      final ids = [for (var i = 0; i < outcomes.length; i++) 'prop-$i'];
+      _stubEntityIds(mockJournalDb, ids);
+      for (final (i, outcome) in outcomes.indexed) {
+        switch (outcome) {
+          case 0:
+            _stubEntity(
+              mockJournalDb,
+              Task(
+                meta: _meta(id: ids[i]),
+                data: _taskData('Prop task $i'),
+                entryText: const EntryText(plainText: _longText),
+              ),
+            );
+          case 1:
+            when(
+              () => mockJournalDb.journalEntityById(ids[i]),
+            ).thenAnswer((_) async => null);
+          default:
+            when(
+              () => mockJournalDb.journalEntityById(ids[i]),
+            ).thenThrow(StateError('lookup boom $i'));
+        }
+      }
+
+      await controller().backfillCategories({_testCategoryId});
+
+      final s = state();
+      final expectedEmbedded = outcomes.where((o) => o == 0).length;
+      final expectedFailed = outcomes.where((o) => o == 2).length;
+
+      expect(s.processedCount, outcomes.length, reason: '$outcomes');
+      expect(s.embeddedCount, expectedEmbedded, reason: '$outcomes');
+      expect(s.failedCount, expectedFailed, reason: '$outcomes');
+      expect(
+        s.embeddedCount + s.failedCount,
+        lessThanOrEqualTo(s.processedCount),
+      );
+      expect(s.progress, 1.0, reason: 'always completes: $outcomes');
+      expect(s.isRunning, isFalse);
+    }, tags: 'glados');
   });
 }

@@ -44,6 +44,44 @@ void main() {
       GetIt.instance.reset();
     });
 
+    /// The standard session returned by the shared create/save stubs.
+    ChatSession makeSession({String id = 's1', String title = 'New Chat'}) =>
+        ChatSession(
+          id: id,
+          title: title,
+          createdAt: DateTime(2024),
+          lastMessageAt: DateTime(2024),
+          messages: const [],
+        );
+
+    /// Stubs createSession to return the standard session.
+    void stubCreateSession({String id = 's1'}) {
+      when(
+        () => mockChatRepository.createSession(categoryId: 'test-category'),
+      ).thenAnswer((_) async => makeSession(id: id));
+    }
+
+    /// Stubs saveSession to return the standard session.
+    void stubSaveSession({String id = 's1'}) {
+      when(
+        () => mockChatRepository.saveSession(any()),
+      ).thenAnswer((_) async => makeSession(id: id));
+    }
+
+    /// Stubs sendMessage to a fresh stream and returns its controller.
+    StreamController<String> stubStreaming() {
+      final streamController = StreamController<String>();
+      when(
+        () => mockChatRepository.sendMessage(
+          message: any(named: 'message'),
+          conversationHistory: any(named: 'conversationHistory'),
+          categoryId: any(named: 'categoryId'),
+          modelId: any(named: 'modelId'),
+        ),
+      ).thenAnswer((_) => streamController.stream);
+      return streamController;
+    }
+
     group('build', () {
       test('returns empty ChatSessionUiModel', () {
         final state = container.read(
@@ -180,17 +218,7 @@ void main() {
       test('upgrades soft break before heading to blank line for Markdown', () {
         fakeAsync((async) {
           // Initialize empty session
-          when(
-            () => mockChatRepository.createSession(categoryId: 'test-category'),
-          ).thenAnswer(
-            (_) async => ChatSession(
-              id: 's1',
-              title: 'New Chat',
-              createdAt: DateTime(2024),
-              lastMessageAt: DateTime(2024),
-              messages: const [],
-            ),
-          );
+          stubCreateSession();
 
           final streamController = StreamController<String>();
           // Keep provider alive during async streaming
@@ -207,15 +235,7 @@ void main() {
               modelId: any(named: 'modelId'),
             ),
           ).thenAnswer((_) => streamController.stream);
-          when(() => mockChatRepository.saveSession(any())).thenAnswer(
-            (_) async => ChatSession(
-              id: 's1',
-              title: 'New Chat',
-              createdAt: DateTime(2024),
-              lastMessageAt: DateTime(2024),
-              messages: const [],
-            ),
-          );
+          stubSaveSession();
 
           // Keep provider alive during async streaming
           final keepAlive = container.listen(
@@ -456,6 +476,46 @@ void main() {
         verifyNever(() => mockChatRepository.deleteSession(any()));
       });
 
+      test(
+        'falls back to an empty session when clearChat fails after a '
+        'successful delete',
+        () async {
+          when(
+            () => mockChatRepository.deleteSession('session-to-delete'),
+          ).thenAnswer((_) async {});
+          // clearChat's createSession blows up — its internal catch must
+          // recover with the empty fallback, not surface a delete error.
+          when(
+            () => mockChatRepository.createSession(categoryId: 'test-category'),
+          ).thenThrow(Exception('store offline'));
+
+          final controller = container.read(
+            chatSessionControllerProvider('test-category').notifier,
+          );
+          container
+              .read(chatSessionControllerProvider('test-category').notifier)
+              .updateState(
+                (state) => state.copyWith(id: 'session-to-delete'),
+              );
+
+          await controller.deleteSession();
+
+          final state = container.read(
+            chatSessionControllerProvider('test-category'),
+          );
+          expect(state.id, isEmpty);
+          expect(state.error, isNull);
+          verify(
+            () => mockDomainLogger.error(
+              any(),
+              any(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'clearChat',
+            ),
+          ).called(1);
+        },
+      );
+
       test('deletes session and creates new one', () async {
         final newSession = ChatSession(
           id: 'new-session-id',
@@ -538,6 +598,38 @@ void main() {
             modelId: any(named: 'modelId'),
           ),
         );
+      });
+
+      test('does nothing when only assistant messages exist', () async {
+        final controller = container.read(
+          chatSessionControllerProvider('test-category').notifier,
+        );
+        container
+            .read(chatSessionControllerProvider('test-category').notifier)
+            .updateState(
+              (state) => state.copyWith(
+                messages: [
+                  ChatMessage.assistant('orphan response 1'),
+                  ChatMessage.assistant('orphan response 2'),
+                ],
+              ),
+            );
+
+        await controller.retryLastMessage();
+
+        // No user message to re-send → no send, state untouched.
+        verifyNever(
+          () => mockChatRepository.sendMessage(
+            message: any(named: 'message'),
+            conversationHistory: any(named: 'conversationHistory'),
+            categoryId: any(named: 'categoryId'),
+            modelId: any(named: 'modelId'),
+          ),
+        );
+        final state = container.read(
+          chatSessionControllerProvider('test-category'),
+        );
+        expect(state.messages, hasLength(2));
       });
 
       test('retries last user message', () async {
@@ -749,24 +841,8 @@ void main() {
             ),
           );
 
-          final streamController = StreamController<String>();
-          when(
-            () => mockChatRepository.sendMessage(
-              message: any(named: 'message'),
-              conversationHistory: any(named: 'conversationHistory'),
-              categoryId: any(named: 'categoryId'),
-              modelId: any(named: 'modelId'),
-            ),
-          ).thenAnswer((_) => streamController.stream);
-          when(() => mockChatRepository.saveSession(any())).thenAnswer(
-            (_) async => ChatSession(
-              id: 's1',
-              title: 'New Chat',
-              createdAt: DateTime(2024),
-              lastMessageAt: DateTime(2024),
-              messages: const [],
-            ),
-          );
+          final streamController = stubStreaming();
+          stubSaveSession();
 
           // Keep provider alive during async streaming by listening to it
           final sub = container.listen(
@@ -826,24 +902,8 @@ void main() {
           ),
         );
 
-        final streamController = StreamController<String>();
-        when(
-          () => mockChatRepository.sendMessage(
-            message: any(named: 'message'),
-            conversationHistory: any(named: 'conversationHistory'),
-            categoryId: any(named: 'categoryId'),
-            modelId: any(named: 'modelId'),
-          ),
-        ).thenAnswer((_) => streamController.stream);
-        when(() => mockChatRepository.saveSession(any())).thenAnswer(
-          (_) async => ChatSession(
-            id: 's1',
-            title: 'New Chat',
-            createdAt: DateTime(2024),
-            lastMessageAt: DateTime(2024),
-            messages: const [],
-          ),
-        );
+        final streamController = stubStreaming();
+        stubSaveSession();
 
         final controller = container.read(
           chatSessionControllerProvider('test-category').notifier,
@@ -886,24 +946,8 @@ void main() {
           ),
         );
 
-        final streamController = StreamController<String>();
-        when(
-          () => mockChatRepository.sendMessage(
-            message: any(named: 'message'),
-            conversationHistory: any(named: 'conversationHistory'),
-            categoryId: any(named: 'categoryId'),
-            modelId: any(named: 'modelId'),
-          ),
-        ).thenAnswer((_) => streamController.stream);
-        when(() => mockChatRepository.saveSession(any())).thenAnswer(
-          (_) async => ChatSession(
-            id: 's1',
-            title: 'New Chat',
-            createdAt: DateTime(2024),
-            lastMessageAt: DateTime(2024),
-            messages: const [],
-          ),
-        );
+        final streamController = stubStreaming();
+        stubSaveSession();
 
         // Keep provider alive during async streaming by listening to it
         final keepSub = container.listen(
@@ -951,24 +995,8 @@ void main() {
           ),
         );
 
-        final streamController = StreamController<String>();
-        when(
-          () => mockChatRepository.sendMessage(
-            message: any(named: 'message'),
-            conversationHistory: any(named: 'conversationHistory'),
-            categoryId: any(named: 'categoryId'),
-            modelId: any(named: 'modelId'),
-          ),
-        ).thenAnswer((_) => streamController.stream);
-        when(() => mockChatRepository.saveSession(any())).thenAnswer(
-          (_) async => ChatSession(
-            id: 's1',
-            title: 'New Chat',
-            createdAt: DateTime(2024),
-            lastMessageAt: DateTime(2024),
-            messages: const [],
-          ),
-        );
+        final streamController = stubStreaming();
+        stubSaveSession();
 
         // Keep provider alive during async streaming by listening to it
         final sub = container.listen(
@@ -1021,24 +1049,8 @@ void main() {
           ),
         );
 
-        final streamController = StreamController<String>();
-        when(
-          () => mockChatRepository.sendMessage(
-            message: any(named: 'message'),
-            conversationHistory: any(named: 'conversationHistory'),
-            categoryId: any(named: 'categoryId'),
-            modelId: any(named: 'modelId'),
-          ),
-        ).thenAnswer((_) => streamController.stream);
-        when(() => mockChatRepository.saveSession(any())).thenAnswer(
-          (_) async => ChatSession(
-            id: 's1',
-            title: 'New Chat',
-            createdAt: DateTime(2024),
-            lastMessageAt: DateTime(2024),
-            messages: const [],
-          ),
-        );
+        final streamController = stubStreaming();
+        stubSaveSession();
 
         // Keep provider alive during async streaming by listening to it
         final sub = container.listen(
@@ -1096,24 +1108,8 @@ void main() {
             ),
           );
 
-          final streamController = StreamController<String>();
-          when(
-            () => mockChatRepository.sendMessage(
-              message: any(named: 'message'),
-              conversationHistory: any(named: 'conversationHistory'),
-              categoryId: any(named: 'categoryId'),
-              modelId: any(named: 'modelId'),
-            ),
-          ).thenAnswer((_) => streamController.stream);
-          when(() => mockChatRepository.saveSession(any())).thenAnswer(
-            (_) async => ChatSession(
-              id: 's1',
-              title: 'New Chat',
-              createdAt: DateTime(2024),
-              lastMessageAt: DateTime(2024),
-              messages: const [],
-            ),
-          );
+          final streamController = stubStreaming();
+          stubSaveSession();
 
           final sub = container.listen(
             chatSessionControllerProvider('test-category'),
@@ -1173,24 +1169,8 @@ void main() {
 
           // Stream emits some content then throws to trigger _removeStreamingMessage
           // with a non-null _currentStreamingMessageId already set.
-          final streamController = StreamController<String>();
-          when(
-            () => mockChatRepository.sendMessage(
-              message: any(named: 'message'),
-              conversationHistory: any(named: 'conversationHistory'),
-              categoryId: any(named: 'categoryId'),
-              modelId: any(named: 'modelId'),
-            ),
-          ).thenAnswer((_) => streamController.stream);
-          when(() => mockChatRepository.saveSession(any())).thenAnswer(
-            (_) async => ChatSession(
-              id: 's1',
-              title: 'New Chat',
-              createdAt: DateTime(2024),
-              lastMessageAt: DateTime(2024),
-              messages: const [],
-            ),
-          );
+          final streamController = stubStreaming();
+          stubSaveSession();
 
           final sub = container.listen(
             chatSessionControllerProvider('test-category'),
@@ -1420,24 +1400,8 @@ void main() {
             ),
           );
 
-          final streamController = StreamController<String>();
-          when(
-            () => mockChatRepository.sendMessage(
-              message: any(named: 'message'),
-              conversationHistory: any(named: 'conversationHistory'),
-              categoryId: any(named: 'categoryId'),
-              modelId: any(named: 'modelId'),
-            ),
-          ).thenAnswer((_) => streamController.stream);
-          when(() => mockChatRepository.saveSession(any())).thenAnswer(
-            (_) async => ChatSession(
-              id: 's1',
-              title: 'New Chat',
-              createdAt: DateTime(2024),
-              lastMessageAt: DateTime(2024),
-              messages: const [],
-            ),
-          );
+          final streamController = stubStreaming();
+          stubSaveSession();
 
           final sub = container.listen(
             chatSessionControllerProvider('test-category'),

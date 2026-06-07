@@ -245,7 +245,7 @@ class _PulsingBorder extends StatefulWidget {
     required this.strokeWidth,
     required this.duration,
     required this.loopCount,
-    this.startDelay = Duration.zero,
+    required this.startDelay,
   });
 
   final Color color;

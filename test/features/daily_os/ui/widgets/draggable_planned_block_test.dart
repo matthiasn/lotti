@@ -17,6 +17,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 
 /// Mock controller that returns fixed unified data.
 class _TestUnifiedController extends UnifiedDailyOsDataController {
@@ -200,7 +201,7 @@ void main() {
     );
   }
 
-  setUp(() {
+  setUp(() async {
     mockCacheService = MockEntitiesCacheService();
     // Use thenAnswer to handle different category IDs
     when(() => mockCacheService.getCategoryById(any())).thenAnswer((
@@ -213,17 +214,14 @@ void main() {
       return null;
     });
 
-    if (getIt.isRegistered<EntitiesCacheService>()) {
-      getIt.unregister<EntitiesCacheService>();
-    }
-    getIt.registerSingleton<EntitiesCacheService>(mockCacheService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<EntitiesCacheService>(mockCacheService);
+      },
+    );
   });
 
-  tearDown(() async {
-    if (getIt.isRegistered<EntitiesCacheService>()) {
-      getIt.unregister<EntitiesCacheService>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   group('DraggablePlannedBlock rendering', () {
     testWidgets('renders category name', (tester) async {

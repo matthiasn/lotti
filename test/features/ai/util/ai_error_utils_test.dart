@@ -37,7 +37,11 @@ class CustomError {
 // Helper for the prioritization test
 class TestErrorWithBodyAndMessage {
   TestErrorWithBodyAndMessage({this.body, this.message});
+  // Read dynamically by AiErrorUtils (error.body / error.message), which the
+  // analyzer cannot see.
+  // ignore: unreachable_from_main
   final dynamic body;
+  // ignore: unreachable_from_main
   final String? message;
 
   @override
@@ -201,20 +205,6 @@ extension _AnyGeneratedCategorizedError on glados.Any {
 
 void main() {
   group('AiErrorUtils', () {
-    test('test helpers expose dynamic fields', () {
-      final errorWithMessage = TestErrorWithMessage(message: 'message');
-      final errorWithBody = TestErrorWithBody(body: {'key': 'value'});
-      final errorWithBodyAndMessage = TestErrorWithBodyAndMessage(
-        body: 'body',
-        message: 'message',
-      );
-
-      expect(errorWithMessage.message, 'message');
-      expect(errorWithBody.body, {'key': 'value'});
-      expect(errorWithBodyAndMessage.body, 'body');
-      expect(errorWithBodyAndMessage.message, 'message');
-    });
-
     group('categorizeError', () {
       test('categorizes SocketException as network connection error', () {
         const error = SocketException('Failed to connect');

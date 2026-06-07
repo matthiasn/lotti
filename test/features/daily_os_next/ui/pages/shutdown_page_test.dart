@@ -14,6 +14,15 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
+/// Applies the standard tall-desktop view geometry every test needs and
+/// registers its reset.
+void _setView(WidgetTester tester) {
+  tester.view
+    ..physicalSize = const Size(1280, 1100)
+    ..devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+}
+
 Widget _wrap(Widget child, {List<Override> overrides = const []}) {
   return ProviderScope(
     overrides: overrides,
@@ -58,10 +67,7 @@ void main() {
     testWidgets('renders completed + carryover + tomorrow content', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1100)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester);
 
       final agent = _fastAgent();
       await tester.pumpWidget(
@@ -84,10 +90,7 @@ void main() {
     testWidgets('keeps shutdown content during provider refreshes', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1100)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester);
 
       final agent = RefreshBlockingShutdownAgent();
       addTearDown(() {
@@ -131,10 +134,7 @@ void main() {
     testWidgets('renders a localized error when shutdown loading fails', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1100)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester);
 
       await tester.pumpWidget(
         _wrap(
@@ -152,10 +152,7 @@ void main() {
     });
 
     testWidgets('footer actions all pop the shutdown route', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1100)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester);
 
       final cases = <Finder Function(AppLocalizations)>[
         (messages) => find.widgetWithText(
@@ -218,10 +215,7 @@ void main() {
     testWidgets(
       'tapping a carryover suggested chip collapses the row to a confirmation',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 1100)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester);
 
         final agent = _fastAgent();
         await tester.pumpWidget(
@@ -253,10 +247,7 @@ void main() {
     testWidgets(
       'AppBar back-arrow button pops the route',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 1100)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester);
 
         final agent = _fastAgent();
         var popped = false;
@@ -305,10 +296,7 @@ void main() {
       'tapping Pick-a-date shows Scheduled decision pill; '
       'tapping Drop shows Dropped decision pill',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 1100)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester);
 
         final agent = _fastAgent();
         await tester.pumpWidget(
@@ -367,10 +355,7 @@ void main() {
       'submitting an empty reflection does not call the controller '
       'and leaves the form visible',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 1100)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester);
 
         final agent = _fastAgent();
         await tester.pumpWidget(
@@ -401,10 +386,7 @@ void main() {
     testWidgets(
       'tapping Speak with text calls submitReflection and shows thanks',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 1100)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester);
 
         final agent = _fastAgent();
         await tester.pumpWidget(
@@ -441,10 +423,7 @@ void main() {
     testWidgets(
       'tapping Submit/Skip with text calls submitReflection and shows thanks',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 1100)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester);
 
         final agent = _fastAgent();
         await tester.pumpWidget(
@@ -512,10 +491,7 @@ void main() {
 
   group('ShutdownPage tomorrow note card', () {
     Future<void> pumpWithNote(WidgetTester tester, TomorrowNote note) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1100)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester);
 
       await tester.pumpWidget(
         _wrap(

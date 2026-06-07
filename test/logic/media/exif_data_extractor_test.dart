@@ -221,6 +221,24 @@ void main() {
         expect(ExifDataExtractor.parseRational('999999/1'), equals(999999.0));
       });
 
+      test('parses scientific notation as plain double', () {
+        expect(ExifDataExtractor.parseRational('1e-5'), equals(0.00001));
+      });
+
+      test('handles negative denominator', () {
+        expect(
+          ExifDataExtractor.parseRational('123/-456'),
+          closeTo(-0.2697, 0.0001),
+        );
+      });
+
+      test('handles double negative fraction', () {
+        expect(
+          ExifDataExtractor.parseRational('-123/-456'),
+          closeTo(0.2697, 0.0001),
+        );
+      });
+
       glados.Glados(
         glados.any.rationalScenario,
         glados.ExploreConfig(numRuns: 120),
@@ -397,6 +415,19 @@ void main() {
 
       test('handles malformed input gracefully', () {
         expect(ExifDataExtractor.parseGpsCoordinate('[error', 'N'), isNull);
+      });
+
+      test('lowercase direction refs do not negate', () {
+        // Only exact 'S' and 'W' negate; lowercase refs leave the value
+        // positive.
+        expect(
+          ExifDataExtractor.parseGpsCoordinate('[37/1, 46/1, 0/1]', 's'),
+          closeTo(37.7667, 0.0001),
+        );
+        expect(
+          ExifDataExtractor.parseGpsCoordinate('[122/1, 25/1, 0/1]', 'w'),
+          closeTo(122.4167, 0.0001),
+        );
       });
 
       glados.Glados(

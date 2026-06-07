@@ -11,6 +11,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../helpers/entity_factories.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 
@@ -27,30 +28,14 @@ void main() {
       String id = 'task-1',
       String title = 'Test Task',
       TaskStatus? status,
-    }) {
-      return Task(
-        meta: Metadata(
-          id: id,
-          createdAt: now,
-          updatedAt: now,
-          dateFrom: now,
-          dateTo: now,
-        ),
-        data: TaskData(
-          status:
-              status ??
-              TaskStatus.open(
-                id: 'status-1',
-                createdAt: now,
-                utcOffset: 0,
-              ),
-          dateFrom: now,
-          dateTo: now,
-          statusHistory: const [],
-          title: title,
-        ),
-      );
-    }
+    }) => TestTaskFactory.create(
+      id: id,
+      title: title,
+      status: status,
+      createdAt: now,
+      dateFrom: now,
+      dateTo: now,
+    );
 
     // Pumps a button that opens the modal, taps it, and settles.
     Future<void> openModal(
@@ -77,7 +62,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
     }
 
     void stubTasks(List<Task> tasks) {
@@ -151,7 +137,8 @@ void main() {
 
       // Tap to open modal
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Link existing task...'), findsOneWidget);
     });
@@ -177,7 +164,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Search tasks...'), findsOneWidget);
       expect(find.byIcon(Icons.search_rounded), findsOneWidget);
@@ -204,7 +192,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byType(DraggableScrollableSheet), findsOneWidget);
     });
@@ -244,7 +233,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('First Task'), findsOneWidget);
       expect(find.text('Second Task'), findsOneWidget);
@@ -285,7 +275,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Current task should be filtered out
       expect(find.text('Current Task'), findsNothing);
@@ -327,7 +318,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Already linked task should be filtered out
       expect(find.text('Already Linked'), findsNothing);
@@ -355,7 +347,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Handle bar is rendered with a specific key
       expect(find.byKey(const Key('link_task_modal_handle')), findsOneWidget);
@@ -403,7 +396,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Status icons should be present
       expect(find.byIcon(Icons.radio_button_unchecked), findsOneWidget);
@@ -442,7 +436,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Each task shows add_link icon as trailing
       expect(find.byIcon(Icons.add_link_rounded), findsOneWidget);
@@ -469,7 +464,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Verify modal is open as a BottomSheet
       expect(find.byType(BottomSheet), findsOneWidget);
@@ -499,63 +495,71 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('No tasks available to link'), findsOneWidget);
     });
 
-    testWidgets('filters tasks by search query', (tester) async {
-      final testTasks = [
-        buildTask(title: 'Apple Task'),
-        buildTask(id: 'task-2', title: 'Banana Task'),
-        buildTask(id: 'task-3', title: 'Cherry Task'),
-      ];
+    testWidgets(
+      'filters tasks by search query immediately — no debounce, results '
+      'update on the very next pump after typing',
+      (tester) async {
+        final testTasks = [
+          buildTask(title: 'Apple Task'),
+          buildTask(id: 'task-2', title: 'Banana Task'),
+          buildTask(id: 'task-3', title: 'Cherry Task'),
+        ];
 
-      when(
-        () => mockJournalDb.getTasks(
-          starredStatuses: any(named: 'starredStatuses'),
-          taskStatuses: any(named: 'taskStatuses'),
-          categoryIds: any(named: 'categoryIds'),
-          limit: any(named: 'limit'),
-        ),
-      ).thenAnswer((_) async => testTasks);
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => testTasks);
 
-      await tester.pumpWidget(
-        ProviderScope(
-          child: WidgetTestBench(
-            child: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () async {
-                  await LinkTaskModal.show(
-                    context: context,
-                    currentTaskId: 'current-task',
-                    existingLinkedIds: const {},
-                  );
-                },
-                child: const Text('Open Modal'),
+        await tester.pumpWidget(
+          ProviderScope(
+            child: WidgetTestBench(
+              child: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await LinkTaskModal.show(
+                      context: context,
+                      currentTaskId: 'current-task',
+                      existingLinkedIds: const {},
+                    );
+                  },
+                  child: const Text('Open Modal'),
+                ),
               ),
             ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+        await tester.tap(find.text('Open Modal'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
-      // All tasks should be visible initially
-      expect(find.text('Apple Task'), findsOneWidget);
-      expect(find.text('Banana Task'), findsOneWidget);
-      expect(find.text('Cherry Task'), findsOneWidget);
+        // All tasks should be visible initially
+        expect(find.text('Apple Task'), findsOneWidget);
+        expect(find.text('Banana Task'), findsOneWidget);
+        expect(find.text('Cherry Task'), findsOneWidget);
 
-      // Enter search query
-      await tester.enterText(find.byType(TextField), 'banana');
-      await tester.pump();
+        // Enter search query. _onSearchChanged fires per keystroke and awaits
+        // the FTS future directly (no debounce timer), so a single pump after
+        // typing must already show the filtered list.
+        await tester.enterText(find.byType(TextField), 'banana');
+        await tester.pump();
 
-      // Only matching task should be visible
-      expect(find.text('Apple Task'), findsNothing);
-      expect(find.text('Banana Task'), findsOneWidget);
-      expect(find.text('Cherry Task'), findsNothing);
-    });
+        // Only matching task should be visible
+        expect(find.text('Apple Task'), findsNothing);
+        expect(find.text('Banana Task'), findsOneWidget);
+        expect(find.text('Cherry Task'), findsNothing);
+      },
+    );
 
     testWidgets('shows no tasks found when search has no matches', (
       tester,
@@ -593,7 +597,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Enter search query with no matches
       await tester.enterText(find.byType(TextField), 'xyz123');
@@ -636,7 +641,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Enter search text
       await tester.enterText(find.byType(TextField), 'search text');
@@ -647,7 +653,8 @@ void main() {
 
       // Tap clear button
       await tester.tap(find.byIcon(Icons.clear_rounded));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Search field should be empty
       final textField = tester.widget<TextField>(find.byType(TextField));
@@ -693,11 +700,13 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Tap the task
       await tester.tap(find.text('Task to Link'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Verify link was created
       verify(
@@ -748,7 +757,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Blocked'), findsOneWidget);
       expect(find.byIcon(Icons.block_rounded), findsOneWidget);
@@ -794,7 +804,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('On Hold'), findsOneWidget);
       expect(find.byIcon(Icons.pause_circle_outline_rounded), findsOneWidget);
@@ -835,7 +846,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.text('Groomed'), findsOneWidget);
       expect(find.byIcon(Icons.done_outline_rounded), findsOneWidget);
@@ -881,7 +893,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Enter search that matches via FTS5
       await tester.enterText(find.byType(TextField), 'special');
@@ -930,7 +943,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Enter search
       await tester.enterText(find.byType(TextField), 'test');

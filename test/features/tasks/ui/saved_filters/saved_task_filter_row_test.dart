@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../features/categories/test_utils.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -416,20 +419,153 @@ void main() {
     expect(find.text('In progress · P0'), findsNothing);
   });
 
+  testWidgets('hides the count badge while renaming and restores it after '
+      'commit', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        SavedTaskFilterRow(
+          view: _view,
+          active: false,
+          count: 9,
+          onActivate: () {},
+          onRename: (_) {},
+          onDelete: () {},
+        ),
+      ),
+    );
+
+    expect(find.text('9'), findsOneWidget);
+
+    // Double-tap enters rename mode — the trailing stack (count + delete)
+    // is not built while editing.
+    await tester.tap(find.byKey(SavedTaskFilterRowKeys.root('sv-1')));
+    await tester.pump(kDoubleTapMinTime);
+    await tester.tap(find.byKey(SavedTaskFilterRowKeys.root('sv-1')));
+    await tester.pump();
+
+    expect(
+      find.byKey(SavedTaskFilterRowKeys.renameField('sv-1')),
+      findsOneWidget,
+    );
+    expect(find.text('9'), findsNothing);
+
+    // Committing the rename leaves edit mode and restores the count.
+    await tester.enterText(
+      find.byKey(SavedTaskFilterRowKeys.renameField('sv-1')),
+      'Renamed filter',
+    );
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pump(_afterDoubleTapTimeout);
+
+    expect(
+      find.byKey(SavedTaskFilterRowKeys.renameField('sv-1')),
+      findsNothing,
+    );
+    expect(find.text('9'), findsOneWidget);
+  });
+
+  testWidgets(
+    'delete-confirm state machine: random event sequences match the model '
+    '(arm + second tap fires exactly once; hover-out disarms)',
+    (tester) async {
+      // Model-based sequence testing with a fixed seed — generative in
+      // spirit (Glados cannot drive a WidgetTester), deterministic in CI.
+      final random = Random(42);
+      var deletes = 0;
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          SavedTaskFilterRow(
+            view: _view,
+            active: false,
+            onActivate: () {},
+            onRename: (_) {},
+            onDelete: () => deletes++,
+          ),
+        ),
+      );
+
+      final gesture = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+      );
+      addTearDown(gesture.removePointer);
+      await gesture.addPointer();
+      final rowCenter = tester.getCenter(
+        find.byKey(SavedTaskFilterRowKeys.root('sv-1')),
+      );
+
+      var hover = false;
+      var armed = false;
+      var expectedDeletes = 0;
+      final trace = <String>[];
+
+      for (var sequence = 0; sequence < 30; sequence++) {
+        final length = 1 + random.nextInt(8);
+        for (var i = 0; i < length; i++) {
+          final event = random.nextInt(3);
+          switch (event) {
+            case 0: // hover-in
+              trace.add('enter');
+              await gesture.moveTo(rowCenter);
+              await tester.pump();
+              hover = true;
+            case 1: // hover-out → disarms
+              trace.add('exit');
+              await gesture.moveTo(const Offset(2000, 2000));
+              await tester.pump();
+              hover = false;
+              armed = false;
+            default: // tap on the delete affordance position
+              trace.add('tap');
+              await tester.tap(
+                find.byKey(SavedTaskFilterRowKeys.deleteButton('sv-1')),
+                warnIfMissed: false,
+              );
+              // Pump past the row GestureDetector's double-tap window so
+              // two taps never register as a rename double-tap.
+              await tester.pump(_afterDoubleTapTimeout);
+              if (hover) {
+                if (armed) {
+                  expectedDeletes++;
+                } else {
+                  armed = true;
+                }
+              }
+          }
+          expect(
+            deletes,
+            expectedDeletes,
+            reason: 'after ${trace.join(' → ')}',
+          );
+        }
+      }
+
+      // The machine actually exercised the commit path at least once.
+      expect(expectedDeletes, greaterThan(0));
+    },
+  );
+
   group('category color dots', () {
     late MockEntitiesCacheService mockCache;
 
-    CategoryDefinition makeCategory(String id, String? color) =>
-        CategoryDefinition(
-          id: id,
-          createdAt: DateTime(2024),
-          updatedAt: DateTime(2024),
-          name: 'Cat $id',
-          vectorClock: null,
-          private: false,
-          active: true,
-          color: color,
-        );
+    // Central factory for colored categories; the null-color edge needs a
+    // direct construction because createTestCategory maps null to a default
+    // color (freezed copyWith can't reset to null either).
+    CategoryDefinition makeCategory(String id, String? color) => color != null
+        ? CategoryTestUtils.createTestCategory(
+            id: id,
+            name: 'Cat $id',
+            color: color,
+          )
+        : CategoryDefinition(
+            id: id,
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            name: 'Cat $id',
+            vectorClock: null,
+            private: false,
+            active: true,
+          );
 
     setUp(() {
       mockCache = MockEntitiesCacheService();

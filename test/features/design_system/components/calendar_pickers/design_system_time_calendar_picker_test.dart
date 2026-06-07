@@ -6,6 +6,14 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
+/// Drives the month-dialog overlay transition: one frame to start the
+/// 150 ms fade (plus barrier), then a bounded 250 ms to finish it — no
+/// unbounded pumpAndSettle needed.
+Future<void> pumpOverlayTransition(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 250));
+}
+
 void main() {
   group('DesignSystemTimeCalendarPicker', () {
     Future<void> pumpPicker(
@@ -43,13 +51,14 @@ void main() {
       WidgetTester tester, {
       required DesignSystemTimeCalendarPickerPresentation presentation,
       required DesignSystemTimeCalendarPickerMode mode,
+      DateTime? initialSelectedDate,
     }) {
       return tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           DesignSystemInteractiveTimeCalendarPicker(
             mode: mode,
             presentation: presentation,
-            initialSelectedDate: DateTime(2025, 4, 17),
+            initialSelectedDate: initialSelectedDate ?? DateTime(2025, 4, 17),
             currentDate: DateTime(2025, 4),
           ),
           theme: mode == DesignSystemTimeCalendarPickerMode.dark
@@ -199,15 +208,13 @@ void main() {
       );
 
       await tester.tap(find.text('April 2025'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 250));
+      await pumpOverlayTransition(tester);
 
       expect(find.text('2025'), findsOneWidget);
       expect(find.text('Sep'), findsOneWidget);
 
       await tester.tap(find.text('Sep'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 250));
+      await pumpOverlayTransition(tester);
 
       expect(find.text('September 2025'), findsOneWidget);
     });
@@ -224,14 +231,12 @@ void main() {
         );
 
         await tester.tap(find.text('April 2025'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 250));
+        await pumpOverlayTransition(tester);
 
         expect(find.text('2025'), findsOneWidget);
 
         await tester.tapAt(const Offset(8, 8));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 250));
+        await pumpOverlayTransition(tester);
 
         expect(find.text('2025'), findsNothing);
         expect(find.text('April 2025'), findsOneWidget);
@@ -352,19 +357,63 @@ void main() {
 
         // Open the month dialog.
         await tester.tap(find.text('April 2025'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 250));
+        await pumpOverlayTransition(tester);
         expect(find.text('2025'), findsOneWidget);
 
         // Tap a month label inside the card — the inner GestureDetector's no-op
         // onTap (line 186) prevents the tap from reaching the barrier dismisser.
         await tester.tap(find.text('Jan'));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 250));
+        await pumpOverlayTransition(tester);
 
         // Dialog is dismissed after selecting a month.
         expect(find.text('2025'), findsNothing);
         expect(find.text('January 2025'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'month dialog paints the visible month with the accent color',
+      (tester) async {
+        await pumpInteractivePicker(
+          tester,
+          presentation: DesignSystemTimeCalendarPickerPresentation.compact,
+          mode: DesignSystemTimeCalendarPickerMode.light,
+        );
+
+        await tester.tap(find.text('April 2025'));
+        await pumpOverlayTransition(tester);
+
+        // The selected month button uses interactive.enabled; the others use
+        // highEmphasis.
+        final selected = tester.widget<Text>(find.text('Apr'));
+        final other = tester.widget<Text>(find.text('Jan'));
+        expect(
+          selected.style?.color,
+          dsTokensLight.colors.interactive.enabled,
+        );
+        expect(other.style?.color, dsTokensLight.colors.text.highEmphasis);
+      },
+    );
+
+    testWidgets(
+      'selecting a shorter month clamps the selected day',
+      (tester) async {
+        // March 31 selected; switching to February must clamp to the 28th
+        // instead of overflowing into March.
+        await pumpInteractivePicker(
+          tester,
+          presentation: DesignSystemTimeCalendarPickerPresentation.compact,
+          mode: DesignSystemTimeCalendarPickerMode.light,
+          initialSelectedDate: DateTime(2025, 3, 31),
+        );
+
+        await tester.tap(find.text('March 2025'));
+        await pumpOverlayTransition(tester);
+        await tester.tap(find.text('Feb'));
+        await pumpOverlayTransition(tester);
+
+        expect(find.text('February 2025'), findsOneWidget);
+        expect(tester.takeException(), isNull);
       },
     );
   });

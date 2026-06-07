@@ -8,18 +8,23 @@ part of 'desktop_task_header.dart';
 /// Used by the meta row so the status pill always sits at the end of the
 /// final visible row, without snapping to a separate column at an arbitrary
 /// breakpoint.
-class _TrailingAlignedWrap extends MultiChildRenderObjectWidget {
-  const _TrailingAlignedWrap({
+/// Public for direct layout testing (the algorithm is a pure function of
+/// child sizes + constraints); production construction stays inside the
+/// header's meta row.
+@visibleForTesting
+class TrailingAlignedWrap extends MultiChildRenderObjectWidget {
+  const TrailingAlignedWrap({
     required this.spacing,
     required this.runSpacing,
     required super.children,
+    super.key,
   });
 
   final double spacing;
   final double runSpacing;
 
   @override
-  _RenderTrailingAlignedWrap createRenderObject(BuildContext context) {
+  RenderBox createRenderObject(BuildContext context) {
     return _RenderTrailingAlignedWrap(
       spacing: spacing,
       runSpacing: runSpacing,
@@ -27,11 +32,8 @@ class _TrailingAlignedWrap extends MultiChildRenderObjectWidget {
   }
 
   @override
-  void updateRenderObject(
-    BuildContext context,
-    _RenderTrailingAlignedWrap renderObject,
-  ) {
-    renderObject
+  void updateRenderObject(BuildContext context, RenderObject renderObject) {
+    (renderObject as _RenderTrailingAlignedWrap)
       ..spacing = spacing
       ..runSpacing = runSpacing;
   }

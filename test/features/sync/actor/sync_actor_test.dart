@@ -454,6 +454,43 @@ extension _AnyGeneratedActorCommandScenario on glados.Any {
           .map(_GeneratedActorCommandScenario.new);
 }
 
+/// Stubs the standard remote device used across the verification tests.
+void stubRemoteDevice(MockDeviceKeys remoteDevice) {
+  when(() => remoteDevice.deviceId).thenReturn('REMOTE');
+  when(() => remoteDevice.verified).thenReturn(false);
+}
+
+/// Stubs the four read-only verification fields every flow test needs.
+void stubVerificationReads(MockKeyVerification verification) {
+  when(
+    () => verification.lastStep,
+  ).thenReturn('m.key.verification.ready');
+  when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
+  when(() => verification.isDone).thenReturn(false);
+  when(() => verification.canceled).thenReturn(false);
+}
+
+/// Wires the client's identity + device-key map to [keysList] holding
+/// [remoteDevice] — the shared shape of the verification gateway setup.
+void stubClientDeviceKeys(
+  MockMatrixClient c,
+  MockDeviceKeysList keysList,
+  MockDeviceKeys remoteDevice,
+) {
+  when(() => c.userID).thenReturn('@test:localhost');
+  when(() => c.deviceID).thenReturn('DEV');
+  when(() => c.userDeviceKeys).thenReturn({
+    '@test:localhost': keysList,
+  });
+  when(() => keysList.deviceKeys).thenReturn(
+    <String, DeviceKeys>{'REMOTE': remoteDevice},
+  );
+  when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
+    return false;
+  });
+  when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+}
+
 void main() {
   late SyncActorCommandHandler handler;
   late DebugPrintCallback originalDebugPrint;
@@ -491,9 +528,10 @@ void main() {
       'generated command sequences respect actor state transitions',
       (scenario) async {
         handler = createTestHandler();
-        final dbRoot = Directory.systemTemp.createTempSync(
-          'sync_actor_generated',
-        );
+        // The in-memory DB factory is overridden, so dbRootPath is never
+        // touched on disk — a constant path avoids 120 createTempSync /
+        // deleteSync round-trips (one per Glados iteration).
+        final dbRootPath = '${Directory.systemTemp.path}/sync_actor_generated';
         var modeledState = SyncActorState.uninitialized;
 
         try {
@@ -501,7 +539,7 @@ void main() {
             final command = scenario.commands[i];
             final expectation = command.expectation(modeledState);
             final response = await handler.handleCommand(
-              command.commandAt(index: i, dbRootPath: dbRoot.path),
+              command.commandAt(index: i, dbRootPath: dbRootPath),
             );
 
             expect(
@@ -521,20 +559,76 @@ void main() {
             modeledState = expectation.nextState;
             expect(handler.state, modeledState, reason: '$scenario');
             if (command.kind == _GeneratedActorCommandKind.getHealth) {
+              // getHealth is infallible: ok is always true and the state
+              // field mirrors the handler's live state in every actor state.
+              expect(response['ok'], isTrue, reason: '$scenario');
               expect(response['state'], modeledState.name, reason: '$scenario');
+              expect(
+                response['state'],
+                handler.state.name,
+                reason: '$scenario',
+              );
             }
           }
         } finally {
           if (handler.state != SyncActorState.disposed) {
             await handler.handleCommand(_cmd('stop'));
           }
-          if (dbRoot.existsSync()) {
-            dbRoot.deleteSync(recursive: true);
-          }
         }
       },
       tags: 'glados',
     );
+
+    group('debugRunWithRetries — properties', () {
+      glados.Glados3(
+        glados.any.intInRange(0, 8),
+        glados.any.intInRange(1, 6),
+        glados.any.bool,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'attempt count and outcome match the retry-loop oracle',
+        (successOnAttempt, maxRetries, retryable) async {
+          handler = createTestHandler();
+          var attempts = 0;
+          Future<String> operation() async {
+            if (attempts++ < successOnAttempt) {
+              throw FormatException('transient $attempts');
+            }
+            return 'done';
+          }
+
+          // Oracle: non-retryable errors throw on the first failure;
+          // retryable ones retry up to maxRetries total attempts.
+          final expectSuccess = retryable
+              ? successOnAttempt < maxRetries
+              : successOnAttempt == 0;
+          final expectedAttempts = expectSuccess
+              ? successOnAttempt + 1
+              : (retryable ? maxRetries : 1);
+
+          try {
+            final result = await handler.debugRunWithRetries(
+              operation,
+              maxRetries: maxRetries,
+              baseDelay: Duration.zero,
+              isRetryable: retryable ? (_) => true : (_) => false,
+            );
+            expect(expectSuccess, isTrue, reason: 'unexpected success');
+            expect(result, 'done');
+          } on FormatException {
+            expect(expectSuccess, isFalse, reason: 'unexpected failure');
+          }
+          expect(
+            attempts,
+            expectedAttempts,
+            reason:
+                'successOn=$successOnAttempt max=$maxRetries '
+                'retryable=$retryable',
+          );
+        },
+        tags: 'glados',
+      );
+    });
 
     group('ping', () {
       test('works in uninitialized state', () async {
@@ -566,8 +660,7 @@ void main() {
         final keysList = MockDeviceKeysList();
         final remoteDevice = MockDeviceKeys();
 
-        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-        when(() => remoteDevice.verified).thenReturn(false);
+        stubRemoteDevice(remoteDevice);
 
         handler = createTestHandler(
           onGatewayCreated: (g, c) {
@@ -1620,8 +1713,7 @@ void main() {
         when(() => ownDevice.deviceId).thenReturn('DEV');
         when(() => ownDevice.verified).thenReturn(true);
 
-        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-        when(() => remoteDevice.verified).thenReturn(false);
+        stubRemoteDevice(remoteDevice);
         when(() => remoteDevice.userId).thenReturn('@peer:localhost');
 
         when(() => initialKeys.deviceKeys).thenReturn(
@@ -1765,14 +1857,8 @@ void main() {
         final remoteDevice = MockDeviceKeys();
         final verification = MockKeyVerification();
 
-        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-        when(() => remoteDevice.verified).thenReturn(false);
-        when(
-          () => verification.lastStep,
-        ).thenReturn('m.key.verification.ready');
-        when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
-        when(() => verification.isDone).thenReturn(false);
-        when(() => verification.canceled).thenReturn(false);
+        stubRemoteDevice(remoteDevice);
+        stubVerificationReads(verification);
         when(verification.acceptSas).thenAnswer((_) async {});
         when(() => verification.openSSSS(skip: true)).thenAnswer((_) async {});
         when(() => verification.startedVerification).thenReturn(true);
@@ -1781,18 +1867,7 @@ void main() {
           onGatewayCreated: (g, c) {
             gateway = g;
             final keysList = MockDeviceKeysList();
-            when(() => c.userID).thenReturn('@test:localhost');
-            when(() => c.deviceID).thenReturn('DEV');
-            when(() => c.userDeviceKeys).thenReturn({
-              '@test:localhost': keysList,
-            });
-            when(() => keysList.deviceKeys).thenReturn(
-              <String, DeviceKeys>{'REMOTE': remoteDevice},
-            );
-            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-              return false;
-            });
-            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            stubClientDeviceKeys(c, keysList, remoteDevice);
             when(() => g.unverifiedDevices()).thenReturn(
               <DeviceKeys>[remoteDevice],
             );
@@ -1829,8 +1904,7 @@ void main() {
         final remoteDevice = MockDeviceKeys();
         final verification = MockKeyVerification();
 
-        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-        when(() => remoteDevice.verified).thenReturn(false);
+        stubRemoteDevice(remoteDevice);
         when(
           () => verification.lastStep,
         ).thenReturn('m.key.verification.ready');
@@ -1849,18 +1923,7 @@ void main() {
             callbackCalled = true;
             gateway = g;
             keysList = MockDeviceKeysList();
-            when(() => c.userID).thenReturn('@test:localhost');
-            when(() => c.deviceID).thenReturn('DEV');
-            when(() => c.userDeviceKeys).thenReturn({
-              '@test:localhost': keysList,
-            });
-            when(() => keysList.deviceKeys).thenReturn(
-              <String, DeviceKeys>{'REMOTE': remoteDevice},
-            );
-            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-              return false;
-            });
-            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            stubClientDeviceKeys(c, keysList, remoteDevice);
             when(() => g.unverifiedDevices()).thenReturn(
               <DeviceKeys>[remoteDevice],
             );
@@ -1898,32 +1961,15 @@ void main() {
         final remoteDevice = MockDeviceKeys();
         final verification = MockKeyVerification();
 
-        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-        when(() => remoteDevice.verified).thenReturn(false);
+        stubRemoteDevice(remoteDevice);
         when(() => remoteDevice.userId).thenReturn('@test:localhost');
         when(() => verification.startedVerification).thenReturn(false);
         when(() => verification.openSSSS(skip: true)).thenAnswer((_) async {});
-        when(
-          () => verification.lastStep,
-        ).thenReturn('m.key.verification.ready');
-        when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
-        when(() => verification.isDone).thenReturn(false);
-        when(() => verification.canceled).thenReturn(false);
+        stubVerificationReads(verification);
 
         handler = createTestHandler(
           onGatewayCreated: (g, c) {
-            when(() => c.userID).thenReturn('@test:localhost');
-            when(() => c.deviceID).thenReturn('DEV');
-            when(() => c.userDeviceKeys).thenReturn({
-              '@test:localhost': keysList,
-            });
-            when(() => keysList.deviceKeys).thenReturn(
-              <String, DeviceKeys>{'REMOTE': remoteDevice},
-            );
-            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-              return false;
-            });
-            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            stubClientDeviceKeys(c, keysList, remoteDevice);
             when(() => g.unverifiedDevices()).thenReturn(
               <DeviceKeys>[remoteDevice],
             );
@@ -1950,24 +1996,12 @@ void main() {
         final keysList = MockDeviceKeysList();
         final remoteDevice = MockDeviceKeys();
 
-        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-        when(() => remoteDevice.verified).thenReturn(false);
+        stubRemoteDevice(remoteDevice);
         when(() => remoteDevice.userId).thenReturn('@peer:localhost');
 
         handler = createTestHandler(
           onGatewayCreated: (g, c) {
-            when(() => c.userID).thenReturn('@test:localhost');
-            when(() => c.deviceID).thenReturn('DEV');
-            when(() => c.userDeviceKeys).thenReturn({
-              '@test:localhost': keysList,
-            });
-            when(() => keysList.deviceKeys).thenReturn(
-              <String, DeviceKeys>{'REMOTE': remoteDevice},
-            );
-            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-              return false;
-            });
-            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            stubClientDeviceKeys(c, keysList, remoteDevice);
             when(() => g.unverifiedDevices()).thenReturn(
               <DeviceKeys>[remoteDevice],
             );
@@ -1994,8 +2028,7 @@ void main() {
         final remoteDevice = MockDeviceKeys();
         final encryption = MockEncryption();
 
-        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-        when(() => remoteDevice.verified).thenReturn(false);
+        stubRemoteDevice(remoteDevice);
         when(() => remoteDevice.userId).thenReturn('@peer:localhost');
 
         handler = createTestHandler(
@@ -2043,8 +2076,7 @@ void main() {
         final keyVerificationManager = MockKeyVerificationManager();
         final room = MockRoom();
 
-        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-        when(() => remoteDevice.verified).thenReturn(false);
+        stubRemoteDevice(remoteDevice);
         when(() => remoteDevice.userId).thenReturn('@peer:localhost');
         when(() => crossSigning.enabled).thenReturn(false);
         when(() => keyVerificationManager.addRequest(any())).thenReturn(null);
@@ -2173,29 +2205,12 @@ void main() {
         final remoteDevice = MockDeviceKeys();
         final verification = MockKeyVerification();
 
-        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-        when(() => remoteDevice.verified).thenReturn(false);
-        when(
-          () => verification.lastStep,
-        ).thenReturn('m.key.verification.ready');
-        when(() => verification.sasEmojis).thenReturn(<KeyVerificationEmoji>[]);
-        when(() => verification.isDone).thenReturn(false);
-        when(() => verification.canceled).thenReturn(false);
+        stubRemoteDevice(remoteDevice);
+        stubVerificationReads(verification);
 
         handler = createTestHandler(
           onGatewayCreated: (g, c) {
-            when(() => c.userID).thenReturn('@test:localhost');
-            when(() => c.deviceID).thenReturn('DEV');
-            when(() => c.userDeviceKeys).thenReturn({
-              '@test:localhost': keysList,
-            });
-            when(() => keysList.deviceKeys).thenReturn(
-              <String, DeviceKeys>{'REMOTE': remoteDevice},
-            );
-            when(() => c.userOwnsEncryptionKeys(any())).thenAnswer((_) async {
-              return false;
-            });
-            when(() => c.userDeviceKeysLoading).thenAnswer((_) async {});
+            stubClientDeviceKeys(c, keysList, remoteDevice);
             when(() => g.unverifiedDevices()).thenReturn(
               <DeviceKeys>[remoteDevice],
             );
@@ -2375,6 +2390,19 @@ void main() {
       expect(response['ok'], isTrue);
       expect(handler.state, SyncActorState.disposed);
       verify(() => gateway.dispose()).called(1);
+
+      // The finally block ran to completion despite the dispose throw:
+      // getHealth reports the disposed state with every gateway-derived
+      // field reset (the nulled _gateway drops client/device/user), and
+      // no active sync loop. _latestLoginState is a cached observation
+      // that stop deliberately does not clear.
+      final health = await handler.handleCommand(_cmd('getHealth'));
+      expect(health['ok'], isTrue);
+      expect(health['state'], SyncActorState.disposed.name);
+      expect(health['deviceId'], isNull);
+      expect(health['userId'], isNull);
+      expect(health['encryptionEnabled'], isFalse);
+      expect(health['syncLoopActive'], isFalse);
     });
 
     test('commands rejected after stop', () async {
@@ -2547,8 +2575,7 @@ void main() {
         final room = MockRoom();
         final addRequestCalls = <KeyVerification>[];
 
-        when(() => remoteDevice.deviceId).thenReturn('REMOTE');
-        when(() => remoteDevice.verified).thenReturn(false);
+        stubRemoteDevice(remoteDevice);
         when(() => remoteDevice.userId).thenReturn('@peer:localhost');
         when(() => crossSigning.enabled).thenReturn(false);
         when(() => room.id).thenReturn('!room:localhost');

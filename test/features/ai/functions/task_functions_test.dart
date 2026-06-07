@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:openai_dart/openai_dart.dart';
@@ -120,28 +121,71 @@ void main() {
     });
   });
 
-  group('TaskFunctionArgs.normalizeToString', () {
-    test('passes through actual strings', () {
-      expect(TaskFunctionArgs.normalizeToString('hello'), 'hello');
-      expect(TaskFunctionArgs.normalizeToString(''), '');
+  group('SetTaskLanguageResult.fromJson — confidence parsing contract', () {
+    test('parses every known confidence value', () {
+      for (final confidence in LanguageDetectionConfidence.values) {
+        final result = SetTaskLanguageResult.fromJson({
+          'languageCode': 'en',
+          'confidence': confidence.name,
+          'reason': 'r',
+        });
+        expect(result.confidence, confidence);
+      }
     });
 
+    test(
+      'an unrecognized confidence value throws — LanguageDetectionConfidence '
+      'has no unknownEnumValue fallback, so malformed AI output makes the '
+      'caller (unified_ai_tool_call_processor) drop the language update via '
+      'its catch block instead of degrading to a low-confidence apply',
+      () {
+        expect(
+          () => SetTaskLanguageResult.fromJson({
+            'languageCode': 'en',
+            'confidence': 'very-high',
+            'reason': 'r',
+          }),
+          throwsA(anything),
+        );
+      },
+    );
+  });
+
+  group('TaskFunctionArgs.normalizeToString', () {
     test('returns null for null input', () {
       expect(TaskFunctionArgs.normalizeToString(null), isNull);
     });
 
-    test('coerces booleans', () {
-      expect(TaskFunctionArgs.normalizeToString(true), 'true');
-      expect(TaskFunctionArgs.normalizeToString(false), 'false');
-    });
+    glados.Glados<String>(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'is the identity for any string',
+      (s) => expect(TaskFunctionArgs.normalizeToString(s), s),
+      tags: 'glados',
+    );
 
-    test('coerces numbers', () {
-      expect(TaskFunctionArgs.normalizeToString(42), '42');
+    glados.Glados<int>(
+      glados.any.intInRange(-1000000, 1000000),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'coerces any non-string value via toString',
+      (n) {
+        // Numbers, booleans, and collections all route through toString —
+        // exercise a numeric sweep plus the fixed non-string shapes.
+        expect(TaskFunctionArgs.normalizeToString(n), n.toString());
+        expect(TaskFunctionArgs.normalizeToString(n.isEven), '${n.isEven}');
+        expect(
+          TaskFunctionArgs.normalizeToString([n, n + 1]),
+          '[$n, ${n + 1}]',
+        );
+      },
+      tags: 'glados',
+    );
+
+    test('empty string and doubles keep their exact representation', () {
+      expect(TaskFunctionArgs.normalizeToString(''), '');
       expect(TaskFunctionArgs.normalizeToString(3.14), '3.14');
-    });
-
-    test('coerces complex objects via toString', () {
-      expect(TaskFunctionArgs.normalizeToString([1, 2]), '[1, 2]');
     });
   });
 

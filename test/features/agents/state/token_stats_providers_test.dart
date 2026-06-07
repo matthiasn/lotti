@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/daily_token_usage.dart';
@@ -351,6 +352,75 @@ void main() {
         expect(lightSource.isHighUsage, isFalse);
       });
     });
+
+    test(
+      'high-usage threshold is strict: exactly 2.5x fair share is NOT '
+      'flagged, just above is',
+      () async {
+        final now = DateTime(2024, 3, 15, 14, 30);
+        await withClock(Clock.fixed(now), () async {
+          // 4 sources -> fairShare 25%, threshold 62.5% (exact in binary
+          // floating point, so the boundary comparison is deterministic).
+          List<WakeTokenUsageEntity> recordsWithHeavy(int heavyTokens) => [
+            makeTokenRecord(
+              createdAt: DateTime(2024, 3, 15, 10),
+              inputTokens: heavyTokens,
+              templateId: 'tpl-heavy',
+            ),
+            makeTokenRecord(
+              createdAt: DateTime(2024, 3, 15, 11),
+              inputTokens: 125,
+              templateId: 'tpl-light-1',
+            ),
+            makeTokenRecord(
+              createdAt: DateTime(2024, 3, 15, 12),
+              inputTokens: 125,
+              templateId: 'tpl-light-2',
+            ),
+            makeTokenRecord(
+              createdAt: DateTime(2024, 3, 15, 13),
+              inputTokens: 1000 - heavyTokens - 250,
+              templateId: 'tpl-light-3',
+            ),
+          ];
+          for (final id in [
+            'tpl-heavy',
+            'tpl-light-1',
+            'tpl-light-2',
+            'tpl-light-3',
+          ]) {
+            when(() => mockRepository.getEntity(id)).thenAnswer(
+              (_) async => makeTestTemplate(
+                id: id,
+                agentId: id,
+                displayName: id,
+              ),
+            );
+          }
+
+          // Exactly at the threshold: 625/1000 = 62.5% == 25% * 2.5.
+          var container = createContainer(
+            tokenRecords: recordsWithHeavy(625),
+          );
+          var result = await container.read(
+            tokenSourceBreakdownProvider.future,
+          );
+          expect(
+            result.firstWhere((s) => s.templateId == 'tpl-heavy').isHighUsage,
+            isFalse,
+            reason: 'strict > comparison: exactly 2.5x is not high usage',
+          );
+
+          // Just above: 626/1000 = 62.6% > 62.5%.
+          container = createContainer(tokenRecords: recordsWithHeavy(626));
+          result = await container.read(tokenSourceBreakdownProvider.future);
+          expect(
+            result.firstWhere((s) => s.templateId == 'tpl-heavy').isHighUsage,
+            isTrue,
+          );
+        });
+      },
+    );
 
     test('returns empty list when no records', () async {
       final now = DateTime(2024, 3, 15, 14, 30);
@@ -781,4 +851,75 @@ void main() {
       });
     },
   );
+
+  group('debugBuildDailyUsage (pure bucket-builder property)', () {
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(1, 31),
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        0,
+        16,
+        glados.CombinableAny(glados.any).combine3(
+          glados.IntAnys(glados.any).intInRange(0, 31),
+          glados.IntAnys(glados.any).intInRange(0, 24 * 60),
+          glados.IntAnys(glados.any).intInRange(0, 5000),
+          (int dayOffset, int minuteOfDay, int tokens) => (
+            dayOffset: dayOffset,
+            minuteOfDay: minuteOfDay,
+            tokens: tokens,
+          ),
+        ),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('bucket invariants hold for generated chartDays and records', (
+      chartDays,
+      specs,
+    ) {
+      // January on purpose: the 31-day generated window must not cross a
+      // DST transition, or Duration-based day arithmetic shifts calendar
+      // days (Glados found this with a 2024-03-31 base date — the EU
+      // spring-forward day is only 23 hours long).
+      final now = DateTime(2024, 1, 31, 14, 30);
+      withClock(Clock.fixed(now), () {
+        final today = DateTime(2024, 1, 31);
+        final records = <WakeTokenUsageEntity>[];
+        var inWindowTokens = 0;
+        for (final (i, spec) in specs.indexed) {
+          final day = today.subtract(Duration(days: spec.dayOffset));
+          final createdAt = day.add(Duration(minutes: spec.minuteOfDay));
+          records.add(
+            makeTokenRecord(
+              createdAt: createdAt.add(Duration(microseconds: i)),
+              inputTokens: spec.tokens,
+            ),
+          );
+          if (spec.dayOffset < chartDays) inWindowTokens += spec.tokens;
+        }
+
+        final result = debugBuildDailyUsage(records, chartDays: chartDays);
+
+        // (1) exactly chartDays buckets, oldest -> newest.
+        expect(result, hasLength(chartDays));
+        // (2) the last bucket is today's, and only it carries isToday.
+        expect(result.last.isToday, isTrue);
+        expect(result.last.date, today);
+        expect(result.where((b) => b.isToday), hasLength(1));
+        // (3) bucket totals account for exactly the in-window records.
+        expect(
+          result.fold<int>(0, (sum, b) => sum + b.totalTokens),
+          inWindowTokens,
+          reason: 'chartDays=$chartDays specs=$specs',
+        );
+        // (4) today's time-of-day value equals its total; other buckets
+        // never exceed their total.
+        expect(result.last.tokensByTimeOfDay, result.last.totalTokens);
+        for (final bucket in result) {
+          expect(
+            bucket.tokensByTimeOfDay,
+            lessThanOrEqualTo(bucket.totalTokens),
+            reason: 'bucket ${bucket.date}',
+          );
+        }
+      });
+    }, tags: 'glados');
+  });
 }

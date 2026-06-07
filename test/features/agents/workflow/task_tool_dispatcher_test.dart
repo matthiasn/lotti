@@ -303,6 +303,14 @@ extension _AnyGeneratedValidDispatchScenario on glados.Any {
       );
 }
 
+/// Stubs the journal write the scalar task-mutation handlers perform —
+/// previously repeated verbatim in every delegation test.
+void stubJournalWrite(MockJournalRepository journalRepository) {
+  when(
+    () => journalRepository.updateJournalEntity(any()),
+  ).thenAnswer((_) async => true);
+}
+
 void main() {
   setUpAll(registerAllFallbackValues);
 
@@ -571,9 +579,7 @@ void main() {
             dateTo: any(named: 'dateTo'),
           ),
         ).thenAnswer((_) async => true);
-        when(
-          () => mockJournalRepository.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubJournalWrite(mockJournalRepository);
 
         final result = await dispatcher.dispatch(
           'set_task_title',
@@ -588,85 +594,30 @@ void main() {
         ).called(1);
       });
 
-      test('set_task_status delegates to TaskStatusHandler', () async {
-        when(
-          () => mockJournalRepository.updateJournalEntity(
-            any(),
-          ),
-        ).thenAnswer((_) async => true);
-
-        final result = await dispatcher.dispatch(
-          'set_task_status',
-          {'status': 'IN PROGRESS'},
-          taskId,
-        );
-
-        expect(result.success, isTrue);
-      });
-
-      test('set_task_language delegates to TaskLanguageHandler', () async {
-        when(
-          () => mockJournalRepository.updateJournalEntity(
-            any(),
-          ),
-        ).thenAnswer((_) async => true);
-
-        final result = await dispatcher.dispatch(
-          'set_task_language',
-          {'languageCode': 'en'},
-          taskId,
-        );
-
-        expect(result.success, isTrue);
-      });
-
-      test('update_task_estimate delegates to TaskEstimateHandler', () async {
-        when(
-          () => mockJournalRepository.updateJournalEntity(
-            any(),
-          ),
-        ).thenAnswer((_) async => true);
-
-        final result = await dispatcher.dispatch(
-          'update_task_estimate',
-          {'minutes': 60},
-          taskId,
-        );
-
-        expect(result.success, isTrue);
-      });
-
-      test('update_task_due_date delegates to TaskDueDateHandler', () async {
-        when(
-          () => mockJournalRepository.updateJournalEntity(
-            any(),
-          ),
-        ).thenAnswer((_) async => true);
-
-        final result = await dispatcher.dispatch(
+      // The five scalar mutations share one shape: stub the journal write,
+      // dispatch, and expect success. Only (tool, args) vary.
+      for (final (toolName, handler, args) in [
+        ('set_task_status', 'TaskStatusHandler', {'status': 'IN PROGRESS'}),
+        ('set_task_language', 'TaskLanguageHandler', {'languageCode': 'en'}),
+        ('update_task_estimate', 'TaskEstimateHandler', {'minutes': 60}),
+        (
           'update_task_due_date',
+          'TaskDueDateHandler',
           {'dueDate': '2024-12-31'},
-          taskId,
-        );
+        ),
+        ('update_task_priority', 'TaskPriorityHandler', {'priority': 'P1'}),
+      ]) {
+        test('$toolName delegates to $handler', () async {
+          stubJournalWrite(mockJournalRepository);
 
-        expect(result.success, isTrue);
-      });
+          final result = await dispatcher.dispatch(toolName, args, taskId);
 
-      test('update_task_priority delegates to TaskPriorityHandler', () async {
-        when(
-          () => mockJournalRepository.updateJournalEntity(
-            any(),
-          ),
-        ).thenAnswer((_) async => true);
-
-        final result = await dispatcher.dispatch(
-          'update_task_priority',
-          {'priority': 'P1'},
-          taskId,
-        );
-
-        expect(result.success, isTrue);
-      });
+          expect(result.success, isTrue, reason: toolName);
+          verify(
+            () => mockJournalRepository.updateJournalEntity(any()),
+          ).called(1);
+        });
+      }
 
       glados.Glados(
         glados.any.validDispatchScenario,
@@ -688,9 +639,7 @@ void main() {
           when(
             () => localJournalDb.journalEntityById(taskId),
           ).thenAnswer((_) async => _makeTestTask(taskId));
-          when(
-            () => localJournalRepository.updateJournalEntity(any()),
-          ).thenAnswer((_) async => true);
+          stubJournalWrite(localJournalRepository);
 
           final result = await localDispatcher.dispatch(
             scenario.toolName,

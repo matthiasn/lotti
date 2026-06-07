@@ -233,6 +233,37 @@ void main() {
     });
   });
 
+  group('profileIsLocal — lookup deduplication', () {
+    test(
+      'same model id reused across thinking and high-end slots still '
+      'resolves with exactly one batch fetch per config type',
+      () async {
+        stubModelWithProvider(
+          providerModelId: 'shared-model',
+          providerType: InferenceProviderType.ollama,
+        );
+
+        final result = await profileIsLocal(
+          _profile(
+            thinkingModelId: 'shared-model',
+            thinkingHighEndModelId: 'shared-model',
+          ),
+          repo,
+        );
+
+        expect(result, isTrue);
+        // The referenced ids are deduplicated via a Set and the rows are
+        // batch-fetched: one repository call per config type, never one
+        // per slot.
+        verify(() => repo.getConfigsByType(AiConfigType.model)).called(1);
+        verify(
+          () => repo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).called(1);
+        verifyNever(() => repo.getConfigById(any()));
+      },
+    );
+  });
+
   group('profileIsLocal — fail closed on unresolved references', () {
     test(
       'referenced model id with no model config → false '

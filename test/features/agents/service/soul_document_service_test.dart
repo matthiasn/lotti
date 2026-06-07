@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -104,6 +105,26 @@ void main() {
         throwsA(isA<ArgumentError>()),
       );
     });
+
+    // Property: ANY whitespace-only value in any of the three required
+    // fields trips the non-blank guard, not just '' and '  '.
+    glados.Glados2(
+      glados.AnyUtils(
+        glados.any,
+      ).choose(const ['', ' ', '   ', '\t', '\n', ' \t\n ']),
+      glados.IntAnys(glados.any).intInRange(0, 3),
+      glados.ExploreConfig(numRuns: 60),
+    ).test('rejects whitespace-only required fields', (blank, fieldSlot) {
+      expect(
+        () => service.createSoul(
+          displayName: fieldSlot == 0 ? blank : 'Name',
+          voiceDirective: fieldSlot == 1 ? blank : 'Voice.',
+          authoredBy: fieldSlot == 2 ? blank : 'user',
+        ),
+        throwsA(isA<ArgumentError>()),
+        reason: 'field $fieldSlot blank="$blank"',
+      );
+    }, tags: 'glados');
 
     test('uses provided soulId', () async {
       when(
@@ -241,6 +262,40 @@ void main() {
 
       verifyNever(() => mockSync.upsertLink(any()));
     });
+
+    test(
+      'collapses multiple stale links (sync-race residue) even when one '
+      'already points at the requested soul',
+      () async {
+        // Two links from a sync race: a stale one plus a matching one. The
+        // single-link no-op guard must NOT fire — both get soft-deleted and
+        // one fresh link is written.
+        final staleLink = makeTestSoulAssignmentLink(
+          id: 'link-stale',
+          toId: 'old-soul',
+        );
+        final matchingLink = makeTestSoulAssignmentLink(id: 'link-match');
+        when(
+          () => mockRepo.getLinksFrom(
+            kTestTemplateId,
+            type: AgentLinkTypes.soulAssignment,
+          ),
+        ).thenAnswer((_) async => [staleLink, matchingLink]);
+
+        await service.assignSoulToTemplate(kTestTemplateId, kTestSoulId);
+
+        final captured = verify(
+          () => mockSync.upsertLink(captureAny()),
+        ).captured;
+        // Two soft-deletes + one fresh link.
+        expect(captured, hasLength(3));
+        expect((captured[0] as AgentLink).deletedAt, isNotNull);
+        expect((captured[1] as AgentLink).deletedAt, isNotNull);
+        final fresh = captured[2] as SoulAssignmentLink;
+        expect(fresh.deletedAt, isNull);
+        expect(fresh.toId, kTestSoulId);
+      },
+    );
   });
 
   group('resolveActiveSoulForTemplate', () {

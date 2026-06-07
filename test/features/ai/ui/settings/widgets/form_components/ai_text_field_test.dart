@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/ai_text_field.dart';
 
+import '../../../../../../widget_test_utils.dart';
+
 void main() {
   group('AiTextField', () {
     late TextEditingController controller;
@@ -15,14 +17,12 @@ void main() {
     });
 
     Widget buildTestWidget(Widget child) {
-      return MaterialApp(
-        theme: ThemeData.dark(),
-        home: Scaffold(
-          body: Padding(
-            padding: const EdgeInsets.all(16),
-            child: child,
-          ),
+      return makeTestableWidgetWithScaffold(
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: child,
         ),
+        theme: ThemeData.dark(),
       );
     }
 
@@ -126,6 +126,10 @@ void main() {
           ),
         ),
       );
+
+      // A read-only field must reject text input.
+      await tester.enterText(find.byType(TextFormField), 'typed');
+      expect(controller.text, isEmpty);
     });
 
     testWidgets('respects enabled property', (tester) async {
@@ -156,6 +160,10 @@ void main() {
           ),
         ),
       );
+
+      final inner = tester.widget<TextField>(find.byType(TextField));
+      expect(inner.maxLines, 3);
+      expect(inner.minLines, 2);
     });
 
     testWidgets('animates on focus', (tester) async {

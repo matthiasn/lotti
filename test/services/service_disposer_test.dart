@@ -189,6 +189,35 @@ void main() {
       expect(loggedErrors.single.error, isStateError);
     });
 
+    test(
+      'continues closing later databases when an earlier close throws',
+      () async {
+        final order = <String>[];
+
+        final journalDb = MockJournalDb();
+        when(journalDb.close).thenThrow(StateError('db boom'));
+        final syncDb = MockSyncDatabase();
+        when(syncDb.close).thenAnswer((_) async {
+          order.add('SyncDatabase');
+        });
+        final settingsDb = MockSettingsDb();
+        when(settingsDb.close).thenAnswer((_) async {
+          order.add('SettingsDb');
+        });
+
+        testGetIt
+          ..registerSingleton<JournalDb>(journalDb)
+          ..registerSingleton<SyncDatabase>(syncDb)
+          ..registerSingleton<SettingsDb>(settingsDb);
+
+        await disposer.disposeAll();
+
+        expect(order, ['SyncDatabase', 'SettingsDb']);
+        expect(loggedErrors.single.service, 'JournalDb');
+        expect(loggedErrors.single.error, isStateError);
+      },
+    );
+
     test('times out a hung disposal and proceeds to the next service', () {
       fakeAsync((async) {
         final order = <String>[];

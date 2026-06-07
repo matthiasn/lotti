@@ -109,6 +109,51 @@ void main() {
     });
   });
 
+  group('NotificationMeta standalone round-trip', () {
+    NotificationMeta roundTrip(NotificationMeta meta) =>
+        NotificationMeta.fromJson(
+          jsonDecode(jsonEncode(meta.toJson())) as Map<String, dynamic>,
+        );
+
+    test('serializes every field including the optional DateTimes', () {
+      final meta = NotificationMeta(
+        id: 'meta-1',
+        createdAt: DateTime.utc(2026, 5, 17, 8),
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        scheduledFor: DateTime.utc(2026, 5, 17, 12),
+        vectorClock: const VectorClock({'host': 3, 'shared': 7}),
+        originatingHostId: 'host-1',
+        seenAt: DateTime.utc(2026, 5, 17, 13),
+        actedOnAt: DateTime.utc(2026, 5, 17, 14),
+        deletedAt: DateTime.utc(2026, 5, 17, 15),
+        category: 'cat-9',
+      );
+
+      final decoded = roundTrip(meta);
+      expect(decoded, meta);
+      expect(decoded.scheduledFor, meta.scheduledFor);
+      expect(decoded.vectorClock, meta.vectorClock);
+    });
+
+    test('optional fields survive as null', () {
+      final meta = NotificationMeta(
+        id: 'meta-2',
+        createdAt: DateTime.utc(2026, 5, 17, 8),
+        updatedAt: DateTime.utc(2026, 5, 17, 9),
+        scheduledFor: DateTime.utc(2026, 5, 17, 12),
+        vectorClock: const VectorClock({'host': 1}),
+        originatingHostId: 'host-2',
+      );
+
+      final decoded = roundTrip(meta);
+      expect(decoded, meta);
+      expect(decoded.seenAt, isNull);
+      expect(decoded.actedOnAt, isNull);
+      expect(decoded.deletedAt, isNull);
+      expect(decoded.category, isNull);
+    });
+  });
+
   group('NotificationEntity JSON round-trip', () {
     glados.Glados<_GeneratedEntity>(
       glados.any.notificationEntity,

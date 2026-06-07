@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -13,6 +15,15 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+
+/// Advances fake time past the controller's debounce window and drains
+/// microtasks — the standard "let the controller settle" step between an
+/// action and its assertions in the fakeAsync-based controller tests.
+void settle(FakeAsync async) {
+  async
+    ..elapse(const Duration(milliseconds: 50))
+    ..flushMicrotasks();
+}
 
 /// Default nav-index values used by [JournalControllerTestSetup]. The
 /// controller compares the stream's emitted index against these to

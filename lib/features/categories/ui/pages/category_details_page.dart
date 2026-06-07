@@ -33,6 +33,8 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:lotti/widgets/ui/form_bottom_bar.dart';
 
+part 'category_details_form_sections.dart';
+
 /// Category Details Page with AI Settings and Projects
 ///
 /// This page allows editing of category details including:
@@ -408,26 +410,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
     );
   }
 
-  Widget _buildNameField() {
-    final isCreateMode = widget.categoryId == null;
-
-    return CategoryNameField(
-      controller: _nameController,
-      isCreateMode: isCreateMode,
-      onChanged: isCreateMode
-          ? null
-          : (value) {
-              ref
-                  .read(
-                    categoryDetailsControllerProvider(
-                      widget.categoryId!,
-                    ).notifier,
-                  )
-                  .updateFormField(name: value);
-            },
-    );
-  }
-
   Widget _buildColorPicker() {
     if (widget.isCreateMode) {
       // For create mode, we need local state since there's no category yet
@@ -459,134 +441,6 @@ class _CategoryDetailsPageState extends ConsumerState<CategoryDetailsPage> {
             )
             .updateFormField(color: colorToCssHex(color));
       },
-    );
-  }
-
-  Widget _buildSwitchTiles(CategoryDefinition category) {
-    final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId!).notifier,
-    );
-
-    return CategorySwitchTiles(
-      settings: CategorySwitchSettings(
-        isPrivate: category.private,
-        isActive: category.active,
-        isFavorite: category.favorite ?? false,
-      ),
-      onChanged: (field, {required value}) {
-        switch (field) {
-          case SwitchFieldType.private:
-            controller.updateFormField(private: value);
-          case SwitchFieldType.active:
-            controller.updateFormField(active: value);
-          case SwitchFieldType.favorite:
-            controller.updateFormField(favorite: value);
-        }
-      },
-    );
-  }
-
-  Widget _buildLanguageDropdown(CategoryDefinition category) {
-    final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId!).notifier,
-    );
-
-    return CategoryLanguageDropdown(
-      languageCode: category.defaultLanguageCode,
-      onTap: () => _showLanguageSelector(
-        context,
-        controller,
-        category.defaultLanguageCode,
-      ),
-    );
-  }
-
-  Future<void> _showLanguageSelector(
-    BuildContext context,
-    CategoryDetailsController controller,
-    String? currentLanguageCode,
-  ) async {
-    final searchQuery = ValueNotifier<String>('');
-    final searchController = TextEditingController();
-
-    try {
-      await ModalUtils.showSinglePageModal<void>(
-        context: context,
-        titleWidget: Padding(
-          padding: const EdgeInsets.only(
-            left: 16,
-            right: 16,
-            top: 20,
-            bottom: 16,
-          ),
-          child: LanguageSelectionModalContent.buildHeader(
-            context: context,
-            controller: searchController,
-            queryNotifier: searchQuery,
-          ),
-        ),
-        builder: (BuildContext context) {
-          return LanguageSelectionModalContent(
-            initialLanguageCode: currentLanguageCode,
-            searchQuery: searchQuery,
-            onLanguageSelected: (language) {
-              controller.updateFormField(defaultLanguageCode: language?.code);
-              if (!context.mounted) {
-                return;
-              }
-              Navigator.pop(context);
-            },
-          );
-        },
-      );
-    } finally {
-      searchController.dispose();
-      searchQuery.dispose();
-    }
-  }
-
-  Widget _buildDefaultProfilePicker(CategoryDefinition category) {
-    final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId!).notifier,
-    );
-
-    return ProfileSelector(
-      selectedProfileId: category.defaultProfileId,
-      onProfileSelected: controller.setDefaultProfileId,
-      hintText: context.messages.categoryDefaultProfileHint,
-    );
-  }
-
-  Widget _buildDefaultTemplatePicker(CategoryDefinition category) {
-    final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId!).notifier,
-    );
-
-    return TemplateSelector(
-      selectedTemplateId: category.defaultTemplateId,
-      onTemplateSelected: controller.setDefaultTemplateId,
-    );
-  }
-
-  Widget _buildSpeechDictionary(CategoryDefinition category) {
-    final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId!).notifier,
-    );
-
-    return CategorySpeechDictionary(
-      dictionary: category.speechDictionary,
-      onChanged: controller.updateSpeechDictionary,
-    );
-  }
-
-  Widget _buildCorrectionExamples(CategoryDefinition category) {
-    final controller = ref.read(
-      categoryDetailsControllerProvider(widget.categoryId!).notifier,
-    );
-
-    return CategoryCorrectionExamples(
-      examples: category.correctionExamples,
-      onDeleteAt: controller.deleteCorrectionExampleAt,
     );
   }
 

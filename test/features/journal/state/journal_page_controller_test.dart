@@ -30,6 +30,38 @@ import 'helpers/journal_controller_test_setup.dart';
 final _testDate = DateTime(2024);
 final _testDateRefresh = DateTime(2024, 3, 15);
 
+/// Mutable call counter returned by `stubCountingQuery`.
+class _QueryCallCounter {
+  int count = 0;
+}
+
+/// Stubs the full 8-param getJournalEntities query on [db] with [result]
+/// and returns a counter incremented on every run — the shared arrangement
+/// for the visibility/notification refresh tests.
+// ignore: library_private_types_in_public_api
+_QueryCallCounter stubCountingQuery(
+  MockJournalDb db, {
+  List<JournalEntity> result = const [],
+}) {
+  final counter = _QueryCallCounter();
+  when(
+    () => db.getJournalEntities(
+      types: any(named: 'types'),
+      starredStatuses: any(named: 'starredStatuses'),
+      privateStatuses: any(named: 'privateStatuses'),
+      flaggedStatuses: any(named: 'flaggedStatuses'),
+      ids: any(named: 'ids'),
+      limit: any(named: 'limit'),
+      offset: any(named: 'offset'),
+      categoryIds: any(named: 'categoryIds'),
+    ),
+  ).thenAnswer((_) async {
+    counter.count++;
+    return result;
+  });
+  return counter;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -59,6 +91,106 @@ void main() {
 
     tearDown(() async {
       await setup.tearDown();
+    });
+
+    group('debugGetNextPageKey (pure page-key computation)', () {
+      JournalEntity entryFor(int i) => JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'pk-$i',
+          createdAt: _testDate,
+          updatedAt: _testDate,
+          dateFrom: _testDate,
+          dateTo: _testDate,
+        ),
+        entryText: const EntryText(plainText: 'pk'),
+      );
+
+      List<JournalEntity> page(int length) => List.generate(length, entryFor);
+
+      test('covers the full branch matrix of the key computation', () {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(false).notifier,
+          );
+          settle(async);
+
+          const pageSize = JournalPageController.pageSize;
+
+          // No loaded keys -> first page key is 0.
+          expect(
+            controller.debugGetNextPageKey(
+              PagingState(keys: const [], pages: const []),
+            ),
+            0,
+          );
+          expect(controller.debugGetNextPageKey(PagingState()), 0);
+
+          // hasNextPage=false -> null regardless of pages.
+          expect(
+            controller.debugGetNextPageKey(
+              PagingState(
+                keys: const [0],
+                pages: [page(pageSize)],
+                hasNextPage: false,
+              ),
+            ),
+            isNull,
+          );
+
+          // Short last page -> null (the previous fetch exhausted the data).
+          expect(
+            controller.debugGetNextPageKey(
+              PagingState(
+                keys: const [0],
+                pages: [page(pageSize - 1)],
+              ),
+            ),
+            isNull,
+          );
+
+          // Full page -> next key is lastKey + lastPage.length.
+          expect(
+            controller.debugGetNextPageKey(
+              PagingState(
+                keys: const [0],
+                pages: [page(pageSize)],
+              ),
+            ),
+            pageSize,
+          );
+          expect(
+            controller.debugGetNextPageKey(
+              PagingState(
+                keys: const [0, pageSize],
+                pages: [page(pageSize), page(pageSize)],
+              ),
+            ),
+            pageSize * 2,
+          );
+
+          // A pending post-filter offset wins over the computed key and is
+          // consumed exactly once.
+          controller.debugPostFilterNextRawOffset = 777;
+          final fullState = PagingState<int, JournalEntity>(
+            keys: const [0],
+            pages: [page(pageSize)],
+          );
+          expect(controller.debugGetNextPageKey(fullState), 777);
+          expect(controller.debugPostFilterNextRawOffset, isNull);
+          expect(controller.debugGetNextPageKey(fullState), pageSize);
+
+          // consumePostFilterOffset=false peeks without consuming.
+          controller.debugPostFilterNextRawOffset = 555;
+          expect(
+            controller.debugGetNextPageKey(
+              fullState,
+              consumePostFilterOffset: false,
+            ),
+            555,
+          );
+          expect(controller.debugPostFilterNextRawOffset, 555);
+        });
+      });
     });
 
     group('Initialization', () {
@@ -201,8 +333,7 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setSearchString('test query');
 
@@ -220,8 +351,7 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setSearchString('test query');
 
@@ -244,8 +374,7 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setSearchString('test');
 
@@ -280,14 +409,12 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Select all entry types initially
           controller.selectAllEntryTypes(entryTypes);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Enable only events flag
           configFlagsController.add({enableEventsFlag});
@@ -328,8 +455,7 @@ void main() {
               journalPageControllerProvider(false).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Enable events and habits, but NOT dashboards
             configFlagsController.add({enableEventsFlag, enableHabitsPageFlag});
@@ -378,8 +504,7 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Enable all feature flags
           configFlagsController.add({
@@ -464,8 +589,7 @@ void main() {
         fakeAsync((async) {
           container.read(journalPageControllerProvider(false));
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           var state = container.read(journalPageControllerProvider(false));
           expect(state.showPrivateEntries, isFalse);
@@ -498,8 +622,7 @@ void main() {
           // Dispose should not throw
           localContainer.dispose();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Emitting to streams after disposal should not cause issues
           configFlagsController.add({enableEventsFlag});
@@ -519,8 +642,7 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(controller.selectedEntryTypesInternal, isNotEmpty);
         });
@@ -532,13 +654,11 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setFilters({DisplayFilter.starredEntriesOnly});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(
             controller.filtersInternal,
@@ -578,8 +698,7 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // This should not throw even if pagingController state is complex
           expect(controller.refreshQuery, returnsNormally);
@@ -598,14 +717,12 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // First select all
           controller.selectAllEntryTypes(entryTypes);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(
             controller.selectedEntryTypesInternal.length,
@@ -615,8 +732,7 @@ void main() {
           // Then select single
           controller.selectSingleEntryType('Task');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(controller.selectedEntryTypesInternal, equals({'Task'}));
         });
@@ -628,13 +744,11 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.clearSelectedEntryTypes();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(controller.selectedEntryTypesInternal, isEmpty);
         });
@@ -648,20 +762,17 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // First select all
           controller.selectAllTaskStatuses();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Then select single
           controller.selectSingleTaskStatus('DONE');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(controller.state.selectedTaskStatuses, equals({'DONE'}));
         });
@@ -677,22 +788,19 @@ void main() {
               journalPageControllerProvider(false).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Clear selection to make it empty
             controller.clearSelectedEntryTypes();
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             expect(controller.selectedEntryTypesInternal, isEmpty);
 
             // Emit config flags with events enabled
             configFlagsController.add({enableEventsFlag});
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Should repopulate with all allowed types (events enabled)
             final expectedTypes = computeAllowedEntryTypes(
@@ -716,14 +824,12 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // First emit with no flags - get initial allowed types
           configFlagsController.add(<String>{});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final initialAllowed = computeAllowedEntryTypes(
             events: false,
@@ -734,16 +840,14 @@ void main() {
           // Select all allowed types
           controller.selectAllEntryTypes(initialAllowed.toList());
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(controller.selectedEntryTypesInternal, equals(initialAllowed));
 
           // Now enable events flag
           configFlagsController.add({enableEventsFlag});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Should adopt new allowed types (including JournalEvent)
           final newAllowed = computeAllowedEntryTypes(
@@ -768,8 +872,7 @@ void main() {
               journalPageControllerProvider(false).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // First emit with all flags enabled
             configFlagsController.add({
@@ -778,8 +881,7 @@ void main() {
               enableDashboardsPageFlag,
             });
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Select a partial set including some gated types
             // JournalEvent (gated by events), HabitCompletionEntry (gated by habits)
@@ -790,8 +892,7 @@ void main() {
               'HabitCompletionEntry',
             ]);
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             expect(
               controller.selectedEntryTypesInternal,
@@ -801,8 +902,7 @@ void main() {
             // Now disable events and habits flags
             configFlagsController.add(<String>{});
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Should intersect - only Task remains (JournalEvent and
             // HabitCompletionEntry are no longer allowed)
@@ -825,14 +925,12 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Start with events only
           configFlagsController.add({enableEventsFlag});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final eventsAllowed = computeAllowedEntryTypes(
             events: true,
@@ -843,8 +941,7 @@ void main() {
           // Select all currently allowed types
           controller.selectAllEntryTypes(eventsAllowed.toList());
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(controller.selectedEntryTypesInternal, equals(eventsAllowed));
           expect(
@@ -855,8 +952,7 @@ void main() {
           // Now also enable habits
           configFlagsController.add({enableEventsFlag, enableHabitsPageFlag});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Should include HabitCompletionEntry now
           expect(
@@ -872,14 +968,12 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Start with dashboards enabled
           configFlagsController.add({enableDashboardsPageFlag});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Select only dashboard-gated types plus Task
           controller.selectAllEntryTypes([
@@ -888,8 +982,7 @@ void main() {
             'QuantitativeEntry',
           ]);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(
             controller.selectedEntryTypesInternal,
@@ -899,8 +992,7 @@ void main() {
           // Disable dashboards
           configFlagsController.add(<String>{});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Only Task should remain
           expect(controller.selectedEntryTypesInternal, equals({'Task'}));
@@ -1051,8 +1143,7 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setAgentAssignmentFilter(AgentAssignmentFilter.hasAgent);
 
@@ -1077,8 +1168,7 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setAgentAssignmentFilter(AgentAssignmentFilter.noAgent);
 
@@ -1103,8 +1193,7 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Default is 'all' — should return both tasks
           controller.setAgentAssignmentFilter(AgentAssignmentFilter.all);
@@ -1228,8 +1317,7 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setAgentAssignmentFilter(AgentAssignmentFilter.noAgent);
 
@@ -1249,13 +1337,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.toggleProjectFilter('proj-1');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, equals({'proj-1'}));
@@ -1268,15 +1354,13 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..toggleProjectFilter('proj-1')
             ..toggleProjectFilter('proj-1');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, isEmpty);
@@ -1289,20 +1373,17 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..toggleProjectFilter('proj-1')
             ..toggleProjectFilter('proj-2');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.clearProjectFilter();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, isEmpty);
@@ -1315,21 +1396,18 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..toggleProjectFilter('proj-1')
             ..toggleProjectFilter('proj-2')
             ..toggleProjectFilter('proj-3');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.removeStaleProjectFilters({'proj-1', 'proj-3'});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, equals({'proj-2'}));
@@ -1342,18 +1420,15 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.toggleProjectFilter('proj-1');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.removeStaleProjectFilters(<String>{});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, equals({'proj-1'}));
@@ -1366,14 +1441,12 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Set a project filter first
           controller.toggleProjectFilter('proj-1');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           var state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, isNotEmpty);
@@ -1381,8 +1454,7 @@ void main() {
           // Changing category should clear project filters
           controller.toggleSelectedCategoryIds('cat-1');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, isEmpty);
@@ -1395,18 +1467,15 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.toggleProjectFilter('proj-1');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.selectedAllCategories();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, isEmpty);
@@ -1482,8 +1551,7 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.toggleProjectFilter('proj-1');
 
@@ -1628,13 +1696,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setSelectedTaskStatuses({'DONE', 'BLOCKED'});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedTaskStatuses, {'DONE', 'BLOCKED'});
@@ -1649,20 +1715,17 @@ void main() {
               journalPageControllerProvider(true).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // First set some projects
             controller.setSelectedProjectIds({'proj-1'});
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Now set categories — projects should be cleared
             controller.setSelectedCategoryIds({'cat-1', 'cat-2'});
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             final state = container.read(journalPageControllerProvider(true));
             expect(state.selectedCategoryIds, {'cat-1', 'cat-2'});
@@ -1677,13 +1740,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setSelectedLabelIds({'label-1', 'label-2'});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedLabelIds, {'label-1', 'label-2'});
@@ -1696,13 +1757,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setSelectedProjectIds({'proj-a', 'proj-b'});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, {'proj-a', 'proj-b'});
@@ -1715,13 +1774,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setSelectedPriorities({'HIGH', 'CRITICAL'});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedPriorities, {'HIGH', 'CRITICAL'});
@@ -1734,14 +1791,12 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final mutableSet = {'DONE'};
           controller.setSelectedTaskStatuses(mutableSet);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Mutate original set — should not affect controller
           mutableSet.add('BLOCKED');
@@ -1774,8 +1829,7 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.applyBatchFilterUpdate(
             statuses: {'DONE'},
@@ -1789,8 +1843,7 @@ void main() {
             showDueDate: true,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedTaskStatuses, {'DONE'});
@@ -1814,8 +1867,7 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final stateBefore = container.read(
             journalPageControllerProvider(true),
@@ -1824,8 +1876,7 @@ void main() {
           // Only update statuses, leave everything else
           controller.applyBatchFilterUpdate(statuses: {'BLOCKED'});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedTaskStatuses, {'BLOCKED'});
@@ -1843,15 +1894,13 @@ void main() {
               journalPageControllerProvider(true).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             controller.applyBatchFilterUpdate(
               searchMode: SearchMode.vector,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             final state = container.read(journalPageControllerProvider(true));
             // Vector search not enabled, so mode should stay fullText
@@ -1868,13 +1917,11 @@ void main() {
               journalPageControllerProvider(true).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Enable vector search via config flags
             configFlagsController.add({enableVectorSearchFlag});
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             expect(controller.enableVectorSearchInternal, isTrue);
 
@@ -1882,8 +1929,7 @@ void main() {
               searchMode: SearchMode.vector,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             final state = container.read(journalPageControllerProvider(true));
             expect(state.searchMode, SearchMode.vector);
@@ -1915,14 +1961,12 @@ void main() {
               journalPageControllerProvider(true).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Flag is disabled by default
             controller.setSearchMode(SearchMode.vector);
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             final state = container.read(journalPageControllerProvider(true));
             expect(state.searchMode, equals(SearchMode.fullText));
@@ -1936,15 +1980,13 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           emitVectorSearchFlag(async);
 
           controller.setSearchMode(SearchMode.vector);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.searchMode, equals(SearchMode.vector));
@@ -2018,8 +2060,7 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           emitVectorSearchFlag(async);
 
@@ -2098,20 +2139,17 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Enable vector search flag
           configFlagsController.add({enableVectorSearchFlag});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Set search mode to vector
           controller.setSearchMode(SearchMode.vector);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Set a search string to trigger vector search
           controller.setSearchString('semantic query');
@@ -2140,8 +2178,7 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(controller.searchModeInternal, equals(SearchMode.fullText));
         });
@@ -2153,18 +2190,15 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           configFlagsController.add({enableVectorSearchFlag});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setSearchMode(SearchMode.vector);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(controller.searchModeInternal, equals(SearchMode.vector));
         });
@@ -2319,8 +2353,7 @@ void main() {
               journalPageControllerProvider(false).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Forcibly null out the pagingController in state.
             controller.state = controller.state.copyWith(
@@ -2332,8 +2365,7 @@ void main() {
             // Must not throw; should log the warning.
             controller.refreshQuery();
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Verify the DevLogger warning was emitted.
             expect(
@@ -2430,22 +2462,7 @@ void main() {
         'visibility transition refreshes when becoming visible after missed update',
         () {
           fakeAsync((async) {
-            var queryCallCount = 0;
-            when(
-              () => mockJournalDb.getJournalEntities(
-                types: any(named: 'types'),
-                starredStatuses: any(named: 'starredStatuses'),
-                privateStatuses: any(named: 'privateStatuses'),
-                flaggedStatuses: any(named: 'flaggedStatuses'),
-                ids: any(named: 'ids'),
-                limit: any(named: 'limit'),
-                offset: any(named: 'offset'),
-                categoryIds: any(named: 'categoryIds'),
-              ),
-            ).thenAnswer((_) async {
-              queryCallCount++;
-              return [];
-            });
+            final queryCalls = stubCountingQuery(mockJournalDb, result: []);
 
             final controller = container.read(
               journalPageControllerProvider(false).notifier,
@@ -2454,16 +2471,15 @@ void main() {
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();
 
-            final initialCount = queryCallCount;
+            final initialCount = queryCalls.count;
 
             // First, simulate being invisible
             controller.debugSetVisibility(isVisible: false);
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Count should remain unchanged (no refresh when becoming invisible)
-            expect(queryCallCount, equals(initialCount));
+            expect(queryCalls.count, equals(initialCount));
 
             // Fire an update while invisible — this sets the dirty flag
             updateStreamController.add({'some-missed-id'});
@@ -2471,7 +2487,7 @@ void main() {
             async.flushMicrotasks();
 
             // Still no refresh while invisible
-            expect(queryCallCount, equals(initialCount));
+            expect(queryCalls.count, equals(initialCount));
 
             // Now simulate becoming visible - should trigger refresh
             // because updates were missed
@@ -2481,7 +2497,7 @@ void main() {
             async.flushMicrotasks();
 
             // Should have increased due to missed update
-            expect(queryCallCount, greaterThan(initialCount));
+            expect(queryCalls.count, greaterThan(initialCount));
           });
         },
       );
@@ -2490,22 +2506,7 @@ void main() {
         'visibility transition does not refresh when no updates were missed',
         () {
           fakeAsync((async) {
-            var queryCallCount = 0;
-            when(
-              () => mockJournalDb.getJournalEntities(
-                types: any(named: 'types'),
-                starredStatuses: any(named: 'starredStatuses'),
-                privateStatuses: any(named: 'privateStatuses'),
-                flaggedStatuses: any(named: 'flaggedStatuses'),
-                ids: any(named: 'ids'),
-                limit: any(named: 'limit'),
-                offset: any(named: 'offset'),
-                categoryIds: any(named: 'categoryIds'),
-              ),
-            ).thenAnswer((_) async {
-              queryCallCount++;
-              return [];
-            });
+            final queryCalls = stubCountingQuery(mockJournalDb, result: []);
 
             final controller = container.read(
               journalPageControllerProvider(false).notifier,
@@ -2514,13 +2515,12 @@ void main() {
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();
 
-            final initialCount = queryCallCount;
+            final initialCount = queryCalls.count;
 
             // Go invisible
             controller.debugSetVisibility(isVisible: false);
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Come back visible without any missed updates
             controller.debugSetVisibility(isVisible: true);
@@ -2529,29 +2529,14 @@ void main() {
             async.flushMicrotasks();
 
             // Should NOT have refreshed — no updates were missed
-            expect(queryCallCount, equals(initialCount));
+            expect(queryCalls.count, equals(initialCount));
           });
         },
       );
 
       test('does not refresh when staying invisible', () {
         fakeAsync((async) {
-          var queryCallCount = 0;
-          when(
-            () => mockJournalDb.getJournalEntities(
-              types: any(named: 'types'),
-              starredStatuses: any(named: 'starredStatuses'),
-              privateStatuses: any(named: 'privateStatuses'),
-              flaggedStatuses: any(named: 'flaggedStatuses'),
-              ids: any(named: 'ids'),
-              limit: any(named: 'limit'),
-              offset: any(named: 'offset'),
-              categoryIds: any(named: 'categoryIds'),
-            ),
-          ).thenAnswer((_) async {
-            queryCallCount++;
-            return [];
-          });
+          final queryCalls = stubCountingQuery(mockJournalDb, result: []);
 
           final controller = container.read(
             journalPageControllerProvider(false).notifier,
@@ -2560,13 +2545,12 @@ void main() {
           async.elapse(const Duration(milliseconds: 100));
           async.flushMicrotasks();
 
-          final initialCount = queryCallCount;
+          final initialCount = queryCalls.count;
 
           // Simulate being invisible
           controller.debugSetVisibility(isVisible: false);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Stay invisible - should NOT trigger refresh
           controller.debugSetVisibility(isVisible: false);
@@ -2575,7 +2559,7 @@ void main() {
           async.flushMicrotasks();
 
           // Count should remain unchanged
-          expect(queryCallCount, equals(initialCount));
+          expect(queryCalls.count, equals(initialCount));
         });
       });
 
@@ -2585,22 +2569,19 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(controller.isVisible, isFalse);
 
           controller.debugSetVisibility(isVisible: true);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(controller.isVisible, isTrue);
 
           controller.debugSetVisibility(isVisible: false);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           expect(controller.isVisible, isFalse);
         });
@@ -2612,22 +2593,7 @@ void main() {
         'visible controller refreshes when update affects displayed items',
         () {
           fakeAsync((async) {
-            var queryCallCount = 0;
-            when(
-              () => mockJournalDb.getJournalEntities(
-                types: any(named: 'types'),
-                starredStatuses: any(named: 'starredStatuses'),
-                privateStatuses: any(named: 'privateStatuses'),
-                flaggedStatuses: any(named: 'flaggedStatuses'),
-                ids: any(named: 'ids'),
-                limit: any(named: 'limit'),
-                offset: any(named: 'offset'),
-                categoryIds: any(named: 'categoryIds'),
-              ),
-            ).thenAnswer((_) async {
-              queryCallCount++;
-              return [];
-            });
+            final queryCalls = stubCountingQuery(mockJournalDb, result: []);
 
             final controller = container.read(
               journalPageControllerProvider(false).notifier,
@@ -2642,7 +2608,7 @@ void main() {
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();
 
-            final countAfterVisible = queryCallCount;
+            final countAfterVisible = queryCalls.count;
 
             // Send update notification
             updateStreamController.add({'some-id'});
@@ -2653,7 +2619,7 @@ void main() {
 
             // Query count may increase depending on implementation details
             // At minimum, the subscription should be active
-            expect(queryCallCount, greaterThanOrEqualTo(countAfterVisible));
+            expect(queryCalls.count, greaterThanOrEqualTo(countAfterVisible));
           });
         },
       );
@@ -2865,8 +2831,7 @@ void main() {
             clearInteractions(mockJournalDb);
 
             updateStreamController.add({'off-screen-task'});
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             verify(
               () => mockJournalDb.getTasks(
@@ -2929,23 +2894,10 @@ void main() {
               ),
               entryText: const EntryText(plainText: 'Entry'),
             );
-            var queryCallCount = 0;
-
-            when(
-              () => mockJournalDb.getJournalEntities(
-                types: any(named: 'types'),
-                starredStatuses: any(named: 'starredStatuses'),
-                privateStatuses: any(named: 'privateStatuses'),
-                flaggedStatuses: any(named: 'flaggedStatuses'),
-                ids: any(named: 'ids'),
-                limit: any(named: 'limit'),
-                offset: any(named: 'offset'),
-                categoryIds: any(named: 'categoryIds'),
-              ),
-            ).thenAnswer((_) async {
-              queryCallCount++;
-              return [entry];
-            });
+            final queryCalls = stubCountingQuery(
+              mockJournalDb,
+              result: [entry],
+            );
 
             final controller = container.read(
               journalPageControllerProvider(false).notifier,
@@ -2956,14 +2908,14 @@ void main() {
             controller.debugSetVisibility(isVisible: true);
 
             clearInteractions(mockJournalDb);
-            queryCallCount = 0;
+            queryCalls.count = 0;
 
             updateStreamController.add({'entry-1'});
 
             async.elapse(const Duration(milliseconds: 200));
             async.flushMicrotasks();
 
-            expect(queryCallCount, 1);
+            expect(queryCalls.count, 1);
             verify(
               () => mockJournalDb.getJournalEntities(
                 types: any(named: 'types'),
@@ -4131,8 +4083,7 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Multiple calls with zero bounds
           controller.debugSetVisibility(isVisible: false);
@@ -4244,14 +4195,12 @@ void main() {
               journalPageControllerProvider(spec.tasksTab).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             spec.prepareAdd?.call(controller);
             spec.toggle(controller, spec.addValue);
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             final state = container.read(
               journalPageControllerProvider(spec.tasksTab),
@@ -4266,16 +4215,14 @@ void main() {
               journalPageControllerProvider(spec.tasksTab).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             if (spec.removeByDoubleToggle) {
               spec.toggle(controller, spec.removeValue);
             }
             spec.toggle(controller, spec.removeValue);
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             final state = container.read(
               journalPageControllerProvider(spec.tasksTab),
@@ -4293,13 +4240,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.selectSingleTaskStatus('DONE');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedTaskStatuses, equals({'DONE'}));
@@ -4312,13 +4257,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.selectAllTaskStatuses();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(
@@ -4334,13 +4277,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.clearSelectedTaskStatuses();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedTaskStatuses, isEmpty);
@@ -4368,20 +4309,17 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..toggleSelectedCategoryIds('cat1')
             ..toggleSelectedCategoryIds('cat2');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.selectedAllCategories();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedCategoryIds, isEmpty);
@@ -4396,20 +4334,17 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..toggleSelectedLabelId('label-A')
             ..toggleSelectedLabelId('label-B');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.clearSelectedLabelIds();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(false));
           expect(state.selectedLabelIds, isEmpty);
@@ -4424,16 +4359,14 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..toggleSelectedPriority('P0')
             ..toggleSelectedPriority('P1')
             ..clearSelectedPriorities();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedPriorities, isEmpty);
@@ -4448,13 +4381,11 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.selectSingleEntryType('Task');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(false));
           expect(state.selectedEntryTypes, equals(['Task']));
@@ -4467,13 +4398,11 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.selectAllEntryTypes();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(false));
           expect(state.selectedEntryTypes.length, equals(entryTypes.length));
@@ -4486,13 +4415,11 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.clearSelectedEntryTypes();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(false));
           expect(state.selectedEntryTypes, isEmpty);
@@ -4507,13 +4434,11 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setFilters({DisplayFilter.starredEntriesOnly});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(false));
           expect(state.filters, equals({DisplayFilter.starredEntriesOnly}));
@@ -4526,13 +4451,11 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setFilters({DisplayFilter.flaggedEntriesOnly});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(false));
           expect(state.filters, equals({DisplayFilter.flaggedEntriesOnly}));
@@ -4545,13 +4468,11 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setFilters({DisplayFilter.privateEntriesOnly});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(false));
           expect(state.filters, equals({DisplayFilter.privateEntriesOnly}));
@@ -4564,16 +4485,14 @@ void main() {
             journalPageControllerProvider(false).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setFilters({
             DisplayFilter.starredEntriesOnly,
             DisplayFilter.privateEntriesOnly,
           });
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(false));
           expect(
@@ -4594,13 +4513,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setSortOption(TaskSortOption.byDate);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.sortOption, equals(TaskSortOption.byDate));
@@ -4613,15 +4530,13 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..setSortOption(TaskSortOption.byDate)
             ..setSortOption(TaskSortOption.byPriority);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.sortOption, equals(TaskSortOption.byPriority));
@@ -4634,13 +4549,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setSortOption(TaskSortOption.byDueDate);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.sortOption, equals(TaskSortOption.byDueDate));
@@ -4653,8 +4566,7 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Start with byPriority (default)
           var state = container.read(journalPageControllerProvider(true));
@@ -4662,22 +4574,19 @@ void main() {
 
           // Switch to byDueDate
           controller.setSortOption(TaskSortOption.byDueDate);
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
           state = container.read(journalPageControllerProvider(true));
           expect(state.sortOption, equals(TaskSortOption.byDueDate));
 
           // Switch to byDate
           controller.setSortOption(TaskSortOption.byDate);
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
           state = container.read(journalPageControllerProvider(true));
           expect(state.sortOption, equals(TaskSortOption.byDate));
 
           // Back to byPriority
           controller.setSortOption(TaskSortOption.byPriority);
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
           state = container.read(journalPageControllerProvider(true));
           expect(state.sortOption, equals(TaskSortOption.byPriority));
         });
@@ -4700,19 +4609,73 @@ void main() {
         getIt.unregister<AgentDatabase>();
       });
 
+      test(
+        'debugRequiresSequentialRetainedRefresh covers the full '
+        'showTasks x agentFilter x projectIds matrix',
+        () {
+          fakeAsync((async) {
+            // showTasks=false: never sequential, regardless of filters.
+            final journalController = container.read(
+              journalPageControllerProvider(false).notifier,
+            );
+            settle(async);
+            expect(
+              journalController.debugRequiresSequentialRetainedRefresh,
+              isFalse,
+            );
+
+            // showTasks=true with no post-filters: parallel refresh.
+            final taskController = container.read(
+              journalPageControllerProvider(true).notifier,
+            );
+            settle(async);
+            expect(
+              taskController.debugRequiresSequentialRetainedRefresh,
+              isFalse,
+            );
+
+            // Agent filter active -> sequential.
+            taskController.setAgentAssignmentFilter(
+              AgentAssignmentFilter.hasAgent,
+            );
+            settle(async);
+            expect(
+              taskController.debugRequiresSequentialRetainedRefresh,
+              isTrue,
+            );
+
+            // Back to all, but with a project selected -> still sequential.
+            taskController.setAgentAssignmentFilter(AgentAssignmentFilter.all);
+            settle(async);
+            taskController.setSelectedProjectIds({'proj-1'});
+            settle(async);
+            expect(
+              taskController.debugRequiresSequentialRetainedRefresh,
+              isTrue,
+            );
+
+            // Clearing the project selection returns to parallel.
+            taskController.setSelectedProjectIds({});
+            settle(async);
+            expect(
+              taskController.debugRequiresSequentialRetainedRefresh,
+              isFalse,
+            );
+          });
+        },
+      );
+
       test('setAgentAssignmentFilter updates to hasAgent', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setAgentAssignmentFilter(AgentAssignmentFilter.hasAgent);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(
@@ -4728,13 +4691,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setAgentAssignmentFilter(AgentAssignmentFilter.noAgent);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(
@@ -4750,15 +4711,13 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..setAgentAssignmentFilter(AgentAssignmentFilter.hasAgent)
             ..setAgentAssignmentFilter(AgentAssignmentFilter.all);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(
@@ -4776,8 +4735,7 @@ void main() {
             equals(AgentAssignmentFilter.all),
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
         });
       });
     });
@@ -4789,13 +4747,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setShowCreationDate(show: true);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.showCreationDate, isTrue);
@@ -4808,15 +4764,13 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..setShowCreationDate(show: true)
             ..setShowCreationDate(show: false);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.showCreationDate, isFalse);
@@ -4831,8 +4785,7 @@ void main() {
               journalPageControllerProvider(true).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             controller
               ..setSortOption(TaskSortOption.byDate)
@@ -4840,8 +4793,7 @@ void main() {
               // Trigger unrelated state update
               ..setFilters({DisplayFilter.starredEntriesOnly});
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             final state = container.read(journalPageControllerProvider(true));
             expect(state.sortOption, equals(TaskSortOption.byDate));
@@ -4859,14 +4811,12 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Default is true, so toggle to false
           controller.setShowDueDate(show: false);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.showDueDate, isFalse);
@@ -4879,15 +4829,13 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..setShowDueDate(show: false)
             ..setShowDueDate(show: true);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.showDueDate, isTrue);
@@ -4898,8 +4846,7 @@ void main() {
         fakeAsync((async) {
           container.read(journalPageControllerProvider(true));
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.showDueDate, isTrue);
@@ -4914,13 +4861,11 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.toggleProjectFilter('proj-1');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, equals({'proj-1'}));
@@ -4933,15 +4878,13 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..toggleProjectFilter('proj-1')
             ..toggleProjectFilter('proj-1');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, isEmpty);
@@ -4954,20 +4897,17 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..toggleProjectFilter('proj-1')
             ..toggleProjectFilter('proj-2');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.clearProjectFilter();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, isEmpty);
@@ -4980,21 +4920,18 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller
             ..toggleProjectFilter('proj-1')
             ..toggleProjectFilter('proj-2')
             ..toggleProjectFilter('proj-3');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.removeStaleProjectFilters({'proj-1', 'proj-3'});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, equals({'proj-2'}));
@@ -5007,18 +4944,15 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.toggleProjectFilter('proj-1');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.removeStaleProjectFilters(<String>{});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, equals({'proj-1'}));
@@ -5031,14 +4965,12 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Set a project filter first
           controller.toggleProjectFilter('proj-1');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           var state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, isNotEmpty);
@@ -5046,8 +4978,7 @@ void main() {
           // Changing category should clear project filters
           controller.toggleSelectedCategoryIds('cat-1');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, isEmpty);
@@ -5060,18 +4991,15 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.toggleProjectFilter('proj-1');
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.selectedAllCategories();
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.selectedProjectIds, isEmpty);
@@ -5147,8 +5075,7 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.toggleProjectFilter('proj-1');
 
@@ -5238,8 +5165,7 @@ void main() {
               journalPageControllerProvider(true).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             controller
               ..toggleProjectFilter('proj-1')
@@ -5270,19 +5196,16 @@ void main() {
             journalPageControllerProvider(true).notifier,
           );
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           // Enable vector search flag
           configFlagsController.add({enableVectorSearchFlag});
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           controller.setSearchMode(SearchMode.vector);
 
-          async.elapse(const Duration(milliseconds: 50));
-          async.flushMicrotasks();
+          settle(async);
 
           final state = container.read(journalPageControllerProvider(true));
           expect(state.searchMode, equals(SearchMode.vector));
@@ -5297,14 +5220,12 @@ void main() {
               journalPageControllerProvider(true).notifier,
             );
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             // Do not enable vector search flag
             controller.setSearchMode(SearchMode.vector);
 
-            async.elapse(const Duration(milliseconds: 50));
-            async.flushMicrotasks();
+            settle(async);
 
             final state = container.read(journalPageControllerProvider(true));
             expect(state.searchMode, equals(SearchMode.fullText));

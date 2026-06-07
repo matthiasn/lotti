@@ -29,6 +29,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
 import 'package:lotti/features/sync/matrix/key_verification_runner.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter.dart';
@@ -82,6 +83,9 @@ void _useViewport(WidgetTester tester, Size size) {
   addTearDown(tester.view.resetDevicePixelRatio);
 }
 
+/// Maps the flag combination to the destinations count and delegates to the
+/// PRODUCTION clamp (`clampNavigationIndex`) — previously this was a local
+/// re-implementation that tested itself.
 int calculateClampedIndex({
   required int rawIndex,
   required bool isProjectsEnabled,
@@ -92,14 +96,14 @@ int calculateClampedIndex({
   final navItems = [
     true, // Tasks
     isProjectsEnabled, // Projects
-    isCalendarEnabled, // Calendar
+    isCalendarEnabled, // Daily OS
     isHabitsEnabled, // Habits
     isDashboardsEnabled, // Dashboards
     true, // Journal
     true, // Settings
   ];
   final itemCount = navItems.where((isEnabled) => isEnabled).length;
-  return rawIndex.clamp(0, itemCount - 1);
+  return clampNavigationIndex(rawIndex: rawIndex, itemCount: itemCount);
 }
 
 class _MockAiSetupPromptService extends AiSetupPromptService {
@@ -485,6 +489,23 @@ void main() {
       expect(clampedIndex, 0);
     });
 
+    test('clamp invariants hold over the full rawIndex x itemCount space', () {
+      for (var itemCount = 1; itemCount <= 7; itemCount++) {
+        for (var rawIndex = -3; rawIndex <= 10; rawIndex++) {
+          final result = clampNavigationIndex(
+            rawIndex: rawIndex,
+            itemCount: itemCount,
+          );
+          final reason = 'rawIndex=$rawIndex itemCount=$itemCount';
+          expect(result, greaterThanOrEqualTo(0), reason: reason);
+          expect(result, lessThanOrEqualTo(itemCount - 1), reason: reason);
+          if (rawIndex >= 0 && rawIndex <= itemCount - 1) {
+            expect(result, rawIndex, reason: '$reason (identity in range)');
+          }
+        }
+      }
+    });
+
     test('clamps negative index to zero', () {
       final clampedIndex = calculateClampedIndex(
         rawIndex: -1,
@@ -561,6 +582,60 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();
     });
+  });
+
+  group('Flatpak audio indicator gating', () {
+    setUp(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first
+        ..physicalSize = const Size(800, 1200)
+        ..devicePixelRatio = 1.0;
+    });
+    tearDown(() {
+      TestWidgetsFlutterBinding.instance.platformDispatcher.views.first.reset();
+      debugIsRunningInFlatpakOverride = null;
+    });
+
+    Future<void> pumpMobileShell(WidgetTester tester) async {
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: const Stream<int>.empty(),
+        isProjectsEnabled: () => false,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+      await _pumpAppScreen(tester, navService: mockNavService);
+    }
+
+    testWidgets(
+      'omits the AudioRecordingIndicator from the mobile overlay when '
+      'running inside the Flatpak sandbox',
+      (tester) async {
+        debugIsRunningInFlatpakOverride = true;
+        await pumpMobileShell(tester);
+
+        expect(find.byType(AudioRecordingIndicator), findsNothing);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'mounts the AudioRecordingIndicator outside the Flatpak sandbox',
+      (tester) async {
+        debugIsRunningInFlatpakOverride = false;
+        await pumpMobileShell(tester);
+
+        expect(find.byType(AudioRecordingIndicator), findsOneWidget);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+      },
+    );
   });
 
   group('AppScreen bottom navigation style', () {

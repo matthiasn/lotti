@@ -419,6 +419,59 @@ void main() {
       expect(result[0].recap?.tldr, 'Adjusted warmth');
     });
 
+    test(
+      'joins recaps by session id — unmatched sessions get a null recap '
+      'and recaps for other sessions are not misattached',
+      () async {
+        final withRecap = makeTestEvolutionSession(
+          id: 'session-with-recap',
+          agentId: kTestSoulId,
+          templateId: kTestSoulId,
+          status: EvolutionSessionStatus.completed,
+        );
+        final withoutRecap = makeTestEvolutionSession(
+          id: 'session-without-recap',
+          agentId: kTestSoulId,
+          templateId: kTestSoulId,
+          status: EvolutionSessionStatus.completed,
+        );
+        final matchingRecap = makeTestEvolutionSessionRecap(
+          agentId: kTestSoulId,
+          sessionId: 'session-with-recap',
+          tldr: 'Matched recap',
+        );
+        // A recap whose session is not in the result set must not attach
+        // anywhere.
+        final strayRecap = makeTestEvolutionSessionRecap(
+          id: 'recap-stray',
+          agentId: kTestSoulId,
+          sessionId: 'session-unknown',
+          tldr: 'Stray recap',
+        );
+        when(
+          () => mockTemplateService.getEvolutionSessions(
+            kTestSoulId,
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => [withRecap, withoutRecap]);
+        when(
+          () => mockTemplateService.getEvolutionSessionRecaps(kTestSoulId),
+        ).thenAnswer((_) async => [matchingRecap, strayRecap]);
+
+        final container = createContainerWithTemplate();
+        addTearDown(container.dispose);
+
+        final result = await container.read(
+          soulEvolutionSessionHistoryProvider(kTestSoulId).future,
+        );
+
+        expect(result, hasLength(2));
+        final byId = {for (final e in result) e.session.id: e};
+        expect(byId['session-with-recap']?.recap?.tldr, 'Matched recap');
+        expect(byId['session-without-recap']?.recap, isNull);
+      },
+    );
+
     test('excludes active sessions from history', () async {
       final active = makeTestEvolutionSession(
         id: 'session-active',

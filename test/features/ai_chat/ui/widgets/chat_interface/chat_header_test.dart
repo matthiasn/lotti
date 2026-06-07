@@ -60,4 +60,63 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AssistantSettingsSheet), findsOneWidget);
   });
+
+  Future<void> pumpHeader(
+    WidgetTester tester, {
+    bool canClearChat = false,
+    VoidCallback? onClearChat,
+    VoidCallback? onNewSession,
+  }) async {
+    ensureDomainLoggerRegistered();
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          eligibleChatModelsForCategoryProvider(
+            'cat',
+          ).overrideWith((ref) async => const []),
+        ],
+        child: MaterialApp(
+          home: Scaffold(
+            body: ChatHeader(
+              sessionTitle: 'My Session',
+              canClearChat: canClearChat,
+              onClearChat: onClearChat ?? () {},
+              onNewSession: onNewSession ?? () {},
+              categoryId: 'cat',
+              selectedModelId: null,
+              isStreaming: false,
+              onSelectModel: (_) {},
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  testWidgets('clear button only renders when canClearChat and invokes '
+      'onClearChat', (tester) async {
+    await pumpHeader(tester);
+    expect(find.byIcon(Icons.clear_all), findsNothing);
+
+    var cleared = 0;
+    await pumpHeader(
+      tester,
+      canClearChat: true,
+      onClearChat: () => cleared++,
+    );
+    expect(find.byIcon(Icons.clear_all), findsOneWidget);
+
+    await tester.tap(find.byIcon(Icons.clear_all));
+    await tester.pump();
+    expect(cleared, 1);
+  });
+
+  testWidgets('new-chat button invokes onNewSession', (tester) async {
+    var newSessions = 0;
+    await pumpHeader(tester, onNewSession: () => newSessions++);
+
+    await tester.tap(find.byIcon(Icons.add_comment_outlined));
+    await tester.pump();
+    expect(newSessions, 1);
+  });
 }

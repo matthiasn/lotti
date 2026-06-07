@@ -4,6 +4,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
+import 'package:lotti/widgets/charts/utils.dart';
 
 import '../test_utils.dart';
 
@@ -93,6 +94,81 @@ void main() {
 
       expect(result, isEmpty);
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Glados property: for any mixed entity list, only SurveyEntry items
+  // carrying the requested score key contribute — in input order, with
+  // their dateFrom and score forwarded verbatim.
+  // ---------------------------------------------------------------------------
+  group('aggregateSurvey — properties', () {
+    const panasSurvey = DashboardSurveyItem(
+      surveyType: 'panasSurveyTask',
+      surveyName: 'PANAS',
+      colorsByScoreKey: {'Positive Affect Score': '#00FF00'},
+    );
+    const scoreKey = 'Positive Affect Score';
+
+    glados.Glados(
+      glados.any.list(glados.IntAnys(glados.any).intInRange(0, 1 << 16)),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('only survey entries with the requested key contribute', (seeds) {
+      final entities = <JournalEntity>[];
+      final expected = <Observation>[];
+
+      for (final (i, seed) in seeds.indexed) {
+        final date = DateTime(2024, 3, 1 + (seed % 28), seed % 24);
+        switch (seed % 4) {
+          case 0: // survey carrying the requested key → contributes
+            final score = seed % 100;
+            entities.add(
+              makeSurveyEntry(
+                dateFrom: date,
+                calculatedScores: {scoreKey: score, 'Other': 1},
+                id: 'hit-$i',
+              ),
+            );
+            expected.add(Observation(date, score));
+          case 1: // survey without the key → ignored
+            entities.add(
+              makeSurveyEntry(
+                dateFrom: date,
+                calculatedScores: {'Negative Affect Score': seed % 100},
+                id: 'miss-$i',
+              ),
+            );
+          case 2: // survey with empty scores → ignored
+            entities.add(
+              makeSurveyEntry(
+                dateFrom: date,
+                calculatedScores: const {},
+                id: 'empty-$i',
+              ),
+            );
+          default: // non-survey entity → ignored
+            entities.add(
+              makeQuantitativeEntry(
+                dateFrom: date,
+                value: seed % 100,
+                dataType: 'HealthDataType.WEIGHT',
+                id: 'quant-$i',
+              ),
+            );
+        }
+      }
+
+      final result = aggregateSurvey(
+        entities: entities,
+        dashboardSurveyItem: panasSurvey,
+        scoreKey: scoreKey,
+      );
+
+      expect(
+        result.map((o) => (o.dateTime, o.value)).toList(),
+        expected.map((o) => (o.dateTime, o.value)).toList(),
+        reason: 'seeds: $seeds',
+      );
+    }, tags: 'glados');
   });
 
   group('surveyLines', () {

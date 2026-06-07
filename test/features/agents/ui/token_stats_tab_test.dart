@@ -239,6 +239,10 @@ void main() {
       expect(find.text('Summary Agent'), findsOneWidget);
       expect(find.text('80 %'), findsOneWidget);
       expect(find.text('20 %'), findsOneWidget);
+      // Both _formatDuration branches render: hours+minutes ('2h 7m') and
+      // the minutes-only path ('15m').
+      expect(find.textContaining('2h 7m'), findsOneWidget);
+      expect(find.textContaining('15m'), findsOneWidget);
     });
 
     testWidgets('shows warning icon for high-usage sources', (tester) async {

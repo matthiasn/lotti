@@ -144,7 +144,7 @@ void main() {
         expect(initial, {'sv-1': 3, 'sv-2': 5});
 
         controller.add({taskNotification, 'some-task-id'});
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         final next = await container.read(savedTaskFilterCountsProvider.future);
         expect(next, {'sv-1': 7, 'sv-2': 9});
@@ -171,7 +171,7 @@ void main() {
       expect(repo.calls, 1);
 
       controller.add({'AUDIO', 'IMAGE'});
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       // Re-read should not invalidate the cache → no additional repo calls.
       await container.read(savedTaskFilterCountsProvider.future);

@@ -9,6 +9,29 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
+/// Finds the toggle's track: the [AnimatedContainer] whose constraints
+/// match the size variant's track dimensions.
+AnimatedContainer _findTrack(
+  WidgetTester tester,
+  Key key, {
+  required double width,
+  required double height,
+}) => tester.widget<AnimatedContainer>(
+  find.descendant(
+    of: find.byKey(key),
+    matching: find.byWidgetPredicate(
+      (widget) =>
+          widget is AnimatedContainer &&
+          widget.constraints?.maxWidth == width &&
+          widget.constraints?.maxHeight == height,
+    ),
+  ),
+);
+
+/// Finds the toggle's thumb the same way (square of [size]).
+AnimatedContainer _findThumb(WidgetTester tester, Key key, double size) =>
+    _findTrack(tester, key, width: size, height: size);
+
 void main() {
   group('DesignSystemToggle', () {
     testWidgets('renders the small off state from tokens', (tester) async {
@@ -28,29 +51,16 @@ void main() {
         ),
       );
 
-      final track = tester.widget<AnimatedContainer>(
-        find.descendant(
-          of: find.byKey(toggleKey),
-          matching: find.byWidgetPredicate(
-            (widget) =>
-                widget is AnimatedContainer &&
-                widget.constraints?.maxWidth == dsTokensLight.spacing.step8 &&
-                widget.constraints?.maxHeight == dsTokensLight.spacing.step6,
-          ),
-        ),
+      final track = _findTrack(
+        tester,
+        toggleKey,
+        width: dsTokensLight.spacing.step8,
+        height: dsTokensLight.spacing.step6,
       );
-      final thumb = tester.widget<AnimatedContainer>(
-        find.descendant(
-          of: find.byKey(toggleKey),
-          matching: find.byWidgetPredicate(
-            (widget) =>
-                widget is AnimatedContainer &&
-                widget.constraints?.maxWidth ==
-                    dsTokensLight.spacing.step6 - dsTokensLight.spacing.step2 &&
-                widget.constraints?.maxHeight ==
-                    dsTokensLight.spacing.step6 - dsTokensLight.spacing.step2,
-          ),
-        ),
+      final thumb = _findThumb(
+        tester,
+        toggleKey,
+        dsTokensLight.spacing.step6 - dsTokensLight.spacing.step2,
       );
       final align = tester.widget<AnimatedAlign>(
         find.descendant(
@@ -124,16 +134,11 @@ void main() {
         ),
       );
 
-      final track = tester.widget<AnimatedContainer>(
-        find.descendant(
-          of: find.byKey(toggleKey),
-          matching: find.byWidgetPredicate(
-            (widget) =>
-                widget is AnimatedContainer &&
-                widget.constraints?.maxWidth == dsTokensLight.spacing.step9 &&
-                widget.constraints?.maxHeight == dsTokensLight.spacing.step7,
-          ),
-        ),
+      final track = _findTrack(
+        tester,
+        toggleKey,
+        width: dsTokensLight.spacing.step9,
+        height: dsTokensLight.spacing.step7,
       );
       final label = tester.widget<RichText>(
         find.descendant(

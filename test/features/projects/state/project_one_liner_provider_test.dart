@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -40,120 +41,79 @@ void main() {
       expect(result, expectedOneLiner);
     });
 
-    test('returns null when no project agent exists', () async {
-      final container = ProviderContainer(
-        overrides: [
+    // All returns-null permutations share one body; each case supplies the
+    // overrides that model its failure mode.
+    final nullCases = <(String, List<Override> Function())>[
+      (
+        'no project agent exists',
+        () => [
           projectAgentProvider(projectId).overrideWith((ref) async => null),
         ],
-      );
-      addTearDown(container.dispose);
+      ),
+      (
+        'agent resolves to a non-identity entity',
+        () => [
+          projectAgentProvider(
+            projectId,
+          ).overrideWith((ref) async => makeTestState(agentId: agentId)),
+        ],
+      ),
+      (
+        'agent report has no oneLiner',
+        () => [
+          projectAgentProvider(
+            projectId,
+          ).overrideWith((ref) async => makeTestIdentity(agentId: agentId)),
+          agentReportProvider(
+            agentId,
+          ).overrideWith((ref) async => makeTestReport(agentId: agentId)),
+        ],
+      ),
+      (
+        'oneLiner is empty',
+        () => [
+          projectAgentProvider(
+            projectId,
+          ).overrideWith((ref) async => makeTestIdentity(agentId: agentId)),
+          agentReportProvider(agentId).overrideWith(
+            (ref) async => makeTestReport(agentId: agentId, oneLiner: ''),
+          ),
+        ],
+      ),
+      (
+        'oneLiner is only whitespace',
+        () => [
+          projectAgentProvider(
+            projectId,
+          ).overrideWith((ref) async => makeTestIdentity(agentId: agentId)),
+          agentReportProvider(agentId).overrideWith(
+            (ref) async => makeTestReport(agentId: agentId, oneLiner: '   '),
+          ),
+        ],
+      ),
+      (
+        'agent report is null',
+        () => [
+          projectAgentProvider(
+            projectId,
+          ).overrideWith((ref) async => makeTestIdentity(agentId: agentId)),
+          agentReportProvider(agentId).overrideWith((ref) async => null),
+        ],
+      ),
+    ];
 
-      final result = await container.read(
-        projectOneLinerProvider(projectId).future,
-      );
-
-      expect(result, isNull);
-    });
-
-    test(
-      'returns null when agent resolves to a non-identity entity',
-      () async {
-        final container = ProviderContainer(
-          overrides: [
-            projectAgentProvider(
-              projectId,
-            ).overrideWith(
-              (ref) async => makeTestState(agentId: agentId),
-            ),
-          ],
-        );
+    for (final (description, overrides) in nullCases) {
+      test('returns null when $description', () async {
+        final container = ProviderContainer(overrides: overrides());
         addTearDown(container.dispose);
 
         final result = await container.read(
           projectOneLinerProvider(projectId).future,
         );
 
-        expect(result, isNull);
-      },
-    );
-
-    test('returns null when agent report has no oneLiner', () async {
-      final container = ProviderContainer(
-        overrides: [
-          projectAgentProvider(
-            projectId,
-          ).overrideWith(
-            (ref) async => makeTestIdentity(agentId: agentId),
-          ),
-          agentReportProvider(
-            agentId,
-          ).overrideWith(
-            (ref) async => makeTestReport(agentId: agentId),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final result = await container.read(
-        projectOneLinerProvider(projectId).future,
-      );
-
-      expect(result, isNull);
-    });
-
-    test('returns null when oneLiner is empty', () async {
-      final container = ProviderContainer(
-        overrides: [
-          projectAgentProvider(
-            projectId,
-          ).overrideWith(
-            (ref) async => makeTestIdentity(agentId: agentId),
-          ),
-          agentReportProvider(
-            agentId,
-          ).overrideWith(
-            (ref) async => makeTestReport(
-              agentId: agentId,
-              oneLiner: '',
-            ),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final result = await container.read(
-        projectOneLinerProvider(projectId).future,
-      );
-
-      expect(result, isNull);
-    });
-
-    test('returns null when oneLiner is only whitespace', () async {
-      final container = ProviderContainer(
-        overrides: [
-          projectAgentProvider(
-            projectId,
-          ).overrideWith(
-            (ref) async => makeTestIdentity(agentId: agentId),
-          ),
-          agentReportProvider(
-            agentId,
-          ).overrideWith(
-            (ref) async => makeTestReport(
-              agentId: agentId,
-              oneLiner: '   ',
-            ),
-          ),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final result = await container.read(
-        projectOneLinerProvider(projectId).future,
-      );
-
-      expect(result, isNull);
-    });
+        expect(result, isNull, reason: description);
+      });
+    }
 
     test('trims whitespace from oneLiner', () async {
       final container = ProviderContainer(

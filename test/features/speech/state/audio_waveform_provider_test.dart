@@ -8,10 +8,10 @@ import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:riverpod/riverpod.dart';
 
-class _MockAudioWaveformService extends Mock implements AudioWaveformService {}
+import '../../../mocks/mocks.dart';
 
 void main() {
-  late _MockAudioWaveformService mockService;
+  late MockAudioWaveformService mockService;
 
   setUpAll(() {
     final audio = JournalAudio(
@@ -36,7 +36,7 @@ void main() {
 
   setUp(() async {
     await getIt.reset();
-    mockService = _MockAudioWaveformService();
+    mockService = MockAudioWaveformService();
     getIt.registerSingleton<AudioWaveformService>(mockService);
   });
 

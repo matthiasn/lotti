@@ -15,16 +15,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
-class FakeKeyVerificationEmoji extends Fake implements KeyVerificationEmoji {
-  FakeKeyVerificationEmoji(this.emoji, this.name);
-
-  @override
-  final String emoji;
-
-  @override
-  final String name;
-}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -45,6 +35,26 @@ void main() {
     when(() => mockKeyVerification.isDone).thenReturn(false);
   });
 
+  /// Pumps the modal inside the standard scaffold wrapper, emits [runner]
+  /// on the verification stream, and settles one frame — the shared
+  /// arrangement of nearly every test in this file.
+  Future<void> pumpModalWithRunner(
+    WidgetTester tester,
+    KeyVerificationRunner runner,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        IncomingVerificationModal(mockKeyVerification),
+        overrides: [
+          matrixServiceProvider.overrideWithValue(mockMatrixService),
+        ],
+      ),
+    );
+
+    controller.add(runner);
+    await tester.pump();
+  }
+
   tearDown(() async {
     await controller.close();
   });
@@ -57,17 +67,7 @@ void main() {
     when(() => runner.keyVerification).thenReturn(mockKeyVerification);
     when(runner.acceptVerification).thenAnswer((_) async {});
 
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        IncomingVerificationModal(mockKeyVerification),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-        ],
-      ),
-    );
-
-    controller.add(runner);
-    await tester.pump();
+    await pumpModalWithRunner(tester, runner);
 
     expect(find.text('Verify'), findsOneWidget);
     verify(runner.acceptVerification).called(1);
@@ -84,17 +84,7 @@ void main() {
     when(() => runner.emojis).thenReturn(emojis);
     when(() => runner.keyVerification).thenReturn(mockKeyVerification);
 
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        IncomingVerificationModal(mockKeyVerification),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-        ],
-      ),
-    );
-
-    controller.add(runner);
-    await tester.pump();
+    await pumpModalWithRunner(tester, runner);
 
     expect(find.text('Cancel'), findsOneWidget);
     expect(find.text('Accept'), findsOneWidget);
@@ -109,17 +99,7 @@ void main() {
     when(() => runner.keyVerification).thenReturn(mockKeyVerification);
     when(() => mockKeyVerification.isDone).thenReturn(true);
 
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        IncomingVerificationModal(mockKeyVerification),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-        ],
-      ),
-    );
-
-    controller.add(runner);
-    await tester.pump();
+    await pumpModalWithRunner(tester, runner);
 
     expect(find.byIcon(MdiIcons.shieldCheck), findsOneWidget);
     final context = tester.element(find.byType(IncomingVerificationModal));
@@ -144,17 +124,7 @@ void main() {
       when(runner.cancelVerification).thenAnswer((_) async {});
       when(runner.acceptEmojiVerification).thenAnswer((_) async {});
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          IncomingVerificationModal(mockKeyVerification),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-
-      controller.add(runner);
-      await tester.pump();
+      await pumpModalWithRunner(tester, runner);
 
       await tester.tap(find.text('Accept'));
       await tester.pump();
@@ -182,17 +152,7 @@ void main() {
       when(() => runner.keyVerification).thenReturn(mockKeyVerification);
       when(runner.cancelVerification).thenAnswer((_) async {});
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          IncomingVerificationModal(mockKeyVerification),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-
-      controller.add(runner);
-      await tester.pump();
+      await pumpModalWithRunner(tester, runner);
 
       expect(
         find.byKey(const Key('matrix_cancel_verification')),
@@ -221,17 +181,7 @@ void main() {
     when(() => runner.keyVerification).thenReturn(mockKeyVerification);
     when(runner.acceptVerification).thenAnswer((_) async {});
 
-    await tester.pumpWidget(
-      makeTestableWidgetWithScaffold(
-        IncomingVerificationModal(mockKeyVerification),
-        overrides: [
-          matrixServiceProvider.overrideWithValue(mockMatrixService),
-        ],
-      ),
-    );
-
-    controller.add(runner);
-    await tester.pump();
+    await pumpModalWithRunner(tester, runner);
 
     expect(find.text('My Pixel'), findsOneWidget);
   });
@@ -246,17 +196,7 @@ void main() {
       when(() => runner.keyVerification).thenReturn(mockKeyVerification);
       when(runner.acceptVerification).thenThrow(Exception('network error'));
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          IncomingVerificationModal(mockKeyVerification),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-
-      controller.add(runner);
-      await tester.pump();
+      await pumpModalWithRunner(tester, runner);
 
       // Verify button should still be visible as fallback
       expect(find.text('Verify'), findsOneWidget);
@@ -282,17 +222,7 @@ void main() {
         (_) async => throw Exception('boom'),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          IncomingVerificationModal(mockKeyVerification),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-
-      controller.add(runner);
-      await tester.pump();
+      await pumpModalWithRunner(tester, runner);
 
       final acceptFinder = find.text('Accept');
       expect(acceptFinder, findsOneWidget);
@@ -351,17 +281,7 @@ void main() {
         (_) => completer.future,
       );
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          IncomingVerificationModal(mockKeyVerification),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-
-      controller.add(runner);
-      await tester.pump();
+      await pumpModalWithRunner(tester, runner);
 
       // Tap Accept — sets _awaitingOtherDevice = true.
       final acceptFinder = find.text('Accept');
@@ -394,17 +314,7 @@ void main() {
       when(() => mockKeyVerification.deviceId).thenReturn('DEVICE1');
       when(runner.stopTimer).thenReturn(null);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          IncomingVerificationModal(mockKeyVerification),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-
-      controller.add(runner);
-      await tester.pump();
+      await pumpModalWithRunner(tester, runner);
 
       expect(find.byIcon(MdiIcons.shieldCheck), findsOneWidget);
 
@@ -446,17 +356,7 @@ void main() {
       when(() => mockKeyVerification.deviceId).thenReturn('DEVICE1');
       when(runner.stopTimer).thenReturn(null);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          IncomingVerificationModal(mockKeyVerification),
-          overrides: [
-            matrixServiceProvider.overrideWithValue(mockMatrixService),
-          ],
-        ),
-      );
-
-      controller.add(runner);
-      await tester.pump();
+      await pumpModalWithRunner(tester, runner);
 
       // Advance time repeatedly so the 400ms delay inside the loop fires more
       // than once, proving lines 76-77 (the delay + mounted re-check) ran.

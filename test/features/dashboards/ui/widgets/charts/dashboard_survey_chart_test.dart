@@ -5,7 +5,6 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/dashboards/state/survey_data.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/dashboard_survey_chart.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_multiline_chart.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -155,20 +154,6 @@ void main() {
       await _pumpSurveyChart(tester, chartConfig: chartConfig);
 
       expect(find.byIcon(Icons.add_rounded), findsOneWidget);
-    });
-
-    testWidgets('renders TimeSeriesMultiLineChart', (tester) async {
-      when(
-        () => mockJournalDb.getSurveyCompletionsByType(
-          type: any(named: 'type'),
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-        ),
-      ).thenAnswer((_) async => []);
-
-      await _pumpSurveyChart(tester, chartConfig: chartConfig);
-
-      expect(find.byType(TimeSeriesMultiLineChart), findsOneWidget);
     });
 
     testWidgets('empty entity list produces one series with empty spots', (

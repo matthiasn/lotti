@@ -379,26 +379,26 @@ class AgentToolExecutor {
     }
   }
 
+  // [payloadText] is required: every call site records a payload alongside
+  // the message (the former nullable parameter's no-payload branch was
+  // unreachable dead code).
   Future<void> _recordMessage({
     required AgentMessageKind kind,
     required AgentMessageMetadata metadata,
-    String? payloadText,
+    required String payloadText,
   }) async {
     final now = clock.now();
-    String? contentEntryId;
 
-    if (payloadText != null) {
-      contentEntryId = _uuid.v4();
-      await syncService.upsertEntity(
-        AgentDomainEntity.agentMessagePayload(
-          id: contentEntryId,
-          agentId: agentId,
-          createdAt: now,
-          vectorClock: null,
-          content: <String, Object?>{'text': payloadText},
-        ),
-      );
-    }
+    final contentEntryId = _uuid.v4();
+    await syncService.upsertEntity(
+      AgentDomainEntity.agentMessagePayload(
+        id: contentEntryId,
+        agentId: agentId,
+        createdAt: now,
+        vectorClock: null,
+        content: <String, Object?>{'text': payloadText},
+      ),
+    );
 
     await syncService.upsertEntity(
       AgentDomainEntity.agentMessage(

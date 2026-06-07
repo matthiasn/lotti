@@ -868,6 +868,42 @@ void main() {
         sub.cancel();
       });
     });
+
+    test(
+      'propagates fetch errors as stream errors and recovers on the next '
+      'notification',
+      () {
+        fakeAsync((async) {
+          var fetchCount = 0;
+          when(() => journalDb.getAllLabelDefinitions()).thenAnswer((_) async {
+            fetchCount++;
+            if (fetchCount == 1) throw Exception('DB exploded');
+            return <LabelDefinition>[];
+          });
+
+          final emissions = <List<LabelDefinition>>[];
+          final errors = <Object>[];
+          final sub = repoWithRealNotifications.watchLabels().listen(
+            emissions.add,
+            onError: errors.add,
+          );
+
+          // Initial fetch throws → surfaced as a stream error, not a crash.
+          async.flushMicrotasks();
+          expect(errors, hasLength(1));
+          expect(emissions, isEmpty);
+
+          // The stream stays open: a notification triggers a successful
+          // refetch that emits data.
+          notificationsController.add({labelsNotification});
+          async.flushMicrotasks();
+          expect(emissions, hasLength(1));
+          expect(errors, hasLength(1));
+
+          sub.cancel();
+        });
+      },
+    );
   });
 
   group('watchLabel', () {
@@ -919,6 +955,26 @@ void main() {
           .first;
 
       expect(result, isNull);
+    });
+
+    test('propagates fetch errors as stream errors', () {
+      fakeAsync((async) {
+        when(
+          () => journalDb.getLabelDefinitionById('boom'),
+        ).thenAnswer((_) async => throw Exception('DB exploded'));
+
+        final emissions = <LabelDefinition?>[];
+        final errors = <Object>[];
+        final sub = repoWithRealNotifications
+            .watchLabel('boom')
+            .listen(emissions.add, onError: errors.add);
+
+        async.flushMicrotasks();
+        expect(errors, hasLength(1));
+        expect(emissions, isEmpty);
+
+        sub.cancel();
+      });
     });
   });
 

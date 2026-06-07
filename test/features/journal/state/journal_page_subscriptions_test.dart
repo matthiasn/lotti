@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/journal/state/journal_page_subscriptions.dart';
 import 'package:lotti/features/journal/utils/entry_type_gating.dart';
@@ -350,5 +351,123 @@ void main() {
 
       expect(result.searchMode, SearchMode.fullText);
     });
+  });
+
+  group('applyJournalConfigFlags — generated invariants', () {
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(0, 4096),
+      glados.IntAnys(glados.any).intInRange(0, 3),
+      glados.ExploreConfig(numRuns: 160),
+    ).test('structural invariants hold across the input cross-product', (
+      bits,
+      entrySelKind,
+    ) {
+      bool bit(int n) => (bits >> n) & 1 == 1;
+
+      final flags = _flags(
+        events: bit(0),
+        habits: bit(1),
+        dashboards: bit(2),
+        vectorSearch: bit(3),
+        projects: bit(4),
+      );
+      final enableEvents = bit(5);
+      final enableHabits = bit(6);
+      final enableDashboards = bit(7);
+      final showTasks = bit(8);
+      final hasExplicitSelection = bit(9);
+      final searchMode = bit(10) ? SearchMode.vector : SearchMode.fullText;
+      final selectedProjectIds = bit(11) ? {'project-1'} : <String>{};
+
+      final oldAllowed = computeAllowedEntryTypes(
+        events: enableEvents,
+        habits: enableHabits,
+        dashboards: enableDashboards,
+      ).toSet();
+      final selectedEntryTypes = switch (entrySelKind) {
+        0 => <String>{},
+        1 => oldAllowed,
+        _ => oldAllowed.take(oldAllowed.length ~/ 2).toSet(),
+      };
+
+      // Pin the desktop flag so the showTasks auto-switch branch is part
+      // of the generated space deterministically.
+      final savedDesktop = platform.isDesktop;
+      platform.isDesktop = true;
+      try {
+        final result = JournalPageSubscriptions.applyJournalConfigFlags(
+          flags: flags,
+          showTasks: showTasks,
+          enableEvents: enableEvents,
+          enableHabits: enableHabits,
+          enableDashboards: enableDashboards,
+          enableVectorSearch: bit(3),
+          enableProjects: bit(4),
+          searchMode: searchMode,
+          hasExplicitSearchModeSelection: hasExplicitSelection,
+          selectedEntryTypes: selectedEntryTypes,
+          selectedProjectIds: selectedProjectIds,
+        );
+
+        final newAllowed = computeAllowedEntryTypes(
+          events: flags.events,
+          habits: flags.habits,
+          dashboards: flags.dashboards,
+        ).toSet();
+        final reason = 'bits=$bits entrySelKind=$entrySelKind';
+
+        // Flags propagate verbatim.
+        expect(result.enableEvents, flags.events, reason: reason);
+        expect(result.enableHabits, flags.habits, reason: reason);
+        expect(result.enableDashboards, flags.dashboards, reason: reason);
+        expect(result.enableVectorSearch, flags.vectorSearch, reason: reason);
+        expect(result.enableProjects, flags.projects, reason: reason);
+
+        // The new selection is always a subset of the new allowed set.
+        expect(
+          result.selectedEntryTypes.difference(newAllowed),
+          isEmpty,
+          reason: reason,
+        );
+
+        // Empty or fully-selected previous selection snaps to the new
+        // allowed set (no partial carry-over).
+        if (selectedEntryTypes.isEmpty ||
+            (oldAllowed.isNotEmpty &&
+                selectedEntryTypes.containsAll(oldAllowed) &&
+                oldAllowed.containsAll(selectedEntryTypes))) {
+          expect(result.selectedEntryTypes, newAllowed, reason: reason);
+        }
+
+        // entryTypesChanged mirrors actual set difference.
+        expect(
+          result.entryTypesChanged,
+          !(result.selectedEntryTypes.containsAll(selectedEntryTypes) &&
+              selectedEntryTypes.containsAll(result.selectedEntryTypes)),
+          reason: reason,
+        );
+
+        // Vector mode never survives a disabled vector-search flag.
+        if (!flags.vectorSearch) {
+          expect(result.searchMode, isNot(SearchMode.vector), reason: reason);
+        }
+        // Project selection never survives a disabled projects flag.
+        if (!flags.projects) {
+          expect(result.selectedProjectIds, isEmpty, reason: reason);
+        }
+
+        // shouldRefresh fires exactly for a search-mode change or a
+        // cleared project selection.
+        final projectsCleared =
+            !flags.projects && selectedProjectIds.isNotEmpty;
+        expect(
+          result.shouldRefresh,
+          result.searchMode != searchMode || projectsCleared,
+          reason: reason,
+        );
+      } finally {
+        platform.isDesktop = savedDesktop;
+      }
+    }, tags: 'glados');
   });
 }

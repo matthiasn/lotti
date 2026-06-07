@@ -68,6 +68,22 @@ void main() {
         expect(result, isTrue);
       });
 
+      test('returns false when the task already has checklists', () async {
+        // Arrange
+        final task = testTask.copyWith(
+          data: testTask.data.copyWith(checklistIds: ['existing-checklist']),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(task.meta.id),
+        ).thenAnswer((_) async => task);
+
+        // Act
+        final result = await service.shouldAutoCreate(taskId: task.meta.id);
+
+        // Assert
+        expect(result, isFalse);
+      });
+
       test('returns false when entity is not a task', () async {
         // Arrange
         final entry = testTextEntry;
@@ -357,42 +373,6 @@ void main() {
               subDomain: 'autoCreateChecklist',
             ),
           ).called(1);
-        },
-      );
-
-      test(
-        'calls shouldAutoCreate to check if auto-creation is allowed',
-        () async {
-          // Arrange
-          const taskId = 'test-task-id';
-          final task = testTask.copyWith(
-            data: testTask.data.copyWith(checklistIds: ['existing-checklist']),
-          );
-          final suggestions = [
-            const ChecklistItemData(
-              title: 'Review code',
-              isChecked: false,
-              linkedChecklists: [],
-            ),
-          ];
-
-          when(
-            () => mockJournalDb.journalEntityById(taskId),
-          ).thenAnswer((_) async => task);
-
-          // Act
-          final result = await service.autoCreateChecklist(
-            taskId: taskId,
-            suggestions: suggestions,
-          );
-
-          // Assert
-          expect(result.success, isFalse);
-          expect(result.error, equals('Checklists already exist'));
-
-          // Verify that shouldAutoCreate was called (line 58 in the source)
-          // This happens implicitly through the internal call but verifies the flow
-          verify(() => mockJournalDb.journalEntityById(taskId)).called(1);
         },
       );
 

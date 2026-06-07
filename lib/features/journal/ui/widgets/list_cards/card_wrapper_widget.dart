@@ -89,10 +89,15 @@ class _DistanceBadge extends StatelessWidget {
     );
   }
 
-  static Color _colorForDistance(double d) {
-    if (d < 0.3) return Colors.green;
-    if (d < 0.6) return Colors.orange.shade700;
-    if (d < 0.8) return Colors.deepOrange;
-    return Colors.red;
-  }
+  static Color _colorForDistance(double d) => colorForVectorDistance(d);
+}
+
+/// Maps a vector-search distance to the badge color: greener is closer,
+/// warming through orange and deep orange to red as relevance drops.
+@visibleForTesting
+Color colorForVectorDistance(double d) {
+  if (d < 0.3) return Colors.green;
+  if (d < 0.6) return Colors.orange.shade700;
+  if (d < 0.8) return Colors.deepOrange;
+  return Colors.red;
 }

@@ -5,6 +5,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/get_it.dart';
+import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'task_progress_repository.g.dart';
@@ -125,7 +126,7 @@ class TaskProgressRepository {
             ? null
             : (
                 estimatesByTaskId[taskId],
-                _buildTimeRanges(linkedTimeSpansByTaskId[taskId] ?? const []),
+                buildTimeRanges(linkedTimeSpansByTaskId[taskId] ?? const []),
               );
 
         for (final completer
@@ -152,7 +153,10 @@ class TaskProgressRepository {
     }
   }
 
-  static Map<String, TimeRange> _buildTimeRanges(
+  /// Visible for property testing: maps each span's id to its [TimeRange];
+  /// for duplicate ids the later span wins (map overwrite).
+  @visibleForTesting
+  static Map<String, TimeRange> buildTimeRanges(
     List<LinkedEntityTimeSpan> timeSpans,
   ) {
     final timeRanges = <String, TimeRange>{};

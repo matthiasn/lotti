@@ -788,18 +788,10 @@ void main() {
   });
 
   group('AudioPlayerController - completion handling', () {
-    test('handles completion event with delay', () async {
-      final controller = container.read(audioPlayerControllerProvider.notifier)
-        ..ensurePlayerForTest();
-
-      // Set a short delay for testing
-      controller.completionDelayForTest = const Duration(milliseconds: 10);
-
-      // We need an audioNote with duration for completion to work
-      // Since we can't easily set that, we test the completion subscription exists
-      expect(controller.completedSubscription, isNotNull);
-    });
-
+    // The timer/progress behavior of completion is covered by the
+    // 'completion timer fires and updates progress to duration' test; the
+    // former 'handles completion event with delay' test only re-asserted
+    // that the subscription exists, which the next test proves behaviorally.
     test('completion subscription is set up after lazy ensure', () {
       container
           .read(audioPlayerControllerProvider.notifier)

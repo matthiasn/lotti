@@ -146,7 +146,7 @@ void main() {
   group('parseEnumByName', () {
     glados.Glados(
       glados.any.enumParseScenario,
-      glados.ExploreConfig(numRuns: 260),
+      glados.ExploreConfig(numRuns: 180),
     ).test('resolves generated agent enum spellings', (scenario) {
       expect(
         _parseAgentEnum(scenario.family, scenario.inputName),

@@ -447,6 +447,38 @@ void main() {
         await realDb.close();
       });
 
+      test(
+        'pruneSentOutboxItems (non-chunked) deletes only sent rows older '
+        'than the retention window',
+        () async {
+          final now = DateTime.now();
+          // Old sent row → pruned.
+          final oldSent = await insertRow(
+            status: OutboxStatus.sent,
+            createdAt: now.subtract(const Duration(days: 30)),
+          );
+          // Recent sent row → kept (inside retention).
+          final recentSent = await insertRow(
+            status: OutboxStatus.sent,
+            createdAt: now.subtract(const Duration(hours: 1)),
+          );
+          // Old but still pending → kept (only sent rows prune).
+          final oldPending = await insertRow(
+            status: OutboxStatus.pending,
+            createdAt: now.subtract(const Duration(days: 30)),
+          );
+
+          final deleted = await realRepo.pruneSentOutboxItems(
+            retention: const Duration(days: 7),
+          );
+
+          expect(deleted, 1);
+          expect(await realDb.getOutboxItemById(oldSent), isNull);
+          expect(await realDb.getOutboxItemById(recentSent), isNotNull);
+          expect(await realDb.getOutboxItemById(oldPending), isNotNull);
+        },
+      );
+
       test('markSentBatch flips every row to status=sent', () async {
         final ids = <int>[];
         for (var i = 0; i < 3; i++) {

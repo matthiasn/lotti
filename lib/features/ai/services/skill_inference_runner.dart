@@ -32,6 +32,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'skill_image_analysis_runner.dart';
@@ -401,6 +402,21 @@ class SkillInferenceRunner {
 
     return '[No entry content available]';
   }
+
+  /// The wired task-summary resolver — observable seam for the provider
+  /// factory tests (AgentDatabase registered vs not).
+  @visibleForTesting
+  TaskSummaryResolver get debugTaskSummaryResolver => _taskSummaryResolver;
+
+  /// Test seam for [_resolveEntryContent] — pure content resolution.
+  @visibleForTesting
+  static String debugResolveEntryContent(JournalEntity entity) =>
+      _resolveEntryContent(entity);
+
+  /// Test seam for [_formatSpeechDictionaryText] — pure prompt fragment.
+  @visibleForTesting
+  static String debugFormatSpeechDictionaryText(List<String> terms) =>
+      _formatSpeechDictionaryText(terms);
 
   /// Formats pre-fetched speech dictionary terms into a prompt fragment.
   static String _formatSpeechDictionaryText(List<String> terms) {

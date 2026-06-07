@@ -14,6 +14,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/cache_extension.dart';
+import 'package:meta/meta.dart';
 
 /// Record type for checklist parameters.
 typedef ChecklistParams = ({String id, String? taskId});
@@ -215,6 +216,20 @@ class ChecklistController extends AsyncNotifier<Checklist?> {
   /// (no target) append to the end. Drops on a row insert at that row's
   /// index when [targetIndex] is supplied, otherwise after [targetItemId].
   /// If [itemId] already exists in the list, it is moved (not duplicated).
+  /// Test-only seam for [_insertItemAt] — the pure insertion/move logic.
+  @visibleForTesting
+  List<String> debugInsertItemAt(
+    List<String> existing,
+    String itemId, {
+    int? targetIndex,
+    String? targetItemId,
+  }) => _insertItemAt(
+    existing,
+    itemId,
+    targetIndex: targetIndex,
+    targetItemId: targetItemId,
+  );
+
   List<String> _insertItemAt(
     List<String> existing,
     String itemId, {

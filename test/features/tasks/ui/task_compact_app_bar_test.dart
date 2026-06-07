@@ -80,7 +80,8 @@ void main() {
       final task = buildTask();
 
       await tester.pumpWidget(buildTestWidget(task));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(SliverAppBar), findsOneWidget);
     });
@@ -89,7 +90,8 @@ void main() {
       final task = buildTask();
 
       await tester.pumpWidget(buildTestWidget(task));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.chevron_left), findsOneWidget);
     });
@@ -98,7 +100,8 @@ void main() {
       final task = buildTask();
 
       await tester.pumpWidget(buildTestWidget(task));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.more_horiz), findsOneWidget);
     });
@@ -107,7 +110,8 @@ void main() {
       final task = buildTask();
 
       await tester.pumpWidget(buildTestWidget(task));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
       expect(appBar.pinned, isTrue);
@@ -117,7 +121,8 @@ void main() {
       final task = buildTask();
 
       await tester.pumpWidget(buildTestWidget(task));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
       expect(appBar.toolbarHeight, 45);
@@ -127,7 +132,8 @@ void main() {
       final task = buildTask();
 
       await tester.pumpWidget(buildTestWidget(task));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
       expect(appBar.leadingWidth, 100);
@@ -137,7 +143,8 @@ void main() {
       final task = buildTask();
 
       await tester.pumpWidget(buildTestWidget(task));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
       expect(appBar.automaticallyImplyLeading, isFalse);
@@ -147,7 +154,8 @@ void main() {
       final task = buildTask();
 
       await tester.pumpWidget(buildTestWidget(task));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final appBar = tester.widget<SliverAppBar>(find.byType(SliverAppBar));
       expect(appBar.expandedHeight, isNull);
@@ -167,7 +175,8 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Test Task'), findsNothing);
     });
 
@@ -185,7 +194,8 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(find.text('Test Task'), findsOneWidget);
       },
     );
@@ -228,7 +238,8 @@ void main() {
 
         final task = buildTask();
         await tester.pumpWidget(buildTestWidget(task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byIcon(Icons.chevron_left), findsNothing);
       },
@@ -248,7 +259,8 @@ void main() {
 
         final task = buildTask(id: 'task-linked');
         await tester.pumpWidget(buildTestWidget(task));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Compact bar uses the same GlassBackButton style as the
         // expandable bar on desktop pop, so the affordance stays

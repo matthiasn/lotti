@@ -2,10 +2,18 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/checklist_data.dart';
+import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/event_data.dart';
+import 'package:lotti/classes/event_status.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/ui/view_models/conflict_list_item_view_model.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+import '../../../../helpers/fallbacks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 
@@ -160,14 +168,83 @@ void main() {
     testWidgets('entity label resolves to the localized type name', (
       tester,
     ) async {
-      // Spot-check several entity types via a single loop, exercising the
-      // _entityLabel mapping without listing every supported type.
+      // Every entry in the impl's _entityLabel map — all 13 types.
+      final now = DateTime(2024, 3, 15);
+      final meta = Metadata(
+        id: 'label-entity',
+        createdAt: now,
+        updatedAt: now,
+        dateFrom: now,
+        dateTo: now,
+      );
       final cases = <(dynamic, String Function(BuildContext))>[
         (testTextEntry, (c) => c.messages.entryTypeLabelJournalEntry),
         (testTask, (c) => c.messages.entryTypeLabelTask),
         (testAudioEntry, (c) => c.messages.entryTypeLabelJournalAudio),
         (testWorkoutRunning, (c) => c.messages.entryTypeLabelWorkoutEntry),
         (testWeightEntry, (c) => c.messages.entryTypeLabelQuantitativeEntry),
+        (testImageEntry, (c) => c.messages.entryTypeLabelJournalImage),
+        (
+          testMeasurementChocolateEntry,
+          (c) => c.messages.entryTypeLabelMeasurementEntry,
+        ),
+        (
+          testHabitCompletionEntry,
+          (c) => c.messages.entryTypeLabelHabitCompletionEntry,
+        ),
+        (
+          JournalEntity.event(
+            meta: meta,
+            data: const EventData(
+              status: EventStatus.tentative,
+              title: 'Event',
+              stars: 0,
+            ),
+          ),
+          (c) => c.messages.entryTypeLabelJournalEvent,
+        ),
+        (
+          JournalEntity.checklist(
+            meta: meta,
+            data: const ChecklistData(
+              title: 'Checklist',
+              linkedChecklistItems: [],
+              linkedTasks: [],
+            ),
+          ),
+          (c) => c.messages.entryTypeLabelChecklist,
+        ),
+        (
+          JournalEntity.checklistItem(
+            meta: meta,
+            data: const ChecklistItemData(
+              title: 'Item',
+              isChecked: false,
+              linkedChecklists: [],
+            ),
+          ),
+          (c) => c.messages.entryTypeLabelChecklistItem,
+        ),
+        (
+          JournalEntity.aiResponse(
+            meta: meta,
+            data: const AiResponseData(
+              model: 'm',
+              systemMessage: '',
+              prompt: '',
+              thoughts: '',
+              response: '',
+            ),
+          ),
+          (c) => c.messages.entryTypeLabelAiResponse,
+        ),
+        (
+          JournalEntity.survey(
+            meta: meta,
+            data: fallbackSurveyData,
+          ),
+          (c) => c.messages.entryTypeLabelSurveyEntry,
+        ),
       ];
 
       for (final (entity, expectedLabel) in cases) {
@@ -189,5 +266,26 @@ void main() {
         );
       }
     });
+  });
+
+  group('shortenConflictId — Glados property', () {
+    glados.Glados<String>(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'ids of 8 chars or fewer pass through; longer ids truncate to the '
+      'first 8',
+      (id) {
+        final short = ConflictListItemViewModel.shortenConflictId(id);
+        if (id.length <= 8) {
+          expect(short, id);
+        } else {
+          expect(short.length, 8);
+          expect(short, id.substring(0, 8));
+          expect(id, startsWith(short));
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

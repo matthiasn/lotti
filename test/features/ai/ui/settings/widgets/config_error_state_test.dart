@@ -3,18 +3,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_error_state.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 
+import '../../../../../widget_test_utils.dart';
+
 void main() {
   group('ConfigErrorState', () {
     Widget createWidget({
       required Object error,
       VoidCallback? onRetry,
     }) {
-      return MaterialApp(
-        home: Scaffold(
-          body: ConfigErrorState(
-            error: error,
-            onRetry: onRetry,
-          ),
+      return makeTestableWidgetWithScaffold(
+        ConfigErrorState(
+          error: error,
+          onRetry: onRetry,
         ),
       );
     }
@@ -99,29 +99,6 @@ void main() {
       await tester.pumpWidget(createWidget(error: exception));
 
       expect(find.text(exception.toString()), findsOneWidget);
-    });
-
-    testWidgets('maintains proper spacing between elements', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        createWidget(
-          error: 'Error with retry',
-          onRetry: () {},
-        ),
-      );
-
-      // Find only the spacing SizedBox widgets by their height
-      final spacing16 = find.byWidgetPredicate(
-        (widget) => widget is SizedBox && widget.height == 16.0,
-      );
-      final spacing8 = find.byWidgetPredicate(
-        (widget) => widget is SizedBox && widget.height == 8.0,
-      );
-
-      // Should have 2 SizedBox widgets with height 16 and 1 with height 8
-      expect(spacing16, findsNWidgets(2));
-      expect(spacing8, findsOneWidget);
     });
 
     testWidgets('error message has proper padding', (

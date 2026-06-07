@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -590,6 +591,109 @@ void main() {
         }
         expect(calls, 0);
       },
+    );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Glados properties for the pure input-normalisation paths. The example
+  // tests above pin individual fixtures (ftp scheme, `https:///models`,
+  // a single whitespace key); these prove the guards for arbitrary
+  // combinations from the same input families.
+  // ---------------------------------------------------------------------------
+  group('verify() input normalisation — properties', () {
+    const nonHttpSchemes = [
+      'ftp',
+      'ws',
+      'wss',
+      'file',
+      'mailto',
+      'httpx',
+      'ssh',
+      'gopher',
+      '',
+    ];
+    const urlRemainders = [
+      '://example.com',
+      '://localhost:11434',
+      '://api.openai.com/v1',
+      '://a.b.c/path?q=1',
+    ];
+
+    glados.Glados2(
+      glados.AnyUtils(glados.any).choose(nonHttpSchemes),
+      glados.AnyUtils(glados.any).choose(urlRemainders),
+      glados.ExploreConfig(numRuns: 60),
+    ).test(
+      'any base URL without an http(s) scheme routes to invalidBaseUrl '
+      'without firing the probe',
+      (scheme, remainder) async {
+        var calls = 0;
+        final container = _makeContainer(
+          client: MockClient((req) async {
+            calls++;
+            return http.Response('{}', 200);
+          }),
+        );
+        try {
+          await container
+              .read(
+                connectionVerifierControllerProvider(
+                  InferenceProviderType.openAi,
+                ).notifier,
+              )
+              .verify(baseUrl: '$scheme$remainder', apiKey: 'k');
+          expect(calls, 0, reason: 'url: $scheme$remainder');
+          final state = _readState(container, InferenceProviderType.openAi);
+          expect(
+            state,
+            isA<ConnectionCheckFailedNetwork>(),
+            reason: 'url: $scheme$remainder',
+          );
+          expect(
+            (state as ConnectionCheckFailedNetwork).code,
+            ConnectionFailureCode.invalidBaseUrl,
+          );
+        } finally {
+          container.dispose();
+        }
+      },
+      tags: 'glados',
+    );
+
+    const whitespaceAtoms = ['', ' ', '  ', '\t', '\n', '\r', ' \t '];
+    const cloudTypes = [
+      InferenceProviderType.gemini,
+      InferenceProviderType.openAi,
+      InferenceProviderType.anthropic,
+    ];
+
+    glados.Glados3(
+      glados.AnyUtils(glados.any).choose(cloudTypes),
+      glados.AnyUtils(glados.any).choose(whitespaceAtoms),
+      glados.AnyUtils(glados.any).choose(whitespaceAtoms),
+      glados.ExploreConfig(numRuns: 60),
+    ).test(
+      'any whitespace-only key short-circuits cloud providers to idle '
+      'without firing the probe',
+      (type, ws1, ws2) async {
+        var calls = 0;
+        final container = _makeContainer(
+          client: MockClient((req) async {
+            calls++;
+            return http.Response('{}', 200);
+          }),
+        );
+        try {
+          await container
+              .read(connectionVerifierControllerProvider(type).notifier)
+              .verify(baseUrl: 'https://example.com', apiKey: '$ws1$ws2');
+          expect(calls, 0, reason: 'type: $type key: "$ws1$ws2"');
+          expect(_readState(container, type), isA<ConnectionCheckIdle>());
+        } finally {
+          container.dispose();
+        }
+      },
+      tags: 'glados',
     );
   });
 

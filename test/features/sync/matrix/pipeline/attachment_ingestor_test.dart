@@ -243,6 +243,12 @@ extension _AnyAttachmentIngestorScenario on glados.Any {
           );
 }
 
+/// Per-invocation fresh state for the Glados properties.
+///
+/// Not redundant with the file's `setUp`/`tearDown`: setUp runs once per
+/// Glados *test*, not per generated iteration, so property bodies must
+/// build and dispose their own logger/index/tempDir to keep iterations
+/// independent. The shared setUp continues to serve the regular tests.
 Future<void> _withFreshAttachmentIngestorState(
   Future<void> Function(
     MockDomainLogger logging,
@@ -716,8 +722,9 @@ void main() {
         );
 
         // Nothing should be queued or in flight when the cap is zero, so
-        // whenIdle resolves synchronously.
-        await ingestor.whenIdle().timeout(const Duration(seconds: 1));
+        // whenIdle resolves synchronously — fail fast instead of hanging
+        // behind a wall-clock timeout if it ever stops doing so.
+        await expectLater(ingestor.whenIdle(), completes);
       },
     );
   });
@@ -853,13 +860,13 @@ void main() {
   group('AttachmentIngestor lifecycle', () {
     test('whenIdle resolves immediately on a fresh ingestor', () async {
       final ingestor = AttachmentIngestor(documentsDirectory: tempDir);
-      await ingestor.whenIdle().timeout(const Duration(seconds: 1));
+      await expectLater(ingestor.whenIdle(), completes);
     });
 
     test('dispose completes any pending whenIdle waiter', () async {
       final ingestor = AttachmentIngestor(documentsDirectory: tempDir)
         ..dispose();
-      await ingestor.whenIdle().timeout(const Duration(seconds: 1));
+      await expectLater(ingestor.whenIdle(), completes);
     });
 
     test('dispose is safe to call multiple times', () {

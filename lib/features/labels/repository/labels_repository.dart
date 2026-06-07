@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/labels/utils/labels_normalization.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -151,24 +152,10 @@ class LabelsRepository {
   /// Normalize and validate category IDs: remove unknowns, de-duplicate, and
   /// sort by category name (case-insensitive) for stable diffs.
   List<String> _normalizeCategoryIds(List<String>? categoryIds) {
-    if (categoryIds == null) return const <String>[];
-    // Trim incoming IDs and drop empties before validation/dedup
-    final unique = LinkedHashSet<String>.from(
-      categoryIds.map((id) => id.trim()).where((id) => id.isNotEmpty),
+    return normalizeLabelCategoryIds(
+      categoryIds,
+      lookupCategory: _entitiesCacheService.getCategoryById,
     );
-
-    final valid = <String>[];
-    final nameById = <String, String>{};
-    for (final id in unique) {
-      final category = _entitiesCacheService.getCategoryById(id);
-      if (category != null) {
-        valid.add(id);
-        nameById[id] = category.name.toLowerCase();
-      }
-    }
-
-    valid.sort((a, b) => (nameById[a] ?? a).compareTo(nameById[b] ?? b));
-    return valid;
   }
 
   Future<void> deleteLabel(String id) async {

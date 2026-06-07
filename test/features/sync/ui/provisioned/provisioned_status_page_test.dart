@@ -141,7 +141,8 @@ void main() {
       );
       await tester.ensureVisible(disconnectFinder);
       await tester.tap(disconnectFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Confirmation dialog should be visible
       expect(
@@ -151,7 +152,8 @@ void main() {
 
       // Tap the confirm button
       await tester.tap(find.text(context.messages.syncDeleteConfigConfirm));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => mockMatrixService.deleteConfig()).called(1);
     });
@@ -226,7 +228,8 @@ void main() {
       );
       await tester.ensureVisible(disconnectFinder);
       await tester.tap(disconnectFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Confirmation dialog should be visible
       expect(
@@ -236,7 +239,8 @@ void main() {
 
       // Tap cancel in confirmation dialog
       await tester.tap(find.text(context.messages.settingsMatrixCancel));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verifyNever(() => mockMatrixService.deleteConfig());
     });
@@ -394,7 +398,8 @@ void main() {
         const Key('statusToggleHandoverVisibility'),
       );
       await tester.ensureVisible(toggleFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(toggleFinder);
       await tester.pump();
 
@@ -472,9 +477,11 @@ void main() {
 
     final copyFinder = find.byKey(const Key('statusCopyHandoverData'));
     await tester.ensureVisible(copyFinder);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(copyFinder);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(clipboardText, isNotNull);
 

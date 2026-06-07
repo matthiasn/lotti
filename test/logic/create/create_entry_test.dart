@@ -213,6 +213,74 @@ void main() {
       expect(linkedEntities.any((e) => e.meta.id == task!.meta.id), true);
     });
 
+    test(
+      'creation coordinators persist metadata invariants for every '
+      'linkedId/categoryId combination',
+      () async {
+        final creators =
+            <
+              String,
+              Future<JournalEntity?> Function({
+                String? linkedId,
+                String? categoryId,
+              })
+            >{
+              'createTextEntry': createTextEntry,
+              'createTask': createTask,
+              'createEvent': createEvent,
+            };
+
+        for (final MapEntry(key: name, value: create) in creators.entries) {
+          for (final withLinked in [false, true]) {
+            for (final withCategory in [false, true]) {
+              final parent = withLinked ? await createTextEntry() : null;
+              final categoryId = withCategory
+                  ? 'cat-$name-linked-$withLinked'
+                  : null;
+
+              final entity = await create(
+                linkedId: parent?.meta.id,
+                categoryId: categoryId,
+              );
+              final reason = '$name linked=$withLinked category=$withCategory';
+
+              expect(entity, isNotNull, reason: reason);
+              expect(entity!.meta.id, isNotEmpty, reason: reason);
+
+              final persisted = await getIt<JournalDb>().journalEntityById(
+                entity.meta.id,
+              );
+              expect(persisted, isNotNull, reason: reason);
+              // Write timestamps are ordered, and the entity time range is
+              // valid. (createdAt <= dateTo does NOT hold for tasks: TaskData
+              // captures `now` before createMetadata stamps createdAt.)
+              expect(
+                persisted!.meta.createdAt.isAfter(persisted.meta.updatedAt),
+                isFalse,
+                reason: '$reason: createdAt must be <= updatedAt',
+              );
+              expect(
+                persisted.meta.dateFrom.isAfter(persisted.meta.dateTo),
+                isFalse,
+                reason: '$reason: dateFrom must be <= dateTo',
+              );
+              expect(persisted.categoryId, categoryId, reason: reason);
+
+              if (parent != null) {
+                final linkedEntities = await getIt<JournalDb>()
+                    .getLinkedEntities(parent.meta.id);
+                expect(
+                  linkedEntities.any((e) => e.meta.id == entity.meta.id),
+                  isTrue,
+                  reason: '$reason: link row must exist',
+                );
+              }
+            }
+          }
+        }
+      },
+    );
+
     test('createTask inherits project from linked task', () async {
       const testCategoryId = 'project-inherit-cat';
       final db = getIt<JournalDb>();

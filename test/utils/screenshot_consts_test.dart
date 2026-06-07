@@ -150,29 +150,8 @@ void main() {
         }
       });
 
-      test('should have complete configuration for spectacle', () {
-        final config = screenshotToolConfigs[spectacleTool];
-        expect(config, isNotNull);
-        expect(config!.arguments, equals(spectacleArguments));
-      });
-
-      test('should have complete configuration for gnome-screenshot', () {
-        final config = screenshotToolConfigs[gnomeScreenshotTool];
-        expect(config, isNotNull);
-        expect(config!.arguments, equals(gnomeScreenshotArguments));
-      });
-
-      test('should have complete configuration for scrot', () {
-        final config = screenshotToolConfigs[scrotTool];
-        expect(config, isNotNull);
-        expect(config!.arguments, equals(scrotArguments));
-      });
-
-      test('should have complete configuration for import', () {
-        final config = screenshotToolConfigs[importTool];
-        expect(config, isNotNull);
-        expect(config!.arguments, equals(importArguments));
-      });
+      // Per-tool argument equality lives in the 'Constants Consistency'
+      // group below — the former four per-tool copies added no information.
     });
 
     group('ScreenshotToolConfig Class', () {

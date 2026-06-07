@@ -5,13 +5,12 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
-import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
+import '../../widget_test_utils.dart';
 
 void main() {
   late MockJournalDb journalDb;
@@ -20,8 +19,6 @@ void main() {
   // return null from withVcScope and the production code would crash on the
   // `await null` inside PersistenceLogic.updateJournalEntity.
   late MockVectorClockService vclock;
-  late MockUpdateNotifications updates;
-  late MockLoggingService logging;
   late MockNotificationService notifications;
 
   setUpAll(() {
@@ -48,26 +45,28 @@ void main() {
   });
 
   setUp(() async {
-    await getIt.reset();
     journalDb = MockJournalDb();
     vclock = MockVectorClockService();
-    updates = MockUpdateNotifications();
-    logging = MockLoggingService();
     notifications = MockNotificationService();
 
-    getIt
-      ..registerSingleton<JournalDb>(journalDb)
-      ..registerSingleton<VectorClockService>(vclock)
-      ..registerSingleton<UpdateNotifications>(updates)
-      ..registerSingleton<LoggingService>(logging)
-      ..registerSingleton<NotificationService>(notifications)
-      ..registerSingleton<OutboxService>(MockOutboxService());
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          // PersistenceLogic must read THIS test's JournalDb, not the
+          // helper's stock mock.
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(journalDb)
+          ..registerSingleton<VectorClockService>(vclock)
+          ..registerSingleton<NotificationService>(notifications)
+          ..registerSingleton<OutboxService>(MockOutboxService());
+      },
+    );
 
     // Not used because we override updateMetadata below
     when(() => notifications.updateBadge()).thenAnswer((_) async {});
   });
 
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
 
   final testDate = DateTime(2024, 3, 15, 10, 30);
 

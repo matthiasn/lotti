@@ -476,8 +476,9 @@ void main() {
 
         final stateUpdates = <String>[];
 
-        // Override the aiConfigByIdProvider to return our test prompt
-        container = ProviderContainer(
+        // Local container (the shared `container` from setUp must not be
+        // reassigned mid-test — the original would leak undisposed).
+        final testContainer = ProviderContainer(
           overrides: [
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
@@ -487,6 +488,7 @@ void main() {
             ),
           ],
         );
+        containersToDispose.add(testContainer);
 
         when(
           () => mockRepository.runInference(
@@ -505,7 +507,7 @@ void main() {
         });
 
         // Listen to the provider to capture state updates
-        final subscription = container.listen(
+        final subscription = testContainer.listen(
           unifiedAiControllerProvider((
             entityId: 'test-entity',
             promptId: 'prompt-1',
@@ -517,7 +519,7 @@ void main() {
         );
 
         // Trigger inference explicitly since it no longer runs automatically
-        container.read(
+        testContainer.read(
           triggerNewInferenceProvider((
             entityId: 'test-entity',
             promptId: 'prompt-1',
@@ -556,7 +558,7 @@ void main() {
         // aiConfigByIdProvider returns null → _performInference throws
         // 'Invalid prompt configuration', and the catch-block's second
         // config lookup also gets null so no status update is attempted.
-        container = ProviderContainer(
+        final testContainer = ProviderContainer(
           overrides: [
             unifiedAiInferenceRepositoryProvider.overrideWithValue(
               mockRepository,
@@ -566,8 +568,9 @@ void main() {
             ).overrideWith((ref) => Future.value()),
           ],
         );
+        containersToDispose.add(testContainer);
 
-        final subscription = container.listen(
+        final subscription = testContainer.listen(
           unifiedAiControllerProvider((
             entityId: 'test-entity',
             promptId: 'missing-prompt',
@@ -578,7 +581,7 @@ void main() {
           fireImmediately: true,
         );
 
-        container.read(
+        testContainer.read(
           triggerNewInferenceProvider((
             entityId: 'test-entity',
             promptId: 'missing-prompt',

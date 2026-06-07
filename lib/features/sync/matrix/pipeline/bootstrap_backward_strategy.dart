@@ -48,8 +48,10 @@ Future<BootstrapResult> collectHistoryForBootstrapImpl({
   num? untilTimestamp,
   Duration? overallTimeout,
   int boundaryContinuationCap = 5,
+  DateTime Function()? now,
 }) async {
-  final start = DateTime.now();
+  final nowFn = now ?? DateTime.now;
+  final start = nowFn();
   final timeline = await room.getTimeline(limit: pageSize);
   var pageIndex = 0;
   var totalEventsSoFar = 0;
@@ -65,7 +67,7 @@ Future<BootstrapResult> collectHistoryForBootstrapImpl({
   try {
     while (true) {
       if (overallTimeout != null &&
-          DateTime.now().difference(start) >= overallTimeout) {
+          nowFn().difference(start) >= overallTimeout) {
         stopReason = BootstrapStopReason.error;
         break;
       }
@@ -110,7 +112,7 @@ Future<BootstrapResult> collectHistoryForBootstrapImpl({
           totalEventsSoFar: totalEventsSoFar,
           oldestTimestampSoFar: oldestTsSoFar,
           serverHasMore: timeline.canRequestHistory,
-          elapsed: DateTime.now().difference(start),
+          elapsed: nowFn().difference(start),
         );
         final shouldContinue = await sink.onPage(page, info);
         pageIndex++;

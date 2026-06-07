@@ -8,6 +8,7 @@ import 'package:lotti/features/design_system/components/search/design_system_sea
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -274,149 +275,80 @@ void main() {
     });
   });
 
-  group("FlagsPage — What's New flag", () {
-    testWidgets('renders the whats-new flag with its localized title', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
-
-      final context = tester.element(find.byType(FlagsPage));
-      expect(
-        find.text(context.messages.configFlagEnableWhatsNew),
-        findsOneWidget,
-      );
-      expect(
-        find.text(context.messages.configFlagEnableWhatsNewDescription),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('uses the new-releases icon for the whats-new row', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
-
-      // The icon is shared with the in-pane What's New tree leaf, so
-      // the visual language stays consistent between sidebar and
-      // toggle row.
-      expect(find.byIcon(Icons.new_releases_outlined), findsAtLeastNWidgets(1));
-    });
-
-    testWidgets('toggle persists the whats-new flag via PersistenceLogic', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(const FlagsPage()),
-      );
-      await tester.pump(const Duration(milliseconds: 100));
-
-      final context = tester.element(find.byType(FlagsPage));
-      final whatsNewItem = find.widgetWithText(
-        DesignSystemListItem,
-        context.messages.configFlagEnableWhatsNew,
-      );
-      // The whats-new row sits toward the bottom of the 12-row list and
-      // is offscreen under the testable wrapper's bounded
-      // SingleChildScrollView. `ensureVisible` walks the target's
-      // ancestor chain to find the right scrollable and drives the
-      // scroll for us — `scrollUntilVisible` can't pick a single
-      // scrollable when the page nests several.
-      await tester.ensureVisible(whatsNewItem);
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.tap(
-        find.descendant(of: whatsNewItem, matching: find.byType(Switch)),
-      );
-      await tester.pump();
-
-      const expected = ConfigFlag(
-        name: enableWhatsNewFlag,
-        description: "Enable What's New feature?",
-        status: true,
-      );
-      verify(() => mockPersistenceLogic.setConfigFlag(expected)).called(1);
-    });
-  });
-
-  group('FlagsPage — fork healing flag', () {
-    testWidgets(
-      'renders the fork-healing flag with localized title, description, and '
-      'merge icon',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final context = tester.element(find.byType(FlagsPage));
-        await tester.enterText(
-          find.byType(DesignSystemSearch),
-          context.messages.configFlagEnableForkHealing,
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final item = find.widgetWithText(
-          DesignSystemListItem,
-          context.messages.configFlagEnableForkHealing,
-        );
-        expect(item, findsOneWidget);
-        expect(
-          find.text(context.messages.configFlagEnableForkHealingDescription),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: item,
-            matching: find.byIcon(Icons.call_merge_rounded),
+  // One parameterized block per feature flag row: render (localized title,
+  // description, icon) and, where applicable, toggle persistence. Adding a
+  // new flag means adding one table entry, not a new copy-pasted group.
+  group('FlagsPage — per-flag rows (parameterized)', () {
+    final flagRowCases =
+        <
+          ({
+            String name,
+            String Function(AppLocalizations m) title,
+            String Function(AppLocalizations m) description,
+            IconData icon,
+            ConfigFlag? expectedToggle,
+          })
+        >[
+          (
+            name: 'whats-new',
+            title: (m) => m.configFlagEnableWhatsNew,
+            description: (m) => m.configFlagEnableWhatsNewDescription,
+            icon: Icons.new_releases_outlined,
+            expectedToggle: const ConfigFlag(
+              name: enableWhatsNewFlag,
+              description: "Enable What's New feature?",
+              status: true,
+            ),
           ),
-          findsOneWidget,
-        );
-      },
-    );
-  });
-
-  group('FlagsPage — AI summary TTS flag', () {
-    testWidgets(
-      'renders the AI summary TTS flag with localized title, description, '
-      'and volume icon',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final context = tester.element(find.byType(FlagsPage));
-        await tester.enterText(
-          find.byType(DesignSystemSearch),
-          context.messages.configFlagEnableAiSummaryTts,
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final ttsItem = find.widgetWithText(
-          DesignSystemListItem,
-          context.messages.configFlagEnableAiSummaryTts,
-        );
-        expect(ttsItem, findsOneWidget);
-        expect(
-          find.text(context.messages.configFlagEnableAiSummaryTtsDescription),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: ttsItem,
-            matching: find.byIcon(Icons.volume_up_rounded),
+          (
+            name: 'fork-healing',
+            title: (m) => m.configFlagEnableForkHealing,
+            description: (m) => m.configFlagEnableForkHealingDescription,
+            icon: Icons.call_merge_rounded,
+            expectedToggle: null,
           ),
-          findsOneWidget,
-        );
-      },
-    );
+          (
+            name: 'ai-summary-tts',
+            title: (m) => m.configFlagEnableAiSummaryTts,
+            description: (m) => m.configFlagEnableAiSummaryTtsDescription,
+            icon: Icons.volume_up_rounded,
+            expectedToggle: const ConfigFlag(
+              name: enableAiSummaryTtsFlag,
+              description: 'Enable local AI summary playback?',
+              status: true,
+            ),
+          ),
+          (
+            name: 'sync-activity-indicator',
+            title: (m) => m.configFlagShowSyncActivityIndicator,
+            description: (m) =>
+                m.configFlagShowSyncActivityIndicatorDescription,
+            icon: Icons.network_check_rounded,
+            expectedToggle: const ConfigFlag(
+              name: showSyncActivityIndicatorFlag,
+              description: 'Show live sync activity in the sidebar.',
+              status: true,
+            ),
+          ),
+          (
+            name: 'sidebar-wake-queue',
+            title: (m) => m.configFlagShowSidebarWakeQueue,
+            description: (m) => m.configFlagShowSidebarWakeQueueDescription,
+            icon: Icons.alarm_rounded,
+            expectedToggle: const ConfigFlag(
+              name: showSidebarWakeQueueFlag,
+              description: 'Show the inline Wake Queue in the sidebar.',
+              status: true,
+            ),
+          ),
+        ];
 
-    testWidgets('toggling persists the AI summary TTS flag', (tester) async {
+    // Pumps the page and narrows the list to the row via the search bar,
+    // so offscreen rows need no scrollable-disambiguation gymnastics.
+    Future<Finder> pumpAndFindRow(
+      WidgetTester tester,
+      String Function(AppLocalizations m) title,
+    ) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const FlagsPage()),
       );
@@ -425,157 +357,55 @@ void main() {
       final context = tester.element(find.byType(FlagsPage));
       await tester.enterText(
         find.byType(DesignSystemSearch),
-        context.messages.configFlagEnableAiSummaryTts,
+        title(context.messages),
       );
       await tester.pump(const Duration(milliseconds: 100));
 
-      final ttsItem = find.widgetWithText(
+      return find.widgetWithText(
         DesignSystemListItem,
-        context.messages.configFlagEnableAiSummaryTts,
+        title(context.messages),
       );
-      await tester.tap(
-        find.descendant(of: ttsItem, matching: find.byType(Switch)),
+    }
+
+    for (final flagCase in flagRowCases) {
+      testWidgets(
+        'renders the ${flagCase.name} row with localized title, '
+        'description, and icon',
+        (tester) async {
+          final item = await pumpAndFindRow(tester, flagCase.title);
+          final context = tester.element(find.byType(FlagsPage));
+
+          expect(item, findsOneWidget);
+          expect(
+            find.text(flagCase.description(context.messages)),
+            findsOneWidget,
+          );
+          expect(
+            find.descendant(of: item, matching: find.byIcon(flagCase.icon)),
+            findsOneWidget,
+          );
+        },
       );
-      await tester.pump();
 
-      const expected = ConfigFlag(
-        name: enableAiSummaryTtsFlag,
-        description: 'Enable local AI summary playback?',
-        status: true,
-      );
-      verify(() => mockPersistenceLogic.setConfigFlag(expected)).called(1);
-    });
-  });
+      final expectedToggle = flagCase.expectedToggle;
+      if (expectedToggle != null) {
+        testWidgets(
+          'toggling the ${flagCase.name} row persists via PersistenceLogic',
+          (tester) async {
+            final item = await pumpAndFindRow(tester, flagCase.title);
 
-  group('FlagsPage — sync activity indicator flag', () {
-    testWidgets(
-      'renders the sync activity indicator flag with its localized '
-      'title, description, and the network-check icon — covers the per-flag '
-      'arms in _iconForFlag/_titleForFlag/_subtitleForFlag',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
+            await tester.tap(
+              find.descendant(of: item, matching: find.byType(Switch)),
+            );
+            await tester.pump();
 
-        final context = tester.element(find.byType(FlagsPage));
-        final indicatorItem = find.widgetWithText(
-          DesignSystemListItem,
-          context.messages.configFlagShowSyncActivityIndicator,
+            verify(
+              () => mockPersistenceLogic.setConfigFlag(expectedToggle),
+            ).called(1);
+          },
         );
-        await tester.ensureVisible(indicatorItem);
-        await tester.pump(const Duration(milliseconds: 100));
-        expect(indicatorItem, findsOneWidget);
-        expect(
-          find.text(
-            context.messages.configFlagShowSyncActivityIndicatorDescription,
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: indicatorItem,
-            matching: find.byIcon(Icons.network_check_rounded),
-          ),
-          findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets(
-      'toggling persists the sync activity indicator flag via '
-      'PersistenceLogic',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final context = tester.element(find.byType(FlagsPage));
-        final indicatorItem = find.widgetWithText(
-          DesignSystemListItem,
-          context.messages.configFlagShowSyncActivityIndicator,
-        );
-        await tester.ensureVisible(indicatorItem);
-        await tester.pump(const Duration(milliseconds: 100));
-        await tester.tap(
-          find.descendant(of: indicatorItem, matching: find.byType(Switch)),
-        );
-        await tester.pump();
-
-        const expected = ConfigFlag(
-          name: showSyncActivityIndicatorFlag,
-          description: 'Show live sync activity in the sidebar.',
-          status: true,
-        );
-        verify(() => mockPersistenceLogic.setConfigFlag(expected)).called(1);
-      },
-    );
-  });
-
-  group('FlagsPage — sidebar wake queue flag', () {
-    testWidgets(
-      'renders the sidebar wake queue flag with its localized title, '
-      'description, and the alarm icon — covers the per-flag arms in '
-      '_iconForFlag/_titleForFlag/_subtitleForFlag',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final context = tester.element(find.byType(FlagsPage));
-        final wakesItem = find.widgetWithText(
-          DesignSystemListItem,
-          context.messages.configFlagShowSidebarWakeQueue,
-        );
-        await tester.ensureVisible(wakesItem);
-        await tester.pump(const Duration(milliseconds: 100));
-        expect(wakesItem, findsOneWidget);
-        expect(
-          find.text(
-            context.messages.configFlagShowSidebarWakeQueueDescription,
-          ),
-          findsOneWidget,
-        );
-        expect(
-          find.descendant(
-            of: wakesItem,
-            matching: find.byIcon(Icons.alarm_rounded),
-          ),
-          findsOneWidget,
-        );
-      },
-    );
-
-    testWidgets(
-      'toggling persists the sidebar wake queue flag via PersistenceLogic',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(const FlagsPage()),
-        );
-        await tester.pump(const Duration(milliseconds: 100));
-
-        final context = tester.element(find.byType(FlagsPage));
-        final wakesItem = find.widgetWithText(
-          DesignSystemListItem,
-          context.messages.configFlagShowSidebarWakeQueue,
-        );
-        await tester.ensureVisible(wakesItem);
-        await tester.pump(const Duration(milliseconds: 100));
-        await tester.tap(
-          find.descendant(of: wakesItem, matching: find.byType(Switch)),
-        );
-        await tester.pump();
-
-        const expected = ConfigFlag(
-          name: showSidebarWakeQueueFlag,
-          description: 'Show the inline Wake Queue in the sidebar.',
-          status: true,
-        );
-        verify(() => mockPersistenceLogic.setConfigFlag(expected)).called(1);
-      },
-    );
+      }
+    }
   });
 
   group('FlagsPage — search bar', () {

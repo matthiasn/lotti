@@ -722,6 +722,58 @@ void main() {
       expect(allContent, contains('Actual response'));
     });
 
+    test('null or empty thinking fields add no think tags', () async {
+      final messages = [
+        const ChatCompletionMessage.user(
+          content: ChatCompletionUserMessageContent.string('Test'),
+        ),
+      ];
+
+      // One chunk with thinking explicitly null, one with an empty string —
+      // neither may open a <think> block.
+      final chunks = [
+        '{"message": {"thinking": null, "content": "First"}}',
+        '{"message": {"thinking": "", "content": " second"}}',
+        '{"done": true}',
+      ];
+
+      final mockResponse = MockStreamedResponse();
+      when(() => mockResponse.statusCode).thenReturn(200);
+      when(() => mockResponse.stream).thenAnswer(
+        (_) => http.ByteStream(
+          Stream.fromIterable(chunks.map((c) => utf8.encode('$c\n'))),
+        ),
+      );
+      when(
+        () => mockHttpClient.send(any()),
+      ).thenAnswer((_) async => mockResponse);
+
+      final provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2026, 3, 15),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+
+      final events = await repository
+          .generateTextWithMessages(
+            messages: messages,
+            model: 'test-model',
+            temperature: 0.7,
+            provider: provider,
+          )
+          .toList();
+      final allContent = events
+          .map((e) => e.choices?.first.delta?.content ?? '')
+          .join();
+
+      expect(allContent, 'First second');
+      expect(allContent, isNot(contains('<think>')));
+      expect(allContent, isNot(contains('</think>')));
+    });
+
     test('should handle tool messages correctly', () async {
       final messages = [
         const ChatCompletionMessage.tool(

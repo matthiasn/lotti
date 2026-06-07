@@ -71,6 +71,49 @@ void main() {
       expect(changes, contains('agentic'));
     });
 
+    testWidgets('fires onSearchPressed with the current query on submit', (
+      tester,
+    ) async {
+      final pressed = <String>[];
+      await pump(
+        tester,
+        header: buildHeader(
+          query: 'agentic',
+          onSearchPressed: pressed.add,
+        ),
+      );
+
+      // The leading search action button forwards the controller text.
+      await tester.tap(find.byIcon(Icons.search_rounded));
+      await tester.pump();
+
+      expect(pressed, ['agentic']);
+    });
+
+    testWidgets('fires onSearchCleared when the clear button is tapped', (
+      tester,
+    ) async {
+      var cleared = 0;
+      final changes = <String>[];
+      await pump(
+        tester,
+        header: buildHeader(
+          query: 'agentic',
+          onSearchCleared: () => cleared++,
+          onSearchChanged: changes.add,
+        ),
+      );
+
+      // A non-empty query exposes the cancel affordance.
+      await tester.tap(find.byIcon(Icons.cancel_rounded));
+      await tester.pump();
+
+      expect(cleared, 1);
+      // Clearing also resets the text through onChanged('').
+      expect(changes, contains(''));
+      expect(find.text('agentic'), findsNothing);
+    });
+
     testWidgets('fires onFilterPressed when the filter icon is tapped', (
       tester,
     ) async {

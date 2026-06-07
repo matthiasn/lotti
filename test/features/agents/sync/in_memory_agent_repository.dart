@@ -14,6 +14,14 @@ import '../../../mocks/mocks.dart';
 class InMemoryAgentRepository extends MockAgentRepository {
   final Map<String, AgentDomainEntity> _entities = {};
   final Map<String, AgentLink> _links = {};
+  final Map<String, int> _entityWrites = {};
+
+  /// All stored entities (any type), for tests that need raw access.
+  List<AgentDomainEntity> get entities => _entities.values.toList();
+
+  /// How many times [upsertEntity] was called for [id] — lets tests prove a
+  /// content-addressed write was skipped rather than idempotently repeated.
+  int entityWriteCount(String id) => _entityWrites[id] ?? 0;
 
   List<AgentMessageEntity> get messages =>
       _entities.values.whereType<AgentMessageEntity>().toList();
@@ -37,6 +45,7 @@ class InMemoryAgentRepository extends MockAgentRepository {
 
   @override
   Future<void> upsertEntity(AgentDomainEntity entity) async {
+    _entityWrites[entity.id] = (_entityWrites[entity.id] ?? 0) + 1;
     _entities[entity.id] = entity;
   }
 

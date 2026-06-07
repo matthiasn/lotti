@@ -246,12 +246,19 @@ void main() {
         ),
       );
 
-      // Check for SizedBox spacers
-      final sizedBoxes = find.byType(SizedBox);
-
-      // Should have spacing between icon and title (16)
-      // and between title and description (8)
-      expect(sizedBoxes, findsAtLeastNWidgets(2));
+      // Assert the actual spacer heights: 16 between icon and title,
+      // 8 between title and description.
+      final spacerHeights = tester
+          .widgetList<SizedBox>(
+            find.descendant(
+              of: find.byType(EmptyStateWidget),
+              matching: find.byType(SizedBox),
+            ),
+          )
+          .map((box) => box.height)
+          .whereType<double>()
+          .toList();
+      expect(spacerHeights, containsAll(<double>[16, 8]));
     });
   });
 }

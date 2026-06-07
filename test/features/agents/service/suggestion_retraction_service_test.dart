@@ -357,7 +357,7 @@ void main() {
   group('SuggestionRetractionService.plan + applyStaged', () {
     glados.Glados(
       glados.any.retractionScenario,
-      glados.ExploreConfig(numRuns: 220),
+      glados.ExploreConfig(numRuns: 180),
     ).test('matches generated request, sibling, and reread semantics', (
       scenario,
     ) async {

@@ -77,9 +77,14 @@ void main() {
     });
 
     /// Pumps the page with the standard repository override.
+    ///
+    /// [createMode] omits the categoryId (create flow); [settle] follows up
+    /// with the standard pump + 350 ms animation pump most tests need.
     Future<void> pumpCategoryDetailsPage(
       WidgetTester tester, {
       List<Override> extraOverrides = const [],
+      bool createMode = false,
+      bool settle = false,
     }) async {
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -87,9 +92,15 @@ void main() {
             categoryRepositoryProvider.overrideWithValue(mockRepository),
             ...extraOverrides,
           ],
-          child: CategoryDetailsPage(categoryId: testCategoryId),
+          child: createMode
+              ? const CategoryDetailsPage()
+              : CategoryDetailsPage(categoryId: testCategoryId),
         ),
       );
+      if (settle) {
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+      }
     }
 
     testWidgets(
@@ -163,10 +174,12 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 350));
 
-        // The page should handle the error gracefully
-        // It might show loading or might handle the error differently
-        // Just verify the page doesn't crash
-        expect(find.byType(CategoryDetailsPage), findsOneWidget);
+        // The controller's onError handler clears isLoading with a null
+        // category, so the page lands on the not-found scaffold instead of
+        // hanging on the loading spinner (ErrorStateWidget only renders in
+        // the loaded-form path, which an initial-load error never reaches).
+        expect(find.textContaining('not found'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
       });
 
       testWidgets('handles null category state correctly', (tester) async {
@@ -670,14 +683,7 @@ void main() {
       });
 
       testWidgets('create mode renders without null errors', (tester) async {
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoryDetailsPage(), // No categoryId = create mode
-          ),
-        );
+        await pumpCategoryDetailsPage(tester, createMode: true);
 
         // Should display create mode UI without errors
         // Use partial text matching since we don't know exact translations
@@ -781,17 +787,7 @@ void main() {
           (_) async => CategoryTestUtils.createTestCategory(),
         );
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoryDetailsPage(),
-          ),
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
+        await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
         // Enter category name
         await tester.enterText(find.byType(TextField), 'New Category');
@@ -857,17 +853,7 @@ void main() {
       testWidgets('create mode shows an error toast for an empty name', (
         tester,
       ) async {
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoryDetailsPage(),
-          ),
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
+        await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
         // Leave the name field empty and tap Create.
         await tester.tap(find.byType(LottiPrimaryButton));
@@ -902,17 +888,7 @@ void main() {
           ),
         ).thenThrow(Exception('Creation failed'));
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoryDetailsPage(),
-          ),
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
+        await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
         await tester.enterText(find.byType(TextField), 'New Category');
         await tester.pump();
@@ -1009,17 +985,7 @@ void main() {
         String? beamedTo;
         beamToNamedOverride = (path) => beamedTo = path;
 
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: const CategoryDetailsPage(),
-          ),
-        );
-
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
+        await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
         await tester.tap(
           find.widgetWithIcon(IconButton, Icons.arrow_back_rounded),
@@ -1036,17 +1002,7 @@ void main() {
           String? beamedTo;
           beamToNamedOverride = (path) => beamedTo = path;
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: const CategoryDetailsPage(),
-            ),
-          );
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+          await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
           final cancelButton = find.byType(LottiSecondaryButton);
           await tester.ensureVisible(cancelButton);
@@ -1061,17 +1017,7 @@ void main() {
       testWidgets(
         'create mode shows Private and Active switch tiles as disabled',
         (tester) async {
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: const CategoryDetailsPage(),
-            ),
-          );
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+          await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
           // Two disabled switch tiles (Private, Active) visible in create mode
           final switchFields = tester.widgetList<LottiSwitchField>(
@@ -1136,28 +1082,23 @@ void main() {
             (_) => Stream.value(category),
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-                configFlagProvider.overrideWith(
-                  (ref, flagName) => flagName == enableProjectsFlag
-                      ? Stream.value(true)
-                      : Stream.value(false),
-                ),
-                inferenceProfileControllerProvider.overrideWith(
-                  _FakeProfileController.new,
-                ),
-                agentTemplatesProvider.overrideWith(
-                  (ref) async => const [],
-                ),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
+          await pumpCategoryDetailsPage(
+            tester,
+            settle: true,
+            extraOverrides: [
+              configFlagProvider.overrideWith(
+                (ref, flagName) => flagName == enableProjectsFlag
+                    ? Stream.value(true)
+                    : Stream.value(false),
+              ),
+              inferenceProfileControllerProvider.overrideWith(
+                _FakeProfileController.new,
+              ),
+              agentTemplatesProvider.overrideWith(
+                (ref) async => const [],
+              ),
+            ],
           );
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
 
           // With a tall viewport all SliverList items are on-screen.
           expect(
@@ -1181,26 +1122,21 @@ void main() {
             (_) => Stream.value(category),
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-                configFlagProvider.overrideWith(
-                  (ref, flagName) => Stream.value(false),
-                ),
-                inferenceProfileControllerProvider.overrideWith(
-                  _FakeProfileController.new,
-                ),
-                agentTemplatesProvider.overrideWith(
-                  (ref) async => const [],
-                ),
-              ],
-              child: CategoryDetailsPage(categoryId: testCategoryId),
-            ),
+          await pumpCategoryDetailsPage(
+            tester,
+            settle: true,
+            extraOverrides: [
+              configFlagProvider.overrideWith(
+                (ref, flagName) => Stream.value(false),
+              ),
+              inferenceProfileControllerProvider.overrideWith(
+                _FakeProfileController.new,
+              ),
+              agentTemplatesProvider.overrideWith(
+                (ref) async => const [],
+              ),
+            ],
           );
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
 
           expect(
             find.byType(CategoryProjectsSection),
@@ -1390,17 +1326,7 @@ void main() {
       testWidgets(
         'icon picker in create mode updates selected icon display',
         (tester) async {
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: const CategoryDetailsPage(),
-            ),
-          );
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+          await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
           // Initially shows "Choose an icon" hint text
           expect(
@@ -1444,17 +1370,7 @@ void main() {
         'icon picker in create mode — dismissed with no selection keeps '
         'the existing display name',
         (tester) async {
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: const CategoryDetailsPage(),
-            ),
-          );
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+          await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
           expect(
             find.text(CategoryIconStrings.chooseIconText),
@@ -1710,17 +1626,7 @@ void main() {
             (_) async => CategoryTestUtils.createTestCategory(),
           );
 
-          await tester.pumpWidget(
-            RiverpodWidgetTestBench(
-              overrides: [
-                categoryRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: const CategoryDetailsPage(),
-            ),
-          );
-
-          await tester.pump();
-          await tester.pump(const Duration(milliseconds: 350));
+          await pumpCategoryDetailsPage(tester, createMode: true, settle: true);
 
           // Open the color picker (default selected color is null → the
           // picker seeds at Colors.red).

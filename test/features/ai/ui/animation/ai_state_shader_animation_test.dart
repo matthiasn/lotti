@@ -30,20 +30,29 @@ void main() {
       expect(thinkingProgram, isA<ui.FragmentProgram>());
     });
 
-    testWidgets('cache loads and reuses runtime-effect programs', (
+    testWidgets('cache returns the identical program for any call count', (
       tester,
     ) async {
-      final firstVoiceProgram =
-          await AiStateShaderProgramCache.loadVoiceInput();
-      final secondVoiceProgram =
-          await AiStateShaderProgramCache.loadVoiceInput();
-      final firstThinkingProgram =
-          await AiStateShaderProgramCache.loadThinkingLine();
-      final secondThinkingProgram =
-          await AiStateShaderProgramCache.loadThinkingLine();
+      // Exhaustive over 2..9 calls per fresh cache — every call must return
+      // the very same memoised object, not merely an equal one.
+      for (var n = 2; n <= 9; n++) {
+        AiStateShaderProgramCache.reset();
+        final voice = [
+          for (var i = 0; i < n; i++)
+            await AiStateShaderProgramCache.loadVoiceInput(),
+        ];
+        final thinking = [
+          for (var i = 0; i < n; i++)
+            await AiStateShaderProgramCache.loadThinkingLine(),
+        ];
 
-      expect(identical(firstVoiceProgram, secondVoiceProgram), isTrue);
-      expect(identical(firstThinkingProgram, secondThinkingProgram), isTrue);
+        for (final program in voice.skip(1)) {
+          expect(identical(program, voice.first), isTrue, reason: 'n=$n');
+        }
+        for (final program in thinking.skip(1)) {
+          expect(identical(program, thinking.first), isTrue, reason: 'n=$n');
+        }
+      }
     });
   });
 
@@ -103,6 +112,35 @@ void main() {
         isA<AiVoiceInputShaderPainter>(),
       );
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('wraps output in Semantics with the provided label', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        const _TestSurface(
+          child: AiVoiceInputShader(
+            dbfs: -24,
+            size: 160,
+            primaryColor: Color(0xFF63D7C7),
+            secondaryColor: Color(0xFFE9EEF2),
+            backgroundColor: Color(0x00000000),
+            timeOverride: 1,
+            programLoader: _failingProgramLoader,
+            semanticsLabel: 'Voice level indicator',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(
+        find.bySemanticsLabel('Voice level indicator'),
+        findsOneWidget,
+      );
+
+      semantics.dispose();
     });
 
     testWidgets('renders a deterministic fallback when shader loading fails', (
@@ -385,14 +423,24 @@ void main() {
   });
 
   group('AI state shader painters', () {
+    // One shared load per program instead of per-test asset reads.
+    late ui.FragmentProgram voiceProgram;
+    late ui.FragmentProgram thinkingProgram;
+
+    setUpAll(() async {
+      voiceProgram = await ui.FragmentProgram.fromAsset(
+        AiStateShaderAssets.voiceInput,
+      );
+      thinkingProgram = await ui.FragmentProgram.fromAsset(
+        AiStateShaderAssets.thinkingLine,
+      );
+    });
+
     testWidgets('paint voice shader and compare repaint inputs', (
       _,
     ) async {
-      final program = await ui.FragmentProgram.fromAsset(
-        AiStateShaderAssets.voiceInput,
-      );
       final painter = AiVoiceInputShaderPainter(
-        program: program,
+        program: voiceProgram,
         dbfs: -18,
         dbfsFloor: -80,
         time: 1.4,
@@ -405,7 +453,7 @@ void main() {
         backgroundColor: const Color(0x00000000),
       );
       final samePainter = AiVoiceInputShaderPainter(
-        program: program,
+        program: voiceProgram,
         dbfs: -18,
         dbfsFloor: -80,
         time: 1.4,
@@ -418,7 +466,7 @@ void main() {
         backgroundColor: const Color(0x00000000),
       );
       final changedPainter = AiVoiceInputShaderPainter(
-        program: program,
+        program: voiceProgram,
         dbfs: -12,
         dbfsFloor: -80,
         time: 1.4,
@@ -440,11 +488,8 @@ void main() {
     testWidgets('paint thinking shader and compare repaint inputs', (
       _,
     ) async {
-      final program = await ui.FragmentProgram.fromAsset(
-        AiStateShaderAssets.thinkingLine,
-      );
       final painter = AiThinkingLineShaderPainter(
-        program: program,
+        program: thinkingProgram,
         time: 2,
         speed: 2.3,
         amplitude: 0.7,
@@ -457,7 +502,7 @@ void main() {
         backgroundColor: const Color(0x00000000),
       );
       final samePainter = AiThinkingLineShaderPainter(
-        program: program,
+        program: thinkingProgram,
         time: 2,
         speed: 2.3,
         amplitude: 0.7,
@@ -470,7 +515,7 @@ void main() {
         backgroundColor: const Color(0x00000000),
       );
       final changedPainter = AiThinkingLineShaderPainter(
-        program: program,
+        program: thinkingProgram,
         time: 3,
         speed: 2.3,
         amplitude: 0.7,
@@ -483,7 +528,7 @@ void main() {
         backgroundColor: const Color(0x00000000),
       );
       final changedOpacityPainter = AiThinkingLineShaderPainter(
-        program: program,
+        program: thinkingProgram,
         time: 2,
         speed: 2.3,
         amplitude: 0.7,

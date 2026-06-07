@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -15,6 +16,24 @@ import 'package:lotti/utils/image_utils.dart';
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
+
+/// Pumps a [CoverArtThumbnail] inside the standard ProviderScope +
+/// MaterialApp + Scaffold wrapper and advances past the image load frame.
+Future<void> pumpThumbnail(
+  WidgetTester tester,
+  Widget thumbnail, {
+  List<Override> overrides = const [],
+}) async {
+  await tester.pumpWidget(
+    ProviderScope(
+      overrides: overrides,
+      child: MaterialApp(
+        home: Scaffold(body: thumbnail),
+      ),
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 100));
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -100,22 +119,14 @@ void main() {
         // Verify file exists before test
         expect(File(filePath).existsSync(), isTrue);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1',
-                  size: 80,
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-1',
+            size: 80,
           ),
+          overrides: [createEntryControllerOverride(image)],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         // Should render the image structure: SizedBox > ClipRect > FittedBox > Image.file
         expect(find.byType(ClipRect), findsOneWidget);
@@ -127,23 +138,15 @@ void main() {
         final image = buildJournalImage();
         createImageFile(image);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1',
-                  size: 80,
-                  cropX: 0, // Left edge: (0 * 2) - 1 = -1
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-1',
+            size: 80,
+            cropX: 0, // Left edge: (0 * 2) - 1 = -1
           ),
+          overrides: [createEntryControllerOverride(image)],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
         expect(fittedBox.alignment, Alignment.centerLeft);
@@ -154,23 +157,15 @@ void main() {
         final image = buildJournalImage();
         createImageFile(image);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1',
-                  size: 80,
-                  // cropX defaults to 0.5: (0.5 * 2) - 1 = 0
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-1',
+            size: 80,
+            // cropX defaults to 0.5: (0.5 * 2) - 1 = 0
           ),
+          overrides: [createEntryControllerOverride(image)],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
         expect(fittedBox.alignment, Alignment.center);
@@ -180,23 +175,15 @@ void main() {
         final image = buildJournalImage();
         createImageFile(image);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1',
-                  size: 80,
-                  cropX: 1, // Right edge: (1 * 2) - 1 = 1
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-1',
+            size: 80,
+            cropX: 1, // Right edge: (1 * 2) - 1 = 1
           ),
+          overrides: [createEntryControllerOverride(image)],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
         expect(fittedBox.alignment, Alignment.centerRight);
@@ -208,23 +195,15 @@ void main() {
         final image = buildJournalImage();
         createImageFile(image);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1',
-                  size: 80,
-                  cropX: 0.25, // (0.25 * 2) - 1 = -0.5
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-1',
+            size: 80,
+            cropX: 0.25, // (0.25 * 2) - 1 = -0.5
           ),
+          overrides: [createEntryControllerOverride(image)],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         final fittedBox = tester.widget<FittedBox>(find.byType(FittedBox));
         expect(fittedBox.alignment, const Alignment(-0.5, 0));
@@ -235,22 +214,14 @@ void main() {
         final image = buildJournalImage();
         createImageFile(image);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1',
-                  size: testSize,
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-1',
+            size: testSize,
           ),
+          overrides: [createEntryControllerOverride(image)],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         // Find the outer SizedBox (the one wrapping the image content)
         final sizedBoxes = tester.widgetList<SizedBox>(find.byType(SizedBox));
@@ -276,22 +247,14 @@ void main() {
           entryText: const EntryText(plainText: 'Not an image'),
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(textEntry),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'text-1',
-                  size: 80,
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'text-1',
+            size: 80,
           ),
+          overrides: [createEntryControllerOverride(textEntry)],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         // Should NOT render ClipRect/FittedBox/Image
         expect(find.byType(ClipRect), findsNothing);
@@ -329,22 +292,14 @@ void main() {
           entryText: const EntryText(plainText: 'Task text'),
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(task),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'task-1',
-                  size: 60,
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'task-1',
+            size: 60,
           ),
+          overrides: [createEntryControllerOverride(task)],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         // Should NOT render image widgets
         expect(find.byType(ClipRect), findsNothing);
@@ -367,22 +322,14 @@ void main() {
           imageDirectory: '/missing/',
         );
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1',
-                  size: 80,
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-1',
+            size: 80,
           ),
+          overrides: [createEntryControllerOverride(image)],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         // Should NOT render image widgets since file doesn't exist
         expect(find.byType(ClipRect), findsNothing);
@@ -402,22 +349,14 @@ void main() {
           final image = buildJournalImage();
           // Note: NOT calling createImageFile - file doesn't exist
 
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                createEntryControllerOverride(image),
-              ],
-              child: const MaterialApp(
-                home: Scaffold(
-                  body: CoverArtThumbnail(
-                    imageId: 'image-1',
-                    size: 50,
-                  ),
-                ),
-              ),
+          await pumpThumbnail(
+            tester,
+            const CoverArtThumbnail(
+              imageId: 'image-1',
+              size: 50,
             ),
+            overrides: [createEntryControllerOverride(image)],
           );
-          await tester.pump(const Duration(milliseconds: 100));
 
           // File doesn't exist, so should show fallback
           expect(find.byType(Image), findsNothing);
@@ -439,45 +378,33 @@ void main() {
         createImageFile(image2);
 
         // Start with image-1
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image1),
-              createEntryControllerOverride(image2),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1',
-                  size: 80,
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-1',
+            size: 80,
           ),
+          overrides: [
+            createEntryControllerOverride(image1),
+            createEntryControllerOverride(image2),
+          ],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         // Verify image-1 is showing
         expect(find.byType(Image), findsOneWidget);
 
         // Change to image-2 - this triggers didUpdateWidget -> resetFileWatcher
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image1),
-              createEntryControllerOverride(image2),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-2',
-                  size: 80,
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-2',
+            size: 80,
           ),
+          overrides: [
+            createEntryControllerOverride(image1),
+            createEntryControllerOverride(image2),
+          ],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         // After imageId change, widget should still render correctly
         expect(find.byType(CoverArtThumbnail), findsOneWidget);
@@ -490,44 +417,28 @@ void main() {
         final image = buildJournalImage();
         createImageFile(image);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1',
-                  size: 80,
-                  cropX: 0,
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-1',
+            size: 80,
+            cropX: 0,
           ),
+          overrides: [createEntryControllerOverride(image)],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(Image), findsOneWidget);
 
         // Change size and cropX but keep same imageId
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1', // Same imageId
-                  size: 100, // Different size
-                  cropX: 1, // Different cropX
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-1', // Same imageId
+            size: 100, // Different size
+            cropX: 1, // Different cropX
           ),
+          overrides: [createEntryControllerOverride(image)],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         // Widget should still render correctly
         expect(find.byType(Image), findsOneWidget);
@@ -550,45 +461,33 @@ void main() {
         // Only create file for image1
         createImageFile(image1);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image1),
-              createEntryControllerOverride(image2),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1',
-                  size: 80,
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-1',
+            size: 80,
           ),
+          overrides: [
+            createEntryControllerOverride(image1),
+            createEntryControllerOverride(image2),
+          ],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         // First image should render
         expect(find.byType(Image), findsOneWidget);
 
         // Switch to image2 (file doesn't exist)
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image1),
-              createEntryControllerOverride(image2),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-2',
-                  size: 80,
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-2',
+            size: 80,
           ),
+          overrides: [
+            createEntryControllerOverride(image1),
+            createEntryControllerOverride(image2),
+          ],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         // Should now show fallback (no Image widget)
         expect(find.byType(Image), findsNothing);
@@ -652,22 +551,14 @@ void main() {
 
         for (var i = 0; i < 3; i++) {
           // Mount
-          await tester.pumpWidget(
-            ProviderScope(
-              overrides: [
-                createEntryControllerOverride(image),
-              ],
-              child: const MaterialApp(
-                home: Scaffold(
-                  body: CoverArtThumbnail(
-                    imageId: 'image-1',
-                    size: 80,
-                  ),
-                ),
-              ),
+          await pumpThumbnail(
+            tester,
+            const CoverArtThumbnail(
+              imageId: 'image-1',
+              size: 80,
             ),
+            overrides: [createEntryControllerOverride(image)],
           );
-          await tester.pump(const Duration(milliseconds: 100));
           expect(find.byType(CoverArtThumbnail), findsOneWidget);
 
           // Unmount
@@ -750,22 +641,14 @@ void main() {
         final image = buildJournalImage();
         createImageFile(image);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              createEntryControllerOverride(image),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(
-                body: CoverArtThumbnail(
-                  imageId: 'image-1',
-                  size: 1,
-                ),
-              ),
-            ),
+        await pumpThumbnail(
+          tester,
+          const CoverArtThumbnail(
+            imageId: 'image-1',
+            size: 1,
           ),
+          overrides: [createEntryControllerOverride(image)],
         );
-        await tester.pump(const Duration(milliseconds: 100));
 
         expect(find.byType(CoverArtThumbnail), findsOneWidget);
       });

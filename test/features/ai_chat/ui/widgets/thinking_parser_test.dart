@@ -447,6 +447,31 @@ void main() {
       tags: 'glados',
     );
 
+    // Streaming invariant: cutting the input mid-body (as a streaming
+    // consumer would when re-parsing the accumulated text each frame)
+    // yields an open-ended thinking block containing exactly the body
+    // prefix, with no visible text leaked.
+    Glados2<String, String>(
+      any.safeText,
+      any.safeText,
+      ExploreConfig(numRuns: 120),
+    ).test(
+      'streaming prefix mid-body: open-ended thinking, nothing visible',
+      (String body, String tail) {
+        if (body.trim().isEmpty) return;
+        final cut = body.length ~/ 2;
+        final prefix = '<think>${body.substring(0, cut)}';
+        final result = parseThinking(prefix);
+        expect(
+          result.thinking?.trim(),
+          body.substring(0, cut).trim(),
+          reason: 'prefix="$prefix"',
+        );
+        expect(result.visible.trim(), isEmpty, reason: 'prefix="$prefix"');
+      },
+      tags: 'glados',
+    );
+
     // Invariant: splitThinkingSegments never throws.
     Glados<String>(any.letterOrDigits, ExploreConfig(numRuns: 200)).test(
       'splitThinkingSegments never throws for letter/digit input',

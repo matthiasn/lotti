@@ -49,7 +49,7 @@ class _MetaRow extends StatelessWidget {
           ),
     ];
 
-    return _TrailingAlignedWrap(
+    return TrailingAlignedWrap(
       spacing: tokens.spacing.step3,
       runSpacing: tokens.spacing.step3,
       children: [

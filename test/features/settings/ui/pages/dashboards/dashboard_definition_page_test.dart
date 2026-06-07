@@ -10,8 +10,10 @@ import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
+import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/dev_logger.dart';
@@ -22,6 +24,26 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../../mocks/mocks.dart';
 import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
+
+/// Stubs the measurable lookups every dashboard-definition test needs:
+/// chocolate and water by id, with water as the any() fallback.
+void stubMeasurableDb(MockJournalDb mockJournalDb) {
+  when(
+    () => mockJournalDb.getMeasurableDataTypeById(
+      'f8f55c10-e30b-4bf5-990d-d569ce4867fb',
+    ),
+  ).thenAnswer((_) async => measurableChocolate);
+
+  when(
+    () => mockJournalDb.getMeasurableDataTypeById(
+      '83ebf58d-9cea-4c15-a034-89c84a8b8178',
+    ),
+  ).thenAnswer((_) async => measurableWater);
+
+  when(
+    () => mockJournalDb.getMeasurableDataTypeById(any()),
+  ).thenAnswer((_) async => measurableWater);
+}
 
 void main() {
   final binding = TestWidgetsFlutterBinding.ensureInitialized();
@@ -120,21 +142,7 @@ void main() {
         () => mockPersistenceLogic.upsertDashboardDefinition(any()),
       ).thenAnswer((_) async => 1);
 
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(
-          'f8f55c10-e30b-4bf5-990d-d569ce4867fb',
-        ),
-      ).thenAnswer((_) async => measurableChocolate);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(
-          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer((_) async => measurableWater);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(any()),
-      ).thenAnswer((_) async => measurableWater);
+      stubMeasurableDb(mockJournalDb);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -208,21 +216,7 @@ void main() {
         () => mockPersistenceLogic.upsertDashboardDefinition(any()),
       ).thenAnswer((_) async => 1);
 
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(
-          'f8f55c10-e30b-4bf5-990d-d569ce4867fb',
-        ),
-      ).thenAnswer((_) async => measurableChocolate);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(
-          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer((_) async => measurableWater);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(any()),
-      ).thenAnswer((_) async => measurableWater);
+      stubMeasurableDb(mockJournalDb);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
@@ -263,26 +257,42 @@ void main() {
       expect(getTrimmed(formData, 'name'), testDashboardName);
       expect(getTrimmed(formData, 'description'), testDashboardDescription);
 
-      final measurableFinder = find.text(measurableChocolate.displayName);
-      expect(measurableFinder, findsWidgets);
-
-      await tester.dragUntilVisible(
-        measurableFinder.first,
-        find.byType(SingleChildScrollView),
-        const Offset(0, 50),
+      // Tap the measurable item card deterministically: a coordinate tap on
+      // the text proved flaky in the batched CI run (silent miss behind
+      // warnIfMissed: false when fonts/layout drift across the shared
+      // isolate). Invoke the card ListTile's onTap directly instead.
+      final chocolateTile = tester.widget<ListTile>(
+        find.ancestor(
+          of: find.descendant(
+            of: find.byType(MeasurableItemCard),
+            matching: find.textContaining(measurableChocolate.displayName),
+          ),
+          matching: find.byType(ListTile),
+        ),
       );
+      chocolateTile.onTap!();
+      // Modal open is a route transition — settle until fully mounted.
+      await tester.pumpAndSettle();
 
-      await tester.tap(measurableFinder.first, warnIfMissed: false);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // The aggregation type is not displayed as text in the current widget structure
-      // and the save button may not be visible immediately
-      // Instead, verify that the measurable item is displayed
+      // Tapping the measurement opens the DashboardItemModal with one
+      // ChoiceChip per aggregation type.
+      final context = tester.element(
+        find.byType(DashboardDefinitionPage),
+      );
       expect(
-        find.text(measurableChocolate.displayName),
-        findsWidgets,
+        find.text(context.messages.dashboardAggregationLabel),
+        findsOneWidget,
       );
+
+      // Pick a different aggregation type. The modal pops, the item card
+      // title re-renders with the new aggregation suffix, and the dirty
+      // flag makes the save button appear.
+      await tester.tap(find.text('dailyMax'));
+      // Modal close is a route transition as well — settle it.
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('[dailyMax]'), findsOneWidget);
+      expect(saveButtonFinder, findsOneWidget);
     });
 
     testWidgets('dashboard definition page is displayed with test item, '
@@ -342,21 +352,7 @@ void main() {
       ).thenAnswer((_) async => 1);
 
       // Mock getMeasurableDataTypeById for all possible items
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(
-          'f8f55c10-e30b-4bf5-990d-d569ce4867fb',
-        ),
-      ).thenAnswer((_) async => measurableChocolate);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(
-          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer((_) async => measurableWater);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(any()),
-      ).thenAnswer((_) async => measurableWater);
+      stubMeasurableDb(mockJournalDb);
 
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(

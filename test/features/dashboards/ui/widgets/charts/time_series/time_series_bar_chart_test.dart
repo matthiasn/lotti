@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/widgets/charts/utils.dart';
+import 'package:tinycolor2/tinycolor2.dart';
 
 import '../../../../../../widget_test_utils.dart';
 
@@ -86,6 +87,13 @@ void main() {
       );
 
       expect(find.byType(BarChart), findsOneWidget);
+      // Both observations land as rendered bar groups, not just a frame.
+      final barChart = tester.widget<BarChart>(find.byType(BarChart));
+      final byX = {
+        for (final g in barChart.data.barGroups) g.x: g.barRods.first.toY,
+      };
+      expect(byX[DateTime(2024, 3, 10).millisecondsSinceEpoch], 5.0);
+      expect(byX[DateTime(2024, 3, 20).millisecondsSinceEpoch], 10.0);
     });
 
     testWidgets('wraps chart in a Padding widget', (tester) async {
@@ -295,7 +303,9 @@ void main() {
   });
 
   group('TimeSeriesBarChart — tooltip callbacks', () {
-    testWidgets('getTooltipColor returns a Color', (tester) async {
+    testWidgets('getTooltipColor derives from the desaturated theme primary', (
+      tester,
+    ) async {
       await _pumpChart(
         tester,
         data: [Observation(DateTime(2024, 3, 10), 5)],
@@ -309,7 +319,8 @@ void main() {
       // Pass a BarChartGroupData to satisfy the callback signature.
       final group = barChart.data.barGroups.first;
       final color = tooltipData.getTooltipColor(group);
-      expect(color, isA<Color>());
+      final theme = Theme.of(tester.element(find.byType(BarChart)));
+      expect(color, theme.primaryColor.desaturate());
     });
 
     testWidgets('getTooltipItem formats numeric value with unit', (

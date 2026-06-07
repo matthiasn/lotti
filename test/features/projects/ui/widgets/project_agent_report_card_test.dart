@@ -490,7 +490,10 @@ void main() {
       await tester.tap(find.text('Assign Agent'));
       await tester.pumpAndSettle();
       await tester.tap(find.text(testProfile.name));
-      await tester.pumpAndSettle();
+      // Error path: a plain pump is enough to surface the snackbar and
+      // cannot time out if the failure triggers a lingering animation.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.textContaining('boom'), findsOneWidget);
     });

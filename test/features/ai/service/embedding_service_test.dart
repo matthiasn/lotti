@@ -718,6 +718,43 @@ void main() {
       });
     });
 
+    test(
+      'mixed batch: processes the valid entity ID and skips the invalid '
+      'UUID token',
+      () {
+        fakeAsync((async) {
+          final entry = JournalEntry(
+            meta: _meta(),
+            entryText: const EntryText(plainText: _longText),
+          );
+          stubEntity(entry);
+          stubEmbedding();
+
+          service.start();
+          // Relevant type token + one garbage token + one valid entity id.
+          sendAndProcess(async, {
+            textEntryNotification,
+            'NOT-A-UUID',
+            _entityId,
+          });
+
+          // The valid entity was looked up and embedded…
+          verify(() => mockJournalDb.journalEntityById(_entityId)).called(1);
+          verify(
+            () => mockEmbeddingRepo.embed(
+              input: any(named: 'input'),
+              baseUrl: any(named: 'baseUrl'),
+              model: any(named: 'model'),
+            ),
+          ).called(greaterThanOrEqualTo(1));
+          // …while the non-UUID token never reached the database.
+          verifyNever(() => mockJournalDb.journalEntityById('NOT-A-UUID'));
+
+          stopInZone(async);
+        });
+      },
+    );
+
     test('continues processing after Ollama error', () {
       fakeAsync((async) {
         const entityId2 = 'ffffffff-bbbb-cccc-dddd-eeeeeeeeeeee';

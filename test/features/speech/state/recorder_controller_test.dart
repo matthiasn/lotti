@@ -8,6 +8,7 @@ import 'dart:typed_data';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -603,39 +604,31 @@ void main() {
         expect(state.modalVisible, isFalse);
       });
 
-      test('should handle exceptions and return null', () async {
-        // Arrange
-        final controller = container.read(
-          audioRecorderControllerProvider.notifier,
-        );
+      test(
+        'stop() without an audio note returns null and logs no error',
+        () async {
+          // Arrange
+          final controller = container.read(
+            audioRecorderControllerProvider.notifier,
+          );
 
-        // Act
-        final result = await controller.stop();
+          // Act
+          final result = await controller.stop();
 
-        // Assert
-        expect(result, isNull);
-      });
-
-      test('should log exceptions during stop', () async {
-        // Arrange
-        final controller = container.read(
-          audioRecorderControllerProvider.notifier,
-        );
-
-        // Act - Force an exception by calling stop in test environment
-        await controller.stop();
-
-        // Assert - Since there's no audio note, no exception should be logged
-        // If there was an audio note and repository threw exception, it would be logged
-        verifyNever(
-          () => mockDomainLogger.error(
-            LogDomain.speech,
-            any<Object>(),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-            subDomain: 'recorder_controller',
-          ),
-        );
-      });
+          // Assert — the no-audio-note early exit is silent: null result,
+          // nothing logged. (The exception-logging branch needs an audio
+          // note plus a throwing repository.)
+          expect(result, isNull);
+          verifyNever(
+            () => mockDomainLogger.error(
+              LogDomain.speech,
+              any<Object>(),
+              stackTrace: any<StackTrace>(named: 'stackTrace'),
+              subDomain: 'recorder_controller',
+            ),
+          );
+        },
+      );
     });
   });
 
@@ -959,14 +952,8 @@ void main() {
             ..elapse(const Duration(milliseconds: 100))
             ..flushMicrotasks();
 
-          // Emit multiple amplitude updates to fill the RMS buffer
-          // The VU meter uses a 300ms window with 20ms intervals = 15 samples
-          // We need to send at least 15 samples to fill the buffer
-          for (var i = 0; i < 20; i++) {
-            amplitudeController.add(mockAmplitude);
-            // Allow microtask queue to process
-            async.flushMicrotasks();
-          }
+          // Fill the VU sliding window (300 ms / 20 ms = 15 samples).
+          fillVuBuffer(amplitudeController, mockAmplitude, async);
 
           // Wait for all stream events to be processed
           async
@@ -1902,6 +1889,93 @@ void main() {
       );
     });
 
+    group('stop() without a linked task', () {
+      test('does NOT trigger automatic prompts', () async {
+        final mockPersistence = MockPersistenceLogic();
+        if (!getIt.isRegistered<PersistenceLogic>()) {
+          getIt.registerSingleton<PersistenceLogic>(mockPersistence);
+        }
+
+        when(
+          () => mockPersistence.createMetadata(
+            dateFrom: any(named: 'dateFrom'),
+            dateTo: any(named: 'dateTo'),
+            uuidV5Input: any(named: 'uuidV5Input'),
+            flag: any(named: 'flag'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer(
+          (_) async => Metadata(
+            id: 'no-link-entry-id',
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            updatedAt: DateTime(2024, 3, 15, 10, 30),
+            dateFrom: DateTime(2024, 3, 15, 10, 30),
+            dateTo: DateTime(2024, 3, 15, 10, 30),
+          ),
+        );
+        when(
+          () => mockPersistence.createDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final mockTrigger = MockAutomaticPromptTrigger();
+        final localContainer = ProviderContainer(
+          overrides: [
+            audioRecorderRepositoryProvider.overrideWithValue(
+              mockAudioRecorderRepository,
+            ),
+            playerFactoryProvider.overrideWithValue(() => mockPlayer),
+            automaticPromptTriggerProvider.overrideWithValue(mockTrigger),
+          ],
+        );
+        addTearDown(localContainer.dispose);
+
+        when(
+          () => mockAudioRecorderRepository.hasPermission(),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockAudioRecorderRepository.isPaused(),
+        ).thenAnswer((_) async => false);
+        when(
+          () => mockAudioRecorderRepository.isRecording(),
+        ).thenAnswer((_) async => false);
+        when(() => mockAudioRecorderRepository.startRecording()).thenAnswer(
+          (_) async => AudioNote(
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            audioFile: 'test.m4a',
+            audioDirectory: '/audio/',
+            duration: const Duration(seconds: 5),
+          ),
+        );
+        when(
+          () => mockAudioRecorderRepository.stopRecording(),
+        ).thenAnswer((_) async {});
+
+        final controller = localContainer.read(
+          audioRecorderControllerProvider.notifier,
+        );
+
+        // Record WITHOUT a linkedId — the trigger gate requires one.
+        await controller.record();
+        final entryId = await controller.stop();
+        await pumpEventQueue();
+
+        expect(entryId, 'no-link-entry-id');
+        verifyNever(
+          () => mockTrigger.triggerAutomaticPrompts(
+            any(),
+            any(),
+            linkedTaskId: any(named: 'linkedTaskId'),
+            realtimeTranscriptProvided: any(
+              named: 'realtimeTranscriptProvided',
+            ),
+          ),
+        );
+      });
+    });
+
     group('_pauseAudioPlayer catch block (lines 707, 709)', () {
       test(
         'logs error when audio player pause() throws (lines 707, 709)',
@@ -2373,4 +2447,95 @@ void main() {
       expect(result.value, isFalse);
     });
   });
+
+  group('debugCalculateVu — Glados properties', () {
+    glados.Glados<List<int>>(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        25,
+        glados.IntAnys(glados.any).intInRange(0, 160),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'every output stays clamped to [-20, 3] for any dBFS sequence',
+      (seeds) {
+        final localContainer = ProviderContainer(
+          overrides: [
+            audioRecorderRepositoryProvider.overrideWithValue(
+              mockAudioRecorderRepository,
+            ),
+          ],
+        );
+        try {
+          final controller = localContainer.read(
+            audioRecorderControllerProvider.notifier,
+          );
+          for (final seed in seeds) {
+            final vu = controller.debugCalculateVu(-seed.toDouble());
+            expect(vu, greaterThanOrEqualTo(-20.0), reason: 'dBFS=-$seed');
+            expect(vu, lessThanOrEqualTo(3.0), reason: 'dBFS=-$seed');
+          }
+        } finally {
+          localContainer.dispose();
+        }
+      },
+      tags: 'glados',
+    );
+
+    test('a silence-only buffer clamps to the -20 floor', () {
+      final localContainer = ProviderContainer(
+        overrides: [
+          audioRecorderRepositoryProvider.overrideWithValue(
+            mockAudioRecorderRepository,
+          ),
+        ],
+      );
+      addTearDown(localContainer.dispose);
+      final controller = localContainer.read(
+        audioRecorderControllerProvider.notifier,
+      );
+
+      double? vu;
+      for (var i = 0; i < 20; i++) {
+        vu = controller.debugCalculateVu(-160);
+      }
+      expect(vu, -20.0);
+    });
+
+    test('a 0 dBFS-only buffer clamps to the +3 ceiling', () {
+      final localContainer = ProviderContainer(
+        overrides: [
+          audioRecorderRepositoryProvider.overrideWithValue(
+            mockAudioRecorderRepository,
+          ),
+        ],
+      );
+      addTearDown(localContainer.dispose);
+      final controller = localContainer.read(
+        audioRecorderControllerProvider.notifier,
+      );
+
+      // RMS of constant 0 dBFS is 0 dB; +18 VU reference clamps to +3.
+      double? vu;
+      for (var i = 0; i < 20; i++) {
+        vu = controller.debugCalculateVu(0);
+      }
+      expect(vu, 3.0);
+    });
+  });
+}
+
+/// Replays [count] amplitude events through [amplitudeController], flushing
+/// the fake-async microtask queue after each so the recorder's VU sliding
+/// window (15 × 20 ms samples) fills deterministically.
+void fillVuBuffer(
+  StreamController<Amplitude> amplitudeController,
+  Amplitude amplitude,
+  FakeAsync async, {
+  int count = 20,
+}) {
+  for (var i = 0; i < count; i++) {
+    amplitudeController.add(amplitude);
+    async.flushMicrotasks();
+  }
 }

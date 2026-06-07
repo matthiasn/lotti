@@ -19,9 +19,16 @@ Color? _chipBackground(WidgetTester tester) {
   return (decorated.decoration as BoxDecoration).color;
 }
 
-Future<void> _pumpBreadcrumbs(WidgetTester tester, Widget child) async {
+Future<void> _pumpBreadcrumbs(
+  WidgetTester tester,
+  Widget child, {
+  ThemeData? theme,
+}) async {
   await tester.pumpWidget(
-    makeTestableWidgetWithScaffold(child, theme: DesignSystemTheme.light()),
+    makeTestableWidgetWithScaffold(
+      child,
+      theme: theme ?? DesignSystemTheme.light(),
+    ),
   );
 }
 
@@ -52,6 +59,34 @@ void main() {
       expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(2));
       expect(home.style?.color, dsTokensLight.colors.text.highEmphasis);
       expect(current.style?.color, dsTokensLight.colors.interactive.enabled);
+    });
+
+    testWidgets('text colors resolve from dark tokens under the dark theme', (
+      tester,
+    ) async {
+      await _pumpBreadcrumbs(
+        tester,
+        SizedBox(
+          width: 600,
+          child: DesignSystemBreadcrumbs(
+            items: [
+              DesignSystemBreadcrumbItem(label: 'Home', onPressed: () {}),
+              const DesignSystemBreadcrumbItem(
+                label: 'Breadcrumbs',
+                selected: true,
+                showChevron: false,
+              ),
+            ],
+          ),
+        ),
+        theme: DesignSystemTheme.dark(),
+      );
+
+      final home = tester.widget<Text>(find.text('Home'));
+      final current = tester.widget<Text>(find.text('Breadcrumbs'));
+
+      expect(home.style?.color, dsTokensDark.colors.text.highEmphasis);
+      expect(current.style?.color, dsTokensDark.colors.interactive.enabled);
     });
 
     testWidgets('renders hover and disabled styles from tokens', (

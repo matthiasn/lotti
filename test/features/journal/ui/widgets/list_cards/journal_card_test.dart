@@ -411,7 +411,8 @@ void main() {
       );
 
       await tester.tap(find.byType(ModernBaseCard));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         mockNavService.navigationHistory,
@@ -429,7 +430,8 @@ void main() {
       );
 
       await tester.tap(find.byType(ModernBaseCard));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         mockNavService.navigationHistory,
@@ -763,6 +765,9 @@ void main() {
 
         expect(find.byType(ModernJournalCard), findsOneWidget);
         expect(find.text('Session Rating'), findsOneWidget);
+        // RatingEntry passes the category-icon filter — with a categoryId
+        // set, the compact icon renders alongside the label.
+        expect(find.byType(CategoryIconCompact), findsOneWidget);
       });
 
       testWidgets('renders AI response entry', (tester) async {
@@ -799,7 +804,8 @@ void main() {
         );
 
         await tester.tap(find.byType(ModernBaseCard));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(
           mockNavService.navigationHistory,
@@ -815,7 +821,8 @@ void main() {
         );
 
         await tester.tap(find.byType(ModernBaseCard));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(
           mockNavService.navigationHistory,
@@ -831,7 +838,8 @@ void main() {
         );
 
         await tester.tap(find.byType(ModernBaseCard));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(
           mockNavService.navigationHistory,
@@ -949,7 +957,8 @@ void main() {
             overrides: [labelsOverride],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Two LabelChips should be rendered
         expect(find.byType(LabelChip), findsNWidgets(2));
@@ -987,7 +996,8 @@ void main() {
             overrides: [labelsOverride],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // No LabelChip from ModernJournalCard's _buildLabelsWrap
         // (tasks are skipped in that method)
@@ -1038,7 +1048,8 @@ void main() {
             overrides: [labelsOverride],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Only public label should be shown
         expect(find.byType(LabelChip), findsOneWidget);
@@ -1078,7 +1089,8 @@ void main() {
             overrides: [labelsOverride],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(LabelChip), findsOneWidget);
         expect(find.text('Private'), findsOneWidget);
@@ -1124,7 +1136,8 @@ void main() {
             overrides: [labelsOverride],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final chips = tester.widgetList<LabelChip>(find.byType(LabelChip));
         final names = chips.map((c) => c.label.name).toList();
@@ -1152,7 +1165,8 @@ void main() {
             overrides: [labelsOverride],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(LabelChip), findsNothing);
       });
@@ -1191,7 +1205,8 @@ void main() {
             overrides: [labelsOverride],
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Only the known label should be rendered
         expect(find.byType(LabelChip), findsOneWidget);

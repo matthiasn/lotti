@@ -23,6 +23,20 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
+/// A resolver that returns a fixed summary map — drives the non-null
+/// branch of the `summary ?? fallback` expression in [TaskSummaryRepository].
+class _FixedSummaryResolver extends TaskSummaryResolver {
+  _FixedSummaryResolver(this._summaries) : super(null);
+
+  final Map<String, String> _summaries;
+
+  @override
+  Future<Map<String, String>> resolveMany(
+    Iterable<String> taskIds, {
+    Map<String, List<JournalEntity>> linkedEntitiesByTaskId = const {},
+  }) async => _summaries;
+}
+
 class _NoAgentResolver extends TaskSummaryResolver {
   _NoAgentResolver() : super(_EmptyAgentRepository());
 }
@@ -819,8 +833,35 @@ void main() {
           ),
         ];
 
+        // Stubs the whole work-entry → link → task → linked-entities
+        // pipeline for one task; only the task varies per iteration.
+        void stubFullPipeline(JournalEntity task) {
+          stubWorkEntries([testJournalDbEntry]);
+          when(
+            () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
+          ).thenAnswer(
+            (_) async => [
+              EntryLink.basic(
+                id: 'status-test-link',
+                fromId: task.meta.id,
+                toId: testJournalDbEntry.id,
+                createdAt: testDate,
+                updatedAt: testDate,
+                vectorClock: null,
+              ),
+            ],
+          );
+          when(
+            () => mockJournalDb.getJournalEntitiesForIdsUnordered({
+              task.meta.id,
+            }),
+          ).thenAnswer((_) async => [task]);
+          when(
+            () => mockJournalDb.getBulkLinkedEntities({task.meta.id}),
+          ).thenAnswer((_) async => {task.meta.id: <JournalEntity>[]});
+        }
+
         for (final (status, expectedName) in statusTests) {
-          // Arrange
           final request = TaskSummaryRequest(
             startDate: testStartDate.ymd,
             endDate: testEndDate.ymd,
@@ -843,47 +884,58 @@ void main() {
             ),
           );
 
-          stubWorkEntries([testJournalDbEntry]);
+          stubFullPipeline(taskWithStatus);
 
-          when(
-            () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
-          ).thenAnswer(
-            (_) async => [
-              EntryLink.basic(
-                id: 'status-test-link',
-                fromId: taskWithStatus.meta.id,
-                toId: testJournalDbEntry.id,
-                createdAt: testDate,
-                updatedAt: testDate,
-                vectorClock: null,
-              ),
-            ],
-          );
-
-          when(
-            () => mockJournalDb.getJournalEntitiesForIdsUnordered({
-              taskWithStatus.meta.id,
-            }),
-          ).thenAnswer((_) async => [taskWithStatus]);
-
-          // Mock the bulk linked entities method
-          when(
-            () => mockJournalDb.getBulkLinkedEntities({taskWithStatus.meta.id}),
-          ).thenAnswer(
-            (_) async => {taskWithStatus.meta.id: <JournalEntity>[]},
-          );
-
-          // Act
           final result = await repository.getTaskSummaries(
             categoryId: testCategoryId,
             request: request,
           );
 
-          // Assert
-          expect(result.length, 1);
+          expect(result.length, 1, reason: expectedName);
           expect(result.first.status, expectedName);
         }
       });
+
+      test(
+        'propagates a resolver-produced summary instead of the fallback text',
+        () async {
+          // A resolver that produces a known agent summary for the task —
+          // exercises the non-null branch of `summary ?? 'No AI summary…'`
+          // directly rather than via the provider-level test.
+          final resolverRepo = TaskSummaryRepository(
+            journalDb: mockJournalDb,
+            taskSummaryResolver: _FixedSummaryResolver({
+              testTask.meta.id: 'Agent report: all subtasks closed.',
+            }),
+          );
+
+          final request = TaskSummaryRequest(
+            startDate: testStartDate.ymd,
+            endDate: testEndDate.ymd,
+          );
+
+          stubWorkEntries([testJournalDbEntry]);
+          when(
+            () => mockJournalDb.linksForEntryIds({testJournalDbEntry.id}),
+          ).thenAnswer((_) async => [testLink]);
+          when(
+            () => mockJournalDb.getJournalEntitiesForIdsUnordered({
+              testTask.meta.id,
+            }),
+          ).thenAnswer((_) async => [testTask]);
+          when(
+            () => mockJournalDb.getBulkLinkedEntities({testTask.meta.id}),
+          ).thenAnswer((_) async => {testTask.meta.id: <JournalEntity>[]});
+
+          final result = await resolverRepo.getTaskSummaries(
+            categoryId: testCategoryId,
+            request: request,
+          );
+
+          expect(result, hasLength(1));
+          expect(result.first.summary, 'Agent report: all subtasks closed.');
+        },
+      );
 
       test('ignores non-task-summary AI responses', () async {
         // Arrange

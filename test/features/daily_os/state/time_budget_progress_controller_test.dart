@@ -6,6 +6,26 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
 import 'package:lotti/features/tasks/util/due_date_utils.dart';
 
+// Shared (planned, recorded, expected) table — the same `inMinutes /
+// inMinutes` formula backs both TimeBudgetProgress.progressFraction and
+// DayBudgetStats.progressFraction, including the sub-minute truncation
+// edge case (30s planned → 0 inMinutes → fraction 0).
+const progressFractionCases = <(Duration, Duration, double, String)>[
+  (Duration(hours: 2), Duration(hours: 1), 0.5, 'normal values'),
+  (Duration.zero, Duration(hours: 1), 0.0, 'planned is zero'),
+  (Duration.zero, Duration.zero, 0.0, 'both zero'),
+  (Duration(hours: 2), Duration.zero, 0.0, 'recorded is zero'),
+  (Duration(hours: 2), Duration(hours: 2), 1.0, 'recorded == planned'),
+  (Duration(hours: 2), Duration(hours: 3), 1.5, 'over budget'),
+  (Duration(minutes: 90), Duration(minutes: 45), 0.5, 'integer minutes'),
+  (
+    Duration(seconds: 30),
+    Duration(seconds: 15),
+    0.0,
+    'sub-minute planned truncates to zero',
+  ),
+];
+
 void main() {
   final fixedDate = DateTime(2024, 3, 15);
 
@@ -163,81 +183,13 @@ void main() {
     }
 
     group('progressFraction', () {
-      test('returns correct fraction for normal values', () {
-        final progress = makeProgress(
-          planned: const Duration(hours: 2),
-          recorded: const Duration(hours: 1),
-        );
-
-        // 60 / 120 = 0.5
-        expect(progress.progressFraction, 0.5);
-      });
-
-      test('returns 0 when planned duration is zero', () {
-        final progress = makeProgress(
-          planned: Duration.zero,
-          recorded: const Duration(hours: 1),
-        );
-
-        expect(progress.progressFraction, 0.0);
-      });
-
-      test('returns 0 when both planned and recorded are zero', () {
-        final progress = makeProgress(
-          planned: Duration.zero,
-          recorded: Duration.zero,
-        );
-
-        expect(progress.progressFraction, 0.0);
-      });
-
-      test('returns 0 when recorded is zero', () {
-        final progress = makeProgress(
-          planned: const Duration(hours: 2),
-          recorded: Duration.zero,
-        );
-
-        expect(progress.progressFraction, 0.0);
-      });
-
-      test('returns 1.0 when recorded equals planned', () {
-        final progress = makeProgress(
-          planned: const Duration(hours: 2),
-          recorded: const Duration(hours: 2),
-        );
-
-        expect(progress.progressFraction, 1.0);
-      });
-
-      test('returns value > 1.0 when over budget', () {
-        final progress = makeProgress(
-          planned: const Duration(hours: 2),
-          recorded: const Duration(hours: 3),
-        );
-
-        // 180 / 120 = 1.5
-        expect(progress.progressFraction, 1.5);
-      });
-
-      test('uses integer minutes for calculation', () {
-        // 90 minutes planned, 45 minutes recorded => 0.5
-        final progress = makeProgress(
-          planned: const Duration(minutes: 90),
-          recorded: const Duration(minutes: 45),
-        );
-
-        expect(progress.progressFraction, 0.5);
-      });
-
-      test('returns 0 when planned is less than 1 minute', () {
-        // 30 seconds => 0 inMinutes
-        final progress = makeProgress(
-          planned: const Duration(seconds: 30),
-          recorded: const Duration(seconds: 15),
-        );
-
-        expect(progress.progressFraction, 0.0);
-      });
+      for (final (planned, recorded, expected, label)
+          in progressFractionCases) {
+        test('$label → $expected', () {
+          final progress = makeProgress(planned: planned, recorded: recorded);
+          expect(progress.progressFraction, expected);
+        });
+      }
     });
 
     group('remainingDuration', () {
@@ -345,6 +297,175 @@ void main() {
 
         expect(progress.hasNoBudgetWarning, isTrue);
       });
+    });
+
+    test('stores all required fields correctly', () {
+      final entries = [
+        JournalEntity.journalEntry(meta: testMeta),
+      ];
+      final taskProgressItems = [
+        TaskDayProgress(
+          task: testTaskEntity,
+          timeSpentOnDay: const Duration(minutes: 30),
+          wasCompletedOnDay: false,
+        ),
+      ];
+
+      final progress = TimeBudgetProgress(
+        categoryId: 'cat-1',
+        category: testCategory,
+        plannedDuration: const Duration(hours: 2),
+        recordedDuration: const Duration(hours: 1),
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: entries,
+        taskProgressItems: taskProgressItems,
+        blocks: [testBlock],
+      );
+
+      expect(progress.categoryId, 'cat-1');
+      expect(progress.category, testCategory);
+      expect(progress.plannedDuration, const Duration(hours: 2));
+      expect(progress.recordedDuration, const Duration(hours: 1));
+      expect(progress.status, BudgetProgressStatus.underBudget);
+      expect(progress.contributingEntries, entries);
+      expect(progress.taskProgressItems, taskProgressItems);
+      expect(progress.blocks, [testBlock]);
+    });
+
+    test('category can be null', () {
+      const progress = TimeBudgetProgress(
+        categoryId: 'cat-1',
+        category: null,
+        plannedDuration: Duration(hours: 1),
+        recordedDuration: Duration.zero,
+        status: BudgetProgressStatus.underBudget,
+        contributingEntries: [],
+        taskProgressItems: [],
+        blocks: [],
+      );
+
+      expect(progress.category, isNull);
+    });
+  });
+
+  group('DayBudgetStats', () {
+    group('totalRemaining', () {
+      test('returns positive duration when under budget', () {
+        const stats = DayBudgetStats(
+          totalPlanned: Duration(hours: 8),
+          totalRecorded: Duration(hours: 5),
+          budgetCount: 3,
+          overBudgetCount: 0,
+        );
+
+        expect(stats.totalRemaining, const Duration(hours: 3));
+      });
+
+      test('returns zero when exactly at budget', () {
+        const stats = DayBudgetStats(
+          totalPlanned: Duration(hours: 8),
+          totalRecorded: Duration(hours: 8),
+          budgetCount: 3,
+          overBudgetCount: 0,
+        );
+
+        expect(stats.totalRemaining, Duration.zero);
+      });
+
+      test('returns negative duration when over budget', () {
+        const stats = DayBudgetStats(
+          totalPlanned: Duration(hours: 8),
+          totalRecorded: Duration(hours: 10),
+          budgetCount: 3,
+          overBudgetCount: 1,
+        );
+
+        expect(stats.totalRemaining, const Duration(hours: -2));
+        expect(stats.totalRemaining.isNegative, isTrue);
+      });
+
+      test('returns zero when both are zero', () {
+        const stats = DayBudgetStats(
+          totalPlanned: Duration.zero,
+          totalRecorded: Duration.zero,
+          budgetCount: 0,
+          overBudgetCount: 0,
+        );
+
+        expect(stats.totalRemaining, Duration.zero);
+      });
+    });
+
+    group('isOverBudget', () {
+      test('returns false when recorded is less than planned', () {
+        const stats = DayBudgetStats(
+          totalPlanned: Duration(hours: 8),
+          totalRecorded: Duration(hours: 5),
+          budgetCount: 3,
+          overBudgetCount: 0,
+        );
+
+        expect(stats.isOverBudget, isFalse);
+      });
+
+      test('returns false when recorded equals planned', () {
+        const stats = DayBudgetStats(
+          totalPlanned: Duration(hours: 8),
+          totalRecorded: Duration(hours: 8),
+          budgetCount: 3,
+          overBudgetCount: 0,
+        );
+
+        expect(stats.isOverBudget, isFalse);
+      });
+
+      test('returns true when recorded exceeds planned', () {
+        const stats = DayBudgetStats(
+          totalPlanned: Duration(hours: 8),
+          totalRecorded: Duration(hours: 10),
+          budgetCount: 3,
+          overBudgetCount: 1,
+        );
+
+        expect(stats.isOverBudget, isTrue);
+      });
+
+      test('returns false when both are zero', () {
+        const stats = DayBudgetStats(
+          totalPlanned: Duration.zero,
+          totalRecorded: Duration.zero,
+          budgetCount: 0,
+          overBudgetCount: 0,
+        );
+
+        expect(stats.isOverBudget, isFalse);
+      });
+
+      test('returns true when over by one microsecond', () {
+        const stats = DayBudgetStats(
+          totalPlanned: Duration(hours: 8),
+          totalRecorded: Duration(hours: 8, microseconds: 1),
+          budgetCount: 3,
+          overBudgetCount: 0,
+        );
+
+        expect(stats.isOverBudget, isTrue);
+      });
+    });
+
+    group('progressFraction', () {
+      for (final (planned, recorded, expected, label)
+          in progressFractionCases) {
+        test('$label → $expected', () {
+          final stats = DayBudgetStats(
+            totalPlanned: planned,
+            totalRecorded: recorded,
+            budgetCount: 1,
+            overBudgetCount: 0,
+          );
+          expect(stats.progressFraction, expected);
+        });
+      }
     });
 
     test('stores all required fields correctly', () {

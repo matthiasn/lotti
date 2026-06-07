@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_status_handler.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
@@ -165,6 +166,8 @@ extension _AnyTaskStatusHandlerScenario on glados.Any {
 }
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   late MockJournalRepository mockJournalRepo;
   late Task task;
 
@@ -186,7 +189,6 @@ void main() {
         ],
       ),
     );
-    registerFallbackValue(task as JournalEntity);
   });
 
   TaskStatus statusFor(String status) {
@@ -298,6 +300,18 @@ void main() {
         expect(result.updatedTask!.data.status.toDbString, 'BLOCKED');
         expect(
           (result.updatedTask!.data.status as TaskBlocked).reason,
+          'Waiting for API access',
+        );
+
+        // The reason also lands on the PERSISTED entity, not just the
+        // returned copy.
+        final persisted =
+            verify(
+                  () => mockJournalRepo.updateJournalEntity(captureAny()),
+                ).captured.single
+                as Task;
+        expect(
+          (persisted.data.status as TaskBlocked).reason,
           'Waiting for API access',
         );
       });

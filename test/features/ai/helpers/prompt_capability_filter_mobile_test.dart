@@ -1,9 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 
 import '../test_utils.dart';
@@ -24,6 +23,19 @@ void main() {
   });
 
   setUp(() {
+    // Force the mobile code paths: isDesktop/isMobile are mutable globals
+    // (see test/logic/health_import_test.dart for the same pattern). The
+    // old per-test `if (Platform.isMacOS …) return;` guards meant every
+    // body silently passed on desktop hosts — i.e. never ran in CI.
+    final originalIsDesktop = platform.isDesktop;
+    final originalIsMobile = platform.isMobile;
+    platform.isDesktop = false;
+    platform.isMobile = true;
+    addTearDown(() {
+      platform.isDesktop = originalIsDesktop;
+      platform.isMobile = originalIsMobile;
+    });
+
     mockRepo = MockAiConfigRepository();
     container = ProviderContainer(
       overrides: [
@@ -38,16 +50,9 @@ void main() {
     container.dispose();
   });
 
-  // These tests will only run correctly on mobile platforms
-  // On desktop they will be skipped
   group('PromptCapabilityFilter - Mobile Platform Tests', () {
     group('isPromptAvailableOnPlatform on mobile', () {
       test('returns false when model is null', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final prompt = AiTestDataFactory.createTestPrompt(
           defaultModelId: 'non-existent-model',
@@ -65,11 +70,6 @@ void main() {
       });
 
       test('returns false when model is not AiConfigModel', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final prompt = AiTestDataFactory.createTestPrompt(
           defaultModelId: 'wrong-type',
@@ -93,11 +93,6 @@ void main() {
       });
 
       test('returns false when provider is null', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final prompt = AiTestDataFactory.createTestPrompt();
 
@@ -122,11 +117,6 @@ void main() {
       test(
         'returns false when provider is not AiConfigInferenceProvider',
         () async {
-          // Skip on desktop
-          if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-            return;
-          }
-
           // Arrange
           final prompt = AiTestDataFactory.createTestPrompt();
 
@@ -156,11 +146,6 @@ void main() {
       );
 
       test('returns false when provider is Whisper', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final prompt = AiTestDataFactory.createTestPrompt(
           defaultModelId: 'whisper-model',
@@ -196,11 +181,6 @@ void main() {
       });
 
       test('returns false when provider is Ollama', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final prompt = AiTestDataFactory.createTestPrompt(
           defaultModelId: 'ollama-model',
@@ -236,11 +216,6 @@ void main() {
       });
 
       test('returns false when provider is Voxtral', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final prompt = AiTestDataFactory.createTestPrompt(
           defaultModelId: 'voxtral-model',
@@ -276,11 +251,6 @@ void main() {
       });
 
       test('returns true when provider is OpenAI', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final prompt = AiTestDataFactory.createTestPrompt(
           defaultModelId: 'openai-model',
@@ -316,11 +286,6 @@ void main() {
       });
 
       test('returns true when provider is Anthropic', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final prompt = AiTestDataFactory.createTestPrompt(
           defaultModelId: 'anthropic-model',
@@ -355,11 +320,6 @@ void main() {
       });
 
       test('returns true when provider is Gemini', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final prompt = AiTestDataFactory.createTestPrompt(
           defaultModelId: 'gemini-model',
@@ -397,11 +357,6 @@ void main() {
 
     group('filterPromptsByPlatform on mobile', () {
       test('filters out local-only models and keeps cloud models', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final whisperPrompt = AiTestDataFactory.createTestPrompt(
           id: 'whisper-prompt',
@@ -481,11 +436,6 @@ void main() {
       });
 
       test('returns empty list when all prompts are local-only', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final whisperPrompt = AiTestDataFactory.createTestPrompt(
           id: 'whisper-prompt',
@@ -542,11 +492,6 @@ void main() {
       });
 
       test('processes checks in parallel using Future.wait', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final prompts = List.generate(
           5,
@@ -589,11 +534,6 @@ void main() {
 
     group('getFirstAvailablePrompt on mobile', () {
       test('skips local-only prompts and returns first cloud prompt', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final whisperPrompt = AiTestDataFactory.createTestPrompt(
           id: 'whisper-prompt',
@@ -658,11 +598,6 @@ void main() {
       });
 
       test('returns null when all prompts are local-only', () async {
-        // Skip on desktop
-        if (Platform.isMacOS || Platform.isLinux || Platform.isWindows) {
-          return;
-        }
-
         // Arrange
         final whisperPrompt = AiTestDataFactory.createTestPrompt(
           id: 'whisper-prompt',

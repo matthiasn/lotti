@@ -316,7 +316,7 @@ void main() {
       // Even when the caller passes a path without a leading slash,
       // the stream should emit the canonical `/images/a.jpg` form so
       // subscribers have a single shape to match against.
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       expect(paths, ['/images/a.jpg']);
 
       // Idempotency guard: re-observing the same event does not
@@ -330,7 +330,7 @@ void main() {
       when(() => e2.eventId).thenReturn('ev2');
       index.record(e2);
 
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       expect(paths, ['/images/a.jpg', '/images/a.jpg']);
 
       await sub.cancel();

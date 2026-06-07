@@ -85,8 +85,14 @@ void main() {
       );
       await tester.pump();
 
-      expect(tester.takeException(), isNull);
       expect(find.text('Tasks'), findsAtLeastNWidgets(2));
+      // The detail pane is bound to the controller's default selection:
+      // its title appears twice (list row + detail header), and the
+      // detail-only sections render for it.
+      final selected = container
+          .read(taskListDetailShowcaseControllerProvider)
+          .selectedTask;
+      expect(selected?.task.data.title, 'Payment confirmation');
       expect(find.text('Payment confirmation'), findsAtLeastNWidgets(2));
       expect(find.text('AI Task Summary'), findsOneWidget);
       expect(find.text('Time Tracker'), findsOneWidget);
@@ -135,7 +141,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byIcon(Icons.filter_list_rounded).first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text('Tasks Filter'), findsOneWidget);
 
@@ -146,7 +153,8 @@ void main() {
       await tester.tap(
         find.byKey(const ValueKey('design-system-task-filter-apply')),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text('User Testing'), findsNothing);
       expect(find.text('Payment confirmation'), findsAtLeastNWidgets(2));

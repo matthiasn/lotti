@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/habits/state/habit_settings_controller.dart';
 import 'package:lotti/features/habits/ui/widgets/habit_category.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -45,22 +47,9 @@ void main() {
 
   tearDown(getIt.reset);
 
-  testWidgets('displays category selection widget', (tester) async {
-    await tester.pumpWidget(
-      RiverpodWidgetTestBench(
-        child: SelectCategoryWidget(habitId: habitFlossing.id),
-      ),
-    );
-
-    await tester.pumpAndSettle();
-
-    expect(find.byType(SelectCategoryWidget), findsOneWidget);
-    expect(find.byType(TextField), findsOneWidget);
-  });
-
-  testWidgets('opens category modal and selects category', (tester) async {
+  testWidgets('shows the selected category name in the field', (tester) async {
     when(
-      () => mockEntitiesCacheService.getCategoryById(categoryMindfulness.id),
+      () => mockEntitiesCacheService.getCategoryById(any()),
     ).thenReturn(categoryMindfulness);
 
     await tester.pumpWidget(
@@ -68,18 +57,51 @@ void main() {
         child: SelectCategoryWidget(habitId: habitFlossing.id),
       ),
     );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
-    await tester.pumpAndSettle();
-
-    // Tap to open modal
-    await tester.tap(find.byType(TextField));
-    await tester.pumpAndSettle();
-
-    // Find category in modal and tap it
-    final categoryFinder = find.text(categoryMindfulness.name);
-    expect(categoryFinder, findsWidgets);
-
-    await tester.tap(categoryFinder.first);
-    await tester.pumpAndSettle();
+    // The field renders the resolved category's name, not just any text box.
+    expect(find.byType(TextField), findsOneWidget);
+    expect(find.text(categoryMindfulness.name), findsOneWidget);
   });
+
+  testWidgets(
+    'selecting a category in the modal updates the habit settings state',
+    (tester) async {
+      when(
+        () => mockEntitiesCacheService.getCategoryById(categoryMindfulness.id),
+      ).thenReturn(categoryMindfulness);
+
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: WidgetTestBench(
+            child: SelectCategoryWidget(habitId: habitFlossing.id),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Open the modal and pick the category.
+      await tester.tap(find.byType(TextField));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      final categoryFinder = find.text(categoryMindfulness.name);
+      expect(categoryFinder, findsWidgets);
+      await tester.tap(categoryFinder.first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // The selection landed in the controller state (dirty + categoryId).
+      final state = container.read(
+        habitSettingsControllerProvider(habitFlossing.id),
+      );
+      expect(state.dirty, isTrue);
+      expect(state.habitDefinition.categoryId, categoryMindfulness.id);
+    },
+  );
 }

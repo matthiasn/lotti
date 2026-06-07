@@ -12,7 +12,7 @@ import 'package:lotti/features/ai/providers/ollama_inference_repository_provider
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
-    show GeminiInferenceRepository, GeneratedImage;
+    show GeneratedImage;
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
@@ -23,11 +23,6 @@ import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
-class MockOpenAIClient extends Mock implements OpenAIClient {}
-
-class MockGeminiInferenceRepository extends Mock
-    implements GeminiInferenceRepository {}
 
 // We need to register fallback values for complex types that will be used with 'any()' matcher
 class FakeCreateChatCompletionRequest extends Fake
@@ -72,6 +67,22 @@ class _TestBench {
 }
 
 void main() {
+  /// Canonical single-chunk stream response used across the request-shape
+  /// tests — only the delta content varies.
+  CreateChatCompletionStreamResponse minimalStreamResponse(String content) {
+    return CreateChatCompletionStreamResponse(
+      id: 'response-id',
+      choices: [
+        ChatCompletionStreamResponseChoice(
+          delta: ChatCompletionStreamResponseDelta(content: content),
+          index: 0,
+        ),
+      ],
+      object: 'chat.completion.chunk',
+      created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
+    );
+  }
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUpAll(() {
@@ -129,19 +140,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test response'),
           ]),
         );
 
@@ -240,19 +239,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test image response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test image response'),
           ]),
         );
 
@@ -302,19 +289,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test audio response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test audio response'),
           ]),
         );
 
@@ -353,6 +328,85 @@ void main() {
     );
 
     test(
+      'generateWithAudio wraps audio as a data URI for providers that '
+      'require it (alibaba)',
+      () {
+        const audioBase64 = 'QUJD';
+        final alibabaProvider =
+            AiConfig.inferenceProvider(
+                  id: 'alibaba-provider',
+                  name: 'Alibaba',
+                  baseUrl: baseUrl,
+                  apiKey: apiKey,
+                  createdAt: DateTime(2024, 3, 15),
+                  inferenceProviderType: InferenceProviderType.alibaba,
+                )
+                as AiConfigInferenceProvider;
+
+        when(
+          () => mockClient.createChatCompletionStream(
+            request: any(named: 'request'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
+
+        repository.generateWithAudio(
+          prompt,
+          model: model,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          audioBase64: audioBase64,
+          provider: alibabaProvider,
+          overrideClient: mockClient,
+        );
+
+        final request =
+            verify(
+                  () => mockClient.createChatCompletionStream(
+                    request: captureAny(named: 'request'),
+                  ),
+                ).captured.first
+                as CreateChatCompletionRequest;
+        // requiresDataUriForAudio providers get the data-URI wrapper; the
+        // raw base64 must not be sent bare.
+        expect(request.toString(), contains('data:;base64,$audioBase64'));
+      },
+    );
+
+    test(
+      'generateWithAudio sends bare base64 for providers without the '
+      'data-URI requirement',
+      () {
+        const audioBase64 = 'QUJD';
+        when(
+          () => mockClient.createChatCompletionStream(
+            request: any(named: 'request'),
+          ),
+        ).thenAnswer((_) => const Stream.empty());
+
+        repository.generateWithAudio(
+          prompt,
+          model: model,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          audioBase64: audioBase64,
+          provider: testProvider,
+          overrideClient: mockClient,
+        );
+
+        final request =
+            verify(
+                  () => mockClient.createChatCompletionStream(
+                    request: captureAny(named: 'request'),
+                  ),
+                ).captured.first
+                as CreateChatCompletionRequest;
+        final str = request.toString();
+        expect(str, contains(audioBase64));
+        expect(str, isNot(contains('data:;base64,')));
+      },
+    );
+
+    test(
       'generateWithAudio sets low reasoning effort for Gemini provider',
       () {
         const audioBase64 = 'audio-base64-string';
@@ -366,19 +420,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test audio response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test audio response'),
           ]),
         );
 
@@ -472,19 +514,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test response'),
           ]),
         );
 
@@ -524,19 +554,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test response'),
           ]),
         );
 
@@ -578,19 +596,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test response'),
           ]),
         );
 
@@ -633,19 +639,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test response',
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-          ),
+          minimalStreamResponse('Test response'),
         ]),
       );
 
@@ -682,19 +676,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test',
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-          ),
+          minimalStreamResponse('Test'),
         ]),
       );
 
@@ -724,19 +706,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test',
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-          ),
+          minimalStreamResponse('Test'),
         ]),
       );
 
@@ -765,19 +735,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test',
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-          ),
+          minimalStreamResponse('Test'),
         ]),
       );
 
@@ -923,19 +881,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test response'),
           ]),
         );
 
@@ -1019,19 +965,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test',
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-          ),
+          minimalStreamResponse('Test'),
         ]),
       );
 
@@ -1064,19 +998,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test'),
           ]),
         );
 
@@ -1106,19 +1028,7 @@ void main() {
       // Arrange - Create a stream that closes normally
       final normalStream =
           Stream<CreateChatCompletionStreamResponse>.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test response'),
           ]);
 
       when(
@@ -1561,19 +1471,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test response',
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-          ),
+          minimalStreamResponse('Test response'),
         ]),
       );
 
@@ -1612,19 +1510,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test response'),
           ]),
         );
 
@@ -1665,19 +1551,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test response'),
           ]),
         );
 
@@ -1923,19 +1797,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test response',
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-          ),
+          minimalStreamResponse('Test response'),
         ]),
       );
 
@@ -1982,19 +1844,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test response',
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-          ),
+          minimalStreamResponse('Test response'),
         ]),
       );
 
@@ -3090,19 +2940,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test response',
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-          ),
+          minimalStreamResponse('Test response'),
         ]),
       );
 
@@ -3133,19 +2971,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test response',
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-          ),
+          minimalStreamResponse('Test response'),
         ]),
       );
 
@@ -3186,19 +3012,7 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
-            id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test response',
-                ),
-                index: 0,
-              ),
-            ],
-            object: 'chat.completion.chunk',
-            created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-          ),
+          minimalStreamResponse('Test response'),
         ]),
       );
 
@@ -3754,19 +3568,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
-              CreateChatCompletionStreamResponse(
-                id: 'response-id',
-                choices: [
-                  const ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: 'Test response',
-                    ),
-                    index: 0,
-                  ),
-                ],
-                object: 'chat.completion.chunk',
-                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-              ),
+              minimalStreamResponse('Test response'),
             ]),
           );
 
@@ -3818,19 +3620,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
-              CreateChatCompletionStreamResponse(
-                id: 'response-id',
-                choices: [
-                  const ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: 'Test response',
-                    ),
-                    index: 0,
-                  ),
-                ],
-                object: 'chat.completion.chunk',
-                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-              ),
+              minimalStreamResponse('Test response'),
             ]),
           );
 
@@ -3879,19 +3669,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test response'),
           ]),
         );
 
@@ -3940,19 +3718,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test response'),
           ]),
         );
 
@@ -4000,19 +3766,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Transcribed text',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Transcribed text'),
           ]),
         );
 
@@ -4056,19 +3810,7 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
+            minimalStreamResponse('Test response'),
           ]),
         );
 

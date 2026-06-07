@@ -474,6 +474,74 @@ void main() {
       },
     );
 
+    test(
+      'reconcile (flag on) ignores deleted and acted-on rows entirely — '
+      'the dueNow/upcoming queries exclude them, and their OS alerts are '
+      'cancelled at mark-time via schedule(), not by reconcile',
+      () async {
+        final now = DateTime.utc(2026, 5, 17, 10);
+        final due = _notification(
+          id: 'due-live',
+          scheduledFor: now.subtract(const Duration(minutes: 5)),
+        );
+        final deleted = _notification(
+          id: 'due-deleted',
+          scheduledFor: now.subtract(const Duration(minutes: 3)),
+          deletedAt: now,
+        );
+        final actedOn = _notification(
+          id: 'due-acted',
+          scheduledFor: now.subtract(const Duration(minutes: 2)),
+          actedOnAt: now,
+        );
+
+        await notificationsDb.upsertNotification(due);
+        await notificationsDb.upsertNotification(deleted);
+        await notificationsDb.upsertNotification(actedOn);
+
+        await scheduler.reconcile(now: now);
+
+        // Only the live row surfaces.
+        verify(
+          () => notificationService.showNotificationNow(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationId: NotificationScheduler.notificationIdFor(
+              'due-live',
+            ),
+            showOnMobile: any(named: 'showOnMobile'),
+            showOnDesktop: any(named: 'showOnDesktop'),
+            deepLink: any(named: 'deepLink'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => notificationService.showNotificationNow(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationId: NotificationScheduler.notificationIdFor(
+              'due-deleted',
+            ),
+            showOnMobile: any(named: 'showOnMobile'),
+            showOnDesktop: any(named: 'showOnDesktop'),
+            deepLink: any(named: 'deepLink'),
+          ),
+        );
+        verifyNever(
+          () => notificationService.showNotificationNow(
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            notificationId: NotificationScheduler.notificationIdFor(
+              'due-acted',
+            ),
+            showOnMobile: any(named: 'showOnMobile'),
+            showOnDesktop: any(named: 'showOnDesktop'),
+            deepLink: any(named: 'deepLink'),
+          ),
+        );
+        verifyNever(() => notificationService.cancelNotification(any()));
+      },
+    );
+
     // HIGH coverage gap from TEST_REVIEW.md:
     // `!entity.meta.scheduledFor.isAfter(effectiveNow)` is true when equal,
     // so scheduledFor == now must route to showNotificationNow, not scheduleNotificationAt.

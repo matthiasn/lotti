@@ -110,6 +110,65 @@ void main() {
     });
   });
 
+  group('ClassifiedFeedbackItem equality', () {
+    test('identical field values are equal with matching hashCodes', () {
+      final a = makeItem(sentiment: FeedbackSentiment.positive);
+      final b = makeItem(sentiment: FeedbackSentiment.positive);
+      expect(a, equals(b));
+      expect(a.hashCode, b.hashCode);
+    });
+
+    test('differing sentiment or category breaks equality', () {
+      final base = makeItem(sentiment: FeedbackSentiment.positive);
+      expect(base, isNot(makeItem(sentiment: FeedbackSentiment.negative)));
+      expect(
+        base,
+        isNot(
+          makeItem(
+            sentiment: FeedbackSentiment.positive,
+            category: FeedbackCategory.accuracy,
+          ),
+        ),
+      );
+    });
+  });
+
+  group('grievances / excellenceNotes extensions', () {
+    test('split critical items by sentiment and exclude routine ones', () {
+      ClassifiedFeedbackItem critical(FeedbackSentiment sentiment) =>
+          ClassifiedFeedbackItem(
+            sentiment: sentiment,
+            category: FeedbackCategory.general,
+            source: 'obs',
+            detail: 'detail',
+            agentId: 'agent-1',
+            observationPriority: ObservationPriority.critical,
+          );
+
+      final feedback = ClassifiedFeedback(
+        items: [
+          critical(FeedbackSentiment.negative),
+          critical(FeedbackSentiment.positive),
+          critical(FeedbackSentiment.neutral),
+          // Routine negative item: must not appear in grievances.
+          makeItem(sentiment: FeedbackSentiment.negative),
+        ],
+        windowStart: DateTime(2024, 3, 10),
+        windowEnd: DateTime(2024, 3, 20),
+        totalObservationsScanned: 4,
+        totalDecisionsScanned: 0,
+      );
+
+      expect(feedback.grievances, hasLength(1));
+      expect(feedback.grievances.single.sentiment, FeedbackSentiment.negative);
+      expect(feedback.excellenceNotes, hasLength(1));
+      expect(
+        feedback.excellenceNotes.single.sentiment,
+        FeedbackSentiment.positive,
+      );
+    });
+  });
+
   group('ClassifiedFeedbackItem JSON with optional fields', () {
     test('fromJson tolerates missing sourceEntityId (null)', () {
       final json = <String, dynamic>{

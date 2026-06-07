@@ -4,6 +4,28 @@ import 'package:lotti/features/daily_os/ui/widgets/compressed_timeline_region.da
 import 'package:lotti/features/daily_os/ui/widgets/zigzag_fold_indicator.dart';
 import 'package:lotti/features/daily_os/util/timeline_folding_utils.dart';
 
+import '../../../../widget_test_utils.dart';
+
+/// Pumps a [CompressedTimelineRegion] through the shared harness — the
+/// static region renders in a single frame, no settle needed.
+Future<void> _pumpRegion(
+  WidgetTester tester, {
+  required CompressedRegion region,
+  VoidCallback? onTap,
+  double timeAxisWidth = 50,
+}) async {
+  await tester.pumpWidget(
+    makeTestableWidgetWithScaffold(
+      CompressedTimelineRegion(
+        region: region,
+        timeAxisWidth: timeAxisWidth,
+        onTap: onTap ?? () {},
+      ),
+    ),
+  );
+  await tester.pump();
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -11,17 +33,7 @@ void main() {
     testWidgets('renders time range label', (tester) async {
       const region = CompressedRegion(startHour: 3, endHour: 13);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompressedTimelineRegion(
-              region: region,
-              timeAxisWidth: 50,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
+      await _pumpRegion(tester, region: region);
 
       expect(find.text('03:00 - 13:00'), findsOneWidget);
     });
@@ -29,17 +41,7 @@ void main() {
     testWidgets('renders zigzag indicator', (tester) async {
       const region = CompressedRegion(startHour: 0, endHour: 6);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompressedTimelineRegion(
-              region: region,
-              timeAxisWidth: 50,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
+      await _pumpRegion(tester, region: region);
 
       expect(find.byType(ZigzagFoldIndicator), findsOneWidget);
     });
@@ -48,16 +50,10 @@ void main() {
       var tapped = false;
       const region = CompressedRegion(startHour: 0, endHour: 6);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompressedTimelineRegion(
-              region: region,
-              timeAxisWidth: 50,
-              onTap: () => tapped = true,
-            ),
-          ),
-        ),
+      await _pumpRegion(
+        tester,
+        region: region,
+        onTap: () => tapped = true,
       );
 
       await tester.tap(find.byType(CompressedTimelineRegion));
@@ -67,17 +63,7 @@ void main() {
     testWidgets('has correct height based on hour count', (tester) async {
       const region = CompressedRegion(startHour: 0, endHour: 10); // 10 hours
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompressedTimelineRegion(
-              region: region,
-              timeAxisWidth: 50,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
+      await _pumpRegion(tester, region: region);
 
       // Height should be 10 hours * 8px per hour = 80px
       final sizedBox = tester.widget<SizedBox>(
@@ -92,17 +78,7 @@ void main() {
     testWidgets('has expand icon', (tester) async {
       const region = CompressedRegion(startHour: 0, endHour: 6);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompressedTimelineRegion(
-              region: region,
-              timeAxisWidth: 50,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
+      await _pumpRegion(tester, region: region);
 
       expect(find.byIcon(Icons.unfold_more), findsOneWidget);
     });
@@ -110,17 +86,7 @@ void main() {
     testWidgets('has accessibility semantics', (tester) async {
       const region = CompressedRegion(startHour: 3, endHour: 9);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompressedTimelineRegion(
-              region: region,
-              timeAxisWidth: 50,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
+      await _pumpRegion(tester, region: region);
 
       final semantics = tester.getSemantics(
         find.byType(CompressedTimelineRegion),
@@ -129,62 +95,6 @@ void main() {
         semantics.label,
         contains('Compressed time region from 3:00 to 9:00'),
       );
-    });
-  });
-
-  group('ZigzagFoldIndicator', () {
-    testWidgets('renders CustomPaint with ZigzagFoldPainter', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: SizedBox(
-              height: 100,
-              child: ZigzagFoldIndicator(
-                color: Colors.grey,
-              ),
-            ),
-          ),
-        ),
-      );
-
-      // Use specific finder since Scaffold may add its own CustomPaint
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is CustomPaint && widget.painter is ZigzagFoldPainter,
-        ),
-        findsOneWidget,
-      );
-    });
-  });
-
-  group('ZigzagFoldPainter', () {
-    test('shouldRepaint returns true when color changes', () {
-      const painter1 = ZigzagFoldPainter(color: Colors.grey);
-      const painter2 = ZigzagFoldPainter(color: Colors.blue);
-
-      expect(painter1.shouldRepaint(painter2), isTrue);
-    });
-
-    test('shouldRepaint returns false when same properties', () {
-      const painter1 = ZigzagFoldPainter(color: Colors.grey);
-      const painter2 = ZigzagFoldPainter(color: Colors.grey);
-
-      expect(painter1.shouldRepaint(painter2), isFalse);
-    });
-
-    test('shouldRepaint returns true when zigzagWidth changes', () {
-      const painter1 = ZigzagFoldPainter(color: Colors.grey, zigzagWidth: 5);
-      const painter2 = ZigzagFoldPainter(color: Colors.grey, zigzagWidth: 8);
-
-      expect(painter1.shouldRepaint(painter2), isTrue);
-    });
-
-    test('shouldRepaint returns true when zigzagHeight changes', () {
-      const painter1 = ZigzagFoldPainter(color: Colors.grey, zigzagHeight: 3);
-      const painter2 = ZigzagFoldPainter(color: Colors.grey, zigzagHeight: 7);
-
-      expect(painter1.shouldRepaint(painter2), isTrue);
     });
   });
 
@@ -504,17 +414,7 @@ void main() {
     testWidgets('formats midnight correctly (00:00)', (tester) async {
       const region = CompressedRegion(startHour: 0, endHour: 6);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompressedTimelineRegion(
-              region: region,
-              timeAxisWidth: 50,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
+      await _pumpRegion(tester, region: region);
 
       expect(find.text('00:00 - 06:00'), findsOneWidget);
     });
@@ -522,17 +422,7 @@ void main() {
     testWidgets('formats end of day correctly (24:00)', (tester) async {
       const region = CompressedRegion(startHour: 22, endHour: 24);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompressedTimelineRegion(
-              region: region,
-              timeAxisWidth: 50,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
+      await _pumpRegion(tester, region: region);
 
       expect(find.text('22:00 - 24:00'), findsOneWidget);
     });
@@ -540,17 +430,7 @@ void main() {
     testWidgets('handles single hour region', (tester) async {
       const region = CompressedRegion(startHour: 12, endHour: 13);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompressedTimelineRegion(
-              region: region,
-              timeAxisWidth: 50,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
+      await _pumpRegion(tester, region: region);
 
       expect(find.text('12:00 - 13:00'), findsOneWidget);
       // Height should be 1 hour * 8px = 8px
@@ -566,17 +446,7 @@ void main() {
     testWidgets('handles full day region (0-24)', (tester) async {
       const region = CompressedRegion(startHour: 0, endHour: 24);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompressedTimelineRegion(
-              region: region,
-              timeAxisWidth: 50,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
+      await _pumpRegion(tester, region: region);
 
       expect(find.text('00:00 - 24:00'), findsOneWidget);
       // Height should be 24 hours * 8px = 192px
@@ -647,17 +517,7 @@ void main() {
     testWidgets('contains hour markers based on region size', (tester) async {
       const region = CompressedRegion(startHour: 0, endHour: 4);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompressedTimelineRegion(
-              region: region,
-              timeAxisWidth: 50,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
+      await _pumpRegion(tester, region: region);
 
       // The widget generates hour markers in a Stack using List.generate
       // There should be 4 Positioned widgets for hour markers
@@ -672,17 +532,7 @@ void main() {
     testWidgets('has Row layout with time axis and content', (tester) async {
       const region = CompressedRegion(startHour: 0, endHour: 6);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: CompressedTimelineRegion(
-              region: region,
-              timeAxisWidth: 50,
-              onTap: () {},
-            ),
-          ),
-        ),
-      );
+      await _pumpRegion(tester, region: region);
 
       expect(
         find.descendant(

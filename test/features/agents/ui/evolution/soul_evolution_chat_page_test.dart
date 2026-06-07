@@ -20,52 +20,7 @@ import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
-
-/// Fake [SoulEvolutionChatState] that returns pre-configured data.
-class _FakeSoulEvolutionChatState extends SoulEvolutionChatState {
-  _FakeSoulEvolutionChatState(this._buildFn);
-
-  final Future<EvolutionChatData> Function(String) _buildFn;
-
-  @override
-  Future<EvolutionChatData> build(String soulId) => _buildFn(soulId);
-}
-
-/// Fake that records the last [sendMessage] call without calling the real
-/// implementation (which would require a wired-up workflow).
-class _TrackingSoulEvolutionChatState extends SoulEvolutionChatState {
-  _TrackingSoulEvolutionChatState(this._buildFn);
-
-  final Future<EvolutionChatData> Function(String) _buildFn;
-  String? lastSentMessage;
-
-  @override
-  Future<EvolutionChatData> build(String soulId) => _buildFn(soulId);
-
-  @override
-  Future<void> sendMessage(
-    String text, {
-    bool skipApprovalCheck = false,
-  }) async {
-    lastSentMessage = text;
-  }
-}
-
-/// Fake that exposes a [pushUpdate] helper so tests can drive state changes
-/// after the initial build (needed to exercise `didUpdateWidget` on the private
-/// `_MessageList` widget).
-class _ControllableSoulEvolutionChatState extends SoulEvolutionChatState {
-  _ControllableSoulEvolutionChatState(this._buildFn);
-
-  final Future<EvolutionChatData> Function(String) _buildFn;
-
-  @override
-  Future<EvolutionChatData> build(String soulId) => _buildFn(soulId);
-
-  void pushUpdate(EvolutionChatData data) {
-    state = AsyncData(data);
-  }
-}
+import 'evolution_chat_test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -105,7 +60,7 @@ void main() {
           soulOverride ?? (ref, id) async => defaultSoul,
         ),
         soulEvolutionChatStateProvider.overrideWith(
-          () => _FakeSoulEvolutionChatState(
+          () => FakeSoulEvolutionChatState(
             chatStateBuilder ?? (_) async => defaultChatData,
           ),
         ),
@@ -393,7 +348,7 @@ void main() {
             overrides: [
               soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
               soulEvolutionChatStateProvider.overrideWith(
-                () => _FakeSoulEvolutionChatState((_) async => defaultChatData),
+                () => FakeSoulEvolutionChatState((_) async => defaultChatData),
               ),
             ],
           ),
@@ -418,7 +373,7 @@ void main() {
       tester,
     ) async {
       // Use the tracking fake to capture what text reaches the notifier.
-      late _TrackingSoulEvolutionChatState notifierInstance;
+      late TrackingSoulEvolutionChatState notifierInstance;
 
       final defaultSoul = makeTestSoulDocument(displayName: 'Laura');
       final initialData = EvolutionChatData(
@@ -437,7 +392,7 @@ void main() {
           overrides: [
             soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
             soulEvolutionChatStateProvider.overrideWith(() {
-              final n = _TrackingSoulEvolutionChatState(
+              final n = TrackingSoulEvolutionChatState(
                 (_) async => initialData,
               );
               notifierInstance = n;
@@ -481,7 +436,7 @@ void main() {
             overrides: [
               soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
               soulEvolutionChatStateProvider.overrideWith(
-                () => _ControllableSoulEvolutionChatState(
+                () => ControllableSoulEvolutionChatState(
                   (_) async => initialData,
                 ),
               ),
@@ -498,7 +453,7 @@ void main() {
         final element = tester.element(find.byType(SoulEvolutionChatPage));
         final container = ProviderScope.containerOf(element);
         (container.read(soulEvolutionChatStateProvider(kTestSoulId).notifier)
-                as _ControllableSoulEvolutionChatState)
+                as ControllableSoulEvolutionChatState)
             .pushUpdate(
               EvolutionChatData(
                 sessionId: 'session-1',
@@ -541,7 +496,7 @@ void main() {
             overrides: [
               soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
               soulEvolutionChatStateProvider.overrideWith(
-                () => _ControllableSoulEvolutionChatState(
+                () => ControllableSoulEvolutionChatState(
                   (_) async => initialData,
                 ),
               ),
@@ -555,7 +510,7 @@ void main() {
         final element = tester.element(find.byType(SoulEvolutionChatPage));
         final container = ProviderScope.containerOf(element);
         (container.read(soulEvolutionChatStateProvider(kTestSoulId).notifier)
-                as _ControllableSoulEvolutionChatState)
+                as ControllableSoulEvolutionChatState)
             .pushUpdate(
               EvolutionChatData(
                 sessionId: 'session-1',
@@ -600,7 +555,7 @@ void main() {
           overrides: [
             soulDocumentProvider.overrideWith((ref, id) async => defaultSoul),
             soulEvolutionChatStateProvider.overrideWith(
-              () => _FakeSoulEvolutionChatState(
+              () => FakeSoulEvolutionChatState(
                 (_) async => EvolutionChatData(
                   sessionId: 'session-1',
                   messages: [

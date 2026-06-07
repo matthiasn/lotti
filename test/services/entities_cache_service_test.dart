@@ -10,41 +10,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
-
-/// A simple wrapper that exposes the same [updateStream] getter as
-/// [UpdateNotifications], but without debouncing — so tests can verify
-/// notification-driven re-fetches immediately.
-class TestNotifications implements UpdateNotifications {
-  final _controller = StreamController<Set<String>>.broadcast(sync: true);
-
-  @override
-  Stream<Set<String>> get updateStream => _controller.stream;
-
-  @override
-  Stream<Set<String>> get localUpdateStream => _controller.stream;
-
-  @override
-  Stream<Set<String>> get syncUpdateStream => _controller.stream;
-
-  void emit(Set<String> ids) {
-    _controller.add(ids);
-  }
-
-  @override
-  void notify(Set<String> affectedIds, {bool fromSync = false}) {
-    emit(affectedIds);
-  }
-
-  @override
-  void notifyUiOnly(Set<String> affectedIds) {
-    emit(affectedIds);
-  }
-
-  @override
-  Future<void> dispose() async {
-    await _controller.close();
-  }
-}
+import '../test_utils/test_notifications.dart';
 
 enum _GeneratedLabelScope {
   globalNull,
@@ -289,7 +255,7 @@ void main() {
 
   setUp(() {
     journalDb = MockJournalDb();
-    notifications = TestNotifications();
+    notifications = TestNotifications(sync: true);
   });
 
   tearDown(() async {
@@ -374,42 +340,47 @@ void main() {
   glados.Glados(
     glados.any.entitiesCacheScenario,
     glados.ExploreConfig(numRuns: 160),
-  ).test('matches generated label visibility invariants', (scenario) async {
-    final cache = await createCache(
-      categories: scenario.categories,
-      labels: scenario.labels,
-      privateFlag: scenario.privateFlag,
-    );
+  ).test('matches generated label visibility invariants', (scenario) {
+    // Drive init through fakeAsync via the synchronous factory so each of
+    // the 160 iterations avoids real async scheduling overhead.
+    fakeAsync((async) {
+      final cache = createCacheSync(
+        async,
+        categories: scenario.categories,
+        labels: scenario.labels,
+        privateFlag: scenario.privateFlag,
+      );
 
-    final available = cache.availableLabelsForCategory(
-      scenario.categoryId,
-      includePrivate: scenario.includePrivate,
-    );
-    final filtered = cache.filterLabelsForCategory(
-      scenario.labels,
-      scenario.categoryId,
-    );
+      final available = cache.availableLabelsForCategory(
+        scenario.categoryId,
+        includePrivate: scenario.includePrivate,
+      );
+      final filtered = cache.filterLabelsForCategory(
+        scenario.labels,
+        scenario.categoryId,
+      );
 
-    expect(
-      available.map((label) => label.id).toList(),
-      scenario.expectedAvailableIds(),
-      reason: scenario.toString(),
-    );
-    expect(
-      filtered.map((label) => label.id).toList(),
-      scenario.expectedFilteredIds(),
-      reason: scenario.toString(),
-    );
-    expect(
-      cache.sortedLabels.map((label) => label.id).toList(),
-      scenario.expectedSortedLabelIds(),
-      reason: scenario.toString(),
-    );
-    expect(
-      available.map((label) => label.id).toSet(),
-      hasLength(available.length),
-      reason: 'availableLabelsForCategory must not duplicate label IDs',
-    );
+      expect(
+        available.map((label) => label.id).toList(),
+        scenario.expectedAvailableIds(),
+        reason: scenario.toString(),
+      );
+      expect(
+        filtered.map((label) => label.id).toList(),
+        scenario.expectedFilteredIds(),
+        reason: scenario.toString(),
+      );
+      expect(
+        cache.sortedLabels.map((label) => label.id).toList(),
+        scenario.expectedSortedLabelIds(),
+        reason: scenario.toString(),
+      );
+      expect(
+        available.map((label) => label.id).toSet(),
+        hasLength(available.length),
+        reason: 'availableLabelsForCategory must not duplicate label IDs',
+      );
+    });
   }, tags: 'glados');
 
   test('availableLabelsForCategory returns union of global + bucket', () async {

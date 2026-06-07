@@ -72,7 +72,8 @@ void main() {
       );
 
       await tester.tap(find.byType(LottiAnimatedCheckbox));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(changedValue, true);
     });
@@ -94,7 +95,8 @@ void main() {
       );
 
       await tester.tap(find.byType(LottiAnimatedCheckbox));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(changedValue, isNull);
     });
@@ -168,12 +170,14 @@ void main() {
 
       // Tap to check
       await tester.tap(find.byType(LottiAnimatedCheckbox));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
       expect(currentValue, true);
 
       // Tap to uncheck
       await tester.tap(find.byType(LottiAnimatedCheckbox));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
       expect(currentValue, false);
     });
 
@@ -249,7 +253,8 @@ void main() {
       await tester.pump(const Duration(milliseconds: 90));
 
       // Complete animation
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
       // Should now show check icon
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);

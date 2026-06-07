@@ -3,11 +3,34 @@ import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 import 'package:lotti/features/ai/state/consts.dart';
+
+/// Streaming 200-OK stub that records the outgoing request — previously
+/// repeated inline in every multipart-shape test. Returns one pre-built
+/// client plus an accessor for the captured request.
+({
+  http.Client client,
+  http.MultipartRequest Function() multipart,
+})
+_stubStreamingOk() {
+  http.BaseRequest? captured;
+  final client = MockClient.streaming((request, _) async {
+    captured = request;
+    return http.StreamedResponse(
+      Stream.value(utf8.encode(jsonEncode({'text': 'transcribed text'}))),
+      200,
+    );
+  });
+  return (
+    client: client,
+    multipart: () => captured! as http.MultipartRequest,
+  );
+}
 
 void main() {
   group('MistralTranscriptionRepository', () {
@@ -31,6 +54,25 @@ void main() {
           );
         }
       });
+
+      // Property: the predicate is exactly a `voxtral-` prefix check.
+      glados.Glados(
+        glados.any.letterOrDigits,
+        glados.ExploreConfig(numRuns: 120),
+      ).test('matches iff the model id starts with voxtral-', (suffix) {
+        expect(
+          MistralTranscriptionRepository.isMistralTranscriptionModel(
+            'voxtral-$suffix',
+          ),
+          isTrue,
+          reason: 'voxtral-$suffix',
+        );
+        expect(
+          MistralTranscriptionRepository.isMistralTranscriptionModel(suffix),
+          suffix.startsWith('voxtral-'),
+          reason: suffix,
+        );
+      }, tags: 'glados');
     });
 
     group('transcribeAudio', () {
@@ -78,21 +120,8 @@ void main() {
       });
 
       test('includes context_bias field with dictionary terms', () async {
-        http.BaseRequest? capturedRequest;
-
-        final mockClient = MockClient.streaming(
-          (request, _) async {
-            capturedRequest = request;
-            return http.StreamedResponse(
-              Stream.value(
-                utf8.encode(jsonEncode({'text': 'transcribed text'})),
-              ),
-              200,
-            );
-          },
-        );
-
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final stub = _stubStreamingOk();
+        final repo = MistralTranscriptionRepository(httpClient: stub.client);
 
         await repo
             .transcribeAudio(
@@ -104,8 +133,7 @@ void main() {
             )
             .toList();
 
-        expect(capturedRequest, isA<http.MultipartRequest>());
-        final multipart = capturedRequest! as http.MultipartRequest;
+        final multipart = stub.multipart();
         expect(multipart.fields['model'], equals(testModel));
         expect(
           multipart.fields['context_bias'],
@@ -116,22 +144,67 @@ void main() {
         expect(multipart.files.first.filename, equals('audio.m4a'));
       });
 
+      // Property: for any raw term list, the wire field is the trimmed,
+      // de-duplicated, order-preserving prefix capped at 100 entries —
+      // and it is omitted entirely when nothing survives normalisation.
+      glados.Glados(
+        glados.any.list(
+          glados.AnyUtils(glados.any).choose(const [
+            'macOS',
+            ' macOS ',
+            'Flutter',
+            'Claude Code',
+            '',
+            '   ',
+            'Kirkjubæjarklaustur',
+            'Nano Banana Pro',
+            '\ttabbed\t',
+          ]),
+        ),
+        glados.ExploreConfig(numRuns: 60),
+      ).test(
+        'context_bias is trimmed, unique, capped, order-preserving',
+        (
+          rawTerms,
+        ) async {
+          final stub = _stubStreamingOk();
+          final repo = MistralTranscriptionRepository(httpClient: stub.client);
+
+          await repo
+              .transcribeAudio(
+                model: testModel,
+                audioBase64: testAudioBase64,
+                baseUrl: testBaseUrl,
+                apiKey: testApiKey,
+                contextBias: rawTerms,
+              )
+              .toList();
+
+          // Oracle: trim, drop empties, dedupe preserving first occurrence,
+          // cap at 100.
+          final expected = <String>[];
+          for (final term in rawTerms.map((t) => t.trim())) {
+            if (term.isEmpty || expected.contains(term)) continue;
+            expected.add(term);
+            if (expected.length == 100) break;
+          }
+
+          final field = stub.multipart().fields['context_bias'];
+          if (expected.isEmpty) {
+            expect(field, isNull, reason: 'raw: $rawTerms');
+          } else {
+            final sent = field!.split(',');
+            expect(sent, expected, reason: 'raw: $rawTerms');
+            expect(sent.length, lessThanOrEqualTo(100));
+            expect(sent.toSet().length, sent.length, reason: 'no duplicates');
+          }
+        },
+        tags: 'glados',
+      );
+
       test('preserves multi-word context_bias phrases', () async {
-        http.BaseRequest? capturedRequest;
-
-        final mockClient = MockClient.streaming(
-          (request, _) async {
-            capturedRequest = request;
-            return http.StreamedResponse(
-              Stream.value(
-                utf8.encode(jsonEncode({'text': 'transcribed text'})),
-              ),
-              200,
-            );
-          },
-        );
-
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final stub = _stubStreamingOk();
+        final repo = MistralTranscriptionRepository(httpClient: stub.client);
 
         await repo
             .transcribeAudio(
@@ -143,7 +216,7 @@ void main() {
             )
             .toList();
 
-        final multipart = capturedRequest! as http.MultipartRequest;
+        final multipart = stub.multipart();
         expect(
           multipart.fields['context_bias'],
           equals('Claude Code,macOS,Nano Banana Pro'),
@@ -151,21 +224,8 @@ void main() {
       });
 
       test('deduplicates repeated context_bias terms', () async {
-        http.BaseRequest? capturedRequest;
-
-        final mockClient = MockClient.streaming(
-          (request, _) async {
-            capturedRequest = request;
-            return http.StreamedResponse(
-              Stream.value(
-                utf8.encode(jsonEncode({'text': 'transcribed text'})),
-              ),
-              200,
-            );
-          },
-        );
-
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final stub = _stubStreamingOk();
+        final repo = MistralTranscriptionRepository(httpClient: stub.client);
 
         await repo
             .transcribeAudio(
@@ -177,7 +237,7 @@ void main() {
             )
             .toList();
 
-        final multipart = capturedRequest! as http.MultipartRequest;
+        final multipart = stub.multipart();
         final terms = multipart.fields['context_bias']!.split(',');
         expect(
           terms.where((t) => t == 'Gemini Pro').length,
@@ -187,21 +247,8 @@ void main() {
       });
 
       test('limits context_bias to 100 terms', () async {
-        http.BaseRequest? capturedRequest;
-
-        final mockClient = MockClient.streaming(
-          (request, _) async {
-            capturedRequest = request;
-            return http.StreamedResponse(
-              Stream.value(
-                utf8.encode(jsonEncode({'text': 'transcribed text'})),
-              ),
-              200,
-            );
-          },
-        );
-
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final stub = _stubStreamingOk();
+        final repo = MistralTranscriptionRepository(httpClient: stub.client);
 
         await repo
             .transcribeAudio(
@@ -213,7 +260,7 @@ void main() {
             )
             .toList();
 
-        final multipart = capturedRequest! as http.MultipartRequest;
+        final multipart = stub.multipart();
         final terms = multipart.fields['context_bias']!.split(',');
         expect(terms, hasLength(100));
         expect(terms.first, 'Term0');
@@ -221,21 +268,8 @@ void main() {
       });
 
       test('does not include context_bias field when null', () async {
-        http.BaseRequest? capturedRequest;
-
-        final mockClient = MockClient.streaming(
-          (request, _) async {
-            capturedRequest = request;
-            return http.StreamedResponse(
-              Stream.value(
-                utf8.encode(jsonEncode({'text': 'transcribed text'})),
-              ),
-              200,
-            );
-          },
-        );
-
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final stub = _stubStreamingOk();
+        final repo = MistralTranscriptionRepository(httpClient: stub.client);
 
         await repo
             .transcribeAudio(
@@ -246,26 +280,13 @@ void main() {
             )
             .toList();
 
-        final multipart = capturedRequest! as http.MultipartRequest;
+        final multipart = stub.multipart();
         expect(multipart.fields.containsKey('context_bias'), isFalse);
       });
 
       test('does not include context_bias field when empty', () async {
-        http.BaseRequest? capturedRequest;
-
-        final mockClient = MockClient.streaming(
-          (request, _) async {
-            capturedRequest = request;
-            return http.StreamedResponse(
-              Stream.value(
-                utf8.encode(jsonEncode({'text': 'transcribed text'})),
-              ),
-              200,
-            );
-          },
-        );
-
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final stub = _stubStreamingOk();
+        final repo = MistralTranscriptionRepository(httpClient: stub.client);
 
         await repo
             .transcribeAudio(
@@ -277,7 +298,7 @@ void main() {
             )
             .toList();
 
-        final multipart = capturedRequest! as http.MultipartRequest;
+        final multipart = stub.multipart();
         expect(multipart.fields.containsKey('context_bias'), isFalse);
       });
 
@@ -526,21 +547,8 @@ void main() {
       });
 
       test('includes diarization fields in request', () async {
-        http.BaseRequest? capturedRequest;
-
-        final mockClient = MockClient.streaming(
-          (request, _) async {
-            capturedRequest = request;
-            return http.StreamedResponse(
-              Stream.value(
-                utf8.encode(jsonEncode({'text': 'ok'})),
-              ),
-              200,
-            );
-          },
-        );
-
-        final repo = MistralTranscriptionRepository(httpClient: mockClient);
+        final stub = _stubStreamingOk();
+        final repo = MistralTranscriptionRepository(httpClient: stub.client);
 
         await repo
             .transcribeAudio(
@@ -551,7 +559,7 @@ void main() {
             )
             .toList();
 
-        final multipart = capturedRequest! as http.MultipartRequest;
+        final multipart = stub.multipart();
         expect(multipart.fields['diarize'], equals('true'));
         expect(
           multipart.fields['timestamp_granularities'],

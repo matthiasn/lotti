@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -1471,7 +1473,6 @@ void main() {
           throwsA(isA<DayAgentInteractionException>()),
         );
       },
-      timeout: const Timeout(Duration(seconds: 5)),
     );
   });
 
@@ -1712,7 +1713,6 @@ void main() {
           throwsA(isA<DayAgentInteractionException>()),
         );
       },
-      timeout: const Timeout(Duration(seconds: 5)),
     );
   });
 
@@ -2479,5 +2479,144 @@ void main() {
         contains('cancelled by caller'),
       );
     });
+  });
+
+  group('debugAgendaFor — agenda state fold', () {
+    const cat = DayAgentCategory(id: 'c1', name: 'Deep', colorHex: '3B82F6');
+
+    TimeBlock block(
+      String id,
+      TimeBlockState state, {
+      String? taskId,
+      int hour = 9,
+    }) => TimeBlock(
+      id: id,
+      title: id,
+      start: _asOf.add(Duration(hours: hour)),
+      end: _asOf.add(Duration(hours: hour + 1)),
+      type: TimeBlockType.ai,
+      state: state,
+      category: cat,
+      taskId: taskId,
+    );
+
+    test(
+      'a partially worked group (inProgress + completed + drafted) folds to '
+      'inProgress, and a fully completed group folds to done',
+      () {
+        final bench = _TestBench.create();
+        final agenda = bench.adapter.debugAgendaFor([
+          // task-1: one of each — inProgress must win even though a block
+          // is already completed and another is still drafted.
+          block('p-done', TimeBlockState.completed, taskId: 'task-1'),
+          block(
+            'p-active',
+            TimeBlockState.inProgress,
+            taskId: 'task-1',
+            hour: 10,
+          ),
+          block(
+            'p-drafted',
+            TimeBlockState.drafted,
+            taskId: 'task-1',
+            hour: 11,
+          ),
+          // task-2: every block completed → done.
+          block('d-1', TimeBlockState.completed, taskId: 'task-2', hour: 12),
+          block('d-2', TimeBlockState.completed, taskId: 'task-2', hour: 13),
+        ]);
+
+        final partial = agenda.firstWhere((a) => a.taskId == 'task-1');
+        expect(partial.state, AgendaItemState.inProgress);
+        expect(partial.linkedBlockIds, ['p-done', 'p-active', 'p-drafted']);
+        expect(partial.totalEstimateMinutes, 180);
+
+        final completed = agenda.firstWhere((a) => a.taskId == 'task-2');
+        expect(completed.state, AgendaItemState.done);
+      },
+    );
+  });
+
+  group('projection pure helpers — properties', () {
+    late _TestBench bench;
+
+    setUp(() {
+      bench = _TestBench.create();
+    });
+
+    glados.Glados2(
+      glados.any.intInRange(0, 365),
+      glados.any.intInRange(0, 365),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'debugDaysBetween is antisymmetric and ignores time-of-day',
+      (a, b) {
+        // Date-only arithmetic on calendar days built from components is
+        // DST-safe; mixing in hours proves the date-only truncation.
+        final base = DateTime(2024);
+        final d1 = DateTime(2024, 1, 1 + a, 9, 30);
+        final d2 = DateTime(2024, 1, 1 + b, 22, 15);
+
+        final forward = bench.adapter.debugDaysBetween(d1, d2);
+        final backward = bench.adapter.debugDaysBetween(d2, d1);
+
+        expect(forward, -backward, reason: 'a=$a b=$b');
+        expect(forward, b - a, reason: 'calendar-day oracle from $base');
+        // Same calendar day, any times → zero.
+        expect(
+          bench.adapter.debugDaysBetween(
+            DateTime(2024, 1, 1 + a),
+            DateTime(2024, 1, 1 + a, 23, 59),
+          ),
+          0,
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<String>(
+      glados.AnyUtils(glados.any).choose(const [
+        '#3B82F6',
+        '3B82F6',
+        '#3B82F6FF',
+        '#FFF',
+        'FFF',
+        '',
+        '#',
+        '#0F172A',
+      ]),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'debugProjectCategory normalises hex per the documented contract',
+      (color) {
+        final def = CategoryDefinition(
+          id: 'cat-1',
+          name: 'Cat',
+          color: color,
+          createdAt: DateTime(2024),
+          updatedAt: DateTime(2024),
+          vectorClock: null,
+          private: false,
+          active: true,
+        );
+
+        final projected = bench.adapter.debugProjectCategory(def);
+
+        // Oracle mirroring the impl contract: strip '#', take the first six
+        // chars when long enough, fall back for empty, pass short raw
+        // through unchanged (documented quirk — NOT padded to 6).
+        final raw = color.replaceFirst('#', '');
+        final expected = raw.length >= 6
+            ? raw.substring(0, 6)
+            : (raw.isEmpty ? projected.colorHex : raw);
+        expect(projected.colorHex, expected, reason: 'color="$color"');
+        expect(projected.id, 'cat-1');
+        expect(projected.name, 'Cat');
+        if (raw.length >= 6) {
+          expect(projected.colorHex.length, 6);
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

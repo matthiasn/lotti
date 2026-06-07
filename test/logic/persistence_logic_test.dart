@@ -465,16 +465,24 @@ void main() {
 
   group('Database Tests - ', () {
     var vcMockNext = '1';
+    late SettingsDb settingsDb;
+    late JournalDb journalDb;
+    late SyncDatabase syncDb;
 
-    setUpAll(() async {
+    // Fresh in-memory databases + GetIt registrations per test: no DB state
+    // accumulates across tests, so no test can depend on entities created by
+    // another (and a failure in one test cannot corrupt later ones).
+    setUp(() async {
+      vcMockNext = '1';
       await getIt.reset();
 
       setFakeDocumentsPath();
 
       getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
-      final settingsDb = SettingsDb(inMemoryDatabase: true);
-      final journalDb = JournalDb(inMemoryDatabase: true);
+      settingsDb = SettingsDb(inMemoryDatabase: true);
+      journalDb = JournalDb(inMemoryDatabase: true);
+      syncDb = SyncDatabase(inMemoryDatabase: true);
       await initConfigFlags(journalDb, inMemoryDatabase: true);
 
       when(
@@ -534,7 +542,7 @@ void main() {
         ..registerSingleton<SettingsDb>(settingsDb)
         ..registerSingleton<Fts5Db>(mockFts5Db)
         ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<SyncDatabase>(SyncDatabase(inMemoryDatabase: true))
+        ..registerSingleton<SyncDatabase>(syncDb)
         ..registerSingleton<JournalDb>(journalDb)
         ..registerSingleton<DomainLogger>(
           DomainLogger(loggingService: LoggingService()),
@@ -559,25 +567,17 @@ void main() {
         ..registerSingleton<PersistenceLogic>(PersistenceLogic());
     });
 
-    tearDownAll(() async {
-      await getIt.reset();
-    });
-
-    // Ensure Directory registration is fresh per test to avoid cross-file overrides
-    setUp(() async {
-      if (getIt.isRegistered<Directory>()) {
-        getIt.unregister<Directory>();
-      }
-      getIt.registerSingleton<Directory>(
-        await getApplicationDocumentsDirectory(),
-      );
-    });
-
-    tearDown(() {
+    tearDown(() async {
       clearInteractions(mockNotificationService);
       clearInteractions(mockUpdateNotifications);
       clearInteractions(mockFts5Db);
       clearInteractions(mockDeviceLocation);
+      clearInteractions(mockOutboxService);
+      clearInteractions(secureStorageMock);
+      await getIt.reset();
+      await journalDb.close();
+      await settingsDb.close();
+      await syncDb.close();
     });
 
     test(
@@ -2579,35 +2579,41 @@ void main() {
       },
     );
 
-    test(
-      'upsertEntityDefinition emits labelsNotification for LabelDefinition',
-      () async {
-        when(
-          () => journalDb.upsertEntityDefinition(any<EntityDefinition>()),
-        ).thenAnswer((_) async => 1);
+    // upsertEntityDefinition routes every definition type to its own
+    // type-level notification alongside the entity id, and enqueues a sync
+    // message for each upsert.
+    final definitionRoutingCases = <(String, EntityDefinition, String)>[
+      ('CategoryDefinition', categoryMindfulness, categoriesNotification),
+      ('HabitDefinition', habitFlossing, habitsNotification),
+      ('DashboardDefinition', testDashboardConfig, dashboardsNotification),
+      ('MeasurableDataType', measurableWater, measurablesNotification),
+      ('LabelDefinition', testLabelDefinition1, labelsNotification),
+    ];
 
-        final label = LabelDefinition(
-          id: 'label-test-id',
-          name: 'TestLabel',
-          color: '#123456',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          vectorClock: null,
-          private: false,
-        );
+    for (final (description, definition, expectedNotification)
+        in definitionRoutingCases) {
+      test(
+        'upsertEntityDefinition emits $expectedNotification for $description',
+        () async {
+          when(
+            () => journalDb.upsertEntityDefinition(any<EntityDefinition>()),
+          ).thenAnswer((_) async => 1);
 
-        final result = await logic.upsertEntityDefinition(label);
+          final result = await logic.upsertEntityDefinition(definition);
 
-        expect(result, 1);
-        // Verify that the labelsNotification was included in the notify call
-        final captured = verify(
-          () => updateNotifications.notify(captureAny<Set<String>>()),
-        ).captured;
-        final notifiedIds = captured.last as Set<String>;
-        expect(notifiedIds, contains('LABELS_CHANGED'));
-        expect(notifiedIds, contains('label-test-id'));
-      },
-    );
+          expect(result, 1);
+          final captured = verify(
+            () => updateNotifications.notify(captureAny<Set<String>>()),
+          ).captured;
+          final notifiedIds = captured.last as Set<String>;
+          expect(notifiedIds, contains(expectedNotification));
+          expect(notifiedIds, contains(definition.id));
+          verify(
+            () => outboxService.enqueueMessage(any<SyncMessage>()),
+          ).called(1);
+        },
+      );
+    }
 
     test(
       'setConfigFlag notifies privateToggleNotification when flag name is private',
@@ -3369,6 +3375,57 @@ void main() {
           verifyNever(
             () => updateNotifications.notify(any<Set<String>>()),
           );
+        },
+      );
+
+      test(
+        'notifyUiOnly receives the full affectedIds enumeration for a '
+        'HabitCompletionEntry inside the agent zone',
+        () async {
+          stubUpdateResult(JournalUpdateResult.applied());
+          when(
+            () => updateNotifications.notifyUiOnly(any<Set<String>>()),
+          ).thenReturn(null);
+
+          final testDate = DateTime(2024, 3, 15, 10, 30);
+          final completion = JournalEntity.habitCompletion(
+            meta: Metadata(
+              id: 'completion-id',
+              createdAt: testDate,
+              updatedAt: testDate,
+              dateFrom: testDate,
+              dateTo: testDate,
+              vectorClock: const VectorClock({'host': 1}),
+            ),
+            data: HabitCompletionData(
+              habitId: 'habit-id',
+              dateFrom: testDate,
+              dateTo: testDate,
+              completionType: HabitCompletionType.success,
+            ),
+          );
+
+          await runZoned(
+            () => logic.updateDbEntity(completion),
+            zoneValues: {agentExecutionZoneKey: true},
+          );
+
+          // The habit completion enumerates its own id, the habit id, and
+          // the habit completion type notification; updateDbEntity adds the
+          // label usage notification on top.
+          final captured = verify(
+            () => updateNotifications.notifyUiOnly(captureAny<Set<String>>()),
+          ).captured;
+          expect(
+            captured.single,
+            containsAll(<String>{
+              'completion-id',
+              'habit-id',
+              habitCompletionNotification,
+              labelUsageNotification,
+            }),
+          );
+          verifyNever(() => updateNotifications.notify(any<Set<String>>()));
         },
       );
     });

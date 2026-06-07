@@ -194,12 +194,6 @@ extension _AnyGeneratedBridgeScenario on glados.Any {
       );
 }
 
-Future<void> _drainBridgeCoordinatorMicrotasks() async {
-  for (var i = 0; i < 6; i++) {
-    await Future<void>.value();
-  }
-}
-
 void main() {
   late SyncDatabase db;
   late MockDomainLogger logging;
@@ -564,7 +558,7 @@ void main() {
             case _GeneratedBridgeTriggerKind.nonLimitedCurrentRoom:
               generatedSyncCtl.add(_nonLimitedSyncFor(scenario.expectedRoomId));
           }
-          await _drainBridgeCoordinatorMicrotasks();
+          await pumpEventQueue();
         }
 
         expect(
@@ -686,6 +680,77 @@ void main() {
           ),
         ).called(greaterThanOrEqualTo(1));
         await coordinator.stop();
+      },
+    );
+
+    test(
+      'incomplete-retry counter state machine: a fully exhausted ladder '
+      'gives up exactly once, schedules no further timer, and resets the '
+      'counter so a later trigger starts a fresh ladder',
+      () {
+        fakeAsync((async) {
+          const retryDelay = Duration(milliseconds: 50);
+          final runner = _RecordingRunner(defaultCompleted: false);
+          final coordinator = buildCoordinator(
+            resolveRoom: () async => room,
+            runner: runner,
+            incompleteRetryDelay: retryDelay,
+            maxIncompleteRetries: 2,
+          );
+
+          var giveUps = 0;
+          when(
+            () => logging.log(
+              any<LogDomain>(),
+              any<String>(that: contains('queue.bridge.incomplete.giveUp')),
+              subDomain: any(named: 'subDomain'),
+            ),
+          ).thenAnswer((_) => giveUps++);
+
+          // Ladder 1: initial walk fails (counter=1, timer scheduled).
+          unawaited(coordinator.bridgeNow());
+          async.flushMicrotasks();
+          expect(runner.calls, hasLength(1));
+
+          // Retry 1 fires and fails (counter=2 == max, timer scheduled).
+          async
+            ..elapse(retryDelay)
+            ..flushMicrotasks();
+          expect(runner.calls, hasLength(2));
+
+          // Retry 2 fires and fails (counter=3 > max): give up — counter
+          // reset, NO further timer.
+          async
+            ..elapse(retryDelay)
+            ..flushMicrotasks();
+          expect(runner.calls, hasLength(3));
+          expect(giveUps, 1, reason: 'giveUp must be logged exactly once');
+
+          // (a) No more timers: elapsing far past the delay schedules
+          // nothing new.
+          async
+            ..elapse(retryDelay * 20)
+            ..flushMicrotasks();
+          expect(runner.calls, hasLength(3));
+          expect(giveUps, 1, reason: 'no second giveUp after the reset');
+
+          // (c) The counter was reset: a fresh trigger starts a brand-new
+          // ladder (walk + scheduled retry), not an immediate give-up.
+          unawaited(coordinator.bridgeNow());
+          async.flushMicrotasks();
+          expect(runner.calls, hasLength(4));
+          async
+            ..elapse(retryDelay)
+            ..flushMicrotasks();
+          expect(
+            runner.calls,
+            hasLength(5),
+            reason: 'post-giveUp ladder must schedule its own retry timer',
+          );
+
+          unawaited(coordinator.stop());
+          async.flushMicrotasks();
+        });
       },
     );
 

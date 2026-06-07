@@ -6,6 +6,7 @@ import 'package:lotti/beamer/locations/calendar_location.dart';
 import 'package:lotti/beamer/locations/dashboards_location.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
+import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 
@@ -56,6 +57,15 @@ void main() {
       expect(location, isA<CalendarLocation>());
     });
 
+    test('projectsBeamerDelegate returns ProjectsLocation', () {
+      final routeInformation = RouteInformation(uri: Uri.parse('/projects'));
+      final location = projectsBeamerDelegate.locationBuilder(
+        routeInformation,
+        null,
+      );
+      expect(location, isA<ProjectsLocation>());
+    });
+
     test('settingsBeamerDelegate returns SettingsLocation', () {
       final routeInformation = RouteInformation(uri: Uri.parse('/settings'));
       final location = settingsBeamerDelegate.locationBuilder(
@@ -92,7 +102,13 @@ void main() {
         null,
       );
 
+      final projectsLocation = projectsBeamerDelegate.locationBuilder(
+        routeInformation,
+        null,
+      );
+
       expect(habitsLocation, isA<NotFound>());
+      expect(projectsLocation, isA<NotFound>());
       expect(dashboardsLocation, isA<NotFound>());
       expect(journalLocation, isA<NotFound>());
       expect(tasksLocation, isA<NotFound>());

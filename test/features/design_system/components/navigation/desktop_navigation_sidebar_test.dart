@@ -250,6 +250,19 @@ void main() {
       await tester.pump();
 
       expect(find.byType(DesignSystemBrandLogo), findsOneWidget);
+
+      // Placement: the logo sits at the top of the sidebar, above every
+      // navigation destination tile.
+      final logoBottom = tester
+          .getBottomLeft(find.byType(DesignSystemBrandLogo))
+          .dy;
+      for (final label in ['Journal', 'Tasks', 'Habits']) {
+        expect(
+          tester.getTopLeft(find.text(label)).dy,
+          greaterThan(logoBottom),
+          reason: 'nav item $label must render below the brand logo',
+        );
+      }
     });
 
     testWidgets('sidebar has default width of 320', (tester) async {

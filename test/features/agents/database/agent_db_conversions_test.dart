@@ -16,6 +16,8 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
+import '../test_utils.dart';
+
 enum _GeneratedReportContentShape {
   string,
   markdownString,
@@ -1615,5 +1617,136 @@ void main() {
       expect(result.fromId, 'tpl-001');
       expect(result.toId, 'soul-002');
     });
+  });
+
+  group('AgentDbConversions — parametric entity round-trip', () {
+    AgentEntity rowFor(AgentEntitiesCompanion companion) => AgentEntity(
+      id: companion.id.value,
+      agentId: companion.agentId.value,
+      type: companion.type.value,
+      subtype: companion.subtype.present ? companion.subtype.value : null,
+      threadId: companion.threadId.present ? companion.threadId.value : null,
+      createdAt: companion.createdAt.value,
+      updatedAt: companion.updatedAt.value,
+      deletedAt: companion.deletedAt.value,
+      serialized: companion.serialized.value,
+      schemaVersion: 1,
+    );
+
+    test(
+      'fromEntityRow(toEntityCompanion(e)) reconstructs every union variant',
+      () {
+        final representatives = <AgentDomainEntity>[
+          makeTestIdentity(),
+          makeTestState(),
+          makeTestMessage(),
+          makeTestMessagePayload(),
+          makeTestReport(),
+          makeTestReportHead(),
+          makeTestTemplate(),
+          makeTestTemplateVersion(),
+          makeTestTemplateHead(),
+          makeTestCapture(),
+          makeTestParsedItem(),
+          makeTestDayPlan(),
+          makeTestChangeSet(),
+          makeTestChangeDecision(),
+          makeTestEvolutionSession(),
+          makeTestEvolutionNote(),
+          makeTestEvolutionSessionRecap(),
+          makeTestSoulDocument(),
+          makeTestSoulDocumentVersion(),
+          makeTestSoulDocumentHead(),
+          makeTestWakeTokenUsage(),
+          makeTestProjectRecommendation(),
+          AgentDomainEntity.attentionRequest(
+            id: 'rt-attention-request',
+            agentId: 'task-agent-001',
+            kind: AttentionRequestKind.task,
+            title: 'Prep demo',
+            categoryId: 'work',
+            requestedMinutes: 45,
+            impact: 4,
+            urgency: 5,
+            energyFit: AttentionEnergyFit.high,
+            evidenceRefs: const [
+              AttentionEvidenceRef(
+                kind: AttentionEvidenceKind.task,
+                id: 'task-001',
+              ),
+            ],
+            scopeKind: AttentionClaimScopeKind.deadline,
+            createdAt: createdAt,
+            vectorClock: null,
+          ),
+          AgentDomainEntity.attentionClaimDisposition(
+            id: 'rt-attention-disposition',
+            agentId: 'planner-agent-001',
+            requestId: 'rt-attention-request',
+            status: AttentionClaimStatus.deferred,
+            planId: 'day_agent_plan:dayplan-2026-05-25',
+            changeSetId: 'changeset-001',
+            reason: 'Revisit tomorrow.',
+            nextReviewAt: DateTime(2026, 5, 24, 18),
+            createdAt: createdAt,
+            vectorClock: null,
+          ),
+          AgentDomainEntity.attentionAward(
+            id: 'rt-attention-award',
+            agentId: 'day-agent-001',
+            requestId: 'rt-attention-request',
+            dayId: 'dayplan-2026-05-25',
+            planId: 'day_agent_plan:dayplan-2026-05-25',
+            blockId: 'attention_block:dayplan-2026-05-25:rt-attention-request',
+            categoryId: 'work',
+            title: 'Prep demo',
+            startTime: DateTime(2026, 5, 25, 9),
+            endTime: DateTime(2026, 5, 25, 9, 45),
+            rank: 1,
+            utilityScore: 5125,
+            createdAt: createdAt,
+            vectorClock: null,
+          ),
+          AgentDomainEntity.standingAgreement(
+            id: 'rt-standing-agreement',
+            agentId: 'fitness-agent-001',
+            title: 'Exercise three times per week',
+            scope: StandingAgreementScope.fitness,
+            cadence: StandingAgreementCadence.weekly,
+            enforcement: StandingAgreementEnforcement.nonNegotiable,
+            approvalMode: StandingAgreementApprovalMode.autoAccept,
+            minCount: 3,
+            minMinutes: 135,
+            preferredSessionMinutes: 45,
+            priority: 80,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+            vectorClock: null,
+          ),
+        ];
+
+        // One representative per serialisable union variant (everything but
+        // `unknown`, which has its own dedicated group). A new variant added
+        // without extending this list fails the distinct-type guard below
+        // only if someone remembers — the per-entity equality is the real
+        // assertion.
+        final distinctTypes = representatives
+            .map(AgentDbConversions.entityType)
+            .toSet();
+        expect(distinctTypes, hasLength(representatives.length));
+
+        for (final entity in representatives) {
+          final companion = AgentDbConversions.toEntityCompanion(entity);
+          final restored = AgentDbConversions.fromEntityRow(rowFor(companion));
+          expect(
+            restored,
+            equals(entity),
+            reason:
+                'variant ${AgentDbConversions.entityType(entity)} '
+                'must survive the companion/row round-trip',
+          );
+        }
+      },
+    );
   });
 }

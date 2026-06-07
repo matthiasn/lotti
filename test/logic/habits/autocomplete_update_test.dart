@@ -237,115 +237,99 @@ void main() {
       title: 'Flossing',
     );
 
-    test('replaceAtRecursive with health rule at root replaces the rule', () {
-      final result = replaceAtRecursive(
-        rule: healthRule,
-        replaceWith: workoutRule,
-        currentPath: [0],
-        replaceAtPath: [0],
-      );
+    // Root replacement is type-independent: every node type (leaf or empty
+    // container) at the root is swapped wholesale for the replacement.
+    const rootReplacementCases = <(String, AutoCompleteRule)>[
+      ('health leaf', healthRule),
+      ('workout leaf', workoutRule),
+      ('measurable leaf', measurableRule),
+      ('habit leaf', habitRule),
+      ('empty AND', AutoCompleteRule.and(rules: [])),
+      ('empty OR', AutoCompleteRule.or(rules: [])),
+      ('empty MULTIPLE', AutoCompleteRule.multiple(rules: [], successes: 0)),
+    ];
 
-      expect(result, workoutRule);
-    });
-
-    test('replaceAtRecursive with workout rule at root replaces the rule', () {
-      final result = replaceAtRecursive(
-        rule: workoutRule,
-        replaceWith: healthRule,
-        currentPath: [0],
-        replaceAtPath: [0],
-      );
-
-      expect(result, healthRule);
-    });
-
-    test(
-      'replaceAtRecursive with measurable rule at root replaces the rule',
-      () {
+    for (final (description, rule) in rootReplacementCases) {
+      test('replaceAtRecursive at root replaces $description wholesale', () {
         final result = replaceAtRecursive(
-          rule: measurableRule,
-          replaceWith: healthRule,
+          rule: rule,
+          replaceWith: habitRule,
           currentPath: [0],
           replaceAtPath: [0],
         );
 
-        expect(result, healthRule);
-      },
-    );
+        expect(result, habitRule);
+      });
+    }
 
-    test('replaceAtRecursive with habit rule at root replaces the rule', () {
-      final result = replaceAtRecursive(
-        rule: habitRule,
-        replaceWith: healthRule,
-        currentPath: [0],
-        replaceAtPath: [0],
+    // One worked example per container type: replace one child, assert the
+    // full resulting tree (which also covers sibling order and, for MULTIPLE,
+    // preservation of `successes`).
+    final containerReplacementCases =
+        <
+          ({
+            String description,
+            AutoCompleteRule container,
+            int replaceIndex,
+            AutoCompleteRule expected,
+          })
+        >[
+          (
+            description: 'AND',
+            container: const AutoCompleteRule.and(
+              rules: [healthRule, workoutRule],
+              title: 'Health and Workout',
+            ),
+            replaceIndex: 0,
+            expected: const AutoCompleteRule.and(
+              rules: [measurableRule, workoutRule],
+              title: 'Health and Workout',
+            ),
+          ),
+          (
+            description: 'OR',
+            container: const AutoCompleteRule.or(
+              rules: [healthRule, workoutRule],
+              title: 'Health or Workout',
+            ),
+            replaceIndex: 1,
+            expected: const AutoCompleteRule.or(
+              rules: [healthRule, measurableRule],
+              title: 'Health or Workout',
+            ),
+          ),
+          (
+            description: 'MULTIPLE',
+            container: const AutoCompleteRule.multiple(
+              rules: [healthRule, workoutRule, habitRule],
+              successes: 2,
+              title: 'At least 2',
+            ),
+            replaceIndex: 2,
+            expected: const AutoCompleteRule.multiple(
+              rules: [healthRule, workoutRule, measurableRule],
+              successes: 2,
+              title: 'At least 2',
+            ),
+          ),
+        ];
+
+    for (final scenario in containerReplacementCases) {
+      test(
+        'replaceAtRecursive replaces child ${scenario.replaceIndex} inside '
+        '${scenario.description}',
+        () {
+          final result = replaceAtRecursive(
+            rule: scenario.container,
+            replaceWith: measurableRule,
+            currentPath: [0],
+            replaceAtPath: [0, scenario.replaceIndex],
+          );
+
+          expect(result, scenario.expected);
+        },
       );
-
-      expect(result, healthRule);
-    });
-
-    test('replaceAtRecursive with AND rule - simple replacement', () {
-      const andRule = AutoCompleteRule.and(
-        rules: [healthRule, workoutRule],
-        title: 'Health and Workout',
-      );
-
-      final result = replaceAtRecursive(
-        rule: andRule,
-        replaceWith: measurableRule,
-        currentPath: [0],
-        replaceAtPath: [0, 0],
-      );
-
-      expect(result, isA<AutoCompleteRuleAnd>());
-      final resultAnd = result! as AutoCompleteRuleAnd;
-      expect(resultAnd.rules.length, 2);
-      expect(resultAnd.rules[0], measurableRule);
-      expect(resultAnd.rules[1], workoutRule);
-    });
-
-    test('replaceAtRecursive with OR rule - simple replacement', () {
-      const orRule = AutoCompleteRule.or(
-        rules: [healthRule, workoutRule],
-        title: 'Health or Workout',
-      );
-
-      final result = replaceAtRecursive(
-        rule: orRule,
-        replaceWith: measurableRule,
-        currentPath: [0],
-        replaceAtPath: [0, 1],
-      );
-
-      expect(result, isA<AutoCompleteRuleOr>());
-      final resultOr = result! as AutoCompleteRuleOr;
-      expect(resultOr.rules.length, 2);
-      expect(resultOr.rules[0], healthRule);
-      expect(resultOr.rules[1], measurableRule);
-    });
-
-    test('replaceAtRecursive with MULTIPLE rule - simple replacement', () {
-      const multipleRule = AutoCompleteRule.multiple(
-        rules: [healthRule, workoutRule, measurableRule],
-        successes: 2,
-        title: 'At least 2',
-      );
-
-      final result = replaceAtRecursive(
-        rule: multipleRule,
-        replaceWith: habitRule,
-        currentPath: [0],
-        replaceAtPath: [0, 2],
-      );
-
-      expect(result, isA<AutoCompleteRuleMultiple>());
-      final resultMultiple = result! as AutoCompleteRuleMultiple;
-      expect(resultMultiple.rules.length, 3);
-      expect(resultMultiple.rules[0], healthRule);
-      expect(resultMultiple.rules[1], workoutRule);
-      expect(resultMultiple.rules[2], habitRule);
-      expect(resultMultiple.successes, 2);
-    });
+    }
 
     test('replaceAtRecursive with nested AND/OR rules', () {
       const nestedRule = AutoCompleteRule.and(
@@ -364,15 +348,64 @@ void main() {
         replaceAtPath: [0, 0, 1],
       );
 
-      expect(result, isA<AutoCompleteRuleAnd>());
-      final resultAnd = result! as AutoCompleteRuleAnd;
-      expect(resultAnd.rules.length, 2);
+      expect(
+        result,
+        const AutoCompleteRule.and(
+          rules: [
+            AutoCompleteRule.or(
+              rules: [healthRule, habitRule],
+            ),
+            measurableRule,
+          ],
+        ),
+      );
+    });
 
-      final firstRule = resultAnd.rules[0] as AutoCompleteRuleOr;
-      expect(firstRule.rules.length, 2);
-      expect(firstRule.rules[0], healthRule);
-      expect(firstRule.rules[1], habitRule);
-      expect(resultAnd.rules[1], measurableRule);
+    test('replaceAtRecursive with deeply nested structure', () {
+      const deeplyNested = AutoCompleteRule.and(
+        rules: [
+          AutoCompleteRule.or(
+            rules: [
+              AutoCompleteRule.multiple(
+                rules: [healthRule, workoutRule],
+                successes: 1,
+              ),
+              measurableRule,
+            ],
+          ),
+          habitRule,
+        ],
+      );
+
+      const heartRateRule = AutoCompleteRule.health(
+        dataType: 'heart_rate',
+        minimum: 60,
+      );
+
+      final result = replaceAtRecursive(
+        rule: deeplyNested,
+        replaceWith: heartRateRule,
+        currentPath: [0],
+        replaceAtPath: [0, 0, 0, 1],
+      );
+
+      expect(
+        result,
+        const AutoCompleteRule.and(
+          rules: [
+            AutoCompleteRule.or(
+              rules: [
+                AutoCompleteRule.multiple(
+                  rules: [healthRule, heartRateRule],
+                  successes: 1,
+                ),
+                measurableRule,
+              ],
+            ),
+            habitRule,
+          ],
+        ),
+      );
     });
 
     test('replaceAtRecursive returns null when replacing with null', () {
@@ -418,9 +451,12 @@ void main() {
         replaceWith: habitRule,
       );
 
-      expect(result, isA<AutoCompleteRuleAnd>());
-      final resultAnd = result! as AutoCompleteRuleAnd;
-      expect(resultAnd.rules[1], habitRule);
+      expect(
+        result,
+        const AutoCompleteRule.and(
+          rules: [healthRule, habitRule, measurableRule],
+        ),
+      );
     });
 
     test('removeAt helper function - simple case', () {
@@ -432,7 +468,7 @@ void main() {
       expect(result, null);
     });
 
-    test('removeAt helper with nested structure', () {
+    test('removeAt helper with nested structure drops the child', () {
       const nestedRule = AutoCompleteRule.and(
         rules: [healthRule, workoutRule, measurableRule],
       );
@@ -442,47 +478,12 @@ void main() {
         path: [0, 1],
       );
 
-      expect(result, isA<AutoCompleteRuleAnd>());
-      final resultAnd = result! as AutoCompleteRuleAnd;
-      expect(resultAnd.rules.length, 2);
-      expect(resultAnd.rules[0], healthRule);
-      expect(resultAnd.rules[1], measurableRule);
-    });
-
-    test('replaceAtRecursive with deeply nested structure', () {
-      const deeplyNested = AutoCompleteRule.and(
-        rules: [
-          AutoCompleteRule.or(
-            rules: [
-              AutoCompleteRule.multiple(
-                rules: [healthRule, workoutRule],
-                successes: 1,
-              ),
-              measurableRule,
-            ],
-          ),
-          habitRule,
-        ],
-      );
-
-      final result = replaceAtRecursive(
-        rule: deeplyNested,
-        replaceWith: const AutoCompleteRule.health(
-          dataType: 'heart_rate',
-          minimum: 60,
+      expect(
+        result,
+        const AutoCompleteRule.and(
+          rules: [healthRule, measurableRule],
         ),
-        currentPath: [0],
-        replaceAtPath: [0, 0, 0, 1],
       );
-
-      expect(result, isA<AutoCompleteRuleAnd>());
-      final resultAnd = result! as AutoCompleteRuleAnd;
-      final firstOr = resultAnd.rules[0] as AutoCompleteRuleOr;
-      final firstMultiple = firstOr.rules[0] as AutoCompleteRuleMultiple;
-      expect(firstMultiple.rules[1], isA<AutoCompleteRuleHealth>());
-      final healthRuleReplaced =
-          firstMultiple.rules[1] as AutoCompleteRuleHealth;
-      expect(healthRuleReplaced.dataType, 'heart_rate');
     });
 
     test('replaceAtRecursive filters out null values from lists', () {
@@ -497,33 +498,33 @@ void main() {
         replaceAtPath: [0, 1],
       );
 
-      expect(result, isA<AutoCompleteRuleAnd>());
-      final resultAnd = result! as AutoCompleteRuleAnd;
-      expect(resultAnd.rules.length, 2);
-      expect(resultAnd.rules[0], healthRule);
-      expect(resultAnd.rules[1], measurableRule);
-    });
-
-    test('replaceAtRecursive handles null rule input', () {
-      final result = replaceAtRecursive(
-        rule: null,
-        replaceWith: healthRule,
-        currentPath: [0],
-        replaceAtPath: [0],
+      expect(
+        result,
+        const AutoCompleteRule.and(
+          rules: [healthRule, measurableRule],
+        ),
       );
-
-      expect(result, healthRule);
     });
 
-    test('replaceAt with null rule input', () {
-      final result = replaceAt(
-        null,
-        replaceAtPath: [0],
-        replaceWith: healthRule,
-      );
-
-      expect(result, healthRule);
-    });
+    test(
+      'null rule input: replace returns replacement, remove returns null',
+      () {
+        expect(
+          replaceAtRecursive(
+            rule: null,
+            replaceWith: healthRule,
+            currentPath: [0],
+            replaceAtPath: [0],
+          ),
+          healthRule,
+        );
+        expect(
+          replaceAt(null, replaceAtPath: [0], replaceWith: healthRule),
+          healthRule,
+        );
+        expect(removeAt(null, path: [0]), null);
+      },
+    );
 
     glados.Glados(
       glados.any.autoCompleteRuleScenario,
@@ -559,337 +560,130 @@ void main() {
         reason: '$scenario',
       );
     }, tags: 'glados');
-
-    test('removeAt with null rule input', () {
-      final result = removeAt(
-        null,
-        path: [0],
-      );
-
-      expect(result, null);
-    });
-
-    test('replaceAtRecursive with empty AND rule preserves structure', () {
-      const emptyAnd = AutoCompleteRule.and(rules: []);
-
-      final result = replaceAtRecursive(
-        rule: emptyAnd,
-        replaceWith: healthRule,
-        currentPath: [0],
-        replaceAtPath: [0],
-      );
-
-      expect(result, healthRule);
-    });
-
-    test('replaceAtRecursive with empty OR rule preserves structure', () {
-      const emptyOr = AutoCompleteRule.or(rules: []);
-
-      final result = replaceAtRecursive(
-        rule: emptyOr,
-        replaceWith: healthRule,
-        currentPath: [0],
-        replaceAtPath: [0],
-      );
-
-      expect(result, healthRule);
-    });
-
-    test('replaceAtRecursive with empty MULTIPLE rule preserves structure', () {
-      const emptyMultiple = AutoCompleteRule.multiple(
-        rules: [],
-        successes: 0,
-      );
-
-      final result = replaceAtRecursive(
-        rule: emptyMultiple,
-        replaceWith: healthRule,
-        currentPath: [0],
-        replaceAtPath: [0],
-      );
-
-      expect(result, healthRule);
-    });
   });
 
   group('Edit Autocomplete Rule Tests - realistic nested structure', () {
-    // A realistic deeply nested AutoCompleteRule structure used for
-    // testing removal and replacement at various depths.
-    const testAutoComplete = AutoCompleteRule.and(
-      title: 'Physical Exercises and Hydration',
+    // Named building blocks for a realistic deeply nested rule tree. The
+    // tests below compose both the input tree and the expected result from
+    // these constants, so the asserted difference is explicit instead of
+    // restating an entire 60-line literal per test.
+    const pushUps = AutoCompleteRule.measurable(
+      dataTypeId: 'push-ups',
+      minimum: 25,
+    );
+    const pullUps = AutoCompleteRule.measurable(
+      dataTypeId: 'pull-ups',
+      minimum: 10,
+    );
+    const sitUps = AutoCompleteRule.measurable(
+      dataTypeId: 'sit-ups',
+      minimum: 70,
+    );
+    const lunges = AutoCompleteRule.measurable(
+      dataTypeId: 'lunges',
+      minimum: 30,
+    );
+    const plank = AutoCompleteRule.measurable(
+      dataTypeId: 'plank',
+      minimum: 70,
+    );
+    const squats = AutoCompleteRule.measurable(
+      dataTypeId: 'squats',
+      minimum: 10,
+    );
+    const allExercises = [pushUps, pullUps, sitUps, lunges, plank, squats];
+
+    const gymWorkout = AutoCompleteRule.workout(
+      dataType: 'functionalStrengthTraining.duration',
+      title: 'Gym workout without tracking exercises',
+      minimum: 30,
+    );
+
+    const cardioOr = AutoCompleteRule.or(
+      title: 'Daily Cardio',
       rules: [
-        AutoCompleteRule.or(
-          title: 'Body weight exercises or Gym',
-          rules: [
-            AutoCompleteRule.multiple(
-              successes: 5,
-              title: 'Daily body weight exercises',
-              rules: [
-                AutoCompleteRule.measurable(
-                  dataTypeId: 'push-ups',
-                  minimum: 25,
-                ),
-                AutoCompleteRule.measurable(
-                  dataTypeId: 'pull-ups',
-                  minimum: 10,
-                ),
-                AutoCompleteRule.measurable(dataTypeId: 'sit-ups', minimum: 70),
-                AutoCompleteRule.measurable(dataTypeId: 'lunges', minimum: 30),
-                AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70),
-                AutoCompleteRule.measurable(dataTypeId: 'squats', minimum: 10),
-              ],
-            ),
-            AutoCompleteRule.workout(
-              dataType: 'functionalStrengthTraining.duration',
-              title: 'Gym workout without tracking exercises',
-              minimum: 30,
-            ),
-          ],
+        AutoCompleteRule.health(
+          dataType: 'cumulative_step_count',
+          minimum: 10000,
         ),
-        AutoCompleteRule.or(
-          title: 'Daily Cardio',
-          rules: [
-            AutoCompleteRule.health(
-              dataType: 'cumulative_step_count',
-              minimum: 10000,
-            ),
-            AutoCompleteRule.workout(dataType: 'walking.duration', minimum: 60),
-            AutoCompleteRule.workout(
-              dataType: 'swimming.duration',
-              minimum: 20,
-            ),
-            AutoCompleteRule.workout(
-              dataType: 'cycling.duration',
-              minimum: 120,
-            ),
-          ],
-        ),
-        AutoCompleteRule.measurable(
-          dataTypeId: 'water',
-          minimum: 2000,
-          title: 'Stay hydrated.',
-        ),
+        AutoCompleteRule.workout(dataType: 'walking.duration', minimum: 60),
+        AutoCompleteRule.workout(dataType: 'swimming.duration', minimum: 20),
+        AutoCompleteRule.workout(dataType: 'cycling.duration', minimum: 120),
       ],
     );
+
+    const hydration = AutoCompleteRule.measurable(
+      dataTypeId: 'water',
+      minimum: 2000,
+      title: 'Stay hydrated.',
+    );
+
+    AutoCompleteRule buildTree({
+      List<AutoCompleteRule> exercises = allExercises,
+      bool includeHydration = true,
+    }) {
+      return AutoCompleteRule.and(
+        title: 'Physical Exercises and Hydration',
+        rules: [
+          AutoCompleteRule.or(
+            title: 'Body weight exercises or Gym',
+            rules: [
+              AutoCompleteRule.multiple(
+                successes: 5,
+                title: 'Daily body weight exercises',
+                rules: exercises,
+              ),
+              gymWorkout,
+            ],
+          ),
+          cardioOr,
+          if (includeHydration) hydration,
+        ],
+      );
+    }
+
+    final testAutoComplete = buildTree();
 
     test('Remove top level rule returns null', () {
       expect(removeAt(testAutoComplete, path: [0]), null);
     });
 
     test('Remove last rule in top level AND: hydration', () {
-      const expected = AutoCompleteRule.and(
-        title: 'Physical Exercises and Hydration',
-        rules: [
-          AutoCompleteRule.or(
-            title: 'Body weight exercises or Gym',
-            rules: [
-              AutoCompleteRule.multiple(
-                successes: 5,
-                title: 'Daily body weight exercises',
-                rules: [
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'push-ups',
-                    minimum: 25,
-                  ),
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'pull-ups',
-                    minimum: 10,
-                  ),
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'sit-ups',
-                    minimum: 70,
-                  ),
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'lunges',
-                    minimum: 30,
-                  ),
-                  AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70),
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'squats',
-                    minimum: 10,
-                  ),
-                ],
-              ),
-              AutoCompleteRule.workout(
-                dataType: 'functionalStrengthTraining.duration',
-                title: 'Gym workout without tracking exercises',
-                minimum: 30,
-              ),
-            ],
-          ),
-          AutoCompleteRule.or(
-            title: 'Daily Cardio',
-            rules: [
-              AutoCompleteRule.health(
-                dataType: 'cumulative_step_count',
-                minimum: 10000,
-              ),
-              AutoCompleteRule.workout(
-                dataType: 'walking.duration',
-                minimum: 60,
-              ),
-              AutoCompleteRule.workout(
-                dataType: 'swimming.duration',
-                minimum: 20,
-              ),
-              AutoCompleteRule.workout(
-                dataType: 'cycling.duration',
-                minimum: 120,
-              ),
-            ],
-          ),
-        ],
+      expect(
+        removeAt(testAutoComplete, path: [0, 2]),
+        buildTree(includeHydration: false),
       );
-      expect(removeAt(testAutoComplete, path: [0, 2]), expected);
     });
 
     test('Remove deeply nested pull-ups rule', () {
-      const expected = AutoCompleteRule.and(
-        title: 'Physical Exercises and Hydration',
-        rules: [
-          AutoCompleteRule.or(
-            title: 'Body weight exercises or Gym',
-            rules: [
-              AutoCompleteRule.multiple(
-                successes: 5,
-                title: 'Daily body weight exercises',
-                rules: [
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'push-ups',
-                    minimum: 25,
-                  ),
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'sit-ups',
-                    minimum: 70,
-                  ),
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'lunges',
-                    minimum: 30,
-                  ),
-                  AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70),
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'squats',
-                    minimum: 10,
-                  ),
-                ],
-              ),
-              AutoCompleteRule.workout(
-                dataType: 'functionalStrengthTraining.duration',
-                title: 'Gym workout without tracking exercises',
-                minimum: 30,
-              ),
-            ],
-          ),
-          AutoCompleteRule.or(
-            title: 'Daily Cardio',
-            rules: [
-              AutoCompleteRule.health(
-                dataType: 'cumulative_step_count',
-                minimum: 10000,
-              ),
-              AutoCompleteRule.workout(
-                dataType: 'walking.duration',
-                minimum: 60,
-              ),
-              AutoCompleteRule.workout(
-                dataType: 'swimming.duration',
-                minimum: 20,
-              ),
-              AutoCompleteRule.workout(
-                dataType: 'cycling.duration',
-                minimum: 120,
-              ),
-            ],
-          ),
-          AutoCompleteRule.measurable(
-            dataTypeId: 'water',
-            minimum: 2000,
-            title: 'Stay hydrated.',
-          ),
-        ],
+      expect(
+        removeAt(testAutoComplete, path: [0, 0, 0, 1]),
+        buildTree(exercises: const [pushUps, sitUps, lunges, plank, squats]),
       );
-      expect(removeAt(testAutoComplete, path: [0, 0, 0, 1]), expected);
     });
 
     test('Replace deeply nested pull-ups rule with harder minimum', () {
-      const expected = AutoCompleteRule.and(
-        title: 'Physical Exercises and Hydration',
-        rules: [
-          AutoCompleteRule.or(
-            title: 'Body weight exercises or Gym',
-            rules: [
-              AutoCompleteRule.multiple(
-                successes: 5,
-                title: 'Daily body weight exercises',
-                rules: [
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'push-ups',
-                    minimum: 25,
-                  ),
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'pull-ups',
-                    minimum: 18,
-                  ),
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'sit-ups',
-                    minimum: 70,
-                  ),
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'lunges',
-                    minimum: 30,
-                  ),
-                  AutoCompleteRule.measurable(dataTypeId: 'plank', minimum: 70),
-                  AutoCompleteRule.measurable(
-                    dataTypeId: 'squats',
-                    minimum: 10,
-                  ),
-                ],
-              ),
-              AutoCompleteRule.workout(
-                dataType: 'functionalStrengthTraining.duration',
-                title: 'Gym workout without tracking exercises',
-                minimum: 30,
-              ),
-            ],
-          ),
-          AutoCompleteRule.or(
-            title: 'Daily Cardio',
-            rules: [
-              AutoCompleteRule.health(
-                dataType: 'cumulative_step_count',
-                minimum: 10000,
-              ),
-              AutoCompleteRule.workout(
-                dataType: 'walking.duration',
-                minimum: 60,
-              ),
-              AutoCompleteRule.workout(
-                dataType: 'swimming.duration',
-                minimum: 20,
-              ),
-              AutoCompleteRule.workout(
-                dataType: 'cycling.duration',
-                minimum: 120,
-              ),
-            ],
-          ),
-          AutoCompleteRule.measurable(
-            dataTypeId: 'water',
-            minimum: 2000,
-            title: 'Stay hydrated.',
-          ),
-        ],
+      const harderPullUps = AutoCompleteRule.measurable(
+        dataTypeId: 'pull-ups',
+        minimum: 18,
       );
+
       expect(
         replaceAt(
           testAutoComplete,
           replaceAtPath: [0, 0, 0, 1],
-          replaceWith: const AutoCompleteRule.measurable(
-            dataTypeId: 'pull-ups',
-            minimum: 18,
-          ),
+          replaceWith: harderPullUps,
         ),
-        expected,
+        buildTree(
+          exercises: const [
+            pushUps,
+            harderPullUps,
+            sitUps,
+            lunges,
+            plank,
+            squats,
+          ],
+        ),
       );
     });
   });

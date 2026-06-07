@@ -69,24 +69,21 @@ void main() {
 
   late MockEntitiesCacheService mockCacheService;
 
-  setUp(() {
+  setUp(() async {
     mockCacheService = MockEntitiesCacheService();
     when(
       () => mockCacheService.getCategoryById('cat-1'),
     ).thenReturn(testCategory);
     when(() => mockCacheService.sortedCategories).thenReturn([testCategory]);
 
-    if (getIt.isRegistered<EntitiesCacheService>()) {
-      getIt.unregister<EntitiesCacheService>();
-    }
-    getIt.registerSingleton<EntitiesCacheService>(mockCacheService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<EntitiesCacheService>(mockCacheService);
+      },
+    );
   });
 
-  tearDown(() async {
-    if (getIt.isRegistered<EntitiesCacheService>()) {
-      getIt.unregister<EntitiesCacheService>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   DayPlanEntry createTestPlan({
     List<PlannedBlock>? plannedBlocks,

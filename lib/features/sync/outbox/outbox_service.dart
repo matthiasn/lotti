@@ -581,6 +581,19 @@ class OutboxService {
   static const int _maxDrainPasses = 2000;
   final Duration _postDrainSettle;
 
+  /// Test seam for [_recordBackoff] — drives the zero/negative
+  /// short-circuit and the monotonic-candidate logic directly.
+  @visibleForTesting
+  void debugRecordBackoff(Duration delay) => _recordBackoff(delay);
+
+  /// Test seam pinning the backoff gate so [computeEnqueueDelay]'s
+  /// past/future branches can be exercised without real waiting.
+  @visibleForTesting
+  DateTime? get debugNextSendAllowedAt => _nextSendAllowedAt;
+
+  @visibleForTesting
+  set debugNextSendAllowedAt(DateTime? value) => _nextSendAllowedAt = value;
+
   void _recordBackoff(Duration delay) {
     if (delay <= Duration.zero) return;
     final now = DateTime.now();

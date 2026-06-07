@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -112,6 +113,15 @@ void main() {
       repository.deleteConversation(id);
       manager = repository.getConversation(id);
       expect(manager, isNull);
+    });
+
+    test('deleteConversation disposes the manager (events stream closes)', () {
+      final id = repository.createConversation();
+      final manager = repository.getConversation(id)!;
+
+      final closed = expectLater(manager.events, emitsDone);
+      repository.deleteConversation(id);
+      return closed;
     });
 
     test('dispose cleans up all conversations', () {
@@ -1668,6 +1678,179 @@ void main() {
       });
     });
 
+    group('tool-call stream helpers', () {
+      ChatCompletionStreamMessageToolCallChunk chunk({
+        String? id,
+        int? index,
+        String? name,
+        String? arguments,
+      }) {
+        return ChatCompletionStreamMessageToolCallChunk(
+          id: id,
+          index: index,
+          type: ChatCompletionStreamMessageToolCallChunkType.function,
+          function: ChatCompletionStreamMessageFunctionCall(
+            name: name,
+            arguments: arguments,
+          ),
+        );
+      }
+
+      test('isGeminiStyleToolCallDelta detects complete multi-call chunks', () {
+        // Two complete calls, no ids/indices → Gemini style.
+        expect(
+          ConversationRepository.isGeminiStyleToolCallDelta([
+            chunk(name: 'a', arguments: '{"x":1}'),
+            chunk(name: 'b', arguments: '{"y":2}'),
+          ]),
+          isTrue,
+        );
+        // Single chunk is never Gemini style.
+        expect(
+          ConversationRepository.isGeminiStyleToolCallDelta([
+            chunk(name: 'a', arguments: '{"x":1}'),
+          ]),
+          isFalse,
+        );
+        // Ids present → OpenAI streaming accumulation.
+        expect(
+          ConversationRepository.isGeminiStyleToolCallDelta([
+            chunk(id: 't1', name: 'a', arguments: '{"x":1}'),
+            chunk(id: 't2', name: 'b', arguments: '{"y":2}'),
+          ]),
+          isFalse,
+        );
+        // Empty arguments anywhere → not Gemini style.
+        expect(
+          ConversationRepository.isGeminiStyleToolCallDelta([
+            chunk(name: 'a', arguments: '{"x":1}'),
+            chunk(name: 'b', arguments: ''),
+          ]),
+          isFalse,
+        );
+      });
+
+      test('appendGeminiToolCalls synthesizes turn-scoped unique ids', () {
+        final toolCalls = <ChatCompletionMessageToolCall>[];
+        ConversationRepository.appendGeminiToolCalls(
+          toolCalls: toolCalls,
+          chunks: [
+            chunk(name: 'first', arguments: '{"a":1}'),
+            chunk(name: 'second', arguments: '{"b":2}'),
+          ],
+          turn: 3,
+        );
+
+        expect(toolCalls, hasLength(2));
+        expect(toolCalls[0].id, 'tool_turn3_0');
+        expect(toolCalls[0].function.name, 'first');
+        expect(toolCalls[0].function.arguments, '{"a":1}');
+        expect(toolCalls[1].id, 'tool_turn3_1');
+        expect(toolCalls[1].function.name, 'second');
+        expect(toolCalls[1].function.arguments, '{"b":2}');
+      });
+
+      test(
+        'accumulateOpenAiToolCallChunks stitches split arguments by id',
+        () {
+          final toolCalls = <ChatCompletionMessageToolCall>[];
+          final buffers = <String, StringBuffer>{};
+
+          ConversationRepository.accumulateOpenAiToolCallChunks(
+            toolCalls: toolCalls,
+            argumentBuffers: buffers,
+            chunks: [
+              chunk(id: 'tool-1', index: 0, name: 'fn', arguments: '{"arg'),
+            ],
+          );
+          ConversationRepository.accumulateOpenAiToolCallChunks(
+            toolCalls: toolCalls,
+            argumentBuffers: buffers,
+            chunks: [chunk(id: 'tool-1', index: 0, arguments: '": "value"}')],
+          );
+
+          expect(toolCalls, hasLength(1));
+          expect(toolCalls.single.id, 'tool-1');
+          expect(toolCalls.single.function.name, 'fn');
+          expect(toolCalls.single.function.arguments, '{"arg": "value"}');
+        },
+      );
+
+      test(
+        'accumulateOpenAiToolCallChunks matches by index when id is absent '
+        'and synthesizes ids for new calls',
+        () {
+          final toolCalls = <ChatCompletionMessageToolCall>[];
+          final buffers = <String, StringBuffer>{};
+
+          // New call without id → synthesized from index.
+          ConversationRepository.accumulateOpenAiToolCallChunks(
+            toolCalls: toolCalls,
+            argumentBuffers: buffers,
+            chunks: [chunk(index: 0, name: 'fn', arguments: '{"k')],
+          );
+          expect(toolCalls.single.id, 'tool_0');
+
+          // Continuation chunk carries only the index.
+          ConversationRepository.accumulateOpenAiToolCallChunks(
+            toolCalls: toolCalls,
+            argumentBuffers: buffers,
+            chunks: [chunk(index: 0, arguments: '":true}')],
+          );
+          expect(toolCalls.single.function.arguments, '{"k":true}');
+        },
+      );
+    });
+
+    group('stripThinkBlocks — Glados properties', () {
+      // Compose inputs from plain segments and think blocks; seed bit i
+      // decides whether segment i is wrapped in a think block.
+      glados.Glados2<List<int>, int>(
+        glados.ListAnys(glados.any).listWithLengthInRange(
+          0,
+          6,
+          glados.IntAnys(glados.any).intInRange(0, 1 << 16),
+        ),
+        glados.IntAnys(glados.any).intInRange(0, 1 << 6),
+        glados.ExploreConfig(numRuns: 150),
+      ).test(
+        'output never contains think tags; null iff every segment is a '
+        'think block',
+        (seeds, mask) {
+          final plainParts = <String>[];
+          final buffer = StringBuffer();
+          for (final (i, seed) in seeds.indexed) {
+            final text = 'seg$seed';
+            if ((mask >> i) & 1 == 1) {
+              final tag = seed.isEven ? 'think' : 'thinking';
+              buffer.write('<$tag>hidden $text</$tag> ');
+            } else {
+              plainParts.add(text);
+              buffer.write('$text ');
+            }
+          }
+
+          final result = stripThinkBlocks(buffer.toString());
+
+          if (plainParts.isEmpty) {
+            expect(result, isNull, reason: 'input: $buffer');
+          } else {
+            expect(result, isNotNull, reason: 'input: $buffer');
+            expect(result, isNot(contains('<think')));
+            expect(result, isNot(contains('</think')));
+            expect(result, isNot(contains('hidden')));
+            for (final part in plainParts) {
+              expect(result, contains(part), reason: 'input: $buffer');
+            }
+          }
+
+          // Null propagates.
+          expect(stripThinkBlocks(null), isNull);
+        },
+        tags: 'glados',
+      );
+    });
+
     group('Provider tests', () {
       test('conversationEvents provider returns stream', () {
         final id = repository.createConversation();
@@ -1684,27 +1867,15 @@ void main() {
           // Listen to the provider which will emit AsyncValue states
           final streamProvider = conversationEventsProvider('non-existent');
 
-          // Listen to the stream of AsyncValue states
-          final completer = Completer<void>();
-          final subscription = container.listen(
-            streamProvider,
-            (previous, next) {
-              // Check if we got an error state
-              if (next.hasError) {
-                expect(next.error.toString(), contains('not found'));
-                completer.complete();
-              }
-            },
-          );
+          // Keep the autoDispose provider alive, flush the event queue so
+          // the Stream.error delivery lands, then assert the error state —
+          // deterministic, no wall-clock timeout.
+          final subscription = container.listen(streamProvider, (_, _) {});
+          await pumpEventQueue();
 
-          // Wait for the error to be emitted
-          // No real wait: use a shorter, deterministic timeout for unit tests
-          await completer.future.timeout(
-            const Duration(milliseconds: 50),
-            onTimeout: () =>
-                throw TestFailure('Expected error was not emitted'),
-          );
-
+          final state = container.read(streamProvider);
+          expect(state.hasError, isTrue);
+          expect(state.error.toString(), contains('not found'));
           subscription.close();
         },
       );

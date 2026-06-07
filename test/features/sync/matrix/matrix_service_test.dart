@@ -138,12 +138,6 @@ void main() {
   }
 
   group('MatrixService', () {
-    test('can be constructed', () {
-      final service = createService();
-
-      expect(service, isNotNull);
-    });
-
     test('client getter returns session manager client', () {
       final service = createService();
 
@@ -526,6 +520,39 @@ void main() {
         ),
       ).called(1);
     });
+
+    // Success path of the saveRoom bootstrap: pipeline start, room-change
+    // hook, and bridge kick all run — in that order — with no error log.
+    test(
+      'saveRoom success path starts pipeline, seeds room, kicks bridge',
+      () async {
+        final order = <String>[];
+        when(() => roomManager.saveRoomId(any())).thenAnswer((_) async {});
+        when(pipeline.start).thenAnswer((_) async {
+          order.add('pipeline.start');
+        });
+        when(() => queueCoordinator.onRoomChanged(any())).thenAnswer((_) async {
+          order.add('onRoomChanged');
+        });
+        when(queueCoordinator.triggerBridge).thenAnswer((_) async {
+          order.add('triggerBridge');
+        });
+
+        final service = createServiceWithPipeline();
+        await service.saveRoom('!room:server');
+        await pumpEventQueue();
+
+        expect(order, ['pipeline.start', 'onRoomChanged', 'triggerBridge']);
+        verifyNever(
+          () => loggingService.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'saveRoom.bootstrap',
+          ),
+        );
+      },
+    );
 
     // Covers lines 486-490: acceptInvite() logs the request and delegates.
     test('acceptInvite logs request and delegates to room manager', () async {
@@ -1031,157 +1058,6 @@ void main() {
       });
     }
 
-    // Covers line 375: journalEntity bucket.
-    test('sendMatrixMsg increments journalEntity bucket', () async {
-      stubSenderSuccess();
-      when(() => client.getRoomById(any())).thenReturn(null);
-      final service = createService();
-      const msg = SyncMessage.journalEntity(
-        id: 'j1',
-        jsonPath: '/p',
-        vectorClock: null,
-        status: SyncEntryStatus.initial,
-      );
-      await service.sendMatrixMsg(msg);
-      expect(service.messageCounts['journalEntity'], 1);
-    });
-
-    // Covers line 376: entityDefinition bucket.
-    test('sendMatrixMsg increments entityDefinition bucket', () async {
-      stubSenderSuccess();
-      when(() => client.getRoomById(any())).thenReturn(null);
-      final service = createService();
-      final msg = SyncMessage.entityDefinition(
-        entityDefinition: EntityDefinition.categoryDefinition(
-          id: 'c1',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          name: 'test',
-          vectorClock: null,
-          private: false,
-          active: true,
-        ),
-        status: SyncEntryStatus.initial,
-      );
-      await service.sendMatrixMsg(msg);
-      expect(service.messageCounts['entityDefinition'], 1);
-    });
-
-    // Covers line 378: aiConfig bucket.
-    test('sendMatrixMsg increments aiConfig bucket', () async {
-      stubSenderSuccess();
-      when(() => client.getRoomById(any())).thenReturn(null);
-      final service = createService();
-      const msg = SyncMessage.aiConfigDelete(id: 'ai1');
-      await service.sendMatrixMsg(msg);
-      expect(service.messageCounts['aiConfigDelete'], 1);
-    });
-
-    // Covers the configFlag bucket.
-    test('sendMatrixMsg increments configFlag bucket', () async {
-      stubSenderSuccess();
-      when(() => client.getRoomById(any())).thenReturn(null);
-      final service = createService();
-      const msg = SyncMessage.configFlag(
-        name: 'enable_logging',
-        description: 'Enable logging',
-        status: true,
-      );
-      await service.sendMatrixMsg(msg);
-      expect(service.messageCounts['configFlag'], 1);
-    });
-
-    // Covers line 380: themingSelection bucket.
-    test('sendMatrixMsg increments themingSelection bucket', () async {
-      stubSenderSuccess();
-      when(() => client.getRoomById(any())).thenReturn(null);
-      final service = createService();
-      const msg = SyncMessage.themingSelection(
-        lightThemeName: 'light',
-        darkThemeName: 'dark',
-        themeMode: 'system',
-        updatedAt: 0,
-        status: SyncEntryStatus.initial,
-      );
-      await service.sendMatrixMsg(msg);
-      expect(service.messageCounts['themingSelection'], 1);
-    });
-
-    // Covers line 383: backfillRequest bucket.
-    test('sendMatrixMsg increments backfillRequest bucket', () async {
-      stubSenderSuccess();
-      when(() => client.getRoomById(any())).thenReturn(null);
-      final service = createService();
-      const msg = SyncMessage.backfillRequest(
-        entries: [],
-        requesterId: 'host-1',
-      );
-      await service.sendMatrixMsg(msg);
-      expect(service.messageCounts['backfillRequest'], 1);
-    });
-
-    // Covers line 384: backfillResponse bucket.
-    test('sendMatrixMsg increments backfillResponse bucket', () async {
-      stubSenderSuccess();
-      when(() => client.getRoomById(any())).thenReturn(null);
-      final service = createService();
-      const msg = SyncMessage.backfillResponse(
-        hostId: 'h1',
-        counter: 1,
-        deleted: false,
-      );
-      await service.sendMatrixMsg(msg);
-      expect(service.messageCounts['backfillResponse'], 1);
-    });
-
-    // Covers line 385: agentEntity bucket.
-    test('sendMatrixMsg increments agentEntity bucket', () async {
-      stubSenderSuccess();
-      when(() => client.getRoomById(any())).thenReturn(null);
-      final service = createService();
-      const msg = SyncMessage.agentEntity(status: SyncEntryStatus.initial);
-      await service.sendMatrixMsg(msg);
-      expect(service.messageCounts['agentEntity'], 1);
-    });
-
-    // Covers line 386: agentLink bucket.
-    test('sendMatrixMsg increments agentLink bucket', () async {
-      stubSenderSuccess();
-      when(() => client.getRoomById(any())).thenReturn(null);
-      final service = createService();
-      const msg = SyncMessage.agentLink(status: SyncEntryStatus.initial);
-      await service.sendMatrixMsg(msg);
-      expect(service.messageCounts['agentLink'], 1);
-    });
-
-    // Covers line 388: outboxBundle bucket.
-    test('sendMatrixMsg increments outboxBundle bucket', () async {
-      stubSenderSuccess();
-      when(() => client.getRoomById(any())).thenReturn(null);
-      final service = createService();
-      const msg = SyncMessage.outboxBundle(children: []);
-      await service.sendMatrixMsg(msg);
-      expect(service.messageCounts['outboxBundle'], 1);
-    });
-
-    // Covers line 389: syncNodeProfile bucket.
-    test('sendMatrixMsg increments syncNodeProfile bucket', () async {
-      stubSenderSuccess();
-      when(() => client.getRoomById(any())).thenReturn(null);
-      final service = createService();
-      final msg = SyncMessage.syncNodeProfile(
-        profile: SyncNodeProfile(
-          hostId: 'h1',
-          displayName: 'dev',
-          platform: 'macos',
-          capabilities: const [],
-          updatedAt: DateTime(2024, 3, 15),
-        ),
-      );
-      await service.sendMatrixMsg(msg);
-      expect(service.messageCounts['syncNodeProfile'], 1);
-    });
-
     // Covers lines 377-378 and 381-382: the entryLink / aiConfig /
     // notification / notificationStateUpdate `map` arms. Each variant must
     // route through its own arm and increment the matching bucket. Driven by
@@ -1226,6 +1102,62 @@ void main() {
       'aiConfig': aiConfig,
       'notification': notification,
       'notificationStateUpdate': notificationStateUpdate,
+      'journalEntity': const SyncMessage.journalEntity(
+        id: 'j1',
+        jsonPath: '/p',
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+      ),
+      'entityDefinition': SyncMessage.entityDefinition(
+        entityDefinition: EntityDefinition.categoryDefinition(
+          id: 'c1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          name: 'test',
+          vectorClock: null,
+          private: false,
+          active: true,
+        ),
+        status: SyncEntryStatus.initial,
+      ),
+      'aiConfigDelete': const SyncMessage.aiConfigDelete(id: 'ai1'),
+      'configFlag': const SyncMessage.configFlag(
+        name: 'enable_logging',
+        description: 'Enable logging',
+        status: true,
+      ),
+      'themingSelection': const SyncMessage.themingSelection(
+        lightThemeName: 'light',
+        darkThemeName: 'dark',
+        themeMode: 'system',
+        updatedAt: 0,
+        status: SyncEntryStatus.initial,
+      ),
+      'backfillRequest': const SyncMessage.backfillRequest(
+        entries: [],
+        requesterId: 'host-1',
+      ),
+      'backfillResponse': const SyncMessage.backfillResponse(
+        hostId: 'h1',
+        counter: 1,
+        deleted: false,
+      ),
+      'agentEntity': const SyncMessage.agentEntity(
+        status: SyncEntryStatus.initial,
+      ),
+      'agentLink': const SyncMessage.agentLink(
+        status: SyncEntryStatus.initial,
+      ),
+      'outboxBundle': const SyncMessage.outboxBundle(children: []),
+      'syncNodeProfile': SyncMessage.syncNodeProfile(
+        profile: SyncNodeProfile(
+          hostId: 'h1',
+          displayName: 'dev',
+          platform: 'macos',
+          capabilities: const [],
+          updatedAt: DateTime(2024, 3, 15),
+        ),
+      ),
     };
 
     for (final entry in variantsByBucket.entries) {

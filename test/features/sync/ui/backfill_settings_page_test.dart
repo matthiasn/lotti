@@ -324,6 +324,32 @@ void main() {
       );
     });
 
+    testWidgets('re-collapses when the header is tapped again', (
+      tester,
+    ) async {
+      await pumpBody(tester);
+      final messages = messagesOf(tester);
+
+      // Open...
+      await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(find.text(messages.backfillManualTitle), findsOneWidget);
+
+      // ...and close: after the reverse animation the action widgets must
+      // leave the tree again, not just shrink.
+      await tester.tap(find.text(messages.backfillAdvancedRecoveryTitle));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+
+      expect(find.text(messages.backfillManualTitle), findsNothing);
+      expect(find.text(messages.backfillReRequestTitle), findsNothing);
+      expect(
+        find.text(messages.backfillResetUnresolvableTitle),
+        findsNothing,
+      );
+    });
+
     testWidgets('manual backfill action triggers the service', (tester) async {
       await pumpBody(tester);
       final messages = messagesOf(tester);
@@ -1365,5 +1391,39 @@ void main() {
       // Sanity: messages bundle resolved from the live body.
       expect(messages.backfillStatusInboundQueue, isNotEmpty);
     });
+  });
+
+  group('debugFormatCount · locale plumbing', () {
+    // The formatter itself is intl's; what is OURS is that the widget's
+    // locale actually reaches NumberFormat. Locales chosen for stable
+    // separators across CLDR versions (fr uses a narrow no-break space
+    // that varies by intl version, so it is deliberately omitted).
+    const cases = <(String locale, String expected)>[
+      ('en', '715,544'),
+      ('de', '715.544'),
+    ];
+
+    for (final (locale, expected) in cases) {
+      testWidgets('formats 715544 as $expected under $locale', (
+        tester,
+      ) async {
+        String? formatted;
+        await tester.pumpWidget(
+          MaterialApp(
+            locale: Locale(locale),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) {
+                formatted = debugFormatCount(context, 715544);
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        expect(formatted, expected);
+      });
+    }
   });
 }

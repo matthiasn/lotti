@@ -1044,7 +1044,11 @@ void main() {
     /// via a tool call, wires up a workflow + session, calls
     /// `approveProposal`, and returns the `feedbackSummary` persisted
     /// on the captured [EvolutionSessionEntity].
-    Future<String?> approveSummaryWith(
+    /// Runs the approve flow and returns BOTH the persisted session entity's
+    /// feedbackSummary and the full captured upsert list, so callers can
+    /// layer further assertions without re-draining the interaction log
+    /// (verify(...).captured consumes it).
+    Future<({String? summary, List<Object?> captured})> approveSummaryWith(
       EvolutionStrategy strategy, {
       required String versionId,
     }) async {
@@ -1107,7 +1111,10 @@ void main() {
           .toList();
       expect(sessionEntities, hasLength(1));
 
-      return sessionEntities.first.feedbackSummary;
+      return (
+        summary: sessionEntities.first.feedbackSummary,
+        captured: capturedEntities,
+      );
     }
 
     test('uses recap TLDR as feedbackSummary when available', () async {
@@ -1134,11 +1141,11 @@ void main() {
       );
       expect(strategy.latestRecap, isNotNull);
 
-      final summary = await approveSummaryWith(
+      final result = await approveSummaryWith(
         strategy,
         versionId: 'ver-tldr',
       );
-      expect(summary, 'Tightened the prompt around brevity.');
+      expect(result.summary, 'Tightened the prompt around brevity.');
     });
 
     test('falls back to proposal.rationale when recap TLDR is empty', () async {
@@ -1153,23 +1160,94 @@ void main() {
           ),
         );
 
-      final summary = await approveSummaryWith(
+      final result = await approveSummaryWith(
         strategy,
         versionId: 'ver-empty-tldr',
       );
       // With empty recap TLDR, falls back to proposal.rationale.
-      expect(summary, 'Based on data');
+      expect(result.summary, 'Based on data');
     });
+
+    test(
+      'persists no recap entity when rationale, recap, and transcript are '
+      'all empty',
+      () async {
+        // propose_directives with a non-empty directive but EMPTY rationale,
+        // no published recap, and a conversation id with no stored
+        // conversation — every _buildSessionRecapEntity input is empty, so
+        // the builder returns null and nothing recap-shaped is upserted.
+        final strategy = EvolutionStrategy();
+
+        final newVersion = makeTestTemplateVersion(
+          id: 'ver-all-empty',
+          version: 2,
+          directives: 'Improved directives',
+        );
+        _stubCreateVersion(mockTemplateService, newVersion);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => makeTestEvolutionSession());
+
+        final manager = ConversationManager(conversationId: 'conv-empty')
+          ..initialize();
+        const toolCall = ChatCompletionMessageToolCall(
+          id: 'call-1',
+          type: ChatCompletionMessageToolCallType.function,
+          function: ChatCompletionMessageFunctionCall(
+            name: 'propose_directives',
+            arguments:
+                // ignore: missing_whitespace_between_adjacent_strings
+                '{"general_directive":"Improved directives",'
+                '"report_directive":"","rationale":""}',
+          ),
+        );
+        manager.addAssistantMessage(toolCalls: [toolCall]);
+        await strategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: manager,
+        );
+
+        final workflow = TemplateEvolutionWorkflow(
+          conversationRepository: _TestConversationRepository(),
+          aiConfigRepository: mockAiConfig,
+          cloudInferenceRepository: mockCloudInference,
+          templateService: mockTemplateService,
+          syncService: mockSyncService,
+        );
+        workflow.activeSessions['session-1'] = ActiveEvolutionSession(
+          sessionId: 'session-1',
+          templateId: kTestTemplateId,
+          conversationId: 'test-conv-id',
+          strategy: strategy,
+          modelId: 'model',
+        );
+
+        final result = await workflow.approveProposal(sessionId: 'session-1');
+        expect(result, isNotNull);
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured;
+        expect(
+          captured.whereType<EvolutionSessionRecapEntity>(),
+          isEmpty,
+          reason: 'all-empty recap inputs must not persist a recap entity',
+        );
+      },
+    );
 
     test('falls back to proposal.rationale when recap is null', () async {
       final strategy = EvolutionStrategy();
 
-      final summary = await approveSummaryWith(
+      final result = await approveSummaryWith(
         strategy,
         versionId: 'ver-no-recap',
       );
       // With no recap, normalizedSummary falls back to proposal.rationale.
-      expect(summary, 'Based on data');
+      expect(result.summary, 'Based on data');
     });
   });
 

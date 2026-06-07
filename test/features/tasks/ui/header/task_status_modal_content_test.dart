@@ -3,8 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/tasks/ui/header/task_status_modal_content.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Test doubles
@@ -89,6 +91,34 @@ void main() {
         expect(find.text(status), findsOneWidget);
       }
     });
+
+    testWidgets(
+      'renders the localized label for every status with the default '
+      'resolver',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            Material(
+              child: TaskStatusModalContent(task: _makeTask('OPEN')),
+            ),
+          ),
+        );
+
+        final context = tester.element(find.byType(TaskStatusModalContent));
+        final messages = context.messages;
+        for (final expected in [
+          messages.taskStatusOpen,
+          messages.taskStatusGroomed,
+          messages.taskStatusInProgress,
+          messages.taskStatusBlocked,
+          messages.taskStatusOnHold,
+          messages.taskStatusDone,
+          messages.taskStatusRejected,
+        ]) {
+          expect(find.text(expected), findsOneWidget, reason: expected);
+        }
+      },
+    );
 
     testWidgets('shows the correct icon for each status', (tester) async {
       await _pump(tester, currentStatus: 'OPEN');

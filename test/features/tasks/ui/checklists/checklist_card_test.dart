@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
@@ -297,6 +298,32 @@ void main() {
       await tester.pump();
 
       expect(capturedTitle, 'Write tests');
+    });
+
+    testWidgets('an all-whitespace submission never calls onCreateItem', (
+      tester,
+    ) async {
+      var calls = 0;
+      await _pump(
+        tester,
+        initiallyExpanded: true,
+        onCreateItem: (title) async {
+          calls++;
+          return 'new-id';
+        },
+      );
+
+      await tester.enterText(
+        find.descendant(
+          of: find.byKey(_addFieldKey),
+          matching: find.byType(TextField),
+        ),
+        '   ',
+      );
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump();
+
+      expect(calls, 0);
     });
 
     // ── Progress ring ────────────────────────────────────────────────────────
@@ -1077,6 +1104,49 @@ void main() {
           ChecklistFilter.openOnly.name,
         );
       },
+    );
+  });
+
+  group('resolveCompletedCount — properties', () {
+    glados.Glados2(
+      glados.any.intInRange(0, 1001),
+      glados.any.intInRange(0, 101),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'derived count is rounded rate*total, bounded by [0, total], and an '
+      'explicit completedCount always wins',
+      (ratePermille, total) {
+        final rate = ratePermille / 1000;
+
+        final derived = resolveCompletedCount(
+          completedCount: null,
+          completionRate: rate,
+          total: total,
+        );
+        expect(derived, (rate * total).round(), reason: 'rate=$rate t=$total');
+        expect(derived, inInclusiveRange(0, total == 0 ? 0 : total));
+
+        // Explicit override dominates regardless of the rate math.
+        expect(
+          resolveCompletedCount(
+            completedCount: 7,
+            completionRate: rate,
+            total: total,
+          ),
+          7,
+        );
+
+        // Empty checklist short-circuits to zero even at full rate.
+        expect(
+          resolveCompletedCount(
+            completedCount: null,
+            completionRate: rate,
+            total: 0,
+          ),
+          0,
+        );
+      },
+      tags: 'glados',
     );
   });
 }

@@ -38,45 +38,6 @@ void main() {
       expect(intent.entryId, isNull);
       expect(intent.alignment, equals(0.1));
     });
-
-    test('creates intent with custom alignment', () {
-      final intent = TaskFocusIntent(
-        taskId: testTaskId,
-        entryId: testEntryId,
-        alignment: 0.5,
-      );
-
-      expect(intent.alignment, equals(0.5));
-    });
-
-    test('toString returns formatted string', () {
-      final intent = TaskFocusIntent(
-        taskId: testTaskId,
-        entryId: testEntryId,
-        alignment: 0.25,
-      );
-
-      expect(
-        intent.toString(),
-        equals(
-          'TaskFocusIntent(taskId: $testTaskId, entryId: $testEntryId, alignment: 0.25)',
-        ),
-      );
-    });
-
-    test('suggestions toString returns formatted string', () {
-      final intent = TaskFocusIntent.suggestions(
-        taskId: testTaskId,
-        alignment: 0.2,
-      );
-
-      expect(
-        intent.toString(),
-        equals(
-          'TaskFocusIntent.suggestions(taskId: $testTaskId, alignment: 0.2)',
-        ),
-      );
-    });
   });
 
   group('TaskFocusController', () {

@@ -41,7 +41,8 @@
 
 - [x] **[HIGH]** `test/features/tasks/ui/checklists/checklist_item_row_test.dart` — **1 456 lines**, the largest test file in this group. The file covers a single source widget but test groups could benefit from a shared `_TestBench` class to reduce the per-test `ProviderScope` + `overrides` + `makeTestableWidgetWithScaffold` boilerplate that appears ~12 times (lines 213–241, 264–297, 420–444, 472–497, etc.). Each repetition is ~25 lines of setup. **RESOLVED:** the shared `_pump`/`_pumpWithControllers` helpers now cover the edit-save, edit-cancel (dirty + pristine), and suggestion-clear tests too; the remaining inline pumps are genuinely custom (null item, StateSetter rebuild, UncontrolledProviderScope).
 
-- [ ] **[MED]** `test/features/tasks/ui/checklists/checklist_card_wrapper_test.dart` — **898 lines** for a 253-line impl. Some setup groups could share more via a unified `_pump()` helper; the file currently has multiple pump variants and inline controller construction that overlaps.
+- [x] **[MED]** `test/features/tasks/ui/checklists/checklist_card_wrapper_test.dart` — **898 lines** for a 253-line impl. Some setup groups could share more via a unified `_pump()` helper; the file currently has multiple pump variants and inline controller construction that overlaps.
+  **RESOLVED (mostly stale):** a rich unified `_pump({checklist, items, completionCounts, extraItemOverrides, …})` helper already exists and backs ~30 tests; the 4 remaining inline pumps are genuinely divergent harnesses (null-checklist controller, throwing clipboard, custom item sets, throwing item provider).
 
 ---
 
@@ -51,11 +52,14 @@
 
 - [x] **[HIGH]** `test/features/tasks/ui/checklists/checklist_card_wrapper_test.dart` line 733: `createdAt: DateTime.now()` in `PendingCorrection` factory. The fake-time policy requires deterministic dates. Replace with a fixed `DateTime(2025, 3, 15)`. **RESOLVED:** fixed to `DateTime(2025, 3, 15)`.
 
-- [ ] **[MED]** `test/features/tasks/ui/checklists/checklist_item_row_test.dart` — inline fake controllers `FakeChecklistItemController`, `FakeChecklistController`, `FakeChecklistCompletionService`, `_FakeDropSession`, `_FakeDropItem`, `_FakeDragSession` are defined in this file (lines 49–197). While these extend real Notifier classes (required for `overrideWith`), their shared state tracker `ChecklistControllerCallTracker` is a custom pattern that should at least be extracted to a `test_utils.dart` for the checklists feature. The fake session/item types duplicate the ones in `drag_utils_test.dart` (`FakeDropSession`, `FakeDropItem`).
+- [x] **[MED]** `test/features/tasks/ui/checklists/checklist_item_row_test.dart` — inline fake controllers `FakeChecklistItemController`, `FakeChecklistController`, `FakeChecklistCompletionService`, `_FakeDropSession`, `_FakeDropItem`, `_FakeDragSession` are defined in this file (lines 49–197). While these extend real Notifier classes (required for `overrideWith`), their shared state tracker `ChecklistControllerCallTracker` is a custom pattern that should at least be extracted to a `test_utils.dart` for the checklists feature. The fake session/item types duplicate the ones in `drag_utils_test.dart` (`FakeDropSession`, `FakeDropItem`).
+  **RESOLVED (adapted):** the duplicated session/item/drag fakes moved to the shared `drag_test_fakes.dart` (`FakeDndDropSession`/`FakeDndDropItem`/`FakeDndDragSession` — `Dnd` prefix avoids clashing with mocks.dart's desktop-drop `FakeDropItem`). The fake controllers + tracker stay file-local: they extend the real Notifier classes for `overrideWith` and are used only here.
 
-- [ ] **[MED]** `test/features/tasks/ui/checklists/drag_utils_test.dart` — defines `MockPerformDropEvent` as an inline class (line 11) without checking `test/mocks/mocks.dart` for an existing mock. Also defines `FakeDropSession` and `FakeDropItem` (lines 14–39) that are structurally identical to `_FakeDropSession` / `_FakeDropItem` in `checklist_item_row_test.dart`. These should either be centralized in a shared file or the duplication noted as a DRY violation.
+- [x] **[MED]** `test/features/tasks/ui/checklists/drag_utils_test.dart` — defines `MockPerformDropEvent` as an inline class (line 11) without checking `test/mocks/mocks.dart` for an existing mock. Also defines `FakeDropSession` and `FakeDropItem` (lines 14–39) that are structurally identical to `_FakeDropSession` / `_FakeDropItem` in `checklist_item_row_test.dart`. These should either be centralized in a shared file or the duplication noted as a DRY violation.
+  **RESOLVED:** the structurally duplicated `FakeDropSession`/`FakeDropItem` pair now lives once in `drag_test_fakes.dart`, imported by both files. `MockPerformDropEvent` stays file-local — single use, and the central file has no super_drag mocks.
 
-- [ ] **[MED]** `test/features/tasks/ui/checklists/checklist_item_row_test.dart` — tests for "edit mode calls updateTitle" (line 414) and "cancel icon exits editing" (line 1075) and "edit mode cancel with pristine field" (line 1132) each build their own full `ProviderScope` + `makeTestableWidgetWithScaffold` from scratch (≈ 25 lines each) instead of using `_pumpWithControllers`. These should be consolidated.
+- [x] **[MED]** `test/features/tasks/ui/checklists/checklist_item_row_test.dart` — tests for "edit mode calls updateTitle" (line 414) and "cancel icon exits editing" (line 1075) and "edit mode cancel with pristine field" (line 1132) each build their own full `ProviderScope` + `makeTestableWidgetWithScaffold` from scratch (≈ 25 lines each) instead of using `_pumpWithControllers`. These should be consolidated.
+  **RESOLVED (stale):** all three named tests already route through `_pumpWithControllers` (23 uses); the remaining inline pumps express override shapes the helper deliberately does not (null item controller, etc.).
 
 - [ ] **[LOW]** `test/features/tasks/ui/checklists/checklist_card_test.dart` — line 157–165 and 236–241 use `pumpAndSettle()` right after `tester.tap(find.byKey(_addFieldKey))` to settle the focus animation (200 ms). This is legitimate usage where an animation must complete, but the comment "pumpAndSettle" is needed precisely because `AnimatedContainer` drives a 200 ms cross-fade. Consider replacing with `await tester.pump(const Duration(milliseconds: 220))` to make the timing intent explicit and avoid the 10-second timeout risk.
 
@@ -63,12 +67,13 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[MED]** `ChecklistCard` completion/progress math (lines 182–186 of `checklist_card.dart`):
+- [x] **[MED]** `ChecklistCard` completion/progress math (lines 182–186 of `checklist_card.dart`):
   ```dart
   final completed = widget.completedCount
       ?? (total == 0 ? 0 : (widget.completionRate * total).round());
   ```
   A Glados property test could assert that for any `completionRate ∈ [0.0, 1.0]` and `totalCount ∈ [0, 100]`, `completed` is always in `[0, total]` and equals `(completionRate * total).round()` when `completedCount` is null. This is non-trivial pure arithmetic with a null-override branch.
+  **RESOLVED:** the math is extracted as the pure `resolveCompletedCount` (used by the widget) with a Glados2 property — derived count equals `(rate*total).round()`, stays in `[0, total]`, an explicit `completedCount` always wins, and the empty-checklist short-circuit returns 0.
 
 - [ ] **[LOW]** `buildChecklistProgressRing` (line 1052) takes a `completionRate` that is clamped by `CircularProgressIndicator.value`. A Glados property could verify that the rendered `CircularProgressIndicator.value` is always clamped to `[0, 1]` regardless of the input, catching future off-by-one bugs if the provider arithmetic changes.
 
@@ -78,9 +83,11 @@
 
 - [x] **[HIGH]** `checklist_card.dart` — the `_loadFilterPreference` async legacy bool-migration path (lines 153–159) is only tested with a single integration-style test that requires toggling `platform_utils.isTestEnv` (checklist_card_test.dart line 983). The bool-migration branch (`getBool` fallback → convert → `setString`) has no test where the legacy bool key is set to `false` (i.e., `ChecklistFilter.all`). Only the `true → openOnly` case is implicitly covered by reading the string path. **RESOLVED:** both migration branches are now tested (bool=false → all, bool=true → openOnly, including the string-form rewrite). Testing the false branch surfaced a real latent bug — `SharedPreferences.getString` hard-casts, so a same-key legacy bool made the migration path throw `TypeError`; fixed at the root in `AppPrefs.getString` via the untyped `prefs.get(key)` + type check.
 
-- [ ] **[MED]** `checklist_item_row.dart` — the drag-initiation path (long-press → `DraggableWidget`) has no test coverage. The `dragItemProvider` call in `ChecklistItemRow.build()` is tested as a no-op via `_FakeDragSession`, but no test verifies the `DragItemWidget` / `DropRegion` / `DraggableWidget` composition or their `dragItemProvider` interactions.
+- [x] **[MED]** `checklist_item_row.dart` — the drag-initiation path (long-press → `DraggableWidget`) has no test coverage. The `dragItemProvider` call in `ChecklistItemRow.build()` is tested as a no-op via `_FakeDragSession`, but no test verifies the `DragItemWidget` / `DropRegion` / `DraggableWidget` composition or their `dragItemProvider` interactions.
+  **RESOLVED (stale):** the 'drag-and-drop wiring' group extracts the mounted `DropRegion`/`DragItemWidget` and invokes their closures directly — `onDropOver` returns move, `onPerformDrop` forwards target index/itemId to `dropChecklistItem`, and `dragItemProvider` builds the DragItem with item/checklist ids as local data.
 
-- [ ] **[MED]** `checklist_card.dart` — the `_AddItemField._submit` method (line 973) trims the input and short-circuits on empty string. `checklist_card_test.dart` tests trimming but does not test that submitting an all-whitespace string (`'   '`) does **not** call `onCreateItem`.
+- [x] **[MED]** `checklist_card.dart` — the `_AddItemField._submit` method (line 973) trims the input and short-circuits on empty string. `checklist_card_test.dart` tests trimming but does not test that submitting an all-whitespace string (`'   '`) does **not** call `onCreateItem`.
+  **RESOLVED:** new test submits `'   '` and asserts `onCreateItem` is never invoked.
 
 - [ ] **[LOW]** `checklists_widget.dart` — the empty-state (no checklists) and "all checklists archived" paths are not visible in `checklists_widget_test.dart`. The file has significant branching based on `checklistIds.isEmpty`.
 
@@ -92,9 +99,11 @@
 
 - [x] **[HIGH]** `test/features/tasks/ui/checklists/checklist_card_wrapper_test.dart` — 25 `pumpAndSettle()` calls spread across lines 377, 381, 402, 406, 464, 466, 708, 710, 806, 808, 833, 835, 857, 859, 885, 887 and others. Menu interactions and dialog confirmations legitimately need settle time, but the repeated double `pumpAndSettle` pattern (two consecutive calls, e.g. lines 377–381) is wasteful. **RESOLVED (assessed, no change):** there are no consecutive double settles — each `pumpAndSettle` follows a distinct interaction (menu open, option tap, dialog confirm), and menu/dialog transitions are genuine animations.
 
-- [ ] **[MED]** `test/features/tasks/ui/checklists/checklist_item_row_test.dart` — 7 `pumpAndSettle()` calls (lines 533, 552, 570, 1193, 1219) are used after `Dismissible` drag gestures which genuinely produce animations. These are acceptable, but the hold-timer tests at lines 648–655 and 705–706 could use `tester.pump(const Duration(milliseconds: 1100))` directly instead — which they already do correctly. The pumpAndSettle usage is constrained to swipe-dismiss tests only; this is well-reasoned.
+- [x] **[MED]** `test/features/tasks/ui/checklists/checklist_item_row_test.dart` — 7 `pumpAndSettle()` calls (lines 533, 552, 570, 1193, 1219) are used after `Dismissible` drag gestures which genuinely produce animations. These are acceptable, but the hold-timer tests at lines 648–655 and 705–706 could use `tester.pump(const Duration(milliseconds: 1100))` directly instead — which they already do correctly. The pumpAndSettle usage is constrained to swipe-dismiss tests only; this is well-reasoned.
+  **RESOLVED (no action):** as the item itself concludes — the settles are constrained to swipe-dismiss animations and the hold-timer tests already use targeted pumps; well-reasoned as-is.
 
-- [ ] **[MED]** `test/features/tasks/ui/checklists/drag_utils_test.dart` — 2 `pumpAndSettle()` calls on `buildDragDecorator` (lines 60, 92) — these test a pure widget-building function with no animations. `await tester.pump()` is sufficient. Savings: minor per run but accumulated across CI shards.
+- [x] **[MED]** `test/features/tasks/ui/checklists/drag_utils_test.dart` — 2 `pumpAndSettle()` calls on `buildDragDecorator` (lines 60, 92) — these test a pure widget-building function with no animations. `await tester.pump()` is sufficient. Savings: minor per run but accumulated across CI shards.
+  **RESOLVED:** both replaced with `tester.pump()`; suite green.
 
 ---
 

@@ -261,8 +261,19 @@ void main() {
         ),
       );
 
-      // Should display the form bar
-      expect(find.byType(FormBottomBar), findsOneWidget);
+      // The bar paints its upward drop shadow regardless of theme elevation
+      // settings (the elevation comes from its own BoxDecoration).
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: find.byType(FormBottomBar),
+          matching: find.byType(Container),
+        ),
+      );
+      final decoration = container.decoration! as BoxDecoration;
+      final shadow = decoration.boxShadow!.single;
+      expect(shadow.blurRadius, 4);
+      expect(shadow.offset, const Offset(0, -2));
+      expect(shadow.color, Colors.black.withValues(alpha: 0.1));
     });
 
     testWidgets('renders with bottom padding', (tester) async {
@@ -287,8 +298,17 @@ void main() {
         ),
       );
 
-      // Should render properly
-      expect(find.byType(FormBottomBar), findsOneWidget);
+      // SafeArea must absorb the simulated 34px home-indicator inset: the
+      // button row's bottom edge sits at least that far above the screen
+      // bottom edge.
+      final barRect = tester.getRect(find.byType(FormBottomBar));
+      final rowRect = tester.getRect(
+        find.descendant(
+          of: find.byType(FormBottomBar),
+          matching: find.byType(Row).first,
+        ),
+      );
+      expect(barRect.bottom - rowRect.bottom, greaterThanOrEqualTo(34));
       expect(find.text('Continue'), findsOneWidget);
     });
 

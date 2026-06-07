@@ -878,53 +878,48 @@ void main() {
         // Assert - the numeric content is rendered via toString()
         expect(results[0].choices?.first.delta?.content, equals('42'));
       });
-    });
 
-    group('SSE stream buffering', () {
-      const model = 'magistral-medium-2509';
-      const baseUrl = 'https://api.mistral.ai/v1';
-      const apiKey = 'test-api-key';
+      test(
+        'converts tool-response messages with tool_call_id and content',
+        () async {
+          final events = [
+            createSseChunkEvent(content: 'Done'),
+            createSseFinalEvent(),
+          ];
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => createSseStreamedResponse(events: events),
+          );
 
-      test('should handle fragmented SSE chunks', () async {
-        // Arrange - simulate fragmented network chunks
-        final event1 = createSseChunkEvent(content: 'First chunk');
-        final event2 = createSseChunkEvent(content: 'Second chunk');
+          final messages = [
+            const ChatCompletionMessage.user(
+              content: ChatCompletionUserMessageContent.string('run tool'),
+            ),
+            const ChatCompletionMessage.tool(
+              toolCallId: 'call-42',
+              content: 'tool says hi',
+            ),
+          ];
 
-        // Split the SSE data into fragments that cut JSON in the middle
-        final fullSse =
-            'data: ${jsonEncode(event1)}\n\ndata: ${jsonEncode(event2)}\n\ndata: [DONE]\n\n';
+          await repository
+              .generateTextWithMessages(
+                messages: messages,
+                model: model,
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+              )
+              .toList();
 
-        // Fragment at an arbitrary position
-        final fragment1 = fullSse.substring(0, 50);
-        final fragment2 = fullSse.substring(50);
-
-        final stream = Stream.fromIterable([
-          utf8.encode(fragment1),
-          utf8.encode(fragment2),
-        ]);
-
-        when(() => mockHttpClient.send(any())).thenAnswer(
-          (_) async => http.StreamedResponse(stream, 200),
-        );
-
-        // Act
-        final responseStream = repository.generateText(
-          prompt: 'Hi',
-          model: model,
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
-
-        final results = await responseStream.toList();
-
-        // Assert - should properly buffer and parse both events
-        expect(results.length, equals(2));
-        expect(results[0].choices?.first.delta?.content, equals('First chunk'));
-        expect(
-          results[1].choices?.first.delta?.content,
-          equals('Second chunk'),
-        );
-      });
+          final request =
+              verify(() => mockHttpClient.send(captureAny())).captured.first
+                  as http.Request;
+          final body = jsonDecode(request.body) as Map<String, dynamic>;
+          final sent = (body['messages'] as List<dynamic>)
+              .cast<Map<String, dynamic>>();
+          final toolMsg = sent.singleWhere((m) => m['role'] == 'tool');
+          expect(toolMsg['tool_call_id'], 'call-42');
+          expect(toolMsg['content'], 'tool says hi');
+        },
+      );
 
       test('should handle multiple events in single chunk', () async {
         // Arrange

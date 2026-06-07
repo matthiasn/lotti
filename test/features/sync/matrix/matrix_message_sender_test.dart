@@ -26,6 +26,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 
 import '../../../mocks/mocks.dart';
 
@@ -4431,6 +4432,44 @@ void main() {
         expect(link.originatingHostId, isNull);
       },
     );
+  });
+
+  group('isSafeOutboxBundlePath property', () {
+    // The predicate is pure (String -> bool); a generated corpus of hostile
+    // and benign paths pins the three invariants from the review item.
+    const accepted = [
+      '/outbox_bundles/bundle-1.json',
+      '/outbox_bundles/nested/child.json',
+      '/outbox_bundles/u\u00f1icode/\u65e5\u672c.json',
+    ];
+    const rejected = [
+      '/elsewhere/bundle.json',
+      'outbox_bundles/missing-leading-slash.json',
+      '/outbox_bundles/../escape.json',
+      '/outbox_bundles/./sneaky.json',
+      '/outbox_bundles/a/../../b.json',
+      '',
+      '..',
+      '/outbox_bundles/..',
+    ];
+
+    for (final path in accepted) {
+      test('accepts "$path"', () {
+        expect(MatrixBundleSender.debugIsSafeOutboxBundlePath(path), isTrue);
+        // Invariants: accepted paths start with the bundle segment and
+        // contain no traversal segments.
+        expect(path, startsWith(outboxBundlesSegment));
+        expect(
+          p.split(path).where((s) => s == '..' || s == '.'),
+          isEmpty,
+        );
+      });
+    }
+    for (final path in rejected) {
+      test('rejects "$path"', () {
+        expect(MatrixBundleSender.debugIsSafeOutboxBundlePath(path), isFalse);
+      });
+    }
   });
 }
 

@@ -10,6 +10,7 @@ import 'package:lotti/services/link_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
+import '../widget_test_utils.dart' show setUpTestGetIt, tearDownTestGetIt;
 
 enum _GeneratedLinkOperationKind {
   linkFrom,
@@ -132,14 +133,15 @@ void main() {
     late MockPersistenceLogic mockPersistenceLogic;
     late LinkService linkService;
 
-    setUp(() {
-      if (getIt.isRegistered<PersistenceLogic>()) {
-        getIt.unregister<PersistenceLogic>();
-      }
-
+    setUp(() async {
       mockPersistenceLogic = MockPersistenceLogic();
 
-      getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      // Central GetIt harness with this file's PersistenceLogic mock on top.
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+        },
+      );
 
       linkService = LinkService();
 
@@ -160,6 +162,8 @@ void main() {
         return null;
       });
     });
+
+    tearDown(tearDownTestGetIt);
 
     glados.Glados(
       glados.any.linkScenario,

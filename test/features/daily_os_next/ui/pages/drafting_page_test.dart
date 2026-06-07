@@ -416,6 +416,55 @@ void main() {
     );
 
     testWidgets(
+      'draft resolution (returnToRootOnReady=true) pops to the first route '
+      'instead of pushing DayPage',
+      (tester) async {
+        _setSurface(tester);
+        final agent = _FakeAgent();
+
+        // Host the page on a pushed route so popUntil(isFirst) has
+        // somewhere to land.
+        await tester.pumpWidget(
+          _wrap(
+            Builder(
+              builder: (context) => Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.of(context).push<void>(
+                      MaterialPageRoute<void>(
+                        builder: (_) => _page(returnToRootOnReady: true),
+                      ),
+                    ),
+                    child: const Text('open drafting'),
+                  ),
+                ),
+              ),
+            ),
+            agent: agent,
+          ),
+        );
+        await tester.tap(find.text('open drafting'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        agent.learnings.complete([_card()]);
+        await tester.pump();
+        await tester.pump();
+
+        agent.draft.complete(_readyPlan());
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Back at the root route — DayPage is NOT pushed in this mode.
+        expect(find.text('open drafting'), findsOneWidget);
+        expect(find.byType(DraftingPage), findsNothing);
+        expect(find.byType(DayPage), findsNothing);
+      },
+    );
+
+    testWidgets(
       'draft failure after the first body keeps stale drafting content mounted',
       (tester) async {
         _setSurface(tester);

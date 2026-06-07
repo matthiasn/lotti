@@ -100,7 +100,9 @@ void main() {
     });
     tearDown(getIt.reset);
 
-    testWidgets('page is rendered with text entry', (tester) async {
+    testWidgets('renders the dashboard title, time-span control, and charts', (
+      tester,
+    ) async {
       Future<MeasurementEntry?> mockCreateMeasurementEntry() {
         return mockPersistenceLogic.createMeasurementEntry(
           data: any(named: 'data'),
@@ -117,6 +119,20 @@ void main() {
       );
 
       await tester.pumpAndSettle();
+
+      // Page chrome: dashboard name as the title, the range selector, and
+      // the chart host wired to this dashboard id.
+      expect(find.text(testDashboardConfig.name), findsOneWidget);
+      expect(find.byType(TimeSpanSegmentedControl), findsOneWidget);
+      final dashboardWidget = tester.widget<DashboardWidget>(
+        find.byType(DashboardWidget),
+      );
+      expect(dashboardWidget.dashboardId, testDashboardConfig.id);
+      // Default 90-day window: rangeStart sits 90 days before rangeEnd.
+      expect(
+        dashboardWidget.rangeEnd.difference(dashboardWidget.rangeStart).inDays,
+        inInclusiveRange(90, 91),
+      );
     });
 
     testWidgets(

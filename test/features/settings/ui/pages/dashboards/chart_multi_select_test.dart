@@ -35,32 +35,6 @@ void main() {
       expect(find.byIcon(Icons.arrow_drop_down), findsOneWidget);
     });
 
-    testWidgets('button is tappable', (tester) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: ChartMultiSelect<String>(
-            multiSelectItems: testItems,
-            onConfirm: (_) {},
-            title: 'Select Items',
-            buttonText: 'Add Items',
-            semanticsLabel: 'Add items button',
-            iconData: Icons.add,
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      final buttonFinder = find.text('Add Items');
-      expect(buttonFinder, findsOneWidget);
-
-      // Verify InkWell is present for tap handling
-      final inkWell = find.ancestor(
-        of: buttonFinder,
-        matching: find.byType(InkWell),
-      );
-      expect(inkWell, findsOneWidget);
-    });
-
     testWidgets('handles empty items list', (tester) async {
       await tester.pumpWidget(
         WidgetTestBench(

@@ -1,18 +1,15 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filter_count_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 
-class _MockAgentRepository extends Mock implements AgentRepository {}
-
 void main() {
   late MockJournalDb db;
   late MockEntitiesCacheService cache;
-  late _MockAgentRepository agentRepo;
+  late MockAgentRepository agentRepo;
   late SavedTaskFilterCountRepository sut;
 
   CategoryDefinition makeCategory(String id) => CategoryDefinition(
@@ -28,7 +25,7 @@ void main() {
   setUp(() {
     db = MockJournalDb();
     cache = MockEntitiesCacheService();
-    agentRepo = _MockAgentRepository();
+    agentRepo = MockAgentRepository();
 
     when(() => cache.sortedCategories).thenReturn([
       makeCategory('cat-1'),
@@ -70,6 +67,40 @@ void main() {
       ),
     );
   });
+
+  test(
+    'zero known categories still queries with the empty-string sentinel',
+    () async {
+      // The expansion branch always appends '' — even with an empty cache
+      // the query runs against [''] rather than short-circuiting to 0.
+      when(() => cache.sortedCategories).thenReturn(const []);
+      when(
+        () => db.getFilteredTasksCount(
+          taskStatuses: any(named: 'taskStatuses'),
+          categoryIds: any(named: 'categoryIds'),
+          labelIds: any(named: 'labelIds'),
+          priorities: any(named: 'priorities'),
+        ),
+      ).thenAnswer((_) async => 3);
+
+      final c = await sut.count(
+        const TasksFilter(selectedTaskStatuses: {'OPEN'}),
+      );
+
+      expect(c, 3);
+      final captured =
+          verify(
+                () => db.getFilteredTasksCount(
+                  taskStatuses: any(named: 'taskStatuses'),
+                  categoryIds: captureAny(named: 'categoryIds'),
+                  labelIds: any(named: 'labelIds'),
+                  priorities: any(named: 'priorities'),
+                ),
+              ).captured.single
+              as List<String>;
+      expect(captured, ['']);
+    },
+  );
 
   test('uses the SQL COUNT path when no post-filters are active', () async {
     when(

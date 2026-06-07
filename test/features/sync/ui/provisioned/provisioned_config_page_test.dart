@@ -349,7 +349,8 @@ void main() {
 
         // Advance past the 3 second delay
         await tester.pump(const Duration(seconds: 3));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // VerificationModal should be displayed in a bottom sheet
         expect(find.byType(VerificationModal), findsOneWidget);
@@ -473,9 +474,11 @@ void main() {
 
       final copyFinder = find.byKey(const Key('copyHandoverData'));
       await tester.ensureVisible(copyFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(copyFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(clipboardText, 'dGVzdC1oYW5kb3Zlci1kYXRh');
 
@@ -1076,7 +1079,8 @@ void main() {
 
           // Advance past the 3 s delay to trigger the verification flow.
           await tester.pump(const Duration(seconds: 3));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // The verification modal must be open.
           expect(find.byType(VerificationModal), findsOneWidget);
@@ -1088,7 +1092,8 @@ void main() {
           final closeButton = find.byIcon(Icons.close_rounded);
           await tester.ensureVisible(closeButton);
           await tester.tap(closeButton);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Modal is gone and the lock has been released (false).
           expect(find.byType(VerificationModal), findsNothing);

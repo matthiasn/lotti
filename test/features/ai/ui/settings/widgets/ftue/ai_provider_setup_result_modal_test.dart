@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/ui/settings/breakpoints.dart';
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ftue/ai_provider_setup_result_modal.dart';
 
@@ -298,6 +299,27 @@ void main() {
           ),
         );
         expect(align.alignment, equals(Alignment.centerRight));
+
+        // The cap itself: the CTA's ConstrainedBox must carry the
+        // documented desktop max width so the button stops stretching.
+        final cap = tester.widget<ConstrainedBox>(
+          find
+              .ancestor(
+                of: find.text('Start using AI'),
+                matching: find.byWidgetPredicate(
+                  (w) => w is ConstrainedBox && w.constraints.maxWidth.isFinite,
+                ),
+              )
+              .first,
+        );
+        expect(
+          cap.constraints.maxWidth,
+          aiSetupResultDesktopCtaMaxWidth,
+        );
+        expect(
+          tester.getRect(find.text('Start using AI')).width,
+          lessThanOrEqualTo(aiSetupResultDesktopCtaMaxWidth),
+        );
       },
     );
   });

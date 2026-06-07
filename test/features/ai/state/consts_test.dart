@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/l10n/app_localizations_en.dart';
 
 import '../../../test_helper.dart';
 
@@ -42,75 +41,49 @@ void main() {
       expect(AiResponseType.values, contains(AiResponseType.imageGeneration));
     });
 
-    test('localizedName returns correct localized strings', () {
-      // Use English localization directly for testing
-      final l10n = AppLocalizationsEn();
-
-      expect(
-        l10n.aiResponseTypeTaskSummary,
-        equals('Task Summary'),
-      );
-      expect(
-        l10n.aiResponseTypeImageAnalysis,
-        equals('Image Analysis'),
-      );
-      expect(
-        l10n.aiResponseTypeAudioTranscription,
-        equals('Audio Transcription'),
-      );
-      expect(
-        l10n.aiResponseTypeChecklistUpdates,
-        equals('Checklist Updates'),
-      );
-      expect(
-        l10n.aiResponseTypePromptGeneration,
-        equals('Generated Prompt'),
-      );
-      expect(
-        l10n.aiResponseTypeImagePromptGeneration,
-        equals('Image Prompt'),
-      );
-      expect(
-        l10n.generateCoverArt,
-        equals('Generate Cover Art'),
-      );
-    });
-
-    test('icon returns correct icons for each type', () {
+    // Expected (label, icon) per enum value — one table drives both the
+    // direct-l10n check and the icon mapping.
+    const expectedByType = <AiResponseType, ({String label, IconData icon})>{
       // ignore: deprecated_member_use_from_same_package
-      expect(AiResponseType.taskSummary.icon, equals(Icons.summarize_outlined));
-      expect(AiResponseType.imageAnalysis.icon, equals(Icons.image_outlined));
-      expect(
-        AiResponseType.audioTranscription.icon,
-        equals(Icons.mic_outlined),
-      );
-      expect(
-        // ignore: deprecated_member_use_from_same_package
-        AiResponseType.checklistUpdates.icon,
-        equals(Icons.checklist_rtl_outlined),
-      );
-      expect(
-        AiResponseType.promptGeneration.icon,
-        equals(Icons.auto_fix_high_outlined),
-      );
-      expect(
-        AiResponseType.imagePromptGeneration.icon,
-        equals(Icons.palette_outlined),
-      );
-      expect(
-        AiResponseType.imageGeneration.icon,
-        equals(Icons.auto_awesome_outlined),
-      );
+      AiResponseType.taskSummary: (
+        label: 'Task Summary',
+        icon: Icons.summarize_outlined,
+      ),
+      AiResponseType.imageAnalysis: (
+        label: 'Image Analysis',
+        icon: Icons.image_outlined,
+      ),
+      AiResponseType.audioTranscription: (
+        label: 'Audio Transcription',
+        icon: Icons.mic_outlined,
+      ),
+      // ignore: deprecated_member_use_from_same_package
+      AiResponseType.checklistUpdates: (
+        label: 'Checklist Updates',
+        icon: Icons.checklist_rtl_outlined,
+      ),
+      AiResponseType.promptGeneration: (
+        label: 'Generated Prompt',
+        icon: Icons.auto_fix_high_outlined,
+      ),
+      AiResponseType.imagePromptGeneration: (
+        label: 'Image Prompt',
+        icon: Icons.palette_outlined,
+      ),
+      AiResponseType.imageGeneration: (
+        label: 'Generate Cover Art',
+        icon: Icons.auto_awesome_outlined,
+      ),
+    };
+
+    test('expectation table covers every enum value', () {
+      expect(expectedByType.keys, containsAll(AiResponseType.values));
     });
 
-    test('const values are correctly defined', () {
-      expect(taskSummaryConst, equals('TaskSummary'));
-      expect(imageAnalysisConst, equals('ImageAnalysis'));
-      expect(audioTranscriptionConst, equals('AudioTranscription'));
-      expect(checklistUpdatesConst, equals('ChecklistUpdates'));
-      expect(promptGenerationConst, equals('PromptGeneration'));
-      expect(imagePromptGenerationConst, equals('ImagePromptGeneration'));
-      expect(imageGenerationConst, equals('ImageGeneration'));
+    test('icon returns the mapped icon for each type', () {
+      for (final entry in expectedByType.entries) {
+        expect(entry.key.icon, entry.value.icon, reason: '${entry.key}');
+      }
     });
 
     testWidgets('localizedName returns correct strings with BuildContext', (
@@ -129,37 +102,14 @@ void main() {
         ),
       );
 
-      // Test all enum values with actual BuildContext
-      expect(
-        // ignore: deprecated_member_use_from_same_package
-        AiResponseType.taskSummary.localizedName(capturedContext),
-        equals('Task Summary'),
-      );
-      expect(
-        AiResponseType.imageAnalysis.localizedName(capturedContext),
-        equals('Image Analysis'),
-      );
-      expect(
-        AiResponseType.audioTranscription.localizedName(capturedContext),
-        equals('Audio Transcription'),
-      );
-      expect(
-        // ignore: deprecated_member_use_from_same_package
-        AiResponseType.checklistUpdates.localizedName(capturedContext),
-        equals('Checklist Updates'),
-      );
-      expect(
-        AiResponseType.promptGeneration.localizedName(capturedContext),
-        equals('Generated Prompt'),
-      );
-      expect(
-        AiResponseType.imagePromptGeneration.localizedName(capturedContext),
-        equals('Image Prompt'),
-      );
-      expect(
-        AiResponseType.imageGeneration.localizedName(capturedContext),
-        equals('Generate Cover Art'),
-      );
+      // Every enum value resolves its localized label through the context.
+      for (final entry in expectedByType.entries) {
+        expect(
+          entry.key.localizedName(capturedContext),
+          entry.value.label,
+          reason: '${entry.key}',
+        );
+      }
     });
 
     test('isPromptGenerationType returns true for prompt generation types', () {

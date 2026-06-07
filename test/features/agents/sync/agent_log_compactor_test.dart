@@ -672,4 +672,83 @@ void main() {
       ),
     );
   });
+
+  test(
+    'loadSummaries skips checkpoints whose payload is missing or has the '
+    'wrong entity type',
+    () async {
+      final at = DateTime.utc(2024, 3, 10);
+      // Summary message pointing at a payload id that does not exist.
+      await repo.upsertEntity(
+        AgentDomainEntity.agentMessage(
+          id: 'sum-missing',
+          agentId: _agentId,
+          threadId: 'sum-missing',
+          kind: AgentMessageKind.summary,
+          createdAt: at,
+          vectorClock: null,
+          contentEntryId: 'no-such-payload',
+          metadata: const AgentMessageMetadata(),
+        ),
+      );
+      // Summary message whose contentEntryId resolves to a NON-payload
+      // entity (the seeded agent state).
+      final stateId = repo.entities.whereType<AgentStateEntity>().single.id;
+      await repo.upsertEntity(
+        AgentDomainEntity.agentMessage(
+          id: 'sum-wrong-type',
+          agentId: _agentId,
+          threadId: 'sum-wrong-type',
+          kind: AgentMessageKind.summary,
+          createdAt: at,
+          vectorClock: null,
+          contentEntryId: stateId,
+          metadata: const AgentMessageMetadata(),
+        ),
+      );
+
+      // Both rows are silently skipped — no checkpoint, no crash.
+      expect(await compactor.loadSummaries(_agentId), isEmpty);
+    },
+  );
+
+  test(
+    'a re-produced checkpoint payload dedupes by content digest: the '
+    'payload write is skipped, only a new summary message is appended',
+    () async {
+      await captureAll([src('e1', 'alpha', day: 1)], 1);
+      await captureAll([src('e2', 'beta', day: 2)], 2);
+
+      // First compaction folds e1 and writes checkpoint payload D.
+      final budget = tokensOf('beta');
+      expect(await compact(budget: budget), isNotNull);
+      final firstSummary = summaryMessages().single;
+      final payloadId = firstSummary.contentEntryId!;
+      final payloadWritesAfterFirst = repo.entityWriteCount(payloadId);
+
+      // Soft-delete the summary message: the checkpoint disappears from the
+      // active view, but the content-addressed payload D stays.
+      await repo.upsertEntity(
+        firstSummary.copyWith(deletedAt: DateTime.utc(2024, 3, 21)),
+      );
+
+      // Re-compacting the identical log re-derives the identical payload
+      // content → same digest → the `getEntity(payloadId) == null` guard
+      // skips the write (ADR 0017 convergence), while a fresh summary
+      // message still lands.
+      expect(await compact(budget: budget, day: 22), isNotNull);
+
+      expect(
+        repo.entityWriteCount(payloadId),
+        payloadWritesAfterFirst,
+        reason: 'duplicate payload content must not be re-written',
+      );
+      final liveSummaries = summaryMessages()
+          .where((m) => m.deletedAt == null)
+          .toList();
+      expect(liveSummaries, hasLength(1));
+      expect(liveSummaries.single.contentEntryId, payloadId);
+      expect(liveSummaries.single.id, isNot(firstSummary.id));
+    },
+  );
 }

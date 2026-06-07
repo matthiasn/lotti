@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -5,9 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -671,6 +674,41 @@ void main() {
           ),
         );
         expect(find.text(label), findsOneWidget);
+
+        // The whole point of the pill is the tint: the label text carries
+        // the status accent and the enclosing DecoratedBox the translucent
+        // background derived from it (see _statusTint in the meta part).
+        final context = tester.element(find.byType(DesktopTaskHeader));
+        final accent = switch (label) {
+          'In Progress' => TaskShowcasePalette.info(context),
+          'Blocked' => TaskShowcasePalette.error(context),
+          'On Hold' => TaskShowcasePalette.warning(context),
+          'Groomed' => context.designTokens.colors.interactive.enabled,
+          'Done' => TaskShowcasePalette.success(context),
+          _ => null, // Rejected uses the low-emphasis text tint.
+        };
+        final text = tester.widget<Text>(find.text(label));
+        final box = tester.widget<DecoratedBox>(
+          find
+              .ancestor(
+                of: find.text(label),
+                matching: find.byType(DecoratedBox),
+              )
+              .first,
+        );
+        final background = (box.decoration as BoxDecoration).color;
+        if (accent != null) {
+          expect(text.style?.color, accent, reason: label);
+          expect(
+            background,
+            accent.withValues(alpha: 0.18),
+            reason: label,
+          );
+        } else {
+          final low = TaskShowcasePalette.lowText(context);
+          expect(text.style?.color, low);
+          expect(background, low.withValues(alpha: 0.14));
+        }
       });
     }
   });
@@ -688,11 +726,59 @@ void main() {
           ),
         );
         expect(find.text(priority.short), findsOneWidget);
+
+        // Verify the pill actually carries the palette accent.
+        final context = tester.element(find.byType(DesktopTaskHeader));
+        final expected = switch (priority) {
+          TaskPriority.p0Urgent => TaskShowcasePalette.error(context),
+          TaskPriority.p1High => TaskShowcasePalette.warning(context),
+          TaskPriority.p2Medium => TaskShowcasePalette.info(context),
+          TaskPriority.p3Low => TaskShowcasePalette.success(context),
+        };
+        final pill = tester.widget<DsPill>(
+          find.ancestor(
+            of: find.text(priority.short),
+            matching: find.byType(DsPill),
+          ),
+        );
+        expect(pill.color, expected, reason: priority.short);
       });
     }
   });
 
   group('DesktopTaskHeader — title editor edge cases', () {
+    testWidgets(
+      'a title change arriving while the editor is open does NOT clobber '
+      'the in-progress edit (didUpdateWidget guard)',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(),
+            onTitleSaved: (_) {},
+            initialEditing: true,
+          ),
+        );
+        await tester.pump();
+        await tester.enterText(find.byType(TextField), 'My half-typed edit');
+        await tester.pump();
+
+        // A sync delivers a new title from elsewhere while editing.
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(title: 'Synced title from another device'),
+            onTitleSaved: (_) {},
+            initialEditing: true,
+          ),
+        );
+        await tester.pump();
+
+        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(field.controller?.text, 'My half-typed edit');
+      },
+    );
+
     testWidgets(
       'committing unchanged text does not fire onTitleSaved',
       (tester) async {
@@ -1116,6 +1202,62 @@ void main() {
 
         // No dialog should appear for a label without a description.
         expect(find.byType(AlertDialog), findsNothing);
+      },
+    );
+  });
+
+  group('TrailingAlignedWrap — layout property', () {
+    testWidgets(
+      'the trailing child is always pinned to the right edge for random '
+      'child-width sequences (model-based, fixed seed)',
+      (tester) async {
+        final random = Random(11);
+        const trailingKey = Key('trailing');
+        const wrapKey = Key('wrap');
+
+        for (var run = 0; run < 25; run++) {
+          final maxWidth = 120.0 + random.nextInt(400);
+          final n = random.nextInt(7);
+          final widths = [
+            for (var i = 0; i < n; i++) 10.0 + random.nextInt(140),
+          ];
+          final trailingWidth = 10.0 + random.nextInt(100);
+
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: TextDirection.ltr,
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: maxWidth,
+                  child: TrailingAlignedWrap(
+                    key: wrapKey,
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: [
+                      for (final w in widths) SizedBox(width: w, height: 12),
+                      SizedBox(
+                        key: trailingKey,
+                        width: trailingWidth,
+                        height: 16,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          final wrapLeft = tester.getTopLeft(find.byKey(wrapKey)).dx;
+          final trailingTopLeft = tester.getTopLeft(find.byKey(trailingKey));
+          expect(
+            trailingTopLeft.dx - wrapLeft,
+            closeTo(maxWidth - trailingWidth, 0.001),
+            reason:
+                'run=$run maxWidth=$maxWidth widths=$widths '
+                'trailing=$trailingWidth',
+          );
+        }
       },
     );
   });

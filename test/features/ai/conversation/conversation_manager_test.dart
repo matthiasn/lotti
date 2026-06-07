@@ -449,18 +449,6 @@ void main() {
       });
     });
 
-    group('export', () {
-      test('should handle max turns', () {
-        // Test that we can check if conversation can continue
-        for (var i = 0; i < 10; i++) {
-          manager.addUserMessage('Message $i');
-        }
-
-        expect(manager.messages.length, 10);
-        expect(manager.canContinue(), true); // Default max turns is 20
-      });
-    });
-
     group('Event Emission', () {
       test('emitThinking should emit thinking event', () {
         fakeAsync((async) {
@@ -625,20 +613,27 @@ void main() {
     });
 
     group('Initialization - Extended', () {
-      test('initialize clears existing messages', () {
-        // Add some messages
+      test('initialize clears existing messages and thought signatures', () {
+        // Add some messages and a stored thought signature
         manager
           ..addUserMessage('Message 1')
-          ..addUserMessage('Message 2');
-        expect(manager.messages.length, 2);
+          ..addUserMessage('Message 2')
+          ..addAssistantMessage(
+            content: 'With signature',
+            signatures: {'tool-1': 'sig-abc'},
+          );
+        expect(manager.messages.length, 3);
+        expect(manager.thoughtSignatures, isNotEmpty);
 
         // Initialize with system message
         manager.initialize(systemMessage: 'New system message');
 
-        // Should have only the system message
+        // Should have only the system message; signatures from the previous
+        // conversation must not leak into the new one.
         expect(manager.messages.length, 1);
         expect(manager.messages.first.role, ChatCompletionMessageRole.system);
         expect(manager.messages.first.content, 'New system message');
+        expect(manager.thoughtSignatures, isEmpty);
       });
 
       test('initialize without system message', () {

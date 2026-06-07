@@ -31,38 +31,8 @@ void main() {
     registerFallbackValue(fallbackJournalEntity);
     registerFallbackValue(FakeMetadata());
     registerFallbackValue(FakeTaskData());
-    registerFallbackValue(
-      Checklist(
-        meta: Metadata(
-          id: 'test',
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-        ),
-        data: const ChecklistData(
-          title: 'Test Checklist',
-          linkedChecklistItems: [],
-          linkedTasks: [],
-        ),
-      ),
-    );
-    registerFallbackValue(
-      ChecklistItem(
-        meta: Metadata(
-          id: 'test',
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-        ),
-        data: const ChecklistItemData(
-          title: 'Test Item',
-          isChecked: false,
-          linkedChecklists: [],
-        ),
-      ),
-    );
+    registerFallbackValue(fallbackChecklist);
+    registerFallbackValue(fallbackChecklistItem);
   });
 
   setUp(() async {
@@ -584,7 +554,11 @@ void main() {
         data: data,
       );
 
-      // Assert
+      // Assert — deliberate API asymmetry: updateChecklist returns false
+      // only when the entity is *missing*; a wrong-typed entity logs the
+      // error but still returns true (the orElse branch falls through to
+      // the unconditional `return true`). Callers treat "found but wrong
+      // type" as non-retriable, unlike "not found".
       expect(result, isTrue);
       verify(() => mockJournalDb.journalEntityById(entryId)).called(1);
       verify(
@@ -875,143 +849,185 @@ void main() {
       },
     );
 
-    test('returns null when checklist not found', () async {
-      // Arrange
-      const checklistId = 'non-existent-checklist-id';
-      const title = 'New Item';
-      const isChecked = false;
-      const categoryId = 'category-id';
-
-      final newItem = ChecklistItem(
-        meta: Metadata(
-          id: 'new-item-id',
-          categoryId: categoryId,
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-          starred: false,
-          private: false,
-          utcOffset: 0,
-          vectorClock: const VectorClock({}),
-        ),
-        data: const ChecklistItemData(
-          title: title,
-          isChecked: isChecked,
-          linkedChecklists: [checklistId],
-        ),
+    // Stubs metadata/db-entity creation for the path-terminates-early error
+    // cases; only the entity returned for the checklist lookup varies.
+    void stubCreateItem({
+      required String checklistId,
+      required JournalEntity? lookedUpEntity,
+    }) {
+      final meta = Metadata(
+        id: 'new-item-id',
+        categoryId: 'category-id',
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
+        starred: false,
+        private: false,
+        utcOffset: 0,
+        vectorClock: const VectorClock({}),
       );
-
       when(
         () => mockPersistenceLogic.createMetadata(),
-      ).thenAnswer((_) async => newItem.meta);
+      ).thenAnswer((_) async => meta);
       when(
         () => mockPersistenceLogic.createDbEntity(any()),
       ).thenAnswer((_) async => true);
       when(
         () => mockJournalDb.journalEntityById(checklistId),
-      ).thenAnswer((_) async => null);
+      ).thenAnswer((_) async => lookedUpEntity);
+    }
 
-      // Act
-      final result = await repository.addItemToChecklist(
-        checklistId: checklistId,
-        title: title,
-        isChecked: isChecked,
-        categoryId: categoryId,
-      );
-
-      // Assert
-      expect(result, isNull);
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.persistence,
-          'Entity is not a checklist',
-          subDomain: 'addItemToChecklist',
-        ),
-      ).called(1);
-    });
-
-    test('returns null when entity is not a checklist', () async {
-      // Arrange
-      const checklistId = 'task-id';
-      const title = 'New Item';
-      const isChecked = false;
-      const categoryId = 'category-id';
-
-      final task = Task(
-        meta: Metadata(
-          id: checklistId,
-          categoryId: categoryId,
+    Task buildNonChecklistEntity(String id) => Task(
+      meta: Metadata(
+        id: id,
+        categoryId: 'category-id',
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate,
+        starred: false,
+        private: false,
+        utcOffset: 0,
+        vectorClock: const VectorClock({}),
+      ),
+      data: TaskData(
+        status: TaskStatus.open(
+          id: 'status-1',
           createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-          starred: false,
-          private: false,
           utcOffset: 0,
-          vectorClock: const VectorClock({}),
         ),
-        data: TaskData(
-          status: TaskStatus.open(
-            id: 'status-1',
-            createdAt: testDate,
-            utcOffset: 0,
+        title: 'Test Task',
+        statusHistory: [],
+        dateFrom: testDate,
+        dateTo: testDate,
+      ),
+    );
+
+    for (final (description, lookedUpFor) in [
+      ('returns null when checklist not found', null),
+      ('returns null when entity is not a checklist', 'task'),
+    ]) {
+      test(description, () async {
+        const checklistId = 'lookup-id';
+        stubCreateItem(
+          checklistId: checklistId,
+          lookedUpEntity: lookedUpFor == null
+              ? null
+              : buildNonChecklistEntity(checklistId),
+        );
+
+        final result = await repository.addItemToChecklist(
+          checklistId: checklistId,
+          title: 'New Item',
+          isChecked: false,
+          categoryId: 'category-id',
+        );
+
+        expect(result, isNull);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.persistence,
+            'Entity is not a checklist',
+            subDomain: 'addItemToChecklist',
           ),
-          title: 'Test Task',
-          statusHistory: [],
-          dateFrom: testDate,
-          dateTo: testDate,
-        ),
-      );
+        ).called(1);
+      });
+    }
 
-      final newItem = ChecklistItem(
-        meta: Metadata(
-          id: 'new-item-id',
-          categoryId: categoryId,
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-          starred: false,
-          private: false,
-          utcOffset: 0,
-          vectorClock: const VectorClock({}),
-        ),
-        data: const ChecklistItemData(
+    test(
+      'successfully creates item and updates checklist atomically',
+      () async {
+        // Arrange
+        const checklistId = 'checklist-id';
+        const title = 'New Item';
+        const isChecked = false;
+        const categoryId = 'category-id';
+
+        final checklist = Checklist(
+          meta: Metadata(
+            id: checklistId,
+            categoryId: categoryId,
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            starred: false,
+            private: false,
+            utcOffset: 0,
+            vectorClock: const VectorClock({}),
+          ),
+          data: const ChecklistData(
+            title: 'Test Checklist',
+            linkedChecklistItems: ['existing-item-1', 'existing-item-2'],
+            linkedTasks: ['task-1'],
+          ),
+        );
+
+        final newItem = ChecklistItem(
+          meta: Metadata(
+            id: 'new-item-id',
+            categoryId: categoryId,
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+            starred: false,
+            private: false,
+            utcOffset: 0,
+            vectorClock: const VectorClock({}),
+          ),
+          data: const ChecklistItemData(
+            title: title,
+            isChecked: isChecked,
+            linkedChecklists: [checklistId],
+          ),
+        );
+
+        when(
+          () => mockPersistenceLogic.createMetadata(),
+        ).thenAnswer((_) async => newItem.meta);
+        when(
+          () => mockPersistenceLogic.createDbEntity(any()),
+        ).thenAnswer((_) async => true);
+        when(
+          () => mockJournalDb.journalEntityById(checklistId),
+        ).thenAnswer((_) async => checklist);
+        when(() => mockPersistenceLogic.updateMetadata(any())).thenAnswer(
+          (_) async => checklist.meta.copyWith(
+            updatedAt: testDate,
+          ),
+        );
+        when(
+          () => mockPersistenceLogic.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+
+        // Act
+        final result = await repository.addItemToChecklist(
+          checklistId: checklistId,
           title: title,
           isChecked: isChecked,
-          linkedChecklists: [checklistId],
-        ),
-      );
+          categoryId: categoryId,
+        );
 
-      when(
-        () => mockPersistenceLogic.createMetadata(),
-      ).thenAnswer((_) async => newItem.meta);
-      when(
-        () => mockPersistenceLogic.createDbEntity(any()),
-      ).thenAnswer((_) async => true);
-      when(
-        () => mockJournalDb.journalEntityById(checklistId),
-      ).thenAnswer((_) async => task);
+        // Assert
+        expect(result, isNotNull);
+        expect(result!.data.title, equals(title));
+        expect(result.data.isChecked, equals(isChecked));
 
-      // Act
-      final result = await repository.addItemToChecklist(
-        checklistId: checklistId,
-        title: title,
-        isChecked: isChecked,
-        categoryId: categoryId,
-      );
+        // Verify that the checklist was updated with the new item
+        final capturedChecklist =
+            verify(
+                  () => mockPersistenceLogic.updateDbEntity(captureAny()),
+                ).captured.first
+                as Checklist;
 
-      // Assert
-      expect(result, isNull);
-      verify(
-        () => mockDomainLogger.error(
-          LogDomain.persistence,
-          'Entity is not a checklist',
-          subDomain: 'addItemToChecklist',
-        ),
-      ).called(1);
-    });
+        expect(
+          capturedChecklist.data.linkedChecklistItems,
+          equals(['existing-item-1', 'existing-item-2', 'new-item-id']),
+        );
+      },
+    );
 
     test('handles exceptions gracefully', () async {
       // Arrange
@@ -1238,6 +1254,74 @@ void main() {
         // No items recovered means the second bulk read is skipped.
         verify(
           () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+        ).called(1);
+      },
+    );
+
+    test(
+      'logs and skips a corrupt ITEM row from the second bulk read while '
+      'still returning the intact items',
+      () async {
+        final checklist = buildChecklist('cl-1', const [
+          'item-good',
+          'item-corrupt',
+        ]);
+        final goodItem = ChecklistItem(
+          meta: Metadata(
+            id: 'item-good',
+            createdAt: testDate,
+            updatedAt: testDate,
+            dateFrom: testDate,
+            dateTo: testDate,
+          ),
+          data: const ChecklistItemData(
+            title: 'Good item',
+            isChecked: false,
+            linkedChecklists: ['cl-1'],
+          ),
+        );
+        final corruptItemRow = JournalDbEntity(
+          id: 'item-corrupt',
+          createdAt: testDate,
+          updatedAt: testDate,
+          dateFrom: testDate,
+          dateTo: testDate,
+          deleted: false,
+          starred: false,
+          private: false,
+          task: false,
+          flag: 0,
+          type: 'ChecklistItem',
+          serialized: '{not valid json either',
+          schemaVersion: 0,
+          category: '',
+        );
+
+        when(
+          () => mockJournalDb.journalEntitiesByIdsUnorderedAllPrivate(any()),
+        ).thenAnswer((invocation) {
+          final ids = invocation.positionalArguments.first as List<String>;
+          if (ids.contains('cl-1')) {
+            return MockSelectable<JournalDbEntity>([toDbEntity(checklist)]);
+          }
+          return MockSelectable<JournalDbEntity>([
+            toDbEntity(goodItem),
+            corruptItemRow,
+          ]);
+        });
+
+        final task = buildTaskWithChecklists(const ['cl-1']);
+        final result = await repository.getChecklistItemsForTask(task: task);
+
+        // The corrupt row is skipped and logged; the intact item survives.
+        expect(result.map((i) => i.meta.id), ['item-good']);
+        verify(
+          () => mockDomainLogger.error(
+            any<LogDomain>(),
+            any(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'getChecklistItemsForTask',
+          ),
         ).called(1);
       },
     );

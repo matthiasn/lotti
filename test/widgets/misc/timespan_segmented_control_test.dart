@@ -187,5 +187,57 @@ void main() {
 
       expect(selectedValues, containsAllInOrder([30, 180, 365, 90]));
     });
+
+    // ── Property: selection + label form over arbitrary segment lists ──────
+    final propertyCases =
+        <({List<int> segments, int selectedIndex, double width})>[
+          (segments: [7, 14, 21], selectedIndex: 0, width: 320),
+          (segments: [30, 90, 180, 365], selectedIndex: 2, width: 449),
+          (segments: [1, 5], selectedIndex: 1, width: 450),
+          (segments: [10, 20, 40, 80, 160], selectedIndex: 4, width: 1024),
+          (segments: [365], selectedIndex: 0, width: 200),
+        ];
+    for (final c in propertyCases) {
+      testWidgets(
+        'property: segments=${c.segments} sel=${c.selectedIndex} '
+        'width=${c.width}',
+        (tester) async {
+          final selectedDays = c.segments[c.selectedIndex];
+          await tester.pumpWidget(
+            MaterialApp(
+              home: MediaQuery(
+                data: MediaQueryData(size: Size(c.width, 800)),
+                child: Scaffold(
+                  body: TimeSpanSegmentedControl(
+                    timeSpanDays: selectedDays,
+                    onValueChanged: (_) {},
+                    segments: c.segments,
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          // The selected set is exactly {timeSpanDays}.
+          final button = tester.widget<SegmentedButton<int>>(
+            find.byType(SegmentedButton<int>),
+          );
+          expect(button.selected, {selectedDays});
+
+          // Labels are exactly the short form below 450px, long form at/above.
+          final shortLabels = c.width < 450;
+          for (final days in c.segments) {
+            expect(
+              find.text(shortLabels ? '${days}d' : '$days days'),
+              findsOneWidget,
+            );
+            expect(
+              find.text(shortLabels ? '$days days' : '${days}d'),
+              findsNothing,
+            );
+          }
+        },
+      );
+    }
   });
 }

@@ -41,7 +41,10 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.textContaining('3'), findsAtLeastNWidgets(1));
+      // Exact localized strings, so a stray '3' elsewhere can't satisfy
+      // the assertion: blocked count appears in the banner and the legend.
+      expect(find.text('3 tasks blocked'), findsOneWidget);
+      expect(find.text('3 Blocked'), findsOneWidget);
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
     });
 
@@ -56,8 +59,9 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.textContaining('4'), findsAtLeastNWidgets(1));
-      expect(find.textContaining('8'), findsAtLeastNWidgets(1));
+      // The progress bar renders the exact completed/total string.
+      expect(find.text('4/8 tasks completed'), findsOneWidget);
+      expect(find.text('4 Completed'), findsOneWidget);
     });
 
     testWidgets('renders legend items', (tester) async {

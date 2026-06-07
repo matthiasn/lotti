@@ -2,17 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/dismiss_background.dart';
 
+import '../../../../../widget_test_utils.dart';
+
 void main() {
   group('DismissBackground', () {
     Widget createWidget() {
-      return const MaterialApp(
-        home: Scaffold(
-          body: Center(
-            child: SizedBox(
-              width: 400,
-              height: 100,
-              child: DismissBackground(),
-            ),
+      return makeTestableWidgetWithScaffold(
+        const Center(
+          child: SizedBox(
+            width: 400,
+            height: 100,
+            child: DismissBackground(),
           ),
         ),
       );

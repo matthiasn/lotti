@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/daily_token_usage.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:meta/meta.dart';
 
 /// Threshold multiplier: a source is flagged "high usage" if its share exceeds
 /// this fraction of an equal split among sources (e.g. 2.5x its "fair share").
@@ -240,6 +241,18 @@ Future<Map<String, _SourceInfo>> _resolveSourceInfo(
 ///
 /// When [wakeCounts] is provided, each day's [DailyTokenUsage.wakeCount]
 /// is populated from it.
+/// Test-only seam for [_buildDailyUsage] — the pure N-day bucket builder.
+@visibleForTesting
+List<DailyTokenUsage> debugBuildDailyUsage(
+  List<WakeTokenUsageEntity> records, {
+  int chartDays = 7,
+  Map<DateTime, int> wakeCounts = const {},
+}) => _buildDailyUsage(
+  records,
+  chartDays: chartDays,
+  wakeCounts: wakeCounts,
+);
+
 List<DailyTokenUsage> _buildDailyUsage(
   List<WakeTokenUsageEntity> records, {
   int chartDays = 7,

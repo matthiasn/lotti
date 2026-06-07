@@ -339,4 +339,182 @@ void main() {
       },
     );
   });
+
+  group('enum contracts — names and order are consumer-visible', () {
+    // The UI and the mock agent switch over these enums by name/index;
+    // a silent rename or reorder would only surface in consumer tests.
+    test('every day-agent enum keeps its declared names in order', () {
+      expect(
+        AgendaItemState.values.map((e) => e.name),
+        ['open', 'inProgress', 'overdue', 'done'],
+      );
+      expect(
+        PlanDiffChangeKind.values.map((e) => e.name),
+        ['moved', 'added', 'dropped'],
+      );
+      expect(
+        PlanDiffChangeDecision.values.map((e) => e.name),
+        ['pending', 'accepted', 'rejected'],
+      );
+      expect(
+        LearningCardKind.values.map((e) => e.name),
+        ['standard', 'nudge'],
+      );
+      expect(
+        TaskCorpusState.values.map((e) => e.name),
+        [
+          'all',
+          'inProgress',
+          'overdue',
+          'scheduled',
+          'recurring',
+          'backlog',
+          'done',
+        ],
+      );
+      expect(
+        PendingItemReason.values.map((e) => e.name),
+        ['overdue', 'inProgress', 'missedRecurring', 'dueToday'],
+      );
+      expect(
+        TriageAction.values.map((e) => e.name),
+        ['today', 'doNow', 'defer', 'done', 'drop'],
+      );
+      expect(
+        CarryoverAction.values.map((e) => e.name),
+        ['tomorrow', 'pickDate', 'drop'],
+      );
+      expect(ReflectionSource.values.map((e) => e.name), ['typed', 'voice']);
+    });
+  });
+
+  group('value-object field contracts', () {
+    const cat = DayAgentCategory(id: 'c1', name: 'Deep', colorHex: '3B82F6');
+
+    test(
+      'PendingItem: optionals default to null, reason-specific fields land',
+      () {
+        const minimal = PendingItem(
+          taskId: 't1',
+          title: 'Fix flaky test',
+          category: cat,
+          reason: PendingItemReason.dueToday,
+        );
+        expect(minimal.note, isNull);
+        expect(minimal.overdueByDays, isNull);
+        expect(minimal.sessionCount, isNull);
+        expect(minimal.referenceDate, isNull);
+
+        final overdue = PendingItem(
+          taskId: 't2',
+          title: 'Pay invoice',
+          category: cat,
+          reason: PendingItemReason.overdue,
+          overdueByDays: 3,
+          note: 'Last skipped Thursday',
+          referenceDate: DateTime(2024, 3, 15),
+        );
+        expect(overdue.overdueByDays, 3);
+        expect(overdue.note, 'Last skipped Thursday');
+        expect(overdue.referenceDate, DateTime(2024, 3, 15));
+      },
+    );
+
+    test('TriageResult: deferredTo only accompanies the defer action', () {
+      const done = TriageResult(taskId: 't1', action: TriageAction.done);
+      expect(done.deferredTo, isNull);
+
+      final deferred = TriageResult(
+        taskId: 't1',
+        action: TriageAction.defer,
+        deferredTo: DateTime(2024, 3, 18),
+      );
+      expect(deferred.action, TriageAction.defer);
+      expect(deferred.deferredTo, DateTime(2024, 3, 18));
+    });
+
+    test('ParsedItem: matched-task and anchor optionals land verbatim', () {
+      const minimal = ParsedItem(
+        id: 'p1',
+        kind: ParsedItemKind.newTask,
+        title: 'Buy paint',
+        category: cat,
+        confidence: ParsedItemConfidence.high,
+      );
+      expect(minimal.matchedTaskId, isNull);
+      expect(minimal.timeAnchor, isNull);
+      expect(minimal.proposedUpdate, isNull);
+
+      const matched = ParsedItem(
+        id: 'p2',
+        kind: ParsedItemKind.matched,
+        title: 'Deck progress',
+        category: cat,
+        confidence: ParsedItemConfidence.medium,
+        spokenPhrase: 'paint the deck before lunch',
+        matchedTaskId: 'task-9',
+        matchedTaskTitle: 'Paint the deck',
+        timeAnchor: 'before 11am',
+        proposedUpdate: 'Set estimate to 90m',
+      );
+      expect(matched.matchedTaskId, 'task-9');
+      expect(matched.spokenPhrase, 'paint the deck before lunch');
+      expect(matched.timeAnchor, 'before 11am');
+      expect(matched.proposedUpdate, 'Set estimate to 90m');
+    });
+
+    test('PlanDiff carries its changes and the post-apply plan', () {
+      final updated = DraftPlan(
+        dayDate: DateTime(2024, 3, 15),
+        blocks: const [],
+        bands: const [],
+        capacityMinutes: 480,
+        scheduledMinutes: 60,
+      );
+      final diff = PlanDiff(
+        id: 'd1',
+        transcript: 'move the gym',
+        changes: const [],
+        updatedPlan: updated,
+      );
+      expect(diff.updatedPlan.scheduledMinutes, 60);
+      expect(diff.changes, isEmpty);
+      expect(diff.transcript, 'move the gym');
+    });
+
+    test('Shutdown models: metrics, completed/carryover items, note', () {
+      const metrics = ShutdownMetrics(
+        focusMinutes: 240,
+        flowSessions: 3,
+        contextSwitches: 12,
+        contextSwitchesWeekAvg: 15.5,
+        energyScore: 7.5,
+        energyDeltaVsWeek: 0.5,
+      );
+      expect(metrics.focusMinutes, 240);
+      expect(metrics.energyDeltaVsWeek, 0.5);
+
+      const completedItem = CompletedItem(
+        taskId: 't1',
+        title: 'Ship release',
+        category: cat,
+        durationMinutes: 90,
+      );
+      expect(completedItem.note, isNull);
+      expect(completedItem.durationMinutes, 90);
+
+      const carryover = CarryoverItem(
+        taskId: 't2',
+        title: 'Write docs',
+        category: cat,
+        reason: 'Ran out of time — started, 40m in',
+        suggestedTarget: '→ tomorrow morning',
+      );
+      expect(carryover.suggestedTarget, '→ tomorrow morning');
+
+      const note = TomorrowNote(body: 'Start with the deck.', maturity: 2);
+      expect(note.maturity, inInclusiveRange(1, 3));
+      expect(note.body, isNotEmpty);
+    });
+  });
 }

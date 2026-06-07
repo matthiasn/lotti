@@ -1,5 +1,8 @@
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:meta/meta.dart';
+
+part 'mock_day_agent_fixtures.dart';
 
 /// Scripted [DayAgentInterface] for the Capture + Reconcile preview.
 ///
@@ -28,27 +31,6 @@ class MockDayAgent implements DayAgentInterface {
   final Duration draftLatency;
   final Duration summarizeLatency;
   final DateTime Function() _clock;
-
-  static const _work = DayAgentCategory(
-    id: 'cat_work',
-    name: 'Work',
-    colorHex: '5ED4B7',
-  );
-  static const _health = DayAgentCategory(
-    id: 'cat_health',
-    name: 'Health',
-    colorHex: '7AB889',
-  );
-  static const _meals = DayAgentCategory(
-    id: 'cat_meals',
-    name: 'Meals',
-    colorHex: '4AB6E8',
-  );
-  static const _study = DayAgentCategory(
-    id: 'cat_study',
-    name: 'Study',
-    colorHex: 'FBA336',
-  );
 
   int _captureSeq = 0;
 
@@ -388,28 +370,6 @@ class MockDayAgent implements DayAgentInterface {
     return byTask.entries
         .map((entry) => buildItem(entry.key, entry.value))
         .toList();
-  }
-
-  String? _scriptedOutcome(String taskId) {
-    switch (taskId) {
-      case 't_deck_review':
-        return 'Deck reviewed by Sarah, sent to leadership.';
-      case 't_onboarding_doc':
-        return 'Onboarding doc back on track — picked up where you left off.';
-      case 't_morning_run':
-        return '5 km logged before the day starts.';
-    }
-    return null;
-  }
-
-  double? _scriptedProgress(String taskId) {
-    switch (taskId) {
-      case 't_onboarding_doc':
-        return 0.4;
-      case 't_deck_review':
-        return 0.6;
-    }
-    return null;
   }
 
   int _diffSeq = 0;
@@ -780,62 +740,21 @@ class MockDayAgent implements DayAgentInterface {
     String? query,
   }) async {
     await Future<void>.delayed(pendingLatency);
-    const all = <TaskCorpusItem>[
-      TaskCorpusItem(
-        id: 't_deck_review',
-        title: 'Deck review — Q2 leadership update',
-        category: _work,
-        state: TaskCorpusState.inProgress,
-        updatedLabel: 'today',
-      ),
-      TaskCorpusItem(
-        id: 't_onboarding_doc',
-        title: 'Finish the Onboarding doc',
-        category: _work,
-        state: TaskCorpusState.inProgress,
-        updatedLabel: 'yesterday',
-      ),
-      TaskCorpusItem(
-        id: 't_dentist',
-        title: 'Reschedule dentist',
-        category: _health,
-        state: TaskCorpusState.overdue,
-        updatedLabel: '3 days ago',
-      ),
-      TaskCorpusItem(
-        id: 't_invoices',
-        title: 'Review outstanding invoices',
-        category: _work,
-        state: TaskCorpusState.scheduled,
-        updatedLabel: 'today',
-      ),
-      TaskCorpusItem(
-        id: 't_dnd_book',
-        title: 'Read 30 pages',
-        category: _study,
-        state: TaskCorpusState.recurring,
-        updatedLabel: 'May 18',
-      ),
-      TaskCorpusItem(
-        id: 't_sunday_call',
-        title: 'Call mom re: Sunday',
-        category: _meals,
-        state: TaskCorpusState.backlog,
-        updatedLabel: '2 weeks ago',
-      ),
-      TaskCorpusItem(
-        id: 't_morning_run_done',
-        title: 'Morning run · 5km',
-        category: _health,
-        state: TaskCorpusState.done,
-        updatedLabel: 'today',
-      ),
-    ];
+    const all = _scriptedTaskCorpus;
     return [
       for (final item in all)
         if (_matchesFilter(item, stateFilter, categoryId, query)) item,
     ];
   }
+
+  /// Test seam for [_matchesFilter] — pure corpus-filter predicate.
+  @visibleForTesting
+  bool debugMatchesFilter(
+    TaskCorpusItem item,
+    TaskCorpusState state,
+    String? categoryId,
+    String? query,
+  ) => _matchesFilter(item, state, categoryId, query);
 
   bool _matchesFilter(
     TaskCorpusItem item,
@@ -852,9 +771,3 @@ class MockDayAgent implements DayAgentInterface {
     return true;
   }
 }
-
-const DayAgentCategory _buffer = DayAgentCategory(
-  id: 'cat_buffer',
-  name: 'Buffer',
-  colorHex: '8E8E8E',
-);

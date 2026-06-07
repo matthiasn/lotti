@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/projection/input_frontier.dart';
@@ -171,4 +172,54 @@ void main() {
       expect(frontierNow().keys, ['e1']);
     },
   );
+
+  test(
+    'a throw mid-transaction propagates and suppresses every buffered sync '
+    'echo (no partial outbox flush)',
+    () async {
+      // Throwing repo: payload entity writes succeed, the first reference
+      // link write blows up — mid-way through captureWakeInputs's
+      // transaction body.
+      final throwingRepo = _LinkThrowingRepository()
+        ..seed([makeTestState(agentId: _agentId)]);
+      final vc = MockVectorClockService();
+      var counter = 0;
+      when(
+        () => vc.getNextVectorClock(previous: any(named: 'previous')),
+      ).thenAnswer((_) async => VectorClock({'h1': ++counter}));
+      final outbox = MockOutboxService();
+      when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+      final failingCapture = AgentInputCaptureService(
+        syncService: AgentSyncService(
+          repository: throwingRepo,
+          outboxService: outbox,
+          vectorClockService: vc,
+        ),
+      );
+
+      await expectLater(
+        failingCapture.captureWakeInputs(
+          agentId: _agentId,
+          sources: [source('e1', 'alpha')],
+          at: DateTime.utc(2024, 3, 10),
+        ),
+        throwsStateError,
+      );
+
+      // The rolled-back transaction must not flush any buffered sync
+      // message — otherwise receivers would apply writes the local DB
+      // rolled back. (Row-level rollback itself is the real drift
+      // repository's job; the in-memory fake cannot model it.)
+      verifyNever(() => outbox.enqueueMessage(any()));
+    },
+  );
+}
+
+/// In-memory repository whose link writes always throw, to fail a capture
+/// transaction after its payload writes succeeded.
+class _LinkThrowingRepository extends InMemoryAgentRepository {
+  @override
+  Future<void> upsertLink(AgentLink link) async {
+    throw StateError('link write rejected');
+  }
 }

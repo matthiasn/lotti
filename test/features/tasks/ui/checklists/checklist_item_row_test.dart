@@ -15,6 +15,7 @@ import 'package:lotti/features/tasks/ui/title_text_field.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 import '../../../../widget_test_utils.dart';
+import 'drag_test_fakes.dart';
 
 // ---------------------------------------------------------------------------
 // Test data
@@ -145,37 +146,6 @@ class FakeChecklistController extends ChecklistController {
 
 /// Minimal [DropSession] fake holding a fixed item list (avoids Mock +
 /// Diagnosticable inheritance issues).
-class _FakeDropSession extends Fake implements DropSession {
-  _FakeDropSession(this.itemList);
-
-  final List<DropItem> itemList;
-
-  @override
-  List<DropItem> get items => itemList;
-
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) =>
-      '_FakeDropSession(items: $itemList)';
-}
-
-/// Minimal [DropItem] fake carrying local data only.
-class _FakeDropItem extends Fake implements DropItem {
-  _FakeDropItem(this.testLocalData);
-
-  final Object? testLocalData;
-
-  @override
-  Object? get localData => testLocalData;
-
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) =>
-      '_FakeDropItem(localData: $testLocalData)';
-}
-
-/// Minimal [DragSession] fake. The production `dragItemProvider` ignores the
-/// request entirely, so an empty stand-in suffices.
-class _FakeDragSession extends Fake implements DragSession {}
-
 class FakeChecklistCompletionService extends ChecklistCompletionService {
   FakeChecklistCompletionService([this._suggestions = const []]);
 
@@ -1268,7 +1238,7 @@ void main() {
           );
           final operation = await dropRegion.onDropOver(
             DropOverEvent(
-              session: _FakeDropSession(const []),
+              session: FakeDndDropSession(itemList: const []),
               position: DropPosition(local: Offset.zero, global: Offset.zero),
             ),
           );
@@ -1289,7 +1259,9 @@ void main() {
             'checklistItemId': 'dragged-item',
             'checklistId': 'other-checklist',
           };
-          final session = _FakeDropSession([_FakeDropItem(localData)]);
+          final session = FakeDndDropSession(
+            itemList: [FakeDndDropItem(testLocalData: localData)],
+          );
 
           final dropRegion = tester.widget<DropRegion>(
             find.byType(DropRegion),
@@ -1326,7 +1298,7 @@ void main() {
           final dragItem = await dragItemWidget.dragItemProvider(
             DragItemRequest(
               location: Offset.zero,
-              session: _FakeDragSession(),
+              session: FakeDndDragSession(),
             ),
           );
 

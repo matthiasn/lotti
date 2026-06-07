@@ -20,6 +20,12 @@ void main() {
     expect(flag.flagCode, 'cn');
   });
 
+  test('returns Ghana flag override for tw (Akan/Twi)', () {
+    final flag = buildFlag('tw');
+
+    expect(flag.flagCode, 'gh');
+  });
+
   test('returns Nigerian flag override for Nigerian languages', () {
     final igboFlag = buildFlag('ig');
     final pidginFlag = buildFlag('pcm');

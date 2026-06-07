@@ -6,12 +6,12 @@ import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
@@ -19,34 +19,7 @@ void main() {
   late MockOutboxService mockOutboxService;
   final fixedDate = DateTime(2024, 3, 15, 12);
 
-  setUpAll(() {
-    // Register a fallback value for AiConfig
-    registerFallbackValue(
-      AiConfig.inferenceProvider(
-        id: 'fallback-id',
-        baseUrl: 'https://fallback.example.com',
-        apiKey: 'fallback-key',
-        name: 'Fallback API',
-        createdAt: fixedDate,
-        inferenceProviderType: InferenceProviderType.genericOpenAi,
-      ),
-    );
-
-    // Register a fallback value for SyncMessage
-    registerFallbackValue(
-      SyncMessage.aiConfig(
-        aiConfig: AiConfig.inferenceProvider(
-          id: 'fallback-id',
-          baseUrl: 'https://fallback.example.com',
-          apiKey: 'fallback-key',
-          name: 'Fallback API',
-          createdAt: fixedDate,
-          inferenceProviderType: InferenceProviderType.genericOpenAi,
-        ),
-        status: SyncEntryStatus.initial,
-      ),
-    );
-  });
+  setUpAll(registerAllFallbackValues);
 
   setUp(() async {
     // Set up a fresh mock for each test
@@ -224,6 +197,40 @@ void main() {
 
       expect((await first).single.id, 'model-1');
       expect((await second).single.id, 'model-1');
+    });
+
+    test('getConfigById coalesces concurrent lookups by id', () async {
+      // Mirror of the by-type coalescing test for the _configByIdInFlight
+      // map: two awaiters of the same id must share one DB read.
+      final completer = Completer<AiConfig?>();
+      when(
+        () => mockDb.getConfigById('inflight-id'),
+      ).thenAnswer((_) => completer.future);
+
+      final first = repository.getConfigById('inflight-id');
+      final second = repository.getConfigById('inflight-id');
+
+      verify(() => mockDb.getConfigById('inflight-id')).called(1);
+
+      completer.complete(
+        AiConfig.inferenceProvider(
+          id: 'inflight-id',
+          baseUrl: 'https://api.example.com',
+          apiKey: 'k',
+          name: 'In-flight Provider',
+          createdAt: fixedDate,
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        ),
+      );
+
+      expect((await first)?.id, 'inflight-id');
+      expect((await second)?.id, 'inflight-id');
+
+      // The settled future must also have populated the id cache: a
+      // follow-up read resolves without another DB hit.
+      final third = await repository.getConfigById('inflight-id');
+      expect(third?.id, 'inflight-id');
+      verifyNever(() => mockDb.getConfigById('inflight-id'));
     });
 
     test('getConfigById caches repeated lookups by id', () async {

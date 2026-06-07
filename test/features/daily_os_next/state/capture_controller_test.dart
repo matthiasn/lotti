@@ -49,11 +49,15 @@ JournalAudio _persistedAudio({String id = 'audio_001'}) {
   );
 }
 
+/// Builds the standard kept-alive container. Batch tests pass [recorder];
+/// realtime tests pass [realtimeRecorderFactory] instead (the controller
+/// constructs its own recorder per realtime session).
 ProviderContainer _aliveContainer({
-  required MockAudioRecorderRepository recorder,
   required MockAudioTranscriptionService transcriber,
   required MockRealtimeTranscriptionService realtimeService,
   required Future<JournalAudio?> Function(AudioNote) persistAudio,
+  MockAudioRecorderRepository? recorder,
+  AudioRecorder Function()? realtimeRecorderFactory,
 }) {
   final container = ProviderContainer(
     overrides: [
@@ -62,6 +66,7 @@ ProviderContainer _aliveContainer({
           recorder: recorder,
           transcriber: transcriber,
           realtimeService: realtimeService,
+          realtimeRecorderFactory: realtimeRecorderFactory,
           persistAudio: persistAudio,
           docDir: Directory.systemTemp.createTempSync,
           now: () => _recordingStartedAt,
@@ -190,11 +195,11 @@ void main() {
         verify(() => recorder.startRecording()).called(1);
 
         ampController.add(Amplitude(current: 0, max: 0));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         ampController.add(Amplitude(current: -22.5, max: 0));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         ampController.add(Amplitude(current: -60, max: 0));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         final amplitudes = container.read(captureControllerProvider).amplitudes;
         expect(amplitudes, hasLength(3));
@@ -402,23 +407,12 @@ void main() {
       return _persistedAudio();
     }
 
-    ProviderContainer buildContainer() {
-      final container = ProviderContainer(
-        overrides: [
-          captureControllerProvider.overrideWith(
-            () => CaptureController(
-              realtimeService: realtimeService,
-              transcriber: transcriber,
-              realtimeRecorderFactory: () => fakeRecorder,
-              persistAudio: persistAudio,
-              docDir: Directory.systemTemp.createTempSync,
-              now: () => _recordingStartedAt,
-            ),
-          ),
-        ],
-      )..listen(captureControllerProvider, (_, _) {});
-      return container;
-    }
+    ProviderContainer buildContainer() => _aliveContainer(
+      transcriber: transcriber,
+      realtimeService: realtimeService,
+      persistAudio: persistAudio,
+      realtimeRecorderFactory: () => fakeRecorder,
+    );
 
     test(
       'toggle prefers realtime when configured, starts the WebSocket, '
@@ -444,17 +438,61 @@ void main() {
 
         // Push a delta + amplitude sample; both should land in state.
         capturedOnDelta!('hello ');
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         capturedOnDelta!('realtime');
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         realtimeAmpController.add(0);
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         final state = container.read(captureControllerProvider);
         expect(state.partialTranscript, 'hello realtime');
         expect(state.amplitudes, hasLength(1));
         expect(state.amplitudes.single, closeTo(1.0, 0.001));
         expect(state.dbfs, 0);
+      },
+    );
+
+    test(
+      'realtime stop failure surfaces realtimeTranscriptionFailed and '
+      'tears the session down',
+      () async {
+        // Re-stub stop to throw (last-wins over the group setUp stub).
+        when(
+          () => realtimeService.stop(
+            stopRecorder: any(named: 'stopRecorder'),
+            outputPath: any(named: 'outputPath'),
+          ),
+        ).thenThrow(StateError('websocket dropped'));
+
+        final container = buildContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(captureControllerProvider.notifier);
+
+        await notifier.toggle(); // start realtime
+        await notifier.toggle(); // stop -> service throws
+
+        final state = container.read(captureControllerProvider);
+        expect(state.phase, CapturePhase.error);
+        expect(state.error, CaptureError.realtimeTranscriptionFailed);
+        // Nothing was persisted for the failed capture.
+        expect(persistedNotes, isEmpty);
+      },
+    );
+
+    test(
+      'finishing without an active realtime session reports '
+      'noActiveRealtimeSession (defensive guard)',
+      () async {
+        final container = buildContainer();
+        addTearDown(container.dispose);
+        final notifier = container.read(captureControllerProvider.notifier);
+
+        // Never started: the session fields are all null.
+        await notifier.debugFinishListeningRealtime();
+
+        final state = container.read(captureControllerProvider);
+        expect(state.phase, CapturePhase.error);
+        expect(state.error, CaptureError.noActiveRealtimeSession);
       },
     );
 
@@ -730,7 +768,7 @@ void main() {
       await notifier.toggle(); // listening -> captured
 
       ampController.add(Amplitude(current: 0, max: 0));
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       expect(
         container.read(captureControllerProvider).amplitudes,
         isEmpty,
@@ -1276,7 +1314,7 @@ void main() {
           // Emit 85 amplitude samples — only the last 80 should be kept.
           for (var i = 0; i < 85; i++) {
             realtimeAmpController.add(-10);
-            await Future<void>.delayed(Duration.zero);
+            await pumpEventQueue();
           }
 
           final amplitudes = container
@@ -1300,9 +1338,9 @@ void main() {
 
           // Add a valid sample then trigger a stream error.
           realtimeAmpController.add(-10);
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
           realtimeAmpController.addError(StateError('amp hw error'));
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
           // The recording continues — phase is still listening and the
           // valid amplitude sample is present.
@@ -1324,7 +1362,7 @@ void main() {
 
           // Phase is now captured — delta should be silently discarded.
           capturedOnDelta!('should be ignored');
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
           final state = container.read(captureControllerProvider);
           expect(state.phase, CapturePhase.captured);
@@ -1377,7 +1415,7 @@ void main() {
           // Emit 85 amplitude samples — only the last 80 should be kept.
           for (var i = 0; i < 85; i++) {
             ampController.add(Amplitude(current: -10, max: 0));
-            await Future<void>.delayed(Duration.zero);
+            await pumpEventQueue();
           }
 
           final amplitudes = container
@@ -1406,9 +1444,9 @@ void main() {
 
           // Add a valid sample then trigger a stream error.
           ampController.add(Amplitude(current: -10, max: 0));
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
           ampController.addError(StateError('amp hw error'));
-          await Future<void>.delayed(Duration.zero);
+          await pumpEventQueue();
 
           // The recording continues — phase is still listening and the
           // valid amplitude sample is present.

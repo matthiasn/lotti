@@ -1045,6 +1045,52 @@ void main() {
     );
 
     group('runInTransaction', () {
+      test(
+        'a caught inner rollback truncates its pending sequence bindings — '
+        'the outer commit records only the surviving writes',
+        () async {
+          final sequenceLog = MockSyncSequenceLogService();
+          final recordedIds = <String>[];
+          when(
+            () => sequenceLog.recordSentEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              payloadType: any(named: 'payloadType'),
+            ),
+          ).thenAnswer((invocation) async {
+            recordedIds.add(invocation.namedArguments[#entryId] as String);
+          });
+          final service = AgentSyncService(
+            repository: mockRepository,
+            outboxService: mockOutboxService,
+            vectorClockService: mockVectorClockService,
+            sequenceLogService: sequenceLog,
+          );
+
+          final outerA = testEntity.copyWith(id: 'outer-a');
+          final inner = testEntity.copyWith(id: 'inner-rolled-back');
+          final outerB = testEntity.copyWith(id: 'outer-b');
+
+          await service.runInTransaction(() async {
+            await service.upsertEntity(outerA);
+            try {
+              await service.runInTransaction(() async {
+                await service.upsertEntity(inner);
+                throw StateError('inner boom');
+              });
+            } catch (_) {
+              // Caught: the outer transaction continues and commits.
+            }
+            await service.upsertEntity(outerB);
+          });
+
+          // Sequence rows exist for exactly the surviving outer writes —
+          // the inner scope's binding was truncated alongside its outbox
+          // message, so no sent-sequence row points at a rolled-back write.
+          expect(recordedIds, ['outer-a', 'outer-b']);
+        },
+      );
+
       glados.Glados(
         glados.any.syncTransactionScenario,
         glados.ExploreConfig(numRuns: 160),

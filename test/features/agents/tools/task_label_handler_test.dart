@@ -791,29 +791,34 @@ void main() {
         mockDb = MockJournalDb();
       });
 
-      test('returns empty string when no labels exist', () async {
-        when(() => mockDb.getAllLabelDefinitions()).thenAnswer((_) async => []);
-
-        final result = await TaskLabelHandler.buildLabelContext(
-          task: task,
+      /// Stubs the label-definitions read and builds the context — the
+      /// stub + call pair previously repeated in every test of the group.
+      Future<String> buildContext({
+        required List<LabelDefinition> labels,
+        Task? forTask,
+      }) {
+        when(
+          () => mockDb.getAllLabelDefinitions(),
+        ).thenAnswer((_) async => labels);
+        return TaskLabelHandler.buildLabelContext(
+          task: forTask ?? task,
           journalDb: mockDb,
         );
+      }
+
+      test('returns empty string when no labels exist', () async {
+        final result = await buildContext(labels: []);
 
         expect(result, isEmpty);
       });
 
       test('returns empty string when all labels are deleted', () async {
-        when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
-          (_) async => [
+        final result = await buildContext(
+          labels: [
             testLabelDefinition1.copyWith(
               deletedAt: DateTime(2024),
             ),
           ],
-        );
-
-        final result = await TaskLabelHandler.buildLabelContext(
-          task: task,
-          journalDb: mockDb,
         );
 
         expect(result, isEmpty);
@@ -824,13 +829,9 @@ void main() {
           meta: task.meta.copyWith(labelIds: ['label-1']),
         );
 
-        when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
-          (_) async => [testLabelDefinition1, testLabelDefinition2],
-        );
-
-        final result = await TaskLabelHandler.buildLabelContext(
-          task: taskWithLabels,
-          journalDb: mockDb,
+        final result = await buildContext(
+          labels: [testLabelDefinition1, testLabelDefinition2],
+          forTask: taskWithLabels,
         );
 
         // Assigned labels are now part of the Current Task Context JSON,
@@ -850,13 +851,9 @@ void main() {
           ),
         );
 
-        when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
-          (_) async => [testLabelDefinition1, testLabelDefinition2],
-        );
-
-        final result = await TaskLabelHandler.buildLabelContext(
-          task: taskWithSuppressed,
-          journalDb: mockDb,
+        final result = await buildContext(
+          labels: [testLabelDefinition1, testLabelDefinition2],
+          forTask: taskWithSuppressed,
         );
 
         expect(result, contains('## Suppressed Labels'));
@@ -883,17 +880,12 @@ void main() {
           applicableCategoryIds: ['cat-999'],
         );
 
-        when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
-          (_) async => [
+        final result = await buildContext(
+          labels: [
             testLabelDefinition1, // global (no applicableCategoryIds)
             scopedLabel, // scoped to cat-1 (task's category)
             otherCatLabel, // scoped to different category
           ],
-        );
-
-        final result = await TaskLabelHandler.buildLabelContext(
-          task: task,
-          journalDb: mockDb,
         );
 
         expect(result, contains('## Available Labels'));
@@ -926,13 +918,9 @@ void main() {
             applicableCategoryIds: ['cat-999'],
           );
 
-          when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
-            (_) async => [testLabelDefinition1, outOfScopeLabel],
-          );
-
-          final result = await TaskLabelHandler.buildLabelContext(
-            task: taskWithOnlySuppressed,
-            journalDb: mockDb,
+          final result = await buildContext(
+            labels: [testLabelDefinition1, outOfScopeLabel],
+            forTask: taskWithOnlySuppressed,
           );
 
           // Should NOT be empty — suppressed guidance is critical.
@@ -952,8 +940,8 @@ void main() {
           ),
         );
 
-        when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
-          (_) async => [
+        final result = await buildContext(
+          labels: [
             testLabelDefinition1,
             testLabelDefinition2,
             LabelDefinition(
@@ -973,11 +961,7 @@ void main() {
               vectorClock: null,
             ),
           ],
-        );
-
-        final result = await TaskLabelHandler.buildLabelContext(
-          task: taskWith3Labels,
-          journalDb: mockDb,
+          forTask: taskWith3Labels,
         );
 
         // Should not contain available labels section since task already
@@ -995,8 +979,8 @@ void main() {
           ),
         );
 
-        when(() => mockDb.getAllLabelDefinitions()).thenAnswer(
-          (_) async => [
+        final result = await buildContext(
+          labels: [
             testLabelDefinition1, // assigned
             testLabelDefinition2, // suppressed
             LabelDefinition(
@@ -1008,11 +992,7 @@ void main() {
               vectorClock: null,
             ),
           ],
-        );
-
-        final result = await TaskLabelHandler.buildLabelContext(
-          task: taskWithLabelsAndSuppressed,
-          journalDb: mockDb,
+          forTask: taskWithLabelsAndSuppressed,
         );
 
         expect(result, contains('## Available Labels'));

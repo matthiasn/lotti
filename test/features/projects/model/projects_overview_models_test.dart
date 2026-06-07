@@ -401,6 +401,20 @@ void main() {
         // Only title should appear, no trailing spaces or separators
         expect(item.searchableText, 'Only Title');
       });
+
+      test('treats whitespace-only entryText as a blank segment', () {
+        final project = makeTestProject(
+          title: 'Spaced Project',
+        ).copyWith(entryText: const EntryText(plainText: '   \n\t  '));
+        final item = ProjectListItemData(
+          project: project,
+          category: null,
+          taskRollup: const ProjectTaskRollupData(),
+        );
+
+        // The trim-filter drops the whitespace-only body entirely.
+        expect(item.searchableText, 'Spaced Project');
+      });
     });
   });
 
@@ -1088,5 +1102,37 @@ void main() {
         );
       }
     });
+  });
+
+  group('ProjectTaskRollupData.completionRatio — Glados properties', () {
+    glados.Glados2<int, int>(
+      glados.IntAnys(glados.any).intInRange(0, 1 << 20),
+      glados.IntAnys(glados.any).intInRange(0, 1 << 20),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'ratio is completed/total bounded to [0, 1] when completed <= total; '
+      'zero total always yields 0',
+      (a, b) {
+        final total = a >= b ? a : b;
+        final completed = a >= b ? b : a;
+        final rollup = ProjectTaskRollupData(
+          totalTaskCount: total,
+          completedTaskCount: completed,
+        );
+
+        if (total == 0) {
+          expect(rollup.completionRatio, 0);
+        } else {
+          expect(rollup.completionRatio, completed / total);
+          expect(rollup.completionRatio, greaterThanOrEqualTo(0.0));
+          expect(rollup.completionRatio, lessThanOrEqualTo(1.0));
+        }
+        expect(
+          rollup.completionPercent,
+          (rollup.completionRatio * 100).round(),
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

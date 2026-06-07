@@ -1,3 +1,10 @@
+// Test factories for evolution-domain entities.
+//
+// NOTE: this file deliberately depends on `template_factories.dart` and
+// `wake_factories.dart` (evolution bundles embed templates and wake runs).
+// Changes to those factories' defaults can therefore ripple into evolution
+// tests — keep default values stable, add new behavior via named overrides.
+
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';

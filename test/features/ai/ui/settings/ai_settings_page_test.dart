@@ -153,6 +153,9 @@ void main() {
   Widget buildHarness({
     List<NavigatorObserver> navigatorObservers = const [],
     List<Override> additionalOverrides = const [],
+    AiSettingsTab? initialTab,
+    bool hideTabBar = false,
+    bool hideHeader = false,
   }) {
     return ProviderScope(
       overrides: [
@@ -177,7 +180,13 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: const AiSettingsPage(),
+        home: initialTab == null
+            ? const AiSettingsPage()
+            : AiSettingsPage(
+                initialTab: initialTab,
+                hideTabBar: hideTabBar,
+                hideHeader: hideHeader,
+              ),
       ),
     );
   }
@@ -189,11 +198,17 @@ void main() {
     required List<AiConfig> profiles,
     List<NavigatorObserver> navigatorObservers = const [],
     List<Override> additionalOverrides = const [],
+    AiSettingsTab? initialTab,
+    bool hideTabBar = false,
+    bool hideHeader = false,
   }) async {
     await tester.pumpWidget(
       buildHarness(
         navigatorObservers: navigatorObservers,
         additionalOverrides: additionalOverrides,
+        initialTab: initialTab,
+        hideTabBar: hideTabBar,
+        hideHeader: hideHeader,
       ),
     );
     // First pump: providers stream emits. The page rebuilds out of
@@ -1148,38 +1163,6 @@ void main() {
   /// a specific tab; without the seed branch the page would always
   /// open on Providers regardless of which sidebar leaf was clicked.
   group('AiSettingsPage — initialTab seeding', () {
-    Widget seededHarness({
-      required AiSettingsTab initialTab,
-      bool hideTabBar = false,
-      bool hideHeader = false,
-      List<NavigatorObserver> navigatorObservers = const [],
-    }) {
-      return ProviderScope(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-        ],
-        child: MaterialApp(
-          navigatorObservers: navigatorObservers,
-          theme: ThemeData(
-            useMaterial3: true,
-            extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
-          ),
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: AiSettingsPage(
-            initialTab: initialTab,
-            hideTabBar: hideTabBar,
-            hideHeader: hideHeader,
-          ),
-        ),
-      );
-    }
-
     Future<void> pumpSeeded({
       required WidgetTester tester,
       required AiSettingsTab initialTab,
@@ -1190,25 +1173,19 @@ void main() {
       bool hideHeader = false,
       List<NavigatorObserver> navigatorObservers = const [],
     }) async {
-      await tester.pumpWidget(
-        seededHarness(
-          initialTab: initialTab,
-          hideTabBar: hideTabBar,
-          hideHeader: hideHeader,
-          navigatorObservers: navigatorObservers,
-        ),
+      // Thin alias over the unified harness — the former seededHarness
+      // duplicate is gone.
+      await pumpWith(
+        tester: tester,
+        providers: providers,
+        models: models,
+        profiles: profiles,
+        navigatorObservers: navigatorObservers,
+        initialTab: initialTab,
+        hideTabBar: hideTabBar,
+        hideHeader: hideHeader,
       );
-      providersController.add(providers);
-      await tester.pump();
-      await tester.pump();
-      modelsController.add(models);
-      profilesController.add(profiles);
-      await tester.pump();
-      await tester.pump();
-      // Flush the ticker timers that mount with the shared header /
-      // cards' InkWells; otherwise the framework's "no pending Timer"
-      // guard trips on teardown — same workaround the rest of this
-      // file uses via `settleTimers`.
+      // Flush the ticker timers mounted with the header/cards' InkWells.
       await settleTimers(tester);
     }
 

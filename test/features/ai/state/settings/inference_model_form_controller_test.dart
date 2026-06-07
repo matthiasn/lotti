@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -411,11 +412,26 @@ void main() {
         maxCompletionTokens: 8000,
       );
 
-      // Act
-      await controller.updateConfig(updatedConfig);
+      // Act — pin the clock so the timestamp the controller stamps is
+      // deterministic and assertable.
+      final frozenNow = DateTime(2024, 6, 1, 12);
+      await withClock(Clock.fixed(frozenNow), () async {
+        await controller.updateConfig(updatedConfig);
+      });
 
-      // Assert
-      verify(() => mockRepository.saveConfig(any())).called(1);
+      // Assert — the loaded config's identity is preserved and updatedAt is
+      // stamped with the (frozen) current time.
+      final saved =
+          verify(
+                () => mockRepository.saveConfig(captureAny()),
+              ).captured.single
+              as AiConfig;
+      expect(saved.id, 'test-id');
+      expect(saved.createdAt, testConfig.createdAt);
+      expect(
+        saved.maybeMap(model: (m) => m.updatedAt, orElse: () => null),
+        frozenNow,
+      );
     });
 
     test('should update form state when name is changed', () async {

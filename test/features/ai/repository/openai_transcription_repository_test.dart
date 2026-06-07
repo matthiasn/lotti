@@ -6,6 +6,21 @@ import 'package:http/testing.dart';
 import 'package:lotti/features/ai/repository/openai_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
 
+/// Streaming 200-OK stub that records the outgoing request — shared by the
+/// prompt-present / prompt-absent multipart-shape tests.
+({http.Client client, http.BaseRequest? Function() captured})
+_stubStreamingOk() {
+  http.BaseRequest? captured;
+  final client = MockClient.streaming((request, _) async {
+    captured = request;
+    return http.StreamedResponse(
+      Stream.value(utf8.encode(jsonEncode({'text': 'transcribed text'}))),
+      200,
+    );
+  });
+  return (client: client, captured: () => captured);
+}
+
 void main() {
   group('OpenAiTranscriptionRepository', () {
     group('isOpenAiTranscriptionModel', () {
@@ -156,21 +171,8 @@ void main() {
       );
 
       test('includes prompt field when provided', () async {
-        http.BaseRequest? capturedRequest;
-
-        final mockClient = MockClient.streaming(
-          (request, _) async {
-            capturedRequest = request;
-            return http.StreamedResponse(
-              Stream.value(
-                utf8.encode(jsonEncode({'text': 'transcribed text'})),
-              ),
-              200,
-            );
-          },
-        );
-
-        final repo = OpenAiTranscriptionRepository(httpClient: mockClient);
+        final stub = _stubStreamingOk();
+        final repo = OpenAiTranscriptionRepository(httpClient: stub.client);
 
         await repo
             .transcribeAudio(
@@ -181,8 +183,8 @@ void main() {
             )
             .toList();
 
-        expect(capturedRequest, isA<http.MultipartRequest>());
-        final multipart = capturedRequest! as http.MultipartRequest;
+        expect(stub.captured(), isA<http.MultipartRequest>());
+        final multipart = stub.captured()! as http.MultipartRequest;
         expect(multipart.fields['model'], equals(testModel));
         expect(
           multipart.fields['prompt'],
@@ -194,21 +196,8 @@ void main() {
       });
 
       test('does not include prompt field when null', () async {
-        http.BaseRequest? capturedRequest;
-
-        final mockClient = MockClient.streaming(
-          (request, _) async {
-            capturedRequest = request;
-            return http.StreamedResponse(
-              Stream.value(
-                utf8.encode(jsonEncode({'text': 'transcribed text'})),
-              ),
-              200,
-            );
-          },
-        );
-
-        final repo = OpenAiTranscriptionRepository(httpClient: mockClient);
+        final stub = _stubStreamingOk();
+        final repo = OpenAiTranscriptionRepository(httpClient: stub.client);
 
         await repo
             .transcribeAudio(
@@ -218,7 +207,7 @@ void main() {
             )
             .toList();
 
-        final multipart = capturedRequest! as http.MultipartRequest;
+        final multipart = stub.captured()! as http.MultipartRequest;
         expect(multipart.fields.containsKey('prompt'), isFalse);
       });
 

@@ -95,8 +95,10 @@ void main() {
         expect(find.byType(TimeSeriesBarChart), findsOneWidget);
         expect(find.byType(TimeSeriesLineChart), findsNothing);
 
-        // Header info shows the display name plus the aggregation label.
+        // Header info shows the display name plus the aggregation label,
+        // with the description stacked underneath.
         expect(find.text('Water [dailySum]'), findsOneWidget);
+        expect(find.text('Water intake'), findsOneWidget);
       },
     );
 

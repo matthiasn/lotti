@@ -1,7 +1,7 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/geolocation.dart';
@@ -63,7 +63,6 @@ void main() {
     late MockOutboxService mockOutboxService;
     late MockTimeService mockTimeService;
     late JournalRepository repository;
-    late StreamController<Set<String>> updateStreamController;
 
     setUpAll(registerAllFallbackValues);
 
@@ -76,9 +75,6 @@ void main() {
       mockUpdateNotifications = MockUpdateNotifications();
       mockOutboxService = MockOutboxService();
       mockTimeService = MockTimeService();
-      updateStreamController = StreamController<Set<String>>.broadcast(
-        sync: true,
-      );
 
       await setUpTestGetIt(
         additionalSetup: () {
@@ -97,15 +93,10 @@ void main() {
         },
       );
 
-      when(
-        () => mockUpdateNotifications.updateStream,
-      ).thenAnswer((_) => updateStreamController.stream);
-
       repository = JournalRepository();
     });
 
     tearDown(() async {
-      await updateStreamController.close();
       await tearDownTestGetIt();
     });
 
@@ -285,6 +276,28 @@ void main() {
     });
 
     group('deleteJournalEntity', () {
+      test(
+        'logs to DomainLogger and returns true when the lookup throws',
+        () async {
+          when(
+            () => mockJournalDb.journalEntityById(any()),
+          ).thenThrow(Exception('db exploded'));
+
+          final result = await repository.deleteJournalEntity('boom-id');
+
+          // The method catches, logs, and reports success like its siblings.
+          expect(result, isTrue);
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.persistence,
+              any(),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'deleteJournalEntity',
+            ),
+          ).called(1);
+        },
+      );
+
       test('marks the entity as deleted and returns true on success', () async {
         // Arrange
         const journalEntityId = 'test-id';
@@ -791,6 +804,85 @@ void main() {
     });
 
     group('updateLink', () {
+      test(
+        'returns false without notifying when upsertEntryLink writes 0 rows '
+        '(identical row already exists inside the VC scope)',
+        () async {
+          final testLink = EntryLink.basic(
+            id: 'link-id',
+            fromId: 'from-id',
+            toId: 'to-id',
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            vectorClock: null,
+          );
+          final changed = testLink.copyWith(hidden: true);
+
+          when(
+            () => mockJournalDb.entryLinkById(changed.id),
+          ).thenAnswer((_) async => testLink);
+          when(
+            () => mockVectorClockService.getNextVectorClock(),
+          ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+          // Identical row already on disk: zero rows written.
+          when(
+            () => mockJournalDb.upsertEntryLink(any()),
+          ).thenAnswer((_) async => 0);
+
+          final result = await repository.updateLink(changed);
+
+          expect(result, isFalse);
+          verifyNever(() => mockUpdateNotifications.notify(any()));
+          verifyNever(() => mockOutboxService.enqueueMessage(any()));
+        },
+      );
+
+      test(
+        'logs the outbox failure and still returns true when enqueueMessage '
+        'throws after the row was written',
+        () async {
+          final testLink = EntryLink.basic(
+            id: 'link-id',
+            fromId: 'from-id',
+            toId: 'to-id',
+            createdAt: DateTime(2023),
+            updatedAt: DateTime(2023),
+            vectorClock: null,
+          );
+          final changed = testLink.copyWith(hidden: true);
+
+          when(
+            () => mockJournalDb.entryLinkById(changed.id),
+          ).thenAnswer((_) async => testLink);
+          when(
+            () => mockVectorClockService.getNextVectorClock(),
+          ).thenAnswer((_) async => const VectorClock({'node1': 1}));
+          when(
+            () => mockJournalDb.upsertEntryLink(any()),
+          ).thenAnswer((_) async => 1);
+          when(
+            () => mockUpdateNotifications.notify(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockOutboxService.enqueueMessage(any()),
+          ).thenThrow(Exception('outbox unavailable'));
+
+          final result = await repository.updateLink(changed);
+
+          // The local write landed; an outbox failure must not undo it.
+          expect(result, isTrue);
+          verify(
+            () => mockDomainLogger.error(
+              LogDomain.sync,
+              any(),
+              message: any(named: 'message'),
+              stackTrace: any(named: 'stackTrace'),
+              subDomain: 'updateLink.enqueue',
+            ),
+          ).called(1);
+        },
+      );
+
       test('updates the link and enqueues a sync message', () async {
         // Arrange
         final testLink = EntryLink.basic(
@@ -872,6 +964,29 @@ void main() {
     });
 
     group('removeLink', () {
+      test(
+        'returns 0 when the link did not exist and still notifies',
+        () async {
+          when(
+            () => mockJournalDb.deleteLink('from-id', 'to-id'),
+          ).thenAnswer((_) async => 0);
+          when(
+            () => mockUpdateNotifications.notify(any()),
+          ).thenAnswer((_) async {});
+
+          final result = await repository.removeLink(
+            fromId: 'from-id',
+            toId: 'to-id',
+          );
+
+          expect(result, 0);
+          // Notification fires unconditionally — by design.
+          verify(
+            () => mockUpdateNotifications.notify({'from-id', 'to-id'}),
+          ).called(1);
+        },
+      );
+
       test('successfully removes a link and returns the result', () async {
         // Arrange
         const fromId = 'from-id';
@@ -897,47 +1012,6 @@ void main() {
         expect(result, equals(1));
         verify(() => mockJournalDb.deleteLink(fromId, toId)).called(1);
         verify(() => mockUpdateNotifications.notify({fromId, toId})).called(1);
-      });
-    });
-
-    group('getLinkedToEntities', () {
-      test('returns entities linked to the specified entity', () async {
-        // Arrange
-        const linkedTo = 'linked-to-id';
-
-        final testEntities = [
-          JournalEntity.journalEntry(
-            entryText: const EntryText(
-              plainText: 'Entry 1',
-              markdown: 'Entry 1',
-            ),
-            meta: testMeta(id: 'entry-1'),
-          ),
-          JournalEntity.journalEntry(
-            entryText: const EntryText(
-              plainText: 'Entry 2',
-              markdown: 'Entry 2',
-            ),
-            meta: testMeta(id: 'entry-2'),
-          ),
-        ];
-
-        // Mock JournalDb
-        when(
-          () => mockJournalDb.getLinkedToEntities(linkedTo),
-        ).thenAnswer((_) async => []);
-
-        // Skip the actual Future conversion and just mock getLinkedEntities directly
-        when(
-          () => mockJournalDb.getLinkedEntities(linkedTo),
-        ).thenAnswer((_) async => testEntities);
-
-        // Act
-        final result = await repository.getLinkedEntities(linkedTo: linkedTo);
-
-        // Assert
-        expect(result, equals(testEntities));
-        verify(() => mockJournalDb.getLinkedEntities(linkedTo)).called(1);
       });
     });
 
@@ -2188,6 +2262,28 @@ void main() {
 
     group('getJournalEntitiesByIds', () {
       test(
+        'returns exactly what the DB yields when some ids resolve to '
+        'no entity',
+        () async {
+          final onlyFound = JournalEntity.journalEntry(
+            entryText: const EntryText(plainText: 'found', markdown: 'found'),
+            meta: testMeta(id: 'found-id'),
+          );
+          when(
+            () => mockJournalDb.getJournalEntitiesForIdsUnordered(
+              {'found-id', 'missing-id'},
+            ),
+          ).thenAnswer((_) async => [onlyFound]);
+
+          final result = await repository.getJournalEntitiesByIds(
+            {'found-id', 'missing-id'},
+          );
+
+          expect(result, [onlyFound]);
+        },
+      );
+
+      test(
         'returns empty list without hitting the DB for an empty input',
         () async {
           final result = await repository.getJournalEntitiesByIds(
@@ -2505,6 +2601,112 @@ void main() {
           () => collapsedMockUpdateNotifications.notify({'from-id', 'to-id'}),
         ).called(1);
       });
+    });
+
+    group('debugHasChange (pure comparator properties)', () {
+      EntryLink buildLink({
+        String id = 'link-id',
+        String fromId = 'from-id',
+        String toId = 'to-id',
+        DateTime? createdAt,
+        DateTime? updatedAt,
+        DateTime? deletedAt,
+        bool? hidden,
+        bool? collapsed,
+      }) => EntryLink.basic(
+        id: id,
+        fromId: fromId,
+        toId: toId,
+        createdAt: createdAt ?? DateTime(2023),
+        updatedAt: updatedAt ?? DateTime(2023),
+        vectorClock: null,
+        hidden: hidden,
+        collapsed: collapsed,
+      ).copyWith(deletedAt: deletedAt);
+
+      glados.Glados(
+        glados.IntAnys(glados.any).intInRange(0, 36),
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'identical-by-compared-fields pairs are no-change; any compared-field '
+        'mutation is a change; non-compared fields never count',
+        (seed) {
+          final hidden = const [null, false, true][seed % 3];
+          final collapsed = const [null, false, true][(seed ~/ 3) % 3];
+          final deletedAt = (seed ~/ 9).isEven ? null : DateTime(2024);
+          final base = buildLink(
+            hidden: hidden,
+            collapsed: collapsed,
+            deletedAt: deletedAt,
+          );
+          final reason = 'seed=$seed';
+
+          // Reflexivity: a structurally identical link is no change.
+          expect(
+            collapsedRepository.debugHasChange(
+              base,
+              buildLink(
+                hidden: hidden,
+                collapsed: collapsed,
+                deletedAt: deletedAt,
+              ),
+            ),
+            isFalse,
+            reason: reason,
+          );
+
+          // null and false are equivalent for hidden/collapsed.
+          if (hidden != true) {
+            expect(
+              collapsedRepository.debugHasChange(
+                base,
+                buildLink(
+                  hidden: hidden == null ? false : null,
+                  collapsed: collapsed,
+                  deletedAt: deletedAt,
+                ),
+              ),
+              isFalse,
+              reason: '$reason hidden null<->false',
+            );
+          }
+
+          // Every compared-field mutation flips the verdict.
+          final mutations = <String, EntryLink>{
+            'fromId': base.copyWith(fromId: 'other-from'),
+            'toId': base.copyWith(toId: 'other-to'),
+            'createdAt': base.copyWith(createdAt: DateTime(2025)),
+            'deletedAt': base.copyWith(
+              deletedAt: deletedAt == null ? DateTime(2025) : null,
+            ),
+            'hidden': base.copyWith(hidden: hidden != true),
+            'collapsed': base.copyWith(collapsed: collapsed != true),
+          };
+          for (final MapEntry(key: field, value: mutated)
+              in mutations.entries) {
+            expect(
+              collapsedRepository.debugHasChange(base, mutated),
+              isTrue,
+              reason: '$reason mutated=$field',
+            );
+          }
+
+          // Non-compared fields (id, updatedAt, vectorClock) never count.
+          expect(
+            collapsedRepository.debugHasChange(
+              base,
+              base.copyWith(
+                id: 'different-id',
+                updatedAt: DateTime(2030),
+                vectorClock: const VectorClock({'host': 9}),
+              ),
+            ),
+            isFalse,
+            reason: '$reason non-compared fields',
+          );
+        },
+        tags: 'glados',
+      );
     });
 
     group('_hasChange via updateLink', () {

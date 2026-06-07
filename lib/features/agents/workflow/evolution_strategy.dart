@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 /// Holds a pending directive proposal from the evolution agent.
@@ -386,6 +387,11 @@ class EvolutionStrategy extends ConversationStrategy {
     if (value is String) return value;
     return '';
   }
+
+  /// Test seam for the defensive string-arg reader — pure, no state.
+  @visibleForTesting
+  static String debugReadStringArg(Map<String, dynamic> args, String key) =>
+      _readStringArg(args, key);
 
   Map<String, dynamic> _parseArgs(String arguments) {
     try {

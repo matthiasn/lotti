@@ -1474,4 +1474,64 @@ void main() {
     },
     tags: 'glados',
   );
+
+  glados.Glados2(
+    glados.any.backfillStatsState,
+    glados.any.intInRange(0, 6),
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'each clear flag nulls exactly its own field and leaves every other '
+    'field untouched',
+    (base, flagIndex) {
+      // Fully populate the nullable fields so "cleared" is distinguishable
+      // from "was already null".
+      final state = base.copyWith(
+        lastProcessedCount: base.lastProcessedCount ?? 11,
+        lastReRequestedCount: base.lastReRequestedCount ?? 12,
+        lastResetCount: base.lastResetCount ?? 13,
+        lastRetiredStuckCount: base.lastRetiredStuckCount ?? 14,
+        lastResetAllUnresolvableCount: 15,
+        error: 'boom',
+      );
+
+      final cleared = state.copyWith(
+        clearError: flagIndex == 0,
+        clearLastProcessed: flagIndex == 1,
+        clearLastReRequested: flagIndex == 2,
+        clearLastReset: flagIndex == 3,
+        clearLastRetiredStuck: flagIndex == 4,
+        clearLastResetAllUnresolvable: flagIndex == 5,
+      );
+
+      // Oracle: field i is null iff its flag was set; all else preserved.
+      expect(cleared.error, flagIndex == 0 ? isNull : 'boom');
+      expect(
+        cleared.lastProcessedCount,
+        flagIndex == 1 ? isNull : state.lastProcessedCount,
+      );
+      expect(
+        cleared.lastReRequestedCount,
+        flagIndex == 2 ? isNull : state.lastReRequestedCount,
+      );
+      expect(
+        cleared.lastResetCount,
+        flagIndex == 3 ? isNull : state.lastResetCount,
+      );
+      expect(
+        cleared.lastRetiredStuckCount,
+        flagIndex == 4 ? isNull : state.lastRetiredStuckCount,
+      );
+      expect(
+        cleared.lastResetAllUnresolvableCount,
+        flagIndex == 5 ? isNull : 15,
+      );
+      // Booleans are never touched by clear flags.
+      expect(cleared.isLoading, state.isLoading);
+      expect(cleared.isProcessing, state.isProcessing);
+      expect(cleared.isReRequesting, state.isReRequesting);
+      expect(cleared.isResetting, state.isResetting);
+      expect(cleared.isRetiringStuck, state.isRetiringStuck);
+    },
+    tags: 'glados',
+  );
 }

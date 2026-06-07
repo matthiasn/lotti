@@ -12,20 +12,18 @@ void main() {
         id: 'p1',
         name: 'My Test Profile',
       );
-      var tapped = false;
 
       await tester.pumpWidget(
         makeTestableWidget(
           ProfileCard(
             profile: profile,
-            onTap: () => tapped = true,
+            onTap: () {},
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('My Test Profile'), findsOneWidget);
-      expect(tapped, isFalse);
     });
 
     testWidgets('calls onTap when tapped', (tester) async {

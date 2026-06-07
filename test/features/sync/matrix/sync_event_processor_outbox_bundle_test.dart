@@ -14,6 +14,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
+import '../../../widget_test_utils.dart' show setUpTestGetIt, tearDownTestGetIt;
 import 'sync_event_processor_test_helpers.dart';
 
 void main() {
@@ -63,16 +64,19 @@ void main() {
     group('manifest resolver on disk', () {
       late Directory tempDir;
 
-      setUp(() {
+      setUp(() async {
         tempDir = Directory.systemTemp.createTempSync('outbox_bundle_test');
-        if (getIt.isRegistered<Directory>()) {
-          getIt.unregister<Directory>();
-        }
-        getIt.registerSingleton<Directory>(tempDir);
+        // Central harness instead of raw getIt mutation; the documents
+        // Directory the unpacker resolves is swapped to the per-test temp dir.
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt.registerSingleton<Directory>(tempDir);
+          },
+        );
       });
 
       tearDown(() async {
-        await getIt.reset();
+        await tearDownTestGetIt();
         if (tempDir.existsSync()) {
           tempDir.deleteSync(recursive: true);
         }

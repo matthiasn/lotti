@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -190,8 +191,8 @@ class InferenceModelFormController extends _$InferenceModelFormController {
     await repository.saveConfig(
       config.copyWith(
         id: _config?.id ?? config.id,
-        createdAt: _config?.createdAt ?? DateTime.now(),
-        updatedAt: DateTime.now(),
+        createdAt: _config?.createdAt ?? clock.now(),
+        updatedAt: clock.now(),
       ),
     );
   }

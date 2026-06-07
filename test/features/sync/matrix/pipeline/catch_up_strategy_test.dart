@@ -629,16 +629,10 @@ void main() {
         final log = MockDomainLogger();
         final tl = MockTimeline();
 
-        Event mk(String id, int ts) {
-          final e = MockEvent();
-          when(() => e.eventId).thenReturn(id);
-          when(
-            () => e.originServerTs,
-          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
-          return e;
-        }
-
-        final events = <Event>[mk('cached-old', 100), mk('cached-new', 300)];
+        final events = <Event>[
+          _generatedEvent('cached-old', 100),
+          _generatedEvent('cached-new', 300),
+        ];
         when(() => room.prev_batch).thenReturn('server-gap-token');
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
@@ -684,16 +678,10 @@ void main() {
         final log = MockDomainLogger();
         final tl = MockTimeline();
 
-        Event mk(String id, int ts) {
-          final e = MockEvent();
-          when(() => e.eventId).thenReturn(id);
-          when(
-            () => e.originServerTs,
-          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
-          return e;
-        }
-
-        final events = <Event>[mk('cached-old', 100), mk('cached-new', 300)];
+        final events = <Event>[
+          _generatedEvent('cached-old', 100),
+          _generatedEvent('cached-new', 300),
+        ];
         when(() => room.prev_batch).thenReturn('server-gap-token');
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
@@ -714,7 +702,7 @@ void main() {
                 required DomainLogger logging,
                 num? untilTimestamp,
               }) async {
-                events.insert(1, mk('server-gap', 140));
+                events.insert(1, _generatedEvent('server-gap', 140));
                 return true;
               },
           preContextSinceTs: 150,
@@ -1024,16 +1012,11 @@ void main() {
         final tl = MockTimeline();
 
         // Build ordered events: o1(ts=100), x1(ts=150), x2(ts=200)
-        Event mk(String id, int ts) {
-          final e = MockEvent();
-          when(() => e.eventId).thenReturn(id);
-          when(
-            () => e.originServerTs,
-          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
-          return e;
-        }
-
-        final events = <Event>[mk('o1', 100), mk('x1', 150), mk('x2', 200)];
+        final events = <Event>[
+          _generatedEvent('o1', 100),
+          _generatedEvent('x1', 150),
+          _generatedEvent('x2', 200),
+        ];
 
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
@@ -1072,16 +1055,11 @@ void main() {
       final tl = MockTimeline();
 
       // o1(ts=100), x1(ts=150), x2(ts=200)
-      Event mk(String id, int ts) {
-        final e = MockEvent();
-        when(() => e.eventId).thenReturn(id);
-        when(
-          () => e.originServerTs,
-        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
-        return e;
-      }
-
-      final events = <Event>[mk('o1', 100), mk('x1', 150), mk('x2', 200)];
+      final events = <Event>[
+        _generatedEvent('o1', 100),
+        _generatedEvent('x1', 150),
+        _generatedEvent('x2', 200),
+      ];
 
       when(
         () => room.getTimeline(limit: any(named: 'limit')),
@@ -1119,18 +1097,9 @@ void main() {
         final tl = MockTimeline();
 
         // Ordered events: e0(ts=100), m(ts=150)[marker], e1(ts=200)
-        Event mk(String id, int ts) {
-          final e = MockEvent();
-          when(() => e.eventId).thenReturn(id);
-          when(
-            () => e.originServerTs,
-          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
-          return e;
-        }
-
-        final e0 = mk('e0', 100);
-        final m = mk('m', 150);
-        final e1 = mk('e1', 200);
+        final e0 = _generatedEvent('e0', 100);
+        final m = _generatedEvent('m', 150);
+        final e1 = _generatedEvent('e1', 200);
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
         ).thenAnswer((_) async => tl);
@@ -1168,18 +1137,9 @@ void main() {
         final tl = MockTimeline();
 
         // Earliest ts is 100; marker at 150; latest 200
-        Event mk(String id, int ts) {
-          final e = MockEvent();
-          when(() => e.eventId).thenReturn(id);
-          when(
-            () => e.originServerTs,
-          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
-          return e;
-        }
-
-        final e0 = mk('e0', 100);
-        final m = mk('m', 150);
-        final e1 = mk('e1', 200);
+        final e0 = _generatedEvent('e0', 100);
+        final m = _generatedEvent('m', 150);
+        final e1 = _generatedEvent('e1', 200);
 
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
@@ -1269,16 +1229,11 @@ void main() {
         num? capturedUntilTimestamp;
         int? capturedMaxPages;
 
-        Event mk(String id, int ts) {
-          final e = MockEvent();
-          when(() => e.eventId).thenReturn(id);
-          when(
-            () => e.originServerTs,
-          ).thenReturn(DateTime.fromMillisecondsSinceEpoch(ts));
-          return e;
-        }
-
-        final events = <Event>[mk('e0', 100), mk('e1', 101), mk('e2', 102)];
+        final events = <Event>[
+          _generatedEvent('e0', 100),
+          _generatedEvent('e1', 101),
+          _generatedEvent('e2', 102),
+        ];
 
         when(
           () => room.getTimeline(limit: any(named: 'limit')),
@@ -1301,7 +1256,7 @@ void main() {
               }) async {
                 capturedUntilTimestamp = untilTimestamp;
                 capturedMaxPages = maxPages;
-                events.insert(0, mk('older', 40));
+                events.insert(0, _generatedEvent('older', 40));
                 return true;
               },
           preContextCount: 5,
@@ -1627,6 +1582,56 @@ void main() {
         verifyNever(
           () => tl.requestHistory(historyCount: any(named: 'historyCount')),
         );
+      },
+    );
+
+    test(
+      'overallTimeout firing after a successful first page keeps the page '
+      'and stops with stopReason=error before the second requestHistory',
+      () async {
+        final room = MockRoom();
+        final log = MockDomainLogger();
+        final tl = MockTimeline();
+        final events = <Event>[_generatedEvent('first-page', 100)];
+        var historyRequests = 0;
+        when(
+          () => room.getTimeline(limit: any(named: 'limit')),
+        ).thenAnswer((_) async => tl);
+        when(() => tl.events).thenAnswer((_) => events);
+        when(() => tl.canRequestHistory).thenReturn(true);
+        when(
+          () => tl.requestHistory(historyCount: any(named: 'historyCount')),
+        ).thenAnswer((_) async {
+          historyRequests++;
+          events.add(_generatedEvent('second-page', 50));
+        });
+        when(() => tl.cancelSubscriptions()).thenReturn(null);
+
+        // Injected step clock: the first deadline check sees zero elapsed
+        // (page 1 processes + requestHistory fires), every later read is
+        // past the timeout, so the SECOND loop-top check trips before the
+        // second page is emitted to the sink.
+        final base = DateTime(2026, 4, 23, 10);
+        var clockReads = 0;
+        DateTime fakeNow() =>
+            clockReads++ < 2 ? base : base.add(const Duration(seconds: 10));
+
+        final pages = <List<Event>>[];
+        final result = await CatchUpStrategy.collectHistoryForBootstrap(
+          room: room,
+          logging: log,
+          sink: _CollectingBootstrapSink(pages.add),
+          pageSize: 1,
+          overallTimeout: const Duration(seconds: 1),
+          now: fakeNow,
+        );
+
+        // First page made it through; the walk stopped on the deadline
+        // between requestHistory and the second sink call.
+        expect(result.stopReason, BootstrapStopReason.error);
+        expect(historyRequests, 1);
+        expect(pages, hasLength(1));
+        expect(pages.single.single.eventId, 'first-page');
       },
     );
 
@@ -2396,13 +2401,17 @@ void main() {
         when(() => tl.canRequestFuture).thenReturn(true);
         when(
           () => tl.requestFuture(historyCount: any(named: 'historyCount')),
-        ).thenAnswer((_) async {
-          // Sleep past the overall timeout so the next loop iteration
-          // trips the deadline check.
-          await Future<void>.delayed(const Duration(milliseconds: 40));
-          events.add(e1);
-        });
+        ).thenAnswer((_) async => events.add(e1));
         when(tl.cancelSubscriptions).thenAnswer((_) {});
+
+        // Injected step clock: the first loop-top deadline check sees no
+        // elapsed time; every later read is past the timeout — no real
+        // sleeping needed to trip the deadline on the second iteration.
+        final base = DateTime(2026, 4, 23, 10);
+        var clockReads = 0;
+        DateTime fakeNow() => clockReads++ < 2
+            ? base
+            : base.add(const Duration(milliseconds: 50));
 
         final result = await CatchUpStrategy.collectForwardForBootstrap(
           room: room,
@@ -2410,6 +2419,7 @@ void main() {
           logging: log,
           anchorEventId: r'$anchor',
           overallTimeout: const Duration(milliseconds: 10),
+          now: fakeNow,
         );
 
         expect(result.stopReason, BootstrapStopReason.error);

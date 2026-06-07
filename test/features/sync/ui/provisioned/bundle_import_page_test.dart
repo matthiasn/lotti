@@ -67,6 +67,24 @@ class _FakeMethodChannelMobileScanner extends MethodChannelMobileScanner {
   }
 }
 
+/// Pins the platform flags to mobile and installs a fresh fake scanner
+/// platform, registering all restores/teardowns — the shared preamble of
+/// every scan-flow test.
+void setUpMobileScanner() {
+  final wasDesktop = isDesktop;
+  final wasMobile = isMobile;
+  isDesktop = false;
+  isMobile = true;
+  addTearDown(() {
+    isDesktop = wasDesktop;
+    isMobile = wasMobile;
+  });
+
+  final fakePlatform = _FakeMethodChannelMobileScanner();
+  MobileScannerPlatform.instance = fakePlatform;
+  addTearDown(fakePlatform.disposeControllers);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -550,18 +568,7 @@ void main() {
     testWidgets(
       'shows scan button and scanner on mobile, hides on second tap',
       (tester) async {
-        final wasDesktop = isDesktop;
-        final wasMobile = isMobile;
-        isDesktop = false;
-        isMobile = true;
-        addTearDown(() {
-          isDesktop = wasDesktop;
-          isMobile = wasMobile;
-        });
-
-        final fakePlatform = _FakeMethodChannelMobileScanner();
-        MobileScannerPlatform.instance = fakePlatform;
-        addTearDown(fakePlatform.disposeControllers);
+        setUpMobileScanner();
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -597,18 +604,7 @@ void main() {
     testWidgets(
       'handles barcode detection: valid bundle shows summary and hides scanner',
       (tester) async {
-        final wasDesktop = isDesktop;
-        final wasMobile = isMobile;
-        isDesktop = false;
-        isMobile = true;
-        addTearDown(() {
-          isDesktop = wasDesktop;
-          isMobile = wasMobile;
-        });
-
-        final fakePlatform = _FakeMethodChannelMobileScanner();
-        MobileScannerPlatform.instance = fakePlatform;
-        addTearDown(fakePlatform.disposeControllers);
+        setUpMobileScanner();
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -654,18 +650,7 @@ void main() {
     testWidgets(
       'ignores duplicate barcode scan — second identical code does not re-decode',
       (tester) async {
-        final wasDesktop = isDesktop;
-        final wasMobile = isMobile;
-        isDesktop = false;
-        isMobile = true;
-        addTearDown(() {
-          isDesktop = wasDesktop;
-          isMobile = wasMobile;
-        });
-
-        final fakePlatform = _FakeMethodChannelMobileScanner();
-        MobileScannerPlatform.instance = fakePlatform;
-        addTearDown(fakePlatform.disposeControllers);
+        setUpMobileScanner();
 
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
@@ -718,18 +703,7 @@ void main() {
     testWidgets('ignores barcode capture with null or empty rawValue', (
       tester,
     ) async {
-      final wasDesktop = isDesktop;
-      final wasMobile = isMobile;
-      isDesktop = false;
-      isMobile = true;
-      addTearDown(() {
-        isDesktop = wasDesktop;
-        isMobile = wasMobile;
-      });
-
-      final fakePlatform = _FakeMethodChannelMobileScanner();
-      MobileScannerPlatform.instance = fakePlatform;
-      addTearDown(fakePlatform.disposeControllers);
+      setUpMobileScanner();
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(

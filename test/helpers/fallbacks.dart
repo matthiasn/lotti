@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:drift/drift.dart' as drift;
 import 'package:genui/genui.dart' show CreateSurface;
+import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
@@ -104,6 +105,36 @@ final SurveyData fallbackSurveyData = SurveyData(
   calculatedScores: const {},
 );
 
+final Checklist fallbackChecklist = Checklist(
+  meta: Metadata(
+    id: 'fallback-checklist',
+    createdAt: DateTime(2024, 3, 15),
+    updatedAt: DateTime(2024, 3, 15),
+    dateFrom: DateTime(2024, 3, 15),
+    dateTo: DateTime(2024, 3, 15),
+  ),
+  data: const ChecklistData(
+    title: 'Fallback Checklist',
+    linkedChecklistItems: [],
+    linkedTasks: [],
+  ),
+);
+
+final ChecklistItem fallbackChecklistItem = ChecklistItem(
+  meta: Metadata(
+    id: 'fallback-checklist-item',
+    createdAt: DateTime(2024, 3, 15),
+    updatedAt: DateTime(2024, 3, 15),
+    dateFrom: DateTime(2024, 3, 15),
+    dateTo: DateTime(2024, 3, 15),
+  ),
+  data: const ChecklistItemData(
+    title: 'Fallback Item',
+    isChecked: false,
+    linkedChecklists: [],
+  ),
+);
+
 /// Registers all commonly used fallback values for mocktail in one call.
 ///
 /// Call this in `setUpAll()` or `setUp()` instead of scattering individual
@@ -145,6 +176,8 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeChatSession());
   registerFallbackValue(FakeChecklistData());
   registerFallbackValue(FakeChecklistItemData());
+  registerFallbackValue(fallbackChecklist);
+  registerFallbackValue(fallbackChecklistItem);
 
   // Agent domain entity fallbacks
   registerFallbackValue(

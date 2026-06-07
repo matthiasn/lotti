@@ -103,6 +103,33 @@ void main() {
     });
   });
 
+  group('projectsFilterFromSheetState — null fields', () {
+    test('null status/category fields map to empty selections', () {
+      final sheetState = DesignSystemTaskFilterState(
+        title: 'Apply filter',
+        clearAllLabel: 'Clear all',
+        applyLabel: 'Apply',
+      );
+
+      final filter = projectsFilterFromSheetState(
+        sheetState,
+        baseFilter: const ProjectsFilter(
+          textQuery: 'sync',
+          searchMode: ProjectsSearchMode.localText,
+          selectedStatusIds: {ProjectStatusFilterIds.open},
+          selectedCategoryIds: {'work'},
+        ),
+      );
+
+      // The `?? const {}` branches: previous selections are cleared,
+      // text query and search mode survive.
+      expect(filter.selectedStatusIds, isEmpty);
+      expect(filter.selectedCategoryIds, isEmpty);
+      expect(filter.textQuery, 'sync');
+      expect(filter.searchMode, ProjectsSearchMode.localText);
+    });
+  });
+
   group('stripTrailingColon', () {
     test('removes a trailing colon and trims the remaining whitespace', () {
       expect(stripTrailingColon('Status :'), 'Status');

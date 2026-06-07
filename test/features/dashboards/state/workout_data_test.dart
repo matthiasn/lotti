@@ -306,5 +306,48 @@ void main() {
       },
       tags: 'glados',
     );
+
+    glados.Glados(
+      glados.any.intInRange(1, 8),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'out-of-range matching entries append extra day buckets — callers '
+      'must pre-filter (the DB query is range-bounded)',
+      (workoutCount) {
+        // Documents actual behaviour: aggregateWorkoutDailySum does NOT
+        // range-filter its input. A matching workout outside the window
+        // adds its own day bucket on top of the zero-filled range days.
+        final outOfRange = <WorkoutEntry>[
+          for (var i = 0; i < workoutCount; i++)
+            makeWorkoutEntry(
+              dateFrom: DateTime(2024, 2, 1 + (i % 4), 8),
+              dateTo: DateTime(2024, 2, 1 + (i % 4), 9),
+              workoutType: 'running',
+              energy: 50,
+              id: 'pre$i',
+            ),
+        ];
+        final result = aggregateWorkoutDailySum(
+          outOfRange,
+          chartConfig: runningEnergyConfig,
+          rangeStart: rangeStart,
+          rangeEnd: rangeEnd,
+        );
+
+        final distinctOutDays = outOfRange
+            .map((e) => e.meta.dateFrom.day)
+            .toSet()
+            .length;
+        expect(result.length, expectedDays + distinctOutDays);
+        // The zero-filled in-range days stay zero.
+        final inRange = result.where(
+          (o) => !o.dateTime.isBefore(rangeStart) && o.dateTime.day >= 10,
+        );
+        for (final obs in inRange.where((o) => o.dateTime.month == 3)) {
+          expect(obs.value, 0, reason: '${obs.dateTime}');
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

@@ -180,6 +180,26 @@ void main() {
 
         expect(state.error, contains('Session not found'));
       });
+
+      test(
+        'sets error when getSession throws (not just returns null)',
+        () async {
+          when(
+            () => mockChatRepository.getSession('broken-id'),
+          ).thenThrow(Exception('db corrupt'));
+
+          final controller = container.read(
+            chatSessionsControllerProvider('test-category').notifier,
+          );
+
+          await controller.switchToSession('broken-id');
+
+          final state = container.read(
+            chatSessionsControllerProvider('test-category'),
+          );
+          expect(state.error, contains('Failed to switch to session'));
+        },
+      );
     });
 
     group('deleteSession', () {

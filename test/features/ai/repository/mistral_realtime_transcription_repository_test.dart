@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -7,150 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/realtime_transcription_event.dart';
 import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
 import 'package:lotti/features/ai/repository/transcription_exception.dart';
-import 'package:stream_channel/stream_channel.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-
-/// A fake WebSocket channel for testing that uses stream controllers
-/// to simulate server messages.
-class _FakeWebSocketChannel extends StreamChannelMixin<dynamic>
-    implements WebSocketChannel {
-  _FakeWebSocketChannel() : _readyCompleter = Completer<void>() {
-    _readyCompleter.complete();
-  }
-
-  final Completer<void> _readyCompleter;
-  final _incomingController = StreamController<dynamic>.broadcast();
-  final _outgoingMessages = <String>[];
-  bool _isClosed = false;
-
-  @override
-  Future<void> get ready => _readyCompleter.future;
-
-  @override
-  Stream<dynamic> get stream => _incomingController.stream;
-
-  @override
-  WebSocketSink get sink => _FakeWebSocketSink(this);
-
-  @override
-  int? get closeCode => _isClosed ? 1000 : null;
-
-  @override
-  String? get closeReason => null;
-
-  @override
-  String? get protocol => null;
-
-  /// Simulate a server-sent message.
-  void simulateServerMessage(Map<String, dynamic> json) {
-    if (!_incomingController.isClosed) {
-      _incomingController.add(jsonEncode(json));
-    }
-  }
-
-  /// Simulate a server error.
-  void simulateError(Object error) {
-    if (!_incomingController.isClosed) {
-      _incomingController.addError(error);
-    }
-  }
-
-  /// Simulate sending a raw (non-JSON) message from the server.
-  void simulateRawMessage(String raw) {
-    if (!_incomingController.isClosed) {
-      _incomingController.add(raw);
-    }
-  }
-
-  /// Simulate server closing the connection.
-  Future<void> simulateClose() async {
-    _isClosed = true;
-    await _incomingController.close();
-  }
-
-  /// Messages sent by the client.
-  List<String> get sentMessages => List.unmodifiable(_outgoingMessages);
-
-  void _addOutgoing(dynamic message) {
-    if (message is String) {
-      _outgoingMessages.add(message);
-    }
-  }
-
-  Future<void> _close() async {
-    _isClosed = true;
-    await _incomingController.close();
-  }
-}
-
-class _FakeWebSocketSink implements WebSocketSink {
-  _FakeWebSocketSink(this._channel);
-
-  final _FakeWebSocketChannel _channel;
-  final _doneCompleter = Completer<void>();
-
-  @override
-  void add(dynamic data) {
-    _channel._addOutgoing(data);
-  }
-
-  @override
-  void addError(Object error, [StackTrace? stackTrace]) {}
-
-  @override
-  Future<dynamic> addStream(Stream<dynamic> stream) => stream.forEach(add);
-
-  @override
-  Future<dynamic> close([int? closeCode, String? closeReason]) async {
-    await _channel._close();
-    if (!_doneCompleter.isCompleted) {
-      _doneCompleter.complete();
-    }
-  }
-
-  @override
-  Future<dynamic> get done => _doneCompleter.future;
-}
-
-/// A fake WebSocket channel whose [ready] throws a non-TranscriptionException.
-class _FailingReadyChannel extends StreamChannelMixin<dynamic>
-    implements WebSocketChannel {
-  @override
-  Future<void> get ready =>
-      Future.error(Exception('Connection refused: ECONNREFUSED'));
-
-  @override
-  Stream<dynamic> get stream => const Stream.empty();
-
-  @override
-  WebSocketSink get sink => _NullSink();
-
-  @override
-  int? get closeCode => null;
-
-  @override
-  String? get closeReason => null;
-
-  @override
-  String? get protocol => null;
-}
-
-class _NullSink implements WebSocketSink {
-  @override
-  void add(dynamic data) {}
-
-  @override
-  void addError(Object error, [StackTrace? stackTrace]) {}
-
-  @override
-  Future<dynamic> addStream(Stream<dynamic> stream) async {}
-
-  @override
-  Future<dynamic> close([int? closeCode, String? closeReason]) async {}
-
-  @override
-  Future<dynamic> get done => Completer<void>().future;
-}
+import '../../../test_utils/fake_web_socket.dart';
 
 void main() {
   group('MistralRealtimeTranscriptionRepository', () {
@@ -254,11 +110,11 @@ void main() {
     });
 
     group('connect', () {
-      late _FakeWebSocketChannel fakeChannel;
+      late FakeWebSocketChannel fakeChannel;
       late MistralRealtimeTranscriptionRepository repo;
 
       setUp(() {
-        fakeChannel = _FakeWebSocketChannel();
+        fakeChannel = FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
           channelFactory: (uri, headers) => fakeChannel,
         );
@@ -313,11 +169,11 @@ void main() {
     });
 
     group('sendAudioChunk', () {
-      late _FakeWebSocketChannel fakeChannel;
+      late FakeWebSocketChannel fakeChannel;
       late MistralRealtimeTranscriptionRepository repo;
 
       setUp(() async {
-        fakeChannel = _FakeWebSocketChannel();
+        fakeChannel = FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
           channelFactory: (uri, headers) => fakeChannel,
         );
@@ -357,11 +213,11 @@ void main() {
     });
 
     group('endAudio', () {
-      late _FakeWebSocketChannel fakeChannel;
+      late FakeWebSocketChannel fakeChannel;
       late MistralRealtimeTranscriptionRepository repo;
 
       setUp(() async {
-        fakeChannel = _FakeWebSocketChannel();
+        fakeChannel = FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
           channelFactory: (uri, headers) => fakeChannel,
         );
@@ -390,11 +246,11 @@ void main() {
     });
 
     group('transcription streams', () {
-      late _FakeWebSocketChannel fakeChannel;
+      late FakeWebSocketChannel fakeChannel;
       late MistralRealtimeTranscriptionRepository repo;
 
       setUp(() async {
-        fakeChannel = _FakeWebSocketChannel();
+        fakeChannel = FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
           channelFactory: (uri, headers) => fakeChannel,
         );
@@ -495,11 +351,11 @@ void main() {
     });
 
     group('disconnect', () {
-      late _FakeWebSocketChannel fakeChannel;
+      late FakeWebSocketChannel fakeChannel;
       late MistralRealtimeTranscriptionRepository repo;
 
       setUp(() async {
-        fakeChannel = _FakeWebSocketChannel();
+        fakeChannel = FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
           channelFactory: (uri, headers) => fakeChannel,
         );
@@ -527,7 +383,7 @@ void main() {
     group('connect with model parameter', () {
       test('includes model in URL query parameters', () async {
         Uri? capturedUri;
-        final fakeChannel = _FakeWebSocketChannel();
+        final fakeChannel = FakeWebSocketChannel();
         final repo = MistralRealtimeTranscriptionRepository(
           channelFactory: (uri, headers) {
             capturedUri = uri;
@@ -557,7 +413,7 @@ void main() {
     group('connect error handling', () {
       test('times out when session.created is not received', () {
         fakeAsync((async) {
-          final fakeChannel = _FakeWebSocketChannel();
+          final fakeChannel = FakeWebSocketChannel();
           final repo = MistralRealtimeTranscriptionRepository(
             channelFactory: (_, _) => fakeChannel,
           );
@@ -586,7 +442,7 @@ void main() {
 
       test('wraps non-TranscriptionException from channel.ready', () async {
         final repo = MistralRealtimeTranscriptionRepository(
-          channelFactory: (_, _) => _FailingReadyChannel(),
+          channelFactory: (_, _) => FailingReadyWebSocketChannel(),
         );
         addTearDown(repo.dispose);
 
@@ -596,11 +452,23 @@ void main() {
             baseUrl: 'https://api.mistral.ai/v1',
           ),
           throwsA(
-            isA<TranscriptionException>().having(
-              (e) => e.message,
-              'message',
-              contains('Failed to connect'),
-            ),
+            isA<TranscriptionException>()
+                .having(
+                  (e) => e.message,
+                  'message',
+                  allOf(
+                    contains('Failed to connect'),
+                    contains('ECONNREFUSED'),
+                  ),
+                )
+                .having((e) => e.provider, 'provider', 'Mistral Realtime')
+                // A refused socket has no HTTP status to report.
+                .having((e) => e.statusCode, 'statusCode', isNull)
+                .having(
+                  (e) => e.originalError,
+                  'originalError',
+                  isA<Exception>(),
+                ),
           ),
         );
       });
@@ -618,11 +486,11 @@ void main() {
     });
 
     group('message parsing edge cases', () {
-      late _FakeWebSocketChannel fakeChannel;
+      late FakeWebSocketChannel fakeChannel;
       late MistralRealtimeTranscriptionRepository repo;
 
       setUp(() async {
-        fakeChannel = _FakeWebSocketChannel();
+        fakeChannel = FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
           channelFactory: (uri, headers) => fakeChannel,
         );
@@ -760,11 +628,11 @@ void main() {
     });
 
     group('stream error handling', () {
-      late _FakeWebSocketChannel fakeChannel;
+      late FakeWebSocketChannel fakeChannel;
       late MistralRealtimeTranscriptionRepository repo;
 
       setUp(() async {
-        fakeChannel = _FakeWebSocketChannel();
+        fakeChannel = FakeWebSocketChannel();
         repo = MistralRealtimeTranscriptionRepository(
           channelFactory: (uri, headers) => fakeChannel,
         );

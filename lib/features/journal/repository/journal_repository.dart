@@ -14,6 +14,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'journal_repository.g.dart';
@@ -320,6 +321,11 @@ class JournalRepository {
       commitWhen: (ok) => ok,
     );
   }
+
+  /// Test-only seam for [_hasChange] — the pure six-field link comparator.
+  @visibleForTesting
+  bool debugHasChange(EntryLink existing, EntryLink incoming) =>
+      _hasChange(existing, incoming);
 
   bool _hasChange(EntryLink existing, EntryLink incoming) {
     final existingHidden = existing.hidden ?? false;

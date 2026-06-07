@@ -116,13 +116,16 @@ void main() {
   /// of the modal sheet, so it is scrolled into view before tapping.
   Future<void> openAndConfirm(WidgetTester tester) async {
     await tester.tap(find.text('Show Modal'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final confirmButton = find.byType(LottiPrimaryButton);
     await tester.ensureVisible(confirmButton);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.tap(confirmButton);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   group('SequenceLogPopulateModal', () {
@@ -130,7 +133,8 @@ void main() {
       await tester.pumpWidget(buildTestWidget(child: showTrigger()));
 
       await tester.tap(find.text('Show Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Confirmation page visible
       expect(find.text('Cancel'), findsOneWidget);
@@ -142,12 +146,14 @@ void main() {
       await tester.pumpWidget(buildTestWidget(child: showTrigger()));
 
       await tester.tap(find.text('Show Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap Cancel button (warnIfMissed: false because modal barrier intercepts
       // the hit test but the tap still propagates correctly).
       await tester.tap(find.text('Cancel'), warnIfMissed: false);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Cancel'), findsNothing);
     });
@@ -156,7 +162,8 @@ void main() {
       await tester.pumpWidget(buildTestWidget(child: showTrigger()));
 
       await tester.tap(find.text('Show Modal'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.textContaining('scan all journal entries'),
@@ -202,7 +209,8 @@ void main() {
 
         // Let the operation finish so the modal closes without leaking timers.
         fakeController.operationGate.complete();
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       },
     );
 
@@ -244,7 +252,8 @@ void main() {
 
         // Let the operation finish so the modal closes without leaking timers.
         fakeController.operationGate.complete();
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
       },
     );
   });

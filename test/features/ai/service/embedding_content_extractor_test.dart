@@ -205,6 +205,41 @@ void main() {
         );
       });
 
+      test(
+        'uses the FIRST transcript (index 0), not the most recent — this '
+        'deliberately differs from SkillInferenceRunner._resolveEntryContent '
+        'which picks the latest by created',
+        () {
+          const firstText =
+              'The very first transcript, long enough for embedding.';
+          const newerText =
+              'A newer transcript that must NOT be selected here.';
+          final audio = JournalAudio(
+            meta: _meta(),
+            data: audioData(
+              transcripts: [
+                AudioTranscript(
+                  created: DateTime(2024, 3, 15),
+                  library: 'whisper',
+                  model: 'small',
+                  detectedLanguage: 'en',
+                  transcript: firstText,
+                ),
+                AudioTranscript(
+                  created: DateTime(2024, 3, 16),
+                  library: 'whisper',
+                  model: 'large',
+                  detectedLanguage: 'en',
+                  transcript: newerText,
+                ),
+              ],
+            ),
+          );
+
+          expect(EmbeddingContentExtractor.extractText(audio), firstText);
+        },
+      );
+
       test('returns null when no text and no transcripts', () {
         final audio = JournalAudio(
           meta: _meta(),
@@ -291,75 +326,78 @@ void main() {
   });
 
   group('EmbeddingContentExtractor.entityType', () {
-    test('returns journal_text for JournalEntry', () {
-      final entry = JournalEntry(meta: _meta());
-      expect(
-        EmbeddingContentExtractor.entityType(entry),
+    // One parameterized loop over the switch arms: supported types map to
+    // their store discriminator constant, unsupported types map to null.
+    final cases = <String, (JournalEntity, String?)>{
+      'JournalEntry -> journal_text': (
+        JournalEntry(meta: _meta()),
         kEntityTypeJournalText,
-      );
-    });
-
-    test('returns task for Task', () {
-      final task = Task(
-        meta: _meta(),
-        data: TaskData(
-          status: TaskStatus.open(
-            id: 'id',
-            createdAt: DateTime(2024, 3, 15),
-            utcOffset: 0,
+      ),
+      'Task -> task': (
+        Task(
+          meta: _meta(),
+          data: TaskData(
+            status: TaskStatus.open(
+              id: 'id',
+              createdAt: DateTime(2024, 3, 15),
+              utcOffset: 0,
+            ),
+            title: 'test',
+            statusHistory: [],
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
           ),
-          title: 'test',
-          statusHistory: [],
-          dateFrom: DateTime(2024, 3, 15),
-          dateTo: DateTime(2024, 3, 15),
         ),
-      );
-      expect(EmbeddingContentExtractor.entityType(task), kEntityTypeTask);
-    });
-
-    test('returns audio for JournalAudio', () {
-      final audio = JournalAudio(
-        meta: _meta(),
-        data: AudioData(
-          dateFrom: DateTime(2024, 3, 15),
-          dateTo: DateTime(2024, 3, 15),
-          duration: Duration.zero,
-          audioFile: '',
-          audioDirectory: '',
+        kEntityTypeTask,
+      ),
+      'JournalAudio -> audio': (
+        JournalAudio(
+          meta: _meta(),
+          data: AudioData(
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            duration: Duration.zero,
+            audioFile: '',
+            audioDirectory: '',
+          ),
         ),
-      );
-      expect(EmbeddingContentExtractor.entityType(audio), kEntityTypeAudio);
-    });
-
-    test('returns ai_response for AiResponseEntry', () {
-      final ai = AiResponseEntry(
-        meta: _meta(),
-        data: const AiResponseData(
-          model: 'test-model',
-          systemMessage: '',
-          prompt: '',
-          thoughts: '',
-          response: '',
+        kEntityTypeAudio,
+      ),
+      'AiResponseEntry -> ai_response': (
+        AiResponseEntry(
+          meta: _meta(),
+          data: const AiResponseData(
+            model: 'test-model',
+            systemMessage: '',
+            prompt: '',
+            thoughts: '',
+            response: '',
+          ),
         ),
-      );
-      expect(
-        EmbeddingContentExtractor.entityType(ai),
         kEntityTypeAiResponse,
-      );
-    });
-
-    test('returns null for JournalImage', () {
-      final image = JournalImage(
-        meta: _meta(),
-        data: ImageData(
-          imageId: '',
-          imageFile: '',
-          imageDirectory: '',
-          capturedAt: DateTime(2024, 3, 15),
+      ),
+      'JournalImage -> null (unsupported)': (
+        JournalImage(
+          meta: _meta(),
+          data: ImageData(
+            imageId: '',
+            imageFile: '',
+            imageDirectory: '',
+            capturedAt: DateTime(2024, 3, 15),
+          ),
         ),
-      );
-      expect(EmbeddingContentExtractor.entityType(image), isNull);
-    });
+        null,
+      ),
+    };
+
+    for (final entry in cases.entries) {
+      test(entry.key, () {
+        expect(
+          EmbeddingContentExtractor.entityType(entry.value.$1),
+          entry.value.$2,
+        );
+      });
+    }
   });
 
   group('EmbeddingContentExtractor.contentHash', () {
@@ -463,11 +501,7 @@ void main() {
     });
   });
 
-  group('kMinEmbeddingTextLength', () {
-    test('is 20', () {
-      expect(kMinEmbeddingTextLength, 20);
-    });
-
+  group('kMinEmbeddingTextLength boundary', () {
     test('text at exactly threshold is accepted', () {
       // 20 characters exactly
       const exactText = '12345678901234567890';

@@ -132,6 +132,23 @@ void main() {
       service = ModelPrepopulationService(repository: mockRepository);
     });
 
+    /// Stubs the repository's config queries: [models] for the model type,
+    /// [providers] for the provider type, and a no-op saveConfig.
+    void stubRepo({
+      List<AiConfig> models = const [],
+      List<AiConfig> providers = const [],
+    }) {
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => models);
+      when(
+        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => providers);
+      when(
+        () => mockRepository.saveConfig(any()),
+      ).thenAnswer((_) async {});
+    }
+
     group('prepopulateModelsForProvider', () {
       test('should skip existing models and only create new ones', () async {
         // Arrange
@@ -161,18 +178,7 @@ void main() {
           isReasoningModel: false,
         );
 
-        when(
-          () => mockRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [existingModel]);
-        when(
-          () => mockRepository.getConfigsByType(
-            AiConfigType.inferenceProvider,
-          ),
-        ).thenAnswer((_) async => [provider]);
-
-        when(
-          () => mockRepository.saveConfig(any()),
-        ).thenAnswer((_) async => {});
+        stubRepo(models: [existingModel], providers: [provider]);
 
         // Act
         final result = await service.prepopulateModelsForProvider(provider);
@@ -240,17 +246,7 @@ void main() {
             inferenceProviderId: providerId,
           );
 
-          when(
-            () => mockRepository.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [existingModel]);
-          when(
-            () => mockRepository.getConfigsByType(
-              AiConfigType.inferenceProvider,
-            ),
-          ).thenAnswer((_) async => [provider]);
-          when(
-            () => mockRepository.saveConfig(any()),
-          ).thenAnswer((_) async => {});
+          stubRepo(models: [existingModel], providers: [provider]);
 
           final result = await service.prepopulateModelsForProvider(provider);
 
@@ -286,17 +282,10 @@ void main() {
             inferenceProviderId: existingProvider.id,
           );
 
-          when(
-            () => mockRepository.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [existingModel]);
-          when(
-            () => mockRepository.getConfigsByType(
-              AiConfigType.inferenceProvider,
-            ),
-          ).thenAnswer((_) async => [existingProvider, newProvider]);
-          when(
-            () => mockRepository.saveConfig(any()),
-          ).thenAnswer((_) async => {});
+          stubRepo(
+            models: [existingModel],
+            providers: [existingProvider, newProvider],
+          );
 
           final result = await service.prepopulateModelsForProvider(
             newProvider,
@@ -326,17 +315,7 @@ void main() {
             inferenceProviderId: 'deleted-gemini-provider',
           );
 
-          when(
-            () => mockRepository.getConfigsByType(AiConfigType.model),
-          ).thenAnswer((_) async => [orphanedModel]);
-          when(
-            () => mockRepository.getConfigsByType(
-              AiConfigType.inferenceProvider,
-            ),
-          ).thenAnswer((_) async => [provider]);
-          when(
-            () => mockRepository.saveConfig(any()),
-          ).thenAnswer((_) async => {});
+          stubRepo(models: [orphanedModel], providers: [provider]);
 
           final result = await service.prepopulateModelsForProvider(provider);
 

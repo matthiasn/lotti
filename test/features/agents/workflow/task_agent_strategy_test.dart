@@ -360,200 +360,108 @@ void main() {
         ).called(2);
       });
 
-      test(
-        'handles get_related_task_details locally for allowlisted sibling tasks',
-        () async {
-          final relatedStrategy = _createStrategy(
-            executor: mockExecutor,
-            syncService: mockSyncService,
-            withChangeSetBuilder: false,
-            resolveRelatedTaskDetails: (requestedTaskId) async {
-              return '{"task":{"id":"$requestedTaskId"}}';
-            },
-            allowedRelatedTaskIds: const {'task-002'},
-          ).strategy;
-          final toolCalls = [
+      // get_related_task_details is handled locally (never reaches the
+      // executor); the five scenarios differ only in resolver behaviour,
+      // allowlist, requested id, and the expected response.
+      Future<String> runRelatedCall({
+        required Future<String?> Function(String) resolver,
+        required Set<String> allowedIds,
+        required String requestedTaskId,
+      }) async {
+        final relatedStrategy = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          withChangeSetBuilder: false,
+          resolveRelatedTaskDetails: resolver,
+          allowedRelatedTaskIds: allowedIds,
+        ).strategy;
+
+        await relatedStrategy.processToolCalls(
+          toolCalls: [
             ChatCompletionMessageToolCall(
               id: 'call-related',
               type: ChatCompletionMessageToolCallType.function,
               function: ChatCompletionMessageFunctionCall(
                 name: TaskAgentToolNames.getRelatedTaskDetails,
-                arguments: jsonEncode({'taskId': 'task-002'}),
+                arguments: jsonEncode({'taskId': requestedTaskId}),
               ),
             ),
-          ];
+          ],
+          manager: mockManager,
+        );
 
-          await relatedStrategy.processToolCalls(
-            toolCalls: toolCalls,
-            manager: mockManager,
-          );
+        // The local handler must never reach the deferred-tool executor.
+        verifyNever(
+          () => mockExecutor.execute(
+            toolName: any(named: 'toolName'),
+            args: any(named: 'args'),
+            targetEntityId: any(named: 'targetEntityId'),
+            resolveCategoryId: any(named: 'resolveCategoryId'),
+            executeHandler: any(named: 'executeHandler'),
+            readVectorClock: any(named: 'readVectorClock'),
+          ),
+        );
+        return verify(
+              () => mockManager.addToolResponse(
+                toolCallId: 'call-related',
+                response: captureAny(named: 'response'),
+              ),
+            ).captured.single
+            as String;
+      }
 
-          verifyNever(
-            () => mockExecutor.execute(
-              toolName: any(named: 'toolName'),
-              args: any(named: 'args'),
-              targetEntityId: any(named: 'targetEntityId'),
-              resolveCategoryId: any(named: 'resolveCategoryId'),
-              executeHandler: any(named: 'executeHandler'),
-              readVectorClock: any(named: 'readVectorClock'),
-            ),
+      test(
+        'handles get_related_task_details locally for allowlisted sibling tasks',
+        () async {
+          final response = await runRelatedCall(
+            resolver: (requestedTaskId) async =>
+                '{"task":{"id":"$requestedTaskId"}}',
+            allowedIds: const {'task-002'},
+            requestedTaskId: 'task-002',
           );
-          verify(
-            () => mockManager.addToolResponse(
-              toolCallId: 'call-related',
-              response: '{"task":{"id":"task-002"}}',
-            ),
-          ).called(1);
+          expect(response, '{"task":{"id":"task-002"}}');
         },
       );
 
       test('rejects get_related_task_details for the current task', () async {
-        final relatedStrategy = _createStrategy(
-          executor: mockExecutor,
-          syncService: mockSyncService,
-          withChangeSetBuilder: false,
-          resolveRelatedTaskDetails: (_) async => '{"task":{"id":"unused"}}',
-          allowedRelatedTaskIds: {taskId},
-        ).strategy;
-        final toolCalls = [
-          ChatCompletionMessageToolCall(
-            id: 'call-current',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: TaskAgentToolNames.getRelatedTaskDetails,
-              arguments: jsonEncode({'taskId': taskId}),
-            ),
-          ),
-        ];
-
-        await relatedStrategy.processToolCalls(
-          toolCalls: toolCalls,
-          manager: mockManager,
+        final response = await runRelatedCall(
+          resolver: (_) async => '{"task":{"id":"unused"}}',
+          allowedIds: {taskId},
+          requestedTaskId: taskId,
         );
-
-        final capturedResponse =
-            verify(
-                  () => mockManager.addToolResponse(
-                    toolCallId: 'call-current',
-                    response: captureAny(named: 'response'),
-                  ),
-                ).captured.single
-                as String;
-        expect(
-          capturedResponse,
-          contains('cannot be used for the current task'),
-        );
+        expect(response, contains('cannot be used for the current task'));
       });
 
       test('rejects get_related_task_details outside the allowlist', () async {
-        final relatedStrategy = _createStrategy(
-          executor: mockExecutor,
-          syncService: mockSyncService,
-          withChangeSetBuilder: false,
-          resolveRelatedTaskDetails: (_) async => '{"task":{"id":"unused"}}',
-          allowedRelatedTaskIds: const {'task-002'},
-        ).strategy;
-        final toolCalls = [
-          ChatCompletionMessageToolCall(
-            id: 'call-outside',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: TaskAgentToolNames.getRelatedTaskDetails,
-              arguments: jsonEncode({'taskId': 'task-999'}),
-            ),
-          ),
-        ];
-
-        await relatedStrategy.processToolCalls(
-          toolCalls: toolCalls,
-          manager: mockManager,
+        final response = await runRelatedCall(
+          resolver: (_) async => '{"task":{"id":"unused"}}',
+          allowedIds: const {'task-002'},
+          requestedTaskId: 'task-999',
         );
-
-        final capturedResponse =
-            verify(
-                  () => mockManager.addToolResponse(
-                    toolCallId: 'call-outside',
-                    response: captureAny(named: 'response'),
-                  ),
-                ).captured.single
-                as String;
-        expect(capturedResponse, contains('not available in the current'));
+        expect(response, contains('not available in the current'));
       });
 
       test(
         'returns tool error when related-task resolver returns null',
         () async {
-          final relatedStrategy = _createStrategy(
-            executor: mockExecutor,
-            syncService: mockSyncService,
-            withChangeSetBuilder: false,
-            resolveRelatedTaskDetails: (_) async => null,
-            allowedRelatedTaskIds: const {'task-002'},
-          ).strategy;
-          final toolCalls = [
-            ChatCompletionMessageToolCall(
-              id: 'call-null',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.getRelatedTaskDetails,
-                arguments: jsonEncode({'taskId': 'task-002'}),
-              ),
-            ),
-          ];
-
-          await relatedStrategy.processToolCalls(
-            toolCalls: toolCalls,
-            manager: mockManager,
+          final response = await runRelatedCall(
+            resolver: (_) async => null,
+            allowedIds: const {'task-002'},
+            requestedTaskId: 'task-002',
           );
-
-          final capturedResponse =
-              verify(
-                    () => mockManager.addToolResponse(
-                      toolCallId: 'call-null',
-                      response: captureAny(named: 'response'),
-                    ),
-                  ).captured.single
-                  as String;
-          expect(capturedResponse, contains('could not be resolved'));
+          expect(response, contains('could not be resolved'));
         },
       );
 
       test(
         'returns tool error when related-task resolver throws',
         () async {
-          final throwingStrategy = _createStrategy(
-            executor: mockExecutor,
-            syncService: mockSyncService,
-            withChangeSetBuilder: false,
-            resolveRelatedTaskDetails: (_) async =>
-                throw Exception('DB connection lost'),
-            allowedRelatedTaskIds: const {'task-002'},
-          ).strategy;
-          final toolCalls = [
-            ChatCompletionMessageToolCall(
-              id: 'call-throw',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: TaskAgentToolNames.getRelatedTaskDetails,
-                arguments: jsonEncode({'taskId': 'task-002'}),
-              ),
-            ),
-          ];
-
-          await throwingStrategy.processToolCalls(
-            toolCalls: toolCalls,
-            manager: mockManager,
+          final response = await runRelatedCall(
+            resolver: (_) async => throw Exception('DB connection lost'),
+            allowedIds: const {'task-002'},
+            requestedTaskId: 'task-002',
           );
-
-          final capturedResponse =
-              verify(
-                    () => mockManager.addToolResponse(
-                      toolCallId: 'call-throw',
-                      response: captureAny(named: 'response'),
-                    ),
-                  ).captured.single
-                  as String;
-          expect(capturedResponse, contains('could not be resolved'));
+          expect(response, contains('could not be resolved'));
         },
       );
 
@@ -631,226 +539,64 @@ void main() {
         ).called(greaterThanOrEqualTo(2));
       });
 
-      test(
-        'recovers arguments from markdown code-fenced JSON (local model quirk)',
-        () async {
-          // Some local models wrap the JSON in a markdown code fence such as:
-          // ```json\n{...}\n```
-          // The strategy must extract and use the inner JSON object.
-          when(
-            () => mockExecutor.execute(
-              toolName: any(named: 'toolName'),
-              args: any(named: 'args'),
-              targetEntityId: any(named: 'targetEntityId'),
-              resolveCategoryId: any(named: 'resolveCategoryId'),
-              executeHandler: any(named: 'executeHandler'),
-              readVectorClock: any(named: 'readVectorClock'),
-            ),
-          ).thenAnswer(
-            (_) async => const ToolExecutionResult(
-              success: true,
-              output: 'fence-recovery-ok',
-            ),
-          );
+      // JSON-recovery scenarios share one harness: stub the executor, fire a
+      // single tool call carrying [rawArguments], then either verify the
+      // recovered args reached the executor or that parsing failed cleanly.
+      Future<void> runRecovery({
+        required String rawArguments,
+        required String toolName,
+        Map<String, dynamic>? expectedArgs, // null → expect a parse failure
+      }) async {
+        when(
+          () => mockExecutor.execute(
+            toolName: any(named: 'toolName'),
+            args: any(named: 'args'),
+            targetEntityId: any(named: 'targetEntityId'),
+            resolveCategoryId: any(named: 'resolveCategoryId'),
+            executeHandler: any(named: 'executeHandler'),
+            readVectorClock: any(named: 'readVectorClock'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const ToolExecutionResult(success: true, output: 'recovery-ok'),
+        );
 
-          final toolCalls = [
-            const ChatCompletionMessageToolCall(
-              id: 'call-fenced',
+        final action = await strategy.processToolCalls(
+          toolCalls: [
+            ChatCompletionMessageToolCall(
+              id: 'call-recovery',
               type: ChatCompletionMessageToolCallType.function,
               function: ChatCompletionMessageFunctionCall(
-                name: 'update_task_priority',
-                arguments: '```json\n{"priority": "P0"}\n```',
+                name: toolName,
+                arguments: rawArguments,
               ),
             ),
-          ];
+          ],
+          manager: mockManager,
+        );
 
-          final action = await strategy.processToolCalls(
-            toolCalls: toolCalls,
-            manager: mockManager,
-          );
+        expect(action, ConversationAction.continueConversation);
 
-          expect(action, ConversationAction.continueConversation);
-
-          // Executor must be called with the extracted map, not the raw fenced
-          // string — confirming the fence-recovery path parsed correctly.
+        if (expectedArgs != null) {
+          // Executor must receive the clean extracted map, not the raw text.
           verify(
             () => mockExecutor.execute(
-              toolName: 'update_task_priority',
-              args: {'priority': 'P0'},
+              toolName: toolName,
+              args: expectedArgs,
               targetEntityId: taskId,
               resolveCategoryId: any(named: 'resolveCategoryId'),
               executeHandler: any(named: 'executeHandler'),
               readVectorClock: any(named: 'readVectorClock'),
             ),
           ).called(1);
-
           verify(
             () => mockManager.addToolResponse(
-              toolCallId: 'call-fenced',
-              response: 'fence-recovery-ok',
+              toolCallId: 'call-recovery',
+              response: 'recovery-ok',
             ),
           ).called(1);
-        },
-      );
-
-      test(
-        'recovers arguments from JSON object embedded in trailing text',
-        () async {
-          // Some local models emit the JSON object followed by explanation text,
-          // e.g. '{"priority": "P1"} (setting to high priority)'.
-          // The balanced-brace extractor must isolate the JSON object.
-          when(
-            () => mockExecutor.execute(
-              toolName: any(named: 'toolName'),
-              args: any(named: 'args'),
-              targetEntityId: any(named: 'targetEntityId'),
-              resolveCategoryId: any(named: 'resolveCategoryId'),
-              executeHandler: any(named: 'executeHandler'),
-              readVectorClock: any(named: 'readVectorClock'),
-            ),
-          ).thenAnswer(
-            (_) async => const ToolExecutionResult(
-              success: true,
-              output: 'brace-recovery-ok',
-            ),
-          );
-
-          const trailingText =
-              '{"status": "IN_PROGRESS"} (setting task to in progress)';
-
-          final toolCalls = [
-            const ChatCompletionMessageToolCall(
-              id: 'call-trailing',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'set_task_status',
-                arguments: trailingText,
-              ),
-            ),
-          ];
-
-          final action = await strategy.processToolCalls(
-            toolCalls: toolCalls,
-            manager: mockManager,
-          );
-
-          expect(action, ConversationAction.continueConversation);
-
-          // Executor must receive the clean map extracted from the raw text.
-          verify(
-            () => mockExecutor.execute(
-              toolName: 'set_task_status',
-              args: {'status': 'IN_PROGRESS'},
-              targetEntityId: taskId,
-              resolveCategoryId: any(named: 'resolveCategoryId'),
-              executeHandler: any(named: 'executeHandler'),
-              readVectorClock: any(named: 'readVectorClock'),
-            ),
-          ).called(1);
-
-          verify(
-            () => mockManager.addToolResponse(
-              toolCallId: 'call-trailing',
-              response: 'brace-recovery-ok',
-            ),
-          ).called(1);
-        },
-      );
-
-      test(
-        'recovers via brace extraction when fenced JSON inner content is '
-        'invalid',
-        () async {
-          // The markdown fence matches but its inner content is not valid JSON
-          // (exercises the FormatException recovery inside the fence branch).
-          // A valid JSON object follows the fence and is recovered by the
-          // balanced-brace extractor instead.
-          when(
-            () => mockExecutor.execute(
-              toolName: any(named: 'toolName'),
-              args: any(named: 'args'),
-              targetEntityId: any(named: 'targetEntityId'),
-              resolveCategoryId: any(named: 'resolveCategoryId'),
-              executeHandler: any(named: 'executeHandler'),
-              readVectorClock: any(named: 'readVectorClock'),
-            ),
-          ).thenAnswer(
-            (_) async => const ToolExecutionResult(
-              success: true,
-              output: 'fence-fallback-ok',
-            ),
-          );
-
-          // Fence wraps non-JSON text; the real object trails after the fence.
-          const raw = '```json\nnot valid json\n```\n{"priority": "P3"}';
-
-          final toolCalls = [
-            const ChatCompletionMessageToolCall(
-              id: 'call-fence-invalid',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_task_priority',
-                arguments: raw,
-              ),
-            ),
-          ];
-
-          final action = await strategy.processToolCalls(
-            toolCalls: toolCalls,
-            manager: mockManager,
-          );
-
-          expect(action, ConversationAction.continueConversation);
-
-          // The fenced content failed to parse, but the trailing object was
-          // recovered and passed to the executor as a clean map.
-          verify(
-            () => mockExecutor.execute(
-              toolName: 'update_task_priority',
-              args: {'priority': 'P3'},
-              targetEntityId: taskId,
-              resolveCategoryId: any(named: 'resolveCategoryId'),
-              executeHandler: any(named: 'executeHandler'),
-              readVectorClock: any(named: 'readVectorClock'),
-            ),
-          ).called(1);
-
-          verify(
-            () => mockManager.addToolResponse(
-              toolCallId: 'call-fence-invalid',
-              response: 'fence-fallback-ok',
-            ),
-          ).called(1);
-        },
-      );
-
-      test(
-        'returns error when balanced-brace candidate is not valid JSON',
-        () async {
-          // Braces are balanced but the content between them is not valid JSON,
-          // so the brace-extraction recovery throws FormatException and all
-          // recovery attempts ultimately fail.
-          const raw = '{not: valid, json}';
-
-          final toolCalls = [
-            const ChatCompletionMessageToolCall(
-              id: 'call-bad-braces',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'update_task_priority',
-                arguments: raw,
-              ),
-            ),
-          ];
-
-          final action = await strategy.processToolCalls(
-            toolCalls: toolCalls,
-            manager: mockManager,
-          );
-
-          expect(action, ConversationAction.continueConversation);
-
-          // The executor is never reached because parsing failed entirely.
+        } else {
+          // Parsing failed entirely — the executor is never reached.
           verifyNever(
             () => mockExecutor.execute(
               toolName: any(named: 'toolName'),
@@ -861,10 +607,9 @@ void main() {
               readVectorClock: any(named: 'readVectorClock'),
             ),
           );
-
           verify(
             () => mockManager.addToolResponse(
-              toolCallId: 'call-bad-braces',
+              toolCallId: 'call-recovery',
               response: any(
                 named: 'response',
                 that: startsWith(
@@ -873,7 +618,51 @@ void main() {
               ),
             ),
           ).called(1);
-        },
+        }
+      }
+
+      test(
+        'recovers arguments from markdown code-fenced JSON (local model quirk)',
+        () => runRecovery(
+          // Some local models wrap the JSON in a markdown code fence.
+          rawArguments: '```json\n{"priority": "P0"}\n```',
+          toolName: 'update_task_priority',
+          expectedArgs: {'priority': 'P0'},
+        ),
+      );
+
+      test(
+        'recovers arguments from JSON object embedded in trailing text',
+        () => runRecovery(
+          // The balanced-brace extractor must isolate the JSON object from
+          // trailing explanation text.
+          rawArguments:
+              '{"status": "IN_PROGRESS"} (setting task to in progress)',
+          toolName: 'set_task_status',
+          expectedArgs: {'status': 'IN_PROGRESS'},
+        ),
+      );
+
+      test(
+        'recovers via brace extraction when fenced JSON inner content is '
+        'invalid',
+        () => runRecovery(
+          // The fence matches but its inner content is not valid JSON; the
+          // valid object trailing the fence is recovered instead.
+          rawArguments: '```json\nnot valid json\n```\n{"priority": "P3"}',
+          toolName: 'update_task_priority',
+          expectedArgs: {'priority': 'P3'},
+        ),
+      );
+
+      test(
+        'returns error when balanced-brace candidate is not valid JSON',
+        () => runRecovery(
+          // Braces balance but the content between them is not valid JSON,
+          // so every recovery attempt fails.
+          rawArguments: '{not: valid, json}',
+          toolName: 'update_task_priority',
+        ),
       );
 
       test('persists assistant message before processing tool calls', () async {
@@ -4068,6 +3857,11 @@ void main() {
                 name: TaskAgentToolNames.retractSuggestions,
                 arguments: jsonEncode({
                   'proposals': [
+                    // Non-object elements and malformed objects both fall
+                    // through to the same "no valid proposals" error path.
+                    'just-a-string',
+                    42,
+                    ['nested', 'array'],
                     {'fingerprint': null, 'reason': 'x'},
                     {'fingerprint': 'fp', 'reason': ''},
                   ],
@@ -4210,7 +4004,78 @@ void main() {
         },
       );
     });
+
+    // -------------------------------------------------------------------------
+    // Glados properties for the pure JSON-recovery parser (via the
+    // debugParseToolArguments seam) — round-trip, fence-recovery, and
+    // balanced-brace invariants for arbitrary generated JSON objects.
+    // -------------------------------------------------------------------------
+    group('debugParseToolArguments — properties', () {
+      glados.Glados(
+        glados.any.toolArgsObject,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'round-trips, fence-recovers, and brace-extracts any object',
+        (
+          obj,
+        ) {
+          final encoded = jsonEncode(obj);
+
+          // Idempotent direct parse: a valid object returns the same map.
+          expect(
+            TaskAgentStrategy.debugParseToolArguments(encoded),
+            obj,
+            reason: 'direct: $encoded',
+          );
+
+          // Fence recovery: a markdown-fenced object always round-trips.
+          expect(
+            TaskAgentStrategy.debugParseToolArguments(
+              '```json\n$encoded\n```',
+            ),
+            obj,
+            reason: 'fenced: $encoded',
+          );
+
+          // Balanced-brace extraction: the first balanced object in a string
+          // with trailing prose is always returned.
+          expect(
+            TaskAgentStrategy.debugParseToolArguments(
+              '$encoded trailing explanation text',
+            ),
+            obj,
+            reason: 'trailing: $encoded',
+          );
+        },
+        tags: 'glados',
+      );
+    });
   });
+}
+
+/// Generates small JSON-object trees from primitive seeds — strings, ints,
+/// bools, nulls, nested objects, and lists, shaped like tool arguments.
+extension _AnyToolArgsObject on glados.Any {
+  glados.Generator<Object?> get _toolArgsValue =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(0, 6),
+        glados.IntAnys(this).intInRange(0, 1000),
+        (int kind, int seed) => switch (kind) {
+          0 => 'value-$seed',
+          1 => seed,
+          2 => seed.isEven,
+          3 => null,
+          4 => <String, dynamic>{'nested-$seed': 'inner-$seed'},
+          _ => <dynamic>['item-$seed', seed],
+        },
+      );
+
+  glados.Generator<Map<String, dynamic>> get toolArgsObject =>
+      list(_toolArgsValue).map(
+        (values) => <String, dynamic>{
+          for (final (i, v) in values.indexed) 'key$i': v,
+        },
+      );
 }
 
 /// Captures every call and returns a scripted response list.

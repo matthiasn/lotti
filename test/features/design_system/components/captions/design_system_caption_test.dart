@@ -44,6 +44,22 @@ void main() {
         ),
         findsNothing,
       );
+
+      // Typography comes from the design-system tokens.
+      final title = tester.widget<Text>(find.text('Caption title'));
+      expectTextStyle(
+        title.style!,
+        dsTokensLight.typography.styles.subtitle.subtitle2,
+        dsTokensLight.colors.text.highEmphasis,
+      );
+      final description = tester.widget<Text>(
+        find.text('Caption description text.'),
+      );
+      expectTextStyle(
+        description.style!,
+        dsTokensLight.typography.styles.body.bodySmall,
+        dsTokensLight.colors.text.mediumEmphasis,
+      );
     });
 
     testWidgets('renders with left icon position', (tester) async {

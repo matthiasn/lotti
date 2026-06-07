@@ -337,7 +337,9 @@ void main() {
               .finishWithTranscript('do something'),
         );
         // Yield one microtask so the async body starts and sets phase=thinking.
-        await Future<void>.value();
+        // Drain the event queue (not a single microtask) so the thinking
+        // phase is observed without relying on microtask-ordering details.
+        await pumpEventQueue();
         expect(
           thinkingContainer.read(refineControllerProvider(draft)).phase,
           RefinePhase.thinking,

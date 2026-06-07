@@ -7,37 +7,11 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+import 'drag_test_fakes.dart';
 
 class MockPerformDropEvent extends Mock implements PerformDropEvent {}
 
 /// Fake DropSession that avoids Mock inheritance issues with Diagnosticable
-class FakeDropSession extends Fake implements DropSession {
-  FakeDropSession({required this.itemList});
-
-  final List<DropItem> itemList;
-
-  @override
-  List<DropItem> get items => itemList;
-
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) =>
-      'FakeDropSession(items: $itemList)';
-}
-
-/// Fake DropItem that avoids Mock inheritance issues with Diagnosticable
-class FakeDropItem extends Fake implements DropItem {
-  FakeDropItem({this.testLocalData});
-
-  final Object? testLocalData;
-
-  @override
-  Object? get localData => testLocalData;
-
-  @override
-  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) =>
-      'FakeDropItem(localData: $testLocalData)';
-}
-
 void main() {
   group('buildDragDecorator', () {
     testWidgets('renders Material with elevation, rounded corners, and the '
@@ -57,7 +31,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final material = tester.widget<Material>(
         find.ancestor(
@@ -89,7 +63,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byKey(testKey), findsOneWidget);
       expect(find.text(testText), findsOneWidget);
@@ -154,7 +128,7 @@ void main() {
     });
 
     test('returns false when session items is empty', () async {
-      final emptySession = FakeDropSession(itemList: []);
+      final emptySession = FakeDndDropSession(itemList: []);
       when(() => mockEvent.session).thenReturn(emptySession);
 
       final result = await handleChecklistItemDrop(
@@ -175,8 +149,8 @@ void main() {
     });
 
     test('returns false when localData is null', () async {
-      final dropItem = FakeDropItem();
-      final session = FakeDropSession(itemList: [dropItem]);
+      final dropItem = FakeDndDropItem();
+      final session = FakeDndDropSession(itemList: [dropItem]);
       when(() => mockEvent.session).thenReturn(session);
 
       final result = await handleChecklistItemDrop(
@@ -202,8 +176,8 @@ void main() {
         'checklistId': 'source-checklist',
       };
 
-      final dropItem = FakeDropItem(testLocalData: localData);
-      final session = FakeDropSession(itemList: [dropItem]);
+      final dropItem = FakeDndDropItem(testLocalData: localData);
+      final session = FakeDndDropSession(itemList: [dropItem]);
       when(() => mockEvent.session).thenReturn(session);
       when(
         () => mockController.dropChecklistItem(
@@ -231,10 +205,10 @@ void main() {
     });
 
     test('returns true after successful drop', () async {
-      final dropItem = FakeDropItem(
+      final dropItem = FakeDndDropItem(
         testLocalData: <String, String>{'key': 'value'},
       );
-      final session = FakeDropSession(itemList: [dropItem]);
+      final session = FakeDndDropSession(itemList: [dropItem]);
       when(() => mockEvent.session).thenReturn(session);
       when(
         () => mockController.dropChecklistItem(

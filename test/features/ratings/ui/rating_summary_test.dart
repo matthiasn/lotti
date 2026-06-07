@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
+import 'package:lotti/classes/rating_question.dart';
 import 'package:lotti/features/ratings/ui/rating_summary.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 
@@ -449,5 +450,61 @@ void main() {
       expect(find.text('Moderate'), findsOneWidget);
       expect(find.text('How severe?'), findsOneWidget);
     });
+  });
+
+  group('resolveRatingLabel / resolveRatingInputType — precedence matrix', () {
+    const catalogQuestion = RatingQuestion(
+      key: 'productivity',
+      question: 'Catalog question',
+      description: 'desc',
+      inputType: 'segmented',
+    );
+
+    // Exhaustive over the full input space: stored value present/absent ×
+    // catalog null / catalog-with-key / catalog-without-key. An exhaustive
+    // matrix beats a generative sweep for a 2×3 finite space.
+    const catalogCases = <(String, List<RatingQuestion>?)>[
+      ('no catalog', null),
+      ('catalog contains key', [catalogQuestion]),
+      (
+        'catalog misses key',
+        [
+          RatingQuestion(
+            key: 'other',
+            question: 'Other question',
+            description: 'desc',
+          ),
+        ],
+      ),
+    ];
+
+    for (final (catalogLabel, catalog) in catalogCases) {
+      for (final hasStored in [true, false]) {
+        test('stored=${hasStored ? 'present' : 'absent'}, $catalogLabel', () {
+          final dim = RatingDimension(
+            key: 'productivity',
+            value: 0.5,
+            question: hasStored ? 'Stored question' : null,
+            inputType: hasStored ? 'boolean' : null,
+          );
+
+          // Oracle: stored → catalog (by key) → key / null.
+          final inCatalog = catalog?.any((q) => q.key == dim.key) ?? false;
+          final expectedLabel = hasStored
+              ? 'Stored question'
+              : inCatalog
+              ? 'Catalog question'
+              : 'productivity';
+          final expectedInputType = hasStored
+              ? 'boolean'
+              : inCatalog
+              ? 'segmented'
+              : null;
+
+          expect(resolveRatingLabel(dim, catalog), expectedLabel);
+          expect(resolveRatingInputType(dim, catalog), expectedInputType);
+        });
+      }
+    }
   });
 }

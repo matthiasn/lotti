@@ -49,8 +49,12 @@ void main() {
               child: Builder(
                 builder: (context) {
                   final modalType = ModalUtils.modalTypeBuilder(context);
-                  expect(modalType, isA<WoltModalType>());
-                  // WoltModalType doesn't expose its type directly, so we just verify it's created
+                  // WoltModalType doesn't expose an enum, but the concrete
+                  // runtimeType distinguishes bottom sheet from dialog.
+                  expect(
+                    modalType.runtimeType,
+                    WoltModalType.bottomSheet().runtimeType,
+                  );
                   return const SizedBox();
                 },
               ),
@@ -69,8 +73,12 @@ void main() {
               child: Builder(
                 builder: (context) {
                   final modalType = ModalUtils.modalTypeBuilder(context);
-                  expect(modalType, isA<WoltModalType>());
-                  // WoltModalType doesn't expose its type directly, so we just verify it's created
+                  // WoltModalType doesn't expose an enum, but the concrete
+                  // runtimeType distinguishes bottom sheet from dialog.
+                  expect(
+                    modalType.runtimeType,
+                    WoltModalType.dialog().runtimeType,
+                  );
                   return const SizedBox();
                 },
               ),
@@ -89,8 +97,12 @@ void main() {
               child: Builder(
                 builder: (context) {
                   final modalType = ModalUtils.modalTypeBuilder(context);
-                  expect(modalType, isA<WoltModalType>());
-                  // WoltModalType doesn't expose its type directly, so we just verify it's created
+                  // WoltModalType doesn't expose an enum, but the concrete
+                  // runtimeType distinguishes bottom sheet from dialog.
+                  expect(
+                    modalType.runtimeType,
+                    WoltModalType.bottomSheet().runtimeType,
+                  );
                   return const SizedBox();
                 },
               ),

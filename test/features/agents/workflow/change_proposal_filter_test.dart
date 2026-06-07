@@ -254,6 +254,54 @@ void main() {
         );
         expect(result, isNull);
       });
+
+      // Property: the estimate branch is exact int equality with two
+      // guards — non-int args and null snapshots never skip; matching
+      // ints always skip; differing ints never skip.
+      glados.Glados2(
+        glados.IntAnys(glados.any).intInRange(0, 1440),
+        glados.IntAnys(glados.any).intInRange(0, 6),
+        glados.ExploreConfig(numRuns: 80),
+      ).test(
+        'skips iff arg is an int equal to the non-null snapshot value',
+        (
+          minutes,
+          shapeSeed,
+        ) {
+          final (Object? arg, int? snapshotMinutes) = switch (shapeSeed) {
+            0 => (minutes, minutes), // exact match
+            1 => (minutes, minutes + 1), // differing value
+            2 => (minutes, null), // null snapshot
+            3 => ('$minutes', minutes), // string-typed arg
+            4 => (minutes.isEven, minutes), // bool-typed arg
+            _ => (null, minutes), // null arg
+          };
+          final snapshot = (
+            title: 'Test',
+            status: 'OPEN',
+            priority: 'P2',
+            estimateMinutes: snapshotMinutes,
+            dueDate: null as String?,
+            languageCode: null as String?,
+          );
+
+          final result = ChangeProposalFilter.checkTaskMetadataRedundancy(
+            'update_task_estimate',
+            {'minutes': arg},
+            snapshot,
+          );
+
+          final shouldSkip = arg is int && snapshotMinutes == arg;
+          expect(
+            result,
+            shouldSkip
+                ? 'Skipped: estimate is already $minutes minutes.'
+                : null,
+            reason: 'arg=$arg snapshot=$snapshotMinutes',
+          );
+        },
+        tags: 'glados',
+      );
     });
 
     group('update_task_priority', () {

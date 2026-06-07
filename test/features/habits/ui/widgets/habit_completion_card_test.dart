@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -326,7 +327,8 @@ void main() {
         expect(checkButton, findsOneWidget);
 
         await tester.tap(checkButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // The HabitDialog is shown in a bottom sheet.
         expect(find.byType(HabitDialog), findsOneWidget);
@@ -383,7 +385,8 @@ void main() {
         final cell = _dayCellTapFinder(pastDay);
         expect(cell, findsOneWidget);
         await tester.tap(cell);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final dialog = tester.widget<HabitDialog>(find.byType(HabitDialog));
         expect(
@@ -398,26 +401,30 @@ void main() {
     testWidgets(
       "tapping today's day cell opens HabitDialog with today as dateString",
       (tester) async {
-        // A result whose dayString equals the real DateTime.now().ymd exercises
-        // the `== res.dayString ? ... : DateTime.now().ymd` branch.
-        final todayYmd = DateTime.now().ymd;
-        await _pumpCard(
-          tester,
-          results: [
-            HabitResult(
-              dayString: todayYmd,
-              completionType: HabitCompletionType.open,
-            ),
-          ],
-          mockRepository: mockRepository,
-        );
+        // The card now reads clock.now(), so the "today" branch is pinned
+        // to a fixed date instead of depending on the real wall clock.
+        final fixedToday = DateTime(2024, 3, 15, 14, 30);
+        final todayYmd = fixedToday.ymd;
+        await withClock(Clock.fixed(fixedToday), () async {
+          await _pumpCard(
+            tester,
+            results: [
+              HabitResult(
+                dayString: todayYmd,
+                completionType: HabitCompletionType.open,
+              ),
+            ],
+            mockRepository: mockRepository,
+          );
 
-        // Scope to today's cell via its tooltip so the finder targets exactly
-        // one GestureDetector.
-        final cell = _dayCellTapFinder(todayYmd);
-        expect(cell, findsOneWidget);
-        await tester.tap(cell);
-        await tester.pumpAndSettle();
+          // Scope to today's cell via its tooltip so the finder targets
+          // exactly one GestureDetector.
+          final cell = _dayCellTapFinder(todayYmd);
+          expect(cell, findsOneWidget);
+          await tester.tap(cell);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+        });
 
         final dialog = tester.widget<HabitDialog>(find.byType(HabitDialog));
         expect(
@@ -460,7 +467,8 @@ void main() {
         );
 
         await tester.tap(find.byIcon(Icons.check_circle_outline));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
         expect(
@@ -483,7 +491,8 @@ void main() {
         );
 
         await tester.tap(find.byIcon(Icons.check_circle_outline));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
         expect(

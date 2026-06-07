@@ -877,6 +877,70 @@ void main() {
       // Should fall back to toolCallId when name not in mapping
       expect(funcResponse['name'], 'unknown-id');
     });
+
+    // ── Property: every assistant tool call surfaces as a functionCall part
+    // and every tool response resolves its name through the id mapping. ────
+    final toolCallCounts = [1, 2, 3, 5];
+    for (final count in toolCallCounts) {
+      test('all $count assistant tool calls produce functionCall parts', () {
+        final toolCalls = List.generate(
+          count,
+          (i) => ChatCompletionMessageToolCall(
+            id: 'call-$i',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'fn_$i',
+              arguments: '{"n": $i}',
+            ),
+          ),
+        );
+        final messages = <ChatCompletionMessage>[
+          const ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('go'),
+          ),
+          ChatCompletionMessage.assistant(toolCalls: toolCalls),
+          for (var i = 0; i < count; i++)
+            ChatCompletionMessage.tool(
+              toolCallId: 'call-$i',
+              content: 'result $i',
+            ),
+        ];
+
+        final body = GeminiUtils.buildMultiTurnRequestBody(
+          messages: messages,
+          temperature: 0.5,
+          thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),
+        );
+
+        final contents = (body['contents'] as List)
+            .cast<Map<String, dynamic>>();
+        final modelParts = contents
+            .where((c) => c['role'] == 'model')
+            .expand((c) => (c['parts'] as List).cast<Map<String, dynamic>>())
+            .where((part) => part.containsKey('functionCall'))
+            .map((part) => part['functionCall'] as Map<String, dynamic>)
+            .toList();
+        // Every tool call became a functionCall part with its name and args.
+        expect(modelParts, hasLength(count));
+        for (var i = 0; i < count; i++) {
+          expect(
+            modelParts.map((p) => p['name']),
+            contains('fn_$i'),
+          );
+        }
+
+        // Every tool response resolved its function name via the id mapping.
+        final responseParts = contents
+            .expand((c) => (c['parts'] as List).cast<Map<String, dynamic>>())
+            .where((part) => part.containsKey('functionResponse'))
+            .map((part) => part['functionResponse'] as Map<String, dynamic>)
+            .toList();
+        expect(responseParts, hasLength(count));
+        for (var i = 0; i < count; i++) {
+          expect(responseParts.map((p) => p['name']), contains('fn_$i'));
+        }
+      });
+    }
   });
 
   group('GeminiUtils.buildImageGenerationRequestBody', () {
@@ -1146,7 +1210,9 @@ void main() {
 
     glados.Glados(
       glados.any.geminiFramingScenario,
-      glados.ExploreConfig(numRuns: 180),
+      // 120 runs: GeminiStreamParser has a complementary property suite, so the
+      // upper-bound 180 here bought little extra coverage (review speed item).
+      glados.ExploreConfig(numRuns: 120),
     ).test('matches generated SSE and JSON array framing semantics', (
       scenario,
     ) {
@@ -1156,5 +1222,78 @@ void main() {
         reason: '$scenario',
       );
     }, tags: 'glados');
+  });
+
+  group('URI builder properties', () {
+    // Generated (scheme, port, model-shape) tuples assert the structural
+    // invariants of _buildGeminiUri: scheme/host/port preserved (with the
+    // https default), and the path always /v1beta/models/<model>:<endpoint>.
+    // Schemeless base URLs are outside the contract: Uri.parse treats
+    // 'example.com' as a path (empty host), so callers always pass a scheme;
+    // the https default only fires for protocol-relative '//host' inputs,
+    // covered by the explicit case below.
+    final schemes = ['http', 'https'];
+    final ports = [null, 8080];
+    final models = [
+      'gemini-pro',
+      'models/gemini-pro',
+      'gemini-pro/',
+      ' gemini-pro ',
+      'models/gemini-2.5-flash/',
+    ];
+    for (final scheme in schemes) {
+      for (final port in ports) {
+        for (final model in models) {
+          test(
+            'scheme="$scheme" port=$port model="$model" '
+            'yields canonical URI shape',
+            () {
+              final hostPart = port == null
+                  ? 'example.com'
+                  : 'example.com:$port';
+              final base = '$scheme://$hostPart';
+
+              final streamUri = GeminiUtils.buildStreamGenerateContentUri(
+                baseUrl: base,
+                model: model,
+                apiKey: 'k',
+              );
+              final plainUri = GeminiUtils.buildGenerateContentUri(
+                baseUrl: base,
+                model: model,
+                apiKey: 'k',
+              );
+
+              for (final (uri, endpoint) in [
+                (streamUri, 'streamGenerateContent'),
+                (plainUri, 'generateContent'),
+              ]) {
+                expect(uri.scheme, scheme);
+                expect(uri.host, 'example.com');
+                if (port != null) expect(uri.port, port);
+                expect(
+                  uri.path,
+                  matches(RegExp('^/v1beta/models/[^/]+:$endpoint\$')),
+                );
+                expect(uri.path, isNot(contains('models/models/')));
+                expect(uri.path, isNot(endsWith('/')));
+                expect(uri.queryParameters['key'], 'k');
+              }
+            },
+          );
+        }
+      }
+    }
+
+    test('protocol-relative base URL defaults to https', () {
+      final uri = GeminiUtils.buildGenerateContentUri(
+        baseUrl: '//example.com',
+        model: 'gemini-pro',
+        apiKey: 'k',
+      );
+      expect(uri.scheme, 'https');
+      expect(uri.host, 'example.com');
+      expect(uri.path, '/v1beta/models/gemini-pro:generateContent');
+    });
   });
 }

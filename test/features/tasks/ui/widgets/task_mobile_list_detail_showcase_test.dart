@@ -214,7 +214,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.byIcon(Icons.filter_list_rounded).first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(find.text('Tasks Filter'), findsOneWidget);
     });
@@ -239,7 +240,8 @@ void main() {
         final filterIcon = find.byIcon(Icons.filter_list_rounded).first;
         await tester.ensureVisible(filterIcon);
         await tester.tap(filterIcon);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
 
         expect(find.text('Tasks Filter'), findsOneWidget);
       },

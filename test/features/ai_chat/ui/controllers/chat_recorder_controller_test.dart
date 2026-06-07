@@ -154,6 +154,15 @@ extension _AnyChatRecorderState on glados.Any {
       );
 }
 
+/// Drains the event queue repeatedly so a zero-duration safety timer and
+/// the multi-await async chain behind it (stop → transcribe → state write)
+/// can settle deterministically — no wall-clock waiting involved.
+Future<void> drainAsyncChain() async {
+  for (var i = 0; i < 10; i++) {
+    await pumpEventQueue();
+  }
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -1759,9 +1768,7 @@ void main() {
 
       // Pump the event queue to let the zero-duration safety timer fire
       // and the subsequent stopAndTranscribe processing complete.
-      for (var i = 0; i < 10; i++) {
-        await pumpEventQueue();
-      }
+      await drainAsyncChain();
 
       final state = container.read(chatRecorderControllerProvider);
       expect(state.status, ChatRecorderStatus.idle);
@@ -1917,9 +1924,7 @@ void main() {
 
       // Pump the event queue to let the zero-duration safety timer fire
       // and the subsequent stopRealtime processing complete.
-      for (var i = 0; i < 10; i++) {
-        await pumpEventQueue();
-      }
+      await drainAsyncChain();
 
       final state = container.read(chatRecorderControllerProvider);
       expect(state.status, ChatRecorderStatus.idle);
@@ -1990,9 +1995,7 @@ void main() {
       binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
 
       // Allow async work to complete
-      for (var i = 0; i < 10; i++) {
-        await pumpEventQueue();
-      }
+      await drainAsyncChain();
 
       final state = container.read(chatRecorderControllerProvider);
       expect(state.status, ChatRecorderStatus.idle);

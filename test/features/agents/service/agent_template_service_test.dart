@@ -4450,6 +4450,25 @@ void main() {
       );
       expect(bundle.nextSessionNumber, 2);
     });
+
+    // Property: for any non-negative session-number multiset, the next
+    // number is max + 1 (or 1 for the empty list), order-independent.
+    glados.Glados(
+      glados.any.list(glados.IntAnys(glados.any).intInRange(0, 1000)),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('nextSessionNumber is fold-max plus one for any list', (numbers) {
+      final bundle = makeTestEvolutionDataBundle(
+        sessions: [
+          for (final (i, n) in numbers.indexed)
+            makeTestEvolutionSession(id: 's$i', sessionNumber: n),
+        ],
+      );
+
+      final expected = numbers.isEmpty
+          ? 1
+          : numbers.reduce((a, b) => a > b ? a : b) + 1;
+      expect(bundle.nextSessionNumber, expected, reason: '$numbers');
+    }, tags: 'glados');
   });
 
   group('TemplateInUseException', () {
@@ -4668,6 +4687,27 @@ void main() {
         () => mockRepo.getAllAgentIdentities(),
       ).thenAnswer((_) async => <AgentIdentityEntity>[]);
     }
+
+    test('propagates when a version-history fetch throws', () async {
+      // No catch envelope wraps the Future.wait fan-out — a repository
+      // failure must surface to the caller rather than degrade into a
+      // false-negative `false`.
+      when(
+        () => mockRepo.getAllTemplates(),
+      ).thenAnswer((_) async => [makeTestTemplate()]);
+      when(
+        () => mockRepo.getEntitiesByAgentId(
+          any(),
+          type: AgentEntityTypes.agentTemplateVersion,
+          limit: any(named: 'limit'),
+        ),
+      ).thenThrow(StateError('version history unavailable'));
+
+      await expectLater(
+        service.profileInUse(profileId),
+        throwsA(isA<StateError>()),
+      );
+    });
 
     glados.Glados(
       glados.any.profileInUseScenario,

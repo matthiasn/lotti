@@ -305,6 +305,59 @@ extension _AnyGeneratedPriorityScenario on glados.Any {
       );
 }
 
+/// Builds the OutboxService variant used by the sequence-log groups —
+/// standard collaborators + activity gate, with an optional sequence log.
+OutboxService buildSequenceLogService({
+  required MockSyncDatabase syncDatabase,
+  required MockDomainLogger loggingService,
+  required MockVectorClockService vectorClockService,
+  required MockJournalDb journalDb,
+  required Directory documentsDirectory,
+  required MockUserActivityService userActivityService,
+  required MockOutboxRepository repository,
+  required MockOutboxMessageSender messageSender,
+  required MockOutboxProcessor processor,
+  required UserActivityGate gate,
+  SyncSequenceLogService? sequenceLogService,
+}) {
+  return OutboxService(
+    syncDatabase: syncDatabase,
+    loggingService: loggingService,
+    vectorClockService: vectorClockService,
+    journalDb: journalDb,
+    documentsDirectory: documentsDirectory,
+    userActivityService: userActivityService,
+    repository: repository,
+    messageSender: messageSender,
+    processor: processor,
+    activityGate: gate,
+    sequenceLogService: sequenceLogService,
+  );
+}
+
+/// Builds a [MockMatrixService] with the standard client/login-state
+/// wiring every matrix-aware test repeats; [loginState] pins the cached
+/// login value (logged out by default).
+MockMatrixService stubMatrixService({
+  LoginState loginState = LoginState.loggedOut,
+  Stream<LoginState>? loginStream,
+}) {
+  final matrixService = MockMatrixService();
+  final client = MockMatrixClient();
+  final cached = MockCachedLoginController();
+  when(
+    () => cached.stream,
+  ).thenAnswer((_) => loginStream ?? const Stream<LoginState>.empty());
+  when(() => cached.value).thenReturn(loginState);
+  when(() => client.onLoginStateChanged).thenReturn(cached);
+  when(() => matrixService.client).thenReturn(client);
+  return matrixService;
+}
+
+/// Single source of truth for the watchdog cadence in elapse calls — if
+/// SyncTuning.outboxWatchdogInterval changes, only this line moves.
+const Duration watchdogInterval = SyncTuning.outboxWatchdogInterval;
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -2390,15 +2443,7 @@ void main() {
         () => processor.processQueue(),
       ).thenAnswer((_) async => OutboxProcessingResult.none);
 
-      final matrixService = MockMatrixService();
-      final client = MockMatrixClient();
-      final cached = MockCachedLoginController();
-      when(
-        () => cached.stream,
-      ).thenAnswer((_) => const Stream<LoginState>.empty());
-      when(() => cached.value).thenReturn(LoginState.loggedOut);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
-      when(() => matrixService.client).thenReturn(client);
+      final matrixService = stubMatrixService();
 
       final svc = OutboxService(
         syncDatabase: syncDatabase,
@@ -2577,15 +2622,7 @@ void main() {
   });
 
   test('constructs with matrixService fallback sender', () async {
-    final matrixService = MockMatrixService();
-    final client = MockMatrixClient();
-    when(() => matrixService.client).thenReturn(client);
-    final cached = MockCachedLoginController();
-    when(
-      () => cached.stream,
-    ).thenAnswer((_) => const Stream<LoginState>.empty());
-    when(() => cached.value).thenReturn(LoginState.loggedOut);
-    when(() => client.onLoginStateChanged).thenReturn(cached);
+    final matrixService = stubMatrixService();
 
     final serviceWithMatrix = OutboxService(
       syncDatabase: syncDatabase,
@@ -2626,15 +2663,7 @@ void main() {
 
       final gate = createGate();
 
-      final matrixService = MockMatrixService();
-      final client = MockMatrixClient();
-      when(() => matrixService.client).thenReturn(client);
-      final cached = MockCachedLoginController();
-      when(
-        () => cached.stream,
-      ).thenAnswer((_) => const Stream<LoginState>.empty());
-      when(() => cached.value).thenReturn(LoginState.loggedOut);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
+      final matrixService = stubMatrixService();
       when(matrixService.isLoggedIn).thenReturn(false);
 
       final svc = buildService(
@@ -2677,15 +2706,7 @@ void main() {
 
       final gate = createGate();
 
-      final matrixService = MockMatrixService();
-      final client = MockMatrixClient();
-      when(() => matrixService.client).thenReturn(client);
-      final cached = MockCachedLoginController();
-      when(
-        () => cached.stream,
-      ).thenAnswer((_) => const Stream<LoginState>.empty());
-      when(() => cached.value).thenReturn(LoginState.loggedOut);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
+      final matrixService = stubMatrixService();
       when(matrixService.isLoggedIn).thenReturn(true);
 
       final svc = OutboxService(
@@ -3106,6 +3127,70 @@ void main() {
     });
   });
 
+  group('computeEnqueueDelay / backoff gate', () {
+    test('negative delays clamp to zero when no backoff gate is set', () {
+      final svc = buildService();
+      addTearDown(svc.dispose);
+
+      expect(
+        svc.computeEnqueueDelay(const Duration(seconds: -5)),
+        Duration.zero,
+      );
+      expect(svc.computeEnqueueDelay(Duration.zero), Duration.zero);
+    });
+
+    test('a backoff gate in the past is ignored — the plain delay wins', () {
+      final svc = buildService();
+      addTearDown(svc.dispose);
+      svc.debugNextSendAllowedAt = DateTime.now().subtract(
+        const Duration(hours: 1),
+      );
+
+      expect(
+        svc.computeEnqueueDelay(const Duration(seconds: 5)),
+        const Duration(seconds: 5),
+      );
+    });
+
+    test('a backoff gate in the future dominates shorter delays', () {
+      final svc = buildService();
+      addTearDown(svc.dispose);
+      svc.debugNextSendAllowedAt = DateTime.now().add(
+        const Duration(hours: 1),
+      );
+
+      final adjusted = svc.computeEnqueueDelay(const Duration(seconds: 1));
+      expect(adjusted, greaterThan(const Duration(minutes: 59)));
+    });
+
+    test('recordBackoff short-circuits on zero/negative delays', () {
+      final svc = buildService();
+      addTearDown(svc.dispose);
+
+      svc
+        ..debugRecordBackoff(Duration.zero)
+        ..debugRecordBackoff(const Duration(seconds: -3));
+
+      // The gate was never set: enqueue delays pass through untouched.
+      expect(svc.debugNextSendAllowedAt, isNull);
+      expect(
+        svc.computeEnqueueDelay(const Duration(seconds: 2)),
+        const Duration(seconds: 2),
+      );
+    });
+
+    test('recordBackoff keeps the furthest gate (monotonic candidate)', () {
+      final svc = buildService();
+      addTearDown(svc.dispose);
+
+      svc.debugRecordBackoff(const Duration(minutes: 30));
+      final first = svc.debugNextSendAllowedAt!;
+      // A shorter follow-up backoff must not pull the gate closer.
+      svc.debugRecordBackoff(const Duration(minutes: 1));
+      expect(svc.debugNextSendAllowedAt, first);
+    });
+  });
+
   group('watchdog', () {
     test('enqueues when pending + logged in + idle queue', () async {
       when(
@@ -3319,7 +3404,7 @@ void main() {
           ownsActivityGate: false,
           matrixService: matrixService,
         );
-        async.elapse(const Duration(seconds: 10));
+        async.elapse(watchdogInterval);
         verifyNever(
           () => loggingService.log(
             LogDomain.sync,
@@ -3372,7 +3457,7 @@ void main() {
           ownsActivityGate: false,
           matrixService: matrixService,
         );
-        async.elapse(const Duration(seconds: 10));
+        async.elapse(watchdogInterval);
         verify(
           () => loggingService.error(
             LogDomain.sync,
@@ -3440,7 +3525,7 @@ void main() {
           ownsActivityGate: false,
           matrixService: matrixService,
         );
-        async.elapse(const Duration(seconds: 10));
+        async.elapse(watchdogInterval);
         unawaited(svc.dispose());
         // Further elapse should not trigger watchdog again
         async.elapse(const Duration(seconds: 20));
@@ -3752,15 +3837,9 @@ void main() {
         gate.waitUntilIdle,
       ).thenAnswer((_) => gateReleased.future);
 
-      final matrixService = MockMatrixService();
-      final client = MockMatrixClient();
-      when(() => matrixService.client).thenReturn(client);
-      final cached = MockCachedLoginController();
-      when(
-        () => cached.stream,
-      ).thenAnswer((_) => const Stream<LoginState>.empty());
-      when(() => cached.value).thenReturn(LoginState.loggedIn);
-      when(() => client.onLoginStateChanged).thenReturn(cached);
+      final matrixService = stubMatrixService(
+        loginState: LoginState.loggedIn,
+      );
       when(() => matrixService.isLoggedIn()).thenReturn(true);
 
       // Track db count stream
@@ -3800,7 +3879,7 @@ void main() {
           ..flushMicrotasks();
 
         // T=10s: Watchdog fires while runner is still blocked in waitUntilIdle
-        async.elapse(const Duration(seconds: 10));
+        async.elapse(watchdogInterval);
 
         // Let the runner finish and the second drain occur after settle
         gateReleased.complete();
@@ -3907,7 +3986,7 @@ void main() {
           async.flushMicrotasks();
 
           // T=10s: Watchdog fires while queue active → should not enqueue
-          async.elapse(const Duration(seconds: 10));
+          async.elapse(watchdogInterval);
 
           // Allow runner completion and second drains
           gateReleased.complete();
@@ -3964,15 +4043,9 @@ void main() {
         // Gate immediate
         final gate = createGate();
 
-        final matrixService = MockMatrixService();
-        final client = MockMatrixClient();
-        when(() => matrixService.client).thenReturn(client);
-        final cached = MockCachedLoginController();
-        when(
-          () => cached.stream,
-        ).thenAnswer((_) => const Stream<LoginState>.empty());
-        when(() => cached.value).thenReturn(LoginState.loggedIn);
-        when(() => client.onLoginStateChanged).thenReturn(cached);
+        final matrixService = stubMatrixService(
+          loginState: LoginState.loggedIn,
+        );
         when(() => matrixService.isLoggedIn()).thenReturn(true);
 
         // DB count stream for nudge
@@ -4000,7 +4073,7 @@ void main() {
           );
 
           // T=10s: Watchdog fires and begins slow fetchPending
-          async.elapse(const Duration(seconds: 10));
+          async.elapse(watchdogInterval);
           // T=10s+20ms: DB nudge enqueues while watchdog is in-flight
           async.elapse(const Duration(milliseconds: 20));
           countController.add(1);
@@ -4501,7 +4574,7 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        serviceWithSequenceLog = OutboxService(
+        serviceWithSequenceLog = buildSequenceLogService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -4511,7 +4584,7 @@ void main() {
           repository: repository,
           messageSender: messageSender,
           processor: processor,
-          activityGate: createGate(),
+          gate: createGate(),
           sequenceLogService: sequenceLogService,
         );
 
@@ -4539,7 +4612,7 @@ void main() {
         status: SyncEntryStatus.initial,
       );
 
-      serviceWithSequenceLog = OutboxService(
+      serviceWithSequenceLog = buildSequenceLogService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -4549,7 +4622,7 @@ void main() {
         repository: repository,
         messageSender: messageSender,
         processor: processor,
-        activityGate: createGate(),
+        gate: createGate(),
         sequenceLogService: sequenceLogService,
       );
 
@@ -4585,7 +4658,7 @@ void main() {
         ),
       ).thenThrow(Exception('sequence log error'));
 
-      serviceWithSequenceLog = OutboxService(
+      serviceWithSequenceLog = buildSequenceLogService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -4595,7 +4668,7 @@ void main() {
         repository: repository,
         messageSender: messageSender,
         processor: processor,
-        activityGate: createGate(),
+        gate: createGate(),
         sequenceLogService: sequenceLogService,
       );
 
@@ -4628,7 +4701,7 @@ void main() {
       );
 
       // Service without sequenceLogService
-      serviceWithSequenceLog = OutboxService(
+      serviceWithSequenceLog = buildSequenceLogService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -4638,7 +4711,7 @@ void main() {
         repository: repository,
         messageSender: messageSender,
         processor: processor,
-        activityGate: createGate(),
+        gate: createGate(),
         // No sequenceLogService
       );
 
@@ -4703,7 +4776,7 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        serviceWithSequenceLog = OutboxService(
+        serviceWithSequenceLog = buildSequenceLogService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -4713,7 +4786,7 @@ void main() {
           repository: repository,
           messageSender: messageSender,
           processor: processor,
-          activityGate: createGate(),
+          gate: createGate(),
           sequenceLogService: sequenceLogService,
         );
 
@@ -4755,7 +4828,7 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        serviceWithSequenceLog = OutboxService(
+        serviceWithSequenceLog = buildSequenceLogService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -4765,7 +4838,7 @@ void main() {
           repository: repository,
           messageSender: messageSender,
           processor: processor,
-          activityGate: createGate(),
+          gate: createGate(),
           sequenceLogService: sequenceLogService,
         );
 
@@ -4802,7 +4875,7 @@ void main() {
         status: SyncEntryStatus.update,
       );
 
-      serviceWithSequenceLog = OutboxService(
+      serviceWithSequenceLog = buildSequenceLogService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
         vectorClockService: vectorClockService,
@@ -4812,7 +4885,7 @@ void main() {
         repository: repository,
         messageSender: messageSender,
         processor: processor,
-        activityGate: createGate(),
+        gate: createGate(),
         sequenceLogService: sequenceLogService,
       );
 
@@ -4859,7 +4932,7 @@ void main() {
           ),
         ).thenThrow(Exception('sequence log error'));
 
-        serviceWithSequenceLog = OutboxService(
+        serviceWithSequenceLog = buildSequenceLogService(
           syncDatabase: syncDatabase,
           loggingService: loggingService,
           vectorClockService: vectorClockService,
@@ -4869,7 +4942,7 @@ void main() {
           repository: repository,
           messageSender: messageSender,
           processor: processor,
-          activityGate: createGate(),
+          gate: createGate(),
           sequenceLogService: sequenceLogService,
         );
 
@@ -6457,15 +6530,7 @@ void main() {
           () => repository.fetchPending(limit: any(named: 'limit')),
         ).thenAnswer((_) async => [pendingItem]);
 
-        final matrixService = MockMatrixService();
-        final client = MockMatrixClient();
-        final cached = MockCachedLoginController();
-        when(() => matrixService.client).thenReturn(client);
-        when(
-          () => cached.stream,
-        ).thenAnswer((_) => const Stream<LoginState>.empty());
-        when(() => cached.value).thenReturn(LoginState.loggedOut);
-        when(() => client.onLoginStateChanged).thenReturn(cached);
+        final matrixService = stubMatrixService();
         when(matrixService.isLoggedIn).thenReturn(false);
 
         final svc = OutboxService(
@@ -6518,15 +6583,7 @@ void main() {
           () => repository.fetchPending(limit: any(named: 'limit')),
         ).thenAnswer((_) async => [pendingItem]);
 
-        final matrixService = MockMatrixService();
-        final client = MockMatrixClient();
-        final cached = MockCachedLoginController();
-        when(() => matrixService.client).thenReturn(client);
-        when(
-          () => cached.stream,
-        ).thenAnswer((_) => const Stream<LoginState>.empty());
-        when(() => cached.value).thenReturn(LoginState.loggedOut);
-        when(() => client.onLoginStateChanged).thenReturn(cached);
+        final matrixService = stubMatrixService();
         when(matrixService.isLoggedIn).thenReturn(false);
 
         // Drive the grace window with a controllable clock: construct the

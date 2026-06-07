@@ -1079,34 +1079,25 @@ void main() {
         });
       });
 
-      test('returns failure for out-of-bounds item index', () async {
-        final changeSet = makeChangeSetWith();
+      for (final badIndex in [5, -1]) {
+        test('returns failure for invalid item index $badIndex', () async {
+          final changeSet = makeChangeSetWith();
 
-        await withClock(testClock, () async {
-          final result = await service.confirmItem(changeSet, 5);
+          await withClock(testClock, () async {
+            final result = await service.confirmItem(changeSet, badIndex);
 
-          expect(result.success, isFalse);
-          expect(result.output, 'Invalid change item index');
+            expect(result.success, isFalse);
+            expect(result.output, 'Invalid change item index');
 
-          verifyNever(
-            () => mockToolDispatcher.dispatch(any(), any(), any()),
-          );
-          verifyNever(
-            () => mockSyncService.upsertEntity(any()),
-          );
+            verifyNever(
+              () => mockToolDispatcher.dispatch(any(), any(), any()),
+            );
+            verifyNever(
+              () => mockSyncService.upsertEntity(any()),
+            );
+          });
         });
-      });
-
-      test('returns failure for negative item index', () async {
-        final changeSet = makeChangeSetWith();
-
-        await withClock(testClock, () async {
-          final result = await service.confirmItem(changeSet, -1);
-
-          expect(result.success, isFalse);
-          expect(result.output, 'Invalid change item index');
-        });
-      });
+      }
 
       test(
         'aborts dispatch when concurrent shape change removes confirmed item',
@@ -1262,6 +1253,351 @@ void main() {
           expect(resolvedSets.single.status, ChangeSetStatus.resolved);
         },
       );
+
+      group('edge cases', () {
+        test('returns false for out-of-bounds item index', () async {
+          final changeSet = makeChangeSetWith();
+
+          await withClock(testClock, () async {
+            final applied = await service.rejectItem(changeSet, 10);
+
+            expect(applied, isFalse);
+            verifyNever(
+              () => mockSyncService.upsertEntity(any()),
+            );
+          });
+        });
+
+        test('skips already-rejected item and returns false', () async {
+          final changeSet = makeTestChangeSet(
+            items: const [
+              ChangeItem(
+                toolName: 'update_task_estimate',
+                args: {'minutes': 120},
+                humanSummary: 'Already rejected',
+                status: ChangeItemStatus.rejected,
+              ),
+            ],
+          );
+
+          await withClock(testClock, () async {
+            final applied = await service.rejectItem(changeSet, 0);
+
+            expect(applied, isFalse);
+            verifyNever(
+              () => mockSyncService.upsertEntity(any()),
+            );
+          });
+        });
+
+        test(
+          'returns false when concurrent shape change removes rejected item',
+          () async {
+            final changeSet = makeChangeSetWith();
+            final changedSet = changeSet.copyWith(
+              items: [changeSet.items.first],
+            );
+            var reads = 0;
+
+            when(() => mockRepository.getEntity(changeSet.id)).thenAnswer((
+              _,
+            ) async {
+              reads += 1;
+              return reads == 1 ? changeSet : changedSet;
+            });
+
+            await withClock(testClock, () async {
+              final applied = await service.rejectItem(changeSet, 1);
+
+              expect(applied, isFalse);
+              final captured = verify(
+                () => mockSyncService.upsertEntity(captureAny()),
+              ).captured;
+              expect(captured.single, isA<ChangeDecisionEntity>());
+            });
+          },
+        );
+      });
+
+      group('label suppression', () {
+        test(
+          'rejecting an assign_task_label item suppresses the label',
+          () async {
+            final changeSet = makeTestChangeSet(
+              items: const [
+                ChangeItem(
+                  toolName: 'assign_task_label',
+                  args: {'id': 'label-bug', 'confidence': 'high'},
+                  humanSummary: 'Assign label: "Bug" (high)',
+                ),
+              ],
+            );
+
+            when(
+              () => mockLabelsRepository.suppressLabelOnTask(
+                taskId: any(named: 'taskId'),
+                labelId: any(named: 'labelId'),
+              ),
+            ).thenAnswer((_) async => true);
+
+            await withClock(testClock, () async {
+              final applied = await service.rejectItem(changeSet, 0);
+
+              expect(applied, isTrue);
+
+              // Verify suppress was called with the correct args.
+              verify(
+                () => mockLabelsRepository.suppressLabelOnTask(
+                  taskId: 'task-001',
+                  labelId: 'label-bug',
+                ),
+              ).called(1);
+            });
+          },
+        );
+
+        test(
+          'rejecting a non-label item does not call suppressLabelOnTask',
+          () async {
+            final changeSet = makeTestChangeSet(
+              items: const [
+                ChangeItem(
+                  toolName: 'update_task_estimate',
+                  args: {'minutes': 120},
+                  humanSummary: 'Set estimate to 2 hours',
+                ),
+              ],
+            );
+
+            await withClock(testClock, () async {
+              await service.rejectItem(changeSet, 0);
+
+              verifyNever(
+                () => mockLabelsRepository.suppressLabelOnTask(
+                  taskId: any(named: 'taskId'),
+                  labelId: any(named: 'labelId'),
+                ),
+              );
+            });
+          },
+        );
+      });
+
+      group('cascade rejection of migration items', () {
+        test(
+          'rejecting create_follow_up_task cascade-rejects sibling migrations',
+          () async {
+            const placeholderId = 'placeholder-cascade-001';
+            final changeSet = makeTestChangeSet(
+              items: const [
+                ChangeItem(
+                  toolName: 'create_follow_up_task',
+                  args: {
+                    'title': 'Split Task',
+                    '_placeholderTaskId': placeholderId,
+                  },
+                  humanSummary: 'Create follow-up task: "Split Task"',
+                ),
+                ChangeItem(
+                  toolName: 'migrate_checklist_item',
+                  args: {
+                    'id': 'item-1',
+                    'title': 'Buy milk',
+                    'targetTaskId': placeholderId,
+                  },
+                  humanSummary: 'Migrate to follow-up: "Buy milk"',
+                ),
+                ChangeItem(
+                  toolName: 'migrate_checklist_item',
+                  args: {
+                    'id': 'item-2',
+                    'title': 'Walk dog',
+                    'targetTaskId': placeholderId,
+                  },
+                  humanSummary: 'Migrate to follow-up: "Walk dog"',
+                ),
+              ],
+            );
+
+            // _freshChangeSet and _cascadeRejectMigrationItems both call
+            // getEntity — return the change set (then progressively updated
+            // versions as items are rejected).
+            when(
+              () => mockRepository.getEntity(changeSet.id),
+            ).thenAnswer((_) async => changeSet);
+
+            await withClock(testClock, () async {
+              final applied = await service.rejectItem(changeSet, 0);
+
+              expect(applied, isTrue);
+
+              // The create item + 2 migration siblings = 3 decisions + 3 status
+              // updates = 6 upserts total.
+              final captured = verify(
+                () => mockSyncService.upsertEntity(captureAny()),
+              ).captured;
+
+              // Count rejected decisions.
+              final decisions = captured.whereType<ChangeDecisionEntity>();
+              expect(
+                decisions.length,
+                3,
+                reason:
+                    'One decision per rejected item (create + 2 migrations)',
+              );
+              for (final d in decisions) {
+                expect(d.verdict, ChangeDecisionVerdict.rejected);
+              }
+            });
+          },
+        );
+
+        test(
+          'rejecting create_follow_up_task does not reject unrelated items',
+          () async {
+            const placeholderId = 'placeholder-cascade-002';
+            final changeSet = makeTestChangeSet(
+              items: const [
+                ChangeItem(
+                  toolName: 'create_follow_up_task',
+                  args: {
+                    'title': 'Split Task',
+                    '_placeholderTaskId': placeholderId,
+                  },
+                  humanSummary: 'Create follow-up task: "Split Task"',
+                ),
+                ChangeItem(
+                  toolName: 'migrate_checklist_item',
+                  args: {
+                    'id': 'item-1',
+                    'title': 'Buy milk',
+                    'targetTaskId': 'other-placeholder',
+                  },
+                  humanSummary: 'Migrate to different task',
+                ),
+                ChangeItem(
+                  toolName: 'update_task_estimate',
+                  args: {'minutes': 60},
+                  humanSummary: 'Set estimate',
+                ),
+              ],
+            );
+
+            when(
+              () => mockRepository.getEntity(changeSet.id),
+            ).thenAnswer((_) async => changeSet);
+
+            await withClock(testClock, () async {
+              await service.rejectItem(changeSet, 0);
+
+              final captured = verify(
+                () => mockSyncService.upsertEntity(captureAny()),
+              ).captured;
+
+              // Only 1 decision (the create item) — no cascade because
+              // the migration targets a different placeholder.
+              final decisions = captured.whereType<ChangeDecisionEntity>();
+              expect(decisions.length, 1);
+
+              // The change set update should only reject item 0.
+              final changeSets = captured.whereType<ChangeSetEntity>();
+              final lastCS = changeSets.last;
+              expect(lastCS.items[0].status, ChangeItemStatus.rejected);
+              expect(lastCS.items[1].status, ChangeItemStatus.pending);
+              expect(lastCS.items[2].status, ChangeItemStatus.pending);
+            });
+          },
+        );
+
+        glados.Glados(
+          glados.any.cascadeScenario,
+          glados.ExploreConfig(numRuns: 180),
+        ).test(
+          'matches generated cascade rejection semantics',
+          (scenario) async {
+            final localSyncService = MockAgentSyncService();
+            final localRepository = MockAgentRepository();
+            final localToolDispatcher = MockTaskToolDispatcher();
+            final localLabelsRepository = MockLabelsRepository();
+            final localService = ChangeSetConfirmationService(
+              syncService: localSyncService,
+              toolDispatcher: localToolDispatcher.dispatch,
+              labelsRepository: localLabelsRepository,
+            );
+            final upserts = <AgentDomainEntity>[];
+            var persisted = makeTestChangeSet(items: scenario.items);
+
+            when(() => localSyncService.repository).thenReturn(localRepository);
+            when(
+              () => localRepository.getEntity(persisted.id),
+            ).thenAnswer((_) async => persisted);
+            when(
+              () => localSyncService.upsertEntity(any()),
+            ).thenAnswer((invocation) async {
+              final entity =
+                  invocation.positionalArguments.first as AgentDomainEntity;
+              upserts.add(entity);
+              if (entity is ChangeSetEntity) {
+                persisted = entity;
+              }
+            });
+
+            await withClock(testClock, () async {
+              final applied = await localService.rejectItem(
+                persisted,
+                0,
+                reason: 'generated rejection',
+              );
+
+              expect(applied, scenario.shouldApply, reason: '$scenario');
+              expect(
+                persisted.items.map((item) => item.status),
+                scenario.expectedStatuses,
+                reason: '$scenario',
+              );
+
+              final decisions = upserts.whereType<ChangeDecisionEntity>();
+              expect(
+                decisions.length,
+                scenario.expectedDecisionCount,
+                reason: '$scenario',
+              );
+              for (final decision in decisions) {
+                expect(decision.verdict, ChangeDecisionVerdict.rejected);
+                expect(decision.rejectionReason, 'generated rejection');
+              }
+
+              if (scenario.shouldApply) {
+                expect(
+                  persisted.status,
+                  scenario.expectedSetStatus,
+                  reason: '$scenario',
+                );
+                expect(
+                  persisted.resolvedAt,
+                  scenario.expectedSetStatus == ChangeSetStatus.resolved
+                      ? testClock.now()
+                      : null,
+                  reason: '$scenario',
+                );
+              } else {
+                expect(upserts, isEmpty, reason: '$scenario');
+              }
+
+              verifyNever(
+                () => localToolDispatcher.dispatch(any(), any(), any()),
+              );
+              verifyNever(
+                () => localLabelsRepository.suppressLabelOnTask(
+                  taskId: any(named: 'taskId'),
+                  labelId: any(named: 'labelId'),
+                ),
+              );
+            });
+          },
+          tags: 'glados',
+        );
+      });
     });
 
     group('confirmAll', () {
@@ -1785,348 +2121,6 @@ void main() {
       );
     });
 
-    group('rejectItem - edge cases', () {
-      test('returns false for out-of-bounds item index', () async {
-        final changeSet = makeChangeSetWith();
-
-        await withClock(testClock, () async {
-          final applied = await service.rejectItem(changeSet, 10);
-
-          expect(applied, isFalse);
-          verifyNever(
-            () => mockSyncService.upsertEntity(any()),
-          );
-        });
-      });
-
-      test('skips already-rejected item and returns false', () async {
-        final changeSet = makeTestChangeSet(
-          items: const [
-            ChangeItem(
-              toolName: 'update_task_estimate',
-              args: {'minutes': 120},
-              humanSummary: 'Already rejected',
-              status: ChangeItemStatus.rejected,
-            ),
-          ],
-        );
-
-        await withClock(testClock, () async {
-          final applied = await service.rejectItem(changeSet, 0);
-
-          expect(applied, isFalse);
-          verifyNever(
-            () => mockSyncService.upsertEntity(any()),
-          );
-        });
-      });
-
-      test(
-        'returns false when concurrent shape change removes rejected item',
-        () async {
-          final changeSet = makeChangeSetWith();
-          final changedSet = changeSet.copyWith(items: [changeSet.items.first]);
-          var reads = 0;
-
-          when(() => mockRepository.getEntity(changeSet.id)).thenAnswer((
-            _,
-          ) async {
-            reads += 1;
-            return reads == 1 ? changeSet : changedSet;
-          });
-
-          await withClock(testClock, () async {
-            final applied = await service.rejectItem(changeSet, 1);
-
-            expect(applied, isFalse);
-            final captured = verify(
-              () => mockSyncService.upsertEntity(captureAny()),
-            ).captured;
-            expect(captured.single, isA<ChangeDecisionEntity>());
-          });
-        },
-      );
-    });
-
-    group('rejectItem - label suppression', () {
-      test(
-        'rejecting an assign_task_label item suppresses the label',
-        () async {
-          final changeSet = makeTestChangeSet(
-            items: const [
-              ChangeItem(
-                toolName: 'assign_task_label',
-                args: {'id': 'label-bug', 'confidence': 'high'},
-                humanSummary: 'Assign label: "Bug" (high)',
-              ),
-            ],
-          );
-
-          when(
-            () => mockLabelsRepository.suppressLabelOnTask(
-              taskId: any(named: 'taskId'),
-              labelId: any(named: 'labelId'),
-            ),
-          ).thenAnswer((_) async => true);
-
-          await withClock(testClock, () async {
-            final applied = await service.rejectItem(changeSet, 0);
-
-            expect(applied, isTrue);
-
-            // Verify suppress was called with the correct args.
-            verify(
-              () => mockLabelsRepository.suppressLabelOnTask(
-                taskId: 'task-001',
-                labelId: 'label-bug',
-              ),
-            ).called(1);
-          });
-        },
-      );
-
-      test(
-        'rejecting a non-label item does not call suppressLabelOnTask',
-        () async {
-          final changeSet = makeTestChangeSet(
-            items: const [
-              ChangeItem(
-                toolName: 'update_task_estimate',
-                args: {'minutes': 120},
-                humanSummary: 'Set estimate to 2 hours',
-              ),
-            ],
-          );
-
-          await withClock(testClock, () async {
-            await service.rejectItem(changeSet, 0);
-
-            verifyNever(
-              () => mockLabelsRepository.suppressLabelOnTask(
-                taskId: any(named: 'taskId'),
-                labelId: any(named: 'labelId'),
-              ),
-            );
-          });
-        },
-      );
-    });
-
-    group('rejectItem - cascade rejection of migration items', () {
-      test(
-        'rejecting create_follow_up_task cascade-rejects sibling migrations',
-        () async {
-          const placeholderId = 'placeholder-cascade-001';
-          final changeSet = makeTestChangeSet(
-            items: const [
-              ChangeItem(
-                toolName: 'create_follow_up_task',
-                args: {
-                  'title': 'Split Task',
-                  '_placeholderTaskId': placeholderId,
-                },
-                humanSummary: 'Create follow-up task: "Split Task"',
-              ),
-              ChangeItem(
-                toolName: 'migrate_checklist_item',
-                args: {
-                  'id': 'item-1',
-                  'title': 'Buy milk',
-                  'targetTaskId': placeholderId,
-                },
-                humanSummary: 'Migrate to follow-up: "Buy milk"',
-              ),
-              ChangeItem(
-                toolName: 'migrate_checklist_item',
-                args: {
-                  'id': 'item-2',
-                  'title': 'Walk dog',
-                  'targetTaskId': placeholderId,
-                },
-                humanSummary: 'Migrate to follow-up: "Walk dog"',
-              ),
-            ],
-          );
-
-          // _freshChangeSet and _cascadeRejectMigrationItems both call
-          // getEntity — return the change set (then progressively updated
-          // versions as items are rejected).
-          when(
-            () => mockRepository.getEntity(changeSet.id),
-          ).thenAnswer((_) async => changeSet);
-
-          await withClock(testClock, () async {
-            final applied = await service.rejectItem(changeSet, 0);
-
-            expect(applied, isTrue);
-
-            // The create item + 2 migration siblings = 3 decisions + 3 status
-            // updates = 6 upserts total.
-            final captured = verify(
-              () => mockSyncService.upsertEntity(captureAny()),
-            ).captured;
-
-            // Count rejected decisions.
-            final decisions = captured.whereType<ChangeDecisionEntity>();
-            expect(
-              decisions.length,
-              3,
-              reason: 'One decision per rejected item (create + 2 migrations)',
-            );
-            for (final d in decisions) {
-              expect(d.verdict, ChangeDecisionVerdict.rejected);
-            }
-          });
-        },
-      );
-
-      test(
-        'rejecting create_follow_up_task does not reject unrelated items',
-        () async {
-          const placeholderId = 'placeholder-cascade-002';
-          final changeSet = makeTestChangeSet(
-            items: const [
-              ChangeItem(
-                toolName: 'create_follow_up_task',
-                args: {
-                  'title': 'Split Task',
-                  '_placeholderTaskId': placeholderId,
-                },
-                humanSummary: 'Create follow-up task: "Split Task"',
-              ),
-              ChangeItem(
-                toolName: 'migrate_checklist_item',
-                args: {
-                  'id': 'item-1',
-                  'title': 'Buy milk',
-                  'targetTaskId': 'other-placeholder',
-                },
-                humanSummary: 'Migrate to different task',
-              ),
-              ChangeItem(
-                toolName: 'update_task_estimate',
-                args: {'minutes': 60},
-                humanSummary: 'Set estimate',
-              ),
-            ],
-          );
-
-          when(
-            () => mockRepository.getEntity(changeSet.id),
-          ).thenAnswer((_) async => changeSet);
-
-          await withClock(testClock, () async {
-            await service.rejectItem(changeSet, 0);
-
-            final captured = verify(
-              () => mockSyncService.upsertEntity(captureAny()),
-            ).captured;
-
-            // Only 1 decision (the create item) — no cascade because
-            // the migration targets a different placeholder.
-            final decisions = captured.whereType<ChangeDecisionEntity>();
-            expect(decisions.length, 1);
-
-            // The change set update should only reject item 0.
-            final changeSets = captured.whereType<ChangeSetEntity>();
-            final lastCS = changeSets.last;
-            expect(lastCS.items[0].status, ChangeItemStatus.rejected);
-            expect(lastCS.items[1].status, ChangeItemStatus.pending);
-            expect(lastCS.items[2].status, ChangeItemStatus.pending);
-          });
-        },
-      );
-
-      glados.Glados(
-        glados.any.cascadeScenario,
-        glados.ExploreConfig(numRuns: 180),
-      ).test(
-        'matches generated cascade rejection semantics',
-        (scenario) async {
-          final localSyncService = MockAgentSyncService();
-          final localRepository = MockAgentRepository();
-          final localToolDispatcher = MockTaskToolDispatcher();
-          final localLabelsRepository = MockLabelsRepository();
-          final localService = ChangeSetConfirmationService(
-            syncService: localSyncService,
-            toolDispatcher: localToolDispatcher.dispatch,
-            labelsRepository: localLabelsRepository,
-          );
-          final upserts = <AgentDomainEntity>[];
-          var persisted = makeTestChangeSet(items: scenario.items);
-
-          when(() => localSyncService.repository).thenReturn(localRepository);
-          when(
-            () => localRepository.getEntity(persisted.id),
-          ).thenAnswer((_) async => persisted);
-          when(
-            () => localSyncService.upsertEntity(any()),
-          ).thenAnswer((invocation) async {
-            final entity =
-                invocation.positionalArguments.first as AgentDomainEntity;
-            upserts.add(entity);
-            if (entity is ChangeSetEntity) {
-              persisted = entity;
-            }
-          });
-
-          await withClock(testClock, () async {
-            final applied = await localService.rejectItem(
-              persisted,
-              0,
-              reason: 'generated rejection',
-            );
-
-            expect(applied, scenario.shouldApply, reason: '$scenario');
-            expect(
-              persisted.items.map((item) => item.status),
-              scenario.expectedStatuses,
-              reason: '$scenario',
-            );
-
-            final decisions = upserts.whereType<ChangeDecisionEntity>();
-            expect(
-              decisions.length,
-              scenario.expectedDecisionCount,
-              reason: '$scenario',
-            );
-            for (final decision in decisions) {
-              expect(decision.verdict, ChangeDecisionVerdict.rejected);
-              expect(decision.rejectionReason, 'generated rejection');
-            }
-
-            if (scenario.shouldApply) {
-              expect(
-                persisted.status,
-                scenario.expectedSetStatus,
-                reason: '$scenario',
-              );
-              expect(
-                persisted.resolvedAt,
-                scenario.expectedSetStatus == ChangeSetStatus.resolved
-                    ? testClock.now()
-                    : null,
-                reason: '$scenario',
-              );
-            } else {
-              expect(upserts, isEmpty, reason: '$scenario');
-            }
-
-            verifyNever(
-              () => localToolDispatcher.dispatch(any(), any(), any()),
-            );
-            verifyNever(
-              () => localLabelsRepository.suppressLabelOnTask(
-                taskId: any(named: 'taskId'),
-                labelId: any(named: 'labelId'),
-              ),
-            );
-          });
-        },
-        tags: 'glados',
-      );
-    });
-
     group('domain logging', () {
       test('logs skip message for already-confirmed item', () async {
         final changeSet = makeTestChangeSet(
@@ -2443,5 +2437,45 @@ void main() {
         },
       );
     });
+  });
+  // ---------------------------------------------------------------------------
+  // Glados property for the PII-safe arg formatter (via debug seam).
+  // ---------------------------------------------------------------------------
+  group('debugDescribeArgsForLog — properties', () {
+    const safeNames = ['id', 'items', 'labels', 'minutes', 'priority'];
+
+    glados.Glados(
+      glados.any.list(glados.IntAnys(glados.any).intInRange(0, 1 << 10)),
+      // ignore: avoid_redundant_argument_values
+      glados.ExploreConfig(numRuns: 100),
+    ).test('counts reconcile and unknown keys never leak', (seeds) {
+      final args = <String, dynamic>{};
+      final expectedKnown = <String>{};
+      for (final (i, seed) in seeds.indexed) {
+        if (seed.isEven) {
+          final name = safeNames[seed % safeNames.length];
+          args[name] = 'value-$seed';
+          expectedKnown.add(name);
+        } else {
+          // Unknown keys carry potentially private content.
+          args['secret-note-$i'] = 'user authored text $seed';
+        }
+      }
+
+      final described = ChangeSetConfirmationService.debugDescribeArgsForLog(
+        args,
+      );
+
+      expect(described, contains('argCount=${args.length}'));
+      final sortedKnown = expectedKnown.toList()..sort();
+      expect(described, contains('knownArgs=[${sortedKnown.join(',')}]'));
+      expect(
+        described,
+        contains('unknownArgCount=${args.length - sortedKnown.length}'),
+      );
+      // PII guard: no unknown key (or its value) ever appears.
+      expect(described, isNot(contains('secret-note')));
+      expect(described, isNot(contains('user authored text')));
+    }, tags: 'glados');
   });
 }

@@ -325,6 +325,40 @@ void main() {
     });
 
     group('user message — imagePromptGeneration', () {
+      test(
+        'fullTask policy injects full task JSON + linked tasks (the '
+        '"other skills" branch of _appendTaskContext)',
+        () {
+          final skill = makeSkill(
+            skillType: SkillType.imagePromptGeneration,
+            contextPolicy: ContextPolicy.fullTask,
+          );
+          final result = builder.build(
+            skill: skill,
+            taskContext: '{"id": "task-1", "title": "Fix bug"}',
+            linkedTasks: '{"linked_from": ["task-2"]}',
+            currentTaskSummary: 'Should not appear as a summary block',
+            entryContent: 'Sketch of the fix',
+          );
+
+          // imagePromptGeneration is neither transcription nor
+          // taskSummary-policy, so it takes the full-JSON branch.
+          expect(result.userMessage, contains('**Task Context:**'));
+          expect(
+            result.userMessage,
+            contains('{"id": "task-1", "title": "Fix bug"}'),
+          );
+          expect(result.userMessage, contains('**Related Tasks:**'));
+          expect(
+            result.userMessage,
+            contains('{"linked_from": ["task-2"]}'),
+          );
+          expect(result.userMessage, isNot(contains('**Task Summary:**')));
+          // Entry content still rides along for this skill type.
+          expect(result.userMessage, contains('Sketch of the fix'));
+        },
+      );
+
       test('includes audio transcript', () {
         final skill = makeSkill(
           skillType: SkillType.imagePromptGeneration,

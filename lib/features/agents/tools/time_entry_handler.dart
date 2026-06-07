@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
+import 'package:meta/meta.dart';
 
 /// Creates a time tracking journal entry linked to the source task.
 ///
@@ -237,4 +238,8 @@ class TimeEntryHandler {
   static bool _isSameDay(DateTime a, DateTime b) {
     return a.year == b.year && a.month == b.month && a.day == b.day;
   }
+
+  /// Test seam for the same-day predicate — pure date math.
+  @visibleForTesting
+  static bool debugIsSameDay(DateTime a, DateTime b) => _isSameDay(a, b);
 }

@@ -153,6 +153,11 @@ void main() {
       expect(ctx.systemPrompt, contains('BinaryChoicePrompt'));
       // Should NOT contain the standard evolution agent prompt.
       expect(ctx.systemPrompt, isNot(contains('evolution agent')));
+      // The high-priority feedback protocol is appended verbatim.
+      expect(
+        ctx.systemPrompt,
+        contains(RitualContextBuilder.highPriorityProtocol),
+      );
     });
 
     test('includes classified feedback summary in user message', () {
@@ -425,6 +430,12 @@ void main() {
       expect(ctx.systemPrompt, contains('Directive churn stability'));
       expect(ctx.systemPrompt, contains('Acceptance rates'));
       expect(ctx.systemPrompt, contains('Lead with the main process problem'));
+      // The high-priority feedback protocol is appended to the meta prompt
+      // as well.
+      expect(
+        ctx.systemPrompt,
+        contains(RitualContextBuilder.highPriorityProtocol),
+      );
       expect(
         ctx.systemPrompt,
         contains('Start with a short recap since the last ritual'),

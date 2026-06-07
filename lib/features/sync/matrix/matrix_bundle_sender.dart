@@ -213,6 +213,11 @@ extension MatrixBundleSender on MatrixMessageSender {
   /// `/outbox_bundles/<id>.json` path with no traversal segments. Used by
   /// [_sendOutboxBundlePayload] to gate which inbound `jsonPath` values are
   /// honoured for a freshly built bundle's metadata.
+  /// Test seam for the path-safety predicate guarding bundle child reads.
+  @visibleForTesting
+  static bool debugIsSafeOutboxBundlePath(String relativePath) =>
+      _isSafeOutboxBundlePath(relativePath);
+
   static bool _isSafeOutboxBundlePath(String relativePath) {
     if (!relativePath.startsWith(outboxBundlesSegment)) return false;
     final segments = p.split(relativePath).where((s) => s.isNotEmpty).toList();

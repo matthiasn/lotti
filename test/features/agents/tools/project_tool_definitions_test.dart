@@ -297,4 +297,14 @@ void main() {
       );
     });
   });
+
+  group('projectDeferredTools', () {
+    test('contains exactly the user-review tools', () {
+      expect(projectDeferredTools, {
+        ProjectAgentToolNames.recommendNextSteps,
+        ProjectAgentToolNames.updateProjectStatus,
+        ProjectAgentToolNames.createTask,
+      });
+    });
+  });
 }

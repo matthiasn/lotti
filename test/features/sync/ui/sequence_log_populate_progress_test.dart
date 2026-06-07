@@ -32,7 +32,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
       expect(find.text('Test error message'), findsOneWidget);
@@ -52,7 +53,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
       // Should show total (100 + 50 + 30 + 20 = 200)
@@ -69,7 +71,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(find.text('50%'), findsOneWidget);
@@ -86,7 +89,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(find.text('38%'), findsOneWidget);
@@ -103,7 +107,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(find.text('63%'), findsOneWidget);
@@ -120,7 +125,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(find.text('88%'), findsOneWidget);
@@ -135,7 +141,8 @@ void main() {
           const SequenceLogPopulateState(),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(find.text('0%'), findsOneWidget);
@@ -157,7 +164,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show progress UI, not completed
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
@@ -174,7 +182,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Error should be shown, not completion
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
@@ -190,7 +199,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
       // Total should be 0 when all counts are null
@@ -207,7 +217,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.check_circle_outline), findsOneWidget);
       // Total should be 75 + 25 = 100
@@ -224,7 +235,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('33%'), findsOneWidget);
     });
@@ -237,7 +249,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.error_outline));
       expect(icon.size, 48);
@@ -251,7 +264,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final icon = tester.widget<Icon>(find.byIcon(Icons.check_circle_outline));
       expect(icon.size, 48);

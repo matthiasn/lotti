@@ -62,6 +62,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
+import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:lotti/features/ai/repository/task_summary_resolver.dart';
@@ -96,6 +97,7 @@ import 'package:lotti/features/notifications/scheduler/notification_scheduler.da
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
@@ -116,6 +118,7 @@ import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
@@ -157,6 +160,7 @@ import 'package:matrix/matrix.dart';
 import 'package:matrix/src/utils/cached_stream_controller.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:openai_dart/openai_dart.dart';
 import 'package:path_provider_platform_interface/path_provider_platform_interface.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:record/record.dart' as record;
@@ -297,6 +301,18 @@ class MockCachedLoginController extends Mock
 class MockMatrixDatabase extends Mock implements DatabaseApi {}
 
 class MockDeviceKeys extends Mock implements DeviceKeys {}
+
+/// Identical fake used by both verification-modal test files: a fixed
+/// (emoji, name) pair for the SAS comparison row.
+class FakeKeyVerificationEmoji extends Fake implements KeyVerificationEmoji {
+  FakeKeyVerificationEmoji(this.emoji, this.name);
+
+  @override
+  final String emoji;
+
+  @override
+  final String name;
+}
 
 class MockDeviceKeysList extends Mock implements DeviceKeysList {}
 
@@ -603,6 +619,8 @@ class MockSyncNodeProfileRepository extends Mock
     implements SyncNodeProfileRepository {}
 
 class MockAudioPlayerController extends Mock implements AudioPlayerController {}
+
+class MockAudioWaveformService extends Mock implements AudioWaveformService {}
 
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}
@@ -953,6 +971,16 @@ class MockSyncSequenceLogService extends Mock
 
 class MockInboundQueue extends Mock implements InboundQueue {}
 
+class MockBridgeCoordinator extends Mock implements BridgeCoordinator {}
+
+class MockPreparedSyncEvent extends Mock implements PreparedSyncEvent {}
+
+/// Unlike [MockSyncEventProcessor] — whose `prepare`/`apply` are concrete
+/// no-op overrides and therefore NOT interceptable by `when(...)` — this is a
+/// plain mock for tests that need to stub the prepare/apply split.
+class MockStubbableSyncEventProcessor extends Mock
+    implements SyncEventProcessor {}
+
 class MockQueuePipelineCoordinator extends Mock
     implements QueuePipelineCoordinator {}
 
@@ -968,6 +996,11 @@ class MockConversationStrategy extends Mock implements ConversationStrategy {}
 
 class MockOllamaInferenceRepository extends Mock
     implements OllamaInferenceRepository {}
+
+class MockOpenAIClient extends Mock implements OpenAIClient {}
+
+class MockGeminiInferenceRepository extends Mock
+    implements GeminiInferenceRepository {}
 
 class MockAgentToolExecutor extends Mock implements AgentToolExecutor {}
 

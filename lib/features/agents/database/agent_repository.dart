@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:meta/meta.dart';
 import 'package:sqlite3/sqlite3.dart' show SqliteException;
 
 part 'agent_attention_projection.dart';
@@ -1470,6 +1471,14 @@ class AgentRepository {
 
   /// Update the [status], and optionally [startedAt], [completedAt] and
   /// [errorMessage], for the wake run identified by [runKey].
+  ///
+  /// Fire-and-forget on a missing [runKey]: the update silently writes zero
+  /// rows. This is deliberate — status transitions are emitted from runtime
+  /// paths (timeouts, error handlers, shutdown hooks) that may race run-log
+  /// cleanup, and a late transition for a vanished run must not crash the
+  /// caller. Contrast with [updateWakeRunTemplate], which throws
+  /// [StateError] because template resolution happens once, early, where a
+  /// missing row indicates a real bug.
   Future<void> updateWakeRunStatus(
     String runKey,
     String status, {

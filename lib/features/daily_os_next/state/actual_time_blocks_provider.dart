@@ -120,6 +120,28 @@ List<TimeBlock> actualTimeBlocksForEntries({
   return out;
 }
 
+/// Test-only seam for [_resolveLinkedFrom] — the pure linked-from picker.
+@visibleForTesting
+JournalEntity? debugResolveLinkedFrom({
+  required Set<String>? linkedFromIds,
+  required Map<String, JournalEntity> linkedFromById,
+}) => _resolveLinkedFrom(
+  linkedFromIds: linkedFromIds,
+  linkedFromById: linkedFromById,
+);
+
+/// Test-only seam for [_projectCategory] — the pure category/color
+/// normalizer.
+@visibleForTesting
+DayAgentCategory debugProjectCategory(
+  String? categoryId,
+  CategoryDefinition? Function(String id) categoryById,
+) => _projectCategory(categoryId, categoryById);
+
+/// The fallback category used when no category is resolvable.
+@visibleForTesting
+DayAgentCategory get debugFallbackActualCategory => _fallbackActualCategory;
+
 JournalEntity? _resolveLinkedFrom({
   required Set<String>? linkedFromIds,
   required Map<String, JournalEntity> linkedFromById,

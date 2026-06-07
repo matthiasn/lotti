@@ -69,7 +69,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(DashboardCard), findsNWidgets(2));
       expect(find.text('Health'), findsOneWidget);
@@ -90,7 +90,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(DashboardCard), findsNothing);
     });
@@ -117,7 +117,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Each DashboardCard renders a DesignSystemListItem
       expect(find.byType(DesignSystemListItem), findsNWidgets(3));
@@ -147,7 +147,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Body'), findsOneWidget);
       expect(find.text('Body measurements'), findsOneWidget);
@@ -175,7 +175,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // The DashboardsList wraps cards in a DecoratedBox whose BoxDecoration
       // uses the design-token background color. Find the specific DecoratedBox
@@ -215,7 +215,7 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(
         find.byIcon(Icons.chevron_right_rounded),

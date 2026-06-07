@@ -43,7 +43,8 @@
 
 - [x] **[HIGH]** `test/features/categories/state/category_details_controller_test.dart` is **1350 lines**. Each of the 20 tests repeats a 30-line setup pattern: create a `ProviderContainer`, `.listen` to fire a `Completer`, await `completer.future.timeout(100ms)`, read state. This should use a `_TestBench` class or a shared `_loadCategory(container, id)` async helper. **RESOLVED:** `makeContainer()` (22 sites) and `loadCategory(container)` (18 sites — instantiates the controller, waits for the loaded state via listener+Completer, returns the notifier) now replace the repeated 30-line setup. The three remaining inline listeners differ legitimately (error-message predicate; a custom per-test category id).
 
-- [ ] **[MED]** `lib/features/categories/ui/pages/category_details_page.dart` is 753 lines. The AI/inference sections (`CategoryProjectsSection`, `InferenceProfileSection`, agent-template wiring) could be extracted into sub-widgets or a separate file without splitting the route.
+- [x] **[MED]** `lib/features/categories/ui/pages/category_details_page.dart` is 753 lines. The AI/inference sections (`CategoryProjectsSection`, `InferenceProfileSection`, agent-template wiring) could be extracted into sub-widgets or a separate file without splitting the route.
+  **RESOLVED (adapted):** the setState-free form-section builders (name field, switch tiles, language dropdown + selector modal, AI default profile/template pickers, speech dictionary, correction examples) moved to a `_CategoryDetailsFormSections` extension in the part file `category_details_form_sections.dart` (155 ln); the page is down to 607 lines. `CategoryProjectsSection` was already an external widget. setState-writing builders (color/icon pickers) cannot leave the State class per the extension-split rule.
 
 ---
 
@@ -55,11 +56,13 @@
 
 - [x] **[HIGH]** `test/features/categories/ui/pages/category_details_page_test.dart:633-689` — two tests (`controller state updates trigger UI rebuilds` and `dispose does not throw errors`) are near-smoke tests. The first asserts only `verify(() => mockRepository.watchCategory(...)).called(1)` — a behavior that is trivially satisfied by the widget being pumped at all. The second asserts only `find.text('Different Page')` after replacing the widget tree. Neither meaningfully tests the page. Both should be deleted or replaced with behavior assertions (e.g., verify that the initial category name is rendered after the stream emits; verify no `ErrorStateWidget` appears after disposal).
 
-- [ ] **[MED]** `test/features/categories/repository/categories_repository_test.dart` — the `setUp`/`tearDown` blocks at lines 44–79 contain 12 lines of inline `getIt.isRegistered` / `getIt.unregister` / `getIt.registerSingleton` boilerplate — exactly the pattern `setUpTestGetIt()` / `tearDownTestGetIt()` is designed to replace. Replace with those helpers from `test/widget_test_utils.dart`.
+- [x] **[MED]** `test/features/categories/repository/categories_repository_test.dart` — the `setUp`/`tearDown` blocks at lines 44–79 contain 12 lines of inline `getIt.isRegistered` / `getIt.unregister` / `getIt.registerSingleton` boilerplate — exactly the pattern `setUpTestGetIt()` / `tearDownTestGetIt()` is designed to replace. Replace with those helpers from `test/widget_test_utils.dart`.
+  **RESOLVED:** setUp/tearDown now use `setUpTestGetIt(additionalSetup: ...)` / `tearDownTestGetIt()`; this test's JournalDb/UpdateNotifications instances replace the helper's stock mocks where the provider-wiring test needs them.
 
-- [ ] **[MED]** `test/features/categories/state/category_task_count_provider_test.dart:117-172` — six `await Future<void>.delayed(Duration.zero)` calls (2 per test, in 3 tests). Per `test/README.md` these are forbidden. The tests are running against a `ProviderContainer` (not a widget test), so the correct replacement is `await container.pump()` or restructuring to use `fakeAsync` and `async.flushMicrotasks()` after firing the notification stream.
+- [x] **[MED]** `test/features/categories/state/category_task_count_provider_test.dart:117-172` — six `await Future<void>.delayed(Duration.zero)` calls (2 per test, in 3 tests). Per `test/README.md` these are forbidden. The tests are running against a `ProviderContainer` (not a widget test), so the correct replacement is `await container.pump()` or restructuring to use `fakeAsync` and `async.flushMicrotasks()` after firing the notification stream.
+  **RESOLVED:** each double micro-delay replaced with a single `await pumpEventQueue()`; all 6 tests green.
 
-- [ ] **[MED]** `test/features/categories/ui/pages/category_details_page_test.dart` — 48 instances of `RiverpodWidgetTestBench(overrides: [categoryRepositoryProvider.overrideWithValue(mockRepository)], child: CategoryDetailsPage(categoryId: testCategoryId))` are copy-pasted. Extract a file-level helper:
+- [x] **[MED]** `test/features/categories/ui/pages/category_details_page_test.dart` — 48 instances of `RiverpodWidgetTestBench(overrides: [categoryRepositoryProvider.overrideWithValue(mockRepository)], child: CategoryDetailsPage(categoryId: testCategoryId))` are copy-pasted. Extract a file-level helper:
   ```dart
   Future<void> _pumpPage(WidgetTester tester, {String? categoryId}) async {
     await tester.pumpWidget(RiverpodWidgetTestBench(
@@ -69,8 +72,10 @@
   }
   ```
   The `mockRepository` is already in `setUp`; this eliminates ~300 lines of duplication.
+  **RESOLVED (partially stale):** a `pumpCategoryDetailsPage` helper already existed and covered most sites; it now also takes `createMode` and `settle` parameters, folding the remaining 12 inline benches (create-mode pumps + flag/profile override sites). Only the helper itself and one legitimately different pump ('Different Page' disposal probe) still construct the bench inline.
 
-- [ ] **[MED]** `test/features/categories/ui/pages/category_details_page_test.dart:152-174` — two tests (`handles stream errors gracefully`, `handles null category state correctly`) use `pumpAndSettle()` after a `Stream.error(...)` / `streamController.add(null)`. The first test asserts only `findsOneWidget` on `CategoryDetailsPage` — a trivial assertion that confirms no crash, not behavior. Add a meaningful assertion (e.g., error message text is shown, or `CircularProgressIndicator` is absent).
+- [x] **[MED]** `test/features/categories/ui/pages/category_details_page_test.dart:152-174` — two tests (`handles stream errors gracefully`, `handles null category state correctly`) use `pumpAndSettle()` after a `Stream.error(...)` / `streamController.add(null)`. The first test asserts only `findsOneWidget` on `CategoryDetailsPage` — a trivial assertion that confirms no crash, not behavior. Add a meaningful assertion (e.g., error message text is shown, or `CircularProgressIndicator` is absent).
+  **RESOLVED:** the stream-error test now asserts the real behavior — the controller's onError clears `isLoading` with a null category, so the page lands on the not-found scaffold (text asserted) and no `CircularProgressIndicator` remains. The null-category test already asserted the not-found message (stale half).
 
 - [ ] **[LOW]** `test/features/categories/domain/category_icon_test.dart:506-527` — the `CategoryIconConstants` group asserts only `greaterThan(0)` / `lessThan(1)` on constant values. These are effectively smoke tests on data. Given the values are `const`, there is no behavior to regress here. The section adds noise without coverage value; consider removing or merging into a single structural invariant test.
 
@@ -82,7 +87,8 @@
 
 - [x] **[HIGH]** `CategoryIconExtension.suggestFromName` — `category_icon.dart:693-922`. This function contains a 3-stage matching algorithm (exact enum name, exact display name, word-boundary prefix, keyword map with regex). The current tests cover ~25 hand-picked inputs but miss: (a) multi-word category names where multiple stages could match differently; (b) the 60% prefix length threshold boundary (names of length 3 vs. 4 at the `nameWord.length >= 4` guard); (c) strings that appear as substrings in multiple keyword entries; (d) inputs with embedded unicode/special chars. A Glados test can generate `String?` inputs and assert structural invariants (non-null result only when at least one matching rule fires, null result for empty/whitespace, result is always a valid `CategoryIcon`). Add a custom `_AnyIconName on Any` generator that mixes enum names, display name words, keyword map keys, and random tokens.
 
-- [ ] **[MED]** `CategoryIconExtension._byName` static map — `category_icon.dart:274-277`. The map is initialized once from `CategoryIcon.values`. A Glados property can assert `_byName.length == CategoryIcon.values.length` (no duplicates in enum names) and that every value's `name` round-trips through the map. Although these are structural invariants that cannot regress without a compile error, they document the invariant explicitly.
+- [x] **[MED]** `CategoryIconExtension._byName` static map — `category_icon.dart:274-277`. The map is initialized once from `CategoryIcon.values`. A Glados property can assert `_byName.length == CategoryIcon.values.length` (no duplicates in enum names) and that every value's `name` round-trips through the map. Although these are structural invariants that cannot regress without a compile error, they document the invariant explicitly.
+  **RESOLVED (adapted):** added an exhaustive test (better than Glados for a finite enum): enum names are collision-free (`toSet` length equals values length) and every value round-trips through the map-backed `fromJson`. The Glados fromJson/toJson round-trip group already existed.
 
 ---
 
@@ -94,11 +100,14 @@
 
 - [x] **[HIGH]** `lib/features/categories/ui/widgets/category_icon_compact.dart` (153 lines) — no test file exists. This widget is used in several places (task items, journal entries). Missing coverage of: rendering with icon set, rendering without icon (fallback character), different size variants, color application.
 
-- [ ] **[MED]** `lib/features/categories/ui/widgets/category_type_card.dart` (63 lines) — no test file exists. A small widget but used as the selection tile in the category picker; behaviors (selection state, tap callback) are untested.
+- [x] **[MED]** `lib/features/categories/ui/widgets/category_type_card.dart` (63 lines) — no test file exists. A small widget but used as the selection tile in the category picker; behaviors (selection state, tap callback) are untested.
+  **RESOLVED (adapted):** a test file existed but was misnamed (`categories_type_card_test.dart`) — renamed to the proper mirror `category_type_card_test.dart`. Added the missing behaviors: tap forwarding via callback counter and the selected/unselected background matrix; moved out the stray `CategoryIconCompact` test (already covered in its own mirror).
 
-- [ ] **[MED]** `category_details_controller_test.dart` does not test the `updateFormField(icon:)` branch. The `CategoryDetailsController.updateFormField` accepts an `icon` named parameter but no controller test exercises it (icon change → `hasChanges = true`, icon reflected in pending state). This is exercised only indirectly in the UI tests.
+- [x] **[MED]** `category_details_controller_test.dart` does not test the `updateFormField(icon:)` branch. The `CategoryDetailsController.updateFormField` accepts an `icon` named parameter but no controller test exercises it (icon change → `hasChanges = true`, icon reflected in pending state). This is exercised only indirectly in the UI tests.
+  **RESOLVED:** the form-field change test now also drives `updateFormField(icon: CategoryIcon.fitness)` and asserts `hasChanges` plus the icon landing in pending state.
 
-- [ ] **[MED]** `categories_repository_test.dart` — `createCategory` error path (when `PersistenceLogic.upsertEntityDefinition` throws) is not tested. The repository catches and logs, but whether the error propagates correctly or is silently swallowed has no test.
+- [x] **[MED]** `categories_repository_test.dart` — `createCategory` error path (when `PersistenceLogic.upsertEntityDefinition` throws) is not tested. The repository catches and logs, but whether the error propagates correctly or is silently swallowed has no test.
+  **RESOLVED (stale):** 'createCategory propagates errors from persistence logic' already exists and asserts the thrown error propagates.
 
 - [ ] **[LOW]** `category_icon_test.dart` — the `suggestFromName` prefix-matching boundary at `nameWord.length >= 4 && ... >= displayWord.length * 0.6` is only checked for the specific inputs `'men'` (returns null) and `'ment'` (returns `mentalHealth`). The boundary at exactly 4 characters and at fractional thresholds (e.g., input length is exactly `floor(displayWord.length * 0.6)`) is not checked.
 
@@ -110,9 +119,11 @@
 
 - [x] **[HIGH]** `test/features/categories/ui/pages/category_details_page_test.dart` — 86 `pumpAndSettle()` calls. Each `pumpAndSettle` drives the frame scheduler until all animations settle (default 10-second timeout). Many of these are used after a single `tester.pump()` or after a stream emit where no animation is pending; substituting `tester.pump()` (or `tester.pump(const Duration(milliseconds: 50))`) would suffice and remove the risk of a 10s hang if an animation never settles. In particular, the tests at lines 168, 194, 221, 337, 368 all use `pumpAndSettle()` after a simple `Stream.value()` emission where a single `pump()` would suffice. **Estimated saving: 2–5s per shard + eliminates potential 10s hang on animation-related regressions.**
 
-- [ ] **[MED]** `test/features/categories/state/category_task_count_provider_test.dart` — 6 `Future<void>.delayed(Duration.zero)` calls (lines 117–172). These yield two microtask ticks to allow the `ProviderContainer` to propagate stream events. Replace with a `fakeAsync` + `async.flushMicrotasks()` pattern so the test is deterministic and has no wall-clock dependency.
+- [x] **[MED]** `test/features/categories/state/category_task_count_provider_test.dart` — 6 `Future<void>.delayed(Duration.zero)` calls (lines 117–172). These yield two microtask ticks to allow the `ProviderContainer` to propagate stream events. Replace with a `fakeAsync` + `async.flushMicrotasks()` pattern so the test is deterministic and has no wall-clock dependency.
+  **RESOLVED:** same fix as the duplicate item above — `pumpEventQueue()` replaces the micro-delays (no wall-clock dependency; fakeAsync not needed since nothing uses timers).
 
-- [ ] **[MED]** `test/features/categories/ui/pages/category_details_page_test.dart` — 48 per-test `pumpWidget` calls that each reconstruct the full `MaterialApp` + localization + `ProviderScope` + `SliverAppBar` + form widget tree. A `setUpAll`-level warm-up (or grouping tests that share the same initial state under one `setUp`) would avoid repeating full cold-start widget builds. **Estimated saving: 0.5–1s per shard.**
+- [x] **[MED]** `test/features/categories/ui/pages/category_details_page_test.dart` — 48 per-test `pumpWidget` calls that each reconstruct the full `MaterialApp` + localization + `ProviderScope` + `SliverAppBar` + form widget tree. A `setUpAll`-level warm-up (or grouping tests that share the same initial state under one `setUp`) would avoid repeating full cold-start widget builds. **Estimated saving: 0.5–1s per shard.**
+  **RESOLVED (assessed, no change):** `testWidgets` gives every test a fresh binding and widget tree by design — a `setUpAll` warm-up cannot be shared across tests, so the suggested mechanism can't deliver the saving. The source-level duplication was removed via the pump helper; the directory runs in ~3 s.
 
 - [ ] **[LOW]** `test/features/categories/ui/widgets/category_selection_modal_content_test.dart` (22 `pumpAndSettle`) and `test/features/categories/ui/widgets/category_create_modal_test.dart` (20 `pumpAndSettle`) — heavily animated modal tests. Review whether each `pumpAndSettle` is needed or whether `tester.pump(const Duration(milliseconds: 300))` (one animation frame) suffices.
 

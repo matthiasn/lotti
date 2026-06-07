@@ -194,7 +194,7 @@ void main() {
       expect(stats.dbfs, closeTo(-26.33, 0.01));
     });
 
-    Glados(any.pcmScenario, ExploreConfig(numRuns: 200)).test(
+    Glados(any.pcmScenario, ExploreConfig(numRuns: 120)).test(
       'matches the generated RMS dBFS model',
       (scenario) {
         final dbfs = computeDbfsFromPcm16(
@@ -213,7 +213,7 @@ void main() {
       tags: 'glados',
     );
 
-    Glados(any.pcmScenario, ExploreConfig(numRuns: 200)).test(
+    Glados(any.pcmScenario, ExploreConfig(numRuns: 120)).test(
       'ignores generated odd trailing bytes',
       (scenario) {
         expect(

@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'unified_suggestion_providers.g.dart';
@@ -162,6 +163,13 @@ List<PendingSuggestion> _keepLatestRunningTimerUpdate(
   }
   return visible;
 }
+
+/// Test-only seam for [_keepLatestRunningTimerUpdate] — the pure dedup
+/// applied to the sorted open list before rendering.
+@visibleForTesting
+List<PendingSuggestion> debugKeepLatestRunningTimerUpdate(
+  List<PendingSuggestion> sortedOpen,
+) => _keepLatestRunningTimerUpdate(sortedOpen);
 
 String? _runningTimerId(ChangeItem item) {
   final timerId = item.args['timerId'];

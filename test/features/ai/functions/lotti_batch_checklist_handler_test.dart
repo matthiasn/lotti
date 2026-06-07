@@ -431,6 +431,54 @@ void main() {
         expect(capturedCall.every((item) => !item.isChecked), true);
       });
 
+      test(
+        'records every item as failed when autoCreateChecklist reports '
+        'failure even though it returns a non-null createdItems list',
+        () async {
+          final result = FunctionCallResult(
+            success: true,
+            functionName: 'add_multiple_checklist_items',
+            arguments: '',
+            data: {
+              'items': [
+                {'title': 'cheese'},
+                {'title': 'tomatoes'},
+              ],
+              'taskId': testTask.meta.id,
+            },
+          );
+
+          stubTaskById();
+          // success: false with a NON-null createdItems — the handler must
+          // key off success, not the list, and treat the batch as failed.
+          when(
+            () => mockAutoChecklistService.autoCreateChecklist(
+              taskId: testTask.meta.id,
+              suggestions: any(named: 'suggestions'),
+              title: 'Todos',
+            ),
+          ).thenAnswer(
+            (_) async => (
+              success: false,
+              checklistId: null,
+              createdItems: [
+                (id: 'ghost', title: 'cheese', isChecked: false),
+              ],
+              error: 'creation failed downstream',
+            ),
+          );
+
+          final count = await handler.createBatchItems(result);
+
+          expect(count, 0);
+          final toolResponse = handler.createToolResponse(result);
+          expect(toolResponse, contains('Failed'));
+          expect(toolResponse, contains('cheese'));
+          expect(toolResponse, contains('tomatoes'));
+          expect(toolResponse, contains('Checklist creation failed'));
+        },
+      );
+
       test('should add items to existing checklist', () async {
         // Arrange
         final taskWithChecklist = ChecklistTestDataFactory.createTask(

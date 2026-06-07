@@ -267,6 +267,44 @@ void main() {
     });
 
     group('DayPlanData', () {
+      // The status getters dispatch on the sealed variant — the committed
+      // terminal state must report false on all three (no isCommitted getter
+      // exists; consumers match on the variant directly).
+      for (final (status, expectDraft, expectAgreed, expectReview) in [
+        (const DayPlanStatus.draft(), true, false, false),
+        (
+          DayPlanStatus.agreed(agreedAt: DateTime(2026, 1, 14, 8)),
+          false,
+          true,
+          false,
+        ),
+        (
+          DayPlanStatus.needsReview(
+            reason: DayPlanReviewReason.newDueTask,
+            triggeredAt: DateTime(2026, 1, 14, 10),
+          ),
+          false,
+          false,
+          true,
+        ),
+        (
+          DayPlanStatus.committed(committedAt: DateTime(2026, 1, 14, 9)),
+          false,
+          false,
+          false,
+        ),
+      ]) {
+        test('status getters dispatch correctly for ${status.runtimeType}', () {
+          final data = DayPlanData(
+            planDate: DateTime(2026, 1, 14),
+            status: status,
+          );
+          expect(data.isDraft, expectDraft);
+          expect(data.isAgreed, expectAgreed);
+          expect(data.needsReview, expectReview);
+        });
+      }
+
       test('can be serialized and deserialized with all fields', () {
         final data = DayPlanData(
           planDate: DateTime(2026, 1, 14),
@@ -595,6 +633,11 @@ void main() {
     });
   });
 }
+
+// ---------------------------------------------------------------------------
+// Glados generator scaffolding — seeded value classes and the Any extension
+// that the property tests above draw from. No test cases below this line.
+// ---------------------------------------------------------------------------
 
 class _GeneratedDayDate {
   const _GeneratedDayDate({

@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai_chat/repository/chat_message_processor.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -133,6 +134,74 @@ void main() {
         expect(toolCalls.first.id, 'rep');
         expect(toolCalls.first.function.arguments, '{"a":2}');
       },
+    );
+  });
+
+  group('accumulateToolCalls — Glados interleaving property', () {
+    glados.Glados<List<int>>(
+      glados.ListAnys(
+        glados.any,
+      ).listWithLengthInRange(
+        1,
+        16,
+        glados.IntAnys(glados.any).intInRange(0, 1 << 10),
+      ),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'one entry per unique effective id; arguments equal the in-order '
+      "concatenation of that id's chunks",
+      (seeds) {
+        final processor = ChatMessageProcessor(
+          aiConfigRepository: MockAiConfigRepository(),
+          cloudInferenceRepository: MockCloudInferenceRepository(),
+          taskSummaryRepository: MockTaskSummaryRepository(),
+          loggingService: MockDomainLogger(),
+        );
+        final toolCalls = <ChatCompletionMessageToolCall>[];
+        final buffers = <String, StringBuffer>{};
+
+        // Each seed becomes one delta: 3 possible tool indices interleaved
+        // arbitrarily; fragments are never complete JSON, so the
+        // replace-on-complete-JSON guard cannot kick in and pure
+        // concatenation is the expected semantics.
+        final expected = <String, StringBuffer>{};
+        for (final (i, seed) in seeds.indexed) {
+          final index = seed % 3;
+          final id = 'tool_$index';
+          final fragment = 'frag$i{';
+          (expected[id] ??= StringBuffer()).write(fragment);
+
+          processor.accumulateToolCalls(
+            toolCalls,
+            [
+              ChatCompletionStreamMessageToolCallChunk(
+                index: index,
+                function: ChatCompletionStreamMessageFunctionCall(
+                  name: 'fn_$index',
+                  arguments: fragment,
+                ),
+              ),
+            ],
+            buffers,
+          );
+        }
+
+        expect(
+          toolCalls.map((tc) => tc.id).toSet(),
+          expected.keys.toSet(),
+          reason: 'one entry per unique effective id (seeds=$seeds)',
+        );
+        expect(toolCalls.length, expected.length);
+        for (final call in toolCalls) {
+          expect(
+            call.function.arguments,
+            expected[call.id]!.toString(),
+            reason: 'accumulated args for ${call.id} (seeds=$seeds)',
+          );
+          expect(call.function.name, 'fn_${call.id.split('_').last}');
+        }
+      },
+      tags: 'glados',
     );
   });
 }

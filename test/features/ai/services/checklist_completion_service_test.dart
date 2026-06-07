@@ -85,6 +85,23 @@ void main() {
       expect(state.value?.first.checklistItemId, equals('item-2'));
     });
 
+    test('clearSuggestion on a single-item list leaves an empty list', () {
+      container.read(checklistCompletionServiceProvider.notifier)
+        ..addSuggestions(const [
+          ChecklistCompletionSuggestion(
+            checklistItemId: 'only-item',
+            reason: 'Task completed',
+            confidence: ChecklistCompletionConfidence.high,
+          ),
+        ])
+        ..clearSuggestion('only-item');
+
+      // The state collapses to an empty data list, not null/loading.
+      final state = container.read(checklistCompletionServiceProvider);
+      expect(state.hasValue, isTrue);
+      expect(state.value, isEmpty);
+    });
+
     test('confidence enum parsing handles invalid values', () {
       // Test the confidence parsing logic
       const validConfidences = ['high', 'medium', 'low'];

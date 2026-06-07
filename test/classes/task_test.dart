@@ -52,97 +52,128 @@ void main() {
       expect(taskData.title, equals('Test Task'));
     });
 
-    test('copyWith supports language code', () {
-      final taskData = TaskData(
-        status: testStatus,
-        dateFrom: testDate,
-        dateTo: testDate,
-        statusHistory: [],
-        title: 'Test Task',
-        languageCode: 'es',
-      );
+    TaskData makeTask({String? languageCode}) => TaskData(
+      status: testStatus,
+      dateFrom: testDate,
+      dateTo: testDate,
+      statusHistory: [],
+      title: 'Test Task',
+      languageCode: languageCode,
+    );
 
-      // Test that languageCode is preserved
-      final copiedTaskData = taskData.copyWith();
-      expect(copiedTaskData.languageCode, equals('es'));
-    });
+    // The copyWith languageCode contract, parameterized over (initial code,
+    // copyWith arguments, expected code after the copy).
+    for (final (description, initial, copy, expectedCode) in [
+      (
+        'copyWith() preserves the language code',
+        'es',
+        (TaskData d) => d.copyWith(),
+        'es',
+      ),
+      (
+        'copyWith(title: ...) leaves the language code untouched',
+        'fr',
+        (TaskData d) => d.copyWith(title: 'Updated Task'),
+        'fr',
+      ),
+      (
+        'copyWith(languageCode: ...) updates the language code',
+        'en',
+        (TaskData d) => d.copyWith(languageCode: 'de'),
+        'de',
+      ),
+      (
+        'copyWith(languageCode: null) clears the language code',
+        'en',
+        (TaskData d) => d.copyWith(languageCode: null),
+        null,
+      ),
+    ]) {
+      test(description, () {
+        final copied = copy(makeTask(languageCode: initial));
+        expect(copied.languageCode, expectedCode);
+        // Untouched fields survive every copy.
+        expect(copied.status, testStatus);
+        expect(copied.dateFrom, testDate);
+      });
+    }
 
     test('equality with language code', () {
-      final taskData1 = TaskData(
-        status: testStatus,
-        dateFrom: testDate,
-        dateTo: testDate,
-        statusHistory: [],
-        title: 'Test Task',
-        languageCode: 'fr',
+      expect(makeTask(languageCode: 'fr'), makeTask(languageCode: 'fr'));
+      expect(
+        makeTask(languageCode: 'fr'),
+        isNot(makeTask(languageCode: 'de')),
       );
-
-      final taskData2 = TaskData(
-        status: testStatus,
-        dateFrom: testDate,
-        dateTo: testDate,
-        statusHistory: [],
-        title: 'Test Task',
-        languageCode: 'fr',
-      );
-
-      expect(taskData1, equals(taskData2));
     });
+  });
 
-    test('copyWith preserves language code', () {
-      final taskData = TaskData(
-        status: testStatus,
-        dateFrom: testDate,
-        dateTo: testDate,
-        statusHistory: [],
-        title: 'Test Task',
-        languageCode: 'fr',
-      );
-
-      final copiedTaskData = taskData.copyWith(
-        title: 'Updated Task',
-      );
-
-      expect(copiedTaskData.languageCode, equals('fr'));
-      expect(copiedTaskData.title, equals('Updated Task'));
-    });
-
-    test('copyWith can update language code', () {
-      final taskData = TaskData(
-        status: testStatus,
-        dateFrom: testDate,
-        dateTo: testDate,
-        statusHistory: [],
-        title: 'Test Task',
-        languageCode: 'en',
-      );
-
-      final copiedTaskData = taskData.copyWith(
-        languageCode: 'de',
-      );
-
-      expect(copiedTaskData.languageCode, equals('de'));
-      expect(copiedTaskData.title, equals('Test Task'));
-    });
-
-    test('copyWith can clear language code', () {
-      final taskData = TaskData(
-        status: testStatus,
-        dateFrom: testDate,
-        dateTo: testDate,
-        statusHistory: [],
-        title: 'Test Task',
-        languageCode: 'en',
-      );
-
-      // Note: In freezed, to set a nullable field to null in copyWith,
-      // you need to use a special syntax
-      final copiedTaskData = taskData.copyWith(
-        languageCode: null,
-      );
-
-      expect(copiedTaskData.languageCode, isNull);
-    });
+  group('TaskStatus.colorForBrightness', () {
+    // Dark-mode status colors (moved from test/utils/task_utils_test.dart —
+    // colorForBrightness lives on TaskStatus in lib/classes/task.dart).
+    for (final (status, expected) in [
+      (
+        TaskStatus.open(
+          id: 'id',
+          createdAt: DateTime(2024, 3, 15),
+          utcOffset: 120,
+        ),
+        Colors.orange,
+      ),
+      (
+        TaskStatus.groomed(
+          id: 'id',
+          createdAt: DateTime(2024, 3, 15),
+          utcOffset: 120,
+        ),
+        Colors.lightGreenAccent,
+      ),
+      (
+        TaskStatus.inProgress(
+          id: 'id',
+          createdAt: DateTime(2024, 3, 15),
+          utcOffset: 120,
+        ),
+        Colors.blue,
+      ),
+      (
+        TaskStatus.blocked(
+          id: 'id',
+          createdAt: DateTime(2024, 3, 15),
+          utcOffset: 120,
+          reason: '',
+        ),
+        Colors.red,
+      ),
+      (
+        TaskStatus.onHold(
+          id: 'id',
+          createdAt: DateTime(2024, 3, 15),
+          utcOffset: 120,
+          reason: '',
+        ),
+        Colors.red,
+      ),
+      (
+        TaskStatus.done(
+          id: 'id',
+          createdAt: DateTime(2024, 3, 15),
+          utcOffset: 120,
+        ),
+        Colors.green,
+      ),
+      (
+        TaskStatus.rejected(
+          id: 'id',
+          createdAt: DateTime(2024, 3, 15),
+          utcOffset: 120,
+        ),
+        Colors.red,
+      ),
+    ]) {
+      test('${status.runtimeType} maps to its dark-mode color', () {
+        expect(status.colorForBrightness(Brightness.dark), expected);
+      });
+    }
   });
 
   group('Task entity', () {

@@ -5,12 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../../test_utils.dart';
 
 final _kCreatedAt = DateTime.utc(2026, 3, 15, 12);
 
@@ -61,16 +61,6 @@ SyncNodeProfile _node({
   );
 }
 
-class _FakeAiConfigByTypeController extends AiConfigByTypeController {
-  _FakeAiConfigByTypeController(this.items);
-  final List<AiConfig> items;
-
-  @override
-  Stream<List<AiConfig>> build({required AiConfigType configType}) {
-    return Stream.value(items);
-  }
-}
-
 Widget _harness({
   required String? pinnedHostId,
   required Set<String> referencedModelIds,
@@ -93,10 +83,10 @@ Widget _harness({
       localVectorClockHostIdProvider.overrideWith((_) async => localHostId),
       aiConfigByTypeControllerProvider(
         configType: AiConfigType.model,
-      ).overrideWith(() => _FakeAiConfigByTypeController(models)),
+      ).overrideWith(() => MockAiConfigByTypeController(models)),
       aiConfigByTypeControllerProvider(
         configType: AiConfigType.inferenceProvider,
-      ).overrideWith(() => _FakeAiConfigByTypeController(providers)),
+      ).overrideWith(() => MockAiConfigByTypeController(providers)),
     ],
   );
 }
@@ -116,19 +106,58 @@ void main() {
           providers: const [],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       // Open the dropdown.
       await tester.tap(find.byType(DropdownButtonFormField<String?>));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap "Not pinned".
       await tester.tap(
         find.text('Not pinned (no auto-trigger)').last,
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(capturedHostId, isNull);
+    },
+  );
+
+  testWidgets(
+    're-selecting the already-pinned host still emits it through onChanged '
+    '(dropdown is not change-gated; the caller decides what a no-op is)',
+    (tester) async {
+      String? capturedHostId;
+      var calls = 0;
+      await tester.pumpWidget(
+        _harness(
+          pinnedHostId: 'h1',
+          referencedModelIds: const {},
+          onChanged: (v) {
+            capturedHostId = v;
+            calls++;
+          },
+          knownNodes: [_node(hostId: 'h1', displayName: 'Studio Mac')],
+          models: const [],
+          providers: const [],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      await tester.tap(find.byType(DropdownButtonFormField<String?>));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Tap the currently-pinned host in the open menu.
+      await tester.tap(find.text('Studio Mac').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(calls, 1);
+      expect(capturedHostId, 'h1');
     },
   );
 
@@ -165,10 +194,12 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.byType(DropdownButtonFormField<String?>));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The non-eligible node must NOT appear in the menu.
       expect(find.text('Mac with MLX only'), findsNothing);
@@ -206,10 +237,12 @@ void main() {
           ],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.byType(DropdownButtonFormField<String?>));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The node is still eligible because the profile imposes no
       // local-runtime requirement.
@@ -234,10 +267,12 @@ void main() {
           localHostId: 'self-host',
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.byType(DropdownButtonFormField<String?>));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Studio Mac (this device)'), findsOneWidget);
       expect(find.text('Other Mac'), findsOneWidget);
@@ -260,10 +295,12 @@ void main() {
           providers: const [],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       await tester.tap(find.byType(DropdownButtonFormField<String?>));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The stale host id appears as its own option (displayName falls
       // back to the host id since the directory has no entry).
@@ -285,7 +322,8 @@ void main() {
           providers: const [],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
 
       expect(
         find.textContaining('No known devices advertise'),
@@ -308,7 +346,8 @@ void main() {
           providers: const [],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
       expect(
         find.textContaining('not auto-transcribed when no device is pinned'),
         findsOneWidget,
@@ -325,7 +364,8 @@ void main() {
           providers: const [],
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump();
       expect(
         find.textContaining('only this device auto-runs inference'),
         findsOneWidget,

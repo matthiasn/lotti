@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/beamer/locations/calendar_location.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
+import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
@@ -219,6 +221,62 @@ void main() {
         expect(pages.single.child, isA<CalendarRoot>());
       });
     }
+
+    glados.Glados3(
+      glados.AnyUtils(glados.any).choose(const ['calendar', 'cal', 'journal']),
+      glados.AnyUtils(glados.any).choose(const [
+        'refine',
+        'commit',
+        'shutdown',
+        'review',
+        'REFINE',
+        '',
+      ]),
+      glados.AnyUtils(glados.any).choose(const [
+        '2026-05-26',
+        '2026-12-31',
+        '2026-13-40',
+        'not-a-date',
+        '20260526',
+        '',
+      ]),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'daily-os nested page appears iff the URI is a valid '
+      '(calendar, target, ISO date) triple',
+      (first, second, third) {
+        final uri = Uri.parse('/$first/$second/$third');
+        final routeInformation = RouteInformation(uri: uri);
+        final location = CalendarLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final pages = location.buildPages(mockBuildContext, beamState);
+        final reason = 'uri=$uri';
+
+        // Oracle mirroring the route contract.
+        final segments = uri.pathSegments;
+        final targetValid =
+            segments.length == 3 &&
+            segments.first == 'calendar' &&
+            DailyOsNextRouteTarget.values.any((t) => t.name == segments[1]);
+        final date = segments.length == 3
+            ? parseDailyOsNextRouteDate(segments[2])
+            : null;
+        final expectDailyOsPage = targetValid && date != null;
+
+        expect(pages.first.child, isA<CalendarRoot>(), reason: reason);
+        if (expectDailyOsPage) {
+          expect(pages, hasLength(2), reason: reason);
+          expect(
+            pages[1].key,
+            ValueKey<String>('daily_os_next_${segments[1]}_${segments[2]}'),
+            reason: reason,
+          );
+        } else {
+          expect(pages, hasLength(1), reason: reason);
+        }
+      },
+      tags: 'glados',
+    );
 
     testWidgets('DailyOS route loading page exposes back navigation', (
       tester,

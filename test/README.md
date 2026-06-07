@@ -34,6 +34,21 @@ For broader test conventions — centralized mocks/fallbacks (`test/mocks/mocks.
 
 When adding a query to one of the mixins, put its tests in the matching mirror file; don't grow a new monolith or split one source file's tests across files.
 
+### Documented exception: `AgentRepository` satellite suites
+
+`test/features/agents/database/` deliberately splits `AgentRepository`'s tests
+by sub-domain — `agent_repository_test.dart` (core) plus the
+`_change_set_test.dart` / `_evolution_test.dart` / `_soul_test.dart`
+satellites. The repository is a single ~1.7k-line class whose consolidated
+mirror would exceed 10k lines; the split is a conscious size-management
+decision, not an accident. Rules for the satellites:
+
+- a sub-domain's tests live in exactly **one** satellite (never two);
+- Glados generator scaffolding lives in the sibling `*_generators.dart`
+  helper libraries (no `main()`, so they are not extra test files);
+- new sub-domains get a satellite only when the core file would otherwise
+  grow past ~8k lines — default to the core file.
+
 ## Mocktail global-state hygiene
 
 Mocktail stores argument matchers (`any`, `captureAny`) in **process-global**

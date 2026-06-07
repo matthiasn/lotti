@@ -741,7 +741,11 @@ void main() {
         final data = container
             .read(soulEvolutionChatStateProvider(kTestSoulId))
             .value!;
+        // State is preserved through the catch: the session survives and the
+        // waiting flag is cleared so the user can retry.
         expect(data.isWaiting, isFalse);
+        expect(data.sessionId, 'session-1');
+        expect(data.messages, isNotEmpty);
       });
     });
 
@@ -1572,8 +1576,9 @@ void main() {
           // This must NOT propagate the exception.
           container.dispose();
 
-          // Allow the unawaited Future to settle.
-          await Future<void>.delayed(Duration.zero);
+          // Allow the unawaited Future to settle — bounded event-queue
+          // drain, no zero-duration Timer (fake-time policy).
+          await pumpEventQueue();
           // If we reach here, the catchError absorbed the exception correctly.
         },
       );

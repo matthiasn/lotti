@@ -49,9 +49,7 @@ class ConflictListItemViewModel {
     );
 
     final conflictIdFull = conflict.id;
-    final conflictIdShort = conflictIdFull.length > 8
-        ? conflictIdFull.substring(0, 8)
-        : conflictIdFull;
+    final conflictIdShort = shortenConflictId(conflictIdFull);
 
     final semantics = messages.conflictListItemSemanticsLabel(
       statusLabel,
@@ -79,6 +77,12 @@ class ConflictListItemViewModel {
   final String conflictIdShort;
   final String semanticsLabel;
 
+  /// First 8 characters of [id]; ids of 8 chars or fewer pass through
+  /// unchanged. Visible for direct property testing.
+  @visibleForTesting
+  static String shortenConflictId(String id) =>
+      id.length > 8 ? id.substring(0, 8) : id;
+
   static String _entityLabel({
     required BuildContext context,
     required String type,
@@ -97,7 +101,7 @@ class ConflictListItemViewModel {
       'QuantitativeEntry': messages.entryTypeLabelQuantitativeEntry,
       'Checklist': messages.entryTypeLabelChecklist,
       'ChecklistItem': messages.entryTypeLabelChecklistItem,
-      'AiResponse': messages.entryTypeLabelAiResponse,
+      'AiResponseEntry': messages.entryTypeLabelAiResponse,
     };
     return map[type] ?? type;
   }

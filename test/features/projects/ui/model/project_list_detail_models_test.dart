@@ -21,6 +21,8 @@ void main() {
       expect(record.blockedTaskCount, 2);
       expect(record.aiSummary, 'Custom summary');
       expect(record.recommendations, ['Do A', 'Do B']);
+      // Derived computation, not just constructor echo: 5 of 10 done.
+      expect(record.overviewListItem.taskRollup.completionRatio, 0.5);
     });
 
     test('exposes an overview list item backed by the real list model', () {

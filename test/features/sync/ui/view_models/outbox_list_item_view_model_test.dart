@@ -502,167 +502,193 @@ void main() {
         return (viewModel: viewModel, ctx: ctx);
       }
 
-      testWidgets('journalEntity payload label (line 153)', (tester) async {
-        const msg = SyncMessage.journalEntity(
-          id: 'je-001',
-          jsonPath: '/entries/je-001.json',
-          vectorClock: VectorClock({'host-1': 1}),
-          status: SyncEntryStatus.update,
-        );
-        final result = await pumpWithMessage(
-          tester,
-          300,
-          jsonEncode(msg.toJson()),
-        );
-        expect(
-          result.viewModel.payloadKindLabel,
-          result.ctx.messages.syncPayloadJournalEntity,
-        );
-      });
+      // (message factory, expected-label selector) per variant — one body.
+      final variantCases =
+          <
+            (
+              String,
+              SyncMessage Function(),
+              String Function(BuildContext),
+            )
+          >[
+            (
+              'journalEntity',
+              () => const SyncMessage.journalEntity(
+                id: 'je-001',
+                jsonPath: '/entries/je-001.json',
+                vectorClock: VectorClock({'host-1': 1}),
+                status: SyncEntryStatus.update,
+              ),
+              (ctx) => ctx.messages.syncPayloadJournalEntity,
+            ),
+            (
+              'entityDefinition',
+              () => SyncMessage.entityDefinition(
+                entityDefinition: EntityDefinition.measurableDataType(
+                  id: 'mdt-001',
+                  createdAt: DateTime(2024, 3, 15),
+                  updatedAt: DateTime(2024, 3, 15),
+                  displayName: 'Weight',
+                  description: 'Body weight in kg',
+                  unitName: 'kg',
+                  version: 1,
+                  vectorClock: null,
+                ),
+                status: SyncEntryStatus.update,
+              ),
+              (ctx) => ctx.messages.syncPayloadEntityDefinition,
+            ),
+            (
+              'entryLink',
+              () => SyncMessage.entryLink(
+                entryLink: EntryLink.basic(
+                  id: 'link-001',
+                  fromId: 'from-001',
+                  toId: 'to-001',
+                  createdAt: DateTime(2024, 3, 15),
+                  updatedAt: DateTime(2024, 3, 15),
+                  vectorClock: null,
+                ),
+                status: SyncEntryStatus.update,
+              ),
+              (ctx) => ctx.messages.syncPayloadEntryLink,
+            ),
+            (
+              'aiConfig',
+              () => SyncMessage.aiConfig(
+                aiConfig: AiConfig.inferenceProvider(
+                  id: 'provider-001',
+                  name: 'Test Provider',
+                  apiKey: 'key-abc',
+                  baseUrl: 'https://api.example.invalid/v1',
+                  createdAt: DateTime(2024, 3, 15),
+                  inferenceProviderType: InferenceProviderType.genericOpenAi,
+                ),
+                status: SyncEntryStatus.update,
+              ),
+              (ctx) => ctx.messages.syncPayloadAiConfig,
+            ),
+            (
+              'configFlag',
+              () => const SyncMessage.configFlag(
+                name: 'enable_logging',
+                description: 'Enable logging',
+                status: true,
+              ),
+              (ctx) => ctx.messages.syncPayloadConfigFlag,
+            ),
+            (
+              'themingSelection',
+              () => const SyncMessage.themingSelection(
+                lightThemeName: 'Indigo',
+                darkThemeName: 'Shark',
+                themeMode: 'dark',
+                updatedAt: 1234567890,
+                status: SyncEntryStatus.update,
+              ),
+              (ctx) => ctx.messages.syncPayloadThemingSelection,
+            ),
+            (
+              'syncNodeProfile',
+              () => SyncMessage.syncNodeProfile(
+                profile: SyncNodeProfile(
+                  hostId: 'host-profile-001',
+                  displayName: 'Test Node',
+                  platform: 'macos',
+                  capabilities: const [NodeCapability.mlxAudio],
+                  updatedAt: DateTime(2024, 3, 15),
+                ),
+              ),
+              (ctx) => ctx.messages.syncPayloadSyncNodeProfile,
+            ),
+          ];
 
-      testWidgets('entityDefinition payload label (line 154)', (tester) async {
-        final msg = SyncMessage.entityDefinition(
-          entityDefinition: EntityDefinition.measurableDataType(
-            id: 'mdt-001',
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            displayName: 'Weight',
-            description: 'Body weight in kg',
-            unitName: 'kg',
-            version: 1,
-            vectorClock: null,
-          ),
-          status: SyncEntryStatus.update,
-        );
-        final result = await pumpWithMessage(
-          tester,
-          301,
-          jsonEncode(msg.toJson()),
-        );
-        expect(
-          result.viewModel.payloadKindLabel,
-          result.ctx.messages.syncPayloadEntityDefinition,
-        );
-      });
-
-      testWidgets('entryLink payload label (line 155)', (tester) async {
-        final msg = SyncMessage.entryLink(
-          entryLink: EntryLink.basic(
-            id: 'link-001',
-            fromId: 'from-001',
-            toId: 'to-001',
-            createdAt: DateTime(2024, 3, 15),
-            updatedAt: DateTime(2024, 3, 15),
-            vectorClock: null,
-          ),
-          status: SyncEntryStatus.update,
-        );
-        final result = await pumpWithMessage(
-          tester,
-          302,
-          jsonEncode(msg.toJson()),
-        );
-        expect(
-          result.viewModel.payloadKindLabel,
-          result.ctx.messages.syncPayloadEntryLink,
-        );
-      });
-
-      testWidgets('aiConfig payload label (line 156)', (tester) async {
-        final msg = SyncMessage.aiConfig(
-          aiConfig: AiConfig.inferenceProvider(
-            id: 'provider-001',
-            name: 'Test Provider',
-            apiKey: 'key-abc',
-            baseUrl: 'https://api.example.invalid/v1',
-            createdAt: DateTime(2024, 3, 15),
-            inferenceProviderType: InferenceProviderType.genericOpenAi,
-          ),
-          status: SyncEntryStatus.update,
-        );
-        final result = await pumpWithMessage(
-          tester,
-          303,
-          jsonEncode(msg.toJson()),
-        );
-        expect(
-          result.viewModel.payloadKindLabel,
-          result.ctx.messages.syncPayloadAiConfig,
-        );
-      });
-
-      testWidgets('configFlag payload label', (tester) async {
-        const msg = SyncMessage.configFlag(
-          name: 'enable_logging',
-          description: 'Enable logging',
-          status: true,
-        );
-        final result = await pumpWithMessage(
-          tester,
-          306,
-          jsonEncode(msg.toJson()),
-        );
-        expect(
-          result.viewModel.payloadKindLabel,
-          result.ctx.messages.syncPayloadConfigFlag,
-        );
-      });
-
-      testWidgets('themingSelection payload label (line 158)', (tester) async {
-        const msg = SyncMessage.themingSelection(
-          lightThemeName: 'Indigo',
-          darkThemeName: 'Shark',
-          themeMode: 'dark',
-          updatedAt: 1234567890,
-          status: SyncEntryStatus.update,
-        );
-        final result = await pumpWithMessage(
-          tester,
-          304,
-          jsonEncode(msg.toJson()),
-        );
-        expect(
-          result.viewModel.payloadKindLabel,
-          result.ctx.messages.syncPayloadThemingSelection,
-        );
-      });
-
-      testWidgets('syncNodeProfile payload label (line 172)', (tester) async {
-        final msg = SyncMessage.syncNodeProfile(
-          profile: SyncNodeProfile(
-            hostId: 'host-profile-001',
-            displayName: 'Test Node',
-            platform: 'macos',
-            capabilities: const [NodeCapability.mlxAudio],
-            updatedAt: DateTime(2024, 3, 15),
-          ),
-        );
-        final result = await pumpWithMessage(
-          tester,
-          305,
-          jsonEncode(msg.toJson()),
-        );
-        expect(
-          result.viewModel.payloadKindLabel,
-          result.ctx.messages.syncPayloadSyncNodeProfile,
-        );
-      });
+      for (final (i, c) in variantCases.indexed) {
+        testWidgets('${c.$1} payload label', (tester) async {
+          final result = await pumpWithMessage(
+            tester,
+            300 + i,
+            jsonEncode(c.$2().toJson()),
+          );
+          expect(
+            result.viewModel.payloadKindLabel,
+            c.$3(result.ctx),
+            reason: c.$1,
+          );
+        });
+      }
     });
 
     group('payloadSizeLabel', () {
-      OutboxItem makeItem({int? payloadSize}) => OutboxItem(
+      OutboxItem makeItem({
+        int? payloadSize,
+        int retries = 0,
+        String? filePath,
+      }) => OutboxItem(
         id: 100,
         createdAt: DateTime(2024, 3, 15),
         updatedAt: DateTime(2024, 3, 15),
         status: 0,
-        retries: 0,
+        retries: retries,
         message: jsonEncode({
           'runtimeType': 'aiConfigDelete',
           'id': 'config-id',
         }),
         subject: 'test',
         payloadSize: payloadSize,
+        filePath: filePath,
         priority: OutboxPriority.low.index,
+      );
+
+      testWidgets(
+        'retriesLabel pluralizes: 1 is singular, every other count plural',
+        (tester) async {
+          late List<String> labels;
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              Builder(
+                builder: (context) {
+                  labels = [
+                    for (final r in [0, 1, 2, 42])
+                      OutboxListItemViewModel.fromItem(
+                        context: context,
+                        item: makeItem(retries: r),
+                      ).retriesLabel,
+                  ];
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(labels, ['0 Retries', '1 Retry', '2 Retries', '42 Retries']);
+        },
+      );
+
+      testWidgets(
+        'non-empty filePath surfaces as the attachment value with the '
+        'attachment icon',
+        (tester) async {
+          late OutboxListItemViewModel viewModel;
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              Builder(
+                builder: (context) {
+                  viewModel = OutboxListItemViewModel.fromItem(
+                    context: context,
+                    item: makeItem(filePath: '  /audio/take-1.m4a  '),
+                  );
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(viewModel.attachmentValue, '/audio/take-1.m4a');
+          expect(viewModel.attachmentIcon, Icons.attachment_rounded);
+        },
       );
 
       testWidgets('is null when payloadSize is null', (tester) async {
@@ -686,7 +712,7 @@ void main() {
         expect(viewModel.payloadSizeLabel, isNull);
       });
 
-      testWidgets('formats bytes correctly', (tester) async {
+      test('formats byte thresholds correctly (pure, no widget tree)', () {
         final cases = <int, String>{
           500: '500 B',
           2048: '2.0 KB',
@@ -698,31 +724,36 @@ void main() {
           1073741824: '1.00 GB',
           1610612736: '1.50 GB',
         };
-
         for (final entry in cases.entries) {
-          late OutboxListItemViewModel viewModel;
-
-          await tester.pumpWidget(
-            makeTestableWidgetNoScroll(
-              Builder(
-                builder: (context) {
-                  viewModel = OutboxListItemViewModel.fromItem(
-                    context: context,
-                    item: makeItem(payloadSize: entry.key),
-                  );
-                  return const SizedBox.shrink();
-                },
-              ),
-            ),
-          );
-
-          await tester.pump();
           expect(
-            viewModel.payloadSizeLabel,
+            OutboxListItemViewModel.formatBytes(entry.key),
             entry.value,
             reason: '${entry.key} bytes should format as ${entry.value}',
           );
         }
+      });
+
+      testWidgets('payloadSize is wired through to payloadSizeLabel', (
+        tester,
+      ) async {
+        late OutboxListItemViewModel viewModel;
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Builder(
+              builder: (context) {
+                viewModel = OutboxListItemViewModel.fromItem(
+                  context: context,
+                  item: makeItem(payloadSize: 2048),
+                );
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        await tester.pump();
+        expect(viewModel.payloadSizeLabel, '2.0 KB');
       });
     });
   });

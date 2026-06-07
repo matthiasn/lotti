@@ -11,6 +11,7 @@ import 'package:lotti/features/categories/ui/widgets/category_field.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/ui/pages/project_create_page.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/form/form_widgets.dart';
@@ -407,6 +408,43 @@ void main() {
       // create flow.
       expect(find.text('Saved successfully'), findsNothing);
     });
+
+    testWidgets(
+      'creation failure (createProject returns null) shows the error toast '
+      'and keeps the page open',
+      (tester) async {
+        stubCreateMetadata();
+        when(
+          () => mockProjectRepo.createProject(project: any(named: 'project')),
+        ).thenAnswer((_) async => null);
+
+        await pumpPage(tester);
+
+        await tester.enterText(find.byType(LottiTextField), 'Doomed Project');
+        await tester.pump();
+
+        await tester.tap(find.text('Create'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // No navigation: the page stays open with the error toast shown.
+        final context = tester.element(find.byType(ProjectCreatePage));
+        expect(
+          find.text(context.messages.projectErrorCreateFailed),
+          findsOneWidget,
+        );
+        expect(find.byType(ProjectCreatePage), findsOneWidget);
+        // No agent provisioning for a failed create.
+        verifyNever(
+          () => mockAgentService.createProjectAgent(
+            projectId: any(named: 'projectId'),
+            templateId: any(named: 'templateId'),
+            displayName: any(named: 'displayName'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        );
+      },
+    );
 
     testWidgets('passes categoryId to createMetadata when provided', (
       tester,

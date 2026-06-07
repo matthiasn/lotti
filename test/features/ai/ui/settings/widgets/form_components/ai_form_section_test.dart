@@ -2,19 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/form_components/ai_form_section.dart';
 
+import '../../../../../../widget_test_utils.dart';
+
 void main() {
   group('AiFormSection', () {
     Widget buildTestWidget(Widget child) {
-      return MaterialApp(
-        theme: ThemeData.dark(),
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: child,
-            ),
-          ),
+      return makeTestableWidgetWithScaffold(
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: child,
         ),
+        theme: ThemeData.dark(),
       );
     }
 

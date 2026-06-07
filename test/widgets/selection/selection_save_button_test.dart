@@ -140,29 +140,33 @@ void main() {
         // No error should be thrown when tapping disabled button
       });
 
-      testWidgets('applies correct colors when enabled', (tester) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            onPressed: () {},
-          ),
-        );
-        await tester.pump();
+      testWidgets(
+        'resolves enabled/disabled background colors from the theme',
+        (tester) async {
+          await tester.pumpWidget(createTestWidget(onPressed: () {}));
+          await tester.pump();
 
-        // The button should be visible and have the correct styling
-        expect(find.byType(SelectionSaveButton), findsOneWidget);
-        expect(find.text('Save'), findsOneWidget);
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-      });
+          final context = tester.element(find.byType(ElevatedButton));
+          final scheme = Theme.of(context).colorScheme;
+          var style = tester
+              .widget<ElevatedButton>(find.byType(ElevatedButton))
+              .style!;
+          expect(
+            style.backgroundColor!.resolve(const {}),
+            scheme.primary,
+          );
 
-      testWidgets('applies correct colors when disabled', (tester) async {
-        await tester.pumpWidget(createTestWidget());
-        await tester.pump();
-
-        // The disabled button should still be visible
-        expect(find.byType(SelectionSaveButton), findsOneWidget);
-        expect(find.text('Save'), findsOneWidget);
-        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
-      });
+          await tester.pumpWidget(createTestWidget());
+          await tester.pump();
+          style = tester
+              .widget<ElevatedButton>(find.byType(ElevatedButton))
+              .style!;
+          expect(
+            style.backgroundColor!.resolve(const {WidgetState.disabled}),
+            scheme.surfaceContainerLow.withValues(alpha: 0.5),
+          );
+        },
+      );
     });
 
     group('Interaction', () {
@@ -231,40 +235,39 @@ void main() {
     });
 
     group('Styling', () {
-      testWidgets('has correct padding', (tester) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            onPressed: () {},
-          ),
-        );
+      testWidgets('uses 16px vertical padding and a 16px corner radius', (
+        tester,
+      ) async {
+        await tester.pumpWidget(createTestWidget(onPressed: () {}));
         await tester.pump();
 
-        // The button should have proper padding as defined in the widget
-        expect(find.byType(SelectionSaveButton), findsOneWidget);
+        final style = tester
+            .widget<ElevatedButton>(find.byType(ElevatedButton))
+            .style!;
+        expect(
+          style.padding!.resolve(const {}),
+          const EdgeInsets.symmetric(vertical: 16),
+        );
+        final shape = style.shape!.resolve(const {})! as RoundedRectangleBorder;
+        expect(shape.borderRadius, BorderRadius.circular(16));
       });
 
-      testWidgets('has correct border radius', (tester) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            onPressed: () {},
-          ),
-        );
+      testWidgets('is elevated when enabled and flat when disabled', (
+        tester,
+      ) async {
+        await tester.pumpWidget(createTestWidget(onPressed: () {}));
         await tester.pump();
+        var style = tester
+            .widget<ElevatedButton>(find.byType(ElevatedButton))
+            .style!;
+        expect(style.elevation!.resolve(const {}), 3);
 
-        // The button should have rounded corners as defined in the widget
-        expect(find.byType(SelectionSaveButton), findsOneWidget);
-      });
-
-      testWidgets('has shadow when enabled', (tester) async {
-        await tester.pumpWidget(
-          createTestWidget(
-            onPressed: () {},
-          ),
-        );
+        await tester.pumpWidget(createTestWidget());
         await tester.pump();
-
-        // The button should have elevation/shadow when enabled
-        expect(find.byType(SelectionSaveButton), findsOneWidget);
+        style = tester
+            .widget<ElevatedButton>(find.byType(ElevatedButton))
+            .style!;
+        expect(style.elevation!.resolve(const {WidgetState.disabled}), 0);
       });
     });
 

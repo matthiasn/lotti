@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_title_handler.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
@@ -82,6 +83,8 @@ extension _AnyTaskTitleHandlerScenario on glados.Any {
 }
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   late MockJournalRepository mockJournalRepo;
   late Task task;
 
@@ -91,7 +94,6 @@ void main() {
     task = testTask.copyWith(
       data: testTask.data.copyWith(title: 'Original Title'),
     );
-    registerFallbackValue(task as JournalEntity);
   });
 
   group('TaskTitleHandler', () {

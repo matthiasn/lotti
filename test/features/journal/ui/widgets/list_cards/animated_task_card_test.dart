@@ -253,9 +253,12 @@ void main() {
       );
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Verify the card renders without errors
-      expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
+      // The inner card receives the in-progress status — not just any task.
       expect(find.text('Test Task Title'), findsOneWidget);
+      final innerCard = tester.widget<ModernTaskCard>(
+        find.byType(ModernTaskCard),
+      );
+      expect(innerCard.task.data.status, isA<TaskInProgress>());
     });
 
     testWidgets('handles task with due date', (WidgetTester tester) async {
@@ -349,39 +352,6 @@ void main() {
       // Verify the card renders without overflow
       expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
       expect(tester.takeException(), isNull);
-    });
-
-    testWidgets('respects theme changes', (WidgetTester tester) async {
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          child: Theme(
-            data: ThemeData.dark(),
-            child: AnimatedModernTaskCard(
-              task: testTask,
-            ),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Verify the card renders in dark theme
-      expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
-
-      // Switch to light theme
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          child: Theme(
-            data: ThemeData.light(),
-            child: AnimatedModernTaskCard(
-              task: testTask,
-            ),
-          ),
-        ),
-      );
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Verify the card renders in light theme
-      expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
     });
 
     testWidgets('passes showCreationDate to ModernTaskCard', (

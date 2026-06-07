@@ -53,6 +53,11 @@ class TimeHistoryStreamChart extends StatelessWidget {
 
   /// Set to true in tests to skip rendering the Chart widget
   /// (which has internal timers that cause test failures).
+  ///
+  /// Marked [visibleForTesting] so production code cannot flip it — the
+  /// flag exists purely as a harness seam, mutated symmetrically by the
+  /// time_history_header test helpers.
+  @visibleForTesting
   static bool testMode = false;
 
   /// All available day summaries (may be more than visible range).

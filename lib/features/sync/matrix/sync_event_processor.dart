@@ -56,6 +56,7 @@ export 'package:lotti/features/sync/matrix/vector_clock_validator.dart';
 // dependency-injection plumbing for every collaborator.
 part 'sync_event_processor_journal_handlers.dart';
 part 'sync_event_processor_agent_handlers.dart';
+part 'sync_event_processor_descriptor_cache.dart';
 part 'sync_event_processor_notification_handlers.dart';
 part 'sync_event_processor_outbox_bundle.dart';
 

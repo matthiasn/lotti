@@ -1,8 +1,10 @@
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/util/time_range_utils.dart';
 import 'package:lotti/features/tasks/repository/task_progress_repository.dart';
@@ -11,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   late TaskProgressRepository repository;
@@ -20,13 +23,19 @@ void main() {
     registerFallbackValue(<String>{});
   });
 
-  setUp(() {
+  setUp(() async {
     mockJournalDb = MockJournalDb();
-    getIt.registerSingleton<JournalDb>(mockJournalDb);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(mockJournalDb);
+      },
+    );
     repository = TaskProgressRepository();
   });
 
-  tearDown(getIt.reset);
+  tearDown(tearDownTestGetIt);
 
   group('getTaskProgressData', () {
     test('returns null when entity is not a Task', () async {
@@ -628,6 +637,183 @@ void main() {
       // Assert - union is 10:00-12:00 = 2 hours, not 1.5h + 1h = 2.5h
       expect(result.progress, const Duration(hours: 2));
       expect(result.estimate, estimate);
+    });
+  });
+
+  group('sumTimeSpentFromEntities — Glados properties', () {
+    final base = DateTime.utc(2024, 3, 15, 8);
+
+    JournalEntity entityFor(int seed) {
+      final start = base.add(Duration(minutes: seed % 480));
+      final end = start.add(Duration(minutes: 1 + (seed >> 4) % 120));
+      final meta = Metadata(
+        id: 'e-$seed',
+        createdAt: start,
+        updatedAt: start,
+        dateFrom: start,
+        dateTo: end,
+      );
+      switch (seed % 4) {
+        case 0:
+          return JournalEntity.journalEntry(meta: meta);
+        case 1:
+          // Excluded: structural task time must not count.
+          return JournalEntity.task(
+            meta: meta,
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 's-$seed',
+                createdAt: start,
+                utcOffset: 0,
+              ),
+              title: 't',
+              statusHistory: const [],
+              dateFrom: start,
+              dateTo: end,
+            ),
+          );
+        case 2:
+          // Excluded: AI output is not logged work.
+          return JournalEntity.aiResponse(
+            meta: meta,
+            data: const AiResponseData(
+              model: 'm',
+              systemMessage: '',
+              prompt: '',
+              thoughts: '',
+              response: '',
+            ),
+          );
+        default:
+          // Excluded: audio duration would double-count logged time.
+          return JournalEntity.journalAudio(
+            meta: meta,
+            data: AudioData(
+              dateFrom: start,
+              dateTo: end,
+              duration: end.difference(start),
+              audioFile: 'a.m4a',
+              audioDirectory: '/audio',
+            ),
+          );
+      }
+    }
+
+    glados.Glados<List<int>>(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        0,
+        12,
+        glados.IntAnys(glados.any).intInRange(0, 1 << 16),
+      ),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'non-negative; bounded by the naive sum; excluded types contribute '
+      'nothing; fully-contained intervals never increase the total',
+      (seeds) {
+        final entities = [for (final s in seeds) entityFor(s)];
+        final counted = entities
+            .where(
+              (e) => e is! Task && e is! AiResponseEntry && e is! JournalAudio,
+            )
+            .toList();
+
+        final result = TaskProgressRepository.sumTimeSpentFromEntities(
+          entities,
+        );
+
+        // (a) Never negative.
+        expect(result, greaterThanOrEqualTo(Duration.zero));
+
+        // (c) Bounded by the naive (overlap-ignoring) sum of counted spans.
+        final naive = counted.fold(
+          Duration.zero,
+          (sum, e) => sum + e.meta.dateTo.difference(e.meta.dateFrom),
+        );
+        expect(result, lessThanOrEqualTo(naive), reason: 'seeds=$seeds');
+
+        // (d) Excluded types contribute nothing: filtering them out first
+        // yields the identical union.
+        expect(
+          TaskProgressRepository.sumTimeSpentFromEntities(counted),
+          result,
+        );
+
+        // (b) Adding an interval fully contained in an existing counted span
+        // never increases the total.
+        if (counted.isNotEmpty) {
+          final host = counted.first;
+          final contained = JournalEntity.journalEntry(
+            meta: Metadata(
+              id: 'contained',
+              createdAt: host.meta.dateFrom,
+              updatedAt: host.meta.dateFrom,
+              dateFrom: host.meta.dateFrom,
+              dateTo: host.meta.dateTo,
+            ),
+          );
+          expect(
+            TaskProgressRepository.sumTimeSpentFromEntities(
+              [...entities, contained],
+            ),
+            result,
+            reason: 'contained interval must not change the union',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('buildTimeRanges — Glados properties', () {
+    final base = DateTime.utc(2024, 3, 15, 8);
+
+    glados.Glados<List<int>>(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        0,
+        10,
+        glados.IntAnys(glados.any).intInRange(0, 1 << 12),
+      ),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'every unique span id appears exactly once with start/end preserved',
+      (seeds) {
+        final spans = <LinkedEntityTimeSpan>[
+          for (final (i, seed) in seeds.indexed)
+            (
+              id: 'span-$i',
+              dateFrom: base.add(Duration(minutes: seed % 480)),
+              dateTo: base.add(Duration(minutes: seed % 480 + 1 + seed % 90)),
+            ),
+        ];
+
+        final ranges = TaskProgressRepository.buildTimeRanges(spans);
+
+        expect(ranges.keys.toSet(), {for (final s in spans) s.id});
+        expect(ranges.length, spans.length);
+        for (final span in spans) {
+          expect(ranges[span.id]!.start, span.dateFrom, reason: span.id);
+          expect(ranges[span.id]!.end, span.dateTo, reason: span.id);
+        }
+      },
+      tags: 'glados',
+    );
+
+    test('duplicate ids: the later span wins (map overwrite)', () {
+      final ranges = TaskProgressRepository.buildTimeRanges([
+        (
+          id: 'dup',
+          dateFrom: base,
+          dateTo: base.add(const Duration(minutes: 10)),
+        ),
+        (
+          id: 'dup',
+          dateFrom: base.add(const Duration(hours: 1)),
+          dateTo: base.add(const Duration(hours: 2)),
+        ),
+      ]);
+
+      expect(ranges, hasLength(1));
+      expect(ranges['dup']!.start, base.add(const Duration(hours: 1)));
     });
   });
 }
