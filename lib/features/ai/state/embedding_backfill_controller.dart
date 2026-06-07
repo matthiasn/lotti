@@ -167,19 +167,15 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
 
   /// Iterates [entityIds], calling [EmbeddingProcessor.processEntity] for
   /// each, and updating progress state. Shared by backfill and reindex.
-  Future<_EmbedResult> _processEntities({
+  Future<void> _processEntities({
     required List<String> entityIds,
     required _BackfillServices services,
     required LabelNameResolver labelResolver,
-    int processedOffset = 0,
-    int embeddedOffset = 0,
-    int failedOffset = 0,
-    int totalOverride = 0,
   }) async {
-    final total = totalOverride > 0 ? totalOverride : entityIds.length;
-    var processed = processedOffset;
-    var embedded = embeddedOffset;
-    var failed = failedOffset;
+    final total = entityIds.length;
+    var processed = 0;
+    var embedded = 0;
+    var failed = 0;
 
     for (final entityId in entityIds) {
       if (_cancelled) break;
@@ -212,12 +208,6 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
         progress: processed / total,
       );
     }
-
-    return _EmbedResult(
-      processed: processed,
-      embedded: embedded,
-      failed: failed,
-    );
   }
 
   /// Generates embeddings for all entries in the given [categoryIds].
@@ -348,15 +338,4 @@ class EmbeddingBackfillController extends Notifier<EmbeddingBackfillState> {
       requireAgentRepository: true,
     );
   }
-}
-
-class _EmbedResult {
-  _EmbedResult({
-    required this.processed,
-    required this.embedded,
-    required this.failed,
-  });
-  final int processed;
-  final int embedded;
-  final int failed;
 }

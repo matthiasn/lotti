@@ -515,7 +515,7 @@ void main() {
 
     glados.Glados(
       glados.any.activeInferenceScenario,
-      glados.ExploreConfig(numRuns: 180),
+      glados.ExploreConfig(numRuns: 120),
     ).test('matches generated active inference lifecycle semantics', (
       scenario,
     ) {

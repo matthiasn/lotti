@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -1049,6 +1050,62 @@ void main() {
       final skills = testContainer.read(provider).value;
       expect(skills, isEmpty);
     });
+
+    // Property: for any generated (entity kind, linkedFrom, skill) triple,
+    // the provider returns the skill iff the modality and context-policy
+    // predicates are simultaneously satisfied. Covers the combinations the
+    // hand-written examples skip (multi-modality skills, dictionaryOnly,
+    // fullTask without task context, ...).
+    glados.Glados(
+      glados.any.skillFilterScenario,
+      glados.ExploreConfig(numRuns: 80),
+    ).test(
+      'matches the documented filter predicate for any combination',
+      (
+        scenario,
+      ) async {
+        final entity = scenario.buildEntity();
+        final skill =
+            AiConfig.skill(
+                  id: 'generated-skill',
+                  name: 'Generated',
+                  createdAt: DateTime(2024, 3, 15),
+                  skillType: scenario.skillType,
+                  requiredInputModalities: scenario.modalities,
+                  contextPolicy: scenario.contextPolicy,
+                  systemInstructions: 'sys',
+                  userInstructions: 'user',
+                )
+                as AiConfigSkill;
+
+        final testContainer = ProviderContainer(
+          overrides: [
+            skillRegistryProvider.overrideWithValue([skill]),
+            createEntryControllerOverride(entity),
+          ],
+        );
+        try {
+          await testContainer.read(
+            entryControllerProvider(id: entity.meta.id).future,
+          );
+          final skills = await testContainer.read(
+            availableSkillsForEntityProvider((
+              entityId: entity.meta.id,
+              linkedFromId: scenario.hasLinkedFrom ? 'linked-from-1' : null,
+            )).future,
+          );
+
+          expect(
+            skills.map((s) => s.id),
+            scenario.expectIncluded ? ['generated-skill'] : isEmpty,
+            reason: '$scenario',
+          );
+        } finally {
+          testContainer.dispose();
+        }
+      },
+      tags: 'glados',
+    );
   });
 
   group('triggerSkillProvider', () {
@@ -2804,4 +2861,91 @@ void main() {
       });
     });
   });
+}
+
+/// One generated (entity kind, linkedFrom, skill shape) combination for the
+/// availability-filter property, with the oracle predicate inlined.
+class _SkillFilterScenario {
+  _SkillFilterScenario(int seed)
+    : entityKind = seed % 4,
+      hasLinkedFrom = (seed ~/ 4).isEven,
+      skillType = SkillType.values[(seed ~/ 8) % SkillType.values.length],
+      contextPolicy =
+          ContextPolicy.values[(seed ~/ 40) % ContextPolicy.values.length],
+      modalities = [
+        if (seed & 256 != 0) Modality.audio,
+        if (seed & 512 != 0) Modality.image,
+        if (seed & 1024 != 0) Modality.text,
+      ];
+
+  final int entityKind; // 0=JournalEntry 1=JournalAudio 2=Task 3=JournalImage
+  final bool hasLinkedFrom;
+  final SkillType skillType;
+  final ContextPolicy contextPolicy;
+  final List<Modality> modalities;
+
+  JournalEntity buildEntity() {
+    final date = DateTime(2024, 3, 15);
+    final meta = Metadata(
+      id: 'entity-prop',
+      createdAt: date,
+      updatedAt: date,
+      dateFrom: date,
+      dateTo: date,
+    );
+    return switch (entityKind) {
+      0 => JournalEntity.journalEntry(meta: meta),
+      1 => JournalEntity.journalAudio(
+        meta: meta,
+        data: AudioData(
+          dateFrom: date,
+          dateTo: date,
+          audioFile: 'p.m4a',
+          audioDirectory: '/p',
+          duration: const Duration(minutes: 1),
+        ),
+      ),
+      2 => JournalEntity.task(
+        meta: meta,
+        data: TaskData(
+          status: TaskStatus.open(id: 's', createdAt: date, utcOffset: 0),
+          dateFrom: date,
+          dateTo: date,
+          statusHistory: const [],
+          title: 'Prop task',
+        ),
+      ),
+      _ => JournalEntity.journalImage(
+        meta: meta,
+        data: ImageData(
+          capturedAt: date,
+          imageId: 'img',
+          imageFile: 'p.jpg',
+          imageDirectory: '/p',
+        ),
+      ),
+    };
+  }
+
+  bool get expectIncluded {
+    final isTask = entityKind == 2;
+    final hasTaskContext = isTask || hasLinkedFrom;
+    if (!hasTaskContext && contextPolicy == ContextPolicy.fullTask) {
+      return false;
+    }
+    if (modalities.contains(Modality.audio) && entityKind != 1) return false;
+    if (modalities.contains(Modality.image) && entityKind != 3) return false;
+    // All four entity kinds carry text, so the text guard never rejects.
+    return true;
+  }
+
+  @override
+  String toString() =>
+      '_SkillFilterScenario(kind: $entityKind, linked: $hasLinkedFrom, '
+      'type: $skillType, policy: $contextPolicy, modalities: $modalities)';
+}
+
+extension _AnySkillFilterScenario on glados.Any {
+  glados.Generator<_SkillFilterScenario> get skillFilterScenario =>
+      glados.IntAnys(this).intInRange(0, 1 << 12).map(_SkillFilterScenario.new);
 }

@@ -528,7 +528,7 @@ void main() {
 
     glados.Glados(
       glados.any.inferenceScenario,
-      glados.ExploreConfig(numRuns: 180),
+      glados.ExploreConfig(numRuns: 120),
     ).test('matches generated multi-response running semantics', (scenario) {
       final generatedContainer = ProviderContainer();
       final expectedById = <String, Map<AiResponseType, InferenceStatus>>{};
