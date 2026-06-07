@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -23,6 +24,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../../categories/test_utils.dart';
 import '../test_utils.dart';
 
@@ -96,6 +98,15 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
 
+  // setUpTestGetIt pre-registers several core services; tests that need a
+  // mock variant swap it in instead of double-registering.
+  void reRegister<T extends Object>(T instance) {
+    if (getIt.isRegistered<T>()) {
+      getIt.unregister<T>();
+    }
+    getIt.registerSingleton<T>(instance);
+  }
+
   setUp(() async {
     mockDb = MockJournalDb();
     mockPersistence = MockPersistenceLogic();
@@ -105,9 +116,16 @@ void main() {
     mockOutboxService = MockOutboxService();
     updateStreamController = StreamController<Set<String>>.broadcast();
 
-    // Register OutboxService in GetIt (used by _enqueueLinkSync)
-    await getIt.reset();
-    getIt.registerSingleton<OutboxService>(mockOutboxService);
+    // Register OutboxService via the central helper (used by
+    // _enqueueLinkSync); setUpTestGetIt owns reset + base registrations.
+    await setUpTestGetIt(
+      additionalSetup: () {
+        if (getIt.isRegistered<OutboxService>()) {
+          getIt.unregister<OutboxService>();
+        }
+        getIt.registerSingleton<OutboxService>(mockOutboxService);
+      },
+    );
     when(
       () => mockOutboxService.enqueueMessage(any()),
     ).thenAnswer((_) async {});
@@ -146,7 +164,7 @@ void main() {
 
   tearDown(() async {
     await updateStreamController.close();
-    await getIt.reset();
+    await tearDownTestGetIt();
   });
 
   group('getProjectById', () {
@@ -960,9 +978,8 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenReturn(null);
-      getIt
-        ..registerSingleton<SyncSequenceLogService>(mockSequenceLog)
-        ..registerSingleton<DomainLogger>(mockDomainLogger);
+      reRegister<SyncSequenceLogService>(mockSequenceLog);
+      reRegister<DomainLogger>(mockDomainLogger);
     });
 
     test('linkTaskToProject records the new link sequence', () async {
@@ -1326,7 +1343,7 @@ void main() {
           subDomain: any<String>(named: 'subDomain'),
         ),
       ).thenReturn(null);
-      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+      reRegister<DomainLogger>(mockDomainLogger);
     });
 
     test(
@@ -1509,21 +1526,11 @@ void main() {
     // five dependencies from getIt.
     test('creates a ProjectRepository from getIt registrations', () async {
       // Register all five dependencies the factory reads from getIt.
-      getIt
-        ..registerSingleton<JournalDb>(mockDb)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<PersistenceLogic>(mockPersistence)
-        ..registerSingleton<UpdateNotifications>(mockNotifications)
-        ..registerSingleton<VectorClockService>(mockVectorClockService);
-
-      addTearDown(
-        () => getIt
-          ..unregister<JournalDb>()
-          ..unregister<EntitiesCacheService>()
-          ..unregister<PersistenceLogic>()
-          ..unregister<UpdateNotifications>()
-          ..unregister<VectorClockService>(),
-      );
+      reRegister<JournalDb>(mockDb);
+      reRegister<EntitiesCacheService>(mockEntitiesCacheService);
+      reRegister<PersistenceLogic>(mockPersistence);
+      reRegister<UpdateNotifications>(mockNotifications);
+      reRegister<VectorClockService>(mockVectorClockService);
 
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -1532,5 +1539,245 @@ void main() {
 
       expect(repo, isA<ProjectRepository>());
     });
+  });
+
+  group('watchProjectsOverview — cancellation', () {
+    test(
+      'cancelling the stream disposes the notification subscription: later '
+      'notifications trigger no further DB fetches',
+      () async {
+        var fetches = 0;
+        when(() => mockDb.getVisibleProjects()).thenAnswer((_) async {
+          fetches++;
+          return [
+            makeTestProject(
+              id: 'project-c1',
+              title: 'P',
+              categoryId: workCategory.id,
+            ),
+          ];
+        });
+        when(() => mockDb.getProjectTaskRollups(any())).thenAnswer(
+          (_) async => {},
+        );
+
+        final stream = repository.watchProjectsOverview(
+          query: const ProjectsQuery(),
+        );
+        final sub = stream.listen((_) {});
+        await pumpEventQueue();
+        final fetchesBeforeCancel = fetches;
+        expect(fetchesBeforeCancel, greaterThan(0));
+
+        await sub.cancel();
+
+        // A relevant notification after cancel must not re-fetch.
+        updateStreamController.add({projectNotification});
+        await pumpEventQueue();
+
+        expect(fetches, fetchesBeforeCancel);
+      },
+    );
+
+    test(
+      'cancelling during an in-flight fetch never adds to the closed '
+      'controller (isClosed guard)',
+      () async {
+        final gate = Completer<List<ProjectEntry>>();
+        var calls = 0;
+        when(() => mockDb.getVisibleProjects()).thenAnswer((_) {
+          calls++;
+          return gate.future;
+        });
+        when(() => mockDb.getProjectTaskRollups(any())).thenAnswer(
+          (_) async => {},
+        );
+
+        final events = <ProjectsOverviewSnapshot>[];
+        final sub = repository
+            .watchProjectsOverview(query: const ProjectsQuery())
+            .listen(events.add);
+        await pumpEventQueue();
+        expect(calls, 1);
+
+        // Cancel while the initial fetch is still pending, then let the
+        // fetch complete — the guard must swallow the late snapshot.
+        await sub.cancel();
+        gate.complete([
+          makeTestProject(
+            id: 'project-late',
+            title: 'Late',
+            categoryId: workCategory.id,
+          ),
+        ]);
+        await pumpEventQueue();
+
+        expect(events, isEmpty);
+      },
+    );
+  });
+
+  group('getProjectsOverview — uncategorized ordering', () {
+    test('projects with a null categoryId group last', () async {
+      when(() => mockDb.getVisibleProjects()).thenAnswer(
+        (_) async => [
+          makeTestProject(
+            id: 'project-uncat',
+            title: 'No category',
+          ),
+          makeTestProject(
+            id: 'project-work',
+            title: 'Work project',
+            categoryId: workCategory.id,
+          ),
+        ],
+      );
+      when(() => mockDb.getProjectTaskRollups(any())).thenAnswer(
+        (_) async => {},
+      );
+
+      final result = await repository.getProjectsOverview(
+        query: const ProjectsQuery(),
+      );
+
+      expect(result.groups, hasLength(2));
+      expect(result.groups.first.categoryId, workCategory.id);
+      expect(result.groups.last.categoryId, isNull);
+      expect(
+        result.groups.last.projects.single.project.meta.id,
+        'project-uncat',
+      );
+    });
+  });
+
+  group('debugProjectsOverviewNeedsRefresh — Glados properties', () {
+    ProjectsOverviewSnapshot snapshotWith({
+      required List<String> projectIds,
+      required String categoryId,
+    }) {
+      return ProjectsOverviewSnapshot(
+        groups: [
+          ProjectCategoryGroup(
+            categoryId: categoryId,
+            category: workCategory,
+            projects: [
+              for (final id in projectIds)
+                ProjectListItemData(
+                  project: makeTestProject(
+                    id: id,
+                    title: id,
+                    categoryId: categoryId,
+                  ),
+                  category: workCategory,
+                  taskRollup: const ProjectTaskRollupData(),
+                ),
+            ],
+          ),
+        ],
+      );
+    }
+
+    glados.Glados<int>(
+      glados.IntAnys(glados.any).intInRange(0, 1 << 12),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'broad tokens always refresh; snapshot members (bare or prefixed) '
+      'refresh; unknown ids never refresh',
+      (seed) {
+        final snapshot = snapshotWith(
+          projectIds: ['proj-$seed', 'proj-x$seed'],
+          categoryId: 'cat-$seed',
+        );
+
+        // Any broad token alone triggers a refresh.
+        for (final token in [
+          projectNotification,
+          taskNotification,
+          categoriesNotification,
+          privateToggleNotification,
+        ]) {
+          expect(
+            repository.debugProjectsOverviewNeedsRefresh({token}, snapshot),
+            isTrue,
+            reason: token,
+          );
+        }
+
+        // A member project id refreshes — bare and prefix-wrapped agree.
+        expect(
+          repository.debugProjectsOverviewNeedsRefresh(
+            {'proj-$seed'},
+            snapshot,
+          ),
+          isTrue,
+        );
+        expect(
+          repository.debugProjectsOverviewNeedsRefresh(
+            {projectEntityUpdateNotification('proj-$seed')},
+            snapshot,
+          ),
+          isTrue,
+        );
+
+        // The snapshot's category id refreshes too.
+        expect(
+          repository.debugProjectsOverviewNeedsRefresh(
+            {'cat-$seed'},
+            snapshot,
+          ),
+          isTrue,
+        );
+
+        // Unrecognised ids never refresh.
+        expect(
+          repository.debugProjectsOverviewNeedsRefresh(
+            {'unrelated-$seed', projectEntityUpdateNotification('nope-$seed')},
+            snapshot,
+          ),
+          isFalse,
+        );
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('resolveAffectedProjectIds — properties', () {
+    test(
+      'result is the union of direct and task-derived ids, and prefixed ids '
+      'normalize to their bare form',
+      () async {
+        when(() => mockDb.getExistingProjectIds(any())).thenAnswer(
+          (invocation) async {
+            final ids = invocation.positionalArguments.first as Set<String>;
+            return {
+              for (final id in ids)
+                if (id.startsWith('proj-')) id,
+            };
+          },
+        );
+        when(() => mockDb.getProjectIdsForTaskIds(any())).thenAnswer(
+          (invocation) async {
+            final ids = invocation.positionalArguments.first as Set<String>;
+            return {
+              for (final id in ids)
+                if (id.startsWith('task-')) 'proj-of-$id',
+            };
+          },
+        );
+
+        final bare = await repository.resolveAffectedProjectIds(
+          {'proj-1', 'task-2', 'noise'},
+        );
+        expect(bare, {'proj-1', 'proj-of-task-2'});
+
+        // Prefix-wrapped ids resolve identically to their bare forms.
+        final prefixed = await repository.resolveAffectedProjectIds({
+          projectEntityUpdateNotification('proj-1'),
+          projectEntityUpdateNotification('task-2'),
+          'noise',
+        });
+        expect(prefixed, bare);
+      },
+    );
   });
 }
