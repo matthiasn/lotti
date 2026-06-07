@@ -1168,6 +1168,83 @@ void main() {
         },
       );
 
+      test(
+        'an override modelId whose parent provider does not resolve to '
+        'an AiConfigInferenceProvider falls back to the profile slot — '
+        'mirrors the image-analysis wrong-provider-type guard',
+        () async {
+          final audioEntity = makeAudioEntity();
+          await createStubAudioFile();
+
+          final orphanModel = AiConfig.model(
+            id: 'override-model-id',
+            name: 'Orphaned Whisper',
+            providerModelId: 'orphan-whisper',
+            inferenceProviderId: 'p-missing',
+            createdAt: DateTime(2024),
+            inputModalities: const [Modality.audio],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+          );
+
+          when(
+            () => mockAiConfigRepo.getConfigById('override-model-id'),
+          ).thenAnswer((_) async => orphanModel);
+          when(
+            () => mockAiConfigRepo.getConfigById('p-missing'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.getEntity('audio-1'),
+          ).thenAnswer((_) async => audioEntity);
+          when(
+            () => mockPromptBuilderHelper.getSpeechDictionaryTerms(audioEntity),
+          ).thenAnswer((_) async => const <String>[]);
+          when(
+            () => mockTaskSummaryResolver.resolve(any()),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: any(named: 'model'),
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.fromIterable([
+              makeStreamChunk('Fell back to profile'),
+            ]),
+          );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
+          stubLoggingEvent();
+
+          await runner.runTranscription(
+            audioEntryId: 'audio-1',
+            automationResult: makeTranscriptionResult(),
+            overrideModelId: 'override-model-id',
+          );
+
+          // The orphaned override is ignored; the profile slot model runs.
+          verify(
+            () => mockCloudRepo.generateWithAudio(
+              any(),
+              model: 'whisper-1',
+              audioBase64: any(named: 'audioBase64'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+            ),
+          ).called(1);
+        },
+      );
+
       test('logs exception on failure', () async {
         when(
           () => mockAiInputRepo.getEntity('entry-1'),
@@ -3965,43 +4042,42 @@ void main() {
             ),
           );
 
-          // Register PersistenceLogic mock if not already registered.
-          if (!getIt.isRegistered<PersistenceLogic>()) {
-            final mockPersistenceLogic = MockPersistenceLogic();
-            getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+          // setUp resets getIt per test, so register unconditionally —
+          // matching the sibling happy-path tests' setup strategy.
+          final mockPersistenceLogic = MockPersistenceLogic();
+          getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
-            when(
-              () => mockPersistenceLogic.createMetadata(
-                dateFrom: any(named: 'dateFrom'),
-                dateTo: any(named: 'dateTo'),
-                uuidV5Input: any(named: 'uuidV5Input'),
-                flag: any(named: 'flag'),
-                categoryId: any(named: 'categoryId'),
-              ),
-            ).thenAnswer(
-              (_) async => Metadata(
-                id: 'gen-img-ref',
-                createdAt: DateTime(2024),
-                updatedAt: DateTime(2024),
-                dateFrom: DateTime(2024),
-                dateTo: DateTime(2024),
-              ),
-            );
-            when(
-              () => mockPersistenceLogic.createDbEntity(
-                any(),
-                linkedId: any(named: 'linkedId'),
-                shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
-                enqueueSync: any(named: 'enqueueSync'),
-              ),
-            ).thenAnswer((_) async => true);
-            when(
-              () => mockPersistenceLogic.updateTask(
-                journalEntityId: any(named: 'journalEntityId'),
-                taskData: any(named: 'taskData'),
-              ),
-            ).thenAnswer((_) async => true);
-          }
+          when(
+            () => mockPersistenceLogic.createMetadata(
+              dateFrom: any(named: 'dateFrom'),
+              dateTo: any(named: 'dateTo'),
+              uuidV5Input: any(named: 'uuidV5Input'),
+              flag: any(named: 'flag'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer(
+            (_) async => Metadata(
+              id: 'gen-img-ref',
+              createdAt: DateTime(2024),
+              updatedAt: DateTime(2024),
+              dateFrom: DateTime(2024),
+              dateTo: DateTime(2024),
+            ),
+          );
+          when(
+            () => mockPersistenceLogic.createDbEntity(
+              any(),
+              linkedId: any(named: 'linkedId'),
+              shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+              enqueueSync: any(named: 'enqueueSync'),
+            ),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockPersistenceLogic.updateTask(
+              journalEntityId: any(named: 'journalEntityId'),
+              taskData: any(named: 'taskData'),
+            ),
+          ).thenAnswer((_) async => true);
 
           getIt
             ..unregister<DomainLogger>()
@@ -4239,7 +4315,12 @@ void main() {
           // getIt.isRegistered<AgentDatabase>() branch where no DB is present.
           final result = testContainer.read(skillInferenceRunnerProvider);
 
-          expect(result, isA<SkillInferenceRunner>());
+          // The wiring is observable: with no AgentDatabase, the resolver
+          // has no agent repository and falls back to legacy summaries.
+          expect(
+            result.debugTaskSummaryResolver.hasAgentRepository,
+            isFalse,
+          );
         },
       );
 
@@ -4272,7 +4353,12 @@ void main() {
           // getIt.isRegistered<AgentDatabase>() == true branch.
           final result = testContainer.read(skillInferenceRunnerProvider);
 
-          expect(result, isA<SkillInferenceRunner>());
+          // With AgentDatabase registered, the resolver carries a real
+          // AgentRepository so agent reports are reachable at run time.
+          expect(
+            result.debugTaskSummaryResolver.hasAgentRepository,
+            isTrue,
+          );
         },
       );
     });
@@ -4302,5 +4388,156 @@ void main() {
         );
       });
     });
+  });
+
+  group('debugResolveEntryContent — pure content resolution', () {
+    AudioTranscript transcriptAt(int day, String text) => AudioTranscript(
+      created: DateTime(2024, 1, day),
+      library: 'lib',
+      model: 'model',
+      detectedLanguage: 'en',
+      transcript: text,
+    );
+
+    JournalAudio audioWithTranscripts(
+      List<AudioTranscript> transcripts, {
+      String? plainText,
+    }) =>
+        JournalEntity.journalAudio(
+              meta: Metadata(
+                id: 'audio-resolve',
+                createdAt: DateTime(2024),
+                updatedAt: DateTime(2024),
+                dateFrom: DateTime(2024),
+                dateTo: DateTime(2024),
+              ),
+              data: AudioData(
+                dateFrom: DateTime(2024),
+                dateTo: DateTime(2024),
+                duration: const Duration(minutes: 1),
+                audioDirectory: '/audio/',
+                audioFile: 'a.aac',
+                transcripts: transcripts,
+              ),
+              entryText: plainText == null
+                  ? null
+                  : EntryText(plainText: plainText),
+            )
+            as JournalAudio;
+
+    test('edited entry text wins over any transcript', () {
+      final audio = audioWithTranscripts(
+        [transcriptAt(20, 'latest transcript')],
+        plainText: '  edited text  ',
+      );
+      expect(
+        SkillInferenceRunner.debugResolveEntryContent(audio),
+        'edited text',
+      );
+    });
+
+    glados.Glados<List<int>>(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        8,
+        glados.any.intInRange(1, 28),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'latest transcript by created date wins regardless of list order',
+      (dayOffsets) {
+        final transcripts = [
+          for (final day in dayOffsets) transcriptAt(day, 'day-$day'),
+        ];
+        final audio = audioWithTranscripts(transcripts);
+
+        final maxDay = dayOffsets.reduce((a, b) => a > b ? a : b);
+        expect(
+          SkillInferenceRunner.debugResolveEntryContent(audio),
+          'day-$maxDay',
+          reason: 'offsets=$dayOffsets',
+        );
+      },
+      tags: 'glados',
+    );
+
+    test(
+      'placeholder branches: empty transcripts / empty note / other type',
+      () {
+        expect(
+          SkillInferenceRunner.debugResolveEntryContent(
+            audioWithTranscripts(const []),
+          ),
+          '[No transcription available]',
+        );
+        expect(
+          SkillInferenceRunner.debugResolveEntryContent(
+            makeTextEntry(plainText: '   '),
+          ),
+          '[Empty note]',
+        );
+        expect(
+          SkillInferenceRunner.debugResolveEntryContent(makeImageEntity()),
+          '[No entry content available]',
+        );
+      },
+    );
+
+    test('markdown wins over plain text for journal entries', () {
+      expect(
+        SkillInferenceRunner.debugResolveEntryContent(
+          makeTextEntry(markdown: '# Heading', plainText: 'plain'),
+        ),
+        '# Heading',
+      );
+      expect(
+        SkillInferenceRunner.debugResolveEntryContent(
+          makeTextEntry(plainText: 'plain only'),
+        ),
+        'plain only',
+      );
+    });
+  });
+
+  group('debugFormatSpeechDictionaryText — pure prompt fragment', () {
+    test('empty terms produce an empty string', () {
+      expect(
+        SkillInferenceRunner.debugFormatSpeechDictionaryText(const []),
+        '',
+      );
+    });
+
+    glados.Glados<List<String>>(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        6,
+        glados.AnyUtils(glados.any).choose(const [
+          'Lotti',
+          'naïve',
+          'with "quotes"',
+          r'back\slash',
+          'line\nbreak',
+          'emoji 😀',
+        ]),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'non-empty output starts with IMPORTANT and the bracketed list '
+      'JSON-decodes back to the exact terms',
+      (terms) {
+        final text = SkillInferenceRunner.debugFormatSpeechDictionaryText(
+          terms,
+        );
+
+        expect(text, startsWith('IMPORTANT'));
+
+        // Round-trip: the escaped fragment must be valid JSON that decodes
+        // back to the original terms, characters intact.
+        final start = text.indexOf('[');
+        final jsonList = text.substring(start);
+        expect(jsonDecode(jsonList), terms, reason: text);
+      },
+      tags: 'glados',
+    );
   });
 }

@@ -26,6 +26,11 @@ class TaskSummaryResolver {
 
   final AgentRepository? _agentRepository;
 
+  /// Whether an agent repository was wired in (agent reports reachable) —
+  /// observable seam for factory-wiring tests.
+  @visibleForTesting
+  bool get hasAgentRepository => _agentRepository != null;
+
   /// Returns the best available summary for [taskId], or `null` if none
   /// exists from either source.
   ///
