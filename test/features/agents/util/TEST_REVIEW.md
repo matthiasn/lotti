@@ -33,9 +33,11 @@
   
   The newline-collapsing logic (`replaceAll('\n', ' ').trim()`) is also non-trivial. A test file `test/features/agents/util/text_utils_test.dart` is required. Per repo convention (one test file per source file), this is a clear gap.
 
-- [ ] **[MED]** `inference_provider_resolver_test.dart` — The `resolveInferenceProviderWithModel` function is the primary implementation, but the test file exclusively uses `resolveInferenceProvider` (the thin wrapper). `resolveInferenceProviderWithModel` is never called directly, meaning no test asserts that the returned `ResolvedInferenceProvider` record's `model` field contains the correct `AiConfigModel` row. Add at least one test calling `resolveInferenceProviderWithModel` directly and asserting both `result.model.id` and `result.provider.id`.
+- [x] **[MED]** `inference_provider_resolver_test.dart` — The `resolveInferenceProviderWithModel` function is the primary implementation, but the test file exclusively uses `resolveInferenceProvider` (the thin wrapper). `resolveInferenceProviderWithModel` is never called directly, meaning no test asserts that the returned `ResolvedInferenceProvider` record's `model` field contains the correct `AiConfigModel` row. Add at least one test calling `resolveInferenceProviderWithModel` directly and asserting both `result.model.id` and `result.provider.id`.
+  - **RESOLVED:** done — added a direct `resolveInferenceProviderWithModel` test asserting both `resolved.model.id` and `resolved.provider.id` on the returned record.
 
-- [ ] **[MED]** `inference_provider_resolver_test.dart` — The `_providerTypesForKnownModel` private function drives the preferred-provider-type matching logic (lines 123–130 in impl). This function iterates `knownModelsByProvider` and is effectively untested: all static tests and the Glados scenario use a `modelId` of `'models/gemini-3-flash-preview'` (which produces a non-empty preferred-type set) and a `'generated-model'` (which produces an empty preferred-type set and falls into the "no preferred types → accept any usable provider" branch). The "usable fallback" path (lines 105–112 in impl), where a provider exists but has the wrong type and a later provider has no known type, is tested by the static test `'skips stale duplicate model rows…'` but the `developer.log('No provider with a known matching type…')` branch at line 107 is never explicitly verified — add an assertion that `usableFallback` is returned and has the expected `id`.
+- [x] **[MED]** `inference_provider_resolver_test.dart` — The `_providerTypesForKnownModel` private function drives the preferred-provider-type matching logic (lines 123–130 in impl). This function iterates `knownModelsByProvider` and is effectively untested: all static tests and the Glados scenario use a `modelId` of `'models/gemini-3-flash-preview'` (which produces a non-empty preferred-type set) and a `'generated-model'` (which produces an empty preferred-type set and falls into the "no preferred types → accept any usable provider" branch). The "usable fallback" path (lines 105–112 in impl), where a provider exists but has the wrong type and a later provider has no known type, is tested by the static test `'skips stale duplicate model rows…'` but the `developer.log('No provider with a known matching type…')` branch at line 107 is never explicitly verified — add an assertion that `usableFallback` is returned and has the expected `id`.
+  - **RESOLVED:** done — added a fallback-path test: a known Gemini model whose only usable provider has the wrong type (openAi) resolves via the `usableFallback` branch to that provider (the central `testInferenceProvider` factory gained a defaulted `inferenceProviderType` parameter for this).
 
 - [ ] **[LOW]** `inference_provider_resolver_test.dart` — Inline `registerFallbackValue(AiConfigType.model)` in `setUpAll` (line 165). `AiConfigType` fallback values could be centralised in `test/helpers/fallbacks.dart` if they are used across multiple files. Verify and consolidate.
 
@@ -51,7 +53,8 @@
   
   A `Glados2<String, int>` property covering these invariants would be a textbook generative test. Tag with `tags: 'glados'` per project convention.
 
-- [ ] **[MED]** `inference_provider_resolver.dart` — A Glados property already exists (`_AnyGeneratedProviderResolutionScenario`) and is well-formed. The existing property covers the primary resolution paths. The `_providerTypesForKnownModel` helper is a set comprehension over static data; its output for any fixed `modelId` is deterministic and not generative-test-worthy. **No additional Glados gap here.**
+- [x] **[MED]** `inference_provider_resolver.dart` — A Glados property already exists (`_AnyGeneratedProviderResolutionScenario`) and is well-formed. The existing property covers the primary resolution paths. The `_providerTypesForKnownModel` helper is a set comprehension over static data; its output for any fixed `modelId` is deterministic and not generative-test-worthy. **No additional Glados gap here.**
+  - **RESOLVED:** (assessed, no change) — as the item concludes: the existing Glados property covers the resolution paths and `_providerTypesForKnownModel` is a deterministic comprehension over static data.
 
 ---
 
@@ -64,9 +67,11 @@
   - Multi-line input → newlines collapsed to spaces
   - Exact-length text → returned unchanged
 
-- [ ] **[MED]** `inference_provider_resolver_test.dart` — The `logTag` parameter's effect on log output is tested via a passing-through smoke test (`'accepts custom logTag'`), but the log calls themselves use `developer.log` and cannot be intercepted in a unit test without an injected logger. This is acceptable; the test verifies the function completes without error. **No action needed.**
+- [x] **[MED]** `inference_provider_resolver_test.dart` — The `logTag` parameter's effect on log output is tested via a passing-through smoke test (`'accepts custom logTag'`), but the log calls themselves use `developer.log` and cannot be intercepted in a unit test without an injected logger. This is acceptable; the test verifies the function completes without error. **No action needed.**
+  - **RESOLVED:** (assessed, no change) — as the item concludes: `developer.log` output is not interceptable without an injected logger and the smoke coverage is acceptable.
 
-- [ ] **[MED]** `inference_provider_resolver_test.dart` — The Glados property verifies `resolvesProvider` (true/false) and `expectedLookupProviderIds` (number of `getConfigById` calls), but does not assert the returned `provider` object's field values (e.g. `provider.apiKey`, `provider.inferenceProviderType`). For the `cloudWithKey` shape, add: `expect(provider!.apiKey, equals('generated-key'))`.
+- [x] **[MED]** `inference_provider_resolver_test.dart` — The Glados property verifies `resolvesProvider` (true/false) and `expectedLookupProviderIds` (number of `getConfigById` calls), but does not assert the returned `provider` object's field values (e.g. `provider.apiKey`, `provider.inferenceProviderType`). For the `cloudWithKey` shape, add: `expect(provider!.apiKey, equals('generated-key'))`.
+  - **RESOLVED:** done — the Glados body now asserts `provider.apiKey == 'generated-key'` whenever the resolved scenario shape is `cloudWithKey`, proving the record carries real provider fields through.
 
 - [ ] **[LOW]** `inference_provider_resolver_test.dart` — Empty `matchingModels` path is covered by the Glados scenario `_GeneratedModelLookupShape.empty` and by the static test `'returns null when model is not found'`. **Well covered.**
 

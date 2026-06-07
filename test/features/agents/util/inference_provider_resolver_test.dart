@@ -345,6 +345,69 @@ void main() {
     );
 
     test(
+      'resolveInferenceProviderWithModel returns the matched model row and '
+      'its provider as one record',
+      () async {
+        final model = testAiModel(
+          id: 'record-model-row',
+          inferenceProviderId: 'record-provider',
+        );
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [model]);
+        when(
+          () => mockAiConfig.getConfigById('record-provider'),
+        ).thenAnswer(
+          (_) async => testInferenceProvider(id: 'record-provider'),
+        );
+
+        final resolved = await resolveInferenceProviderWithModel(
+          modelId: 'models/gemini-3-flash-preview',
+          aiConfigRepository: mockAiConfig,
+        );
+
+        expect(resolved, isNotNull);
+        expect(resolved!.model.id, 'record-model-row');
+        expect(resolved.provider.id, 'record-provider');
+      },
+    );
+
+    test(
+      'falls back to a usable provider of the wrong type when no provider '
+      'matches the known model type',
+      () async {
+        // gemini-3-flash-preview has known Gemini provider types; configure
+        // only a usable provider of a different type so every iteration
+        // takes the wrong-type branch and the fallback wins.
+        final model = testAiModel(
+          id: 'fallback-model-row',
+          inferenceProviderId: 'mismatched-provider',
+        );
+        when(
+          () => mockAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [model]);
+        when(
+          () => mockAiConfig.getConfigById('mismatched-provider'),
+        ).thenAnswer(
+          (_) async => testInferenceProvider(
+            id: 'mismatched-provider',
+            inferenceProviderType: InferenceProviderType.openAi,
+          ),
+        );
+
+        final resolved = await resolveInferenceProviderWithModel(
+          modelId: 'models/gemini-3-flash-preview',
+          aiConfigRepository: mockAiConfig,
+        );
+
+        // The usableFallback branch returns the mismatched-but-usable row.
+        expect(resolved, isNotNull);
+        expect(resolved!.provider.id, 'mismatched-provider');
+        expect(resolved.model.id, 'fallback-model-row');
+      },
+    );
+
+    test(
       'continues past unusable duplicate providers before resolving',
       () async {
         final noKeyModel = testAiModel(
@@ -462,6 +525,11 @@ void main() {
       if (scenario.resolvesProvider) {
         expect(provider, isNotNull, reason: '$scenario');
         expect(provider!.id, scenario.expectedProviderId);
+        // The resolved record carries the provider's real fields through.
+        if (scenario.providerShape ==
+            _GeneratedProviderLookupShape.cloudWithKey) {
+          expect(provider.apiKey, 'generated-key', reason: '$scenario');
+        }
       } else {
         expect(provider, isNull, reason: '$scenario');
       }
