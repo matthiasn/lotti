@@ -299,7 +299,7 @@ void main() {
       // Tap the header to collapse using the key
       await tester.tap(find.byKey(NestedAiResponsesWidget.headerKey));
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify collapsed (SizeTransition should have value 0.0)
       final collapsedSizeTransition = tester.widget<SizeTransition>(
@@ -317,7 +317,7 @@ void main() {
       // Collapse first
       await tester.tap(headerFinder);
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify collapsed
       var sizeTransition = tester.widget<SizeTransition>(
@@ -328,7 +328,7 @@ void main() {
       // Expand again
       await tester.tap(headerFinder);
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify expanded
       sizeTransition = tester.widget<SizeTransition>(
@@ -358,7 +358,7 @@ void main() {
       // Collapse
       await tester.tap(headerFinder);
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify rotation changed — when collapsed, the icon rotates
       // -0.25 turns so the chevron points right.
@@ -377,7 +377,7 @@ void main() {
       // Swipe to trigger confirmation dialog
       await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify AlertDialog is shown with title and content
       expect(find.byType(AlertDialog), findsOneWidget);
@@ -394,12 +394,12 @@ void main() {
       // Swipe to trigger confirmation dialog
       await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap Cancel button
       await tester.tap(find.text('Cancel'));
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Dialog should be dismissed
       expect(find.byType(AlertDialog), findsNothing);
@@ -424,12 +424,12 @@ void main() {
       // Swipe to trigger confirmation dialog
       await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap Delete button
       await tester.tap(find.text('Delete'));
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify delete was called with correct ID
       verify(
@@ -456,12 +456,12 @@ void main() {
       // Swipe to trigger confirmation dialog
       await tester.drag(dismissibleFinder, const Offset(-300, 0));
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap Delete button
       await tester.tap(find.text('Delete'));
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify delete was called
       verify(
@@ -493,12 +493,12 @@ void main() {
       // Swipe to trigger confirmation dialog
       await tester.drag(dismissibleFinder, const Offset(-300, 0));
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap Delete button
       await tester.tap(find.text('Delete'));
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Error snackbar should be shown
       expect(find.byType(SnackBar), findsOneWidget);
@@ -516,7 +516,7 @@ void main() {
       // Swipe to trigger confirmation dialog
       await tester.drag(find.byType(Dismissible), const Offset(-300, 0));
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify dialog is shown
       expect(find.byType(AlertDialog), findsOneWidget);
@@ -524,7 +524,7 @@ void main() {
       // Tap outside the dialog (on the barrier)
       await tester.tapAt(const Offset(10, 10));
       await tester.pump();
-    await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Dialog should be dismissed
       expect(find.byType(AlertDialog), findsNothing);

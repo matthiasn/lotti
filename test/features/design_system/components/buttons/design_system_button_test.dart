@@ -220,8 +220,7 @@ void main() {
               of: find.byKey(buttonKey),
               matching: find.byWidgetPredicate(
                 (widget) =>
-                    widget is DefaultTextStyle &&
-                    widget.style.color == spec.fg,
+                    widget is DefaultTextStyle && widget.style.color == spec.fg,
               ),
             ),
             findsWidgets,
