@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -238,6 +239,36 @@ void main() {
         expect(popped, isNotNull);
         expect(popped?.state, DayState.committed);
         expect(find.byType(CommitPage), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'while commitDay is in-flight the page stays on the sign-off scene '
+      'and a completed hold does not double-commit',
+      (tester) async {
+        _setSurface(tester, const Size(1280, 1200));
+        final gate = Completer<void>();
+        final agent = RecordingDayAgent(commitGate: gate);
+        await tester.pumpWidget(
+          _wrap(
+            CommitPage(draft: _planWithItems()),
+            overrides: [dayAgentProvider.overrideWithValue(agent)],
+          ),
+        );
+        await tester.pump();
+
+        await _completeHold(tester);
+        await tester.pump();
+
+        // In-flight: commit started, lock scene not yet revealed.
+        expect(agent.commitCount, 1);
+        expect(find.byType(LockInScene), findsNothing);
+        expect(find.byType(HoldToConfirm), findsOneWidget);
+
+        gate.complete();
+        await tester.pump();
+        await tester.pump();
+        expect(find.byType(LockInScene), findsOneWidget);
       },
     );
 

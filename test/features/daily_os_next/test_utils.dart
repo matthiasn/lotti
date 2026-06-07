@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 
@@ -17,6 +19,8 @@ class RecordingDayAgent implements DayAgentInterface {
     this.renameError,
     this.submitResult = const CaptureId('cap'),
     this.draftPlanBuilder,
+    this.commitGate,
+    this.commitError,
   });
 
   /// Diff returned by [proposePlanDiff]; when null, a no-change diff
@@ -26,6 +30,13 @@ class RecordingDayAgent implements DayAgentInterface {
   /// Plan returned by [acceptDiff]; defaults to the accepted diff's
   /// `updatedPlan`.
   final DraftPlan? acceptedPlan;
+
+  /// When set, [commitDay] suspends on this completer before returning —
+  /// lets tests observe the in-flight window.
+  final Completer<void>? commitGate;
+
+  /// When set, [commitDay] throws this error (after [commitGate]).
+  final Error? commitError;
 
   /// When set, [proposePlanDiff] throws this error (after [proposeGate]).
   final Error? proposeError;
@@ -134,6 +145,8 @@ class RecordingDayAgent implements DayAgentInterface {
   Future<DraftPlan> commitDay(DraftPlan plan) async {
     capturedPlan = plan;
     commitCount++;
+    if (commitGate != null) await commitGate!.future;
+    if (commitError != null) throw commitError!;
     return plan.copyWith(state: DayState.committed);
   }
 
