@@ -268,7 +268,10 @@ class UnifiedDailyOsDataController extends _$UnifiedDailyOsDataController {
         category: budget.category,
         plannedDuration: budget.plannedDuration,
         recordedDuration: recordedDuration,
-        status: _calculateStatus(budget.plannedDuration, recordedDuration),
+        status: calculateBudgetProgressStatus(
+          budget.plannedDuration,
+          recordedDuration,
+        ),
         contributingEntries: updatedEntries,
         taskProgressItems: budget.taskProgressItems,
         blocks: budget.blocks,

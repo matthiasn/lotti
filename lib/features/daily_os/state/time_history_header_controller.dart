@@ -202,10 +202,10 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
 
       final categoryOrder = current.categoryOrder;
       final stackedHeights = newMax > current.maxDailyTotal
-          ? _computeStackedHeights(mergedDays, categoryOrder, newMax)
+          ? computeStackedHeights(mergedDays, categoryOrder, newMax)
           : {
               ...current.stackedHeights,
-              ..._computeStackedHeights(
+              ...computeStackedHeights(
                 additionalData.days,
                 categoryOrder,
                 newMax,
@@ -376,26 +376,10 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     DateTime start,
     DateTime end,
   ) {
-    // Calculate day count using UTC dates to avoid DST artifacts.
-    // Local DateTime.difference().inDays is unreliable across DST boundaries
-    // because days can be 23 or 25 hours. UTC dates have consistent 24-hour days.
-    final startUtc = DateTime.utc(start.year, start.month, start.day);
-    final endUtc = DateTime.utc(end.year, end.month, end.day);
-    final dayCount = endUtc.difference(startUtc).inDays + 1;
-    final data = <DateTime, Map<String?, Duration>>{};
-
-    // Use calendar arithmetic (day - i) at noon to avoid DST artifacts.
-    // This is the proven pattern from time_by_category_controller.dart:getDaysAtNoon()
-    final endNoon = end.dayAtNoon;
-    for (var i = 0; i < dayCount; i++) {
-      final dayNoon = DateTime(
-        endNoon.year,
-        endNoon.month,
-        endNoon.day - i,
-        12,
-      );
-      data[dayNoon] = <String?, Duration>{};
-    }
+    final data = <DateTime, Map<String?, Duration>>{
+      for (final dayNoon in daysAtNoonForRange(start, end))
+        dayNoon: <String?, Duration>{},
+    };
 
     // Aggregate entries
     // Note: JournalAudio is excluded to avoid double-counting when audio
@@ -461,7 +445,7 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
     days.sort((a, b) => b.day.compareTo(a.day));
 
     // Compute stacked heights
-    final stackedHeights = _computeStackedHeights(
+    final stackedHeights = computeStackedHeights(
       days,
       categoryOrder,
       maxTotal,
@@ -478,52 +462,71 @@ class TimeHistoryHeaderController extends _$TimeHistoryHeaderController {
       stackedHeights: stackedHeights,
     );
   }
+}
 
-  /// Precompute stacked heights for efficient painting.
-  ///
-  /// For each day and category, computes the cumulative height of all
-  /// categories below it in the stack order.
-  ///
-  /// Uses microseconds for precision - inMinutes truncates durations < 60s to 0,
-  /// which would cause divide-by-zero or incorrect scaling.
-  StackedHeights _computeStackedHeights(
-    List<DayTimeSummary> days,
-    List<String> categoryOrder,
-    Duration maxTotal,
-  ) {
-    if (maxTotal <= Duration.zero) {
-      return {};
-    }
-
-    final maxMicroseconds = maxTotal.inMicroseconds.toDouble();
-
-    // Guard against zero after conversion (shouldn't happen if maxTotal > zero,
-    // but defensive against edge cases)
-    if (maxMicroseconds == 0) {
-      return {};
-    }
-
-    final result = <DateTime, Map<String?, double>>{};
-
-    for (final day in days) {
-      final heights = <String?, double>{};
-      var cumulative = 0.0;
-
-      // Stack in category order
-      for (final categoryId in categoryOrder) {
-        heights[categoryId] = cumulative;
-        final microseconds =
-            (day.durationByCategoryId[categoryId]?.inMicroseconds ?? 0)
-                .toDouble();
-        cumulative += microseconds / maxMicroseconds;
-      }
-
-      // Handle uncategorized (null key) at the top
-      heights[null] = cumulative;
-
-      result[day.day] = heights;
-    }
-
-    return result;
+/// Precompute stacked heights for efficient painting.
+///
+/// For each day and category, computes the cumulative height of all
+/// categories below it in the stack order.
+///
+/// Uses microseconds for precision - inMinutes truncates durations < 60s to 0,
+/// which would cause divide-by-zero or incorrect scaling.
+StackedHeights computeStackedHeights(
+  List<DayTimeSummary> days,
+  List<String> categoryOrder,
+  Duration maxTotal,
+) {
+  if (maxTotal <= Duration.zero) {
+    return {};
   }
+
+  final maxMicroseconds = maxTotal.inMicroseconds.toDouble();
+
+  // Guard against zero after conversion (shouldn't happen if maxTotal > zero,
+  // but defensive against edge cases)
+  if (maxMicroseconds == 0) {
+    return {};
+  }
+
+  final result = <DateTime, Map<String?, double>>{};
+
+  for (final day in days) {
+    final heights = <String?, double>{};
+    var cumulative = 0.0;
+
+    // Stack in category order
+    for (final categoryId in categoryOrder) {
+      heights[categoryId] = cumulative;
+      final microseconds =
+          (day.durationByCategoryId[categoryId]?.inMicroseconds ?? 0)
+              .toDouble();
+      cumulative += microseconds / maxMicroseconds;
+    }
+
+    // Handle uncategorized (null key) at the top
+    heights[null] = cumulative;
+
+    result[day.day] = heights;
+  }
+
+  return result;
+}
+
+/// Generates one noon-anchored [DateTime] per calendar day from [end] back
+/// to [start] (newest first), safely across DST transitions.
+///
+/// Day count uses UTC dates because local `difference().inDays` is
+/// unreliable across DST boundaries (23/25-hour days); the day keys use
+/// calendar arithmetic (`day - i`) at noon — the proven pattern from
+/// time_by_category_controller.dart:getDaysAtNoon().
+List<DateTime> daysAtNoonForRange(DateTime start, DateTime end) {
+  final startUtc = DateTime.utc(start.year, start.month, start.day);
+  final endUtc = DateTime.utc(end.year, end.month, end.day);
+  final dayCount = endUtc.difference(startUtc).inDays + 1;
+
+  final endNoon = end.dayAtNoon;
+  return [
+    for (var i = 0; i < dayCount; i++)
+      DateTime(endNoon.year, endNoon.month, endNoon.day - i, 12),
+  ];
 }

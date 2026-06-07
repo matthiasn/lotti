@@ -314,7 +314,10 @@ extension UnifiedDailyOsDataAggregation on UnifiedDailyOsDataController {
           category: cacheService.getCategoryById(budget.categoryId),
           plannedDuration: plannedDuration,
           recordedDuration: recordedDuration,
-          status: _calculateStatus(plannedDuration, recordedDuration),
+          status: calculateBudgetProgressStatus(
+            plannedDuration,
+            recordedDuration,
+          ),
           contributingEntries: categoryEntries,
           taskProgressItems: mergedTaskItems,
           blocks: budget.blocks,
@@ -486,23 +489,6 @@ extension UnifiedDailyOsDataAggregation on UnifiedDailyOsDataController {
     return calculateUnionDuration(ranges);
   }
 
-  BudgetProgressStatus _calculateStatus(
-    Duration planned,
-    Duration recorded,
-  ) {
-    final remaining = planned - recorded;
-
-    if (remaining.isNegative) {
-      return BudgetProgressStatus.overBudget;
-    } else if (remaining == Duration.zero) {
-      return BudgetProgressStatus.exhausted;
-    } else if (remaining.inMinutes <= 15) {
-      return BudgetProgressStatus.nearLimit;
-    } else {
-      return BudgetProgressStatus.underBudget;
-    }
-  }
-
   int _calculateDayStartHour(
     List<PlannedTimeSlot> planned,
     List<ActualTimeSlot> actual,
@@ -593,4 +579,24 @@ extension UnifiedDailyOsDataAggregation on UnifiedDailyOsDataController {
   // =========================================================================
   // Day Plan Mutation Methods
   // =========================================================================
+}
+
+/// Classifies a budget by the time remaining: negative remaining is over
+/// budget, exactly zero is exhausted, fifteen minutes or less (by whole
+/// minutes) is near the limit, anything beyond that is under budget.
+BudgetProgressStatus calculateBudgetProgressStatus(
+  Duration planned,
+  Duration recorded,
+) {
+  final remaining = planned - recorded;
+
+  if (remaining.isNegative) {
+    return BudgetProgressStatus.overBudget;
+  } else if (remaining == Duration.zero) {
+    return BudgetProgressStatus.exhausted;
+  } else if (remaining.inMinutes <= 15) {
+    return BudgetProgressStatus.nearLimit;
+  } else {
+    return BudgetProgressStatus.underBudget;
+  }
 }

@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -976,70 +977,6 @@ void main() {
     );
 
     test(
-      'generates correct days across US DST fall back (November 1, 2026)',
-      () async {
-        // US DST fall back: clocks fall 2:00 AM -> 1:00 AM on November 1, 2026
-        // Testing from November 3 to ensure the DST day (November 1) is within range.
-        final dstDay = DateTime(2026, 11, 3, 12);
-        final fixedClock = Clock.fixed(dstDay);
-
-        await withClock(fixedClock, () async {
-          when(
-            () => mockDb.sortedCalendarEntries(
-              rangeStart: any(named: 'rangeStart'),
-              rangeEnd: any(named: 'rangeEnd'),
-            ),
-          ).thenAnswer((_) async => []);
-
-          when(
-            () => mockDb.linksForEntryIds(any()),
-          ).thenAnswer((_) async => []);
-
-          when(
-            () => mockDb.getJournalEntitiesForIdsUnordered(any()),
-          ).thenAnswer((_) async => []);
-
-          final result = await container.read(
-            timeHistoryHeaderControllerProvider.future,
-          );
-
-          // Should have exactly 30 unique days
-          expect(result.days.length, equals(60));
-
-          // Extract day numbers to verify uniqueness
-          final dayDates = result.days.map(
-            (d) => DateTime(d.day.year, d.day.month, d.day.day),
-          );
-          final uniqueDates = dayDates.toSet();
-          expect(
-            uniqueDates.length,
-            equals(60),
-            reason: 'All 60 days should be unique (no duplicates from DST)',
-          );
-
-          // Verify November 1 (DST day) is present exactly once
-          final nov1Count = result.days
-              .where((d) => d.day.month == 11 && d.day.day == 1)
-              .length;
-          expect(
-            nov1Count,
-            equals(1),
-            reason: 'November 1 (DST fall back day) should appear exactly once',
-          );
-
-          // Verify all days are at noon
-          for (final day in result.days) {
-            expect(
-              day.day.hour,
-              equals(12),
-              reason: 'All days should be at noon',
-            );
-          }
-        });
-      },
-    );
-
-    test(
       'loadMoreDays produces exact day count near US DST transition',
       () async {
         // Test that loadMoreDays produces exactly 44 days (30 initial + 14 more)
@@ -1102,137 +1039,55 @@ void main() {
       },
     );
 
-    test(
-      'generates correct days across EU DST spring forward (March 29, 2026)',
-      () async {
-        // EU DST spring forward: clocks jump 2:00 AM -> 3:00 AM on last Sunday
-        // in March (March 29, 2026).
-        // Testing from March 31 to ensure the DST day is within range.
-        final dstDay = DateTime(2026, 3, 31, 12);
-        final fixedClock = Clock.fixed(dstDay);
+    // The US-fall / EU-spring / EU-fall initial-build variants were folded
+    // into the direct daysAtNoonForRange table below — same calendar math,
+    // no provider container per case.
+  });
 
-        await withClock(fixedClock, () async {
-          when(
-            () => mockDb.sortedCalendarEntries(
-              rangeStart: any(named: 'rangeStart'),
-              rangeEnd: any(named: 'rangeEnd'),
-            ),
-          ).thenAnswer((_) async => []);
+  group('daysAtNoonForRange — direct DST calendar math', () {
+    // (label, anchor day two days after the transition) for every DST edge
+    // the provider-level tests used to spin a full container for.
+    const dstAnchors = <(String, int, int, int)>[
+      ('US spring forward (Mar 8, 2026)', 2026, 3, 10),
+      ('US fall back (Nov 1, 2026)', 2026, 11, 3),
+      ('EU spring forward (Mar 29, 2026)', 2026, 3, 31),
+      ('EU fall back (Oct 25, 2026)', 2026, 10, 27),
+    ];
 
-          when(
-            () => mockDb.linksForEntryIds(any()),
-          ).thenAnswer((_) async => []);
+    for (final (label, year, month, day) in dstAnchors) {
+      test(
+        '60-day window across $label: unique, consecutive, noon-anchored',
+        () {
+          final end = DateTime(year, month, day);
+          final start = DateTime(end.year, end.month, end.day - 59);
 
-          when(
-            () => mockDb.getJournalEntitiesForIdsUnordered(any()),
-          ).thenAnswer((_) async => []);
+          final days = daysAtNoonForRange(start, end);
 
-          final result = await container.read(
-            timeHistoryHeaderControllerProvider.future,
-          );
-
-          // Should have exactly 30 unique days
-          expect(result.days.length, equals(60));
-
-          // Extract day numbers to verify uniqueness
-          final dayDates = result.days.map(
-            (d) => DateTime(d.day.year, d.day.month, d.day.day),
-          );
-          final uniqueDates = dayDates.toSet();
-          expect(
-            uniqueDates.length,
-            equals(60),
-            reason: 'All 60 days should be unique (no duplicates from EU DST)',
-          );
-
-          // Verify March 29 (EU DST day) is present exactly once
-          final march29Count = result.days
-              .where((d) => d.day.month == 3 && d.day.day == 29)
-              .length;
-          expect(
-            march29Count,
-            equals(1),
-            reason:
-                'March 29 (EU DST spring forward day) should appear exactly once',
-          );
-
-          // Verify all days are at noon
-          for (final day in result.days) {
-            expect(
-              day.day.hour,
-              equals(12),
-              reason: 'All days should be at noon',
-            );
+          expect(days, hasLength(60));
+          expect(days.toSet(), hasLength(60), reason: 'no DST duplicates');
+          expect(days.first, DateTime(year, month, day, 12));
+          expect(days.last, DateTime(start.year, start.month, start.day, 12));
+          for (var i = 0; i < days.length; i++) {
+            expect(days[i].hour, 12, reason: 'noon-anchored');
+            if (i > 0) {
+              // Consecutive calendar days, newest first.
+              final expected = DateTime(
+                days[i - 1].year,
+                days[i - 1].month,
+                days[i - 1].day - 1,
+                12,
+              );
+              expect(days[i], expected, reason: 'consecutive at index $i');
+            }
           }
-        });
-      },
-    );
+        },
+      );
+    }
 
-    test(
-      'generates correct days across EU DST fall back (October 25, 2026)',
-      () async {
-        // EU DST fall back: clocks fall 3:00 AM -> 2:00 AM on last Sunday
-        // in October (October 25, 2026).
-        // Testing from October 27 to ensure the DST day is within range.
-        final dstDay = DateTime(2026, 10, 27, 12);
-        final fixedClock = Clock.fixed(dstDay);
-
-        await withClock(fixedClock, () async {
-          when(
-            () => mockDb.sortedCalendarEntries(
-              rangeStart: any(named: 'rangeStart'),
-              rangeEnd: any(named: 'rangeEnd'),
-            ),
-          ).thenAnswer((_) async => []);
-
-          when(
-            () => mockDb.linksForEntryIds(any()),
-          ).thenAnswer((_) async => []);
-
-          when(
-            () => mockDb.getJournalEntitiesForIdsUnordered(any()),
-          ).thenAnswer((_) async => []);
-
-          final result = await container.read(
-            timeHistoryHeaderControllerProvider.future,
-          );
-
-          // Should have exactly 30 unique days
-          expect(result.days.length, equals(60));
-
-          // Extract day numbers to verify uniqueness
-          final dayDates = result.days.map(
-            (d) => DateTime(d.day.year, d.day.month, d.day.day),
-          );
-          final uniqueDates = dayDates.toSet();
-          expect(
-            uniqueDates.length,
-            equals(60),
-            reason: 'All 60 days should be unique (no duplicates from EU DST)',
-          );
-
-          // Verify October 25 (EU DST day) is present exactly once
-          final oct25Count = result.days
-              .where((d) => d.day.month == 10 && d.day.day == 25)
-              .length;
-          expect(
-            oct25Count,
-            equals(1),
-            reason:
-                'October 25 (EU DST fall back day) should appear exactly once',
-          );
-
-          // Verify all days are at noon
-          for (final day in result.days) {
-            expect(
-              day.day.hour,
-              equals(12),
-              reason: 'All days should be at noon',
-            );
-          }
-        });
-      },
-    );
+    test('single-day range yields exactly that day at noon', () {
+      final day = DateTime(2026, 3, 8);
+      expect(daysAtNoonForRange(day, day), [DateTime(2026, 3, 8, 12)]);
+    });
   });
 
   // Timezone-explicit tests that don't depend on system TZ environment variable.
@@ -1439,6 +1294,16 @@ void main() {
 
             // A second DB fetch should have been triggered by _refresh.
             expect(fetchCount, greaterThanOrEqualTo(2));
+
+            // The refresh preserves the pagination flags from before the
+            // refresh (lines 127-131): not loading, still able to load more.
+            // (No production path currently sets canLoadMore to false, so
+            // the preserved values match the pre-refresh state's defaults.)
+            final refreshed = c
+                .read(timeHistoryHeaderControllerProvider)
+                .value!;
+            expect(refreshed.isLoadingMore, isFalse);
+            expect(refreshed.canLoadMore, isTrue);
             c.dispose();
           });
         });
@@ -1797,5 +1662,118 @@ void main() {
         });
       },
     );
+  });
+
+  group('computeStackedHeights — properties', () {
+    const categoryPool = ['cat-a', 'cat-b', 'cat-c'];
+
+    glados.Glados(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        6,
+        // Per day: minutes for cat-a/b/c plus an extra category that is NOT
+        // in the stacking order (must be ignored by the function).
+        glados.CombinableAny(glados.any).combine4(
+          glados.any.intInRange(0, 120),
+          glados.any.intInRange(0, 120),
+          glados.any.intInRange(0, 120),
+          glados.any.intInRange(0, 120),
+          (int a, int b, int c, int x) => (a: a, b: b, c: c, x: x),
+        ),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'heights match the cumulative-fraction oracle and stay within [0, 1]',
+      (dayMinutes) {
+        // January days at noon: DST-safe and matches the production
+        // convention of date-at-noon keys.
+        final days = <DayTimeSummary>[
+          for (var i = 0; i < dayMinutes.length; i++)
+            DayTimeSummary(
+              day: DateTime(2024, 1, 10 + i, 12),
+              durationByCategoryId: {
+                'cat-a': Duration(minutes: dayMinutes[i].a),
+                'cat-b': Duration(minutes: dayMinutes[i].b),
+                'cat-c': Duration(minutes: dayMinutes[i].c),
+                'cat-unordered': Duration(minutes: dayMinutes[i].x),
+              },
+              total: Duration(
+                minutes:
+                    dayMinutes[i].a +
+                    dayMinutes[i].b +
+                    dayMinutes[i].c +
+                    dayMinutes[i].x,
+              ),
+            ),
+        ];
+        final maxTotal = days
+            .map((d) => d.total)
+            .reduce((a, b) => a >= b ? a : b);
+
+        final result = computeStackedHeights(days, categoryPool, maxTotal);
+
+        if (maxTotal == Duration.zero) {
+          expect(result, isEmpty);
+          return;
+        }
+
+        expect(result.keys, days.map((d) => d.day));
+        for (final day in days) {
+          final heights = result[day.day]!;
+          // Oracle: each category's height is the sum of the fractions of
+          // the categories stacked below it; null caps the ordered stack.
+          var cumulative = 0.0;
+          for (final categoryId in categoryPool) {
+            expect(
+              heights[categoryId],
+              cumulative,
+              reason: '$categoryId offset for $dayMinutes',
+            );
+            cumulative +=
+                day.durationByCategoryId[categoryId]!.inMicroseconds /
+                maxTotal.inMicroseconds;
+          }
+          expect(heights[null], cumulative, reason: 'null cap');
+
+          // Unordered categories are excluded from the stack entirely.
+          expect(heights.containsKey('cat-unordered'), isFalse);
+
+          // Bounds + monotonicity along the stack order.
+          final ordered = [
+            for (final categoryId in categoryPool) heights[categoryId]!,
+            heights[null]!,
+          ];
+          for (var i = 0; i < ordered.length; i++) {
+            expect(ordered[i], inInclusiveRange(0.0, 1.0 + 1e-9));
+            if (i > 0) {
+              expect(ordered[i], greaterThanOrEqualTo(ordered[i - 1]));
+            }
+          }
+        }
+      },
+      tags: 'glados',
+    );
+
+    test('maxTotal of zero yields an empty map', () {
+      final days = [
+        DayTimeSummary(
+          day: DateTime(2024, 1, 10, 12),
+          durationByCategoryId: const {},
+          total: Duration.zero,
+        ),
+      ];
+      expect(
+        computeStackedHeights(days, categoryPool, Duration.zero),
+        isEmpty,
+      );
+      expect(
+        computeStackedHeights(
+          days,
+          categoryPool,
+          const Duration(minutes: -5),
+        ),
+        isEmpty,
+      );
+    });
   });
 }

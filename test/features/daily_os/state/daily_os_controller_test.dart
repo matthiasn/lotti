@@ -342,229 +342,129 @@ void main() {
     });
   });
 
-  group('DailyOsState computed properties', () {
-    test('isDraft returns true when dayPlan is null', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
+  group('DailyOsState defaults and per-field copyWith behavior', () {
+    DailyOsState bareState() => DailyOsState(
+      selectedDate: testDate,
+      dayPlan: null,
+      budgetProgress: [],
+      timelineData: createTestTimelineData(),
+    );
+
+    test(
+      'bare state: optional-field defaults and null-plan computed values',
+      () {
+        final state = bareState();
+        // Optional-field defaults.
+        expect(state.expandedSection, isNull);
+        expect(state.isEditingPlan, isFalse);
+        expect(state.highlightedCategoryId, isNull);
+        expect(state.expandedFoldRegions, isEmpty);
+        // Computed getters with a null plan / empty budgets.
+        expect(state.isDraft, isTrue);
+        expect(state.isAgreed, isFalse);
+        expect(state.needsReview, isFalse);
+        expect(state.overBudgetCount, 0);
+        expect(state.totalRecordedTime, Duration.zero);
+      },
+    );
+
+    // One case per optional field: constructor sets the value, copyWith
+    // overrides it, and a copyWith touching an unrelated field preserves it.
+    final cases =
+        <
+          ({
+            String field,
+            DailyOsState Function() constructed,
+            Object? constructorExpected,
+            DailyOsState Function(DailyOsState) copied,
+            Object? copyExpected,
+            Object? Function(DailyOsState) read,
+          })
+        >[
+          (
+            field: 'expandedSection',
+            constructed: () => DailyOsState(
+              selectedDate: testDate,
+              dayPlan: null,
+              budgetProgress: [],
+              timelineData: createTestTimelineData(),
+              expandedSection: DailyOsSection.timeline,
+            ),
+            constructorExpected: DailyOsSection.timeline,
+            copied: (s) => s.copyWith(expandedSection: DailyOsSection.budgets),
+            copyExpected: DailyOsSection.budgets,
+            read: (s) => s.expandedSection,
+          ),
+          (
+            field: 'isEditingPlan',
+            constructed: () => DailyOsState(
+              selectedDate: testDate,
+              dayPlan: null,
+              budgetProgress: [],
+              timelineData: createTestTimelineData(),
+              isEditingPlan: true,
+            ),
+            constructorExpected: true,
+            copied: (s) => s.copyWith(isEditingPlan: false),
+            copyExpected: false,
+            read: (s) => s.isEditingPlan,
+          ),
+          (
+            field: 'highlightedCategoryId',
+            constructed: () => DailyOsState(
+              selectedDate: testDate,
+              dayPlan: null,
+              budgetProgress: [],
+              timelineData: createTestTimelineData(),
+              highlightedCategoryId: 'cat-123',
+            ),
+            constructorExpected: 'cat-123',
+            copied: (s) => s.copyWith(highlightedCategoryId: 'cat-new'),
+            copyExpected: 'cat-new',
+            read: (s) => s.highlightedCategoryId,
+          ),
+          (
+            field: 'expandedFoldRegions',
+            constructed: () => DailyOsState(
+              selectedDate: testDate,
+              dayPlan: null,
+              budgetProgress: [],
+              timelineData: createTestTimelineData(),
+              expandedFoldRegions: {0, 18},
+            ),
+            constructorExpected: {0, 18},
+            copied: (s) => s.copyWith(expandedFoldRegions: {0, 12, 18}),
+            copyExpected: {0, 12, 18},
+            read: (s) => s.expandedFoldRegions,
+          ),
+        ];
+
+    for (final c in cases) {
+      test(
+        '${c.field}: constructor sets, copyWith overrides, unrelated '
+        'copyWith preserves',
+        () {
+          final constructed = c.constructed();
+          expect(c.read(constructed), c.constructorExpected);
+
+          final copied = c.copied(constructed);
+          expect(c.read(copied), c.copyExpected);
+
+          // copyWith touching an unrelated field must preserve this one.
+          final preserved = constructed.copyWith(
+            selectedDate: testDate.add(const Duration(days: 1)),
+          );
+          expect(c.read(preserved), c.constructorExpected);
+        },
       );
+    }
 
-      expect(state.isDraft, isTrue);
-    });
-
-    test('isAgreed returns false when dayPlan is null', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
+    test('copyWith can reset expandedFoldRegions to the empty set', () {
+      final state = bareState().copyWith(expandedFoldRegions: {0, 18});
+      expect(
+        state.copyWith(expandedFoldRegions: {}).expandedFoldRegions,
+        isEmpty,
       );
-
-      expect(state.isAgreed, isFalse);
-    });
-
-    test('needsReview returns false when dayPlan is null', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-      );
-
-      expect(state.needsReview, isFalse);
-    });
-
-    test('overBudgetCount returns zero with empty budgets', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-      );
-
-      expect(state.overBudgetCount, equals(0));
-    });
-
-    test('totalRecordedTime returns zero with empty budgets', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-      );
-
-      expect(state.totalRecordedTime, equals(Duration.zero));
-    });
-  });
-
-  group('DailyOsState expandedSection', () {
-    test('default expandedSection is null', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-      );
-
-      expect(state.expandedSection, isNull);
-    });
-
-    test('can set expandedSection via constructor', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-        expandedSection: DailyOsSection.timeline,
-      );
-
-      expect(state.expandedSection, equals(DailyOsSection.timeline));
-    });
-
-    test('copyWith changes expandedSection', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-      );
-
-      final modified = state.copyWith(expandedSection: DailyOsSection.budgets);
-
-      expect(modified.expandedSection, equals(DailyOsSection.budgets));
-    });
-  });
-
-  group('DailyOsState isEditingPlan', () {
-    test('default isEditingPlan is false', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-      );
-
-      expect(state.isEditingPlan, isFalse);
-    });
-
-    test('can set isEditingPlan via constructor', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-        isEditingPlan: true,
-      );
-
-      expect(state.isEditingPlan, isTrue);
-    });
-  });
-
-  group('DailyOsState highlightedCategoryId', () {
-    test('default highlightedCategoryId is null', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-      );
-
-      expect(state.highlightedCategoryId, isNull);
-    });
-
-    test('can set highlightedCategoryId via constructor', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-        highlightedCategoryId: 'cat-123',
-      );
-
-      expect(state.highlightedCategoryId, equals('cat-123'));
-    });
-
-    test('copyWith changes highlightedCategoryId', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-        highlightedCategoryId: 'cat-old',
-      );
-
-      final modified = state.copyWith(highlightedCategoryId: 'cat-new');
-
-      expect(modified.highlightedCategoryId, equals('cat-new'));
-    });
-  });
-
-  group('DailyOsState expandedFoldRegions', () {
-    test('default expandedFoldRegions is empty', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-      );
-
-      expect(state.expandedFoldRegions, isEmpty);
-    });
-
-    test('can set expandedFoldRegions via constructor', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-        expandedFoldRegions: {0, 18},
-      );
-
-      expect(state.expandedFoldRegions, equals({0, 18}));
-    });
-
-    test('copyWith changes expandedFoldRegions', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-        expandedFoldRegions: {0},
-      );
-
-      final modified = state.copyWith(expandedFoldRegions: {0, 12, 18});
-
-      expect(modified.expandedFoldRegions, equals({0, 12, 18}));
-    });
-
-    test('copyWith preserves expandedFoldRegions when not specified', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-        expandedFoldRegions: {6, 22},
-      );
-
-      final modified = state.copyWith(isEditingPlan: true);
-
-      expect(modified.expandedFoldRegions, equals({6, 22}));
-    });
-
-    test('copyWith can set expandedFoldRegions to empty set', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-        expandedFoldRegions: {0, 18},
-      );
-
-      final modified = state.copyWith(expandedFoldRegions: {});
-
-      expect(modified.expandedFoldRegions, isEmpty);
     });
   });
 
@@ -620,92 +520,6 @@ void main() {
 
       expect(state.expandedFoldRegions.length, equals(4));
       expect(state.expandedFoldRegions.containsAll({0, 6, 18, 22}), isTrue);
-    });
-  });
-
-  group('DailyOsController fold region toggle logic (simulated)', () {
-    // These tests simulate the controller's toggleFoldRegion behavior
-    // by applying the same state transformation logic
-
-    Set<int> simulateToggleFoldRegion(Set<int> currentRegions, int startHour) {
-      if (currentRegions.contains(startHour)) {
-        return currentRegions.where((r) => r != startHour).toSet();
-      } else {
-        return {...currentRegions, startHour};
-      }
-    }
-
-    test('toggleFoldRegion adds region when not present', () {
-      const currentRegions = <int>{};
-      final updated = simulateToggleFoldRegion(currentRegions, 6);
-
-      expect(updated, contains(6));
-      expect(updated.length, equals(1));
-    });
-
-    test('toggleFoldRegion removes region when present', () {
-      const currentRegions = {6, 18};
-      final updated = simulateToggleFoldRegion(currentRegions, 6);
-
-      expect(updated, isNot(contains(6)));
-      expect(updated, contains(18));
-      expect(updated.length, equals(1));
-    });
-
-    test('toggleFoldRegion is idempotent on double toggle', () {
-      const currentRegions = <int>{};
-      final afterFirstToggle = simulateToggleFoldRegion(currentRegions, 6);
-      final afterSecondToggle = simulateToggleFoldRegion(afterFirstToggle, 6);
-
-      expect(afterSecondToggle, equals(currentRegions));
-    });
-
-    test('toggleFoldRegion handles multiple independent toggles', () {
-      var regions = <int>{};
-      regions = simulateToggleFoldRegion(regions, 0);
-      regions = simulateToggleFoldRegion(regions, 12);
-      regions = simulateToggleFoldRegion(regions, 22);
-
-      expect(regions, equals({0, 12, 22}));
-
-      regions = simulateToggleFoldRegion(regions, 12);
-      expect(regions, equals({0, 22}));
-    });
-
-    test('resetFoldState clears all regions', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-        expandedFoldRegions: {0, 6, 12, 18, 22},
-      );
-
-      // Simulate resetFoldState
-      final reset = state.copyWith(expandedFoldRegions: {});
-
-      expect(reset.expandedFoldRegions, isEmpty);
-    });
-
-    test('toggle does not affect other state properties', () {
-      final state = DailyOsState(
-        selectedDate: testDate,
-        dayPlan: null,
-        budgetProgress: [],
-        timelineData: createTestTimelineData(),
-        expandedSection: DailyOsSection.timeline,
-        highlightedCategoryId: 'cat-1',
-        isEditingPlan: true,
-      );
-
-      final toggled = state.copyWith(
-        expandedFoldRegions: {...state.expandedFoldRegions, 6},
-      );
-
-      expect(toggled.expandedSection, equals(DailyOsSection.timeline));
-      expect(toggled.highlightedCategoryId, equals('cat-1'));
-      expect(toggled.isEditingPlan, isTrue);
-      expect(toggled.expandedFoldRegions, contains(6));
     });
   });
 

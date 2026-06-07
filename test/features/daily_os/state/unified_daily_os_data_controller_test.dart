@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -4727,4 +4728,169 @@ void main() {
       });
     },
   );
+
+  group(
+    'UnifiedDailyOsDataController - disposed mid-flight guards '
+    '(_refreshFromNotifications + _updateWithRunningTimer)',
+    () {
+      /// Both guards protect the same hazard: a fetch resolving AFTER the
+      /// controller was disposed must not assign `state` (which would throw
+      /// on a disposed notifier) and must not loop into further fetches.
+      test(
+        'no state write or extra fetch when disposed while a notification '
+        'refresh fetch is in-flight',
+        () {
+          fakeAsync((async) {
+            final refreshFetchCompleter = Completer<DayPlanEntry?>();
+            var callCount = 0;
+
+            when(() => mockDayPlanRepository.getDayPlan(testDate)).thenAnswer((
+              _,
+            ) {
+              callCount++;
+              if (callCount == 1) return Future.value(createTestPlan());
+              return refreshFetchCompleter.future;
+            });
+            when(
+              () => mockDb.sortedCalendarEntries(
+                rangeStart: any(named: 'rangeStart'),
+                rangeEnd: any(named: 'rangeEnd'),
+              ),
+            ).thenAnswer((_) async => []);
+
+            container.read(
+              unifiedDailyOsDataControllerProvider(date: testDate).future,
+            );
+            async.flushMicrotasks();
+
+            // Notification starts a refresh whose fetch blocks.
+            updateStreamController.add({planId});
+            async.flushMicrotasks();
+            expect(callCount, 2);
+
+            // Dispose while the refresh fetch is in-flight.
+            container.dispose();
+            async.flushMicrotasks();
+
+            // Resolving the fetch now must hit the `_isDisposed` guard: no
+            // state assignment (would throw in this zone) and no do-while
+            // re-run fetch.
+            refreshFetchCompleter.complete(createTestPlan());
+            async.flushMicrotasks();
+            expect(callCount, 2);
+
+            // Recreate container so tearDown can dispose it safely.
+            container = ProviderContainer(
+              overrides: [
+                dayPlanRepositoryProvider.overrideWithValue(
+                  mockDayPlanRepository,
+                ),
+              ],
+            );
+          });
+        },
+      );
+
+      test(
+        'no state write when disposed while the timer-stop refetch is '
+        'in-flight',
+        () {
+          fakeAsync((async) {
+            final refetchCompleter = Completer<DayPlanEntry?>();
+            var callCount = 0;
+
+            when(() => mockDayPlanRepository.getDayPlan(testDate)).thenAnswer((
+              _,
+            ) {
+              callCount++;
+              if (callCount == 1) return Future.value(createTestPlan());
+              return refetchCompleter.future;
+            });
+            when(
+              () => mockDb.sortedCalendarEntries(
+                rangeStart: any(named: 'rangeStart'),
+                rangeEnd: any(named: 'rangeEnd'),
+              ),
+            ).thenAnswer((_) async => []);
+            when(() => mockTimeService.linkedFrom).thenReturn(null);
+
+            container.read(
+              unifiedDailyOsDataControllerProvider(date: testDate).future,
+            );
+            async.flushMicrotasks();
+
+            // Start then stop the timer: the stop triggers the refetch in
+            // _updateWithRunningTimer, blocked on the completer.
+            timerStreamController.add(
+              createTestEntry(
+                id: 'timer-entry-1',
+                categoryId: 'cat-work',
+                dateFrom: testDate.add(const Duration(hours: 10)),
+                dateTo: testDate.add(const Duration(hours: 10, minutes: 30)),
+              ),
+            );
+            async.flushMicrotasks();
+            timerStreamController.add(null);
+            async.flushMicrotasks();
+            expect(callCount, 2);
+
+            container.dispose();
+            async.flushMicrotasks();
+
+            // Resolving the refetch after dispose must take the `.then`
+            // `_isDisposed` early-return instead of assigning state.
+            refetchCompleter.complete(createTestPlan());
+            async.flushMicrotasks();
+            expect(callCount, 2);
+
+            container = ProviderContainer(
+              overrides: [
+                dayPlanRepositoryProvider.overrideWithValue(
+                  mockDayPlanRepository,
+                ),
+              ],
+            );
+          });
+        },
+      );
+    },
+  );
+
+  group('calculateBudgetProgressStatus — properties', () {
+    glados.Glados(
+      glados.CombinableAny(glados.any).combine2(
+        // Seconds rather than minutes so sub-minute remainders exercise
+        // the inMinutes truncation around the 15-minute threshold.
+        glados.any.intInRange(0, 4 * 3600),
+        glados.any.intInRange(0, 4 * 3600),
+        (int planned, int recorded) => (planned: planned, recorded: recorded),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'classifies by remaining time exactly per the threshold spec',
+      (scenario) {
+        final planned = Duration(seconds: scenario.planned);
+        final recorded = Duration(seconds: scenario.recorded);
+
+        final status = calculateBudgetProgressStatus(planned, recorded);
+
+        // Oracle over remaining seconds (15 min threshold compares whole
+        // minutes, so it truncates toward zero like Duration.inMinutes).
+        final remainingSeconds = scenario.planned - scenario.recorded;
+        final expected = remainingSeconds < 0
+            ? BudgetProgressStatus.overBudget
+            : remainingSeconds == 0
+            ? BudgetProgressStatus.exhausted
+            : remainingSeconds ~/ 60 <= 15
+            ? BudgetProgressStatus.nearLimit
+            : BudgetProgressStatus.underBudget;
+        expect(
+          status,
+          expected,
+          reason: 'planned=${scenario.planned}s recorded=${scenario.recorded}s',
+        );
+      },
+      tags: 'glados',
+    );
+  });
 }
