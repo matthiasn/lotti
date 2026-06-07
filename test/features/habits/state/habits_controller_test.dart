@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
@@ -730,15 +731,25 @@ void main() {
         // measure the visibility-trigger effect.
         expect(stateWhileAway.openNow.map((h) => h.id), ['habit-1']);
 
-        // Switching back to habits should re-run the aggregation, even
-        // though completions and definitions did not change. Observable
-        // signal: state copyWith produces a new instance.
+        // Count completion fetches from here on: the reactivation edge
+        // must refetch, which is a concrete, copyWith-proof signal.
+        var fetches = 0;
+        when(
+          () => mockRepository.getHabitCompletionsInRange(
+            rangeStart: any(named: 'rangeStart'),
+          ),
+        ).thenAnswer((_) async {
+          fetches++;
+          return [];
+        });
+
+        // Switching back to habits must re-run the aggregation, even
+        // though completions and definitions did not change.
         navIndexController.add(habitsTabIndex);
         await pumpEventQueue();
 
+        expect(fetches, 1);
         final stateOnReturn = container.read(habitsControllerProvider);
-
-        expect(identical(stateWhileAway, stateOnReturn), isFalse);
         expect(stateOnReturn.openNow.map((h) => h.id), ['habit-1']);
       },
     );
@@ -749,31 +760,88 @@ void main() {
       definitionsController.add([testHabit1]);
       await pumpEventQueue();
 
-      final baseline = container.read(habitsControllerProvider);
+      // Count completion fetches from here on: none of the following
+      // transitions sit on the inactive→active edge, so none may refetch.
+      var fetches = 0;
+      when(
+        () => mockRepository.getHabitCompletionsInRange(
+          rangeStart: any(named: 'rangeStart'),
+        ),
+      ).thenAnswer((_) async {
+        fetches++;
+        return [];
+      });
 
       // habits → habits should be a no-op (already active).
       navIndexController.add(habitsTabIndex);
       await pumpEventQueue();
-      expect(
-        identical(baseline, container.read(habitsControllerProvider)),
-        isTrue,
-      );
+      expect(fetches, 0);
 
       // habits → other should not trigger a recompute.
       navIndexController.add(otherTabIndex);
       await pumpEventQueue();
-      expect(
-        identical(baseline, container.read(habitsControllerProvider)),
-        isTrue,
-      );
+      expect(fetches, 0);
 
       // other → other should not trigger a recompute either.
       navIndexController.add(otherTabIndex);
       await pumpEventQueue();
-      expect(
-        identical(baseline, container.read(habitsControllerProvider)),
-        isTrue,
-      );
+      expect(fetches, 0);
     });
+  });
+
+  group('countHabitsWithStreak — properties', () {
+    glados.Glados(
+      glados.CombinableAny(glados.any).combine2(
+        // Per habit: a bitmask over the 10-day universe of candidate days.
+        glados.ListAnys(glados.any).listWithLengthInRange(
+          0,
+          8,
+          glados.any.intInRange(0, 1 << 10),
+        ),
+        // Streak window: a bitmask selecting which days must be covered.
+        glados.any.intInRange(0, 1 << 10),
+        (List<int> habitMasks, int streakMask) =>
+            (habitMasks: habitMasks, streakMask: streakMask),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'counts exactly the habits whose day sets cover the streak window',
+      (scenario) {
+        // January window: multi-day Duration arithmetic is DST-safe here.
+        final universe = <String>[
+          for (var d = 0; d < 10; d++) DateTime(2024, 1, 10 + d).ymd,
+        ];
+        Set<String> daysFromMask(int mask) => {
+          for (var d = 0; d < 10; d++)
+            if (mask & (1 << d) != 0) universe[d],
+        };
+
+        final habitSuccessDays = <String, Set<String>>{
+          for (var i = 0; i < scenario.habitMasks.length; i++)
+            'habit-$i': daysFromMask(scenario.habitMasks[i]),
+        };
+        final streakDays = daysFromMask(scenario.streakMask).toList();
+
+        final count = countHabitsWithStreak(habitSuccessDays, streakDays);
+
+        // Oracle via bit arithmetic: habit covers the window iff its mask
+        // has every streak bit set.
+        final expected = scenario.habitMasks
+            .where((mask) => mask & scenario.streakMask == scenario.streakMask)
+            .length;
+        expect(
+          count,
+          expected,
+          reason: 'masks=${scenario.habitMasks} streak=${scenario.streakMask}',
+        );
+        // Bound: never counts more habits than exist.
+        expect(count, lessThanOrEqualTo(habitSuccessDays.length));
+        // Empty window: every habit trivially qualifies.
+        if (scenario.streakMask == 0) {
+          expect(count, habitSuccessDays.length);
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

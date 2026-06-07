@@ -79,7 +79,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show the empty filter icon
       expect(find.byIcon(Icons.filter_alt_off_outlined), findsOneWidget);
@@ -100,7 +101,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should have an IconButton containing the PieChart
       expect(find.byType(IconButton), findsOneWidget);
@@ -120,11 +122,13 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the filter button
       await tester.tap(find.byKey(const Key('habit_category_filter')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Modal should show category chips
       expect(find.byType(ActionChip), findsWidgets);
@@ -146,18 +150,21 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the filter button to open modal
       await tester.tap(find.byKey(const Key('habit_category_filter')));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find and tap a category chip
       final chipFinder = find.byType(ActionChip);
       expect(chipFinder, findsWidgets);
 
       await tester.tap(chipFinder.first);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify toggleSelectedCategoryIds was called with the correct category
       expect(

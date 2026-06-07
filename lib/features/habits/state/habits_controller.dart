@@ -205,18 +205,14 @@ class HabitsController extends _$HabitsController {
       }
     }
 
-    var shortStreakCount = 0;
-    var longStreakCount = 0;
-
-    habitSuccessDays.forEach((habitId, days) {
-      if (days.containsAll(shortStreakDays)) {
-        shortStreakCount++;
-      }
-
-      if (days.containsAll(longStreakDays)) {
-        longStreakCount++;
-      }
-    });
+    final shortStreakCount = countHabitsWithStreak(
+      habitSuccessDays,
+      shortStreakDays,
+    );
+    final longStreakCount = countHabitsWithStreak(
+      habitSuccessDays,
+      longStreakDays,
+    );
 
     final selectedCategoryIds = state.selectedCategoryIds;
 
@@ -364,4 +360,17 @@ class HabitsController extends _$HabitsController {
       () => setInfoYmd(''),
     );
   }
+}
+
+/// Counts the habits whose success-day sets cover every day in [streakDays].
+///
+/// A habit only counts toward a streak when it has a qualifying completion
+/// on each day of the window — a single missing day disqualifies it.
+int countHabitsWithStreak(
+  Map<String, Set<String>> habitSuccessDays,
+  List<String> streakDays,
+) {
+  return habitSuccessDays.values
+      .where((days) => days.containsAll(streakDays))
+      .length;
 }

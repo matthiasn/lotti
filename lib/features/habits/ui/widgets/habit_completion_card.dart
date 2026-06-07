@@ -1,4 +1,5 @@
 import 'dart:core';
+import 'package:clock/clock.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -152,7 +153,8 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
                           )
                         : const SizedBox.shrink(),
                     results.map((res) {
-                      final daysAgo = DateTime.now()
+                      final daysAgo = clock
+                          .now()
                           .difference(DateTime.parse(res.dayString))
                           .inDays;
 
@@ -163,9 +165,9 @@ class _HabitCompletionCardState extends ConsumerState<HabitCompletionCard> {
                           child: GestureDetector(
                             onTap: () {
                               onTapAdd(
-                                dateString: DateTime.now().ymd != res.dayString
+                                dateString: clock.now().ymd != res.dayString
                                     ? res.dayString
-                                    : DateTime.now().ymd,
+                                    : clock.now().ymd,
                               );
                             },
                             child: Semantics(

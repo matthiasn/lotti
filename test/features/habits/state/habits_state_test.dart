@@ -7,14 +7,16 @@ import 'package:lotti/features/habits/state/habits_state.dart';
 // Helpers shared by the Glados property groups below.
 // ---------------------------------------------------------------------------
 
-/// Creates a minimal HabitDefinition active from [activeFrom].
-HabitDefinition _makeHabitForActiveBy(String id, DateTime activeFrom) {
+/// Creates a minimal HabitDefinition active from [activeFrom]
+/// (null exercises the `?? DateTime(0)` fallback in [activeBy]).
+HabitDefinition _makeHabitForActiveBy(String id, DateTime? activeFrom) {
+  final created = activeFrom ?? DateTime(2019);
   return HabitDefinition(
     id: id,
     name: 'Habit $id',
     description: '',
-    createdAt: activeFrom,
-    updatedAt: activeFrom,
+    createdAt: created,
+    updatedAt: created,
     vectorClock: null,
     private: false,
     active: true,
@@ -528,72 +530,61 @@ void main() {
 
   group('activeBy — properties', () {
     glados.Glados(
-      glados.any.intInRange(1, 15),
+      glados.CombinableAny(glados.any).combine2(
+        glados.ListAnys(glados.any).listWithLengthInRange(
+          0,
+          12,
+          // -1 → null activeFrom; 0..40 → day offset from the base date.
+          glados.any.intInRange(-1, 41),
+        ),
+        glados.any.intInRange(0, 40),
+        (List<int> offsets, int queryOffset) =>
+            (offsets: offsets, queryOffset: queryOffset),
+      ),
       glados.ExploreConfig(numRuns: 120),
     ).test(
-      'every returned habit has activeFrom <= parsed ymd',
-      (n) {
-        const ymd = '2025-06-15';
-        final target = DateTime.parse(ymd);
+      'returns exactly the habits whose activeFrom date is on or before '
+      'the query day, preserving order',
+      (scenario) {
+        // January window: multi-day Duration arithmetic is DST-safe here.
+        final base = DateTime(2024, 1, 10);
         final habits = <HabitDefinition>[
-          for (var i = 0; i < n; i++)
+          for (var i = 0; i < scenario.offsets.length; i++)
             _makeHabitForActiveBy(
               'h$i',
-              i.isEven
-                  ? target.subtract(const Duration(days: 1))
-                  : target.add(const Duration(days: 1)),
+              scenario.offsets[i] == -1
+                  ? null
+                  // Mix in a time-of-day so the property proves activeFrom
+                  // is compared date-only (same-day boundary included).
+                  : base.add(
+                      Duration(days: scenario.offsets[i], hours: i % 24),
+                    ),
             ),
         ];
-        final result = activeBy(habits, ymd);
-        for (final habit in result) {
-          final from = DateTime(
-            habit.activeFrom!.year,
-            habit.activeFrom!.month,
-            habit.activeFrom!.day,
-          );
-          expect(
-            from.isAfter(target),
-            isFalse,
-            reason: 'activeFrom=$from must not be after target=$target',
-          );
-        }
-      },
-      tags: 'glados',
-    );
+        final queryDay = base.add(Duration(days: scenario.queryOffset));
+        final ymd =
+            '${queryDay.year}-'
+            '${queryDay.month.toString().padLeft(2, '0')}-'
+            '${queryDay.day.toString().padLeft(2, '0')}';
 
-    glados.Glados(
-      glados.any.intInRange(1, 15),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'no excluded habit satisfies activeFrom on-or-before target',
-      (n) {
-        const ymd = '2025-06-15';
-        final target = DateTime.parse(ymd);
-        final habits = <HabitDefinition>[
-          for (var i = 0; i < n; i++)
-            _makeHabitForActiveBy(
-              'h$i',
-              i.isEven
-                  ? target.subtract(const Duration(days: 1))
-                  : target.add(const Duration(days: 1)),
-            ),
+        final result = activeBy(habits, ymd);
+
+        // Oracle: date-only activeFrom (null → DateTime(0)) must be on or
+        // before the parsed query day; order of survivors is preserved.
+        final expectedIds = <String>[
+          for (final habit in habits)
+            if (!DateTime(
+              (habit.activeFrom ?? DateTime(0)).year,
+              (habit.activeFrom ?? DateTime(0)).month,
+              (habit.activeFrom ?? DateTime(0)).day,
+            ).isAfter(queryDay))
+              habit.id,
         ];
-        final resultIds = activeBy(habits, ymd).map((h) => h.id).toSet();
-        for (final habit in habits) {
-          if (resultIds.contains(habit.id)) continue;
-          final from = DateTime(
-            habit.activeFrom!.year,
-            habit.activeFrom!.month,
-            habit.activeFrom!.day,
-          );
-          expect(
-            from.isAfter(target),
-            isTrue,
-            reason:
-                'excluded habit ${habit.id} activeFrom=$from '
-                'is not after target=$target',
-          );
-        }
+        expect(
+          result.map((habit) => habit.id).toList(),
+          expectedIds,
+          reason: 'offsets=${scenario.offsets} query=$ymd',
+        );
       },
       tags: 'glados',
     );
