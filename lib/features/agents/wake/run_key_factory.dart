@@ -34,15 +34,25 @@ class RunKeyFactory {
     );
   }
 
-  /// Manual (system/user) wake: SHA256(agentId | reason | timestamp).
+  /// Manual (system/user) wake:
+  /// SHA256(agentId | reason | workspaceKey? | timestamp).
   ///
   /// Uses the ISO-8601 timestamp to ensure uniqueness across invocations.
+  /// [workspaceKey] disambiguates same-reason manual wakes for different
+  /// workspaces under one identity (ADR 0022): two day-scoped planner wakes
+  /// enqueued in the same tick would otherwise collide on run key and the
+  /// second would be deduped away. When `null` the segment is omitted so
+  /// existing single-workspace run keys stay byte-identical.
   static String forManual({
     required String agentId,
     required String reason,
     required DateTime timestamp,
+    String? workspaceKey,
   }) {
-    return _sha256('$agentId|$reason|${timestamp.toIso8601String()}');
+    final workspaceSegment = workspaceKey == null ? '' : '$workspaceKey|';
+    return _sha256(
+      '$agentId|$reason|$workspaceSegment${timestamp.toIso8601String()}',
+    );
   }
 
   /// Operation ID for a tool call within a run:

@@ -262,6 +262,7 @@ void main() {
                   () => orchestrator.enqueueManualWake(
                     agentId: _agentId,
                     reason: 'capture_submitted',
+                    workspaceKey: any(named: 'workspaceKey'),
                     triggerTokens: captureAny(named: 'triggerTokens'),
                   ),
                 ).captured.single

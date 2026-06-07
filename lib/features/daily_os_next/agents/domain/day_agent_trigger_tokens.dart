@@ -14,6 +14,18 @@
 /// (`captureIdsFromTriggerTokens`, [resolvePlannerWakeDay]).
 library;
 
+/// Wake-queue workspace-key prefix for a Daily OS day workspace.
+///
+/// The wake queue partitions superseding, dedupe, and token-merge by
+/// `(agentId, workspaceKey)` (ADR 0022). The planner tags every day-scoped
+/// wake with `day:<dayId>` so jobs for different days under one identity never
+/// collide. This is the queue partition key, distinct from the trigger tokens
+/// rendered into the prompt.
+const dayAgentWorkspacePrefix = 'day:';
+
+/// Builds the wake-queue workspace key for the [dayId] day workspace.
+String dayAgentWorkspaceKey(String dayId) => '$dayAgentWorkspacePrefix$dayId';
+
 /// Wake trigger token prefix that scopes a wake to a day workspace.
 ///
 /// `planning_day:<dayId>` is the authoritative day-workspace claim on a

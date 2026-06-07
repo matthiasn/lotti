@@ -159,6 +159,7 @@ class DayAgentService {
       agentId: identity.agentId,
       reason: WakeReason.creation.name,
       triggerTokens: {dayAgentPlanningDayToken(dayId)},
+      workspaceKey: dayAgentWorkspaceKey(dayId),
     );
 
     domainLogger.log(
@@ -316,6 +317,7 @@ class DayAgentService {
       agentId: agent.agentId,
       reason: dayAgentDraftingReason,
       triggerTokens: triggerTokens,
+      workspaceKey: dayAgentWorkspaceKey(dayId),
     );
     return true;
   }
@@ -399,6 +401,7 @@ class DayAgentService {
       agentId: agent.agentId,
       reason: dayAgentRefineReason,
       triggerTokens: triggerTokens,
+      workspaceKey: dayAgentWorkspaceKey(dayId),
     );
     return true;
   }

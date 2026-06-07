@@ -97,6 +97,7 @@ void main() {
       () => orchestrator.enqueueManualWake(
         agentId: any(named: 'agentId'),
         reason: any(named: 'reason'),
+        workspaceKey: any(named: 'workspaceKey'),
         triggerTokens: any(named: 'triggerTokens'),
       ),
     ).thenReturn(null);
@@ -199,6 +200,7 @@ void main() {
         () => orchestrator.enqueueManualWake(
           agentId: agentId,
           reason: WakeReason.creation.name,
+          workspaceKey: dayAgentWorkspaceKey(dayId),
           triggerTokens: {dayAgentPlanningDayToken(dayId)},
         ),
       ).called(1);
@@ -335,6 +337,7 @@ void main() {
         () => orchestrator.enqueueManualWake(
           agentId: any(named: 'agentId'),
           reason: any(named: 'reason'),
+          workspaceKey: any(named: 'workspaceKey'),
           triggerTokens: any(named: 'triggerTokens'),
         ),
       );
@@ -408,6 +411,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentDraftingReason,
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: {
                 dayAgentPlanningDayToken(dayId),
                 dayAgentDraftingToken(dayId),
@@ -437,6 +441,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentDraftingReason,
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: {
                 dayAgentPlanningDayToken(dayId),
                 dayAgentDraftingToken(dayId),
@@ -467,6 +472,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentDraftingReason,
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: {
                 dayAgentPlanningDayToken(dayId),
                 dayAgentDraftingToken(dayId),
@@ -493,6 +499,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: any(named: 'agentId'),
               reason: any(named: 'reason'),
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: any(named: 'triggerTokens'),
             ),
           );
@@ -517,6 +524,7 @@ void main() {
           () => orchestrator.enqueueManualWake(
             agentId: agentId,
             reason: dayAgentDraftingReason,
+            workspaceKey: any(named: 'workspaceKey'),
             triggerTokens: {
               dayAgentPlanningDayToken(dayId),
               dayAgentDraftingToken(dayId),
@@ -547,6 +555,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentDraftingReason,
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: {
                 dayAgentPlanningDayToken(dayId),
                 dayAgentDraftingToken(dayId),
@@ -579,6 +588,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentDraftingReason,
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: {
                 dayAgentPlanningDayToken(dayId),
                 dayAgentDraftingToken(dayId),
@@ -608,6 +618,7 @@ void main() {
           () => orchestrator.enqueueManualWake(
             agentId: agentId,
             reason: dayAgentDraftingReason,
+            workspaceKey: any(named: 'workspaceKey'),
             triggerTokens: {
               dayAgentPlanningDayToken(dayId),
               dayAgentDraftingToken(dayId),
@@ -638,6 +649,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentDraftingReason,
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: {
                 dayAgentPlanningDayToken(dayId),
                 dayAgentDraftingToken(dayId),
@@ -712,6 +724,7 @@ void main() {
                     () => orchestrator.enqueueManualWake(
                       agentId: agentId,
                       reason: dayAgentRefineReason,
+                      workspaceKey: any(named: 'workspaceKey'),
                       triggerTokens: captureAny(named: 'triggerTokens'),
                     ),
                   ).captured.single
@@ -746,6 +759,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: agentId,
               reason: dayAgentRefineReason,
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: {
                 dayAgentPlanningDayToken(dayId),
                 dayAgentRefineToken(dayId),
@@ -776,6 +790,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: any(named: 'agentId'),
               reason: any(named: 'reason'),
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: any(named: 'triggerTokens'),
             ),
           );
@@ -804,6 +819,7 @@ void main() {
             () => orchestrator.enqueueManualWake(
               agentId: any(named: 'agentId'),
               reason: any(named: 'reason'),
+              workspaceKey: any(named: 'workspaceKey'),
               triggerTokens: any(named: 'triggerTokens'),
             ),
           );
@@ -876,6 +892,7 @@ void main() {
           () => orchestrator.enqueueManualWake(
             agentId: agentId,
             reason: dayAgentRefineReason,
+            workspaceKey: any(named: 'workspaceKey'),
             triggerTokens: {
               dayAgentPlanningDayToken(dayId),
               dayAgentRefineToken(dayId),
@@ -892,6 +909,7 @@ void main() {
         () => orchestrator.enqueueManualWake(
           agentId: agentId,
           reason: WakeReason.reanalysis.name,
+          workspaceKey: any(named: 'workspaceKey'),
         ),
       ).called(1);
       final logMessage =
@@ -1055,6 +1073,7 @@ void main() {
           () => orchestrator.enqueueManualWake(
             agentId: any(named: 'agentId'),
             reason: any(named: 'reason'),
+            workspaceKey: any(named: 'workspaceKey'),
             triggerTokens: any(named: 'triggerTokens'),
           ),
         );

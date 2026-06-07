@@ -168,6 +168,13 @@ class DayAgentCaptureService {
       agentId: agentId,
       reason: dayAgentCaptureSubmittedReason,
       triggerTokens: {dayAgentCaptureSubmittedToken(capture.id)},
+      // Partition the parse wake by the capture's day workspace so it never
+      // supersedes or merges with another day's queued work under one planner
+      // (ADR 0022). PR3 makes the capture carry an explicit dayId; until then
+      // the day derives from when it was captured.
+      workspaceKey: dayAgentWorkspaceKey(
+        dayAgentIdForDate(capturedAt ?? now),
+      ),
     );
 
     return capture;
