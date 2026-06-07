@@ -153,7 +153,10 @@ void main() {
       );
 
       expect(report.status, ShadowProjectionStatus.error);
-      expect(report.error, isNotNull);
+      // The captured `e.toString()` names the structural defect — a cycle in
+      // the messagePrev edges surfaces as ProjectionCycleException, not just
+      // some non-null string.
+      expect(report.error, contains('ProjectionCycleException'));
     });
   });
 

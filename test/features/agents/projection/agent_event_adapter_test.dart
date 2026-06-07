@@ -27,16 +27,41 @@ extension _AnyKind on glados.Any {
 
 void main() {
   group('agentEventKindFromMessageKind', () {
+    // The exact target kind for every storage kind, pinned individually (no
+    // catch-all) so a mis-mapping of any single kind — including the
+    // non-obvious system→message and toolResult→message collapses — fails
+    // loudly rather than being absorbed by an oracle's `_` branch.
+    const expectedByKind = <AgentMessageKind, AgentEventKind>{
+      AgentMessageKind.observation: AgentEventKind.observation,
+      AgentMessageKind.summary: AgentEventKind.summary,
+      AgentMessageKind.user: AgentEventKind.message,
+      AgentMessageKind.thought: AgentEventKind.message,
+      AgentMessageKind.action: AgentEventKind.message,
+      AgentMessageKind.toolResult: AgentEventKind.message,
+      AgentMessageKind.system: AgentEventKind.message,
+    };
+
+    test('every message kind maps to its exact event kind (exhaustive)', () {
+      // The table must enumerate every enum value — a new kind added to the
+      // storage enum without a row here fails the count assertion.
+      expect(expectedByKind.keys.toSet(), AgentMessageKind.values.toSet());
+      for (final entry in expectedByKind.entries) {
+        expect(
+          agentEventKindFromMessageKind(entry.key),
+          entry.value,
+          reason: '${entry.key} should map to ${entry.value}',
+        );
+      }
+    });
+
     glados.Glados(glados.any.messageKind).test('maps every message kind', (
       kind,
     ) {
-      final expected = switch (kind) {
-        AgentMessageKind.observation => AgentEventKind.observation,
-        AgentMessageKind.summary => AgentEventKind.summary,
-        _ => AgentEventKind.message,
-      };
-
-      expect(agentEventKindFromMessageKind(kind), expected, reason: '$kind');
+      expect(
+        agentEventKindFromMessageKind(kind),
+        expectedByKind[kind],
+        reason: '$kind',
+      );
     }, tags: 'glados');
   });
 
