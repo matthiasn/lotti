@@ -34,7 +34,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('User says'), findsOneWidget);
       expect(find.text('Assistant replies'), findsOneWidget);
@@ -43,23 +44,11 @@ void main() {
     testWidgets('hides timestamp for pure thinking messages', (tester) async {
       final thinkingOnly = ChatMessage.assistant('<thinking>plan</thinking>');
       await tester.pumpWidget(wrap(MessageBubble(message: thinkingOnly)));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Timestamp widget should not be rendered for thinking-only messages
       expect(find.byType(MessageTimestamp), findsNothing);
-    });
-
-    testWidgets('shows copy action for assistant visible content', (
-      tester,
-    ) async {
-      final ai = ChatMessage.assistant('Visible content');
-      await tester.pumpWidget(wrap(MessageBubble(message: ai)));
-      await tester.pumpAndSettle();
-
-      // Tap the copy corner action (tooltip 'Copy')
-      await tester.tap(find.byTooltip('Copy'));
-      await tester.pumpAndSettle();
-      // We don't assert the SnackBar (theme-dependent). The tap should not throw.
     });
 
     testWidgets('copy action writes clipboard and shows a toast', (
@@ -89,7 +78,8 @@ void main() {
         'Visible answer <thinking>hidden plan</thinking> trailing',
       );
       await tester.pumpWidget(wrap(MessageBubble(message: ai)));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byTooltip('Copy'));
       await tester.pump();

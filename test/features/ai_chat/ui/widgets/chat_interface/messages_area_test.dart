@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/messages_area.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/typing_indicator.dart';
 
 void main() {
   Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
@@ -36,9 +37,13 @@ void main() {
         ),
       );
 
-      // TypingIndicator renders inside the stack bottom area
-      // We assert the presence of at least one AnimatedBuilder (dots animation)
-      expect(find.byType(AnimatedBuilder), findsWidgets);
+      // The empty + streaming state shows exactly one assistant-side
+      // typing indicator pinned to the bottom of the stack.
+      expect(find.byType(TypingIndicator), findsOneWidget);
+      expect(
+        tester.widget<TypingIndicator>(find.byType(TypingIndicator)).isUser,
+        isFalse,
+      );
     });
 
     testWidgets('renders bubbles and trailing typing indicator', (
@@ -63,9 +68,13 @@ void main() {
       expect(find.text('Hello'), findsOneWidget);
       expect(find.text('Hi!'), findsOneWidget);
 
-      // And a trailing TypingIndicator row exists at the end
-      // (we just check that there are at least two Rows: content + trailing)
-      expect(find.byType(Row), findsWidgets);
+      // The trailing list slot renders exactly one typing indicator BELOW
+      // the last message bubble.
+      expect(find.byType(TypingIndicator), findsOneWidget);
+      expect(
+        tester.getTopLeft(find.byType(TypingIndicator)).dy,
+        greaterThan(tester.getBottomLeft(find.text('Hi!')).dy),
+      );
     });
   });
 }

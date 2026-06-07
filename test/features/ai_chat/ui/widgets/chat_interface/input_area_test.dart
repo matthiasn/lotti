@@ -16,10 +16,8 @@ import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/input_area.dart
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
-
-class _MockRealtimeService extends Mock
-    implements RealtimeTranscriptionService {}
 
 /// Wraps [child] in [ProviderScope] + [MaterialApp] with localization.
 Widget _wrap(Widget child, {List<Override> overrides = const []}) =>
@@ -64,9 +62,9 @@ Override _defaultRecorderOverride() =>
 Override _realtimeAvailableOverride() =>
     realtimeAvailableProvider.overrideWith((_) async => true);
 
-/// Creates a [_MockRealtimeService] that reports realtime config available.
-_MockRealtimeService _realtimeServiceWithConfig() {
-  final mock = _MockRealtimeService();
+/// Creates a [MockRealtimeTranscriptionService] that reports realtime config available.
+MockRealtimeTranscriptionService _realtimeServiceWithConfig() {
+  final mock = MockRealtimeTranscriptionService();
   when(mock.resolveRealtimeConfig).thenAnswer(
     (_) async => (
       provider: const _FakeProvider(),
