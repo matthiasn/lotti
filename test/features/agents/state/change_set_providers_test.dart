@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -41,23 +42,40 @@ void main() {
     mockRepository = MockAgentRepository();
   });
 
+  /// Builds the standard project-agent container: projectAgent override,
+  /// repository override, and (when [agent] + [updateController] are given)
+  /// the agent-update stream override. Optionally keeps [listenTo] alive
+  /// and registers all disposals via addTearDown.
+  ProviderContainer createProjectAgentContainer({
+    required String projectId,
+    AgentDomainEntity? agent,
+    StreamController<Set<String>>? updateController,
+    ProviderListenable<Object?>? listenTo,
+  }) {
+    final container = ProviderContainer(
+      overrides: [
+        projectAgentProvider(projectId).overrideWith((ref) async => agent),
+        agentRepositoryProvider.overrideWithValue(mockRepository),
+        if (agent != null && updateController != null)
+          agentUpdateStreamProvider(agent.agentId).overrideWith(
+            (ref) => updateController.stream,
+          ),
+      ],
+    );
+    addTearDown(container.dispose);
+    if (listenTo != null) {
+      final sub = container.listen(listenTo, (_, _) {});
+      addTearDown(sub.close);
+    }
+    return container;
+  }
+
   group('projectPendingChangeSetsProvider', () {
     test('returns empty list when no agent exists for project', () async {
-      final container = ProviderContainer(
-        overrides: [
-          projectAgentProvider('project-001').overrideWith(
-            (ref) async => null,
-          ),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-        ],
+      final container = createProjectAgentContainer(
+        projectId: 'project-001',
+        listenTo: projectPendingChangeSetsProvider('project-001'),
       );
-      addTearDown(container.dispose);
-
-      final sub = container.listen(
-        projectPendingChangeSetsProvider('project-001'),
-        (_, _) {},
-      );
-      addTearDown(sub.close);
 
       final result = await container.read(
         projectPendingChangeSetsProvider('project-001').future,
@@ -89,24 +107,12 @@ void main() {
       final updateController = StreamController<Set<String>>.broadcast();
       addTearDown(updateController.close);
 
-      final container = ProviderContainer(
-        overrides: [
-          projectAgentProvider('project-001').overrideWith(
-            (ref) async => agent,
-          ),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          agentUpdateStreamProvider(agent.agentId).overrideWith(
-            (ref) => updateController.stream,
-          ),
-        ],
+      final container = createProjectAgentContainer(
+        projectId: 'project-001',
+        agent: agent,
+        updateController: updateController,
+        listenTo: projectPendingChangeSetsProvider('project-001'),
       );
-      addTearDown(container.dispose);
-
-      final sub = container.listen(
-        projectPendingChangeSetsProvider('project-001'),
-        (_, _) {},
-      );
-      addTearDown(sub.close);
 
       final result = await container.read(
         projectPendingChangeSetsProvider('project-001').future,
@@ -126,21 +132,10 @@ void main() {
 
   group('projectRecommendationsProvider', () {
     test('returns empty list when no project agent exists', () async {
-      final container = ProviderContainer(
-        overrides: [
-          projectAgentProvider('project-001').overrideWith(
-            (ref) async => null,
-          ),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-        ],
+      final container = createProjectAgentContainer(
+        projectId: 'project-001',
+        listenTo: projectRecommendationsProvider('project-001'),
       );
-      addTearDown(container.dispose);
-
-      final sub = container.listen(
-        projectRecommendationsProvider('project-001'),
-        (_, _) {},
-      );
-      addTearDown(sub.close);
 
       final result = await container.read(
         projectRecommendationsProvider('project-001').future,
@@ -159,21 +154,11 @@ void main() {
     test(
       'returns empty list when project agent is not an identity entity',
       () async {
-        final container = ProviderContainer(
-          overrides: [
-            projectAgentProvider('project-001').overrideWith(
-              (ref) async => makeTestState(),
-            ),
-            agentRepositoryProvider.overrideWithValue(mockRepository),
-          ],
+        final container = createProjectAgentContainer(
+          projectId: 'project-001',
+          agent: makeTestState(),
+          listenTo: projectRecommendationsProvider('project-001'),
         );
-        addTearDown(container.dispose);
-
-        final sub = container.listen(
-          projectRecommendationsProvider('project-001'),
-          (_, _) {},
-        );
-        addTearDown(sub.close);
 
         final result = await container.read(
           projectRecommendationsProvider('project-001').future,
@@ -250,24 +235,12 @@ void main() {
           ],
         );
 
-        final container = ProviderContainer(
-          overrides: [
-            projectAgentProvider('project-001').overrideWith(
-              (ref) async => agent,
-            ),
-            agentRepositoryProvider.overrideWithValue(mockRepository),
-            agentUpdateStreamProvider(agent.agentId).overrideWith(
-              (ref) => updateController.stream,
-            ),
-          ],
+        final container = createProjectAgentContainer(
+          projectId: 'project-001',
+          agent: agent,
+          updateController: updateController,
+          listenTo: projectRecommendationsProvider('project-001'),
         );
-        addTearDown(container.dispose);
-
-        final sub = container.listen(
-          projectRecommendationsProvider('project-001'),
-          (_, _) {},
-        );
-        addTearDown(sub.close);
 
         final result = await container.read(
           projectRecommendationsProvider('project-001').future,
@@ -607,24 +580,12 @@ void main() {
         ),
       ).thenAnswer((_) async => rawSets);
 
-      final container = ProviderContainer(
-        overrides: [
-          projectAgentProvider('project-ded').overrideWith(
-            (ref) async => agent,
-          ),
-          agentRepositoryProvider.overrideWithValue(mockRepository),
-          agentUpdateStreamProvider(agent.agentId).overrideWith(
-            (ref) => updateController.stream,
-          ),
-        ],
+      final container = createProjectAgentContainer(
+        projectId: 'project-ded',
+        agent: agent,
+        updateController: updateController,
+        listenTo: projectPendingChangeSetsProvider('project-ded'),
       );
-      addTearDown(container.dispose);
-
-      final sub = container.listen(
-        projectPendingChangeSetsProvider('project-ded'),
-        (_, _) {},
-      );
-      addTearDown(sub.close);
 
       return container.read(
         projectPendingChangeSetsProvider('project-ded').future,

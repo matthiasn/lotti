@@ -1073,6 +1073,69 @@ void main() {
     );
 
     test(
+      'a fully-failing agent degrades to its agentId without poisoning '
+      'the other Future.wait entries',
+      () async {
+        final fixed = DateTime(2026, 5, 5, 21);
+        final runner = WakeRunner();
+        addTearDown(runner.dispose);
+        final mockRepository = MockAgentRepository();
+        final mockAgentService = MockAgentService();
+        final mockJournalDb = MockJournalDb();
+        final notifications = UpdateNotifications();
+        addTearDown(notifications.dispose);
+
+        // agent-broken: every lookup throws -> both catch blocks fire,
+        // title degrades to the agent id, subjectId stays null.
+        when(
+          () => mockRepository.getAgentState('agent-broken'),
+        ).thenThrow(StateError('state boom'));
+        when(
+          () => mockAgentService.getAgent('agent-broken'),
+        ).thenThrow(StateError('identity boom'));
+        // agent-ok resolves normally via its linked task.
+        when(
+          () => mockRepository.getAgentState('agent-ok'),
+        ).thenAnswer(
+          (_) async => makeTestState(
+            agentId: 'agent-ok',
+            slots: const AgentSlots(activeTaskId: 'task-ok'),
+          ),
+        );
+        when(() => mockJournalDb.journalEntityById('task-ok')).thenAnswer(
+          (_) async => makeTestTask(id: 'task-ok', title: 'Healthy task'),
+        );
+
+        await withClock(Clock.fixed(fixed), () async {
+          await runner.tryAcquire('agent-broken');
+          await runner.tryAcquire('agent-ok');
+        });
+
+        final container = ProviderContainer(
+          overrides: [
+            wakeRunnerProvider.overrideWithValue(runner),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            agentServiceProvider.overrideWithValue(mockAgentService),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final records = await container.read(
+          ongoingWakeRecordsProvider.future,
+        );
+
+        expect(records, hasLength(2));
+        final byAgent = {for (final r in records) r.agentId: r};
+        expect(byAgent['agent-broken']?.title, 'agent-broken');
+        expect(byAgent['agent-broken']?.subjectId, isNull);
+        expect(byAgent['agent-ok']?.title, 'Healthy task');
+        expect(byAgent['agent-ok']?.subjectId, 'task-ok');
+      },
+    );
+
+    test(
       'swallows subject lookup errors and falls back to display name',
       () async {
         final runner = WakeRunner();
