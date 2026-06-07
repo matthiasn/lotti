@@ -115,11 +115,15 @@ class DraftingModalContent extends StatelessWidget {
 
   final DraftingState state;
 
+  /// Width at/above which the skeleton and learning cards sit side by side.
+  /// Compared against the actual available width (the modal/dialog box), not
+  /// the screen, so the dialog never forces two cramped columns.
+  static const double _twoColumnBreakpoint = 760;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
-    final isWide = MediaQuery.sizeOf(context).width >= 900;
 
     final left = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -148,23 +152,29 @@ class DraftingModalContent extends StatelessWidget {
         Expanded(
           child: SingleChildScrollView(
             padding: EdgeInsets.all(tokens.spacing.step6),
-            child: isWide
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: left),
-                      SizedBox(width: tokens.spacing.step6),
-                      Expanded(child: right),
-                    ],
-                  )
-                : Column(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= _twoColumnBreakpoint;
+                if (!isWide) {
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       left,
                       SizedBox(height: tokens.spacing.step6),
                       right,
                     ],
-                  ),
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: left),
+                    SizedBox(width: tokens.spacing.step6),
+                    Expanded(child: right),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ],

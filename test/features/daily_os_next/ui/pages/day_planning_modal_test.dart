@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
@@ -171,6 +172,11 @@ Future<void> _openCreate(
         // far" card is deterministic and never reaches GetIt-backed services.
         dailyOsActualTimeBlocksProvider.overrideWith(
           (ref, date) async => actualBlocks,
+        ),
+        // Idle agent-running signal so the reconcile Heard column's parsing
+        // shader stays off and the provider never reaches the wake runner.
+        agentIsRunningProvider.overrideWith(
+          (ref, agentId) => Stream.value(false),
         ),
         if (agent != null) dayAgentProvider.overrideWithValue(agent),
       ],
@@ -535,10 +541,11 @@ void main() {
 
       await _openCreate(tester, size: const Size(1280, 900));
       expect(find.byType(CaptureModalContent), findsOneWidget);
-      // The dialog branch constrains the content far below the 1280 width,
-      // unlike the full-width phone bottom sheet above.
+      // The dialog branch constrains the content to the configured width —
+      // wider than the phone content but well below the full 1280 screen.
       final width = tester.getSize(find.byType(CaptureModalContent)).width;
-      expect(width, lessThan(900));
+      expect(width, lessThan(1280));
+      expect(width, greaterThan(700));
     });
   });
 }

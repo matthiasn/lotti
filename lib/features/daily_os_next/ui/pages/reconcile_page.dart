@@ -1,9 +1,12 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_shader.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
@@ -154,6 +157,14 @@ class _HeardColumn extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    // While the capture-submitted parse wake is still running, the parsed
+    // cards haven't landed yet — surface the AI thinking shader above the
+    // empty placeholder so the column reads as "working", not "done/empty".
+    final isParsing =
+        ref
+            .watch(agentIsRunningProvider(dayAgentIdForDate(params.dayDate)))
+            .value ??
+        false;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -162,7 +173,11 @@ class _HeardColumn extends ConsumerWidget {
           count: items.length,
         ),
         SizedBox(height: tokens.spacing.step4),
-        if (items.isEmpty)
+        if (items.isEmpty) ...[
+          if (isParsing) ...[
+            const DayPlanningThinkingShader(isThinking: true),
+            SizedBox(height: tokens.spacing.step3),
+          ],
           DsDashedBorder(
             color: tokens.colors.decorative.level02,
             radius: tokens.radii.m,
@@ -177,6 +192,7 @@ class _HeardColumn extends ConsumerWidget {
               ),
             ),
           ),
+        ],
         for (final item in items) ...[
           ParsedCard(
             item: item,
@@ -344,8 +360,6 @@ class ReconcileModalContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final isWide =
-        MediaQuery.sizeOf(context).width >= _reconcileTwoColumnBreakpoint;
     final heardColumn = _HeardColumn(params: params, items: data.parsed);
     final decideColumn = _DecideColumn(params: params, items: data.pending);
 
@@ -354,23 +368,32 @@ class ReconcileModalContent extends StatelessWidget {
         horizontal: tokens.spacing.step6,
         vertical: tokens.spacing.step5,
       ),
-      child: isWide
-          ? Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(flex: _heardColumnFlex, child: heardColumn),
-                SizedBox(width: tokens.spacing.step6),
-                Expanded(flex: _decideColumnFlex, child: decideColumn),
-              ],
-            )
-          : Column(
+      // Decide two-column vs stacked from the actual available width (the
+      // modal/dialog box), not the screen size — the dialog can be far
+      // narrower than the screen.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= _reconcileTwoColumnBreakpoint;
+          if (!isWide) {
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 heardColumn,
                 SizedBox(height: tokens.spacing.step6),
                 decideColumn,
               ],
-            ),
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: _heardColumnFlex, child: heardColumn),
+              SizedBox(width: tokens.spacing.step6),
+              Expanded(flex: _decideColumnFlex, child: decideColumn),
+            ],
+          );
+        },
+      ),
     );
   }
 }

@@ -5,12 +5,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_shader.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
@@ -23,9 +25,18 @@ Widget _wrap(
   Widget child, {
   List<Override> overrides = const [],
   MediaQueryData mediaQueryData = const MediaQueryData(size: Size(1400, 900)),
+  bool agentRunning = false,
 }) {
   return ProviderScope(
-    overrides: overrides,
+    overrides: [
+      // Single agent-running override (Riverpod forbids overriding a family
+      // twice). Defaults to idle so the Heard column's parsing shader stays
+      // off; pass agentRunning: true for the parse-in-flight case.
+      agentIsRunningProvider.overrideWith(
+        (ref, agentId) => Stream.value(agentRunning),
+      ),
+      ...overrides,
+    ],
     child: makeTestableWidget2(
       child,
       mediaQueryData: mediaQueryData,
@@ -110,6 +121,31 @@ class _RefreshBlockingAgent extends MockDayAgent {
     }
     return Future.value(const <PendingItem>[]);
   }
+}
+
+/// Parse returns nothing until [ready] flips true (simulating the
+/// capture-submitted parse wake completing), then surfaces one item.
+class _LateParseAgent extends MockDayAgent {
+  _LateParseAgent()
+    : super(
+        parseLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+        triageLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 9),
+      );
+
+  bool ready = false;
+
+  @override
+  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async {
+    if (!ready) return const [];
+    return [_parsed('p_late', kind: ParsedItemKind.newTask, title: 'Drafted')];
+  }
+
+  @override
+  Future<List<PendingItem>> surfacePendingDecisions({
+    DateTime? forDate,
+  }) async => const [];
 }
 
 /// Shared category for hand-built fixtures — the colour is irrelevant to
@@ -209,6 +245,42 @@ void main() {
       expect(find.byType(PendingCard), findsNWidgets(3));
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
+
+    testWidgets(
+      're-reads parsed items when the parse wake finishes (running '
+      'true → false)',
+      (tester) async {
+        _setWideSurface(tester);
+        final running = StreamController<bool>.broadcast();
+        addTearDown(running.close);
+        final agent = _LateParseAgent();
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              agentIsRunningProvider.overrideWith((ref, id) => running.stream),
+              dayAgentProvider.overrideWithValue(agent),
+            ],
+            child: makeTestableWidget2(
+              const ReconcilePage(captureId: CaptureId('cap_late')),
+              mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+            ),
+          ),
+        );
+        running.add(true);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+        // Wake still running, parse hasn't produced items yet.
+        expect(find.byType(ParsedCard), findsNothing);
+
+        // Wake completes and the parsed items are now available.
+        agent.ready = true;
+        running.add(false);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.byType(ParsedCard), findsOneWidget);
+      },
+    );
 
     testWidgets('shows both column headers with their item counts', (
       tester,
@@ -534,7 +606,12 @@ void main() {
       final agent = _fastAgent();
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [dayAgentProvider.overrideWithValue(agent)],
+          overrides: [
+            agentIsRunningProvider.overrideWith(
+              (ref, agentId) => Stream.value(false),
+            ),
+            dayAgentProvider.overrideWithValue(agent),
+          ],
           child: makeTestableWidget2(
             const ReconcilePage(captureId: CaptureId('cap_x')),
             mediaQueryData: const MediaQueryData(size: Size(600, 1400)),
@@ -812,6 +889,82 @@ void main() {
       // column and the two overlines share roughly the same vertical line.
       expect(decide.dx, greaterThan(heard.dx));
       expect((decide.dy - heard.dy).abs(), lessThan(1));
+    });
+
+    testWidgets(
+      'Heard column shows the thinking shader while the parse wake runs, '
+      'with the pending column already populated',
+      (tester) async {
+        _setWideSurface(tester);
+        final params = ReconcileParams(
+          captureId: const CaptureId('cap_parsing'),
+          dayDate: DateTime(2026, 5, 25),
+        );
+        final data = _reconcileData(
+          pending: const [
+            PendingItem(
+              taskId: 't_pending',
+              title: _kPendingTitle,
+              category: _category,
+              reason: PendingItemReason.overdue,
+              overdueByDays: 2,
+            ),
+          ],
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            ReconcileModalContent(params: params, data: data),
+            overrides: [dayAgentProvider.overrideWithValue(_fastAgent())],
+            agentRunning: true,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+
+        // Pending decisions render immediately while parsing continues.
+        expect(find.text(_kPendingTitle), findsOneWidget);
+        // The Heard column surfaces the AI thinking shader (parse in flight).
+        expect(
+          find.byKey(DayPlanningThinkingShader.indicatorKey),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('Heard column hides the shader once the agent is idle', (
+      tester,
+    ) async {
+      _setWideSurface(tester);
+      final params = ReconcileParams(
+        captureId: const CaptureId('cap_idle'),
+        dayDate: DateTime(2026, 5, 25),
+      );
+      final data = _reconcileData(
+        pending: const [
+          PendingItem(
+            taskId: 't_pending',
+            title: _kPendingTitle,
+            category: _category,
+            reason: PendingItemReason.overdue,
+            overdueByDays: 2,
+          ),
+        ],
+      );
+
+      // _wrap defaults agentIsRunningProvider to false.
+      await tester.pumpWidget(
+        _wrap(
+          ReconcileModalContent(params: params, data: data),
+          overrides: [dayAgentProvider.overrideWithValue(_fastAgent())],
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text(_kPendingTitle), findsOneWidget);
+      expect(
+        find.byKey(DayPlanningThinkingShader.indicatorKey),
+        findsNothing,
+      );
     });
   });
 }

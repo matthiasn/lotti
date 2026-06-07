@@ -19,6 +19,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/misc/wolt_modal_config.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
+import 'package:lotti/widgets/modal/sized_wolt_dialog_type.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
 /// What the day-planning modal opens to.
@@ -63,7 +64,8 @@ Future<void> showDayPlanningModal({
   return WoltModalSheet.show<void>(
     context: context,
     useRootNavigator: true,
-    modalTypeBuilder: _dayPlanningModalType,
+    modalTypeBuilder: (modalContext) =>
+        _dayPlanningModalType(modalContext, intent),
     barrierDismissible: true,
     modalBarrierColor: ModalUtils.getModalBarrierColor(
       isDark: isDark,
@@ -78,15 +80,30 @@ Future<void> showDayPlanningModal({
   );
 }
 
-/// Full-height bottom sheet on phones (covers the nav), dialog on wide.
-WoltModalType _dayPlanningModalType(BuildContext context) {
+/// Target width of the desktop/tablet dialog. Wider than Wolt's default
+/// ~524px so the two-column Reconcile and Drafting steps and the learning
+/// cards have room to breathe; [SizedWoltDialogType] shrinks it to fit on
+/// narrower screens.
+const double _dayPlanningDialogWidth = 920;
+
+/// Bottom sheet on phones (covers the nav), dialog on wide.
+///
+/// The Create ritual (Capture → Reconcile → Drafting) runs as a calm
+/// full-height bottom sheet so it reads as a near-full layer; the Adapt
+/// (Refine) flow is a compact, content-sized panel that shouldn't stretch
+/// to fill the screen for its sparse voice content.
+WoltModalType _dayPlanningModalType(
+  BuildContext context,
+  DayPlanningIntent intent,
+) {
   final width = MediaQuery.of(context).size.width;
   if (width < WoltModalConfig.pageBreakpoint) {
-    // Full-height bottom sheet so the layer covers the bottom nav and the
-    // centered Capture/Drafting steps have a bounded viewport to fill.
-    return const WoltBottomSheetType(forceMaxHeight: true);
+    return switch (intent) {
+      DayPlanningCreate() => const WoltBottomSheetType(forceMaxHeight: true),
+      DayPlanningAdapt() => const WoltBottomSheetType(),
+    };
   }
-  return WoltModalType.dialog();
+  return const SizedWoltDialogType(preferredWidth: _dayPlanningDialogWidth);
 }
 
 /// Bottom padding reserved under scrolling step content so the last rows
@@ -490,12 +507,11 @@ SliverWoltModalSheetPage _refineStepPage(
     context: context,
     title: context.messages.dailyOsNextRefineTitle,
     slivers: [
-      SliverToBoxAdapter(
-        child: SizedBox(
-          height: _stepViewportHeight(context),
-          child: RefineModalContent(draft: draft),
-        ),
-      ),
+      // Refine's modal content is a content-sized scroll view (voice panel +
+      // diff rows), so let it size to its content instead of forcing the
+      // full step viewport height — otherwise the sparse idle state leaves a
+      // large empty gap below the orb.
+      SliverToBoxAdapter(child: RefineModalContent(draft: draft)),
       const SliverToBoxAdapter(child: SizedBox(height: _barClearance)),
     ],
     stickyActionBar: _RefineStepBar(draft: draft),

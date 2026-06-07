@@ -28,6 +28,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
@@ -207,6 +208,9 @@ Future<void> _openModal(
           dailyOsActualTimeBlocksProvider.overrideWith(
             (ref, date) async => const <TimeBlock>[],
           ),
+          agentIsRunningProvider.overrideWith(
+            (ref, agentId) => Stream.value(false),
+          ),
           if (agent != null) dayAgentProvider.overrideWithValue(agent),
         ],
         home: Builder(
@@ -352,6 +356,19 @@ void main() {
     await _tapPill(tester, _messages(tester).dailyOsNextCaptureReconcileCta);
     await _tapPill(tester, _messages(tester).dailyOsNextReconcileBuildDayCta);
     await _capture(tester, '06_drafting_dark');
+  });
+
+  testWidgets('drafting (wide two-column) — dark', (tester) async {
+    await _openModal(
+      tester,
+      intent: const DayPlanningCreate(),
+      capture: _captured,
+      agent: _PendingDraftAgent(),
+      size: const Size(1100, 900),
+    );
+    await _tapPill(tester, _messages(tester).dailyOsNextCaptureReconcileCta);
+    await _tapPill(tester, _messages(tester).dailyOsNextReconcileBuildDayCta);
+    await _capture(tester, '06b_drafting_wide_dark');
   });
 
   testWidgets('refine — dark', (tester) async {

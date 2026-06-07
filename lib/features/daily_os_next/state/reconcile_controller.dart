@@ -3,6 +3,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
@@ -89,7 +90,21 @@ class ReconcileController extends AsyncNotifier<ReconcileData> {
   Future<ReconcileData> build() async {
     _agent = ref.watch(dayAgentProvider);
     final preferences = ref.watch(dailyOsPreferencesControllerProvider);
-    ref.watch(reconcileCaptureUpdateProvider(params.captureId.value));
+    // When the capture-submitted parse wake finishes (running true → false),
+    // re-read so the Heard column fills in even if the per-capture update
+    // notification doesn't carry the capture id. Uses `listen` (not `watch`)
+    // so the signal's intermediate emissions don't re-run — and abort — the
+    // initial parse build.
+    ref
+      ..watch(reconcileCaptureUpdateProvider(params.captureId.value))
+      ..listen(agentIsRunningProvider(dayAgentIdForDate(params.dayDate)), (
+        previous,
+        next,
+      ) {
+        final wasRunning = previous?.value ?? false;
+        final isRunning = next.value ?? false;
+        if (wasRunning && !isRunning) ref.invalidateSelf();
+      });
     final triageDecisions =
         state.value?.triageDecisions ?? const <String, TriageResult>{};
     final parsedFuture = _agent.parseCaptureToItems(params.captureId);
