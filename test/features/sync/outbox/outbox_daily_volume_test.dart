@@ -126,65 +126,9 @@ void main() {
       expect(volume.totalMegabytes, 0.0);
     });
 
-    test('equality holds for identical values', () {
-      final date = DateTime.utc(2024, 3, 15);
-      final a = OutboxDailyVolume(
-        date: date,
-        totalBytes: 1000,
-        itemCount: 5,
-      );
-      final b = OutboxDailyVolume(
-        date: date,
-        totalBytes: 1000,
-        itemCount: 5,
-      );
-      expect(a, equals(b));
-      expect(a.hashCode, equals(b.hashCode));
-    });
-
-    test('inequality when date differs', () {
-      final a = OutboxDailyVolume(
-        date: DateTime.utc(2024, 3, 15),
-        totalBytes: 1000,
-        itemCount: 5,
-      );
-      final b = OutboxDailyVolume(
-        date: DateTime.utc(2024, 3, 16),
-        totalBytes: 1000,
-        itemCount: 5,
-      );
-      expect(a, isNot(equals(b)));
-    });
-
-    test('inequality when totalBytes differs', () {
-      final date = DateTime.utc(2024, 3, 15);
-      final a = OutboxDailyVolume(
-        date: date,
-        totalBytes: 1000,
-        itemCount: 5,
-      );
-      final b = OutboxDailyVolume(
-        date: date,
-        totalBytes: 2000,
-        itemCount: 5,
-      );
-      expect(a, isNot(equals(b)));
-    });
-
-    test('inequality when itemCount differs', () {
-      final date = DateTime.utc(2024, 3, 15);
-      final a = OutboxDailyVolume(
-        date: date,
-        totalBytes: 1000,
-        itemCount: 5,
-      );
-      final b = OutboxDailyVolume(
-        date: date,
-        totalBytes: 1000,
-        itemCount: 10,
-      );
-      expect(a, isNot(equals(b)));
-    });
+    // Equality/inequality across all three dimensions is covered by the
+    // Glados property above (120 generated scenarios); only the behaviors
+    // the property does not touch keep concrete tests below.
 
     test('toString includes all fields', () {
       final volume = OutboxDailyVolume(

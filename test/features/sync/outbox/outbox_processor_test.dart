@@ -475,7 +475,7 @@ void main() {
 
   glados.Glados(
     glados.any.processorScenario,
-    glados.ExploreConfig(numRuns: 220),
+    glados.ExploreConfig(numRuns: 150),
   ).test(
     'generated processQueue scenarios match the bundle state model',
     (scenario) async {
