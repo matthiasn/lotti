@@ -37,7 +37,9 @@ class SavedTaskFilterCountRepository {
     } else {
       categoryIds = filter.selectedCategoryIds.toList();
     }
-    if (categoryIds.isEmpty) return 0;
+    // Note: categoryIds can never be empty here — the expansion branch
+    // always appends the empty-string sentinel, and the explicit branch is
+    // guarded by selectedCategoryIds.isNotEmpty.
 
     final taskStatuses = filter.selectedTaskStatuses.toList();
     final labelIds = filter.selectedLabelIds.toList();
