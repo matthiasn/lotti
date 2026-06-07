@@ -1950,18 +1950,22 @@ void main() {
       await db.close();
     });
 
+    // Bound parameters (not string interpolation) so test data containing
+    // quotes or other special characters cannot break the SQL.
     Future<void> insertAgentEntity({
       required String id,
       required String serialized,
     }) async {
-      await db.customStatement('''
+      await db.customStatement(
+        '''
         INSERT INTO agent_entities
           (id, agent_id, type, created_at, updated_at, serialized,
            schema_version)
         VALUES
-          ('$id', 'agent-1', 'agentMessage',
-           '2026-01-01', '2026-01-01', '$serialized', 1)
-      ''');
+          (?, 'agent-1', 'agentMessage', '2026-01-01', '2026-01-01', ?, 1)
+      ''',
+        [id, serialized],
+      );
     }
 
     Future<void> insertAgentLink({
@@ -1969,15 +1973,16 @@ void main() {
       required String serialized,
       String? deletedAt,
     }) async {
-      final deletedClause = deletedAt != null ? "'$deletedAt'" : 'NULL';
-      await db.customStatement('''
+      await db.customStatement(
+        '''
         INSERT INTO agent_links
           (id, from_id, to_id, type, created_at, updated_at, deleted_at,
            serialized, schema_version)
         VALUES
-          ('$id', 'from-1', 'to-$id', 'some_type',
-           '2026-01-01', '2026-01-01', $deletedClause, '$serialized', 1)
-      ''');
+          (?, 'from-1', ?, 'some_type', '2026-01-01', '2026-01-01', ?, ?, 1)
+      ''',
+        [id, 'to-$id', deletedAt, serialized],
+      );
     }
 
     test(

@@ -20,1914 +20,8 @@ import 'package:sqlite3/sqlite3.dart' show SqliteException;
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
+import 'agent_repository_test_generators.dart';
 import 'agent_repository_test_helpers.dart';
-
-enum _GeneratedIntervalEntityKind { agent, state }
-
-enum _GeneratedReportAgentSlot { target, other }
-
-enum _GeneratedReportScopeSlot { target, other }
-
-enum _GeneratedPrimaryProjectSlot { target, other }
-
-enum _GeneratedPrimaryTaskSlot { first, second, other }
-
-enum _GeneratedPrimaryReportState {
-  noActiveHead,
-  missingReport,
-  deletedReport,
-  emptyReport,
-  usableReport,
-}
-
-enum _GeneratedBatchLinkKind { agentTask, basic }
-
-enum _GeneratedBatchTaskSlot { first, second, other }
-
-enum _GeneratedBatchRequestedTaskSlot { first, second, other, missing }
-
-enum _GeneratedWakeTemplateShape { target, other, none }
-
-enum _GeneratedTemplateSlot { target, other }
-
-class _GeneratedIntervalEntitySpec {
-  const _GeneratedIntervalEntitySpec({
-    required this.kind,
-    required this.offsetDays,
-    required this.deleted,
-    required this.seed,
-  });
-
-  final _GeneratedIntervalEntityKind kind;
-  final int offsetDays;
-  final bool deleted;
-  final int seed;
-
-  String get id => 'generated-interval-$seed-$offsetDays-${kind.name}';
-
-  String idAt(int index) => '$id-$index';
-
-  String get agentId => 'generated-agent-$seed';
-
-  DateTime get updatedAt => DateTime(2026, 3).add(Duration(days: offsetDays));
-
-  bool isInside(DateTime start, DateTime end) {
-    return !updatedAt.isBefore(start) && updatedAt.isBefore(end);
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedIntervalEntitySpec('
-        'kind: $kind, offsetDays: $offsetDays, '
-        'deleted: $deleted, seed: $seed)';
-  }
-}
-
-class _GeneratedIntervalQueryScenario {
-  const _GeneratedIntervalQueryScenario({
-    required this.specs,
-    required this.pageSize,
-  });
-
-  final List<_GeneratedIntervalEntitySpec> specs;
-  final int pageSize;
-
-  List<String> expectedIds(DateTime start, DateTime end) {
-    return [
-      for (var index = 0; index < specs.length; index++)
-        if (specs[index].isInside(start, end)) specs[index].idAt(index),
-    ];
-  }
-
-  List<String> expectedDeletedIds(DateTime start, DateTime end) {
-    return [
-      for (var index = 0; index < specs.length; index++)
-        if (specs[index].deleted && specs[index].isInside(start, end))
-          specs[index].idAt(index),
-    ];
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedIntervalQueryScenario('
-        'pageSize: $pageSize, specs: $specs)';
-  }
-}
-
-const String _generatedReportTargetAgentId = 'generated-report-agent-target';
-const String _generatedReportOtherAgentId = 'generated-report-agent-other';
-const String _generatedReportTargetScope = AgentReportScopes.current;
-const String _generatedReportOtherScope = 'generated-report-other-scope';
-
-class _GeneratedReportSpec {
-  const _GeneratedReportSpec({
-    required this.agentSlot,
-    required this.scopeSlot,
-    required this.deleted,
-    required this.createdMinuteOffset,
-    required this.seed,
-  });
-
-  final _GeneratedReportAgentSlot agentSlot;
-  final _GeneratedReportScopeSlot scopeSlot;
-  final bool deleted;
-  final int createdMinuteOffset;
-  final int seed;
-
-  String idAt(int index) => 'generated-report-$index-$seed';
-
-  String get agentId => switch (agentSlot) {
-    _GeneratedReportAgentSlot.target => _generatedReportTargetAgentId,
-    _GeneratedReportAgentSlot.other => _generatedReportOtherAgentId,
-  };
-
-  String get scope => switch (scopeSlot) {
-    _GeneratedReportScopeSlot.target => _generatedReportTargetScope,
-    _GeneratedReportScopeSlot.other => _generatedReportOtherScope,
-  };
-
-  DateTime createdAt(int index) {
-    return DateTime(2026, 5, 4).add(
-      Duration(minutes: createdMinuteOffset, seconds: index),
-    );
-  }
-
-  DateTime? deletedAt(int index) {
-    return deleted ? createdAt(index).add(const Duration(minutes: 1)) : null;
-  }
-
-  String contentAt(int index) => 'generated report $index from seed $seed';
-
-  @override
-  String toString() {
-    return '_GeneratedReportSpec('
-        'agentSlot: $agentSlot, scopeSlot: $scopeSlot, '
-        'deleted: $deleted, createdMinuteOffset: $createdMinuteOffset, '
-        'seed: $seed)';
-  }
-}
-
-class _GeneratedReportHeadSpec {
-  const _GeneratedReportHeadSpec({
-    required this.agentSlot,
-    required this.scopeSlot,
-    required this.pointsToExisting,
-    required this.reportOrdinal,
-    required this.deleted,
-    required this.updatedMinuteOffset,
-    required this.seed,
-  });
-
-  final _GeneratedReportAgentSlot agentSlot;
-  final _GeneratedReportScopeSlot scopeSlot;
-  final bool pointsToExisting;
-  final int reportOrdinal;
-  final bool deleted;
-  final int updatedMinuteOffset;
-  final int seed;
-
-  String idAt(int index) => 'generated-report-head-$index-$seed';
-
-  String get agentId => switch (agentSlot) {
-    _GeneratedReportAgentSlot.target => _generatedReportTargetAgentId,
-    _GeneratedReportAgentSlot.other => _generatedReportOtherAgentId,
-  };
-
-  String get scope => switch (scopeSlot) {
-    _GeneratedReportScopeSlot.target => _generatedReportTargetScope,
-    _GeneratedReportScopeSlot.other => _generatedReportOtherScope,
-  };
-
-  DateTime updatedAt(int index) {
-    return DateTime(2026, 5, 5).add(
-      Duration(minutes: updatedMinuteOffset, seconds: index),
-    );
-  }
-
-  DateTime? deletedAt(int index) {
-    return deleted ? updatedAt(index).add(const Duration(minutes: 1)) : null;
-  }
-
-  String reportIdFor(_GeneratedReportResolutionScenario scenario) {
-    final matchingIndexes = scenario
-        .reportIndexesFor(
-          agentSlot,
-          scopeSlot,
-        )
-        .toList();
-    if (!pointsToExisting || matchingIndexes.isEmpty) {
-      return 'generated-missing-report-$seed';
-    }
-
-    final reportIndex = matchingIndexes[reportOrdinal % matchingIndexes.length];
-    return scenario.reports[reportIndex].idAt(reportIndex);
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedReportHeadSpec('
-        'agentSlot: $agentSlot, scopeSlot: $scopeSlot, '
-        'pointsToExisting: $pointsToExisting, '
-        'reportOrdinal: $reportOrdinal, deleted: $deleted, '
-        'updatedMinuteOffset: $updatedMinuteOffset, seed: $seed)';
-  }
-}
-
-class _GeneratedReportResolutionScenario {
-  const _GeneratedReportResolutionScenario({
-    required this.reports,
-    required this.heads,
-  });
-
-  final List<_GeneratedReportSpec> reports;
-  final List<_GeneratedReportHeadSpec> heads;
-
-  Iterable<int> reportIndexesFor(
-    _GeneratedReportAgentSlot agentSlot,
-    _GeneratedReportScopeSlot scopeSlot,
-  ) sync* {
-    for (var index = 0; index < reports.length; index++) {
-      if (reports[index].agentSlot == agentSlot &&
-          reports[index].scopeSlot == scopeSlot) {
-        yield index;
-      }
-    }
-  }
-
-  Iterable<int> headIndexesFor(
-    _GeneratedReportAgentSlot agentSlot,
-    _GeneratedReportScopeSlot scopeSlot,
-  ) sync* {
-    for (var index = 0; index < heads.length; index++) {
-      if (heads[index].agentSlot == agentSlot &&
-          heads[index].scopeSlot == scopeSlot) {
-        yield index;
-      }
-    }
-  }
-
-  int? expectedHeadIndexFor(
-    _GeneratedReportAgentSlot agentSlot,
-    _GeneratedReportScopeSlot scopeSlot,
-  ) {
-    final indexes =
-        headIndexesFor(
-          agentSlot,
-          scopeSlot,
-        ).where((index) => !heads[index].deleted).toList()..sort(
-          (a, b) => heads[b].updatedAt(b).compareTo(heads[a].updatedAt(a)),
-        );
-    return indexes.isEmpty ? null : indexes.first;
-  }
-
-  String? expectedHeadIdFor(
-    _GeneratedReportAgentSlot agentSlot,
-    _GeneratedReportScopeSlot scopeSlot,
-  ) {
-    final index = expectedHeadIndexFor(agentSlot, scopeSlot);
-    return index == null ? null : heads[index].idAt(index);
-  }
-
-  String? expectedHeadReportIdFor(
-    _GeneratedReportAgentSlot agentSlot,
-    _GeneratedReportScopeSlot scopeSlot,
-  ) {
-    final index = expectedHeadIndexFor(agentSlot, scopeSlot);
-    return index == null ? null : heads[index].reportIdFor(this);
-  }
-
-  String? expectedLatestReportIdFor(
-    _GeneratedReportAgentSlot agentSlot,
-    _GeneratedReportScopeSlot scopeSlot,
-  ) {
-    final headReportId = expectedHeadReportIdFor(agentSlot, scopeSlot);
-    if (headReportId == null) return null;
-
-    for (final index in reportIndexesFor(agentSlot, scopeSlot)) {
-      if (!reports[index].deleted &&
-          reports[index].idAt(index) == headReportId) {
-        return headReportId;
-      }
-    }
-    return null;
-  }
-
-  Map<String, String> get expectedBatchReportIdsForTargetScope {
-    final result = <String, String>{};
-    for (final agentSlot in _GeneratedReportAgentSlot.values) {
-      final reportId = expectedLatestReportIdFor(
-        agentSlot,
-        _GeneratedReportScopeSlot.target,
-      );
-      if (reportId != null) {
-        result[_agentIdFor(agentSlot)] = reportId;
-      }
-    }
-    return result;
-  }
-
-  String _agentIdFor(_GeneratedReportAgentSlot agentSlot) {
-    return switch (agentSlot) {
-      _GeneratedReportAgentSlot.target => _generatedReportTargetAgentId,
-      _GeneratedReportAgentSlot.other => _generatedReportOtherAgentId,
-    };
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedReportResolutionScenario('
-        'reports: $reports, heads: $heads)';
-  }
-}
-
-const String _generatedPrimaryTargetProjectId =
-    'generated-primary-project-target';
-const String _generatedPrimaryOtherProjectId =
-    'generated-primary-project-other';
-const String _generatedPrimaryFirstTaskId = 'generated-primary-task-first';
-const String _generatedPrimarySecondTaskId = 'generated-primary-task-second';
-const String _generatedPrimaryOtherTaskId = 'generated-primary-task-other';
-
-String _generatedPrimaryAgentId(int agentSlot) {
-  return 'generated-primary-agent-$agentSlot';
-}
-
-class _GeneratedPrimaryReportSpec {
-  const _GeneratedPrimaryReportSpec({
-    required this.agentSlot,
-    required this.scopeSlot,
-    required this.state,
-    required this.updatedMinuteOffset,
-  });
-
-  final int agentSlot;
-  final _GeneratedReportScopeSlot scopeSlot;
-  final _GeneratedPrimaryReportState state;
-  final int updatedMinuteOffset;
-
-  String get agentId => _generatedPrimaryAgentId(agentSlot);
-
-  String get scope => switch (scopeSlot) {
-    _GeneratedReportScopeSlot.target => AgentReportScopes.current,
-    _GeneratedReportScopeSlot.other => _generatedReportOtherScope,
-  };
-
-  String get reportId =>
-      'generated-primary-report-${scopeSlot.name}-$agentSlot';
-
-  String get headId => 'generated-primary-head-${scopeSlot.name}-$agentSlot';
-
-  String get missingReportId {
-    return 'generated-primary-missing-report-${scopeSlot.name}-$agentSlot';
-  }
-
-  DateTime get updatedAt {
-    return DateTime(2026, 5, 6).add(
-      Duration(minutes: updatedMinuteOffset),
-    );
-  }
-
-  DateTime? get headDeletedAt {
-    return state == _GeneratedPrimaryReportState.noActiveHead
-        ? updatedAt.add(const Duration(minutes: 1))
-        : null;
-  }
-
-  DateTime? get reportDeletedAt {
-    return state == _GeneratedPrimaryReportState.deletedReport
-        ? updatedAt.add(const Duration(minutes: 1))
-        : null;
-  }
-
-  String get headReportId {
-    return state == _GeneratedPrimaryReportState.missingReport
-        ? missingReportId
-        : reportId;
-  }
-
-  bool get writesReport {
-    return state != _GeneratedPrimaryReportState.missingReport;
-  }
-
-  String get content {
-    return state == _GeneratedPrimaryReportState.emptyReport
-        ? '   '
-        : 'generated usable report for $agentId';
-  }
-
-  bool get resolvesCurrentReport {
-    return scopeSlot == _GeneratedReportScopeSlot.target &&
-        switch (state) {
-          _GeneratedPrimaryReportState.emptyReport ||
-          _GeneratedPrimaryReportState.usableReport => true,
-          _ => false,
-        };
-  }
-
-  bool get resolvesNonEmptyCurrentReport {
-    return resolvesCurrentReport && content.trim().isNotEmpty;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedPrimaryReportSpec('
-        'agentSlot: $agentSlot, scopeSlot: $scopeSlot, state: $state, '
-        'updatedMinuteOffset: $updatedMinuteOffset)';
-  }
-}
-
-class _GeneratedPrimaryProjectLinkSpec {
-  const _GeneratedPrimaryProjectLinkSpec({
-    required this.projectSlot,
-    required this.agentSlot,
-    required this.deleted,
-    required this.createdMinuteOffset,
-  });
-
-  final _GeneratedPrimaryProjectSlot projectSlot;
-  final int agentSlot;
-  final bool deleted;
-  final int createdMinuteOffset;
-
-  String get id =>
-      'generated-primary-project-link-'
-      '${projectSlot.name}-$agentSlot';
-
-  String get agentId => _generatedPrimaryAgentId(agentSlot);
-
-  String get projectId => switch (projectSlot) {
-    _GeneratedPrimaryProjectSlot.target => _generatedPrimaryTargetProjectId,
-    _GeneratedPrimaryProjectSlot.other => _generatedPrimaryOtherProjectId,
-  };
-
-  DateTime get createdAt {
-    return DateTime(2026, 5, 7).add(
-      Duration(minutes: createdMinuteOffset),
-    );
-  }
-
-  DateTime? get deletedAt {
-    return deleted ? createdAt.add(const Duration(minutes: 1)) : null;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedPrimaryProjectLinkSpec('
-        'projectSlot: $projectSlot, agentSlot: $agentSlot, '
-        'deleted: $deleted, createdMinuteOffset: $createdMinuteOffset)';
-  }
-}
-
-class _GeneratedPrimaryTaskLinkSpec {
-  const _GeneratedPrimaryTaskLinkSpec({
-    required this.taskSlot,
-    required this.agentSlot,
-    required this.deleted,
-    required this.createdMinuteOffset,
-  });
-
-  final _GeneratedPrimaryTaskSlot taskSlot;
-  final int agentSlot;
-  final bool deleted;
-  final int createdMinuteOffset;
-
-  String get id => 'generated-primary-task-link-${taskSlot.name}-$agentSlot';
-
-  String get agentId => _generatedPrimaryAgentId(agentSlot);
-
-  String get taskId => switch (taskSlot) {
-    _GeneratedPrimaryTaskSlot.first => _generatedPrimaryFirstTaskId,
-    _GeneratedPrimaryTaskSlot.second => _generatedPrimarySecondTaskId,
-    _GeneratedPrimaryTaskSlot.other => _generatedPrimaryOtherTaskId,
-  };
-
-  DateTime get createdAt {
-    return DateTime(2026, 5, 8).add(
-      Duration(minutes: createdMinuteOffset),
-    );
-  }
-
-  DateTime? get deletedAt {
-    return deleted ? createdAt.add(const Duration(minutes: 1)) : null;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedPrimaryTaskLinkSpec('
-        'taskSlot: $taskSlot, agentSlot: $agentSlot, '
-        'deleted: $deleted, createdMinuteOffset: $createdMinuteOffset)';
-  }
-}
-
-class _GeneratedPrimaryLinkSelectionScenario {
-  const _GeneratedPrimaryLinkSelectionScenario({
-    required this.reports,
-    required this.projectLinks,
-    required this.taskLinks,
-  });
-
-  final List<_GeneratedPrimaryReportSpec> reports;
-  final List<_GeneratedPrimaryProjectLinkSpec> projectLinks;
-  final List<_GeneratedPrimaryTaskLinkSpec> taskLinks;
-
-  Map<String, _GeneratedPrimaryReportSpec> get _finalReportsByAgentAndScope {
-    final result = <String, _GeneratedPrimaryReportSpec>{};
-    for (final report in reports) {
-      result['${report.agentSlot}:${report.scopeSlot.name}'] = report;
-    }
-    return result;
-  }
-
-  _GeneratedPrimaryReportSpec? _currentReportForAgent(int agentSlot) {
-    return _finalReportsByAgentAndScope['$agentSlot:${_GeneratedReportScopeSlot.target.name}'];
-  }
-
-  List<_GeneratedPrimaryProjectLinkSpec> get _activeTargetProjectLinks {
-    final finalLinksByAgent = <int, _GeneratedPrimaryProjectLinkSpec>{};
-    for (final link in projectLinks) {
-      if (link.projectSlot == _GeneratedPrimaryProjectSlot.target) {
-        finalLinksByAgent[link.agentSlot] = link;
-      }
-    }
-
-    return finalLinksByAgent.values.where((link) => !link.deleted).toList()
-      ..sort((a, b) {
-        final byCreatedAt = b.createdAt.compareTo(a.createdAt);
-        if (byCreatedAt != 0) return byCreatedAt;
-        return b.id.compareTo(a.id);
-      });
-  }
-
-  List<_GeneratedPrimaryTaskLinkSpec> _activeTaskLinksFor(
-    _GeneratedPrimaryTaskSlot taskSlot,
-  ) {
-    final finalLinksByAgent = <int, _GeneratedPrimaryTaskLinkSpec>{};
-    for (final link in taskLinks) {
-      if (link.taskSlot == taskSlot) {
-        finalLinksByAgent[link.agentSlot] = link;
-      }
-    }
-
-    return finalLinksByAgent.values.where((link) => !link.deleted).toList()
-      ..sort((a, b) {
-        final byCreatedAt = b.createdAt.compareTo(a.createdAt);
-        if (byCreatedAt != 0) return byCreatedAt;
-        return b.id.compareTo(a.id);
-      });
-  }
-
-  String? get expectedProjectReportId {
-    for (final link in _activeTargetProjectLinks) {
-      final report = _currentReportForAgent(link.agentSlot);
-      if (report != null && report.resolvesNonEmptyCurrentReport) {
-        return report.reportId;
-      }
-    }
-    return null;
-  }
-
-  Map<String, String> get expectedTaskReportIds {
-    final result = <String, String>{};
-    for (final taskSlot in [
-      _GeneratedPrimaryTaskSlot.first,
-      _GeneratedPrimaryTaskSlot.second,
-    ]) {
-      final links = _activeTaskLinksFor(taskSlot);
-      if (links.isEmpty) continue;
-
-      final primaryLink = links.first;
-      final report = _currentReportForAgent(primaryLink.agentSlot);
-      if (report != null && report.resolvesCurrentReport) {
-        result[primaryLink.taskId] = report.reportId;
-      }
-    }
-    return result;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedPrimaryLinkSelectionScenario('
-        'reports: $reports, projectLinks: $projectLinks, '
-        'taskLinks: $taskLinks)';
-  }
-}
-
-const String _generatedBatchFirstTaskId = 'generated-batch-task-first';
-const String _generatedBatchSecondTaskId = 'generated-batch-task-second';
-const String _generatedBatchOtherTaskId = 'generated-batch-task-other';
-const String _generatedBatchMissingTaskId = 'generated-batch-task-missing';
-
-String _generatedBatchAgentId(int agentSlot) {
-  return 'generated-batch-agent-$agentSlot';
-}
-
-String _generatedBatchTaskId(_GeneratedBatchTaskSlot taskSlot) {
-  return switch (taskSlot) {
-    _GeneratedBatchTaskSlot.first => _generatedBatchFirstTaskId,
-    _GeneratedBatchTaskSlot.second => _generatedBatchSecondTaskId,
-    _GeneratedBatchTaskSlot.other => _generatedBatchOtherTaskId,
-  };
-}
-
-String _generatedBatchRequestedTaskId(
-  _GeneratedBatchRequestedTaskSlot taskSlot,
-) {
-  return switch (taskSlot) {
-    _GeneratedBatchRequestedTaskSlot.first => _generatedBatchFirstTaskId,
-    _GeneratedBatchRequestedTaskSlot.second => _generatedBatchSecondTaskId,
-    _GeneratedBatchRequestedTaskSlot.other => _generatedBatchOtherTaskId,
-    _GeneratedBatchRequestedTaskSlot.missing => _generatedBatchMissingTaskId,
-  };
-}
-
-class _GeneratedBatchTaskLinkSpec {
-  const _GeneratedBatchTaskLinkSpec({
-    required this.kind,
-    required this.taskSlot,
-    required this.agentSlot,
-    required this.deleted,
-    required this.createdMinuteOffset,
-  });
-
-  final _GeneratedBatchLinkKind kind;
-  final _GeneratedBatchTaskSlot taskSlot;
-  final int agentSlot;
-  final bool deleted;
-  final int createdMinuteOffset;
-
-  String get id =>
-      'generated-batch-link-'
-      '${kind.name}-${taskSlot.name}-$agentSlot';
-
-  String get agentId => _generatedBatchAgentId(agentSlot);
-
-  String get taskId => _generatedBatchTaskId(taskSlot);
-
-  DateTime get createdAt {
-    return DateTime(2026, 5, 9).add(
-      Duration(minutes: createdMinuteOffset),
-    );
-  }
-
-  DateTime? get deletedAt {
-    return deleted ? createdAt.add(const Duration(minutes: 1)) : null;
-  }
-
-  String get naturalKey => '${kind.name}:$taskId:$agentId';
-
-  @override
-  String toString() {
-    return '_GeneratedBatchTaskLinkSpec('
-        'kind: $kind, taskSlot: $taskSlot, agentSlot: $agentSlot, '
-        'deleted: $deleted, createdMinuteOffset: $createdMinuteOffset)';
-  }
-}
-
-class _GeneratedBatchTaskLinkQueryScenario {
-  const _GeneratedBatchTaskLinkQueryScenario({
-    required this.links,
-    required this.requestedTaskSlots,
-  });
-
-  final List<_GeneratedBatchTaskLinkSpec> links;
-  final List<_GeneratedBatchRequestedTaskSlot> requestedTaskSlots;
-
-  Map<String, _GeneratedBatchTaskLinkSpec> get _finalLinksByNaturalKey {
-    final result = <String, _GeneratedBatchTaskLinkSpec>{};
-    for (final link in links) {
-      result[link.naturalKey] = link;
-    }
-    return result;
-  }
-
-  Iterable<_GeneratedBatchTaskLinkSpec> get _activeAgentTaskLinks {
-    return _finalLinksByNaturalKey.values.where(
-      (link) => link.kind == _GeneratedBatchLinkKind.agentTask && !link.deleted,
-    );
-  }
-
-  List<String> get requestedTaskIds {
-    return requestedTaskSlots.map(_generatedBatchRequestedTaskId).toList();
-  }
-
-  Map<String, Set<String>> get expectedLinksToMultipleIds {
-    final requestedIds = requestedTaskIds.toSet();
-    final result = <String, Set<String>>{};
-    for (final link in _activeAgentTaskLinks) {
-      if (requestedIds.contains(link.taskId)) {
-        (result[link.taskId] ??= <String>{}).add(link.id);
-      }
-    }
-    return result;
-  }
-
-  Set<String> get expectedTaskIdsWithAgentLink {
-    return _activeAgentTaskLinks.map((link) => link.taskId).toSet();
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedBatchTaskLinkQueryScenario('
-        'requestedTaskSlots: $requestedTaskSlots, links: $links)';
-  }
-}
-
-final _generatedTemplateInstanceBase = DateTime(2026, 5, 10, 12);
-final _generatedTemplateInstanceSince = DateTime(2026, 5, 10, 12);
-
-const String _generatedInstanceTargetTemplateId =
-    'generated-instance-template-target';
-const String _generatedInstanceOtherTemplateId =
-    'generated-instance-template-other';
-
-String _generatedInstanceAgentId(int agentSlot) {
-  return 'generated-instance-agent-$agentSlot';
-}
-
-class _GeneratedTemplateInstanceAssignmentSpec {
-  const _GeneratedTemplateInstanceAssignmentSpec({
-    required this.slot,
-    required this.agentSlot,
-    required this.deleted,
-    required this.createdMinuteOffset,
-  });
-
-  final _GeneratedTemplateSlot slot;
-  final int agentSlot;
-  final bool deleted;
-  final int createdMinuteOffset;
-
-  String get id => 'generated-instance-assignment-${slot.name}-$agentSlot';
-
-  String get templateId => switch (slot) {
-    _GeneratedTemplateSlot.target => _generatedInstanceTargetTemplateId,
-    _GeneratedTemplateSlot.other => _generatedInstanceOtherTemplateId,
-  };
-
-  String get agentId => _generatedInstanceAgentId(agentSlot);
-
-  DateTime get createdAt {
-    return _generatedTemplateInstanceBase.add(
-      Duration(minutes: createdMinuteOffset),
-    );
-  }
-
-  DateTime? get deletedAt {
-    return deleted ? createdAt.add(const Duration(minutes: 1)) : null;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedTemplateInstanceAssignmentSpec('
-        'slot: $slot, agentSlot: $agentSlot, deleted: $deleted, '
-        'createdMinuteOffset: $createdMinuteOffset)';
-  }
-}
-
-class _GeneratedTemplateInstanceTokenUsageSpec {
-  const _GeneratedTemplateInstanceTokenUsageSpec({
-    required this.agentSlot,
-    required this.deleted,
-    required this.createdMinuteOffset,
-    required this.seed,
-  });
-
-  final int agentSlot;
-  final bool deleted;
-  final int createdMinuteOffset;
-  final int seed;
-
-  String idAt(int index) => 'generated-instance-token-$index-$seed';
-
-  String get agentId => _generatedInstanceAgentId(agentSlot);
-
-  String runKeyAt(int index) => 'generated-instance-run-$index-$seed';
-
-  String threadIdAt(int index) => 'generated-instance-thread-$index-$seed';
-
-  String get modelId => 'generated-model-${seed % 4}';
-
-  int? get inputTokens => seed % 4 == 0 ? null : seed % 17;
-
-  int? get outputTokens => seed % 5 == 0 ? null : seed % 13;
-
-  int? get thoughtsTokens => seed % 6 == 0 ? null : seed % 11;
-
-  DateTime createdAt(int index) {
-    return _generatedTemplateInstanceBase.add(
-      Duration(minutes: createdMinuteOffset, seconds: index),
-    );
-  }
-
-  DateTime? deletedAt(int index) {
-    return deleted ? createdAt(index).add(const Duration(minutes: 1)) : null;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedTemplateInstanceTokenUsageSpec('
-        'agentSlot: $agentSlot, deleted: $deleted, '
-        'createdMinuteOffset: $createdMinuteOffset, seed: $seed)';
-  }
-}
-
-class _GeneratedTemplateInstanceReportSpec {
-  const _GeneratedTemplateInstanceReportSpec({
-    required this.agentSlot,
-    required this.scopeSlot,
-    required this.deleted,
-    required this.createdMinuteOffset,
-    required this.seed,
-  });
-
-  final int agentSlot;
-  final _GeneratedReportScopeSlot scopeSlot;
-  final bool deleted;
-  final int createdMinuteOffset;
-  final int seed;
-
-  String idAt(int index) => 'generated-instance-report-$index-$seed';
-
-  String get agentId => _generatedInstanceAgentId(agentSlot);
-
-  String get scope => switch (scopeSlot) {
-    _GeneratedReportScopeSlot.target => AgentReportScopes.current,
-    _GeneratedReportScopeSlot.other => _generatedReportOtherScope,
-  };
-
-  String contentAt(int index) => 'generated report $index seed $seed';
-
-  DateTime createdAt(int index) {
-    return _generatedTemplateInstanceBase.add(
-      Duration(minutes: createdMinuteOffset, seconds: index),
-    );
-  }
-
-  DateTime? deletedAt(int index) {
-    return deleted ? createdAt(index).add(const Duration(minutes: 1)) : null;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedTemplateInstanceReportSpec('
-        'agentSlot: $agentSlot, scopeSlot: $scopeSlot, deleted: $deleted, '
-        'createdMinuteOffset: $createdMinuteOffset, seed: $seed)';
-  }
-}
-
-class _GeneratedTemplateInstanceQueryScenario {
-  const _GeneratedTemplateInstanceQueryScenario({
-    required this.assignments,
-    required this.tokenUsages,
-    required this.reports,
-    required this.usageLimit,
-    required this.reportLimit,
-  });
-
-  final List<_GeneratedTemplateInstanceAssignmentSpec> assignments;
-  final List<_GeneratedTemplateInstanceTokenUsageSpec> tokenUsages;
-  final List<_GeneratedTemplateInstanceReportSpec> reports;
-  final int usageLimit;
-  final int reportLimit;
-
-  Set<int> get _activeTargetAgentSlots {
-    final finalAssignmentsByNaturalKey =
-        <String, _GeneratedTemplateInstanceAssignmentSpec>{};
-    for (final assignment in assignments) {
-      final key = '${assignment.slot.name}:${assignment.agentSlot}';
-      finalAssignmentsByNaturalKey[key] = assignment;
-    }
-
-    return {
-      for (final assignment in finalAssignmentsByNaturalKey.values)
-        if (assignment.slot == _GeneratedTemplateSlot.target &&
-            !assignment.deleted)
-          assignment.agentSlot,
-    };
-  }
-
-  List<int> _matchingTokenIndexes({DateTime? since}) {
-    return [
-      for (var index = 0; index < tokenUsages.length; index++)
-        if (_activeTargetAgentSlots.contains(tokenUsages[index].agentSlot) &&
-            !tokenUsages[index].deleted &&
-            (since == null ||
-                !tokenUsages[index].createdAt(index).isBefore(since)))
-          index,
-    ]..sort(
-      (a, b) => tokenUsages[b]
-          .createdAt(b)
-          .compareTo(
-            tokenUsages[a].createdAt(a),
-          ),
-    );
-  }
-
-  List<int> get _matchingReportIndexes {
-    return [
-      for (var index = 0; index < reports.length; index++)
-        if (_activeTargetAgentSlots.contains(reports[index].agentSlot) &&
-            reports[index].scopeSlot == _GeneratedReportScopeSlot.target &&
-            !reports[index].deleted)
-          index,
-    ]..sort(
-      (a, b) => reports[b]
-          .createdAt(b)
-          .compareTo(
-            reports[a].createdAt(a),
-          ),
-    );
-  }
-
-  List<String> expectedTokenUsageIds({required int limit}) {
-    return _matchingTokenIndexes()
-        .take(limit)
-        .map((index) => tokenUsages[index].idAt(index))
-        .toList();
-  }
-
-  List<String> expectedTokenUsageIdsSince(DateTime since) {
-    return _matchingTokenIndexes(
-      since: since,
-    ).map((index) => tokenUsages[index].idAt(index)).toList();
-  }
-
-  List<String> expectedReportIds({required int limit}) {
-    return _matchingReportIndexes
-        .take(limit)
-        .map((index) => reports[index].idAt(index))
-        .toList();
-  }
-
-  ({int input, int output, int thoughts}) expectedTokenSums({
-    DateTime? since,
-  }) {
-    var input = 0;
-    var output = 0;
-    var thoughts = 0;
-    for (final index in _matchingTokenIndexes(since: since)) {
-      final usage = tokenUsages[index];
-      input += usage.inputTokens ?? 0;
-      output += usage.outputTokens ?? 0;
-      thoughts += usage.thoughtsTokens ?? 0;
-    }
-    return (input: input, output: output, thoughts: thoughts);
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedTemplateInstanceQueryScenario('
-        'usageLimit: $usageLimit, reportLimit: $reportLimit, '
-        'assignments: $assignments, tokenUsages: $tokenUsages, '
-        'reports: $reports)';
-  }
-}
-
-final _generatedWakeBase = DateTime(2026, 4, 10, 12);
-final _generatedWakeWindowStart = DateTime(2026, 4, 10, 6);
-final _generatedWakeWindowEnd = DateTime(2026, 4, 10, 18);
-
-const _generatedWakeTargetAgentId = 'generated-wake-agent-0';
-const _generatedWakeTargetThreadId = 'generated-wake-thread-0';
-const _generatedWakeTargetTemplateId = 'generated-wake-template-target';
-
-const _generatedTemplateTargetId = 'generated-template-target';
-const _generatedTemplateOtherId = 'generated-template-other';
-
-class _GeneratedWakeLifecycleSpec {
-  const _GeneratedWakeLifecycleSpec({
-    required this.status,
-    required this.templateShape,
-    required this.agentSlot,
-    required this.threadSlot,
-    required this.createdHourOffset,
-    required this.durationMinutes,
-    required this.seed,
-  });
-
-  final WakeRunStatus status;
-  final _GeneratedWakeTemplateShape templateShape;
-  final int agentSlot;
-  final int threadSlot;
-  final int createdHourOffset;
-  final int durationMinutes;
-  final int seed;
-
-  String runKeyAt(int index) => 'generated-wake-run-$index-$seed';
-
-  String get agentId => 'generated-wake-agent-$agentSlot';
-
-  String get threadId => 'generated-wake-thread-$threadSlot';
-
-  String get reason => WakeReason.values[seed % WakeReason.values.length].name;
-
-  DateTime createdAt(int index) => _generatedWakeBase.add(
-    Duration(hours: createdHourOffset, seconds: index),
-  );
-
-  DateTime startedAt(int index) => createdAt(index).add(
-    Duration(minutes: seed % 4),
-  );
-
-  Duration get duration => Duration(minutes: durationMinutes);
-
-  DateTime? completedAt(int index) {
-    return switch (status) {
-      WakeRunStatus.completed ||
-      WakeRunStatus.failed ||
-      WakeRunStatus.aborted => startedAt(index).add(duration),
-      WakeRunStatus.running || WakeRunStatus.abandoned => null,
-    };
-  }
-
-  String? get errorMessage {
-    return status == WakeRunStatus.failed ? 'generated failure $seed' : null;
-  }
-
-  String? get templateId {
-    return switch (templateShape) {
-      _GeneratedWakeTemplateShape.target => _generatedWakeTargetTemplateId,
-      _GeneratedWakeTemplateShape.other => 'generated-wake-template-other',
-      _GeneratedWakeTemplateShape.none => null,
-    };
-  }
-
-  String? get templateVersionId {
-    final id = templateId;
-    return id == null ? null : '$id-version-${seed % 3}';
-  }
-
-  bool get hasResolvedModel => seed.isEven;
-
-  String? get resolvedModelId {
-    return hasResolvedModel ? 'generated-model-${seed % 5}' : null;
-  }
-
-  bool get hasSoulProvenance => seed % 3 == 0;
-
-  String? get soulId {
-    return hasSoulProvenance ? 'generated-soul-${seed % 4}' : null;
-  }
-
-  String? get soulVersionId {
-    return hasSoulProvenance ? 'generated-soul-version-${seed % 6}' : null;
-  }
-
-  bool get hasRating => seed.isEven;
-
-  double get rating => (seed % 11) / 2;
-
-  DateTime ratedAt(int index) => createdAt(index).add(
-    Duration(hours: 3, minutes: seed % 7),
-  );
-
-  bool isInWindow(int index, DateTime since, DateTime until) {
-    final created = createdAt(index);
-    return !created.isBefore(since) && !created.isAfter(until);
-  }
-
-  bool hasPositiveDuration(int index) {
-    final completed = completedAt(index);
-    if (completed == null) return false;
-    return completed.difference(startedAt(index)).inMilliseconds > 0;
-  }
-
-  int positiveDurationMs(int index) {
-    return hasPositiveDuration(index)
-        ? completedAt(index)!.difference(startedAt(index)).inMilliseconds
-        : 0;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedWakeLifecycleSpec('
-        'status: $status, templateShape: $templateShape, '
-        'agentSlot: $agentSlot, threadSlot: $threadSlot, '
-        'createdHourOffset: $createdHourOffset, '
-        'durationMinutes: $durationMinutes, seed: $seed)';
-  }
-}
-
-class _GeneratedWakeLifecycleScenario {
-  const _GeneratedWakeLifecycleScenario({
-    required this.specs,
-    required this.templateLimit,
-  });
-
-  final List<_GeneratedWakeLifecycleSpec> specs;
-  final int templateLimit;
-
-  List<int> _sortedIndexes(Iterable<int> indexes) {
-    return indexes.toList()
-      ..sort((a, b) => specs[b].createdAt(b).compareTo(specs[a].createdAt(a)));
-  }
-
-  Iterable<int> get _targetTemplateIndexes sync* {
-    for (var index = 0; index < specs.length; index++) {
-      if (specs[index].templateId == _generatedWakeTargetTemplateId) {
-        yield index;
-      }
-    }
-  }
-
-  List<String> expectedTemplateRunKeys({required int limit}) {
-    return _sortedIndexes(
-      _targetTemplateIndexes,
-    ).take(limit).map((index) => specs[index].runKeyAt(index)).toList();
-  }
-
-  List<String> expectedTargetTemplateWindowRunKeys(
-    DateTime since,
-    DateTime until,
-  ) {
-    return _sortedIndexes(
-      _targetTemplateIndexes.where(
-        (index) => specs[index].isInWindow(index, since, until),
-      ),
-    ).map((index) => specs[index].runKeyAt(index)).toList();
-  }
-
-  List<String> expectedGlobalWindowRunKeys(DateTime since, DateTime until) {
-    return _sortedIndexes(
-      Iterable<int>.generate(specs.length).where(
-        (index) => specs[index].isInWindow(index, since, until),
-      ),
-    ).map((index) => specs[index].runKeyAt(index)).toList();
-  }
-
-  String? latestRunKeyForThread(String agentId, String threadId) {
-    final indexes = _sortedIndexes(
-      Iterable<int>.generate(specs.length).where(
-        (index) =>
-            specs[index].agentId == agentId &&
-            specs[index].threadId == threadId,
-      ),
-    );
-    return indexes.isEmpty
-        ? null
-        : specs[indexes.first].runKeyAt(indexes.first);
-  }
-
-  int get targetTemplateCount => _targetTemplateIndexes.length;
-
-  int get targetTemplateSuccessCount {
-    return _targetTemplateIndexes
-        .where((index) => specs[index].status == WakeRunStatus.completed)
-        .length;
-  }
-
-  int get targetTemplateFailureCount {
-    return _targetTemplateIndexes
-        .where((index) => specs[index].status == WakeRunStatus.failed)
-        .length;
-  }
-
-  int get targetTemplateDurationCount {
-    return _targetTemplateIndexes
-        .where((index) => specs[index].hasPositiveDuration(index))
-        .length;
-  }
-
-  int? get targetTemplateDurationSumMs {
-    if (targetTemplateCount == 0) return null;
-    return _targetTemplateIndexes.fold<int>(
-      0,
-      (sum, index) => sum + specs[index].positiveDurationMs(index),
-    );
-  }
-
-  DateTime? get firstWakeAt {
-    if (targetTemplateCount == 0) return null;
-    final dates =
-        _targetTemplateIndexes
-            .map((index) => specs[index].createdAt(index))
-            .toList()
-          ..sort();
-    return dates.first;
-  }
-
-  DateTime? get lastWakeAt {
-    if (targetTemplateCount == 0) return null;
-    final dates =
-        _targetTemplateIndexes
-            .map((index) => specs[index].createdAt(index))
-            .toList()
-          ..sort();
-    return dates.last;
-  }
-
-  int get runningCount {
-    return specs.where((spec) => spec.status == WakeRunStatus.running).length;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedWakeLifecycleScenario('
-        'templateLimit: $templateLimit, specs: $specs)';
-  }
-}
-
-class _GeneratedTemplateVersionSpec {
-  const _GeneratedTemplateVersionSpec({
-    required this.slot,
-    required this.version,
-    required this.status,
-    required this.deleted,
-    required this.seed,
-  });
-
-  final _GeneratedTemplateSlot slot;
-  final int version;
-  final AgentTemplateVersionStatus status;
-  final bool deleted;
-  final int seed;
-
-  String idAt(int index) => 'generated-template-version-$index-$seed';
-
-  String get templateId => switch (slot) {
-    _GeneratedTemplateSlot.target => _generatedTemplateTargetId,
-    _GeneratedTemplateSlot.other => _generatedTemplateOtherId,
-  };
-
-  DateTime createdAt(int index) {
-    return DateTime(2026, 5).add(Duration(minutes: index, seconds: seed % 30));
-  }
-
-  DateTime? deletedAt(int index) {
-    return deleted ? createdAt(index).add(const Duration(minutes: 1)) : null;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedTemplateVersionSpec('
-        'slot: $slot, version: $version, status: $status, '
-        'deleted: $deleted, seed: $seed)';
-  }
-}
-
-class _GeneratedTemplateHeadSpec {
-  const _GeneratedTemplateHeadSpec({
-    required this.slot,
-    required this.pointsToExisting,
-    required this.versionOrdinal,
-    required this.deleted,
-    required this.updatedMinuteOffset,
-    required this.seed,
-  });
-
-  final _GeneratedTemplateSlot slot;
-  final bool pointsToExisting;
-  final int versionOrdinal;
-  final bool deleted;
-  final int updatedMinuteOffset;
-  final int seed;
-
-  String idAt(int index) => 'generated-template-head-$index-$seed';
-
-  String get templateId => switch (slot) {
-    _GeneratedTemplateSlot.target => _generatedTemplateTargetId,
-    _GeneratedTemplateSlot.other => _generatedTemplateOtherId,
-  };
-
-  DateTime updatedAt(int index) {
-    return DateTime(
-      2026,
-      5,
-      2,
-    ).add(Duration(minutes: updatedMinuteOffset, seconds: index));
-  }
-
-  DateTime? deletedAt(int index) {
-    return deleted ? updatedAt(index).add(const Duration(minutes: 1)) : null;
-  }
-
-  String versionIdFor(_GeneratedTemplateResolutionScenario scenario) {
-    final targetIndexes = scenario.targetVersionIndexes.toList();
-    if (!pointsToExisting || targetIndexes.isEmpty) {
-      return 'generated-missing-version-$seed';
-    }
-    final versionIndex = targetIndexes[versionOrdinal % targetIndexes.length];
-    return scenario.versions[versionIndex].idAt(versionIndex);
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedTemplateHeadSpec('
-        'slot: $slot, pointsToExisting: $pointsToExisting, '
-        'versionOrdinal: $versionOrdinal, deleted: $deleted, '
-        'updatedMinuteOffset: $updatedMinuteOffset, seed: $seed)';
-  }
-}
-
-class _GeneratedTemplateAssignmentSpec {
-  const _GeneratedTemplateAssignmentSpec({
-    required this.slot,
-    required this.agentSlot,
-    required this.deleted,
-    required this.seed,
-  });
-
-  final _GeneratedTemplateSlot slot;
-  final int agentSlot;
-  final bool deleted;
-  final int seed;
-
-  String idAt(int _) => 'generated-template-assignment-${slot.name}-$agentSlot';
-
-  String get templateId => switch (slot) {
-    _GeneratedTemplateSlot.target => _generatedTemplateTargetId,
-    _GeneratedTemplateSlot.other => _generatedTemplateOtherId,
-  };
-
-  String get agentId => 'generated-template-agent-$agentSlot';
-
-  DateTime createdAt(int index) {
-    return DateTime(2026, 5, 3).add(Duration(minutes: index));
-  }
-
-  DateTime? deletedAt(int index) {
-    return deleted ? createdAt(index).add(const Duration(minutes: 1)) : null;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedTemplateAssignmentSpec('
-        'slot: $slot, agentSlot: $agentSlot, deleted: $deleted, seed: $seed)';
-  }
-}
-
-class _GeneratedTemplateResolutionScenario {
-  const _GeneratedTemplateResolutionScenario({
-    required this.versions,
-    required this.heads,
-    required this.assignments,
-  });
-
-  final List<_GeneratedTemplateVersionSpec> versions;
-  final List<_GeneratedTemplateHeadSpec> heads;
-  final List<_GeneratedTemplateAssignmentSpec> assignments;
-
-  Iterable<int> get targetVersionIndexes sync* {
-    for (var index = 0; index < versions.length; index++) {
-      if (versions[index].slot == _GeneratedTemplateSlot.target) {
-        yield index;
-      }
-    }
-  }
-
-  Iterable<int> get nonDeletedTargetVersionIndexes {
-    return targetVersionIndexes.where((index) => !versions[index].deleted);
-  }
-
-  Iterable<int> get targetHeadIndexes sync* {
-    for (var index = 0; index < heads.length; index++) {
-      if (heads[index].slot == _GeneratedTemplateSlot.target) {
-        yield index;
-      }
-    }
-  }
-
-  int? get expectedHeadIndex {
-    final indexes =
-        targetHeadIndexes.where((index) => !heads[index].deleted).toList()
-          ..sort(
-            (a, b) => heads[b].updatedAt(b).compareTo(heads[a].updatedAt(a)),
-          );
-    return indexes.isEmpty ? null : indexes.first;
-  }
-
-  String? get expectedHeadId {
-    final index = expectedHeadIndex;
-    return index == null ? null : heads[index].idAt(index);
-  }
-
-  String? get expectedHeadVersionId {
-    final index = expectedHeadIndex;
-    return index == null ? null : heads[index].versionIdFor(this);
-  }
-
-  String? get expectedActiveVersionId {
-    final headVersionId = expectedHeadVersionId;
-    if (headVersionId == null) return null;
-    for (final index in nonDeletedTargetVersionIndexes) {
-      if (versions[index].idAt(index) == headVersionId) {
-        return headVersionId;
-      }
-    }
-    return null;
-  }
-
-  AgentTemplateVersionStatus? get expectedActiveVersionStatus {
-    final activeVersionId = expectedActiveVersionId;
-    if (activeVersionId == null) return null;
-    for (final index in nonDeletedTargetVersionIndexes) {
-      if (versions[index].idAt(index) == activeVersionId) {
-        return versions[index].status;
-      }
-    }
-    return null;
-  }
-
-  int get expectedNextVersionNumber {
-    final versionNumbers = nonDeletedTargetVersionIndexes
-        .map((index) => versions[index].version)
-        .toList();
-    if (versionNumbers.isEmpty) return 1;
-    return versionNumbers.reduce((a, b) => a > b ? a : b) + 1;
-  }
-
-  Set<String> get expectedTargetAssignmentIds {
-    final finalAssignmentsBySlot = <String, _GeneratedTemplateAssignmentSpec>{};
-    for (final assignment in assignments) {
-      final key = '${assignment.slot.name}:${assignment.agentSlot}';
-      finalAssignmentsBySlot[key] = assignment;
-    }
-    return {
-      for (final assignment in finalAssignmentsBySlot.values)
-        if (assignment.slot == _GeneratedTemplateSlot.target &&
-            !assignment.deleted)
-          assignment.idAt(0),
-    };
-  }
-
-  Set<String> get expectedTargetAssignmentAgentIds {
-    final finalAssignmentsBySlot = <String, _GeneratedTemplateAssignmentSpec>{};
-    for (final assignment in assignments) {
-      final key = '${assignment.slot.name}:${assignment.agentSlot}';
-      finalAssignmentsBySlot[key] = assignment;
-    }
-    return {
-      for (final assignment in finalAssignmentsBySlot.values)
-        if (assignment.slot == _GeneratedTemplateSlot.target &&
-            !assignment.deleted)
-          assignment.agentId,
-    };
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedTemplateResolutionScenario('
-        'versions: $versions, heads: $heads, assignments: $assignments)';
-  }
-}
-
-extension _AnyGeneratedIntervalQueryScenario on glados.Any {
-  glados.Generator<_GeneratedIntervalEntityKind> get intervalEntityKind =>
-      glados.AnyUtils(this).choose(_GeneratedIntervalEntityKind.values);
-
-  glados.Generator<_GeneratedIntervalEntitySpec> get intervalEntitySpec =>
-      glados.CombinableAny(this).combine4(
-        intervalEntityKind,
-        glados.IntAnys(this).intInRange(-2, 7),
-        glados.AnyUtils(this).choose([false, true]),
-        glados.IntAnys(this).intInRange(0, 10000),
-        (
-          _GeneratedIntervalEntityKind kind,
-          int offsetDays,
-          bool deleted,
-          int seed,
-        ) => _GeneratedIntervalEntitySpec(
-          kind: kind,
-          offsetDays: offsetDays,
-          deleted: deleted,
-          seed: seed,
-        ),
-      );
-
-  glados.Generator<_GeneratedIntervalQueryScenario> get intervalQueryScenario =>
-      glados.CombinableAny(this).combine2(
-        glados.ListAnys(
-          this,
-        ).listWithLengthInRange(0, 10, intervalEntitySpec),
-        glados.IntAnys(this).intInRange(1, 4),
-        (
-          List<_GeneratedIntervalEntitySpec> specs,
-          int pageSize,
-        ) => _GeneratedIntervalQueryScenario(
-          specs: specs,
-          pageSize: pageSize,
-        ),
-      );
-
-  glados.Generator<_GeneratedReportAgentSlot> get reportAgentSlot =>
-      glados.AnyUtils(this).choose(_GeneratedReportAgentSlot.values);
-
-  glados.Generator<_GeneratedReportScopeSlot> get reportScopeSlot =>
-      glados.AnyUtils(this).choose(_GeneratedReportScopeSlot.values);
-
-  glados.Generator<_GeneratedReportSpec> get reportSpec =>
-      glados.CombinableAny(this).combine5(
-        reportAgentSlot,
-        reportScopeSlot,
-        glados.AnyUtils(this).choose([false, true]),
-        glados.IntAnys(this).intInRange(-4, 4),
-        glados.IntAnys(this).intInRange(0, 10000),
-        (
-          _GeneratedReportAgentSlot agentSlot,
-          _GeneratedReportScopeSlot scopeSlot,
-          bool deleted,
-          int createdMinuteOffset,
-          int seed,
-        ) => _GeneratedReportSpec(
-          agentSlot: agentSlot,
-          scopeSlot: scopeSlot,
-          deleted: deleted,
-          createdMinuteOffset: createdMinuteOffset,
-          seed: seed,
-        ),
-      );
-
-  glados.Generator<_GeneratedReportHeadSpec> get reportHeadSpec =>
-      glados.CombinableAny(this).combine7(
-        reportAgentSlot,
-        reportScopeSlot,
-        glados.AnyUtils(this).choose([false, true]),
-        glados.IntAnys(this).intInRange(0, 8),
-        glados.AnyUtils(this).choose([false, true]),
-        glados.IntAnys(this).intInRange(-4, 4),
-        glados.IntAnys(this).intInRange(0, 10000),
-        (
-          _GeneratedReportAgentSlot agentSlot,
-          _GeneratedReportScopeSlot scopeSlot,
-          bool pointsToExisting,
-          int reportOrdinal,
-          bool deleted,
-          int updatedMinuteOffset,
-          int seed,
-        ) => _GeneratedReportHeadSpec(
-          agentSlot: agentSlot,
-          scopeSlot: scopeSlot,
-          pointsToExisting: pointsToExisting,
-          reportOrdinal: reportOrdinal,
-          deleted: deleted,
-          updatedMinuteOffset: updatedMinuteOffset,
-          seed: seed,
-        ),
-      );
-
-  glados.Generator<_GeneratedReportResolutionScenario>
-  get reportResolutionScenario => glados.CombinableAny(this).combine2(
-    glados.ListAnys(this).listWithLengthInRange(0, 8, reportSpec),
-    glados.ListAnys(this).listWithLengthInRange(0, 6, reportHeadSpec),
-    (
-      List<_GeneratedReportSpec> reports,
-      List<_GeneratedReportHeadSpec> heads,
-    ) => _GeneratedReportResolutionScenario(
-      reports: reports,
-      heads: heads,
-    ),
-  );
-
-  glados.Generator<_GeneratedPrimaryReportState> get primaryReportState =>
-      glados.AnyUtils(this).choose(_GeneratedPrimaryReportState.values);
-
-  glados.Generator<_GeneratedPrimaryProjectSlot> get primaryProjectSlot =>
-      glados.AnyUtils(this).choose(_GeneratedPrimaryProjectSlot.values);
-
-  glados.Generator<_GeneratedPrimaryTaskSlot> get primaryTaskSlot =>
-      glados.AnyUtils(this).choose(_GeneratedPrimaryTaskSlot.values);
-
-  glados.Generator<_GeneratedPrimaryReportSpec> get primaryReportSpec =>
-      glados.CombinableAny(this).combine4(
-        glados.AnyUtils(this).choose([0, 1, 2, 3]),
-        reportScopeSlot,
-        primaryReportState,
-        glados.IntAnys(this).intInRange(-4, 4),
-        (
-          int agentSlot,
-          _GeneratedReportScopeSlot scopeSlot,
-          _GeneratedPrimaryReportState state,
-          int updatedMinuteOffset,
-        ) => _GeneratedPrimaryReportSpec(
-          agentSlot: agentSlot,
-          scopeSlot: scopeSlot,
-          state: state,
-          updatedMinuteOffset: updatedMinuteOffset,
-        ),
-      );
-
-  glados.Generator<_GeneratedPrimaryProjectLinkSpec>
-  get primaryProjectLinkSpec => glados.CombinableAny(this).combine4(
-    primaryProjectSlot,
-    glados.AnyUtils(this).choose([0, 1, 2, 3]),
-    glados.AnyUtils(this).choose([false, true]),
-    glados.IntAnys(this).intInRange(-4, 4),
-    (
-      _GeneratedPrimaryProjectSlot projectSlot,
-      int agentSlot,
-      bool deleted,
-      int createdMinuteOffset,
-    ) => _GeneratedPrimaryProjectLinkSpec(
-      projectSlot: projectSlot,
-      agentSlot: agentSlot,
-      deleted: deleted,
-      createdMinuteOffset: createdMinuteOffset,
-    ),
-  );
-
-  glados.Generator<_GeneratedPrimaryTaskLinkSpec> get primaryTaskLinkSpec =>
-      glados.CombinableAny(this).combine4(
-        primaryTaskSlot,
-        glados.AnyUtils(this).choose([0, 1, 2, 3]),
-        glados.AnyUtils(this).choose([false, true]),
-        glados.IntAnys(this).intInRange(-4, 4),
-        (
-          _GeneratedPrimaryTaskSlot taskSlot,
-          int agentSlot,
-          bool deleted,
-          int createdMinuteOffset,
-        ) => _GeneratedPrimaryTaskLinkSpec(
-          taskSlot: taskSlot,
-          agentSlot: agentSlot,
-          deleted: deleted,
-          createdMinuteOffset: createdMinuteOffset,
-        ),
-      );
-
-  glados.Generator<_GeneratedPrimaryLinkSelectionScenario>
-  get primaryLinkSelectionScenario => glados.CombinableAny(this).combine3(
-    glados.ListAnys(this).listWithLengthInRange(0, 8, primaryReportSpec),
-    glados.ListAnys(this).listWithLengthInRange(0, 8, primaryProjectLinkSpec),
-    glados.ListAnys(this).listWithLengthInRange(0, 8, primaryTaskLinkSpec),
-    (
-      List<_GeneratedPrimaryReportSpec> reports,
-      List<_GeneratedPrimaryProjectLinkSpec> projectLinks,
-      List<_GeneratedPrimaryTaskLinkSpec> taskLinks,
-    ) => _GeneratedPrimaryLinkSelectionScenario(
-      reports: reports,
-      projectLinks: projectLinks,
-      taskLinks: taskLinks,
-    ),
-  );
-
-  glados.Generator<_GeneratedBatchLinkKind> get batchLinkKind =>
-      glados.AnyUtils(this).choose(_GeneratedBatchLinkKind.values);
-
-  glados.Generator<_GeneratedBatchTaskSlot> get batchTaskSlot =>
-      glados.AnyUtils(this).choose(_GeneratedBatchTaskSlot.values);
-
-  glados.Generator<_GeneratedBatchRequestedTaskSlot>
-  get batchRequestedTaskSlot =>
-      glados.AnyUtils(this).choose(_GeneratedBatchRequestedTaskSlot.values);
-
-  glados.Generator<_GeneratedBatchTaskLinkSpec> get batchTaskLinkSpec =>
-      glados.CombinableAny(this).combine5(
-        batchLinkKind,
-        batchTaskSlot,
-        glados.AnyUtils(this).choose([0, 1, 2, 3]),
-        glados.AnyUtils(this).choose([false, true]),
-        glados.IntAnys(this).intInRange(-4, 4),
-        (
-          _GeneratedBatchLinkKind kind,
-          _GeneratedBatchTaskSlot taskSlot,
-          int agentSlot,
-          bool deleted,
-          int createdMinuteOffset,
-        ) => _GeneratedBatchTaskLinkSpec(
-          kind: kind,
-          taskSlot: taskSlot,
-          agentSlot: agentSlot,
-          deleted: deleted,
-          createdMinuteOffset: createdMinuteOffset,
-        ),
-      );
-
-  glados.Generator<_GeneratedBatchTaskLinkQueryScenario>
-  get batchTaskLinkQueryScenario => glados.CombinableAny(this).combine2(
-    glados.ListAnys(this).listWithLengthInRange(0, 9, batchTaskLinkSpec),
-    glados.ListAnys(this).listWithLengthInRange(0, 6, batchRequestedTaskSlot),
-    (
-      List<_GeneratedBatchTaskLinkSpec> links,
-      List<_GeneratedBatchRequestedTaskSlot> requestedTaskSlots,
-    ) => _GeneratedBatchTaskLinkQueryScenario(
-      links: links,
-      requestedTaskSlots: requestedTaskSlots,
-    ),
-  );
-
-  glados.Generator<_GeneratedTemplateInstanceAssignmentSpec>
-  get templateInstanceAssignmentSpec => glados.CombinableAny(this).combine4(
-    templateSlot,
-    glados.AnyUtils(this).choose([0, 1, 2, 3]),
-    glados.AnyUtils(this).choose([false, true]),
-    glados.IntAnys(this).intInRange(-4, 4),
-    (
-      _GeneratedTemplateSlot slot,
-      int agentSlot,
-      bool deleted,
-      int createdMinuteOffset,
-    ) => _GeneratedTemplateInstanceAssignmentSpec(
-      slot: slot,
-      agentSlot: agentSlot,
-      deleted: deleted,
-      createdMinuteOffset: createdMinuteOffset,
-    ),
-  );
-
-  glados.Generator<_GeneratedTemplateInstanceTokenUsageSpec>
-  get templateInstanceTokenUsageSpec => glados.CombinableAny(this).combine4(
-    glados.AnyUtils(this).choose([0, 1, 2, 3]),
-    glados.AnyUtils(this).choose([false, true]),
-    glados.IntAnys(this).intInRange(-4, 4),
-    glados.IntAnys(this).intInRange(0, 10000),
-    (
-      int agentSlot,
-      bool deleted,
-      int createdMinuteOffset,
-      int seed,
-    ) => _GeneratedTemplateInstanceTokenUsageSpec(
-      agentSlot: agentSlot,
-      deleted: deleted,
-      createdMinuteOffset: createdMinuteOffset,
-      seed: seed,
-    ),
-  );
-
-  glados.Generator<_GeneratedTemplateInstanceReportSpec>
-  get templateInstanceReportSpec => glados.CombinableAny(this).combine5(
-    glados.AnyUtils(this).choose([0, 1, 2, 3]),
-    reportScopeSlot,
-    glados.AnyUtils(this).choose([false, true]),
-    glados.IntAnys(this).intInRange(-4, 4),
-    glados.IntAnys(this).intInRange(0, 10000),
-    (
-      int agentSlot,
-      _GeneratedReportScopeSlot scopeSlot,
-      bool deleted,
-      int createdMinuteOffset,
-      int seed,
-    ) => _GeneratedTemplateInstanceReportSpec(
-      agentSlot: agentSlot,
-      scopeSlot: scopeSlot,
-      deleted: deleted,
-      createdMinuteOffset: createdMinuteOffset,
-      seed: seed,
-    ),
-  );
-
-  glados.Generator<_GeneratedTemplateInstanceQueryScenario>
-  get templateInstanceQueryScenario => glados.CombinableAny(this).combine5(
-    glados.ListAnys(
-      this,
-    ).listWithLengthInRange(0, 8, templateInstanceAssignmentSpec),
-    glados.ListAnys(
-      this,
-    ).listWithLengthInRange(0, 8, templateInstanceTokenUsageSpec),
-    glados.ListAnys(
-      this,
-    ).listWithLengthInRange(0, 8, templateInstanceReportSpec),
-    glados.IntAnys(this).intInRange(1, 4),
-    glados.IntAnys(this).intInRange(1, 4),
-    (
-      List<_GeneratedTemplateInstanceAssignmentSpec> assignments,
-      List<_GeneratedTemplateInstanceTokenUsageSpec> tokenUsages,
-      List<_GeneratedTemplateInstanceReportSpec> reports,
-      int usageLimit,
-      int reportLimit,
-    ) => _GeneratedTemplateInstanceQueryScenario(
-      assignments: assignments,
-      tokenUsages: tokenUsages,
-      reports: reports,
-      usageLimit: usageLimit,
-      reportLimit: reportLimit,
-    ),
-  );
-
-  glados.Generator<_GeneratedWakeTemplateShape> get wakeTemplateShape =>
-      glados.AnyUtils(this).choose(_GeneratedWakeTemplateShape.values);
-
-  glados.Generator<_GeneratedTemplateSlot> get templateSlot =>
-      glados.AnyUtils(this).choose(_GeneratedTemplateSlot.values);
-
-  glados.Generator<AgentTemplateVersionStatus> get templateVersionStatus =>
-      glados.AnyUtils(this).choose(AgentTemplateVersionStatus.values);
-
-  glados.Generator<_GeneratedTemplateVersionSpec> get templateVersionSpec =>
-      glados.CombinableAny(this).combine5(
-        templateSlot,
-        glados.IntAnys(this).intInRange(1, 8),
-        templateVersionStatus,
-        glados.AnyUtils(this).choose([false, true]),
-        glados.IntAnys(this).intInRange(0, 10000),
-        (
-          _GeneratedTemplateSlot slot,
-          int version,
-          AgentTemplateVersionStatus status,
-          bool deleted,
-          int seed,
-        ) => _GeneratedTemplateVersionSpec(
-          slot: slot,
-          version: version,
-          status: status,
-          deleted: deleted,
-          seed: seed,
-        ),
-      );
-
-  glados.Generator<_GeneratedTemplateHeadSpec> get templateHeadSpec =>
-      glados.CombinableAny(this).combine6(
-        templateSlot,
-        glados.AnyUtils(this).choose([false, true]),
-        glados.IntAnys(this).intInRange(0, 8),
-        glados.AnyUtils(this).choose([false, true]),
-        glados.IntAnys(this).intInRange(-4, 4),
-        glados.IntAnys(this).intInRange(0, 10000),
-        (
-          _GeneratedTemplateSlot slot,
-          bool pointsToExisting,
-          int versionOrdinal,
-          bool deleted,
-          int updatedMinuteOffset,
-          int seed,
-        ) => _GeneratedTemplateHeadSpec(
-          slot: slot,
-          pointsToExisting: pointsToExisting,
-          versionOrdinal: versionOrdinal,
-          deleted: deleted,
-          updatedMinuteOffset: updatedMinuteOffset,
-          seed: seed,
-        ),
-      );
-
-  glados.Generator<_GeneratedTemplateAssignmentSpec>
-  get templateAssignmentSpec => glados.CombinableAny(this).combine4(
-    templateSlot,
-    glados.AnyUtils(this).choose([0, 1, 2]),
-    glados.AnyUtils(this).choose([false, true]),
-    glados.IntAnys(this).intInRange(0, 10000),
-    (
-      _GeneratedTemplateSlot slot,
-      int agentSlot,
-      bool deleted,
-      int seed,
-    ) => _GeneratedTemplateAssignmentSpec(
-      slot: slot,
-      agentSlot: agentSlot,
-      deleted: deleted,
-      seed: seed,
-    ),
-  );
-
-  glados.Generator<_GeneratedTemplateResolutionScenario>
-  get templateResolutionScenario => glados.CombinableAny(this).combine3(
-    glados.ListAnys(this).listWithLengthInRange(0, 8, templateVersionSpec),
-    glados.ListAnys(this).listWithLengthInRange(0, 5, templateHeadSpec),
-    glados.ListAnys(this).listWithLengthInRange(0, 6, templateAssignmentSpec),
-    (
-      List<_GeneratedTemplateVersionSpec> versions,
-      List<_GeneratedTemplateHeadSpec> heads,
-      List<_GeneratedTemplateAssignmentSpec> assignments,
-    ) => _GeneratedTemplateResolutionScenario(
-      versions: versions,
-      heads: heads,
-      assignments: assignments,
-    ),
-  );
-
-  glados.Generator<WakeRunStatus> get wakeRunStatus =>
-      glados.AnyUtils(this).choose(WakeRunStatus.values);
-
-  glados.Generator<_GeneratedWakeLifecycleSpec> get wakeLifecycleSpec =>
-      glados.CombinableAny(this).combine7(
-        wakeRunStatus,
-        wakeTemplateShape,
-        glados.AnyUtils(this).choose([0, 1]),
-        glados.AnyUtils(this).choose([0, 1]),
-        glados.IntAnys(this).intInRange(-8, 8),
-        glados.IntAnys(this).intInRange(-1, 5),
-        glados.IntAnys(this).intInRange(0, 10000),
-        (
-          WakeRunStatus status,
-          _GeneratedWakeTemplateShape templateShape,
-          int agentSlot,
-          int threadSlot,
-          int createdHourOffset,
-          int durationMinutes,
-          int seed,
-        ) => _GeneratedWakeLifecycleSpec(
-          status: status,
-          templateShape: templateShape,
-          agentSlot: agentSlot,
-          threadSlot: threadSlot,
-          createdHourOffset: createdHourOffset,
-          durationMinutes: durationMinutes,
-          seed: seed,
-        ),
-      );
-
-  glados.Generator<_GeneratedWakeLifecycleScenario> get wakeLifecycleScenario =>
-      glados.CombinableAny(this).combine2(
-        glados.ListAnys(this).listWithLengthInRange(1, 8, wakeLifecycleSpec),
-        glados.IntAnys(this).intInRange(1, 4),
-        (
-          List<_GeneratedWakeLifecycleSpec> specs,
-          int templateLimit,
-        ) => _GeneratedWakeLifecycleScenario(
-          specs: specs,
-          templateLimit: templateLimit,
-        ),
-      );
-}
 
 void main() {
   late AgentDatabase db;
@@ -2742,6 +836,30 @@ void main() {
       );
 
       test(
+        'breaks created_at ties by agent_id DESC',
+        () async {
+          const dayId = 'dayplan-2026-05-25';
+          final sharedCreatedAt = DateTime(2026, 5, 25);
+          for (final agentId in ['tie-agent-a', 'tie-agent-b']) {
+            await repo.upsertEntity(
+              identityForLookup(agentId: agentId, createdAt: sharedCreatedAt),
+            );
+            await repo.upsertEntity(
+              stateForLookup(agentId: agentId, activeDayId: dayId),
+            );
+          }
+
+          final result = await repo.getActiveAgentByKindAndActiveDayId(
+            kind: AgentKinds.dayAgent,
+            activeDayId: dayId,
+          );
+
+          // Equal created_at -> the lexicographically larger agent_id wins.
+          expect(result?.agentId, 'tie-agent-b');
+        },
+      );
+
+      test(
         'ignores an older matching state when the latest state moved days',
         () async {
           const dayId = 'dayplan-2026-05-25';
@@ -3250,16 +1368,15 @@ void main() {
             );
           }
 
-          for (final agentSlot in _GeneratedReportAgentSlot.values) {
-            for (final scopeSlot in _GeneratedReportScopeSlot.values) {
+          for (final agentSlot in GeneratedReportAgentSlot.values) {
+            for (final scopeSlot in GeneratedReportScopeSlot.values) {
               final agentId = switch (agentSlot) {
-                _GeneratedReportAgentSlot.target =>
-                  _generatedReportTargetAgentId,
-                _GeneratedReportAgentSlot.other => _generatedReportOtherAgentId,
+                GeneratedReportAgentSlot.target => generatedReportTargetAgentId,
+                GeneratedReportAgentSlot.other => generatedReportOtherAgentId,
               };
               final scope = switch (scopeSlot) {
-                _GeneratedReportScopeSlot.target => _generatedReportTargetScope,
-                _GeneratedReportScopeSlot.other => _generatedReportOtherScope,
+                GeneratedReportScopeSlot.target => generatedReportTargetScope,
+                GeneratedReportScopeSlot.other => generatedReportOtherScope,
               };
 
               final head = await localRepo.getReportHead(agentId, scope);
@@ -3289,11 +1406,11 @@ void main() {
 
           final batch = await localRepo.getLatestReportsByAgentIds(
             [
-              _generatedReportTargetAgentId,
-              _generatedReportOtherAgentId,
-              _generatedReportTargetAgentId,
+              generatedReportTargetAgentId,
+              generatedReportOtherAgentId,
+              generatedReportTargetAgentId,
             ],
-            _generatedReportTargetScope,
+            generatedReportTargetScope,
           );
           final batchReportIdsByAgentId = batch.map(
             (agentId, report) => MapEntry(agentId, report.id),
@@ -3639,7 +1756,7 @@ void main() {
 
           final projectReport = await localRepo
               .getLatestProjectReportForProjectId(
-                _generatedPrimaryTargetProjectId,
+                generatedPrimaryTargetProjectId,
               );
           expect(
             projectReport?.id,
@@ -3655,9 +1772,9 @@ void main() {
           }
 
           final taskReports = await localRepo.getLatestTaskReportsForTaskIds([
-            _generatedPrimaryFirstTaskId,
-            _generatedPrimarySecondTaskId,
-            _generatedPrimaryFirstTaskId,
+            generatedPrimaryFirstTaskId,
+            generatedPrimarySecondTaskId,
+            generatedPrimaryFirstTaskId,
           ]);
           final taskReportIdsByTaskId = taskReports.map(
             (taskId, report) => MapEntry(taskId, report.id),
@@ -4920,7 +3037,7 @@ void main() {
         try {
           for (final spec in scenario.links) {
             final link = switch (spec.kind) {
-              _GeneratedBatchLinkKind.agentTask => model.AgentLink.agentTask(
+              GeneratedBatchLinkKind.agentTask => model.AgentLink.agentTask(
                 id: spec.id,
                 fromId: spec.agentId,
                 toId: spec.taskId,
@@ -4929,7 +3046,7 @@ void main() {
                 vectorClock: const VectorClock({'node-1': 1}),
                 deletedAt: spec.deletedAt,
               ),
-              _GeneratedBatchLinkKind.basic => model.AgentLink.basic(
+              GeneratedBatchLinkKind.basic => model.AgentLink.basic(
                 id: spec.id,
                 fromId: spec.agentId,
                 toId: spec.taskId,
@@ -5220,6 +3337,19 @@ void main() {
     });
 
     group('updateWakeRunStatus', () {
+      test(
+        'silently writes zero rows for a missing runKey (fire-and-forget)',
+        () async {
+          // Documented contract: late status transitions racing run-log
+          // cleanup must not crash the caller and must not create rows.
+          await expectLater(
+            repo.updateWakeRunStatus('no-such-run-key', 'completed'),
+            completes,
+          );
+          expect(await repo.getWakeRun('no-such-run-key'), isNull);
+        },
+      );
+
       test('updates status field', () async {
         await repo.insertWakeRun(entry: makeWakeRun());
 
@@ -5398,20 +3528,20 @@ void main() {
           }
 
           final latestThreadRun = await localRepo.getWakeRunByThreadId(
-            _generatedWakeTargetAgentId,
-            _generatedWakeTargetThreadId,
+            generatedWakeTargetAgentId,
+            generatedWakeTargetThreadId,
           );
           expect(
             latestThreadRun?.runKey,
             scenario.latestRunKeyForThread(
-              _generatedWakeTargetAgentId,
-              _generatedWakeTargetThreadId,
+              generatedWakeTargetAgentId,
+              generatedWakeTargetThreadId,
             ),
             reason: '$scenario',
           );
 
           final templateRuns = await localRepo.getWakeRunsForTemplate(
-            _generatedWakeTargetTemplateId,
+            generatedWakeTargetTemplateId,
             limit: scenario.templateLimit,
           );
           expect(
@@ -5421,7 +3551,7 @@ void main() {
           );
 
           final templateCount = await localRepo.countWakeRunsForTemplate(
-            _generatedWakeTargetTemplateId,
+            generatedWakeTargetTemplateId,
           );
           expect(
             templateCount,
@@ -5431,34 +3561,34 @@ void main() {
 
           final targetWindowRuns = await localRepo
               .getWakeRunsForTemplateInWindow(
-                _generatedWakeTargetTemplateId,
-                since: _generatedWakeWindowStart,
-                until: _generatedWakeWindowEnd,
+                generatedWakeTargetTemplateId,
+                since: generatedWakeWindowStart,
+                until: generatedWakeWindowEnd,
               );
           expect(
             targetWindowRuns.map((run) => run.runKey).toList(),
             scenario.expectedTargetTemplateWindowRunKeys(
-              _generatedWakeWindowStart,
-              _generatedWakeWindowEnd,
+              generatedWakeWindowStart,
+              generatedWakeWindowEnd,
             ),
             reason: '$scenario',
           );
 
           final globalWindowRuns = await localRepo.getWakeRunsInWindow(
-            since: _generatedWakeWindowStart,
-            until: _generatedWakeWindowEnd,
+            since: generatedWakeWindowStart,
+            until: generatedWakeWindowEnd,
           );
           expect(
             globalWindowRuns.map((run) => run.runKey).toList(),
             scenario.expectedGlobalWindowRunKeys(
-              _generatedWakeWindowStart,
-              _generatedWakeWindowEnd,
+              generatedWakeWindowStart,
+              generatedWakeWindowEnd,
             ),
             reason: '$scenario',
           );
 
           final metrics = await localRepo.aggregateWakeRunMetrics(
-            _generatedWakeTargetTemplateId,
+            generatedWakeTargetTemplateId,
           );
           expect(
             metrics.successCount,
@@ -6184,16 +4314,16 @@ void main() {
         try {
           await localRepo.upsertEntity(
             makeTestTemplate(
-              id: _generatedTemplateTargetId,
-              agentId: _generatedTemplateTargetId,
+              id: generatedTemplateTargetId,
+              agentId: generatedTemplateTargetId,
               createdAt: testDate,
               updatedAt: testDate,
             ),
           );
           await localRepo.upsertEntity(
             makeTestTemplate(
-              id: _generatedTemplateOtherId,
-              agentId: _generatedTemplateOtherId,
+              id: generatedTemplateOtherId,
+              agentId: generatedTemplateOtherId,
               createdAt: testDate,
               updatedAt: testDate,
             ),
@@ -6242,7 +4372,7 @@ void main() {
           }
 
           final head = await localRepo.getTemplateHead(
-            _generatedTemplateTargetId,
+            generatedTemplateTargetId,
           );
           expect(head?.id, scenario.expectedHeadId, reason: '$scenario');
           expect(
@@ -6252,7 +4382,7 @@ void main() {
           );
 
           final activeVersion = await localRepo.getActiveTemplateVersion(
-            _generatedTemplateTargetId,
+            generatedTemplateTargetId,
           );
           expect(
             activeVersion?.id,
@@ -6266,7 +4396,7 @@ void main() {
           );
 
           final nextVersion = await localRepo.getNextTemplateVersionNumber(
-            _generatedTemplateTargetId,
+            generatedTemplateTargetId,
           );
           expect(
             nextVersion,
@@ -6275,7 +4405,7 @@ void main() {
           );
 
           final assignmentLinks = await localRepo.getLinksFrom(
-            _generatedTemplateTargetId,
+            generatedTemplateTargetId,
             type: AgentLinkTypes.templateAssignment,
           );
           expect(
@@ -6324,6 +4454,39 @@ void main() {
         expect(run.soulId, 'soul-001');
         expect(run.soulVersionId, 'sv-001');
       });
+
+      test(
+        'omitted optional args leave columns NULL and never overwrite '
+        'previously set values (Value.absent semantics)',
+        () async {
+          await repo.insertWakeRun(entry: makeWakeRun(runKey: 'run-absent'));
+
+          // First update without optional args: columns stay NULL.
+          await repo.updateWakeRunTemplate('run-absent', 'tpl-001', 'ver-001');
+          var run = await repo.getWakeRun('run-absent');
+          expect(run!.resolvedModelId, isNull);
+          expect(run.soulId, isNull);
+          expect(run.soulVersionId, isNull);
+
+          // Set all optional columns.
+          await repo.updateWakeRunTemplate(
+            'run-absent',
+            'tpl-001',
+            'ver-001',
+            resolvedModelId: 'model-1',
+            soulId: 'soul-001',
+            soulVersionId: 'sv-001',
+          );
+
+          // A later update without optional args must NOT null them out.
+          await repo.updateWakeRunTemplate('run-absent', 'tpl-002', 'ver-002');
+          run = await repo.getWakeRun('run-absent');
+          expect(run!.templateId, 'tpl-002');
+          expect(run.resolvedModelId, 'model-1');
+          expect(run.soulId, 'soul-001');
+          expect(run.soulVersionId, 'sv-001');
+        },
+      );
 
       test('throws StateError when runKey does not exist', () async {
         await expectLater(
@@ -6472,9 +4635,12 @@ void main() {
       await repo.insertWakeRun(
         entry: makeWakeRun(runKey: 'run-running-2', status: 'running'),
       );
-      await repo.insertWakeRun(
-        entry: makeWakeRun(runKey: 'run-completed', status: 'completed'),
-      );
+      // One run in every non-running status: none of these may be touched.
+      for (final status in ['completed', 'failed', 'aborted', 'abandoned']) {
+        await repo.insertWakeRun(
+          entry: makeWakeRun(runKey: 'run-$status', status: status),
+        );
+      }
       await repo.insertWakeRun(
         entry: makeWakeRun(runKey: 'run-pending'),
       );
@@ -6494,9 +4660,12 @@ void main() {
       final run2 = await repo.getWakeRun('run-running-2');
       expect(run2!.status, 'abandoned');
 
-      // Verify non-running runs are untouched.
-      final completed = await repo.getWakeRun('run-completed');
-      expect(completed!.status, 'completed');
+      // Verify non-running runs are untouched (terminal states and
+      // pending alike).
+      for (final status in ['completed', 'failed', 'aborted', 'abandoned']) {
+        final run = await repo.getWakeRun('run-$status');
+        expect(run!.status, status, reason: 'status $status must not change');
+      }
 
       final pending = await repo.getWakeRun('run-pending');
       expect(pending!.status, 'pending');
@@ -6897,7 +5066,7 @@ void main() {
         }
 
         final usage = await localRepo.getTokenUsageForTemplate(
-          _generatedInstanceTargetTemplateId,
+          generatedInstanceTargetTemplateId,
           limit: scenario.usageLimit,
         );
         expect(
@@ -6907,29 +5076,29 @@ void main() {
         );
 
         final usageSince = await localRepo.getTokenUsageForTemplateSince(
-          _generatedInstanceTargetTemplateId,
-          since: _generatedTemplateInstanceSince,
+          generatedInstanceTargetTemplateId,
+          since: generatedTemplateInstanceSince,
         );
         expect(
           usageSince.map((entry) => entry.id).toList(),
-          scenario.expectedTokenUsageIdsSince(_generatedTemplateInstanceSince),
+          scenario.expectedTokenUsageIdsSince(generatedTemplateInstanceSince),
           reason: '$scenario',
         );
 
         final sums = scenario.expectedTokenSums();
         final result = await localRepo.sumTokenUsageForTemplate(
-          _generatedInstanceTargetTemplateId,
+          generatedInstanceTargetTemplateId,
         );
         expect(result.totalInput, sums.input, reason: '$scenario');
         expect(result.totalOutput, sums.output, reason: '$scenario');
         expect(result.totalThoughts, sums.thoughts, reason: '$scenario');
 
         final sumsSince = scenario.expectedTokenSums(
-          since: _generatedTemplateInstanceSince,
+          since: generatedTemplateInstanceSince,
         );
         final resultSince = await localRepo.sumTokenUsageForTemplateSince(
-          _generatedInstanceTargetTemplateId,
-          since: _generatedTemplateInstanceSince,
+          generatedInstanceTargetTemplateId,
+          since: generatedTemplateInstanceSince,
         );
         expect(resultSince.totalInput, sumsSince.input, reason: '$scenario');
         expect(resultSince.totalOutput, sumsSince.output, reason: '$scenario');
@@ -6940,7 +5109,7 @@ void main() {
         );
 
         final reports = await localRepo.getRecentReportsByTemplate(
-          _generatedInstanceTargetTemplateId,
+          generatedInstanceTargetTemplateId,
           limit: scenario.reportLimit,
         );
         expect(
@@ -7060,7 +5229,7 @@ void main() {
             final spec = scenario.specs[index];
             final deletedAt = spec.deleted ? spec.updatedAt : null;
             final entity = switch (spec.kind) {
-              _GeneratedIntervalEntityKind.agent =>
+              GeneratedIntervalEntityKind.agent =>
                 makeAgent(
                   id: spec.idAt(index),
                   agentId: spec.agentId,
@@ -7068,7 +5237,7 @@ void main() {
                   updatedAt: spec.updatedAt,
                   deletedAt: deletedAt,
                 ),
-              _GeneratedIntervalEntityKind.state =>
+              GeneratedIntervalEntityKind.state =>
                 makeAgentState(
                   id: spec.idAt(index),
                   agentId: spec.agentId,

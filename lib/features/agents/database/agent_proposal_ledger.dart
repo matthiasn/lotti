@@ -174,6 +174,24 @@ extension AgentProposalLedger on AgentRepository {
     );
   }
 
+  /// Test-only seam for [_isPendingLike] — pure enum predicate.
+  @visibleForTesting
+  static bool debugIsPendingLike(ChangeSetStatus status) =>
+      _isPendingLike(status);
+
+  /// Test-only seam for [_effectiveLedgerStatus] — the pure status
+  /// state-machine that getProposalLedger applies per item.
+  @visibleForTesting
+  static ChangeItemStatus debugEffectiveLedgerStatus({
+    required bool setIsActive,
+    required ChangeItem item,
+    required ChangeDecisionEntity? decision,
+  }) => _effectiveLedgerStatus(
+    setIsActive: setIsActive,
+    item: item,
+    decision: decision,
+  );
+
   static bool _isPendingLike(ChangeSetStatus status) {
     return status == ChangeSetStatus.pending ||
         status == ChangeSetStatus.partiallyResolved;
