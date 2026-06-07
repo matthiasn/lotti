@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/client_runner.dart';
 import 'package:lotti/services/dev_logger.dart';
 
@@ -93,4 +94,69 @@ void main() {
       runner.close();
     });
   });
+  test('close() while the callback is mid-execution exits cleanly', () {
+    fakeAsync((async) {
+      final processed = <int>[];
+      final gate = Completer<void>();
+
+      final runner =
+          ClientRunner<int>(
+              callback: (value) async {
+                processed.add(value);
+                // First item parks mid-execution.
+                if (value == 1) await gate.future;
+              },
+            )
+            ..enqueueRequest(1)
+            ..enqueueRequest(2);
+
+      async.flushMicrotasks();
+      expect(processed, [1]);
+
+      // Close while item 1 is still in flight — must not throw, and the
+      // already-streamed item 2 still drains after the gate opens.
+      runner.close();
+      gate.complete();
+      async.flushMicrotasks();
+
+      expect(processed, [1, 2]);
+    });
+  });
+
+  glados.Glados(
+    glados.ListAnys(glados.any).listWithLengthInRange(
+      0,
+      24,
+      glados.IntAnys(glados.any).intInRange(-1000, 1000),
+    ),
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'every enqueued request is processed exactly once, in enqueue order',
+    (requests) {
+      fakeAsync((async) {
+        final processed = <int>[];
+        final runner = ClientRunner<int>(
+          callback: (value) async {
+            processed.add(value);
+            // Vary the per-item latency deterministically by value so the
+            // ordering claim survives interleaved timer wakeups.
+            await Future<void>.delayed(
+              Duration(milliseconds: value.abs() % 7),
+            );
+          },
+        );
+
+        requests.forEach(runner.enqueueRequest);
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 30))
+          ..flushMicrotasks();
+
+        expect(processed, requests, reason: 'requests=$requests');
+        expect(runner.queueSize, 0, reason: 'requests=$requests');
+        runner.close();
+      });
+    },
+    tags: 'glados',
+  );
 }

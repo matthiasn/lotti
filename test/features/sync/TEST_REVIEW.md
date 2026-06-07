@@ -36,7 +36,8 @@ This document also serves as the index for the sync feature's subdir-level test 
 
 - [x] **[HIGH]** `matrix_test.dart` (15 lines): the single test asserts `MatrixService != null`, `MatrixSessionManager != null`, `MatrixStats != null`, `SyncRoomManager != null`. These are purely compile-time checks — if any export were removed the file would fail to compile before the test even runs. Per AGENTS.md "no constructor smoke tests" — this test has zero behavioral value. Either delete the file or replace it with a meaningful integration check (e.g., assert that `MatrixService` can be instantiated with mocked dependencies). **RESOLVED:** `matrix_test.dart` is deleted (same change recorded under the coverage item below) — compile-time-only assertions with zero behavioral value.
 
-- [ ] **[MED]** `vector_clock_logging_test.dart` (68 lines): all four tests call `logVectorClockAssignment(...)` and verify only that no exception is thrown. `MockDomainLogger` is wired but never queried with `verify(...)`. The function's contract is to call `loggingService.log(...)` — this is never asserted. Add `verify(() => loggingService.log(LogDomain.sync, any(), subDomain: any(named: 'subDomain'))).called(1)` to at least one test to confirm the logging call fires.
+- [x] **[MED]** `vector_clock_logging_test.dart` (68 lines): all four tests call `logVectorClockAssignment(...)` and verify only that no exception is thrown. `MockDomainLogger` is wired but never queried with `verify(...)`. The function's contract is to call `loggingService.log(...)` — this is never asserted. Add `verify(() => loggingService.log(LogDomain.sync, any(), subDomain: any(named: 'subDomain'))).called(1)` to at least one test to confirm the logging call fires.
+  - **RESOLVED:** done — both representative tests now capture the `log` call: the minimal case pins the exact message ('ASSIGN previous=null assigned=null') and the all-parameters case asserts every formatted field (type, entryId, clocks, covered list, extras) plus the right subDomain.
 
 - [ ] **[LOW]** `utils_test.dart` (14 lines): tests only verify two constant string values (`hostKey == 'VC_HOST'`, `nextAvailableCounterKey == 'VC_NEXT_AVAILABLE_COUNTER'`). This is a valid regression guard for magic constants; no improvement needed.
 
@@ -52,7 +53,8 @@ This document also serves as the index for the sync feature's subdir-level test 
 
 - [ ] **[LOW]** `tuning_test.dart` has Glados for `BackfillHostStats`. Coverage is complete for the pure logic.
 
-- [ ] **[MED]** `client_runner_test.dart`: `ClientRunner` is a sequential queue with a callback. A Glados property over generated `List<int>` request sequences would verify that: every enqueued request is eventually processed exactly once, in enqueue order, regardless of interleaving. The current static tests cover sequential ordering and drain-on-close, but not arbitrary-length queues. Feasible with `fakeAsync` + `flushMicrotasks`.
+- [x] **[MED]** `client_runner_test.dart`: `ClientRunner` is a sequential queue with a callback. A Glados property over generated `List<int>` request sequences would verify that: every enqueued request is eventually processed exactly once, in enqueue order, regardless of interleaving. The current static tests cover sequential ordering and drain-on-close, but not arbitrary-length queues. Feasible with `fakeAsync` + `flushMicrotasks`.
+  - **RESOLVED:** done — added a Glados property (lists of 0–24 ints, numRuns 120, `tags: 'glados'`): with value-dependent per-item latencies under fakeAsync, every enqueued request is processed exactly once in enqueue order and `queueSize` drains to 0.
 
 ---
 
@@ -60,9 +62,11 @@ This document also serves as the index for the sync feature's subdir-level test 
 
 - [x] **[HIGH]** `matrix_test.dart` provides no behavioral coverage of the barrel file. The `matrix.dart` barrel itself just re-exports types — the real behavior is in the exported files. This file could be deleted without any coverage loss. **RESOLVED:** `matrix_test.dart` is deleted — it only asserted type literals were non-null, which any importing file already guarantees at compile time.
 
-- [ ] **[MED]** `client_runner_test.dart`: `ClientRunner.close()` is called after the queue drains in the third test, but there is no test for calling `close()` while items are still being processed (i.e., the callback is mid-execution when `close()` is called). This is a race condition that affects sync teardown. Add a test that enqueues work, starts processing (without completing), calls `close()`, and asserts no panic / clean exit.
+- [x] **[MED]** `client_runner_test.dart`: `ClientRunner.close()` is called after the queue drains in the third test, but there is no test for calling `close()` while items are still being processed (i.e., the callback is mid-execution when `close()` is called). This is a race condition that affects sync teardown. Add a test that enqueues work, starts processing (without completing), calls `close()`, and asserts no panic / clean exit.
+  - **RESOLVED:** done — added `'close() while the callback is mid-execution exits cleanly'`: item 1 parks on a gate, `close()` lands mid-flight without throwing, and the already-streamed item 2 still drains after the gate opens.
 
-- [ ] **[MED]** `secure_storage_test.dart`: `SecureStorage.readValue` is tested for a missing key at line 83. But `SecureStorage.write` followed by `readValue` (not `read`) is not tested — it is unclear if both getters share the same cache. Add a test that calls `write` and then `readValue` to confirm cache coherence.
+- [x] **[MED]** `secure_storage_test.dart`: `SecureStorage.readValue` is tested for a missing key at line 83. But `SecureStorage.write` followed by `readValue` (not `read`) is not tested — it is unclear if both getters share the same cache. Add a test that calls `write` and then `readValue` to confirm cache coherence.
+  - **RESOLVED:** done — added `'write is immediately visible through readValue (shared cache)'` pinning the cache coherence between the two getters.
 
 - [ ] **[LOW]** `vector_clock_logging_test.dart`: `logVectorClockAssignment` is the only function in `vector_clock_logging.dart`. The export `vectorClockLogDomain` is tested (line 19). The only missing behavior is the actual log call verification (see Test Quality section above).
 
@@ -70,7 +74,8 @@ This document also serves as the index for the sync feature's subdir-level test 
 
 ## Test execution speed opportunities
 
-- [ ] **[MED]** `vector_clock_test.dart` Glados properties use `numRuns: 120–160`. All are correctly tagged `'glados'` and run in the separate Glados CI lane. Standard lane is unaffected.
+- [x] **[MED]** `vector_clock_test.dart` Glados properties use `numRuns: 120–160`. All are correctly tagged `'glados'` and run in the separate Glados CI lane. Standard lane is unaffected.
+  - **RESOLVED:** (assessed, no change) — as the item itself concludes: the properties are correctly tagged into the Glados CI lane and the standard lane is unaffected.
 
 - [ ] **[LOW]** `g_counter_test.dart` Glados properties use `numRuns: 200` for commutativity and `numRuns: 120–200` for other properties. These are already at the high end of the recommended range. The `numRuns: 200` commutativity test involves only a map-merge operation — this is cheap. However, consider reducing `numRuns` to 160 for consistency with the rest of the codebase; `200` runs on a CRDT merge adds no failure-finding benefit that `160` wouldn't provide.
 

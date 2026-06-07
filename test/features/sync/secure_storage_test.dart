@@ -115,6 +115,20 @@ void main() {
       expect(result, 'new_value');
     });
 
+    test(
+      'write is immediately visible through readValue (shared cache)',
+      () async {
+        final storage = SecureStorage();
+
+        await storage.write(key: 'coherent_key', value: 'coherent_value');
+
+        // readValue and read share the same `_state` cache — a write must be
+        // observable through both getters.
+        expect(await storage.readValue('coherent_key'), 'coherent_value');
+        expect(await storage.read(key: 'coherent_key'), 'coherent_value');
+      },
+    );
+
     test('writeValue delegates to write and is readable via read', () async {
       final storage = SecureStorage();
 
