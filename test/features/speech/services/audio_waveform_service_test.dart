@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:just_waveform/just_waveform.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -203,6 +204,10 @@ void main() {
       );
   }
 
+  /// Creates [count] cache files whose content is intentionally INVALID
+  /// payload ('{}'): these stubs exist only for pruning/count tests that
+  /// never parse them. Do not reuse for read-path tests — parsing would
+  /// fail; use [writeCache]/[buildPayload] for valid entries instead.
   List<File> populateCacheEntries(int count) {
     final cacheDir = Directory(p.join(tempDir.path, 'audio_waveforms', 'aa'))
       ..createSync(recursive: true);
@@ -228,6 +233,14 @@ void main() {
     );
 
     expect(result, isNotNull);
+    // The core path must yield real data, not just a non-null shell.
+    expect(result!.amplitudes, isNotEmpty);
+    expect(
+      result.amplitudes.every((v) => v >= 0.0 && v <= 1.0),
+      isTrue,
+      reason: 'amplitudes must be normalized to [0, 1]',
+    );
+    expect(result.audioDuration, greaterThan(Duration.zero));
     verifyNever(
       () => mockDomainLogger.log(
         LogDomain.speech,
@@ -844,6 +857,10 @@ void main() {
       ).called(1);
     });
 
+    // Intentionally real-I/O: chmod via Process.run mutates actual
+    // file permissions, which fakeAsync cannot model — keep real.
+    // Intentionally real-I/O: chmod via Process.run mutates actual
+    // file permissions, which fakeAsync cannot model — keep real.
     test('returns null when audio file is unreadable', () async {
       if (Platform.isWindows) {
         return;
@@ -1079,6 +1096,10 @@ void main() {
   });
 
   group('cache write failures', () {
+    // Intentionally real-I/O: chmod via Process.run mutates actual
+    // file permissions, which fakeAsync cannot model — keep real.
+    // Intentionally real-I/O: chmod via Process.run mutates actual
+    // file permissions, which fakeAsync cannot model — keep real.
     test('logs exception when cache directory is read only', () async {
       if (Platform.isWindows) {
         return;
@@ -1255,26 +1276,18 @@ void main() {
         isTrue,
       );
 
-      if (cacheFile.existsSync()) {
-        expect(p.basename(cacheFile.path), '${sanitized}_3.json');
-        verifyNever(
-          () => mockDomainLogger.error(
-            LogDomain.speech,
-            any<Object>(),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-            subDomain: 'cache_write',
-          ),
-        );
-      } else {
-        verify(
-          () => mockDomainLogger.error(
-            LogDomain.speech,
-            any<Object>(),
-            stackTrace: any<StackTrace>(named: 'stackTrace'),
-            subDomain: 'cache_write',
-          ),
-        ).called(1);
-      }
+      // Deterministic on this platform: the sanitized name (~300 chars)
+      // exceeds the 255-byte filename limit, so the cache write must fail
+      // and be logged — the file can never exist.
+      expect(cacheFile.existsSync(), isFalse);
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.speech,
+          any<Object>(),
+          stackTrace: any<StackTrace>(named: 'stackTrace'),
+          subDomain: 'cache_write',
+        ),
+      ).called(1);
     });
 
     test('sanitizes unicode audio ids', () async {
@@ -1427,6 +1440,10 @@ void main() {
       );
     });
 
+    // Intentionally real-I/O: chmod via Process.run mutates actual
+    // file permissions, which fakeAsync cannot model — keep real.
+    // Intentionally real-I/O: chmod via Process.run mutates actual
+    // file permissions, which fakeAsync cannot model — keep real.
     test('logs and continues when pruning deletion fails', () async {
       if (Platform.isWindows) {
         return;
@@ -1465,6 +1482,10 @@ void main() {
       ).called(1);
     });
 
+    // Intentionally real-I/O: chmod via Process.run mutates actual
+    // file permissions, which fakeAsync cannot model — keep real.
+    // Intentionally real-I/O: chmod via Process.run mutates actual
+    // file permissions, which fakeAsync cannot model — keep real.
     test(
       'logs error when cache directory listing fails during prune',
       () async {
@@ -1573,6 +1594,64 @@ void main() {
           ),
         ).called(1);
       },
+    );
+  });
+
+  group('debugNormalizeWaveform — Glados properties', () {
+    glados.Glados2<int, int>(
+      glados.IntAnys(glados.any).intInRange(1, 200),
+      glados.IntAnys(glados.any).intInRange(1, 300),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'amplitudes clamp to [0, 1]; length == min(pixels, buckets); '
+      'no downsampling when buckets >= pixels',
+      (pixelCount, targetBuckets) {
+        // Deterministic pseudo-random 16-bit min/max pairs per pixel.
+        final data = <int>[
+          for (var i = 0; i < pixelCount; i++) ...[
+            -((i * 2654435761) % 32768),
+            (i * 40503) % 32768,
+          ],
+        ];
+        final waveform = Waveform(
+          version: 1,
+          flags: 0,
+          sampleRate: 48000,
+          samplesPerPixel: 480,
+          length: pixelCount,
+          data: data,
+        );
+
+        final normalized = AudioWaveformService().debugNormalizeWaveform(
+          waveform: waveform,
+          targetBuckets: targetBuckets,
+        );
+
+        expect(
+          normalized.length,
+          math.min(pixelCount, targetBuckets),
+          reason: 'pixels=$pixelCount buckets=$targetBuckets',
+        );
+        for (final v in normalized) {
+          expect(v, greaterThanOrEqualTo(0.0));
+          expect(v, lessThanOrEqualTo(1.0));
+        }
+        if (pixelCount <= targetBuckets) {
+          // Identity path: pure per-pixel normalization, no blending.
+          for (var i = 0; i < pixelCount; i++) {
+            final expected = math.min(
+              1,
+              math.max(
+                    waveform.getPixelMin(i).abs(),
+                    waveform.getPixelMax(i).abs(),
+                  ) /
+                  32768,
+            );
+            expect(normalized[i], closeTo(expected, 1e-9));
+          }
+        }
+      },
+      tags: 'glados',
     );
   });
 }
