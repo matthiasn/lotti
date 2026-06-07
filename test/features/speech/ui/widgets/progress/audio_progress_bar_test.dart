@@ -177,15 +177,21 @@ void main() {
   });
 
   group('resolveAudioProgressColors', () {
-    test('light mode brightens medium primary for thumb', () {
-      final theme = ThemeData(
-        colorScheme: const ColorScheme.light(
-          primary: Colors.teal,
-          secondary: Colors.deepPurple,
-        ),
-      );
+    // resolveAudioProgressColors only reads brightness + colorScheme.primary
+    // (when no DsTokens extension is present). secondary is irrelevant to the
+    // colour logic, so the helper fixes it and varies only the inputs the
+    // function actually consumes.
+    ThemeData makeTheme(Brightness brightness, Color primary) {
+      final colorScheme = brightness == Brightness.dark
+          ? ColorScheme.dark(primary: primary)
+          : ColorScheme.light(primary: primary);
+      return ThemeData(colorScheme: colorScheme);
+    }
 
-      final colors = resolveAudioProgressColors(theme);
+    test('light mode brightens medium primary for thumb', () {
+      final colors = resolveAudioProgressColors(
+        makeTheme(Brightness.light, Colors.teal),
+      );
 
       expect(colors.progress, Colors.teal);
       expect(
@@ -196,14 +202,9 @@ void main() {
     });
 
     test('dark mode brightens primary for thumb', () {
-      final theme = ThemeData(
-        colorScheme: const ColorScheme.dark(
-          primary: Colors.blueGrey,
-          secondary: Colors.amber,
-        ),
+      final colors = resolveAudioProgressColors(
+        makeTheme(Brightness.dark, Colors.blueGrey),
       );
-
-      final colors = resolveAudioProgressColors(theme);
 
       expect(colors.progress, Colors.blueGrey);
       expect(
@@ -215,21 +216,13 @@ void main() {
 
     test('thumb lifts toward white for mid-luminance primaries', () {
       const primary = Color(0xFF2BA184);
-      final lightTheme = ThemeData(
-        colorScheme: const ColorScheme.light(
-          primary: primary,
-          secondary: Colors.deepPurple,
-        ),
-      );
-      final darkTheme = ThemeData(
-        colorScheme: const ColorScheme.dark(
-          primary: primary,
-          secondary: Colors.amber,
-        ),
-      );
 
-      final lightColors = resolveAudioProgressColors(lightTheme);
-      final darkColors = resolveAudioProgressColors(darkTheme);
+      final lightColors = resolveAudioProgressColors(
+        makeTheme(Brightness.light, primary),
+      );
+      final darkColors = resolveAudioProgressColors(
+        makeTheme(Brightness.dark, primary),
+      );
 
       // Thumb is brighter than the brand color in both modes so it remains
       // visible against the filled progress.
@@ -244,14 +237,9 @@ void main() {
     });
 
     test('light mode darkens overly bright primary for thumb contrast', () {
-      final theme = ThemeData(
-        colorScheme: const ColorScheme.light(
-          primary: Colors.yellow,
-          secondary: Colors.deepPurple,
-        ),
+      final colors = resolveAudioProgressColors(
+        makeTheme(Brightness.light, Colors.yellow),
       );
-
-      final colors = resolveAudioProgressColors(theme);
 
       expect(colors.progress, Colors.yellow);
       expect(

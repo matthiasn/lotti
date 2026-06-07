@@ -37,6 +37,35 @@ void main() {
     }, tags: 'glados');
   });
 
+  group('dayAgentPlanEntityId', () {
+    test('locks the cross-service entity-id format for a day plan', () {
+      // The literal prefix is the lookup key shared with DayAgentPlanService;
+      // any drift here silently breaks cross-service plan-existence checks.
+      expect(
+        dayAgentPlanEntityId('dayplan-2026-05-25'),
+        'day_agent_plan:dayplan-2026-05-25',
+      );
+    });
+
+    test('embeds the dayId verbatim, including empty input', () {
+      expect(dayAgentPlanEntityId(''), 'day_agent_plan:');
+    });
+
+    glados.Glados<String>(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('always prefixes the dayId without mutating it', (dayId) {
+      final entityId = dayAgentPlanEntityId(dayId);
+      expect(entityId, 'day_agent_plan:$dayId', reason: 'dayId="$dayId"');
+      expect(entityId.startsWith('day_agent_plan:'), isTrue);
+      expect(
+        entityId.substring('day_agent_plan:'.length),
+        dayId,
+        reason: 'dayId="$dayId"',
+      );
+    }, tags: 'glados');
+  });
+
   group('captureDayId', () {
     CaptureEntity capture({String dayId = '', DateTime? capturedAt}) {
       return AgentDomainEntity.capture(

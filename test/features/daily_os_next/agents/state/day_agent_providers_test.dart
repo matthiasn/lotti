@@ -31,6 +31,23 @@ void main() {
     return container;
   }
 
+  /// Fires a wired service's [onPersistedStateChanged] callback for [agentId]
+  /// and asserts it forwards a UI-only notification carrying that id plus the
+  /// shared [agentNotification] marker. Every day-agent service provider wires
+  /// this callback identically via `persistedStateChangedNotifier`, so the
+  /// assertion is factored out here.
+  void expectPersistedStateNotification({
+    required void Function(String)? callback,
+    required MockUpdateNotifications notifications,
+    required String agentId,
+  }) {
+    expect(callback, isNotNull);
+    callback!(agentId);
+    verify(
+      () => notifications.notifyUiOnly({agentId, agentNotification}),
+    ).called(1);
+  }
+
   group('dayAgentServiceProvider', () {
     test('wires dependencies and persisted-state notifications', () {
       final agentService = MockAgentService();
@@ -59,14 +76,11 @@ void main() {
       expect(service.templateService, same(templateService));
       expect(service.domainLogger, same(domainLogger));
 
-      service.onPersistedStateChanged?.call('day-agent-001');
-
-      verify(
-        () => notifications.notifyUiOnly({
-          'day-agent-001',
-          agentNotification,
-        }),
-      ).called(1);
+      expectPersistedStateNotification(
+        callback: service.onPersistedStateChanged,
+        notifications: notifications,
+        agentId: 'day-agent-001',
+      );
     });
   });
 
@@ -92,14 +106,11 @@ void main() {
       expect(service.journalDb, same(journalDb));
       expect(service.domainLogger, same(domainLogger));
 
-      service.onPersistedStateChanged?.call('dayplan-2026-05-25');
-
-      verify(
-        () => notifications.notifyUiOnly({
-          'dayplan-2026-05-25',
-          agentNotification,
-        }),
-      ).called(1);
+      expectPersistedStateNotification(
+        callback: service.onPersistedStateChanged,
+        notifications: notifications,
+        agentId: 'dayplan-2026-05-25',
+      );
     });
   });
 
@@ -142,14 +153,11 @@ void main() {
       expect(service.orchestrator, same(orchestrator));
       expect(service.domainLogger, same(domainLogger));
 
-      service.onPersistedStateChanged?.call('capture-2026-05-25');
-
-      verify(
-        () => notifications.notifyUiOnly({
-          'capture-2026-05-25',
-          agentNotification,
-        }),
-      ).called(1);
+      expectPersistedStateNotification(
+        callback: service.onPersistedStateChanged,
+        notifications: notifications,
+        agentId: 'capture-2026-05-25',
+      );
     });
   });
 
@@ -176,6 +184,26 @@ void main() {
       );
 
       expect(result, identity);
+      verify(() => service.getDayAgentForDate(requestedDate)).called(1);
+    });
+
+    test('propagates null when no day agent exists for the date', () async {
+      final service = MockDayAgentService();
+      final notifications = UpdateNotifications();
+      final requestedDate = DateTime(2026, 5, 25, 9, 30);
+      when(
+        () => service.getDayAgentForDate(requestedDate),
+      ).thenAnswer((_) async => null);
+      final container = buildContainer([
+        dayAgentServiceProvider.overrideWithValue(service),
+        updateNotificationsProvider.overrideWithValue(notifications),
+      ]);
+
+      final result = await container.read(
+        dayAgentProvider(requestedDate).future,
+      );
+
+      expect(result, isNull);
       verify(() => service.getDayAgentForDate(requestedDate)).called(1);
     });
   });
@@ -229,6 +257,36 @@ void main() {
         verify(() => captureService.getCapture('capture-001')).called(1);
         verify(
           () => captureService.parsedItemsForCapture('capture-001'),
+        ).called(1);
+      },
+    );
+
+    test(
+      'still loads parsed items when the capture is not found',
+      () async {
+        final captureService = MockDayAgentCaptureService();
+        final notifications = UpdateNotifications();
+        when(
+          () => captureService.getCapture('capture-404'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => captureService.parsedItemsForCapture('capture-404'),
+        ).thenAnswer((_) async => const <ParsedItemEntity>[]);
+        final container = buildContainer([
+          dayAgentCaptureServiceProvider.overrideWithValue(captureService),
+          updateNotificationsProvider.overrideWithValue(notifications),
+        ]);
+
+        final result = await container.read(
+          parsedItemsForCaptureProvider('capture-404').future,
+        );
+
+        // getCapture returned null, so the agent-scoped update stream is never
+        // watched, but the provider still falls through to fetch parsed items.
+        expect(result, isEmpty);
+        verify(() => captureService.getCapture('capture-404')).called(1);
+        verify(
+          () => captureService.parsedItemsForCapture('capture-404'),
         ).called(1);
       },
     );

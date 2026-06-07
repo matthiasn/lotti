@@ -16,13 +16,16 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** Both test files are within the ~600-line soft guideline. No split needed. The `formatAudioDuration` group (lines 6–79 of `audio_progress_bar_test.dart`) and the widget tests could be two logical sections in the same file — they are already separated by groups, which is appropriate.
+- [x] **[LOW]** Both test files are within the ~600-line soft guideline. No split needed. The `formatAudioDuration` group (lines 6–79 of `audio_progress_bar_test.dart`) and the widget tests could be two logical sections in the same file — they are already separated by groups, which is appropriate.
+  **RESOLVED:** Confirmed true, no change. Both files stay within the soft guideline and are already partitioned into clear `group`s per concern (formatter / color helper / widget). One test file per source file is the mandated convention, so no split is warranted.
 
 ## Test quality improvements
 
-- [ ] **[MED]** `test/…/progress/audio_waveform_scrubber_test.dart:107` — Single `pumpAndSettle()` call after a gesture. The scrubber widget likely uses an `AnimationController` or a `GestureDetector` callback that resolves synchronously. Replace with `tester.pump()` to avoid the 10-second default timeout risk and to match the policy.
+- [x] **[MED]** `test/…/progress/audio_waveform_scrubber_test.dart:107` — Single `pumpAndSettle()` call after a gesture. The scrubber widget likely uses an `AnimationController` or a `GestureDetector` callback that resolves synchronously. Replace with `tester.pump()` to avoid the 10-second default timeout risk and to match the policy.
+  **RESOLVED:** Replaced the `pumpAndSettle()` in `_pumpScrubber` with a single `tester.pump()`. Verified from source (`audio_waveform_scrubber.dart`) that the widget has no `AnimationController` and no async providers — its tree is `LayoutBuilder` + `CustomPaint` + `GestureDetector`, all built synchronously — so one frame is sufficient and the 10s timeout risk is removed.
 
-- [ ] **[LOW]** `test/…/progress/audio_progress_bar_test.dart:81–200` — `resolveAudioProgressColors` tests are well-written. Minor: the test at line 118 (`thumb lifts toward white for mid-luminance primaries`) builds two full `ThemeData` objects. Consider extracting a `_makeTheme(Brightness, Color)` helper to reduce duplication across the three similar color-resolution tests.
+- [x] **[LOW]** `test/…/progress/audio_progress_bar_test.dart:81–200` — `resolveAudioProgressColors` tests are well-written. Minor: the test at line 118 (`thumb lifts toward white for mid-luminance primaries`) builds two full `ThemeData` objects. Consider extracting a `_makeTheme(Brightness, Color)` helper to reduce duplication across the three similar color-resolution tests.
+  **RESOLVED:** Extracted a group-local `makeTheme(Brightness, Color)` helper and routed all four `resolveAudioProgressColors` tests through it. The helper fixes `secondary` (unused by the function — it only reads brightness + `colorScheme.primary` when no `DsTokens` is present) and varies only the consumed inputs, removing the duplicated `ColorScheme.light`/`ColorScheme.dark` boilerplate.
 
 ## Generative (Glados) testing opportunities
 
@@ -32,17 +35,21 @@
   - Monotonicity: `d1 ≤ d2 → format(d1) ≤ format(d2)` (lexicographic, given fixed-width padding).
   Use `any.int` filtered to `[-1000000, 400000]` for seconds, then construct `Duration(seconds: n)`. Tag with `tags: 'glados'`. The existing hand-rolled tests (zero, negative, seconds, minutes, hours, clamped max) make excellent static companions.
 
-- [ ] **[LOW]** `resolveAudioProgressColors(ThemeData theme)` — A pure function mapping theme to color triple. Glados could generate random `Color` values for the primary and verify: `colors.thumb != colors.progress`, `colors.glow.a >= 0`. Less valuable than `formatAudioDuration` because the color logic involves human-perceptible heuristics; hand-rolled fixtures are more readable here.
+- [x] **[LOW]** `resolveAudioProgressColors(ThemeData theme)` — A pure function mapping theme to color triple. Glados could generate random `Color` values for the primary and verify: `colors.thumb != colors.progress`, `colors.glow.a >= 0`. Less valuable than `formatAudioDuration` because the color logic involves human-perceptible heuristics; hand-rolled fixtures are more readable here.
+  **RESOLVED:** Confirmed true, no change. The reviewer's own conclusion (hand-rolled fixtures are more readable for the perceptual heuristics) holds, and the two proposed properties are not actually invariant: `colors.glow.a >= 0` is trivially always true (alpha is `0..1`), and `colors.thumb != colors.progress` is false for a fully transparent base where `_resolveThumbColor` returns `base` unchanged (verified in `audio_progress_bar.dart` lines 71–73). The existing hand-rolled brightness/luminance cases cover the meaningful branches without adding a brittle generative test.
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[MED]** `test/…/progress/audio_progress_bar_test.dart` — The `AudioProgressBar` widget interactive behavior (drag to seek, tap to seek) is not covered — only the formatter and color helper are tested. Verify that a `GestureDetector` drag event on the progress bar calls the `onSeek` callback with the correct `Duration`. Add at least one `testWidgets` test that pumps the widget with a mock `onSeek` and verifies the callback fires.
+- [x] **[MED]** `test/…/progress/audio_progress_bar_test.dart` — The `AudioProgressBar` widget interactive behavior (drag to seek, tap to seek) is not covered — only the formatter and color helper are tested. Verify that a `GestureDetector` drag event on the progress bar calls the `onSeek` callback with the correct `Duration`. Add at least one `testWidgets` test that pumps the widget with a mock `onSeek` and verifies the callback fires.
+  **RESOLVED:** Confirmed already covered (the review predates the current `AudioProgressBar widget` group). The file now has a `pumpProgressBar` helper feeding a recording `onSeek` and asserts the callback fires with the correct `Duration`: tap-to-seek at center/start/end (`seekCalls.first.inSeconds` `closeTo(50)`, `< 5`, `> 90`), drag-to-seek (`drag end flushes pending seek`, `throttle timer flushes the last pending seek after the delay`), the disabled / zero-total no-seek paths, and the unbounded-width MediaQuery fallback. No change needed.
 
-- [ ] **[LOW]** `test/…/progress/audio_waveform_scrubber_test.dart` — Confirm that the scrubber test covers the case where `waveformData` is null (shows placeholder/spinner) vs. non-null (shows waveform). If only one path is tested, add the other.
+- [x] **[LOW]** `test/…/progress/audio_waveform_scrubber_test.dart` — Confirm that the scrubber test covers the case where `waveformData` is null (shows placeholder/spinner) vs. non-null (shows waveform). If only one path is tested, add the other.
+  **RESOLVED:** Confirmed covered, no change. There is no nullable `waveformData` — `AudioWaveformScrubber` takes a non-nullable `List<double> amplitudes` (verified in `audio_waveform_scrubber.dart` line 30). The analogous empty-vs-non-empty branch is exercised both ways: empty (`const <double>[]`) in `handles empty amplitudes safely` and `exposes empty amplitude list without painting` (the painter early-returns when `amplitudes.isEmpty`), and non-empty in the remaining interaction/painter tests.
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** `test/…/progress/audio_waveform_scrubber_test.dart:107` — One `pumpAndSettle()` at default 10-second timeout. The only risk is if an async provider never resolves. Replace with `tester.pump()` + `tester.pump()` for micro/macro task flushing.
+- [x] **[LOW]** `test/…/progress/audio_waveform_scrubber_test.dart:107` — One `pumpAndSettle()` at default 10-second timeout. The only risk is if an async provider never resolves. Replace with `tester.pump()` + `tester.pump()` for micro/macro task flushing.
+  **RESOLVED:** Same fix as the [MED] item above — the `pumpAndSettle()` in `_pumpScrubber` was replaced with a single `tester.pump()`. One frame suffices because the widget tree builds synchronously (no animations, no async providers), so no second flush frame is needed.
 
 ---
 

@@ -390,7 +390,38 @@ void _expectDedupeAndSortEdges() {
   });
 }
 
+void _expectDecidedTaskRef() {
+  group('DecidedTaskRef', () {
+    test('toJson locks the drafting-prompt field names', () {
+      const ref = DecidedTaskRef(
+        id: 'task-1',
+        title: 'Prep demo',
+        categoryId: 'cat',
+      );
+
+      expect(ref.toJson(), <String, Object?>{
+        'id': 'task-1',
+        'title': 'Prep demo',
+        'categoryId': 'cat',
+      });
+    });
+
+    test('toJson emits a null categoryId rather than dropping the key', () {
+      const ref = DecidedTaskRef(
+        id: 'task-2',
+        title: 'Review inbox',
+        categoryId: null,
+      );
+
+      final json = ref.toJson();
+      expect(json.containsKey('categoryId'), isTrue);
+      expect(json['categoryId'], isNull);
+    });
+  });
+}
+
 void _expectMain() {
   _expectProjections();
   _expectDedupeAndSortEdges();
+  _expectDecidedTaskRef();
 }
