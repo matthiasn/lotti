@@ -203,7 +203,13 @@ void main() {
         );
 
         await tester.tap(find.text('Settings'));
-        await tester.pumpAndSettle();
+        // `truncateTo` mutates the path synchronously inside the tap
+        // callback; a single `pump()` applies the rebuild. The InkWell
+        // splash that `pumpAndSettle` was draining is irrelevant to the
+        // path-value assertion and its controller is disposed at
+        // teardown, so a bounded `pump()` is both sufficient and
+        // deterministic.
+        await tester.pump();
 
         expect(container.read(settingsTreePathProvider), isEmpty);
       },
@@ -223,7 +229,10 @@ void main() {
 
         // Sync Settings is at index 1 → truncateTo(1) drops the leaf.
         await tester.tap(find.text('Sync Settings'));
-        await tester.pumpAndSettle();
+        // Synchronous path mutation; one `pump()` applies the rebuild.
+        // The InkWell splash is irrelevant to the path assertion, so a
+        // bounded `pump()` replaces `pumpAndSettle` deterministically.
+        await tester.pump();
 
         expect(container.read(settingsTreePathProvider), ['sync']);
       },

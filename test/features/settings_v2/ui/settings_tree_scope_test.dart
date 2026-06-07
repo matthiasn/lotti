@@ -183,7 +183,17 @@ void main() {
             ],
           ),
         );
-        await tester.pumpAndSettle();
+        // The host watches `configFlagProvider` (a Stream provider).
+        // The mock's `watchConfigFlag` emits `false` for every flag on
+        // the first event-loop turn after subscription; one `pump()`
+        // delivers that emission and a second applies the resulting
+        // provider rebuild. Bounded pumps replace `pumpAndSettle` so
+        // there is no 10 s settle-loop. (The tree assertions hold even
+        // before emission because the host falls back to `false` via
+        // `.value ?? false`, but draining keeps the stream from leaking
+        // into the post-test pending-work check.)
+        await tester.pump();
+        await tester.pump();
 
         // Agents flag is on, so the agents branch should be present.
         expect(scope.index.findById('agents'), isNotNull);

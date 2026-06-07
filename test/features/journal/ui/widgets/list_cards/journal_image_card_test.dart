@@ -93,6 +93,8 @@ void main() {
 
     testWidgets('displays entry text when available', (tester) async {
       final imageEntry = testImageEntry;
+      // Guard: this assertion only has value if the fixture carries text.
+      expect(imageEntry.entryText, isNotNull);
 
       await tester.pumpWidget(
         makeTestableWidget(
@@ -100,11 +102,38 @@ void main() {
         ),
       );
 
-      if (imageEntry.entryText != null) {
-        // TextViewerWidgetNonScrollable is used for displaying text in non-compact mode
-        expect(find.byType(TextViewerWidgetNonScrollable), findsOneWidget);
-      }
+      // TextViewerWidgetNonScrollable is used for displaying text in
+      // non-compact mode, and it receives the entry's text unchanged.
+      final viewer = tester.widget<TextViewerWidgetNonScrollable>(
+        find.byType(TextViewerWidgetNonScrollable),
+      );
+      expect(viewer.entryText, imageEntry.entryText);
     });
+
+    // _buildTextContent returns SizedBox.shrink() (no text viewer) when there
+    // is nothing to show. Both the null-entryText and the empty-plainText
+    // branches collapse to the same observable outcome.
+    for (final (label, entry) in [
+      ('null entryText', testImageEntry.copyWith(entryText: null)),
+      (
+        'empty plainText',
+        testImageEntry.copyWith(
+          entryText: const EntryText(plainText: '', markdown: ''),
+        ),
+      ),
+    ]) {
+      testWidgets('omits text viewer for $label', (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            ModernJournalImageCard(item: entry),
+          ),
+        );
+
+        // The card itself still renders, but the text region is collapsed.
+        expect(find.byType(ModernJournalImageCard), findsOneWidget);
+        expect(find.byType(TextViewerWidgetNonScrollable), findsNothing);
+      });
+    }
 
     testWidgets('shows starred icon when entry is starred', (tester) async {
       final starredEntry = testImageEntry.copyWith(
