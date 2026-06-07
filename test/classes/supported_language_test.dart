@@ -84,7 +84,7 @@ void main() {
 
     glados.Glados(
       glados.any.generatedInvalidLanguageCode,
-      glados.ExploreConfig(numRuns: 160),
+      glados.ExploreConfig(numRuns: 50),
     ).test('rejects generated non-canonical language codes', (scenario) {
       expect(
         SupportedLanguage.fromCode(scenario.code),

@@ -321,6 +321,71 @@ void main() {
       expect(dbLink.hidden, link.hidden ?? false, reason: '$scenario');
     }, tags: 'glados');
   });
+
+  group('EntryLink.rating', () {
+    final ratingTestDate = DateTime(2024, 3, 15, 10, 30);
+
+    test('round-trip JSON serialization preserves the rating variant', () {
+      final link = EntryLink.rating(
+        id: 'link-002',
+        fromId: 'rating-001',
+        toId: 'entry-001',
+        createdAt: ratingTestDate,
+        updatedAt: ratingTestDate,
+        vectorClock: const VectorClock({'host': 7}),
+        hidden: true,
+        collapsed: false,
+      );
+
+      final restored = EntryLink.fromJson(
+        jsonDecode(jsonEncode(link)) as Map<String, dynamic>,
+      );
+
+      expect(restored, isA<RatingLink>());
+      expect(restored, equals(link));
+      final restoredLink = restored as RatingLink;
+      expect(restoredLink.id, 'link-002');
+      expect(restoredLink.fromId, 'rating-001');
+      expect(restoredLink.toId, 'entry-001');
+      expect(restoredLink.hidden, isTrue);
+      expect(restoredLink.collapsed, isFalse);
+      expect(restoredLink.vectorClock, const VectorClock({'host': 7}));
+    });
+
+    test('linkedDbEntity tags rating links with the RatingLink type', () {
+      final link = EntryLink.rating(
+        id: 'link-002',
+        fromId: 'rating-001',
+        toId: 'entry-001',
+        createdAt: ratingTestDate,
+        updatedAt: ratingTestDate,
+        vectorClock: null,
+      );
+
+      final dbLink = linkedDbEntity(link);
+      expect(dbLink.type, 'RatingLink');
+      expect(dbLink.fromId, 'rating-001');
+      expect(dbLink.toId, 'entry-001');
+    });
+
+    test(
+      'entryLinkFromLinkedDbEntry round-trips RatingLink through DB rows',
+      () {
+        final link = EntryLink.rating(
+          id: 'link-002',
+          fromId: 'rating-001',
+          toId: 'entry-001',
+          createdAt: ratingTestDate,
+          updatedAt: ratingTestDate,
+          vectorClock: null,
+        );
+
+        final restored = entryLinkFromLinkedDbEntry(linkedDbEntity(link));
+        expect(restored, isA<RatingLink>());
+        expect(restored, equals(link));
+      },
+    );
+  });
 }
 
 enum _GeneratedEntryLinkKind { basic, rating, project }

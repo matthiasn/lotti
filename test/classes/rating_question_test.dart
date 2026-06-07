@@ -131,6 +131,29 @@ void main() {
       expect(updated.inputType, 'tapBar');
     });
 
+    test('copyWith can clear the options list back to null', () {
+      const q = RatingQuestion(
+        key: 'challenge',
+        question: 'Difficulty?',
+        description: 'Challenge-skill balance.',
+        inputType: 'segmented',
+        options: [
+          RatingQuestionOption(label: 'Easy', value: 0),
+          RatingQuestionOption(label: 'Hard', value: 1),
+        ],
+      );
+
+      final cleared = q.copyWith(options: null);
+
+      expect(cleared.options, isNull);
+      // Clearing options must leave every other field untouched.
+      expect(cleared.key, 'challenge');
+      expect(cleared.question, 'Difficulty?');
+      expect(cleared.description, 'Challenge-skill balance.');
+      expect(cleared.inputType, 'segmented');
+      expect(cleared, isNot(equals(q)));
+    });
+
     test('equality detects changes in key, question, or description', () {
       const base = RatingQuestion(
         key: 'k',

@@ -40,9 +40,11 @@ under `test/classes/`.
 
 - [x] **[MED]** `test/classes/project_data_test.dart` (505 L) and `test/classes/project_entity_test.dart` (477 L) both test classes defined in `lib/classes/project_data.dart`. The "one test file per source file" rule (AGENTS.md) is violated. The `_GeneratedProjectStatusKind` enum, `_projectStatus` factory, `_projectDate`/`_projectEntityDate` helpers, `_optionalProjectText`, and `_vectorClock` are duplicated near-verbatim (`project_entity_test.dart:441`–`477` vs `project_data_test.dart:488`–`505`). Merge into a single `project_data_test.dart`. **RESOLVED:** (adapted) the premise was off — `project_entity_test.dart` actually tested `JournalEntity.project` (journal_entities.dart) and `EntryLink.project` (entry_link.dart), not project_data classes. Split by true source instead: the entity group moved into `journal_entities_test.dart`, the link group into `entry_link_test.dart` (renamed from the mis-named `entry_link_collapsed_test.dart`), and `project_entity_test.dart` was deleted.
 
-- [ ] **[LOW]** `test/classes/entry_link_collapsed_test.dart` should be renamed `entry_link_test.dart` to follow the one-test-file naming convention. The current name is artifact-scoped (the field that prompted the test), not source-file-scoped.
+- [x] **[LOW]** `test/classes/entry_link_collapsed_test.dart` should be renamed `entry_link_test.dart` to follow the one-test-file naming convention. The current name is artifact-scoped (the field that prompted the test), not source-file-scoped.
+  **RESOLVED:** (stale) already done — the file is now `test/classes/entry_link_test.dart`; no `entry_link_collapsed_test.dart` exists.
 
-- [ ] **[LOW]** `test/classes/rating_data_test.dart` is 647 lines. Lines 556–648 are generator boilerplate. No split needed, but the file length is driven largely by redundant static cases (see Test Quality section).
+- [x] **[LOW]** `test/classes/rating_data_test.dart` is 647 lines. Lines 556–648 are generator boilerplate. No split needed, but the file length is driven largely by redundant static cases (see Test Quality section).
+  **RESOLVED:** observational, no split warranted; the redundant-static concern was already addressed by the Test-Quality resolution above (statics trimmed, file down to ~591 lines, generator boilerplate isolated at the tail). No further change needed.
 
 ---
 
@@ -60,9 +62,11 @@ under `test/classes/`.
 
 - [x] **[MED]** `test/classes/project_data_test.dart` + `test/classes/project_entity_test.dart` — `_GeneratedProjectStatusKind` enum is declared identically in both files (`project_data_test.dart:271`, `project_entity_test.dart:214`). The `_projectStatus` / `_projectEntityDate` / `_optionalProjectText` / `_vectorClock` helpers are also duplicated. DRY violation; should live in one file after the merge described in File Size. **RESOLVED:** done — the shared primitives (status kind enum, status factory, date/text/vector-clock/bool slot helpers) and both generated classes now live in `project_test_generators.dart`, imported by all three consumer files; `project_data_test.dart` dropped its local copies.
 
-- [ ] **[LOW]** `test/classes/checklist_item_data_test.dart:126` — The assertion `expect(json['checkedAt'], data.checkedAt?.toIso8601String())` checks the pre-encode value against the original, but not the round-tripped `restored` object. The test at line 119 (`expect(restored, equals(data))`) covers overall equality, but the individual field assertion on the decoded object is missing: should be `expect(restored.checkedAt, data.checkedAt)`.
+- [x] **[LOW]** `test/classes/checklist_item_data_test.dart:126` — The assertion `expect(json['checkedAt'], data.checkedAt?.toIso8601String())` checks the pre-encode value against the original, but not the round-tripped `restored` object. The test at line 119 (`expect(restored, equals(data))`) covers overall equality, but the individual field assertion on the decoded object is missing: should be `expect(restored.checkedAt, data.checkedAt)`.
+  **RESOLVED:** done — added `expect(restored.checkedAt, data.checkedAt)` and `expect(restored.checkedBy, data.checkedBy)` so the decoded object's provenance fields are asserted directly, not only the pre-encode values.
 
-- [ ] **[LOW]** `test/classes/day_plan_test.dart` line 424 — `status helper methods work correctly` tests `isAgreed`, `isDraft`, `needsReview` but not `isCommitted` (the `DayPlanStatusCommitted` variant added in the impl at `day_plan.dart:89`). The `isCommitted` getter is only implied by Glados indirectly.
+- [x] **[LOW]** `test/classes/day_plan_test.dart` line 424 — `status helper methods work correctly` tests `isAgreed`, `isDraft`, `needsReview` but not `isCommitted` (the `DayPlanStatusCommitted` variant added in the impl at `day_plan.dart:89`). The `isCommitted` getter is only implied by Glados indirectly.
+  **RESOLVED:** (stale) no `isCommitted` getter exists in `day_plan.dart` (only `isDraft`/`isAgreed`/`needsReview` in `DayPlanDataX`). The committed variant is already covered by the parameterized status-getter dispatch table (`day_plan_test.dart:273`) asserting it reports false on all three getters, plus a dedicated `committed can be serialized and deserialized` round-trip test.
 
 ---
 
@@ -82,9 +86,11 @@ under `test/classes/`.
 
 - [x] **[MED]** `lib/classes/checklist_data.dart` — `ChecklistData.fromJson`/`toJson` with variable-length `linkedChecklistItems` and `linkedTasks` lists is a natural Glados target, but has **no test file at all**. **RESOLVED:** (stale) `checklist_data_test.dart` exists with static round-trips, equality, and a Glados group over variable-length linked lists.
 
-- [ ] **[LOW]** `lib/classes/entry_text.dart` — `EntryText` with optional `markdown`/`quill` fields has no test. A short Glados round-trip would be simple (combine3 slots for optional strings).
+- [x] **[LOW]** `lib/classes/entry_text.dart` — `EntryText` with optional `markdown`/`quill` fields has no test. A short Glados round-trip would be simple (combine3 slots for optional strings).
+  **RESOLVED:** (stale) `test/classes/entry_text_test.dart` exists with static round-trips covering plainText/markdown/quill/geolocation/all-fields/empty shapes, equality checks, and a `generatedEntryText` Glados round-trip asserting `fromJson(toJson()) == original` plus per-field preservation.
 
-- [ ] **[LOW]** `lib/classes/event_data.dart` — `EventData.fromJson`/`toJson` with `EventStatus` enum and `double stars` has no test. A 3-variant static test plus a `Glados(any.choose(EventStatus.values))` would give full coverage.
+- [x] **[LOW]** `lib/classes/event_data.dart` — `EventData.fromJson`/`toJson` with `EventStatus` enum and `double stars` has no test. A 3-variant static test plus a `Glados(any.choose(EventStatus.values))` would give full coverage.
+  **RESOLVED:** (stale) `test/classes/event_data_test.dart` exists covering all 8 `EventStatus` variants via static round-trips, zero/fractional/special-character cases, equality, key-emission, and a `generatedEventData` Glados round-trip over every status × stars combination.
 
 ---
 
@@ -102,9 +108,11 @@ under `test/classes/`.
 
 - [x] **[MED]** `lib/classes/supported_language.dart` — `localizedName(BuildContext)` is untested. While this requires a widget test, there is no widget test at all for this class. Worth noting as a gap even if addressed elsewhere. **RESOLVED:** done — a widget test resolves every `SupportedLanguage` through a real BuildContext (non-empty labels) with exact spot-checks against the live ARB bundle.
 
-- [ ] **[LOW]** `lib/classes/entry_link.dart` — `EntryLink.rating` variant has only Glados coverage; no dedicated static test. The file is currently named `entry_link_collapsed_test.dart`, which implies only the `collapsed` field was tested — the full variant matrix (`basic`, `rating`, `project`) is only reached via Glados.
+- [x] **[LOW]** `lib/classes/entry_link.dart` — `EntryLink.rating` variant has only Glados coverage; no dedicated static test. The file is currently named `entry_link_collapsed_test.dart`, which implies only the `collapsed` field was tested — the full variant matrix (`basic`, `rating`, `project`) is only reached via Glados.
+  **RESOLVED:** done — added an `EntryLink.rating` static group to `entry_link_test.dart` (file already renamed) with a JSON round-trip asserting the `RatingLink` variant identity + fields, a `linkedDbEntity` type-tag check (`'RatingLink'`), and a DB-row round-trip via `entryLinkFromLinkedDbEntry`.
 
-- [ ] **[LOW]** `lib/classes/rating_question.dart` — `copyWith` with `options: null` (clearing options) is not tested. The current copyWith test (line 119) updates `question` but never clears `options`.
+- [x] **[LOW]** `lib/classes/rating_question.dart` — `copyWith` with `options: null` (clearing options) is not tested. The current copyWith test (line 119) updates `question` but never clears `options`.
+  **RESOLVED:** done — added `copyWith can clear the options list back to null` to `rating_question_test.dart`. Verified against the generated freezed copyWith (`options = freezed`, `freezed == options ? _self._options : options`) that passing `options: null` does clear the list; the test asserts `options` becomes null, all other fields are untouched, and the result is no longer equal to the original.
 
 ---
 
@@ -116,11 +124,14 @@ under `test/classes/`.
 
 - [x] **[MED]** `test/classes/entity_definitions_test.dart` lines 57–72 and 105–118 — two Glados tests totaling 140+160=300 runs. The `generatedAutoCompleteRule` test (160 runs) generates the compound `and`/`or`/`multiple` variants that embed two leaf rules each, so the `generatedChecklistCorrectionExample` test (140 runs) is not accelerated by the other — both are needed. However, `numRuns: 160` for autocomplete rules is high given their low-dimensional input space (8 int slots). Reducing to 100 saves 60 runs per CI invocation. **RESOLVED:** done — 160 → 100 (the ExploreConfig default, kept explicit for documentation with a lint ignore).
 
-- [ ] **[LOW]** `test/classes/day_plan_test.dart` lines 482–555 and 557–573 — two Glados tests with numRuns=140 and numRuns=120 = 260 runs. Both use identical `_GeneratedDayPlanBlocks` generator. The first test (invariants) and the second (round-trip) are distinct properties so both are needed, but the round-trip test at 120 could be reduced to 80 runs (it simply needs to hit all 9 block-count slots, which the generator covers quickly). Saves 40 runs.
+- [x] **[LOW]** `test/classes/day_plan_test.dart` lines 482–555 and 557–573 — two Glados tests with numRuns=140 and numRuns=120 = 260 runs. Both use identical `_GeneratedDayPlanBlocks` generator. The first test (invariants) and the second (round-trip) are distinct properties so both are needed, but the round-trip test at 120 could be reduced to 80 runs (it simply needs to hit all 9 block-count slots, which the generator covers quickly). Saves 40 runs.
+  **RESOLVED:** done — the `round-trips generated day-plan data through JSON` Glados config reduced from 120 → 80 runs; the invariants test stays at 140. Both remain inside the 80-180 floor.
 
-- [ ] **[LOW]** `test/classes/supported_language_test.dart` lines 81–91 — `generatedInvalidLanguageCode` (numRuns=160) tests a `choose` from 7 enum values × 7 kind values = 49 combinations; 160 runs is 3× the exhaustive space. Reducing to 50 saves 110 runs with identical coverage.
+- [x] **[LOW]** `test/classes/supported_language_test.dart` lines 81–91 — `generatedInvalidLanguageCode` (numRuns=160) tests a `choose` from 7 enum values × 7 kind values = 49 combinations; 160 runs is 3× the exhaustive space. Reducing to 50 saves 110 runs with identical coverage.
+  **RESOLVED:** done — `generatedInvalidLanguageCode` Glados config reduced from 160 → 50 runs; 50 ≥ the 49-combination exhaustive space (language × kind) so coverage is unchanged.
 
 - [ ] **[LOW]** `test/classes/task_priority_test.dart` line 22 — `generatedTaskPriorityInput` (numRuns=160) samples from `4 priorities × 6 kinds × 3 case styles × 5 whitespace = 360` combinations; 160 runs covers most but not all. This is fine at 160. The second Glados test (`round-trips generated priorities through short labels`, numRuns=80) samples from 4 values — 80 runs is large; 20 would suffice for 4-element choose. Saves 60 runs.
+  **DEFERRED:** the requested target (20) is below the project's mandated Glados `ExploreConfig(numRuns:N)` floor of 80 (and the alternative — omitting `ExploreConfig` — defaults to 100, which would *raise* the count, not lower it). No compliant value can reduce below the current `numRuns: 80`, so the test is left unchanged.
 
 **Total recoverable runs: approximately 390–490 runs** (from 3270 current total), with no meaningful coverage loss.
 
