@@ -54,7 +54,8 @@
 
 - [x] **[MED]** `test/features/ai/state/embedding_backfill_controller_test.dart` — 1268 lines. The `backfillAgentReports` group (lines ~780–1165) is independently testable and could be extracted to `embedding_backfill_agent_reports_test.dart`, but only after resolving the one-file-per-source rule: given this rule the preferred approach would be a nested group rather than a new file. However the current file at 1268 lines is large enough to warrant investigating a logical reorganization within the single file using tighter grouping. **RESOLVED:** (assessed, no change) the file already carries nine tightly-scoped groups including a dedicated `backfillAgentReports` group — exactly the within-file organization the item asks for, with the one-file-per-source rule blocking the alternative split.
 
-- [ ] **[LOW]** `test/features/ai/state/linked_entity_inference_test.dart` — 710 lines covering behavior already partially exercised in `unified_ai_controller_test.dart`. The overlap (linked-entity status propagation) should be audited for redundancy; unique scenarios should be folded into the unified controller test after the split described above.
+- [x] **[LOW]** `test/features/ai/state/linked_entity_inference_test.dart` — 710 lines covering behavior already partially exercised in `unified_ai_controller_test.dart`. The overlap (linked-entity status propagation) should be audited for redundancy; unique scenarios should be folded into the unified controller test after the split described above.
+  **RESOLVED:** (stale) the audit already happened in the HIGH pass — `linked_entity_inference_test.dart` no longer exists and its linked-entity status-propagation scenarios were folded into the `triggerSkillProvider` group of the new mirror `skill_trigger_providers_test.dart` (running/idle/error propagation for both main and linked entities at lines ~338–486). No standalone redundant file remains to audit.
 
 ---
 
@@ -76,9 +77,11 @@
 
 - [x] **[MED]** `test/features/ai/state/consts_test.dart` — Lines 79–104: `icon` test and lines 45–77 `localizedName` test both iterate all 7 enum values with separate `expect` lines, giving 7 copy-paste expect calls per test. These can be parameterized using a `final cases = <AiResponseType, IconData>{...}` map iterated in a loop, reducing each test body to ~5 lines. **RESOLVED:** done — one `expectedByType` table drives the icon test and the context-based `localizedName` loop, with a completeness guard that the table covers every enum value (the redundant direct-l10n string test was folded away).
 
-- [ ] **[LOW]** `test/features/ai/state/unified_ai_controller_test.dart` — `FakeEntryControllerNull` (lines 41–43) is defined inline. If this pattern is needed in other test files it should be added to central fakes; if unique to this file it should remain but be documented.
+- [x] **[LOW]** `test/features/ai/state/unified_ai_controller_test.dart` — `FakeEntryControllerNull` (lines 41–43) is defined inline. If this pattern is needed in other test files it should be added to central fakes; if unique to this file it should remain but be documented.
+  **RESOLVED:** (stale) the HIGH-pass split already removed `FakeEntryControllerNull` from this file — no such class is defined here anymore. The only remnant was a dangling `/// Entry controller that returns null (entity not found).` doc comment with no class beneath it, which has now been deleted.
 
-- [ ] **[LOW]** `test/features/ai/state/linked_entity_inference_test.dart` — Line 94: `tearDown` only unregisters `DomainLogger` but `setUp` also registers it. If the test suite is expanded the teardown may become incomplete. Should mirror the full registration/unregistration via `setUpTestGetIt()`.
+- [x] **[LOW]** `test/features/ai/state/linked_entity_inference_test.dart` — Line 94: `tearDown` only unregisters `DomainLogger` but `setUp` also registers it. If the test suite is expanded the teardown may become incomplete. Should mirror the full registration/unregistration via `setUpTestGetIt()`.
+  **RESOLVED:** (stale) `linked_entity_inference_test.dart` no longer exists; its coverage moved to `skill_trigger_providers_test.dart`, which already uses `setUpTestGetIt()` / `tearDownTestGetIt()` (lines ~119 and ~173), so registration and teardown are symmetric.
 
 ---
 
@@ -88,9 +91,11 @@
 
 - [x] **[MED]** `lib/features/ai/state/embedding_backfill_controller.dart` — `_processEntities` has non-trivial arithmetic: `progress = processed / total`, counts for `embedded`, `failed`, `processed`. A Glados property over randomly generated sequences of `didEmbed: bool` and `didThrow: bool` per entity could verify that `processed == embedded + failed + (skipped by cancel)`, `progress == processed / total`, and `embedded + failed <= processed` hold for any input sequence. This is pure math over counters, ideal for property testing. **RESOLVED:** done — a property generates per-entity outcome sequences (embed / missing-entity skip / lookup throw) and asserts processed == total, embedded/failed match the outcome counts, embedded+failed <= processed, and progress lands at 1.0.
 
-- [ ] **[LOW]** `lib/features/ai/state/consts.dart` — `SkillTypeToResponseType.toResponseType` already has a Glados test in `consts_test.dart` — well covered. No gap here.
+- [x] **[LOW]** `lib/features/ai/state/consts.dart` — `SkillTypeToResponseType.toResponseType` already has a Glados test in `consts_test.dart` — well covered. No gap here.
+  **RESOLVED:** (confirmed true, no change) `consts_test.dart` lines 147–157 already drive `toResponseType` through a `glados.Glados(glados.any.skillType, numRuns: 80)` property checked against an independent oracle (`_expectedResponseTypeForSkill`), tagged `glados`. No gap.
 
-- [ ] **[LOW]** `lib/features/ai/state/consts.dart` — `isLegacyType` could have a Glados property: "for any `AiResponseType` value, `isLegacyType` equals `this == taskSummary || this == checklistUpdates || this == imageGeneration`". However this is trivially verified by the existing static tests; only worth adding Glados if a regression in the formula becomes a concern.
+- [x] **[LOW]** `lib/features/ai/state/consts.dart` — `isLegacyType` could have a Glados property: "for any `AiResponseType` value, `isLegacyType` equals `this == taskSummary || this == checklistUpdates || this == imageGeneration`". However this is trivially verified by the existing static tests; only worth adding Glados if a regression in the formula becomes a concern.
+  **RESOLVED:** (confirmed true, no change) the `AiResponseType` enum has only 7 values and the static test `isLegacyType gates exactly the prompt-superseded types` (consts_test.dart lines 130–144) already asserts the predicate for every value exhaustively. A Glados property over a 7-element enum would re-test the identical finite domain with no added coverage, so it is intentionally omitted per the item's own note.
 
 ---
 
@@ -110,9 +115,11 @@
 
 - [x] **[MED]** `lib/features/ai/state/profile_automation_providers.dart` — `categoryProfileLookup` (lines 32–37): the closure calls `journalDb.getCategoryById(categoryId)` and reads `category?.defaultProfileId`. No test currently exercises the path where `getCategoryById` returns a non-null category with a `defaultProfileId`. The `profile_automation_providers_test.dart` tests for task profile lookups but the category lookup path is only indirectly covered via `triggerSkillProvider` tests with a real category ID. **RESOLVED:** (stale) the `categoryProfileLookup via resolveForCategory` group covers both the non-null `defaultProfileId` forwarding and the null fallback.
 
-- [ ] **[LOW]** `lib/features/ai/state/ai_config_initialization.dart` — The `ModelPrepopulationService.backfillNewModels()` error path logs and continues; `ai_config_initialization_test.dart` line 122 covers this. Clean.
+- [x] **[LOW]** `lib/features/ai/state/ai_config_initialization.dart` — The `ModelPrepopulationService.backfillNewModels()` error path logs and continues; `ai_config_initialization_test.dart` line 122 covers this. Clean.
+  **RESOLVED:** (confirmed true, no change) the test `completes normally and still seeds profiles when model backfill throws` (ai_config_initialization_test.dart lines 122–152) stubs `getConfigsByType(inferenceProvider)` to throw, then asserts the provider future `completes`, all default profiles are still seeded, and the upgrade pass still runs — exactly the swallow-and-continue contract of the backfill try/catch. Clean.
 
-- [ ] **[LOW]** `lib/features/ai/state/inference_status_controller.dart` — `InferenceRunningController` returns `true` if any of the supplied `responseTypes` is `running`. The existing Glados test covers the `setStatus` → read path but there is no test for `InferenceRunningController` with an empty `responseTypes` set (should always return `false`) or with a set that includes a non-running type alongside a running type. These edge cases are not exercised.
+- [x] **[LOW]** `lib/features/ai/state/inference_status_controller.dart` — `InferenceRunningController` returns `true` if any of the supplied `responseTypes` is `running`. The existing Glados test covers the `setStatus` → read path but there is no test for `InferenceRunningController` with an empty `responseTypes` set (should always return `false`) or with a set that includes a non-running type alongside a running type. These edge cases are not exercised.
+  **RESOLVED:** (stale) both edge cases are now exercised in `inference_status_controller_test.dart`. The empty-set case has a dedicated example test `works with empty response types set` (lines 516–527) asserting `false`. The mixed running/non-running case is covered by `returns true when any inference is running` (lines 341–413), which sets one type of a two-type set to `running` and asserts `true` while the other stays idle. The Glados property `matches generated multi-response running semantics` (lines 529–599) additionally generates the empty `responseSetKind` and arbitrary single-running-among-many subsets, checking each against an `any(status == running)` oracle.
 
 ---
 
@@ -128,7 +135,8 @@
 
 - [x] **[MED]** `test/features/ai/state/inference_status_controller_test.dart` — Glados uses `numRuns: 180` with list length 0–55 (inferred from similar pattern). Same recommendation: 120 runs / max 40 operations. **RESOLVED:** numRuns reduced to 120.
 
-- [ ] **[LOW]** `test/features/ai/state/unified_ai_controller_test.dart` — `setUpAll` registers fallback values that include constructing real `JournalEntry` and `ProviderContainer` instances. These are cheap but if the test file is split as recommended, each split file re-runs `setUpAll`. Centralizing fallback registration in `test/helpers/fallbacks.dart` (which is the prescribed pattern via `registerAllFallbackValues()`) and calling that from `setUpAll` would keep consistency.
+- [x] **[LOW]** `test/features/ai/state/unified_ai_controller_test.dart` — `setUpAll` registers fallback values that include constructing real `JournalEntry` and `ProviderContainer` instances. These are cheap but if the test file is split as recommended, each split file re-runs `setUpAll`. Centralizing fallback registration in `test/helpers/fallbacks.dart` (which is the prescribed pattern via `registerAllFallbackValues()`) and calling that from `setUpAll` would keep consistency.
+  **RESOLVED:** done — `setUpAll` now calls `registerAllFallbackValues()` from `test/helpers/fallbacks.dart` (which already provides `FakeAiConfigPrompt`, `fallbackJournalEntity`, `AutomationResult.notHandled`, and `StackTrace.empty`), eliminating the hand-built `JournalEntry`/`Metadata`, `AutomationResult`, and `FakeAiConfigPrompt` fallbacks. Only the two fallbacks the central registry does not yet carry — `InferenceStatus.idle` and `<String, dynamic>{}` — remain registered locally. The now-unused `journal_entities.dart` and `profile_automation_service.dart` imports were removed. The central registry file itself was not edited (forbidden shared file), so `InferenceStatus`/`Map` stay local.
 
 ---
 

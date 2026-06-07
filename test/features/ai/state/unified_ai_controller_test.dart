@@ -3,12 +3,10 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/unified_ai_inference_repository.dart';
-import 'package:lotti/features/ai/services/profile_automation_service.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
@@ -22,10 +20,9 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
-
-/// Entry controller that returns null (entity not found).
 
 /// File-level factory for the boilerplate [AiConfigPrompt] blocks; only the
 /// parts that vary between tests are parameters.
@@ -62,25 +59,14 @@ void main() {
   late MockUpdateNotifications mockUpdateNotifications;
 
   setUpAll(() {
-    registerFallbackValue(FakeAiConfigPrompt());
+    // Shared fallbacks (FakeAiConfigPrompt, JournalEntity, AutomationResult,
+    // StackTrace, …) come from the centralized registry so the four mirror
+    // test files for these providers stay consistent and don't each
+    // re-construct fallback instances.
+    registerAllFallbackValues();
+    // File-local fallbacks not (yet) covered by the central registry.
     registerFallbackValue(InferenceStatus.idle);
     registerFallbackValue(<String, dynamic>{});
-    registerFallbackValue(StackTrace.current);
-    registerFallbackValue(
-      const AutomationResult(handled: true),
-    );
-    // Register a fallback for JournalEntity (sealed class, use real type)
-    registerFallbackValue(
-      JournalEntry(
-        meta: Metadata(
-          id: 'fallback-entry',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          dateFrom: DateTime(2024, 3, 15),
-          dateTo: DateTime(2024, 3, 15),
-        ),
-      ),
-    );
   });
 
   setUp(() async {
