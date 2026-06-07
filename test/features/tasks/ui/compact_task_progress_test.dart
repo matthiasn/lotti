@@ -96,7 +96,8 @@ void main() {
       estimate: const Duration(hours: 1),
     );
     await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(LinearProgressIndicator), findsOneWidget);
   });
@@ -114,7 +115,8 @@ void main() {
       estimate: const Duration(hours: 1),
     );
     await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final textFinder = find.descendant(
       of: find.byType(CompactTaskProgress),
@@ -135,7 +137,8 @@ void main() {
       estimate: const Duration(hours: 1),
     );
     await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final textFinder = find.descendant(
       of: find.byType(CompactTaskProgress),
@@ -173,7 +176,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final textFinder = find.descendant(
         of: find.byType(CompactTaskProgress),
@@ -194,7 +198,8 @@ void main() {
       estimate: const Duration(hours: 1),
     );
     await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final indicator = tester.widget<LinearProgressIndicator>(
       find.byType(LinearProgressIndicator),
@@ -215,7 +220,8 @@ void main() {
       estimate: const Duration(hours: 1),
     );
     await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final indicator = tester.widget<LinearProgressIndicator>(
       find.byType(LinearProgressIndicator),
@@ -236,7 +242,8 @@ void main() {
       estimate: const Duration(hours: 1),
     );
     await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final indicator = tester.widget<LinearProgressIndicator>(
       find.byType(LinearProgressIndicator),
@@ -255,7 +262,8 @@ void main() {
       estimate: Duration.zero,
     );
     await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     // Only the outer widget exists; no progress bar is rendered.
     expect(find.byType(LinearProgressIndicator), findsNothing);
@@ -272,7 +280,8 @@ void main() {
       estimate: const Duration(hours: 1, minutes: 50),
     );
     await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final textFinder = find.descendant(
       of: find.byType(CompactTaskProgress),
@@ -297,7 +306,8 @@ void main() {
       theme: ThemeData(textTheme: const TextTheme()),
     );
     await tester.pumpWidget(widget);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final textFinder = find.descendant(
       of: find.byType(CompactTaskProgress),

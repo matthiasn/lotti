@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/tasks/ui/task_status.dart';
@@ -75,99 +76,90 @@ void main() {
     );
   });
 
-  testWidgets('renders with correct background color for each status', (
-    tester,
-  ) async {
-    // Test each task status color in light mode (default for WidgetTestBench)
-    final testCases = [
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.open(
-          id: id,
-          createdAt: createdAt,
-          utcOffset: utcOffset,
-        ),
-        const Color(0xFFE65100), // Dark orange for light mode
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.groomed(
-          id: id,
-          createdAt: createdAt,
-          utcOffset: utcOffset,
-        ),
-        const Color(0xFF2E7D32), // Dark green for light mode
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.inProgress(
-          id: id,
-          createdAt: createdAt,
-          utcOffset: utcOffset,
-        ),
-        const Color(0xFF1565C0), // Dark blue for light mode
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.blocked(
-          id: id,
-          createdAt: createdAt,
-          utcOffset: utcOffset,
-          reason: 'Test reason',
-        ),
-        const Color(0xFFC62828), // Dark red for light mode
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.onHold(
-          id: id,
-          createdAt: createdAt,
-          utcOffset: utcOffset,
-          reason: 'Test reason',
-        ),
-        const Color(0xFFC62828), // Dark red for light mode
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.done(
-          id: id,
-          createdAt: createdAt,
-          utcOffset: utcOffset,
-        ),
-        const Color(0xFF2E7D32), // Dark green for light mode
-      ),
-      (
-        (String id, DateTime createdAt, int utcOffset) => TaskStatus.rejected(
-          id: id,
-          createdAt: createdAt,
-          utcOffset: utcOffset,
-        ),
-        const Color(0xFFC62828), // Dark red for light mode
-      ),
-    ];
+  // One status→color table per theme; the loop below covers both
+  // brightness modes without duplicating the seven per-status cases.
+  final statusFactories = <String, TaskStatus Function(String, DateTime, int)>{
+    'open': (id, createdAt, utcOffset) =>
+        TaskStatus.open(id: id, createdAt: createdAt, utcOffset: utcOffset),
+    'groomed': (id, createdAt, utcOffset) =>
+        TaskStatus.groomed(id: id, createdAt: createdAt, utcOffset: utcOffset),
+    'inProgress': (id, createdAt, utcOffset) => TaskStatus.inProgress(
+      id: id,
+      createdAt: createdAt,
+      utcOffset: utcOffset,
+    ),
+    'blocked': (id, createdAt, utcOffset) => TaskStatus.blocked(
+      id: id,
+      createdAt: createdAt,
+      utcOffset: utcOffset,
+      reason: 'Test reason',
+    ),
+    'onHold': (id, createdAt, utcOffset) => TaskStatus.onHold(
+      id: id,
+      createdAt: createdAt,
+      utcOffset: utcOffset,
+      reason: 'Test reason',
+    ),
+    'done': (id, createdAt, utcOffset) =>
+        TaskStatus.done(id: id, createdAt: createdAt, utcOffset: utcOffset),
+    'rejected': (id, createdAt, utcOffset) => TaskStatus.rejected(
+      id: id,
+      createdAt: createdAt,
+      utcOffset: utcOffset,
+    ),
+  };
 
-    for (final testCase in testCases) {
-      final statusFactory = testCase.$1;
-      final expectedColor = testCase.$2;
+  const lightColors = <String, Color>{
+    'open': Color(0xFFE65100),
+    'groomed': Color(0xFF2E7D32),
+    'inProgress': Color(0xFF1565C0),
+    'blocked': Color(0xFFC62828),
+    'onHold': Color(0xFFC62828),
+    'done': Color(0xFF2E7D32),
+    'rejected': Color(0xFFC62828),
+  };
 
-      final status = statusFactory(
-        'test-status-id',
-        testDate,
-        testDate.timeZoneOffset.inMinutes,
-      );
+  const darkColors = <String, Color>{
+    'open': Colors.orange,
+    'groomed': Colors.lightGreenAccent,
+    'inProgress': Colors.blue,
+    'blocked': Colors.red,
+    'onHold': Colors.red,
+    'done': Colors.green,
+    'rejected': Colors.red,
+  };
 
-      final mockTask = createTask(status);
+  for (final dark in [false, true]) {
+    testWidgets(
+      'renders the correct background color for each status in '
+      '${dark ? 'dark' : 'light'} mode',
+      (tester) async {
+        final expectedColors = dark ? darkColors : lightColors;
+        for (final entry in statusFactories.entries) {
+          final status = entry.value(
+            'test-status-id',
+            testDate,
+            testDate.timeZoneOffset.inMinutes,
+          );
+          final mockTask = createTask(status);
 
-      await tester.pumpWidget(
-        WidgetTestBench(
-          child: TaskStatusWidget(mockTask),
-        ),
-      );
+          await tester.pumpWidget(
+            dark
+                ? DarkWidgetTestBench(child: TaskStatusWidget(mockTask))
+                : WidgetTestBench(child: TaskStatusWidget(mockTask)),
+          );
+          await tester.pump();
 
-      // Find the Chip widget
-      final chipWidget = tester.widget<Chip>(find.byType(Chip));
-
-      // Verify the background color matches the expected color
-      expect(chipWidget.backgroundColor, expectedColor);
-
-      // Reset for next test case
-      await tester.pumpAndSettle();
-    }
-  });
+          final chipWidget = tester.widget<Chip>(find.byType(Chip));
+          expect(
+            chipWidget.backgroundColor,
+            expectedColors[entry.key],
+            reason: '${entry.key} in ${dark ? 'dark' : 'light'} mode',
+          );
+        }
+      },
+    );
+  }
 
   testWidgets('text color is white for dark background colors in light mode', (
     tester,
@@ -274,109 +266,25 @@ void main() {
     expect(chipWidget.visualDensity, equals(VisualDensity.compact));
   });
 
-  test('fontSizeSmall is used for text style', () {
-    // This is a unit test (not widget test) to verify the fontSizeSmall constant is used
+  testWidgets('chip label text uses the small font size token', (
+    tester,
+  ) async {
+    final status = createTaskStatus(
+      (id, createdAt, utcOffset) => TaskStatus.open(
+        id: id,
+        createdAt: createdAt,
+        utcOffset: utcOffset,
+      ),
+    );
+    await tester.pumpWidget(
+      WidgetTestBench(child: TaskStatusWidget(createTask(status))),
+    );
 
-    // We're verifying that fontSizeSmall is used in the code
-    // This is testing the implementation detail, but important for coverage
-    expect(fontSizeSmall, isNotNull);
+    final text = tester.widget<Text>(
+      find.descendant(of: find.byType(Chip), matching: find.byType(Text)),
+    );
+    expect(text.style?.fontSize, fontSizeSmall);
   });
-
-  testWidgets(
-    'renders with correct background color for each status in dark mode',
-    (tester) async {
-      // Test each task status color in dark mode
-      final testCases = [
-        (
-          (String id, DateTime createdAt, int utcOffset) => TaskStatus.open(
-            id: id,
-            createdAt: createdAt,
-            utcOffset: utcOffset,
-          ),
-          Colors.orange, // Bright orange for dark mode
-        ),
-        (
-          (String id, DateTime createdAt, int utcOffset) => TaskStatus.groomed(
-            id: id,
-            createdAt: createdAt,
-            utcOffset: utcOffset,
-          ),
-          Colors.lightGreenAccent, // Light green accent for dark mode
-        ),
-        (
-          (String id, DateTime createdAt, int utcOffset) =>
-              TaskStatus.inProgress(
-                id: id,
-                createdAt: createdAt,
-                utcOffset: utcOffset,
-              ),
-          Colors.blue, // Blue for dark mode
-        ),
-        (
-          (String id, DateTime createdAt, int utcOffset) => TaskStatus.blocked(
-            id: id,
-            createdAt: createdAt,
-            utcOffset: utcOffset,
-            reason: 'Test reason',
-          ),
-          Colors.red, // Red for dark mode
-        ),
-        (
-          (String id, DateTime createdAt, int utcOffset) => TaskStatus.onHold(
-            id: id,
-            createdAt: createdAt,
-            utcOffset: utcOffset,
-            reason: 'Test reason',
-          ),
-          Colors.red, // Red for dark mode
-        ),
-        (
-          (String id, DateTime createdAt, int utcOffset) => TaskStatus.done(
-            id: id,
-            createdAt: createdAt,
-            utcOffset: utcOffset,
-          ),
-          Colors.green, // Green for dark mode
-        ),
-        (
-          (String id, DateTime createdAt, int utcOffset) => TaskStatus.rejected(
-            id: id,
-            createdAt: createdAt,
-            utcOffset: utcOffset,
-          ),
-          Colors.red, // Red for dark mode
-        ),
-      ];
-
-      for (final testCase in testCases) {
-        final statusFactory = testCase.$1;
-        final expectedColor = testCase.$2;
-
-        final status = statusFactory(
-          'test-status-id',
-          testDate,
-          testDate.timeZoneOffset.inMinutes,
-        );
-
-        final mockTask = createTask(status);
-
-        await tester.pumpWidget(
-          DarkWidgetTestBench(
-            child: TaskStatusWidget(mockTask),
-          ),
-        );
-
-        // Find the Chip widget
-        final chipWidget = tester.widget<Chip>(find.byType(Chip));
-
-        // Verify the background color matches the expected color
-        expect(chipWidget.backgroundColor, expectedColor);
-
-        // Reset for next test case
-        await tester.pumpAndSettle();
-      }
-    },
-  );
 
   testWidgets('text color is black for bright background colors in dark mode', (
     tester,
@@ -437,5 +345,50 @@ void main() {
     expect(normalizeTaskStatusString('Opening'), 'OPEN');
     expect(normalizeTaskStatusString('inProgress'), 'IN PROGRESS');
     expect(normalizeTaskStatusString('IN_PROGRESS'), 'IN PROGRESS');
+  });
+
+  group('normalizeTaskStatusString — properties', () {
+    glados.Glados<String>(
+      glados.AnyUtils(glados.any).choose(const [
+        'open',
+        ' OPEN ',
+        'OPENING',
+        'opened',
+        'in_progress',
+        'INPROGRESS',
+        'In Progress',
+        'on_hold',
+        'BLOCKED',
+        'done ',
+        'rejected',
+        'garbage-status',
+        '',
+      ]),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'is idempotent, and every known alias lands in allTaskStatuses',
+      (input) {
+        final once = normalizeTaskStatusString(input);
+        // Idempotence: re-normalizing a normalized value is a no-op.
+        expect(normalizeTaskStatusString(once), once, reason: 'input="$input"');
+
+        // Known aliases (anything that trims/uppercases/underscores or
+        // alias-maps to a canonical value) must land in the canonical set;
+        // unknown strings pass through normalized but must NOT collide
+        // with the canonical set spelled differently.
+        final canonical = allTaskStatuses.contains(once);
+        final isKnownAlias =
+            allTaskStatuses.contains(
+              input.trim().toUpperCase().replaceAll('_', ' '),
+            ) ||
+            [
+              'OPENING',
+              'OPENED',
+              'INPROGRESS',
+            ].contains(input.trim().toUpperCase().replaceAll('_', ' '));
+        expect(canonical, isKnownAlias, reason: 'input="$input" → "$once"');
+      },
+      tags: 'glados',
+    );
   });
 }

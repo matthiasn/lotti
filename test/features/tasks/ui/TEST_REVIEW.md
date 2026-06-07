@@ -48,11 +48,14 @@
 
 - [x] **[HIGH]** `test/features/tasks/ui/task_status_test.dart` defines an inline `MockTask` class (lines 12–28) instead of importing from `test/mocks/mocks.dart`. This violates "Use centralized mocks."
 
-- [ ] **[MED]** `test/features/tasks/ui/task_status_test.dart` lines 82–173 and 288–381 are two near-identical loops that iterate over all `TaskStatus` values and check `backgroundColor`. These should be consolidated into a single parameterized helper, not duplicated for light vs. dark mode. The duplication is ~90 lines.
+- [x] **[MED]** `test/features/tasks/ui/task_status_test.dart` lines 82–173 and 288–381 are two near-identical loops that iterate over all `TaskStatus` values and check `backgroundColor`. These should be consolidated into a single parameterized helper, not duplicated for light vs. dark mode. The duplication is ~90 lines.
+  **RESOLVED:** the light/dark loops are now one parameterized `for (final dark in [false, true])` test over shared status-factory and per-theme color tables (~90 duplicated lines removed).
 
-- [ ] **[MED]** `test/features/tasks/ui/cover_art_thumbnail_test.dart` does not use `makeTestableWidget()` / `makeTestableWidgetWithScaffold()`; each test builds its own `ProviderScope` + `MaterialApp` + `Scaffold` boilerplate (lines 116–131, 143–159, 166–187, etc.). A shared `_pump()` helper would eliminate 25+ repeated wrapper blocks.
+- [x] **[MED]** `test/features/tasks/ui/cover_art_thumbnail_test.dart` does not use `makeTestableWidget()` / `makeTestableWidgetWithScaffold()`; each test builds its own `ProviderScope` + `MaterialApp` + `Scaffold` boilerplate (lines 116–131, 143–159, 166–187, etc.). A shared `_pump()` helper would eliminate 25+ repeated wrapper blocks.
+  **RESOLVED:** a `pumpThumbnail(tester, widget, {overrides})` helper wraps the ProviderScope + MaterialApp + Scaffold + load-frame pump; 18 repeated wrapper blocks folded.
 
-- [ ] **[MED]** `test/features/tasks/ui/due_date_text_test.dart` uses `WidgetTestBench` (from `test_helper.dart`) correctly but calls `pumpAndSettle()` after every single widget render even for stateless assertions that need no animation to settle. See speed section below.
+- [x] **[MED]** `test/features/tasks/ui/due_date_text_test.dart` uses `WidgetTestBench` (from `test_helper.dart`) correctly but calls `pumpAndSettle()` after every single widget render even for stateless assertions that need no animation to settle. See speed section below.
+  **RESOLVED (stale):** the file has zero `pumpAndSettle` calls.
 
 - [ ] **[LOW]** `test/features/tasks/ui/title_text_field_shortcuts_test.dart` builds a custom `MaterialApp` + `AppLocalizations` wrapper (lines 12–27) instead of using `makeTestableWidget()`. This should be standardized.
 
@@ -60,7 +63,8 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[MED]** `lib/features/tasks/ui/utils.dart` — `normalizeTaskStatusString()` (line 49) is a pure string normalization function with switch/case logic over status aliases. It is only tested with three concrete inputs (`task_status_test.dart:440-442`). A Glados property test could assert round-trip idempotence: `normalizeTaskStatusString(normalizeTaskStatusString(s))` == `normalizeTaskStatusString(s)` for any string `s`, and that no known alias (OPENING, OPENED, INPROGRESS, IN_PROGRESS) produces a variant not in `allTaskStatuses`.
+- [x] **[MED]** `lib/features/tasks/ui/utils.dart` — `normalizeTaskStatusString()` (line 49) is a pure string normalization function with switch/case logic over status aliases. It is only tested with three concrete inputs (`task_status_test.dart:440-442`). A Glados property test could assert round-trip idempotence: `normalizeTaskStatusString(normalizeTaskStatusString(s))` == `normalizeTaskStatusString(s)` for any string `s`, and that no known alias (OPENING, OPENED, INPROGRESS, IN_PROGRESS) produces a variant not in `allTaskStatuses`.
+  **RESOLVED:** added a Glados property over alias/whitespace/garbage inputs — idempotence (`normalize(normalize(s)) == normalize(s)`) plus the canonical-set membership oracle (known aliases land in `allTaskStatuses`; unknown strings never collide).
 
 - [ ] **[LOW]** `lib/features/tasks/ui/utils.dart` — `taskColorFromStatusString` and `taskIconFromStatusString` (lines 9–32) are pure switch functions. A Glados property could assert that every status string returns a non-null result (exhaustiveness), and that any string outside the known list maps to the default fallback icon / color.
 
@@ -74,9 +78,11 @@
 
 - [x] **[HIGH]** `lib/features/tasks/ui/utils.dart` (76 ln) has no test file. Functions `taskColorFromStatusString`, `taskIconFromStatusString`, and `taskLabelFromStatusString` are tested indirectly via widget tests at best. There is no dedicated unit test file, violating "One test file per source file."
 
-- [ ] **[MED]** `test/features/tasks/ui/task_app_bar_test.dart` (253 ln): assertions mostly check icon presence or text presence. The `task_app_bar.dart` orchestrates between compact and expandable app bars; the test should verify that the correct variant is assembled at given viewport widths.
+- [x] **[MED]** `test/features/tasks/ui/task_app_bar_test.dart` (253 ln): assertions mostly check icon presence or text presence. The `task_app_bar.dart` orchestrates between compact and expandable app bars; the test should verify that the correct variant is assembled at given viewport widths.
+  **RESOLVED (assessed, no change):** the premise is partly wrong — the orchestration keys on cover-art presence, not viewport width. Strengthening to variant-type assertions was attempted and reverted: probing shows neither `TaskCompactAppBar` nor `TaskExpandableAppBar` ever mounts in this harness even under `pumpAndSettle` (the `FakeEntryController` resolution is order-dependent across tests), so the existing assertions are the strongest stable ones without a harness rework.
 
-- [ ] **[MED]** `lib/features/tasks/ui/task_status.dart` is tested but `task_status_test.dart` line 281–286 contains a pure `test('fontSizeSmall is used for text style')` that checks `fontSizeSmall != null` — this is a zero-value smoke test and should be removed or replaced with a behavioral assertion.
+- [x] **[MED]** `lib/features/tasks/ui/task_status.dart` is tested but `task_status_test.dart` line 281–286 contains a pure `test('fontSizeSmall is used for text style')` that checks `fontSizeSmall != null` — this is a zero-value smoke test and should be removed or replaced with a behavioral assertion.
+  **RESOLVED:** replaced with a behavioral widget test asserting the chip label's rendered `fontSize` equals the `fontSizeSmall` token.
 
 ---
 
@@ -86,11 +92,14 @@
 
 - [x] **[HIGH]** `test/features/tasks/ui/due_date_text_test.dart` — 21 `pumpAndSettle()` calls. `DueDateText` is a stateless toggling widget with no unresolved animations; each test only needs `tester.pump()` after an interaction. Savings: ~210s of virtual CI time.
 
-- [ ] **[MED]** `test/features/tasks/ui/compact_task_progress_test.dart` — 10 `pumpAndSettle()` calls (lines 87, 105, 126, 164, 185, 206, 227, 246, 263, 288). The widget resolves an `AsyncNotifier` (one frame) and then is static. Each could be `await tester.pump()` (2 pumps max). Savings: ~100s.
+- [x] **[MED]** `test/features/tasks/ui/compact_task_progress_test.dart` — 10 `pumpAndSettle()` calls (lines 87, 105, 126, 164, 185, 206, 227, 246, 263, 288). The widget resolves an `AsyncNotifier` (one frame) and then is static. Each could be `await tester.pump()` (2 pumps max). Savings: ~100s.
+  **RESOLVED:** all 10 replaced with bounded `pump()` + `pump(300ms)` pairs; suite green. (Note: settles cost fake time, not the wall-clock seconds the item estimates — the win is removing the 10 s timeout ceiling.)
 
-- [ ] **[MED]** `test/features/tasks/ui/task_compact_app_bar_test.dart` — 12 `pumpAndSettle()` calls (lines 83, 92, 101, 110, 120, 130, 140, 150, 170, 188, 231, 251). Savings: ~120s.
+- [x] **[MED]** `test/features/tasks/ui/task_compact_app_bar_test.dart` — 12 `pumpAndSettle()` calls (lines 83, 92, 101, 110, 120, 130, 140, 150, 170, 188, 231, 251). Savings: ~120s.
+  **RESOLVED:** all 12 replaced with bounded pumps; suite green.
 
-- [ ] **[MED]** `test/features/tasks/ui/task_app_bar_test.dart` — 7 `pumpAndSettle()` calls (lines 120, 134, 148, 159, 179, 201, 225). Savings: ~70s.
+- [x] **[MED]** `test/features/tasks/ui/task_app_bar_test.dart` — 7 `pumpAndSettle()` calls (lines 120, 134, 148, 159, 179, 201, 225). Savings: ~70s.
+  **RESOLVED (assessed, no change):** a bounded-pump conversion was attempted and reverted — this file's `FakeEntryController` resolution is order-dependent (assertions that pass in full-file runs fail under `--plain-name` isolation), so the settles are load-bearing here.
 
 - [ ] **[LOW]** `test/features/tasks/ui/linked_duration_timer_text_test.dart` (line 47) and `compact_task_progress_timer_text_test.dart` (line 49) each have a `pumpAndSettle()` followed by an extra `pump()`. The double-settle pattern is redundant if the animation truly settles; the comment "Ensure AsyncNotifier completes and rebuilds" suggests `tester.pump()` alone would be sufficient.
 
