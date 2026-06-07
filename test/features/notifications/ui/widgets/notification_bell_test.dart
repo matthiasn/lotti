@@ -74,6 +74,18 @@ void main() {
       },
     );
 
+    test('pins to the floor at the exact lower boundary', () {
+      // available == popoverMinWidth exactly → the <= comparison takes the
+      // floor branch rather than returning the (equal) available width.
+      const exactBoundary =
+          NotificationBell.popoverMinWidth +
+          NotificationBell.popoverScreenMargin * 2;
+      expect(
+        NotificationBell.resolvePopoverWidth(exactBoundary),
+        NotificationBell.popoverMinWidth,
+      );
+    });
+
     test('snaps to the floor on absurdly narrow viewports', () {
       // A 280 px viewport would push the available width below the floor;
       // the resolver pins to popoverMinWidth so the layout stays legible.

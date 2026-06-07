@@ -152,6 +152,66 @@ void main() {
       },
       tags: 'glados',
     );
+
+    group('earliestNonNull — algebraic properties', () {
+      DateTime? fromSlot(int slot) =>
+          slot == 0 ? null : DateTime.utc(2026, 5, 17, 9, slot % 60);
+
+      glados.Glados2<int, int>(
+        glados.IntAnys(glados.any).intInRange(0, 60),
+        glados.IntAnys(glados.any).intInRange(0, 60),
+        glados.ExploreConfig(numRuns: 150),
+      ).test(
+        'commutative, idempotent, null-identity, and result-membership',
+        (slotA, slotB) {
+          final a = fromSlot(slotA);
+          final b = fromSlot(slotB);
+
+          final ab = NotificationMerge.earliestNonNull(a, b);
+          final ba = NotificationMerge.earliestNonNull(b, a);
+          expect(ab, ba, reason: 'commutativity a=$a b=$b');
+
+          expect(NotificationMerge.earliestNonNull(a, a), a, reason: 'idem');
+          expect(NotificationMerge.earliestNonNull(a, null), a);
+          expect(NotificationMerge.earliestNonNull(null, b), b);
+
+          // Result is always one of the inputs, and ≤ each non-null input.
+          expect(ab == a || ab == b, isTrue);
+          if (ab != null) {
+            if (a != null) expect(ab.isAfter(a), isFalse);
+            if (b != null) expect(ab.isAfter(b), isFalse);
+          }
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados3<int, int, int>(
+        glados.IntAnys(glados.any).intInRange(0, 60),
+        glados.IntAnys(glados.any).intInRange(0, 60),
+        glados.IntAnys(glados.any).intInRange(0, 60),
+        glados.ExploreConfig(numRuns: 150),
+      ).test(
+        'associative across three operands',
+        (slotA, slotB, slotC) {
+          final a = fromSlot(slotA);
+          final b = fromSlot(slotB);
+          final c = fromSlot(slotC);
+
+          expect(
+            NotificationMerge.earliestNonNull(
+              NotificationMerge.earliestNonNull(a, b),
+              c,
+            ),
+            NotificationMerge.earliestNonNull(
+              a,
+              NotificationMerge.earliestNonNull(b, c),
+            ),
+            reason: 'a=$a b=$b c=$c',
+          );
+        },
+        tags: 'glados',
+      );
+    });
   });
 }
 
