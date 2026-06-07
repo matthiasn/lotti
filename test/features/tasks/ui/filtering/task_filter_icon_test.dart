@@ -133,7 +133,7 @@ void main() {
 
     testWidgets('renders correctly', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(TaskFilterIcon), findsOneWidget);
       expect(find.byIcon(MdiIcons.filterVariant), findsOneWidget);
@@ -143,7 +143,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.byIcon(MdiIcons.filterVariant));
       await tester.pumpAndSettle();
@@ -155,7 +155,7 @@ void main() {
 
     testWidgets('modal contains design system filter sheet', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.byIcon(MdiIcons.filterVariant));
       await tester.pumpAndSettle();
@@ -168,7 +168,7 @@ void main() {
 
     testWidgets('modal can be dismissed', (tester) async {
       await tester.pumpWidget(buildSubject());
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.byIcon(MdiIcons.filterVariant));
       await tester.pumpAndSettle();
