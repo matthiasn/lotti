@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/task_language_handler.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 
@@ -121,6 +122,8 @@ extension _AnyTaskLanguageHandlerScenario on glados.Any {
 }
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   late MockJournalRepository mockJournalRepo;
   late Task task;
 
@@ -129,7 +132,6 @@ void main() {
     task = testTask.copyWith(
       data: testTask.data.copyWith(languageCode: null),
     );
-    registerFallbackValue(task as JournalEntity);
   });
 
   group('TaskLanguageHandler', () {

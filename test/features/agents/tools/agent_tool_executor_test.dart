@@ -693,5 +693,45 @@ void main() {
       expect(result.policyDenied, isTrue);
       expect(result.denialReason, equals('not allowed'));
     });
+
+    test('fromHandlerResult maps a write result onto the entity id', () {
+      final result = ToolExecutionResult.fromHandlerResult(
+        success: true,
+        message: 'updated',
+        didWrite: true,
+        entityId: 'ent-7',
+      );
+      expect(result.mutatedEntityId, 'ent-7');
+      expect(result.output, 'updated');
+
+      // No write → the id is dropped even when provided.
+      final noWrite = ToolExecutionResult.fromHandlerResult(
+        success: true,
+        message: 'read-only',
+        didWrite: false,
+        entityId: 'ent-7',
+      );
+      expect(noWrite.mutatedEntityId, isNull);
+    });
+
+    test(
+      'fromHandlerResult asserts in debug mode when didWrite has no id',
+      () {
+        // The contract guard only exists in debug builds (assert) — tests
+        // run in debug mode, so both the null and empty shapes must throw.
+        for (final badId in <String?>[null, '']) {
+          expect(
+            () => ToolExecutionResult.fromHandlerResult(
+              success: true,
+              message: 'wrote something',
+              didWrite: true,
+              entityId: badId,
+            ),
+            throwsA(isA<AssertionError>()),
+            reason: 'entityId: $badId',
+          );
+        }
+      },
+    );
   });
 }
