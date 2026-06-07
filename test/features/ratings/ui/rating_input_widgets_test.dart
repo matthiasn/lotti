@@ -15,7 +15,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(RatingTapBar), findsOneWidget);
       expect(find.byType(GestureDetector), findsOneWidget);
@@ -30,7 +30,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(RatingTapBar), findsOneWidget);
     });
@@ -45,10 +45,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.byType(RatingTapBar));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(capturedValue, isNotNull);
       expect(capturedValue, greaterThanOrEqualTo(0.0));
@@ -65,14 +65,14 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Drag across the tap bar
       await tester.drag(
         find.byType(RatingTapBar),
         const Offset(100, 0),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(capturedValues, isNotEmpty);
     });
@@ -94,7 +94,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Test question'), findsOneWidget);
       expect(find.text('Low'), findsOneWidget);
@@ -117,7 +117,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // SegmentedButton uses int indices; value 0.5 maps to index 1
       final segmented = tester.widget<SegmentedButton<int>>(
@@ -142,10 +142,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       await tester.tap(find.text('High'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(capturedValue, equals(1.0));
     });
@@ -166,7 +166,7 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final segmented = tester.widget<SegmentedButton<int>>(
         find.byType(SegmentedButton<int>),

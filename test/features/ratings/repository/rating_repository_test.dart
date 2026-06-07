@@ -106,6 +106,74 @@ void main() {
   });
 
   group('RatingRepository', () {
+    /// Stubs the full create-rating flow shared by the create-path tests.
+    ///
+    /// [timeEntry] is what the target lookup returns (category inheritance);
+    /// [createMetadataResult] overrides the metadata returned by
+    /// createMetadata. [stubLink] controls whether upsertEntryLink succeeds —
+    /// rollback tests pass false so the unstubbed call throws, or provide
+    /// [upsertResult] for a custom outcome. [stubUpdatePaths] additionally
+    /// stubs updateMetadata/updateDbEntity for the soft-delete rollback path.
+    void stubCreateFlow({
+      JournalEntity? timeEntry,
+      Metadata? createMetadataResult,
+      bool stubLink = true,
+      Future<int> Function()? upsertResult,
+      bool stubUpdatePaths = false,
+    }) {
+      when(
+        () => mockDb.getRatingForTimeEntry(
+          testTimeEntryId,
+          catalogId: any(named: 'catalogId'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockDb.journalEntityById(testTimeEntryId),
+      ).thenAnswer((_) async => timeEntry);
+      when(
+        () => mockPersistence.createMetadata(
+          dateFrom: any(named: 'dateFrom'),
+          dateTo: any(named: 'dateTo'),
+          categoryId: any(named: 'categoryId'),
+          uuidV5Input: any(named: 'uuidV5Input'),
+        ),
+      ).thenAnswer((_) async => createMetadataResult ?? testMetadata);
+      when(
+        () => mockPersistence.createDbEntity(
+          any(),
+          shouldAddGeolocation: false,
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockVectorClock.getNextVectorClock(),
+      ).thenAnswer((_) async => testVectorClock);
+      when(() => mockNotifications.notify(any())).thenReturn(null);
+      when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
+      if (upsertResult != null) {
+        when(
+          () => mockDb.upsertEntryLink(any()),
+        ).thenAnswer((_) => upsertResult());
+      } else if (stubLink) {
+        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
+      }
+      if (stubUpdatePaths) {
+        when(
+          () => mockPersistence.updateMetadata(
+            any(),
+            deletedAt: any(named: 'deletedAt'),
+          ),
+        ).thenAnswer((invocation) async {
+          final meta = invocation.positionalArguments.first as Metadata;
+          return meta.copyWith(
+            deletedAt: invocation.namedArguments[#deletedAt] as DateTime?,
+          );
+        });
+        when(
+          () => mockPersistence.updateDbEntity(any()),
+        ).thenAnswer((_) async => true);
+      }
+    }
+
     group('getRatingForTargetEntry', () {
       // Stubs and verifies must pass `catalogId` explicitly because the
       // repository always passes it to the JournalDb call: noSuchMethod
@@ -174,35 +242,7 @@ void main() {
 
     group('createOrUpdateRating', () {
       test('creates new rating when none exists', () async {
-        when(
-          () => mockDb.getRatingForTimeEntry(
-            testTimeEntryId,
-            catalogId: any(named: 'catalogId'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockDb.journalEntityById(testTimeEntryId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockPersistence.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-            uuidV5Input: any(named: 'uuidV5Input'),
-          ),
-        ).thenAnswer((_) async => testMetadata);
-        when(
-          () => mockPersistence.createDbEntity(
-            any(),
-            shouldAddGeolocation: false,
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockVectorClock.getNextVectorClock(),
-        ).thenAnswer((_) async => testVectorClock);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
-        when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
+        stubCreateFlow();
 
         final result = await repository.createOrUpdateRating(
           targetId: testTimeEntryId,
@@ -285,35 +325,7 @@ void main() {
       test(
         'passes a non-default catalogId through to the created rating',
         () async {
-          when(
-            () => mockDb.getRatingForTimeEntry(
-              testTimeEntryId,
-              catalogId: any(named: 'catalogId'),
-            ),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockDb.journalEntityById(testTimeEntryId),
-          ).thenAnswer((_) async => null);
-          when(
-            () => mockPersistence.createMetadata(
-              dateFrom: any(named: 'dateFrom'),
-              dateTo: any(named: 'dateTo'),
-              categoryId: any(named: 'categoryId'),
-              uuidV5Input: any(named: 'uuidV5Input'),
-            ),
-          ).thenAnswer((_) async => testMetadata);
-          when(
-            () => mockPersistence.createDbEntity(
-              any(),
-              shouldAddGeolocation: false,
-            ),
-          ).thenAnswer((_) async => true);
-          when(
-            () => mockVectorClock.getNextVectorClock(),
-          ).thenAnswer((_) async => testVectorClock);
-          when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-          when(() => mockNotifications.notify(any())).thenReturn(null);
-          when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
+          stubCreateFlow();
 
           final result = await repository.createOrUpdateRating(
             targetId: testTimeEntryId,
@@ -395,35 +407,7 @@ void main() {
       });
 
       test('creates rating without note', () async {
-        when(
-          () => mockDb.getRatingForTimeEntry(
-            testTimeEntryId,
-            catalogId: any(named: 'catalogId'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockDb.journalEntityById(testTimeEntryId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockPersistence.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-            uuidV5Input: any(named: 'uuidV5Input'),
-          ),
-        ).thenAnswer((_) async => testMetadata);
-        when(
-          () => mockPersistence.createDbEntity(
-            any(),
-            shouldAddGeolocation: false,
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockVectorClock.getNextVectorClock(),
-        ).thenAnswer((_) async => testVectorClock);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
-        when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
+        stubCreateFlow();
 
         final result = await repository.createOrUpdateRating(
           targetId: testTimeEntryId,
@@ -453,35 +437,10 @@ void main() {
           categoryId: timeEntryCategoryId,
         );
 
-        when(
-          () => mockDb.getRatingForTimeEntry(
-            testTimeEntryId,
-            catalogId: any(named: 'catalogId'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockDb.journalEntityById(testTimeEntryId),
-        ).thenAnswer((_) async => timeEntry);
-        when(
-          () => mockPersistence.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: timeEntryCategoryId,
-            uuidV5Input: any(named: 'uuidV5Input'),
-          ),
-        ).thenAnswer((_) async => metadataWithCategory);
-        when(
-          () => mockPersistence.createDbEntity(
-            any(),
-            shouldAddGeolocation: false,
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockVectorClock.getNextVectorClock(),
-        ).thenAnswer((_) async => testVectorClock);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
-        when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
+        stubCreateFlow(
+          timeEntry: timeEntry,
+          createMetadataResult: metadataWithCategory,
+        );
 
         final result = await repository.createOrUpdateRating(
           targetId: testTimeEntryId,
@@ -540,35 +499,7 @@ void main() {
 
     group('link creation', () {
       test('creates RatingLink with correct from/to IDs', () async {
-        when(
-          () => mockDb.getRatingForTimeEntry(
-            testTimeEntryId,
-            catalogId: any(named: 'catalogId'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockDb.journalEntityById(testTimeEntryId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockPersistence.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-            uuidV5Input: any(named: 'uuidV5Input'),
-          ),
-        ).thenAnswer((_) async => testMetadata);
-        when(
-          () => mockPersistence.createDbEntity(
-            any(),
-            shouldAddGeolocation: false,
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockVectorClock.getNextVectorClock(),
-        ).thenAnswer((_) async => testVectorClock);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
-        when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
+        stubCreateFlow();
 
         await repository.createOrUpdateRating(
           targetId: testTimeEntryId,
@@ -588,35 +519,7 @@ void main() {
       });
 
       test('enqueues sync message for link', () async {
-        when(
-          () => mockDb.getRatingForTimeEntry(
-            testTimeEntryId,
-            catalogId: any(named: 'catalogId'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockDb.journalEntityById(testTimeEntryId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockPersistence.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-            uuidV5Input: any(named: 'uuidV5Input'),
-          ),
-        ).thenAnswer((_) async => testMetadata);
-        when(
-          () => mockPersistence.createDbEntity(
-            any(),
-            shouldAddGeolocation: false,
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockVectorClock.getNextVectorClock(),
-        ).thenAnswer((_) async => testVectorClock);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
-        when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
+        stubCreateFlow();
 
         await repository.createOrUpdateRating(
           targetId: testTimeEntryId,
@@ -668,40 +571,8 @@ void main() {
           ..registerSingleton<DomainLogger>(mockDomainLogger);
       });
 
-      Future<void> stubCreateRatingFlow() async {
-        when(
-          () => mockDb.getRatingForTimeEntry(
-            testTimeEntryId,
-            catalogId: any(named: 'catalogId'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockDb.journalEntityById(testTimeEntryId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockPersistence.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-            uuidV5Input: any(named: 'uuidV5Input'),
-          ),
-        ).thenAnswer((_) async => testMetadata);
-        when(
-          () => mockPersistence.createDbEntity(
-            any(),
-            shouldAddGeolocation: false,
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockVectorClock.getNextVectorClock(),
-        ).thenAnswer((_) async => testVectorClock);
-        when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
-        when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
-      }
-
       test('records the new rating link sequence on create', () async {
-        await stubCreateRatingFlow();
+        stubCreateFlow();
 
         await repository.createOrUpdateRating(
           targetId: testTimeEntryId,
@@ -719,7 +590,7 @@ void main() {
       test(
         'sequence-record failure is swallowed and routed through DomainLogger',
         () async {
-          await stubCreateRatingFlow();
+          stubCreateFlow();
           when(
             () => mockSequenceLog.recordSentEntryLink(
               linkId: any(named: 'linkId'),
@@ -756,63 +627,11 @@ void main() {
         registerFallbackValue(testMetadata);
       });
 
-      Future<void> stubBaseCreateFlow({
-        Future<int> Function()? upsertResult,
-      }) async {
-        when(
-          () => mockDb.getRatingForTimeEntry(
-            testTimeEntryId,
-            catalogId: any(named: 'catalogId'),
-          ),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockDb.journalEntityById(testTimeEntryId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockPersistence.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-            uuidV5Input: any(named: 'uuidV5Input'),
-          ),
-        ).thenAnswer((_) async => testMetadata);
-        when(
-          () => mockPersistence.updateMetadata(
-            any(),
-            deletedAt: any(named: 'deletedAt'),
-          ),
-        ).thenAnswer((invocation) async {
-          final meta = invocation.positionalArguments.first as Metadata;
-          return meta.copyWith(
-            deletedAt: invocation.namedArguments[#deletedAt] as DateTime?,
-          );
-        });
-        when(
-          () => mockPersistence.createDbEntity(
-            any(),
-            shouldAddGeolocation: false,
-          ),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockPersistence.updateDbEntity(any()),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockVectorClock.getNextVectorClock(),
-        ).thenAnswer((_) async => testVectorClock);
-        when(() => mockNotifications.notify(any())).thenReturn(null);
-        when(() => mockOutbox.enqueueMessage(any())).thenAnswer((_) async {});
-        if (upsertResult != null) {
-          when(() => mockDb.upsertEntryLink(any())).thenAnswer(
-            (_) => upsertResult(),
-          );
-        }
-      }
-
       test(
         'soft-deletes the orphaned rating entity and logs when '
         '_createRatingLink throws',
         () async {
-          await stubBaseCreateFlow();
+          stubCreateFlow(stubLink: false, stubUpdatePaths: true);
           when(
             () => mockDb.upsertEntryLink(any()),
           ).thenThrow(StateError('boom from link upsert'));
@@ -846,7 +665,7 @@ void main() {
         '_softDeleteEntity logs and swallows when the compensating '
         'updateDbEntity itself throws',
         () async {
-          await stubBaseCreateFlow();
+          stubCreateFlow(stubLink: false, stubUpdatePaths: true);
           when(
             () => mockDb.upsertEntryLink(any()),
           ).thenThrow(StateError('boom from link upsert'));
@@ -900,7 +719,7 @@ void main() {
             ..registerSingleton<SyncSequenceLogService>(mockSequenceLog)
             ..registerSingleton<DomainLogger>(mockDomainLogger);
 
-          await stubBaseCreateFlow();
+          stubCreateFlow(stubLink: false, stubUpdatePaths: true);
           when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 1);
           when(
             () => mockOutbox.enqueueMessage(any()),
@@ -934,7 +753,7 @@ void main() {
         'rows so the reserved VC counter is released through the scope and '
         'no sync message is enqueued',
         () async {
-          await stubBaseCreateFlow();
+          stubCreateFlow(stubLink: false, stubUpdatePaths: true);
           when(() => mockDb.upsertEntryLink(any())).thenAnswer((_) async => 0);
 
           final result = await repository.createOrUpdateRating(

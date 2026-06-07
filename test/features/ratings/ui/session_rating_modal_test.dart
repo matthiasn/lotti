@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
+import 'package:lotti/features/ratings/data/rating_catalogs.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/ratings/ui/session_rating_modal.dart';
 import 'package:mocktail/mocktail.dart';
@@ -48,6 +49,52 @@ void main() {
   }
 
   group('RatingModal', () {
+    /// Builds the standard fully-rated existing rating and stubs the lookup;
+    /// when [stubSubmit] is true also stubs createOrUpdateRating to return it
+    /// ([submitResult] overrides that, e.g. null for the error-toast test).
+    RatingEntry stubPrePopulatedRating({
+      String? note,
+      bool stubSubmit = false,
+      RatingEntry? Function()? submitResult,
+    }) {
+      final existingRating = RatingEntry(
+        meta: Metadata(
+          id: 'rating-1',
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 15),
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+        ),
+        data: RatingData(
+          targetId: testTimeEntryId,
+          dimensions: const [
+            RatingDimension(key: 'productivity', value: 0.7),
+            RatingDimension(key: 'energy', value: 0.5),
+            RatingDimension(key: 'focus', value: 0.9),
+            RatingDimension(key: 'challenge_skill', value: 0.5),
+          ],
+          note: note,
+        ),
+      );
+
+      when(
+        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
+      ).thenAnswer((_) async => existingRating);
+      if (stubSubmit || submitResult != null) {
+        when(
+          () => mockRepository.createOrUpdateRating(
+            targetId: any(named: 'targetId'),
+            dimensions: any(named: 'dimensions'),
+            catalogId: any(named: 'catalogId'),
+            note: any(named: 'note'),
+          ),
+        ).thenAnswer(
+          (_) async => submitResult != null ? submitResult() : existingRating,
+        );
+      }
+      return existingRating;
+    }
+
     testWidgets('renders title', (tester) async {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
@@ -117,30 +164,7 @@ void main() {
     });
 
     testWidgets('pre-populates from existing rating', (tester) async {
-      final existingRating = RatingEntry(
-        meta: Metadata(
-          id: 'rating-1',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          dateFrom: DateTime(2024, 3, 15),
-          dateTo: DateTime(2024, 3, 15),
-        ),
-        data: const RatingData(
-          targetId: testTimeEntryId,
-          dimensions: [
-            RatingDimension(key: 'productivity', value: 0.7),
-            RatingDimension(key: 'energy', value: 0.5),
-            RatingDimension(key: 'focus', value: 0.9),
-            RatingDimension(key: 'challenge_skill', value: 0.5),
-          ],
-          note: 'Previous note',
-        ),
-      );
-
-      when(
-        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
-      ).thenAnswer((_) async => existingRating);
-
+      stubPrePopulatedRating(note: 'Previous note');
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
@@ -190,37 +214,7 @@ void main() {
     testWidgets('submit calls repository when all dimensions set', (
       tester,
     ) async {
-      final existingRating = RatingEntry(
-        meta: Metadata(
-          id: 'rating-1',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          dateFrom: DateTime(2024, 3, 15),
-          dateTo: DateTime(2024, 3, 15),
-        ),
-        data: const RatingData(
-          targetId: testTimeEntryId,
-          dimensions: [
-            RatingDimension(key: 'productivity', value: 0.7),
-            RatingDimension(key: 'energy', value: 0.5),
-            RatingDimension(key: 'focus', value: 0.9),
-            RatingDimension(key: 'challenge_skill', value: 0.5),
-          ],
-        ),
-      );
-
-      when(
-        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
-      ).thenAnswer((_) async => existingRating);
-
-      when(
-        () => mockRepository.createOrUpdateRating(
-          targetId: any(named: 'targetId'),
-          dimensions: any(named: 'dimensions'),
-          catalogId: any(named: 'catalogId'),
-          note: any(named: 'note'),
-        ),
-      ).thenAnswer((_) async => existingRating);
+      stubPrePopulatedRating(stubSubmit: true);
 
       await tester.pumpWidget(buildSubject());
       await tester.pump();
@@ -234,7 +228,7 @@ void main() {
       // Tap Save
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));
       await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
 
       verify(
         () => mockRepository.createOrUpdateRating(
@@ -248,37 +242,7 @@ void main() {
     testWidgets('shows an error toast when submit returns null', (
       tester,
     ) async {
-      final existingRating = RatingEntry(
-        meta: Metadata(
-          id: 'rating-1',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          dateFrom: DateTime(2024, 3, 15),
-          dateTo: DateTime(2024, 3, 15),
-        ),
-        data: const RatingData(
-          targetId: testTimeEntryId,
-          dimensions: [
-            RatingDimension(key: 'productivity', value: 0.7),
-            RatingDimension(key: 'energy', value: 0.5),
-            RatingDimension(key: 'focus', value: 0.9),
-            RatingDimension(key: 'challenge_skill', value: 0.5),
-          ],
-        ),
-      );
-
-      when(
-        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
-      ).thenAnswer((_) async => existingRating);
-
-      when(
-        () => mockRepository.createOrUpdateRating(
-          targetId: any(named: 'targetId'),
-          dimensions: any(named: 'dimensions'),
-          catalogId: any(named: 'catalogId'),
-          note: any(named: 'note'),
-        ),
-      ).thenAnswer((_) async => null);
+      stubPrePopulatedRating(submitResult: () => null);
 
       await tester.pumpWidget(buildSubject());
       await tester.pump();
@@ -297,37 +261,7 @@ void main() {
     testWidgets('submitted dimensions contain snapshotted question metadata', (
       tester,
     ) async {
-      final existingRating = RatingEntry(
-        meta: Metadata(
-          id: 'rating-1',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          dateFrom: DateTime(2024, 3, 15),
-          dateTo: DateTime(2024, 3, 15),
-        ),
-        data: const RatingData(
-          targetId: testTimeEntryId,
-          dimensions: [
-            RatingDimension(key: 'productivity', value: 0.7),
-            RatingDimension(key: 'energy', value: 0.5),
-            RatingDimension(key: 'focus', value: 0.9),
-            RatingDimension(key: 'challenge_skill', value: 0.5),
-          ],
-        ),
-      );
-
-      when(
-        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
-      ).thenAnswer((_) async => existingRating);
-
-      when(
-        () => mockRepository.createOrUpdateRating(
-          targetId: any(named: 'targetId'),
-          dimensions: any(named: 'dimensions'),
-          catalogId: any(named: 'catalogId'),
-          note: any(named: 'note'),
-        ),
-      ).thenAnswer((_) async => existingRating);
+      stubPrePopulatedRating(stubSubmit: true);
 
       await tester.pumpWidget(buildSubject());
       await tester.pump();
@@ -335,7 +269,7 @@ void main() {
       // Tap Save
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));
       await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
 
       // Capture the dimensions passed to the repository
       final captured =
@@ -429,37 +363,7 @@ void main() {
     testWidgets('submit passes trimmed non-empty note to repository', (
       tester,
     ) async {
-      final existingRating = RatingEntry(
-        meta: Metadata(
-          id: 'rating-1',
-          createdAt: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-          dateFrom: DateTime(2024, 3, 15),
-          dateTo: DateTime(2024, 3, 15),
-        ),
-        data: const RatingData(
-          targetId: testTimeEntryId,
-          dimensions: [
-            RatingDimension(key: 'productivity', value: 0.7),
-            RatingDimension(key: 'energy', value: 0.5),
-            RatingDimension(key: 'focus', value: 0.9),
-            RatingDimension(key: 'challenge_skill', value: 0.5),
-          ],
-        ),
-      );
-
-      when(
-        () => mockRepository.getRatingForTargetEntry(testTimeEntryId),
-      ).thenAnswer((_) async => existingRating);
-
-      when(
-        () => mockRepository.createOrUpdateRating(
-          targetId: any(named: 'targetId'),
-          dimensions: any(named: 'dimensions'),
-          catalogId: any(named: 'catalogId'),
-          note: any(named: 'note'),
-        ),
-      ).thenAnswer((_) async => existingRating);
+      stubPrePopulatedRating(stubSubmit: true);
 
       await tester.pumpWidget(buildSubject());
       await tester.pump();
@@ -470,7 +374,7 @@ void main() {
 
       await tester.tap(find.widgetWithText(FilledButton, 'Save'));
       await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
+      await tester.pump();
 
       final capturedNote =
           verify(
@@ -524,6 +428,34 @@ void main() {
       expect(find.byType(RatingModal), findsNothing);
       expect(find.text('open'), findsOneWidget);
     });
+  });
+
+  group('RatingModal empty catalog', () {
+    testWidgets(
+      'Save stays disabled for a registered catalog with zero questions',
+      (tester) async {
+        // _canSubmit guards the empty catalog explicitly: catalog.every()
+        // over zero questions is vacuously true, so without the guard an
+        // empty catalog would allow submitting an empty rating.
+        ratingCatalogRegistry['empty_catalog'] = (_) => [];
+        addTearDown(() => ratingCatalogRegistry.remove('empty_catalog'));
+
+        when(
+          () => mockRepository.getRatingForTargetEntry(
+            testTimeEntryId,
+            catalogId: 'empty_catalog',
+          ),
+        ).thenAnswer((_) async => null);
+
+        await tester.pumpWidget(buildSubject(catalogId: 'empty_catalog'));
+        await tester.pump();
+
+        final saveButton = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'Save'),
+        );
+        expect(saveButton.onPressed, isNull);
+      },
+    );
   });
 
   group('RatingModal unknown catalog', () {

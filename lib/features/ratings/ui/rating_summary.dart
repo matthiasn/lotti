@@ -85,10 +85,10 @@ class RatingSummary extends StatelessWidget {
     required AppLocalizations messages,
   }) {
     // Resolve label via fallback chain
-    final label = _resolveLabel(dim, catalog);
+    final label = resolveRatingLabel(dim, catalog);
 
     // Resolve inputType: stored first, then catalog lookup
-    final inputType = _resolveInputType(dim, catalog);
+    final inputType = resolveRatingInputType(dim, catalog);
 
     // Segmented: display as categorical text
     if (inputType == 'segmented') {
@@ -134,7 +134,8 @@ class RatingSummary extends StatelessWidget {
 
 /// Resolves the inputType for a dimension using the fallback chain:
 /// stored inputType → catalog lookup → null (defaults to progress bar).
-String? _resolveInputType(
+@visibleForTesting
+String? resolveRatingInputType(
   RatingDimension dim,
   List<RatingQuestion>? catalog,
 ) {
@@ -153,7 +154,8 @@ String? _resolveInputType(
 
 /// Resolves the display label for a dimension using the fallback chain:
 /// stored question → catalog lookup → dimension key.
-String _resolveLabel(
+@visibleForTesting
+String resolveRatingLabel(
   RatingDimension dim,
   List<RatingQuestion>? catalog,
 ) {
