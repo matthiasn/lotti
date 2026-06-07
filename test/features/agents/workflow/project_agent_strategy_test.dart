@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
@@ -780,4 +781,51 @@ void main() {
       });
     });
   });
+  // ---------------------------------------------------------------------------
+  // Glados property for the JSON/markdown argument parser (via debug seam):
+  // both the direct and the markdown-fenced paths round-trip any object.
+  // ---------------------------------------------------------------------------
+  group('debugParseToolArguments — properties', () {
+    glados.Glados(
+      glados.any.projectToolArgs,
+      // ignore: avoid_redundant_argument_values
+      glados.ExploreConfig(numRuns: 100),
+    ).test('direct and markdown-fenced JSON both round-trip', (args) {
+      final encoded = jsonEncode(args);
+
+      expect(strategy.debugParseToolArguments(encoded), args);
+      expect(
+        strategy.debugParseToolArguments('```json\n$encoded\n```'),
+        args,
+        reason: 'fenced: $encoded',
+      );
+      expect(
+        strategy.debugParseToolArguments('```\n$encoded\n```'),
+        args,
+        reason: 'plain fence: $encoded',
+      );
+    }, tags: 'glados');
+  });
+}
+
+/// Generates small JSON-object trees from primitive seeds.
+extension _AnyProjectToolArgs on glados.Any {
+  glados.Generator<Map<String, dynamic>> get projectToolArgs =>
+      list(
+        glados.CombinableAny(this).combine2(
+          glados.IntAnys(this).intInRange(0, 5),
+          glados.IntAnys(this).intInRange(0, 1000),
+          (int kind, int seed) => switch (kind) {
+            0 => 'value-$seed',
+            1 => seed,
+            2 => seed.isEven,
+            3 => null,
+            _ => <String, dynamic>{'nested-$seed': seed},
+          },
+        ),
+      ).map(
+        (values) => <String, dynamic>{
+          for (final (i, v) in values.indexed) 'key$i': v,
+        },
+      );
 }

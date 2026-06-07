@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
+import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -341,6 +342,11 @@ class ProjectAgentStrategy extends ConversationStrategy {
   }
 
   // ── JSON argument parsing ──────────────────────────────────────────────────
+
+  /// Test seam for the JSON/markdown argument parser — pure, no state.
+  @visibleForTesting
+  Map<String, dynamic> debugParseToolArguments(String raw) =>
+      _parseToolArguments(raw);
 
   Map<String, dynamic> _parseToolArguments(String raw) {
     final trimmed = raw.trim();

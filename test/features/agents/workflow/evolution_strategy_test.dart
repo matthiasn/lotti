@@ -2,12 +2,30 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genui/genui.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+/// Shared GenUI bench: catalog-backed bridge + strategy + initialized
+/// conversation manager — previously duplicated by three groups' setUps.
+({GenUiBridge bridge, EvolutionStrategy strategy, ConversationManager manager})
+buildGenUiBench({
+  required String conversationId,
+  EvolutionStrategy Function(GenUiBridge bridge)? strategyBuilder,
+}) {
+  final catalog = buildEvolutionCatalog();
+  final processor = SurfaceController(catalogs: [catalog]);
+  final bridge = GenUiBridge(processor: processor);
+  final strategy =
+      strategyBuilder?.call(bridge) ?? EvolutionStrategy(genUiBridge: bridge);
+  final manager = ConversationManager(conversationId: conversationId)
+    ..initialize(systemMessage: 'You are an evolution agent.');
+  return (bridge: bridge, strategy: strategy, manager: manager);
+}
 
 void main() {
   late EvolutionStrategy strategy;
@@ -374,12 +392,10 @@ void main() {
     late ConversationManager bridgeManager;
 
     setUp(() {
-      final catalog = buildEvolutionCatalog();
-      final processor = SurfaceController(catalogs: [catalog]);
-      bridge = GenUiBridge(processor: processor);
-      strategyWithBridge = EvolutionStrategy(genUiBridge: bridge);
-      bridgeManager = ConversationManager(conversationId: 'test-auto')
-        ..initialize(systemMessage: 'You are an evolution agent.');
+      final bench = buildGenUiBench(conversationId: 'test-auto');
+      bridge = bench.bridge;
+      strategyWithBridge = bench.strategy;
+      bridgeManager = bench.manager;
     });
 
     test('propose_directives automatically creates a GenUI surface', () async {
@@ -434,12 +450,10 @@ void main() {
     late ConversationManager bridgeManager;
 
     setUp(() {
-      final catalog = buildEvolutionCatalog();
-      final processor = SurfaceController(catalogs: [catalog]);
-      bridge = GenUiBridge(processor: processor);
-      strategyWithBridge = EvolutionStrategy(genUiBridge: bridge);
-      bridgeManager = ConversationManager(conversationId: 'test-bridge')
-        ..initialize(systemMessage: 'You are an evolution agent.');
+      final bench = buildGenUiBench(conversationId: 'test-bridge');
+      bridge = bench.bridge;
+      strategyWithBridge = bench.strategy;
+      bridgeManager = bench.manager;
     });
 
     test('delegates render_surface to GenUiBridge', () async {
@@ -804,18 +818,19 @@ void main() {
     late ConversationManager bridgeManager;
 
     setUp(() {
-      final catalog = buildEvolutionCatalog();
-      final processor = SurfaceController(catalogs: [catalog]);
-      bridge = GenUiBridge(processor: processor);
-      strategyWithBridge = EvolutionStrategy(
-        genUiBridge: bridge,
-        currentVoiceDirective: 'Old voice.',
-        currentToneBounds: 'Old bounds.',
-        currentCoachingStyle: 'Old coaching.',
-        currentAntiSycophancyPolicy: 'Old policy.',
+      final bench = buildGenUiBench(
+        conversationId: 'test-soul-auto',
+        strategyBuilder: (bridge) => EvolutionStrategy(
+          genUiBridge: bridge,
+          currentVoiceDirective: 'Old voice.',
+          currentToneBounds: 'Old bounds.',
+          currentCoachingStyle: 'Old coaching.',
+          currentAntiSycophancyPolicy: 'Old policy.',
+        ),
       );
-      bridgeManager = ConversationManager(conversationId: 'test-soul-auto')
-        ..initialize(systemMessage: 'You are an evolution agent.');
+      bridge = bench.bridge;
+      strategyWithBridge = bench.strategy;
+      bridgeManager = bench.manager;
     });
 
     test('creates a GenUI surface with current values', () async {
@@ -900,5 +915,41 @@ void main() {
       expect(strat.latestSoulProposal, isNotNull);
       expect(strat.latestSoulProposal!.voiceDirective, 'Some voice.');
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Glados property for the defensive string-arg reader (via debug seam).
+  // ---------------------------------------------------------------------------
+  group('debugReadStringArg — properties', () {
+    glados.Glados(
+      glados.IntAnys(glados.any).intInRange(0, 7),
+      glados.ExploreConfig(numRuns: 80),
+    ).test(
+      'returns the value only for String args; everything else → ""',
+      (
+        kind,
+      ) {
+        final (Object? value, bool isString) = switch (kind) {
+          0 => ('hello', true),
+          1 => ('', true),
+          2 => (42, false),
+          3 => (true, false),
+          4 => (const ['list'], false),
+          5 => (const {'nested': 1}, false),
+          6 => (null, false),
+          _ => (3.14, false),
+        };
+        final args = <String, dynamic>{'key': value};
+
+        expect(
+          EvolutionStrategy.debugReadStringArg(args, 'key'),
+          isString ? value : '',
+          reason: '$value',
+        );
+        // Missing keys are also the empty-string fallback.
+        expect(EvolutionStrategy.debugReadStringArg(args, 'absent'), '');
+      },
+      tags: 'glados',
+    );
   });
 }

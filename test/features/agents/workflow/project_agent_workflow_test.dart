@@ -13,14 +13,17 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
+import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
+import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -97,6 +100,30 @@ void main() {
           )
           as AiConfigModel;
 
+  /// Builds a [ProjectAgentWorkflow] wired to the suite's mocks, overriding
+  /// only the collaborators a test swaps in — previously 13 copies of the
+  /// 8-parameter construction.
+  ProjectAgentWorkflow buildWorkflow({
+    ConversationRepository? conversationRepository,
+    AgentInputCaptureService? inputCaptureService,
+    SoulDocumentService? soulDocumentService,
+    DomainLogger? domainLogger,
+  }) {
+    return ProjectAgentWorkflow(
+      agentRepository: mockAgentRepository,
+      conversationRepository:
+          conversationRepository ?? mockConversationRepository,
+      aiConfigRepository: mockAiConfigRepository,
+      cloudInferenceRepository: mockCloudInferenceRepository,
+      journalRepository: mockJournalRepository,
+      syncService: mockSyncService,
+      templateService: mockTemplateService,
+      inputCaptureService: inputCaptureService,
+      soulDocumentService: soulDocumentService,
+      domainLogger: domainLogger,
+    );
+  }
+
   setUp(() async {
     mockAgentRepository = MockAgentRepository();
     mockSyncService = MockAgentSyncService();
@@ -163,15 +190,7 @@ void main() {
     ).thenAnswer((_) async => {});
     when(() => mockConversationManager.messages).thenReturn([]);
 
-    workflow = ProjectAgentWorkflow(
-      agentRepository: mockAgentRepository,
-      conversationRepository: mockConversationRepository,
-      aiConfigRepository: mockAiConfigRepository,
-      cloudInferenceRepository: mockCloudInferenceRepository,
-      journalRepository: mockJournalRepository,
-      syncService: mockSyncService,
-      templateService: mockTemplateService,
-    );
+    workflow = buildWorkflow();
   });
 
   tearDown(tearDownTestGetIt);
@@ -368,14 +387,7 @@ void main() {
           ).thenAnswer((_) async => [note]);
 
           final recorder = _RecordingCaptureService();
-          final capturingWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
-            conversationRepository: mockConversationRepository,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
+          final capturingWorkflow = buildWorkflow(
             inputCaptureService: recorder,
           );
 
@@ -406,14 +418,7 @@ void main() {
           ).thenThrow(StateError('journal unavailable'));
 
           final recorder = _RecordingCaptureService();
-          final capturingWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
-            conversationRepository: mockConversationRepository,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
+          final capturingWorkflow = buildWorkflow(
             inputCaptureService: recorder,
           );
 
@@ -524,14 +529,8 @@ void main() {
                       return null;
                     };
 
-          final compactedWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
+          final compactedWorkflow = buildWorkflow(
             conversationRepository: sendCapturingRepo,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
             inputCaptureService: _RecordingCaptureService(),
           );
 
@@ -637,6 +636,9 @@ void main() {
           final updatedState = captured.single as AgentStateEntity;
           expect(updatedState.scheduledWakeAt, DateTime(2026, 3, 21, 6));
           expect(updatedState.slots.lastDailyWakeAt, isNull);
+          // The dormant skip is a successful no-op wake — the failure
+          // streak must reset alongside the reschedule.
+          expect(updatedState.consecutiveFailureCount, 0);
           expect(mockConversationRepository.deletedConversationIds, isEmpty);
           // The dormant skip still advances lastWakeAt → emits wakeCompleted
           // only (no daily-wake marker, since the digest didn't run).
@@ -673,14 +675,7 @@ void main() {
           ).thenAnswer((_) async => makeTestReport());
 
           final recorder = _RecordingCaptureService();
-          final capturingWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
-            conversationRepository: mockConversationRepository,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
+          final capturingWorkflow = buildWorkflow(
             inputCaptureService: recorder,
           );
 
@@ -841,14 +836,8 @@ void main() {
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
-          final soulWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
+          final soulWorkflow = buildWorkflow(
             conversationRepository: capturingRepo,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
             soulDocumentService: mockSoulService,
           );
 
@@ -914,14 +903,8 @@ void main() {
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
-          final soulWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
+          final soulWorkflow = buildWorkflow(
             conversationRepository: capturingRepo,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
             soulDocumentService: mockSoulService,
           );
 
@@ -954,14 +937,7 @@ void main() {
             ),
           ).thenThrow(Exception('Soul DB error'));
 
-          final soulWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
-            conversationRepository: mockConversationRepository,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
+          final soulWorkflow = buildWorkflow(
             soulDocumentService: mockSoulService,
           );
 
@@ -1019,14 +995,7 @@ void main() {
               }) async =>
                   const InferenceUsage(inputTokens: 40, outputTokens: 20);
 
-          final soulWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
-            conversationRepository: mockConversationRepository,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
+          final soulWorkflow = buildWorkflow(
             soulDocumentService: mockSoulService,
           );
 
@@ -1360,6 +1329,57 @@ void main() {
 
         expect(capturedMessage, contains('(no content)'));
       });
+
+      test(
+        'renders placeholder when the batch payload lookup throws',
+        () async {
+          // _resolveObservationPayloads swallows getEntitiesByIds failures
+          // and returns an empty map — the wake proceeds and observations
+          // render as '(no content)' instead of aborting.
+          final observation = makeTestMessage(
+            id: 'obs-msg-3',
+            kind: AgentMessageKind.observation,
+            contentEntryId: 'payload-3',
+          );
+
+          when(
+            () => mockAgentRepository.getMessagesByKind(
+              agentId,
+              AgentMessageKind.observation,
+            ),
+          ).thenAnswer((_) async => [observation]);
+          when(
+            () => mockAgentRepository.getEntitiesByIds(any()),
+          ).thenThrow(StateError('payload batch lookup failed'));
+
+          String? capturedMessage;
+          mockConversationRepository.sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                capturedMessage = message;
+                return null;
+              };
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          );
+
+          expect(result.success, isTrue);
+          expect(capturedMessage, contains('(no content)'));
+        },
+      );
 
       test('persists deferred items as change set', () async {
         mockConversationRepository.sendMessageDelegate =
@@ -2854,14 +2874,7 @@ void main() {
             ),
           ).thenReturn(null);
 
-          final loggingWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
-            conversationRepository: mockConversationRepository,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
+          final loggingWorkflow = buildWorkflow(
             domainLogger: mockDomainLogger,
           );
 
@@ -2917,14 +2930,8 @@ void main() {
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
-          final capturingWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
+          final capturingWorkflow = buildWorkflow(
             conversationRepository: capturingRepo,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
           );
 
           await capturingWorkflow.execute(
@@ -2966,14 +2973,8 @@ void main() {
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
-          final capturingWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
+          final capturingWorkflow = buildWorkflow(
             conversationRepository: capturingRepo,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
           );
 
           await capturingWorkflow.execute(
@@ -3018,14 +3019,8 @@ void main() {
             mockConversationManager,
             onSystemMessage: (msg) => capturedSystemMessage = msg,
           );
-          final capturingWorkflow = ProjectAgentWorkflow(
-            agentRepository: mockAgentRepository,
+          final capturingWorkflow = buildWorkflow(
             conversationRepository: capturingRepo,
-            aiConfigRepository: mockAiConfigRepository,
-            cloudInferenceRepository: mockCloudInferenceRepository,
-            journalRepository: mockJournalRepository,
-            syncService: mockSyncService,
-            templateService: mockTemplateService,
           );
 
           await capturingWorkflow.execute(
