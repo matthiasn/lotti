@@ -50,6 +50,54 @@ extension _AnyEstimateTokens on Any {
   );
 }
 
+/// Input families paired with the formula their path must produce. Covers
+/// all three `estimateTokens` paths plus the two exclusivity edges (a short
+/// single ASCII token, and CJK content that is multi-word and therefore must
+/// NOT take the rune-count path).
+enum _EstimateTokensOracleKind {
+  multiWord,
+  cjkSingleToken,
+  cjkMultiWord,
+  shortSingleToken,
+  longNonCjkToken,
+}
+
+extension _AnyEstimateTokensOracle on Any {
+  Generator<(String, int)> get estimateTokensCase =>
+      CombinableAny(this).combine2(
+        AnyUtils(this).choose(_EstimateTokensOracleKind.values),
+        intInRange(2, 30),
+        (kind, countFactor) {
+          switch (kind) {
+            case _EstimateTokensOracleKind.multiWord:
+              final input = List.generate(
+                countFactor,
+                (i) => 'word$i',
+              ).join(' ');
+              return (input, (countFactor * kTokensPerWord).ceil());
+            case _EstimateTokensOracleKind.cjkSingleToken:
+              // Whitespace-free CJK → rune count.
+              return ('漢' * countFactor, countFactor);
+            case _EstimateTokensOracleKind.cjkMultiWord:
+              // CJK content WITH spaces is multi-word → word path, not
+              // rune count (path exclusivity).
+              final input = List.generate(
+                countFactor,
+                (_) => '漢字',
+              ).join(' ');
+              return (input, (countFactor * kTokensPerWord).ceil());
+            case _EstimateTokensOracleKind.shortSingleToken:
+              // Single ASCII token below the long-token threshold → word
+              // path with one word.
+              return ('a' * countFactor, (1 * kTokensPerWord).ceil());
+            case _EstimateTokensOracleKind.longNonCjkToken:
+              final length = kChunkTargetTokens * 4 + countFactor * 10;
+              return ('a' * length, (length / 4).ceil());
+          }
+        },
+      );
+}
+
 class _GeneratedChunkText {
   const _GeneratedChunkText({
     required this.wordCounts,
@@ -633,6 +681,25 @@ void main() {
             result,
             greaterThan(0),
             reason: 'estimateTokens("$input") must be > 0 for non-empty input',
+          );
+        },
+        tags: 'glados',
+      );
+
+      Glados(
+        any.estimateTokensCase,
+        ExploreConfig(numRuns: 150),
+      ).test(
+        'each input family is scored by exactly its own path formula '
+        '(paths are mutually exclusive and collectively exhaustive)',
+        (testCase) {
+          final (input, expected) = testCase;
+          expect(
+            TextChunker.estimateTokens(input),
+            expected,
+            reason:
+                'estimateTokens for ${input.length}-char input must follow '
+                'the family formula',
           );
         },
         tags: 'glados',
