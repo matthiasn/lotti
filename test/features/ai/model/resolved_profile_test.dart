@@ -1,7 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
 
 import '../../agents/test_utils.dart';
+import '../test_utils.dart';
 
 void main() {
   group('ResolvedProfile', () {
@@ -129,6 +131,57 @@ void main() {
 
       expect(profile.effectiveHighEndModelId, 'flash');
       expect(profile.effectiveHighEndProvider, provider1);
+    });
+
+    test('skillAssignments participate in equality', () {
+      ResolvedProfile withSkills(List<SkillAssignment> skills) =>
+          ResolvedProfile(
+            thinkingModelId: 'thinking',
+            thinkingProvider: provider1,
+            skillAssignments: skills,
+          );
+
+      const skillA = SkillAssignment(skillId: 'skill-a', automate: true);
+      const skillB = SkillAssignment(skillId: 'skill-b');
+
+      // Equal lists (by value) keep profiles equal.
+      expect(
+        withSkills(const [skillA, skillB]),
+        equals(withSkills(const [skillA, skillB])),
+      );
+      // Differing content, order, or length breaks equality.
+      expect(
+        withSkills(const [skillA, skillB]),
+        isNot(equals(withSkills(const [skillB, skillA]))),
+      );
+      expect(
+        withSkills(const [skillA]),
+        isNot(equals(withSkills(const [skillA, skillB]))),
+      );
+    });
+
+    test('optional resolved model slots participate in equality', () {
+      final model = AiTestDataFactory.createTestModel(id: 'm-1');
+      ResolvedProfile withModels({
+        bool thinking = false,
+        bool imageRecognition = false,
+        bool transcription = false,
+        bool imageGeneration = false,
+      }) => ResolvedProfile(
+        thinkingModelId: 'thinking',
+        thinkingProvider: provider1,
+        thinkingModel: thinking ? model : null,
+        imageRecognitionModel: imageRecognition ? model : null,
+        transcriptionModel: transcription ? model : null,
+        imageGenerationModel: imageGeneration ? model : null,
+      );
+
+      final base = withModels();
+      expect(withModels(), equals(base));
+      expect(withModels(thinking: true), isNot(equals(base)));
+      expect(withModels(imageRecognition: true), isNot(equals(base)));
+      expect(withModels(transcription: true), isNot(equals(base)));
+      expect(withModels(imageGeneration: true), isNot(equals(base)));
     });
 
     test('is not equal to a non-ResolvedProfile object', () {

@@ -21,6 +21,7 @@ void main() {
           InferenceProviderType.nebiusAiStudio: Icons.rocket_launch,
           InferenceProviderType.whisper: Icons.mic,
           InferenceProviderType.voxtral: Icons.graphic_eq,
+          InferenceProviderType.mlxAudio: Icons.memory_rounded,
         };
 
         for (final entry in icons.entries) {
@@ -30,6 +31,25 @@ void main() {
             reason: '${entry.key} should have icon ${entry.value}',
           );
         }
+      });
+
+      test('the icon table is exhaustive over the enum', () {
+        // Guards against new provider types silently missing a pinned icon.
+        final pinned = <InferenceProviderType>{
+          InferenceProviderType.alibaba,
+          InferenceProviderType.anthropic,
+          InferenceProviderType.openAi,
+          InferenceProviderType.gemini,
+          InferenceProviderType.mistral,
+          InferenceProviderType.openRouter,
+          InferenceProviderType.ollama,
+          InferenceProviderType.genericOpenAi,
+          InferenceProviderType.nebiusAiStudio,
+          InferenceProviderType.whisper,
+          InferenceProviderType.voxtral,
+          InferenceProviderType.mlxAudio,
+        };
+        expect(pinned, InferenceProviderType.values.toSet());
       });
 
       test('covers all provider types', () {
