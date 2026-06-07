@@ -1104,6 +1104,68 @@ void main() {
     });
   });
 
+  group('ProjectsFilter equality/hashCode — Glados properties', () {
+    // Rebuild a value with the same field contents but sets reconstructed in
+    // reversed insertion order, exercising the order-insensitive SetEquality.
+    ProjectsFilter reordered(ProjectsFilter f) => ProjectsFilter(
+      selectedStatusIds: Set<String>.from(
+        f.selectedStatusIds.toList().reversed,
+      ),
+      selectedCategoryIds: Set<String>.from(
+        f.selectedCategoryIds.toList().reversed,
+      ),
+      textQuery: f.textQuery,
+      searchMode: f.searchMode,
+    );
+
+    glados.Glados<ProjectsFilter>(
+      glados.any.projectsFilter,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'reflexive, and a field-reordered copy is symmetric & transitive',
+      (filter) {
+        // Reflexivity.
+        expect(filter, filter);
+        expect(filter.hashCode, filter.hashCode);
+
+        // Two independently reordered copies are all mutually equal, so we can
+        // exercise symmetry and transitivity on a genuinely-equal triple.
+        final b = reordered(filter);
+        final c = reordered(filter);
+
+        // Symmetry.
+        expect(filter == b, isTrue);
+        expect(b == filter, isTrue);
+
+        // Transitivity: a == b and b == c implies a == c.
+        expect(b == c, isTrue);
+        expect(filter == c, isTrue);
+
+        // Equal values must share a hashCode.
+        expect(b.hashCode, filter.hashCode);
+        expect(c.hashCode, filter.hashCode);
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2<ProjectsFilter, ProjectsFilter>(
+      glados.any.projectsFilter,
+      glados.any.projectsFilter,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'equality is symmetric and consistent with hashCode for any two filters',
+      (a, b) {
+        // == is symmetric regardless of whether the two filters are equal.
+        expect(a == b, b == a);
+        // Whenever two filters compare equal they must hash the same.
+        if (a == b) {
+          expect(a.hashCode, b.hashCode);
+        }
+      },
+      tags: 'glados',
+    );
+  });
+
   group('ProjectTaskRollupData.completionRatio — Glados properties', () {
     glados.Glados2<int, int>(
       glados.IntAnys(glados.any).intInRange(0, 1 << 20),

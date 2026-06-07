@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/projects/ui/widgets/project_mobile_detail_content.dart';
+import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
+import 'package:lotti/features/projects/widgetbook/project_list_detail_mock_data.dart';
 import 'package:lotti/features/projects/widgetbook/project_widgetbook.dart';
 
 import '../../../widget_test_utils.dart';
@@ -15,6 +17,17 @@ void main() {
       final component = buildProjectListDetailWidgetbookComponent();
       final useCase = component.useCases.firstWhere(
         (useCase) => useCase.name == 'Desktop',
+      );
+
+      // Derive the expected total-time label from the same mock data and
+      // formatter the widget uses, so this assertion tracks the mock data
+      // instead of a hardcoded string. Device Sync is the default selection.
+      final mockData = buildProjectListDetailMockData();
+      final deviceSync = mockData.projects.firstWhere(
+        (record) => record.project.data.title == 'Device Sync',
+      );
+      final expectedTotalTime = showcaseFormatDuration(
+        deviceSync.highlightedTasksTotalDuration,
       );
 
       expect(component.name, 'Project list & detail');
@@ -48,7 +61,11 @@ void main() {
       expect(find.text('3 projects'), findsOneWidget);
       expect(find.text('Health Score'), findsOneWidget);
       expect(find.text('Project Tasks'), findsOneWidget);
-      expect(find.text('11m 38s'), findsOneWidget);
+      expect(
+        find.text(expectedTotalTime),
+        findsOneWidget,
+        reason: "Device Sync's highlighted-tasks total duration label",
+      );
       expect(find.text('One-on-one Reviews'), findsNothing);
     });
 
