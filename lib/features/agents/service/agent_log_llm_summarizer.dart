@@ -146,8 +146,8 @@ class AgentLogLlmSummarizer {
     final buffer = StringBuffer();
     await for (final response in stream) {
       final choices = response.choices;
-      if (choices == null || choices.isEmpty) continue;
-      final content = choices.first.delta?.content;
+      if (choices.isEmpty) continue;
+      final content = choices.first.delta.content;
       if (content != null) buffer.write(content);
     }
     final text = buffer.toString().trim();

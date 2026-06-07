@@ -1022,6 +1022,35 @@ void main() {
     });
 
     test(
+      'generate without overrideClient surfaces the HTTP error and closes '
+      'the owned client',
+      () async {
+        // flutter_test's binding stubs all real HTTP with empty 400
+        // responses, so consuming the stream runs the owned-client wrapper
+        // to completion: the request fails, the error surfaces, and the
+        // finally block closes the internally allocated client.
+        final stream = repository.generate(
+          prompt,
+          model: model,
+          temperature: temperature,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
+
+        await expectLater(
+          stream.toList(),
+          throwsA(
+            isA<AiInferenceException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              400,
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
       'generateWithImages without overrideClient creates new AiInferenceClient',
       () {
         // Act - Don't provide overrideClient, so it creates its own

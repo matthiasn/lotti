@@ -209,15 +209,14 @@ void main() {
           geminiThinkingMode: any(named: 'geminiThinkingMode'),
         ),
       ).thenAnswer(
-        (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
-          const CreateChatCompletionStreamResponse(
+        (_) => Stream<AiStreamChunk>.fromIterable([
+          const AiStreamChunk(
             id: '1',
-            object: 'chat.completion.chunk',
             created: 0,
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: 'hi'),
+                delta: AiStreamDelta(content: 'hi'),
               ),
             ],
           ),
@@ -1104,14 +1103,13 @@ void main() {
         ),
       ).thenAnswer(
         (_) => Stream.value(
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: '1',
-            object: 'chat.completion.chunk',
             created: 0,
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   content: 'mistral default',
                 ),
               ),

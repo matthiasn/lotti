@@ -18,26 +18,25 @@ void main() {
 
   final provider = testInferenceProvider(apiKey: 'k-123');
 
-  Stream<AiStreamChunk> streamOf(List<String> parts) =>
-      Stream.fromIterable([
-        // An empty-choices chunk first — the collector must tolerate it.
-        const AiStreamChunk(
-          id: 'keepalive',
-          created: 0,
-          choices: [],
-        ),
-        for (final part in parts)
-          AiStreamChunk(
-            id: 'chunk',
-            created: 0,
-            choices: [
-              AiStreamChoice(
-                index: 0,
-                delta: AiStreamDelta(content: part),
-              ),
-            ],
+  Stream<AiStreamChunk> streamOf(List<String> parts) => Stream.fromIterable([
+    // An empty-choices chunk first — the collector must tolerate it.
+    const AiStreamChunk(
+      id: 'keepalive',
+      created: 0,
+      choices: [],
+    ),
+    for (final part in parts)
+      AiStreamChunk(
+        id: 'chunk',
+        created: 0,
+        choices: [
+          AiStreamChoice(
+            index: 0,
+            delta: AiStreamDelta(content: part),
           ),
-      ]);
+        ],
+      ),
+  ]);
 
   setUp(() {
     inference = MockCloudInferenceRepository();

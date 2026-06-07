@@ -560,8 +560,7 @@ void main() {
                       const AiToolCall(
                         id: 'report-call',
                         name: 'update_report',
-                        arguments:
-                            '{"oneLiner":"o","tldr":"t","content":"c"}',
+                        arguments: '{"oneLiner":"o","tldr":"t","content":"c"}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -706,8 +705,7 @@ void main() {
                       const AiToolCall(
                         id: 'report-call',
                         name: 'update_report',
-                        arguments:
-                            '{"oneLiner":"o","tldr":"t","content":"c"}',
+                        arguments: '{"oneLiner":"o","tldr":"t","content":"c"}',
                       ),
                     ],
                     manager: mockConversationManager,

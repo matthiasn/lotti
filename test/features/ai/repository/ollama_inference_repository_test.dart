@@ -2642,80 +2642,6 @@ void main() {
     );
   });
 
-  group('generateTextWithMessages – content encoding branches', () {
-    late OllamaInferenceRepository repo;
-    late MockHttpClient mockClient;
-
-    AiConfigInferenceProvider makeProvider() => AiConfigInferenceProvider(
-      id: 'test-provider',
-      name: 'Test',
-      baseUrl: 'http://localhost:11434',
-      apiKey: '',
-      createdAt: DateTime(2024, 3, 15),
-      inferenceProviderType: InferenceProviderType.ollama,
-    );
-
-    MockStreamedResponse okStreamResponse(String line) {
-      final resp = MockStreamedResponse();
-      when(() => resp.statusCode).thenReturn(200);
-      when(
-        () => resp.stream,
-      ).thenAnswer(
-        (_) => http.ByteStream(Stream.value(utf8.encode(line))),
-      );
-      return resp;
-    }
-
-    setUp(() {
-      mockClient = MockHttpClient();
-      repo = OllamaInferenceRepository(httpClient: mockClient);
-    });
-
-    test(
-      'developer message with parts content falls into jsonEncode branch '
-      '(line 139)',
-      () async {
-        // ChatCompletionDeveloperMessageContent is NOT a String and NOT a
-        // ChatCompletionUserMessageContent, so it hits the `else if` branch
-        // at line 136–142 and jsonEncode is called.
-        final messages = [
-          const ChatCompletionMessage.developer(
-            content: ChatCompletionDeveloperMessageContent.parts([
-              ChatCompletionMessageContentPart.text(
-                text: 'You are helpful',
-              ),
-            ]),
-          ),
-        ];
-
-        when(
-          () => mockClient.send(any()),
-        ).thenAnswer(
-          (_) async => okStreamResponse(
-            '{"message":{"content":"ok"},"done":true}\n',
-          ),
-        );
-
-        await repo
-            .generateTextWithMessages(
-              messages: messages,
-              model: 'test-model',
-              temperature: 0.7,
-              provider: makeProvider(),
-            )
-            .toList();
-
-        final captured = verify(() => mockClient.send(captureAny())).captured;
-        final request = captured.first as http.Request;
-        final body = jsonDecode(request.body) as Map<String, dynamic>;
-        final jsonMessages = body['messages'] as List<dynamic>;
-        final firstMsg = jsonMessages[0] as Map<String, dynamic>;
-        // The content should have been JSON-encoded (not null or empty).
-        expect(firstMsg['content'], isNotEmpty);
-      },
-    );
-  });
-
   group('generateWithImages – maxCompletionTokens and warmUpModel call', () {
     late OllamaInferenceRepository repo;
     late MockHttpClient mockClient;
@@ -2777,7 +2703,7 @@ void main() {
             .toList();
 
         expect(results, isNotEmpty);
-        expect(results.first.choices?.first.delta?.content, 'described');
+        expect(results.first.choices.first.delta.content, 'described');
 
         // Verify warmUpModel was called (line 249).
         verify(

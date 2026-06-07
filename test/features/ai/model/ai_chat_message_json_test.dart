@@ -196,10 +196,14 @@ void main() {
       expect(const AiToolChoiceAuto().toJson(), 'auto');
     });
     test('none → "none"', () {
-      expect(const AiToolChoiceNone().toJson(), 'none');
+      // Non-const so the constructor registers an executable-line hit;
+      // const instances are canonicalized at compile time.
+      // ignore: prefer_const_constructors
+      expect(AiToolChoiceNone().toJson(), 'none');
     });
     test('required → "required"', () {
-      expect(const AiToolChoiceRequired().toJson(), 'required');
+      // ignore: prefer_const_constructors
+      expect(AiToolChoiceRequired().toJson(), 'required');
     });
     test('function(name) → typed object', () {
       expect(const AiToolChoiceFunction('update_report').toJson(), {
@@ -265,6 +269,39 @@ void main() {
         ],
       });
       expect(chunk!.choices.first.delta.content, 'Hello');
+    });
+
+    test('flattens raw string elements inside array content', () {
+      final chunk = aiStreamChunkFromJson({
+        'id': '1',
+        'choices': [
+          {
+            'index': 0,
+            'delta': {
+              'content': [
+                'Hel',
+                {'type': 'text', 'text': 'lo'},
+                // Non-text parts are skipped, not stringified.
+                {'type': 'image_url', 'image_url': 'http://x'},
+              ],
+            },
+          },
+        ],
+      });
+      expect(chunk!.choices.first.delta.content, 'Hello');
+    });
+
+    test('stringifies non-string non-list content', () {
+      final chunk = aiStreamChunkFromJson({
+        'id': '1',
+        'choices': [
+          {
+            'index': 0,
+            'delta': {'content': 42},
+          },
+        ],
+      });
+      expect(chunk!.choices.first.delta.content, '42');
     });
 
     test('parses tool call chunks with id, name, arguments delta', () {

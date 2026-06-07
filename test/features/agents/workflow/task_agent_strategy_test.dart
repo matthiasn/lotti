@@ -3641,16 +3641,15 @@ void main() {
             retractionService: fakeService,
           ).strategy;
 
-          AiToolCall retractCall(String id) =>
-              AiToolCall(
-                id: id,
-                name: TaskAgentToolNames.retractSuggestions,
-                arguments: jsonEncode({
-                  'proposals': [
-                    {'fingerprint': 'fp-stage', 'reason': 'stale'},
-                  ],
-                }),
-              );
+          AiToolCall retractCall(String id) => AiToolCall(
+            id: id,
+            name: TaskAgentToolNames.retractSuggestions,
+            arguments: jsonEncode({
+              'proposals': [
+                {'fingerprint': 'fp-stage', 'reason': 'stale'},
+              ],
+            }),
+          );
 
           await retractionStrategy.processToolCalls(
             toolCalls: [retractCall('call-1')],

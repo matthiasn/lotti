@@ -72,7 +72,7 @@ class ProjectAgentStrategy extends ConversationStrategy {
       try {
         args = _parseToolArguments(call.arguments);
       } catch (e) {
-        final rawBytes = utf8.encode(call.function.arguments).length;
+        final rawBytes = utf8.encode(call.arguments).length;
         developer.log(
           'Failed to parse tool call arguments for $toolName '
           '(rawBytes=$rawBytes, errorType=${e.runtimeType})',

@@ -5934,8 +5934,8 @@ Take into account the following task context:
       // ignore: prefer_const_constructors
       final chunkWithUsage = AiStreamChunk(
         id: 'response-with-usage',
-        choices: [
-          const AiStreamChoice(
+        choices: const [
+          AiStreamChoice(
             index: 0,
             delta: AiStreamDelta(content: 'Answer'),
             finishReason: 'stop',

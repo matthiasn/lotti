@@ -172,8 +172,7 @@ void main() {
       const toolCall = AiToolCall(
         id: 'call-soul',
         name: 'propose_soul_directives',
-        arguments:
-            '{"voice_directive":"Updated voice.","rationale":"Reason"}',
+        arguments: '{"voice_directive":"Updated voice.","rationale":"Reason"}',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(

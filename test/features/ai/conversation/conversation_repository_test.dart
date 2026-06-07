@@ -1188,6 +1188,98 @@ void main() {
         },
       );
 
+      test(
+        'merges OpenAI-style continuation into a Gemini-style tool call '
+        '(argument buffer fallback + late name adoption)',
+        () async {
+          _stubGenerateText(mockOllamaRepo).thenAnswer(
+            (_) => Stream.fromIterable([
+              // Gemini-style chunk: multiple complete tool calls with empty
+              // IDs and null indices — emitted directly, without seeding the
+              // per-call argument buffers.
+              const AiStreamChunk(
+                id: 'gemini-response',
+                choices: [
+                  AiStreamChoice(
+                    index: 0,
+                    delta: AiStreamDelta(
+                      toolCalls: [
+                        AiToolCallChunk(
+                          id: '',
+                          name: 'fn_a',
+                          arguments: '{"a":1}',
+                        ),
+                        AiToolCallChunk(id: '', name: '', arguments: '{"b":'),
+                      ],
+                    ),
+                  ),
+                ],
+                created: 1710500000,
+              ),
+              // OpenAI-style continuation addressed by index: completes the
+              // second call's arguments and delivers its name late.
+              const AiStreamChunk(
+                id: 'continuation',
+                choices: [
+                  AiStreamChoice(
+                    index: 0,
+                    delta: AiStreamDelta(
+                      toolCalls: [
+                        AiToolCallChunk(
+                          index: 1,
+                          name: 'fn_b',
+                          arguments: '2}',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                created: 1710500000,
+              ),
+            ]),
+          );
+
+          when(
+            () => mockStrategy.processToolCalls(
+              toolCalls: captureAny(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            ),
+          ).thenAnswer((_) async => ConversationAction.complete);
+
+          await repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Mixed provider tool call framing',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+            strategy: mockStrategy,
+            tools: [
+              const AiTool(
+                name: 'fn_b',
+                description: 'A test function',
+                parameters: <String, dynamic>{},
+              ),
+            ],
+          );
+
+          final captured =
+              verify(
+                    () => mockStrategy.processToolCalls(
+                      toolCalls: captureAny(named: 'toolCalls'),
+                      manager: any(named: 'manager'),
+                    ),
+                  ).captured.single
+                  as List<AiToolCall>;
+          expect(captured, hasLength(2));
+          expect(captured[0].name, 'fn_a');
+          expect(captured[0].arguments, '{"a":1}');
+          // The continuation merged into the existing call: arguments were
+          // accumulated via the buffer fallback and the late name adopted.
+          expect(captured[1].name, 'fn_b');
+          expect(captured[1].arguments, '{"b":2}');
+        },
+      );
+
       test('handles strategy with wait action', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([

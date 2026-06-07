@@ -429,7 +429,10 @@ class ChatMessageProcessor {
     return switch (message.role) {
       ChatMessageRole.user => AiUserMessage(AiUserTextContent(message.content)),
       ChatMessageRole.assistant => AiAssistantMessage(content: message.content),
+      // Exhaustiveness only — the sole caller filters system entries out.
+      // coverage:ignore-start
       ChatMessageRole.system => AiSystemMessage(message.content),
+      // coverage:ignore-end
     };
   }
 }

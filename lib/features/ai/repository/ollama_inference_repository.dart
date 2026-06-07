@@ -173,7 +173,9 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                   .toList(),
           },
         // AiToolResultMessage handled by the `if case` guard above.
+        // coverage:ignore-start
         AiToolResultMessage() => throw StateError('unreachable'),
+        // coverage:ignore-end
       };
     }).toList();
 

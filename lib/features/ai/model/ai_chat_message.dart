@@ -219,8 +219,7 @@ enum AiReasoningEffort {
   minimal,
   low,
   medium,
-  high
-  ;
+  high;
 
   String get wire => name;
 }

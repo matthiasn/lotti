@@ -1022,14 +1022,13 @@ void main() {
             retryCall.tools.map((tool) => tool.name),
             [DayAgentToolNames.parseCaptureToItems],
           );
-          retryCall.toolChoice!.map(
-            mode: (_) => fail('Expected named tool choice, got mode.'),
-            tool: (named) {
-              expect(
-                named.value.name,
-                DayAgentToolNames.parseCaptureToItems,
-              );
-            },
+          expect(
+            retryCall.toolChoice,
+            isA<AiToolChoiceFunction>().having(
+              (choice) => choice.name,
+              'name',
+              DayAgentToolNames.parseCaptureToItems,
+            ),
           );
 
           final args =
@@ -1493,11 +1492,13 @@ void main() {
             retryCall.tools.map((tool) => tool.name),
             [DayAgentToolNames.draftDayPlan],
           );
-          retryCall.toolChoice!.map(
-            mode: (_) => fail('Expected named tool choice, got mode.'),
-            tool: (named) {
-              expect(named.value.name, DayAgentToolNames.draftDayPlan);
-            },
+          expect(
+            retryCall.toolChoice,
+            isA<AiToolChoiceFunction>().having(
+              (choice) => choice.name,
+              'name',
+              DayAgentToolNames.draftDayPlan,
+            ),
           );
           verify(
             () => planService.executeTool(
@@ -2439,12 +2440,9 @@ class _ConversationHarness extends ConversationRepository {
       toolResponses
         ..clear()
         ..addAll(
-          manager.messages
-              .where(
-                (message) => message.role == AiMessageRole.tool,
-              )
-              .map((message) => message.content)
-              .whereType<String>(),
+          manager.messages.whereType<AiToolResultMessage>().map(
+            (message) => message.content,
+          ),
         );
     }
     if (finalResponse != null) {

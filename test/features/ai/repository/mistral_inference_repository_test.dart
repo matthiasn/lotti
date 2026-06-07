@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_chat_message.dart';
+import 'package:lotti/features/ai/model/ai_chat_message_json.dart';
 import 'package:lotti/features/ai/repository/mistral_inference_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -489,20 +490,11 @@ void main() {
           );
 
           final messages = [
-            const ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.parts([
-                ChatCompletionMessageContentPart.text(text: 'Describe this'),
-                ChatCompletionMessageContentPart.image(
-                  imageUrl: ChatCompletionMessageImageUrl(
-                    url: 'https://example.com/cat.png',
-                  ),
-                ),
-                ChatCompletionMessageContentPart.audio(
-                  inputAudio: ChatCompletionMessageInputAudio(
-                    data: 'AAAA',
-                    format: ChatCompletionMessageInputAudioFormat.wav,
-                  ),
-                ),
+            const AiUserMessage(
+              AiUserPartsContent([
+                AiTextPart('Describe this'),
+                AiImagePart('https://example.com/cat.png'),
+                AiAudioPart(data: 'AAAA', format: AiAudioFormat.wav),
               ]),
             ),
           ];
@@ -551,99 +543,6 @@ void main() {
           expect(inputAudio['format'], equals('wav'));
         },
       );
-
-      test('should convert function messages correctly', () async {
-        // Arrange
-        final events = [
-          createSseChunkEvent(content: 'Response'),
-          createSseFinalEvent(),
-        ];
-
-        when(() => mockHttpClient.send(any())).thenAnswer(
-          (_) async => createSseStreamedResponse(events: events),
-        );
-
-        final messages = [
-          const ChatCompletionMessage.function(
-            name: 'get_weather',
-            content: '{"temp": 21}',
-          ),
-        ];
-
-        // Act
-        final stream = repository.generateTextWithMessages(
-          messages: messages,
-          model: model,
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
-
-        await stream.toList();
-
-        // Assert
-        final captured = verify(
-          () => mockHttpClient.send(captureAny()),
-        ).captured;
-        final request = captured.first as http.Request;
-        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
-
-        final reqMessages = requestBody['messages'] as List<dynamic>;
-        expect(reqMessages.length, equals(1));
-
-        final functionMsg = reqMessages[0] as Map<String, dynamic>;
-        expect(functionMsg['role'], equals('function'));
-        expect(functionMsg['name'], equals('get_weather'));
-        expect(functionMsg['content'], equals('{"temp": 21}'));
-      });
-
-      test('should convert developer messages correctly', () async {
-        // Arrange
-        final events = [
-          createSseChunkEvent(content: 'Response'),
-          createSseFinalEvent(),
-        ];
-
-        when(() => mockHttpClient.send(any())).thenAnswer(
-          (_) async => createSseStreamedResponse(events: events),
-        );
-
-        final messages = [
-          const ChatCompletionMessage.developer(
-            content: ChatCompletionDeveloperMessageContent.text(
-              'Follow these rules',
-            ),
-          ),
-        ];
-
-        // Act
-        final stream = repository.generateTextWithMessages(
-          messages: messages,
-          model: model,
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
-
-        await stream.toList();
-
-        // Assert - developer role and content are carried through
-        final captured = verify(
-          () => mockHttpClient.send(captureAny()),
-        ).captured;
-        final request = captured.first as http.Request;
-        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
-
-        final reqMessages = requestBody['messages'] as List<dynamic>;
-        expect(reqMessages.length, equals(1));
-
-        final developerMsg = reqMessages[0] as Map<String, dynamic>;
-        expect(developerMsg['role'], equals('developer'));
-        // The developer content is carried through as the freezed union map,
-        // which serializes to a value/runtimeType pair.
-        final developerContent =
-            developerMsg['content'] as Map<String, dynamic>;
-        expect(developerContent['value'], equals('Follow these rules'));
-        expect(developerContent['runtimeType'], equals('text'));
-      });
     });
 
     group('content extraction', () {
@@ -861,7 +760,7 @@ void main() {
         final results = await stream.toList();
 
         // Assert - the numeric content is rendered via toString()
-        expect(results[0].choices?.first.delta?.content, equals('42'));
+        expect(results[0].choices.first.delta.content, equals('42'));
       });
     });
 
@@ -1411,9 +1310,9 @@ data: not valid json 5
       const baseUrl = 'https://api.mistral.ai/v1';
       const apiKey = 'test-api-key';
 
-      test('should fallback to assistant for unknown role', () async {
-        // Arrange - an unrecognized role string should resolve to assistant
-        // via the orElse branch.
+      test('should leave role null for unknown role', () async {
+        // Arrange - an unrecognized role string resolves to null via
+        // AiMessageRole.tryParse; the content delta still flows through.
         final event = {
           'id': 'chatcmpl-test',
           'object': 'chat.completion.chunk',
@@ -1443,11 +1342,8 @@ data: not valid json 5
         final results = await stream.toList();
 
         // Assert
-        expect(
-          results[0].choices?.first.delta?.role,
-          equals(ChatCompletionMessageRole.assistant),
-        );
-        expect(results[0].choices?.first.delta?.content, equals('hi'));
+        expect(results[0].choices.first.delta.role, isNull);
+        expect(results[0].choices.first.delta.content, equals('hi'));
       });
     });
 
@@ -1703,19 +1599,18 @@ data: not valid json 5
       });
     });
 
-    group('convertMessages', () {
+    group('message wire serialization', () {
       glados.Glados(
         glados.any.mistralMessagesScenario,
         glados.ExploreConfig(numRuns: 120),
       ).test(
-        'role and content survive conversion for every message kind',
+        'role and content survive serialization for every message kind',
         (scenario) {
-          final repository = MistralInferenceRepository();
-          final converted = repository.convertMessages(scenario.messages);
+          final serialized = scenario.messages.map((m) => m.toJson()).toList();
 
-          expect(converted.length, scenario.messages.length);
-          for (var i = 0; i < converted.length; i++) {
-            scenario.verify(i, converted[i]);
+          expect(serialized.length, scenario.messages.length);
+          for (var i = 0; i < serialized.length; i++) {
+            scenario.verify(i, serialized[i]);
           }
         },
         tags: 'glados',
@@ -1724,50 +1619,44 @@ data: not valid json 5
   });
 }
 
-/// A generated list of [ChatCompletionMessage]s covering every supported
-/// role variant, paired with per-message expectations for the converted map.
+/// A generated list of [AiChatMessage]s covering every supported message
+/// variant, paired with per-message expectations for the serialized map the
+/// repository puts on the wire via `toJson()`.
 class _MistralMessagesScenario {
   _MistralMessagesScenario({required int count, required int seed})
     : _kinds = List.generate(count, (i) => (seed + i) % 5);
 
   final List<int> _kinds;
 
-  List<ChatCompletionMessage> get messages => [
+  List<AiChatMessage> get messages => [
     for (var i = 0; i < _kinds.length; i++)
       switch (_kinds[i]) {
-        0 => ChatCompletionMessage.system(content: 'sys $i'),
-        1 => ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('hello $i'),
-        ),
-        2 => ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.parts([
-            ChatCompletionMessageContentPart.text(text: 'part $i'),
-            ChatCompletionMessageContentPart.image(
-              imageUrl: ChatCompletionMessageImageUrl(url: 'http://img/$i'),
-            ),
+        0 => AiSystemMessage('sys $i'),
+        1 => AiUserMessage(AiUserTextContent('hello $i')),
+        2 => AiUserMessage(
+          AiUserPartsContent([
+            AiTextPart('part $i'),
+            AiImagePart('http://img/$i'),
           ]),
         ),
-        3 => ChatCompletionMessage.assistant(
+        3 => AiAssistantMessage(
           content: 'answer $i',
           toolCalls: [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'tc-$i',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'fn$i',
-                arguments: '{"x":$i}',
-              ),
+              name: 'fn$i',
+              arguments: '{"x":$i}',
             ),
           ],
         ),
-        _ => ChatCompletionMessage.tool(
+        _ => AiToolResultMessage(
           toolCallId: 'call-$i',
           content: 'result $i',
         ),
       },
   ];
 
-  /// Asserts the converted map for message [i] preserves role and content.
+  /// Asserts the serialized map for message [i] preserves role and content.
   void verify(int i, Map<String, dynamic> map) {
     switch (_kinds[i]) {
       case 0:

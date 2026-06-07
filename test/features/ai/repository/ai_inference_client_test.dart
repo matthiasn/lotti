@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/repository/ai_inference_client.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -141,6 +143,35 @@ void main() {
         'type': 'function',
         'function': {'name': 'get_weather'},
       });
+    });
+
+    test('serializes max_tokens and reasoning_effort when provided', () async {
+      final httpClient = MockHttpClient();
+      late http.Request sent;
+
+      when(() => httpClient.send(any())).thenAnswer((invocation) async {
+        sent = invocation.positionalArguments.first as http.Request;
+        return _sse([]);
+      });
+
+      final client = AiInferenceClient(
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'k',
+        httpClient: httpClient,
+      );
+
+      await client
+          .chatCompletionsStream(
+            messages: const [AiUserMessage(AiUserTextContent('x'))],
+            model: 'gemini-3-flash-preview',
+            maxTokens: 512,
+            reasoningEffort: AiReasoningEffort.medium,
+          )
+          .toList();
+
+      final body = jsonDecode(sent.body) as Map<String, dynamic>;
+      expect(body['max_tokens'], 512);
+      expect(body['reasoning_effort'], 'medium');
     });
 
     test(
@@ -302,6 +333,12 @@ void main() {
     test(
       'throws AiInferenceException once parse errors hit the threshold',
       () async {
+        // Register a logging service so the threshold path also reports the
+        // exception through LoggingService.captureException.
+        final mockLoggingService = MockLoggingService();
+        getIt.registerSingleton<LoggingService>(mockLoggingService);
+        addTearDown(() => getIt.unregister<LoggingService>());
+
         final httpClient = MockHttpClient();
         // 5 malformed `data:` lines — hits the maxParseErrors=5 threshold.
         final raw = [
@@ -321,7 +358,7 @@ void main() {
           httpClient: httpClient,
         );
 
-        expect(
+        await expectLater(
           () => client
               .chatCompletionsStream(
                 messages: const [AiUserMessage(AiUserTextContent('x'))],
@@ -336,6 +373,15 @@ void main() {
             ),
           ),
         );
+
+        verify(
+          () => mockLoggingService.captureException(
+            any<Object>(),
+            domain: 'AiInferenceClient',
+            subDomain: 'parse_threshold_exceeded',
+            stackTrace: any<dynamic>(named: 'stackTrace'),
+          ),
+        ).called(1);
       },
     );
 
@@ -414,6 +460,22 @@ void main() {
       ).close();
 
       verify(httpClient.close).called(1);
+    });
+  });
+
+  group('AiInferenceException', () {
+    test('toString includes the message', () {
+      final exception = AiInferenceException(
+        'HTTP 500: boom',
+        statusCode: 500,
+        originalError: const FormatException('bad'),
+      );
+      expect(
+        exception.toString(),
+        'AiInferenceException: HTTP 500: boom',
+      );
+      expect(exception.statusCode, 500);
+      expect(exception.originalError, isA<FormatException>());
     });
   });
 }

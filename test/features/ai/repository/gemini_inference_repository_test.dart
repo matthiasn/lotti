@@ -2783,7 +2783,7 @@ void main() {
         // Only the large text chunk should be emitted; stream terminates early
         // before "should never appear".
         expect(events.length, 1);
-        expect(events.first.choices!.first.delta!.content, largeText);
+        expect(events.first.choices.first.delta.content, largeText);
       },
     );
   });
@@ -2831,7 +2831,7 @@ void main() {
             inferenceProviderType: InferenceProviderType.gemini,
           );
 
-          List<CreateChatCompletionStreamResponse>? events;
+          List<AiStreamChunk>? events;
           repo
               .generateText(
                 prompt: 'test',
@@ -2852,7 +2852,7 @@ void main() {
           expect(attemptCount, 2);
           expect(events, isNotNull);
           expect(
-            events!.first.choices!.first.delta!.content,
+            events!.first.choices.first.delta.content,
             'Done after fallback backoff',
           );
         });
@@ -2893,7 +2893,7 @@ void main() {
             inferenceProviderType: InferenceProviderType.gemini,
           );
 
-          List<CreateChatCompletionStreamResponse>? events;
+          List<AiStreamChunk>? events;
           repo
               .generateText(
                 prompt: 'test',
@@ -2913,7 +2913,7 @@ void main() {
           expect(attemptCount, 2);
           expect(events, isNotNull);
           expect(
-            events!.first.choices!.first.delta!.content,
+            events!.first.choices.first.delta.content,
             'Response after timeout',
           );
         });
@@ -2948,7 +2948,7 @@ void main() {
             .toList()
             .catchError((Object e) {
               caughtError = e;
-              return <CreateChatCompletionStreamResponse>[];
+              return <AiStreamChunk>[];
             });
 
         // Attempt 1 times out, schedules 500ms delay.

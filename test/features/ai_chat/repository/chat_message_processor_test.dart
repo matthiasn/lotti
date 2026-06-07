@@ -168,6 +168,39 @@ void main() {
       });
 
       test(
+        'omits system messages and empty assistant turns from the prompt',
+        () {
+          // Arrange: system messages and assistant turns without content
+          // (tool-call-only placeholders) must not produce prompt lines.
+          final messages = [
+            const AiSystemMessage('You are a helpful assistant'),
+            const AiUserMessage(AiUserTextContent('Hello')),
+            const AiAssistantMessage(
+              toolCalls: [
+                AiToolCall(id: 't1', name: 'fn', arguments: '{}'),
+              ],
+            ),
+            const AiToolResultMessage(toolCallId: 't1', content: 'data'),
+          ];
+
+          // Act
+          final result = processor.buildPromptFromMessages(
+            messages,
+            'follow-up',
+          );
+
+          // Assert
+          expect(result, isNot(contains('helpful assistant')));
+          final lines = result.split('\n\n');
+          expect(lines, [
+            'User: Hello',
+            'Tool response: data',
+            'User: follow-up',
+          ]);
+        },
+      );
+
+      test(
         'renders multi-part user content by stringifying and joining parts',
         () {
           // Arrange: a user message whose content is an array of content

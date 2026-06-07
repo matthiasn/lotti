@@ -531,39 +531,35 @@ void main() {
       // A schema value that is a List of Map sub-schemas (e.g. anyOf) must
       // have additionalProperties stripped recursively from each list element.
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Call a function'),
-        ),
+        const AiUserMessage(AiUserTextContent('Call a function')),
       ];
 
       const tools = [
-        ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'my_tool',
-            parameters: {
-              'type': 'object',
-              'properties': {
-                'value': {
-                  'anyOf': [
-                    {
-                      'type': 'object',
-                      'properties': {
-                        'kind': {'type': 'string'},
-                      },
-                      'additionalProperties': false,
+        AiTool(
+          name: 'my_tool',
+          description: '',
+          parameters: {
+            'type': 'object',
+            'properties': {
+              'value': {
+                'anyOf': [
+                  {
+                    'type': 'object',
+                    'properties': {
+                      'kind': {'type': 'string'},
                     },
-                    {
-                      'type': 'number',
-                      // Plain string element in the same list exercises the
-                      // non-map branch (returns the element unchanged).
-                    },
-                    'scalar',
-                  ],
-                },
+                    'additionalProperties': false,
+                  },
+                  {
+                    'type': 'number',
+                    // Plain string element in the same list exercises the
+                    // non-map branch (returns the element unchanged).
+                  },
+                  'scalar',
+                ],
               },
             },
-          ),
+          },
         ),
       ];
 
