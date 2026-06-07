@@ -122,16 +122,10 @@ double _stepViewportHeight(BuildContext context) =>
 
 DateTime _capturedAtForDay(DateTime day) {
   final now = clock.now();
-  return DateTime(
-    day.year,
-    day.month,
-    day.day,
-    now.hour,
-    now.minute,
-    now.second,
-    now.millisecond,
-    now.microsecond,
-  );
+  // Preserve [day]'s timezone by adding the elapsed time since midnight,
+  // rather than mixing [day]'s date with [now]'s wall-clock components.
+  // `clock.now()` is always local here, so local midnight is correct.
+  return day.add(now.difference(DateTime(now.year, now.month, now.day)));
 }
 
 // ─────────────────────────────── Capture ───────────────────────────────
@@ -329,22 +323,33 @@ class _ReconcileStepContent extends ConsumerWidget {
   }
 }
 
-class _ReconcileStepBar extends ConsumerWidget {
+class _ReconcileStepBar extends ConsumerStatefulWidget {
   const _ReconcileStepBar({required this.params, required this.day});
 
   final ReconcileParams params;
   final DateTime day;
 
-  void _buildDay(BuildContext context, WidgetRef ref) {
-    final data = ref.read(reconcileControllerProvider(params)).value;
+  @override
+  ConsumerState<_ReconcileStepBar> createState() => _ReconcileStepBarState();
+}
+
+class _ReconcileStepBarState extends ConsumerState<_ReconcileStepBar> {
+  /// True once "Build my day" has pushed the Drafting page — guards against
+  /// rapid re-taps stacking duplicate Drafting steps on the modal navigator.
+  bool _pushing = false;
+
+  void _buildDay() {
+    if (_pushing) return;
+    final data = ref.read(reconcileControllerProvider(widget.params)).value;
     if (data == null) return;
+    setState(() => _pushing = true);
     final selections = reconcileDraftingSelections(data);
     final sheet = WoltModalSheet.of(context);
     sheet.pushPage(
       _draftingStepPage(
         context,
-        day: day,
-        captureId: params.captureId,
+        day: widget.day,
+        captureId: widget.params.captureId,
         selections: selections,
         onBack: sheet.popPage,
       ),
@@ -352,10 +357,11 @@ class _ReconcileStepBar extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final state = ref.watch(reconcileControllerProvider(params));
+    final state = ref.watch(reconcileControllerProvider(widget.params));
+    final canBuild = state.hasValue && !_pushing;
 
     return DayPlanningGlassActionBar(
       topSlot: DayPlanningThinkingShader(
@@ -367,6 +373,7 @@ class _ReconcileStepBar extends ConsumerWidget {
             child: DsGlassPill(
               icon: Icons.mic_rounded,
               label: messages.dailyOsNextReconcileReRecord,
+              enabled: !_pushing,
               onTap: () => WoltModalSheet.of(context).popPage(),
             ),
           ),
@@ -377,7 +384,8 @@ class _ReconcileStepBar extends ConsumerWidget {
               label: messages.dailyOsNextReconcileBuildDayCta,
               fillColor: tokens.colors.interactive.enabled,
               foregroundColor: tokens.colors.text.onInteractiveAlert,
-              onTap: () => _buildDay(context, ref),
+              enabled: canBuild,
+              onTap: _buildDay,
             ),
           ),
         ],

@@ -19,9 +19,9 @@ Future<void> _pump(
   );
 }
 
-/// Reads the styled [Container] (the one carrying the [BoxDecoration]) inside
-/// the given root widget type. Both [DsGlassRoundButton] and [DsGlassPill]
-/// render exactly one [Container], which is the decorated one.
+/// Reads the inner [Container] (which carries the hairline
+/// [Container.foregroundDecoration]) inside the given root widget type. Both
+/// [DsGlassRoundButton] and [DsGlassPill] render exactly one [Container].
 Container _decoratedContainer(WidgetTester tester, Type rootType) {
   return tester.widget<Container>(
     find.descendant(
@@ -29,6 +29,15 @@ Container _decoratedContainer(WidgetTester tester, Type rootType) {
       matching: find.byType(Container),
     ),
   );
+}
+
+/// Reads the background [BoxDecoration] from the [Ink] widget — the fill
+/// lives on [Ink] (not the Container) so the InkWell splash renders above it.
+BoxDecoration _inkDecoration(WidgetTester tester, Type rootType) {
+  final ink = tester.widget<Ink>(
+    find.descendant(of: find.byType(rootType), matching: find.byType(Ink)),
+  );
+  return ink.decoration! as BoxDecoration;
 }
 
 DsTokens _tokens(WidgetTester tester, Type rootType) {
@@ -118,10 +127,9 @@ void main() {
           ),
         );
 
-        final container = _decoratedContainer(tester, DsGlassRoundButton);
-        final decoration = container.decoration! as BoxDecoration;
-        expect(decoration.color, bg);
+        expect(_inkDecoration(tester, DsGlassRoundButton).color, bg);
         // No hairline outline drawn when a solid background is supplied.
+        final container = _decoratedContainer(tester, DsGlassRoundButton);
         expect(container.foregroundDecoration, isNull);
       },
     );
@@ -139,10 +147,12 @@ void main() {
         );
 
         final tokens = _tokens(tester, DsGlassRoundButton);
-        final container = _decoratedContainer(tester, DsGlassRoundButton);
-        final decoration = container.decoration! as BoxDecoration;
-        expect(decoration.color, dsGlassChipFill(tokens));
+        expect(
+          _inkDecoration(tester, DsGlassRoundButton).color,
+          dsGlassChipFill(tokens),
+        );
 
+        final container = _decoratedContainer(tester, DsGlassRoundButton);
         final foreground = container.foregroundDecoration! as BoxDecoration;
         expect(foreground.border, isNotNull);
         expect(foreground.border, dsGlassChipBorder(tokens));
@@ -255,9 +265,8 @@ void main() {
           ),
         );
 
+        expect(_inkDecoration(tester, DsGlassPill).color, fill);
         final container = _decoratedContainer(tester, DsGlassPill);
-        final decoration = container.decoration! as BoxDecoration;
-        expect(decoration.color, fill);
         expect(container.foregroundDecoration, isNull);
       },
     );
@@ -274,10 +283,12 @@ void main() {
         );
 
         final tokens = _tokens(tester, DsGlassPill);
-        final container = _decoratedContainer(tester, DsGlassPill);
-        final decoration = container.decoration! as BoxDecoration;
-        expect(decoration.color, dsGlassChipFill(tokens));
+        expect(
+          _inkDecoration(tester, DsGlassPill).color,
+          dsGlassChipFill(tokens),
+        );
 
+        final container = _decoratedContainer(tester, DsGlassPill);
         final foreground = container.foregroundDecoration! as BoxDecoration;
         expect(foreground.border, isNotNull);
         expect(foreground.border, dsGlassChipBorder(tokens));
@@ -416,8 +427,7 @@ void main() {
         final tokens = _tokens(tester, DsGlassPill);
 
         // (b) Solid fill is dropped for the translucent glass fill.
-        final container = _decoratedContainer(tester, DsGlassPill);
-        final decoration = container.decoration! as BoxDecoration;
+        final decoration = _inkDecoration(tester, DsGlassPill);
         expect(decoration.color, dsGlassChipFill(tokens));
         expect(decoration.color, isNot(fill));
 

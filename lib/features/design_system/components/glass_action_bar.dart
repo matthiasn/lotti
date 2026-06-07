@@ -84,28 +84,34 @@ class DsGlassRoundButton extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: Container(
-            width: diameter,
-            height: diameter,
-            decoration: BoxDecoration(
-              color: backgroundColor ?? dsGlassChipFill(tokens),
-              shape: BoxShape.circle,
-            ),
-            // foregroundDecoration so the hairline outline doesn't eat
-            // into the icon's content rect — keeps the glyph centred.
-            foregroundDecoration: isTranslucent
-                ? BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: dsGlassChipBorder(tokens),
-                  )
-                : null,
-            child: Icon(
-              icon,
-              size: iconSize,
-              color: iconColor ?? tokens.colors.text.highEmphasis,
+        // Background lives on [Ink] (not the inner Container) so the InkWell
+        // splash/highlight renders above it instead of being obscured.
+        child: Ink(
+          width: diameter,
+          height: diameter,
+          decoration: BoxDecoration(
+            color: backgroundColor ?? dsGlassChipFill(tokens),
+            shape: BoxShape.circle,
+          ),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: onPressed,
+            child: Container(
+              width: diameter,
+              height: diameter,
+              // foregroundDecoration so the hairline outline doesn't eat
+              // into the icon's content rect — keeps the glyph centred.
+              foregroundDecoration: isTranslucent
+                  ? BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: dsGlassChipBorder(tokens),
+                    )
+                  : null,
+              child: Icon(
+                icon,
+                size: iconSize,
+                color: iconColor ?? tokens.colors.text.highEmphasis,
+              ),
             ),
           ),
         ),
@@ -201,26 +207,32 @@ class DsGlassPill extends StatelessWidget {
       excludeSemantics: true,
       child: Material(
         color: Colors.transparent,
-        child: InkWell(
-          borderRadius: pillRadius,
-          onTap: enabled ? onTap : null,
-          child: Container(
-            height: height,
-            width: expand ? double.infinity : null,
-            padding: EdgeInsets.symmetric(horizontal: spacing.step5),
-            decoration: BoxDecoration(
-              color: effectiveFill ?? dsGlassChipFill(tokens),
-              borderRadius: pillRadius,
+        // Background lives on [Ink] (not the inner Container) so the InkWell
+        // splash/highlight renders above it instead of being obscured.
+        child: Ink(
+          height: height,
+          width: expand ? double.infinity : null,
+          decoration: BoxDecoration(
+            color: effectiveFill ?? dsGlassChipFill(tokens),
+            borderRadius: pillRadius,
+          ),
+          child: InkWell(
+            borderRadius: pillRadius,
+            onTap: enabled ? onTap : null,
+            child: Container(
+              height: height,
+              width: expand ? double.infinity : null,
+              padding: EdgeInsets.symmetric(horizontal: spacing.step5),
+              // foregroundDecoration keeps the hairline a hairline without
+              // widening the pill (which would shift action-row layout).
+              foregroundDecoration: isTranslucent
+                  ? BoxDecoration(
+                      borderRadius: pillRadius,
+                      border: dsGlassChipBorder(tokens),
+                    )
+                  : null,
+              child: Center(widthFactor: expand ? null : 1, child: content),
             ),
-            // foregroundDecoration keeps the hairline a hairline without
-            // widening the pill (which would shift action-row layout).
-            foregroundDecoration: isTranslucent
-                ? BoxDecoration(
-                    borderRadius: pillRadius,
-                    border: dsGlassChipBorder(tokens),
-                  )
-                : null,
-            child: Center(widthFactor: expand ? null : 1, child: content),
           ),
         ),
       ),
