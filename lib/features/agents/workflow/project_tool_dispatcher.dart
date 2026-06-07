@@ -114,7 +114,8 @@ class ProjectToolDispatcher {
         success: false,
         output:
             'Error: unsupported project status "$statusValue". '
-            'Use open, active, on_hold, completed, or archived.',
+            'Use open, active, monitoring, on_hold, completed, or '
+            'archived.',
         errorMessage: 'Invalid project status',
       );
     }
@@ -354,6 +355,11 @@ class ProjectToolDispatcher {
         createdAt: now,
         utcOffset: now.timeZoneOffset.inMinutes,
       ),
+      'monitoring' || 'monitor' => ProjectStatus.monitoring(
+        id: _uuid.v1(),
+        createdAt: now,
+        utcOffset: now.timeZoneOffset.inMinutes,
+      ),
       'on_hold' || 'hold' || 'blocked' || 'at_risk' => ProjectStatus.onHold(
         id: _uuid.v1(),
         createdAt: now,
@@ -387,6 +393,7 @@ class ProjectToolDispatcher {
     return switch ((current, next)) {
       (ProjectOpen(), ProjectOpen()) => true,
       (ProjectActive(), ProjectActive()) => true,
+      (ProjectMonitoring(), ProjectMonitoring()) => true,
       (ProjectCompleted(), ProjectCompleted()) => true,
       (ProjectArchived(), ProjectArchived()) => true,
       (ProjectOnHold(:final reason), ProjectOnHold(reason: final nextReason)) =>

@@ -242,6 +242,37 @@ void main() {
       );
     });
 
+    test(
+      'toggling only isAvailableForDayPlan flips hasChanges and updates '
+      'the pending category',
+      () async {
+        // Original category has the flag unset (null).
+        final category = CategoryTestUtils.createTestCategory();
+
+        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+          (_) => Stream.value(category),
+        );
+
+        final container = makeContainer();
+        final controller = await loadCategory(container);
+
+        expect(
+          container
+              .read(categoryDetailsControllerProvider(testCategoryId))
+              .hasChanges,
+          isFalse,
+        );
+
+        controller.updateFormField(isAvailableForDayPlan: true);
+
+        final state = container.read(
+          categoryDetailsControllerProvider(testCategoryId),
+        );
+        expect(state.hasChanges, isTrue);
+        expect(state.category?.isAvailableForDayPlan, isTrue);
+      },
+    );
+
     test('no changes when setting same values', () async {
       final category = CategoryTestUtils.createTestCategory(
         name: 'Test',
@@ -366,6 +397,47 @@ void main() {
 
       verify(() => mockRepository.updateCategory(any())).called(1);
     });
+
+    test(
+      'saveChanges persists isAvailableForDayPlan through the '
+      'correction-examples merge path',
+      () async {
+        // The latest-category fetch makes saveChanges rebuild the pending
+        // category via copyWith before persisting — the flag must survive.
+        final category = CategoryTestUtils.createTestCategory(
+          correctionExamples: const [
+            ChecklistCorrectionExample(
+              before: 'recognised',
+              after: 'corrected',
+            ),
+          ],
+        );
+
+        when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+          (_) => Stream.value(category),
+        );
+        when(() => mockRepository.getCategoryById(testCategoryId)).thenAnswer(
+          (_) async => category,
+        );
+        when(() => mockRepository.updateCategory(any())).thenAnswer(
+          (_) async => category,
+        );
+
+        final container = makeContainer();
+        final controller = await loadCategory(container);
+
+        controller.updateFormField(isAvailableForDayPlan: true);
+        await controller.saveChanges();
+
+        final saved =
+            verify(
+                  () => mockRepository.updateCategory(captureAny()),
+                ).captured.single
+                as CategoryDefinition;
+        expect(saved.isAvailableForDayPlan, isTrue);
+        expect(saved.correctionExamples, category.correctionExamples);
+      },
+    );
 
     test('validates name is not empty', () async {
       final category = CategoryTestUtils.createTestCategory(name: 'Original');

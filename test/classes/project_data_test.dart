@@ -166,6 +166,14 @@ void main() {
         'ACTIVE',
       );
       expect(
+        ProjectStatus.monitoring(
+          id: 'ps-6',
+          createdAt: testDate,
+          utcOffset: 0,
+        ).toDbString,
+        'MONITORING',
+      );
+      expect(
         ProjectStatus.onHold(
           id: 'ps-3',
           createdAt: testDate,
@@ -210,6 +218,14 @@ void main() {
         'Active',
       );
       expect(
+        ProjectStatus.monitoring(
+          id: 'ps-6',
+          createdAt: testDate,
+          utcOffset: 0,
+        ).label,
+        'Monitoring',
+      );
+      expect(
         ProjectStatus.onHold(
           id: 'ps-3',
           createdAt: testDate,
@@ -235,6 +251,48 @@ void main() {
         'Archived',
       );
     });
+
+    test('monitoring round-trips through JSON', () {
+      final status = ProjectStatus.monitoring(
+        id: 'ps-monitoring',
+        createdAt: testDate,
+        utcOffset: 120,
+        timezone: 'Europe/Berlin',
+      );
+
+      final json = jsonDecode(jsonEncode(status)) as Map<String, dynamic>;
+      final restored = ProjectStatus.fromJson(json);
+
+      expect(restored, isA<ProjectMonitoring>());
+      expect(restored, equals(status));
+    });
+
+    test(
+      'pre-monitoring status JSON still parses (old-schema regression guard)',
+      () {
+        // JSON shapes as an app version WITHOUT the monitoring variant would
+        // have written them. Guards the decode path for already-synced data.
+        const oldSchemaVariants = <String>[
+          'open',
+          'active',
+          'onHold',
+          'completed',
+          'archived',
+        ];
+        for (final runtimeType in oldSchemaVariants) {
+          final json = <String, dynamic>{
+            'id': 'ps-old-$runtimeType',
+            'createdAt': '2024-03-15T10:00:00.000',
+            'utcOffset': 0,
+            if (runtimeType == 'onHold') 'reason': 'legacy reason',
+            'runtimeType': runtimeType,
+          };
+          final restored = ProjectStatus.fromJson(json);
+          expect(restored.id, 'ps-old-$runtimeType', reason: runtimeType);
+          expect(restored is ProjectMonitoring, isFalse, reason: runtimeType);
+        }
+      },
+    );
 
     test('onHold preserves reason field', () {
       final status = ProjectStatus.onHold(
@@ -308,6 +366,12 @@ class _GeneratedProjectStatus {
         utcOffset: common.utcOffset,
         timezone: common.timezone,
       ),
+      GeneratedProjectStatusKind.monitoring => ProjectStatus.monitoring(
+        id: common.id,
+        createdAt: common.createdAt,
+        utcOffset: common.utcOffset,
+        timezone: common.timezone,
+      ),
       GeneratedProjectStatusKind.onHold => ProjectStatus.onHold(
         id: common.id,
         createdAt: common.createdAt,
@@ -333,6 +397,7 @@ class _GeneratedProjectStatus {
   String get expectedDbString => switch (kind) {
     GeneratedProjectStatusKind.open => 'OPEN',
     GeneratedProjectStatusKind.active => 'ACTIVE',
+    GeneratedProjectStatusKind.monitoring => 'MONITORING',
     GeneratedProjectStatusKind.onHold => 'ON HOLD',
     GeneratedProjectStatusKind.completed => 'COMPLETED',
     GeneratedProjectStatusKind.archived => 'ARCHIVED',
@@ -341,6 +406,7 @@ class _GeneratedProjectStatus {
   String get expectedLabel => switch (kind) {
     GeneratedProjectStatusKind.open => 'Open',
     GeneratedProjectStatusKind.active => 'Active',
+    GeneratedProjectStatusKind.monitoring => 'Monitoring',
     GeneratedProjectStatusKind.onHold => 'On Hold',
     GeneratedProjectStatusKind.completed => 'Completed',
     GeneratedProjectStatusKind.archived => 'Archived',

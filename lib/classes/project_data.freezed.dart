@@ -23,6 +23,10 @@ ProjectStatus _$ProjectStatusFromJson(
           return ProjectActive.fromJson(
             json
           );
+                case 'monitoring':
+          return ProjectMonitoring.fromJson(
+            json
+          );
                 case 'onHold':
           return ProjectOnHold.fromJson(
             json
@@ -140,12 +144,13 @@ extension ProjectStatusPatterns on ProjectStatus {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ProjectOpen value)?  open,TResult Function( ProjectActive value)?  active,TResult Function( ProjectOnHold value)?  onHold,TResult Function( ProjectCompleted value)?  completed,TResult Function( ProjectArchived value)?  archived,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( ProjectOpen value)?  open,TResult Function( ProjectActive value)?  active,TResult Function( ProjectMonitoring value)?  monitoring,TResult Function( ProjectOnHold value)?  onHold,TResult Function( ProjectCompleted value)?  completed,TResult Function( ProjectArchived value)?  archived,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case ProjectOpen() when open != null:
 return open(_that);case ProjectActive() when active != null:
-return active(_that);case ProjectOnHold() when onHold != null:
+return active(_that);case ProjectMonitoring() when monitoring != null:
+return monitoring(_that);case ProjectOnHold() when onHold != null:
 return onHold(_that);case ProjectCompleted() when completed != null:
 return completed(_that);case ProjectArchived() when archived != null:
 return archived(_that);case _:
@@ -166,12 +171,13 @@ return archived(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ProjectOpen value)  open,required TResult Function( ProjectActive value)  active,required TResult Function( ProjectOnHold value)  onHold,required TResult Function( ProjectCompleted value)  completed,required TResult Function( ProjectArchived value)  archived,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( ProjectOpen value)  open,required TResult Function( ProjectActive value)  active,required TResult Function( ProjectMonitoring value)  monitoring,required TResult Function( ProjectOnHold value)  onHold,required TResult Function( ProjectCompleted value)  completed,required TResult Function( ProjectArchived value)  archived,}){
 final _that = this;
 switch (_that) {
 case ProjectOpen():
 return open(_that);case ProjectActive():
-return active(_that);case ProjectOnHold():
+return active(_that);case ProjectMonitoring():
+return monitoring(_that);case ProjectOnHold():
 return onHold(_that);case ProjectCompleted():
 return completed(_that);case ProjectArchived():
 return archived(_that);}
@@ -188,12 +194,13 @@ return archived(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ProjectOpen value)?  open,TResult? Function( ProjectActive value)?  active,TResult? Function( ProjectOnHold value)?  onHold,TResult? Function( ProjectCompleted value)?  completed,TResult? Function( ProjectArchived value)?  archived,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( ProjectOpen value)?  open,TResult? Function( ProjectActive value)?  active,TResult? Function( ProjectMonitoring value)?  monitoring,TResult? Function( ProjectOnHold value)?  onHold,TResult? Function( ProjectCompleted value)?  completed,TResult? Function( ProjectArchived value)?  archived,}){
 final _that = this;
 switch (_that) {
 case ProjectOpen() when open != null:
 return open(_that);case ProjectActive() when active != null:
-return active(_that);case ProjectOnHold() when onHold != null:
+return active(_that);case ProjectMonitoring() when monitoring != null:
+return monitoring(_that);case ProjectOnHold() when onHold != null:
 return onHold(_that);case ProjectCompleted() when completed != null:
 return completed(_that);case ProjectArchived() when archived != null:
 return archived(_that);case _:
@@ -213,11 +220,12 @@ return archived(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  open,TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  active,TResult Function( String id,  DateTime createdAt,  int utcOffset,  String reason,  String? timezone,  Geolocation? geolocation)?  onHold,TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  completed,TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  archived,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  open,TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  active,TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  monitoring,TResult Function( String id,  DateTime createdAt,  int utcOffset,  String reason,  String? timezone,  Geolocation? geolocation)?  onHold,TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  completed,TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  archived,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case ProjectOpen() when open != null:
 return open(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectActive() when active != null:
-return active(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectOnHold() when onHold != null:
+return active(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectMonitoring() when monitoring != null:
+return monitoring(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectOnHold() when onHold != null:
 return onHold(_that.id,_that.createdAt,_that.utcOffset,_that.reason,_that.timezone,_that.geolocation);case ProjectCompleted() when completed != null:
 return completed(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectArchived() when archived != null:
 return archived(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case _:
@@ -238,11 +246,12 @@ return archived(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.ge
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)  open,required TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)  active,required TResult Function( String id,  DateTime createdAt,  int utcOffset,  String reason,  String? timezone,  Geolocation? geolocation)  onHold,required TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)  completed,required TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)  archived,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)  open,required TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)  active,required TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)  monitoring,required TResult Function( String id,  DateTime createdAt,  int utcOffset,  String reason,  String? timezone,  Geolocation? geolocation)  onHold,required TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)  completed,required TResult Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)  archived,}) {final _that = this;
 switch (_that) {
 case ProjectOpen():
 return open(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectActive():
-return active(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectOnHold():
+return active(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectMonitoring():
+return monitoring(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectOnHold():
 return onHold(_that.id,_that.createdAt,_that.utcOffset,_that.reason,_that.timezone,_that.geolocation);case ProjectCompleted():
 return completed(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectArchived():
 return archived(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);}
@@ -259,11 +268,12 @@ return archived(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.ge
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  open,TResult? Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  active,TResult? Function( String id,  DateTime createdAt,  int utcOffset,  String reason,  String? timezone,  Geolocation? geolocation)?  onHold,TResult? Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  completed,TResult? Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  archived,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  open,TResult? Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  active,TResult? Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  monitoring,TResult? Function( String id,  DateTime createdAt,  int utcOffset,  String reason,  String? timezone,  Geolocation? geolocation)?  onHold,TResult? Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  completed,TResult? Function( String id,  DateTime createdAt,  int utcOffset,  String? timezone,  Geolocation? geolocation)?  archived,}) {final _that = this;
 switch (_that) {
 case ProjectOpen() when open != null:
 return open(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectActive() when active != null:
-return active(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectOnHold() when onHold != null:
+return active(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectMonitoring() when monitoring != null:
+return monitoring(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectOnHold() when onHold != null:
 return onHold(_that.id,_that.createdAt,_that.utcOffset,_that.reason,_that.timezone,_that.geolocation);case ProjectCompleted() when completed != null:
 return completed(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case ProjectArchived() when archived != null:
 return archived(_that.id,_that.createdAt,_that.utcOffset,_that.timezone,_that.geolocation);case _:
@@ -436,6 +446,99 @@ class _$ProjectActiveCopyWithImpl<$Res>
 /// with the given fields replaced by the non-null parameter values.
 @override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? utcOffset = null,Object? timezone = freezed,Object? geolocation = freezed,}) {
   return _then(ProjectActive(
+id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
+as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
+as DateTime,utcOffset: null == utcOffset ? _self.utcOffset : utcOffset // ignore: cast_nullable_to_non_nullable
+as int,timezone: freezed == timezone ? _self.timezone : timezone // ignore: cast_nullable_to_non_nullable
+as String?,geolocation: freezed == geolocation ? _self.geolocation : geolocation // ignore: cast_nullable_to_non_nullable
+as Geolocation?,
+  ));
+}
+
+/// Create a copy of ProjectStatus
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$GeolocationCopyWith<$Res>? get geolocation {
+    if (_self.geolocation == null) {
+    return null;
+  }
+
+  return $GeolocationCopyWith<$Res>(_self.geolocation!, (value) {
+    return _then(_self.copyWith(geolocation: value));
+  });
+}
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class ProjectMonitoring implements ProjectStatus {
+  const ProjectMonitoring({required this.id, required this.createdAt, required this.utcOffset, this.timezone, this.geolocation, final  String? $type}): $type = $type ?? 'monitoring';
+  factory ProjectMonitoring.fromJson(Map<String, dynamic> json) => _$ProjectMonitoringFromJson(json);
+
+@override final  String id;
+@override final  DateTime createdAt;
+@override final  int utcOffset;
+@override final  String? timezone;
+@override final  Geolocation? geolocation;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of ProjectStatus
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$ProjectMonitoringCopyWith<ProjectMonitoring> get copyWith => _$ProjectMonitoringCopyWithImpl<ProjectMonitoring>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$ProjectMonitoringToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is ProjectMonitoring&&(identical(other.id, id) || other.id == id)&&(identical(other.createdAt, createdAt) || other.createdAt == createdAt)&&(identical(other.utcOffset, utcOffset) || other.utcOffset == utcOffset)&&(identical(other.timezone, timezone) || other.timezone == timezone)&&(identical(other.geolocation, geolocation) || other.geolocation == geolocation));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,id,createdAt,utcOffset,timezone,geolocation);
+
+@override
+String toString() {
+  return 'ProjectStatus.monitoring(id: $id, createdAt: $createdAt, utcOffset: $utcOffset, timezone: $timezone, geolocation: $geolocation)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $ProjectMonitoringCopyWith<$Res> implements $ProjectStatusCopyWith<$Res> {
+  factory $ProjectMonitoringCopyWith(ProjectMonitoring value, $Res Function(ProjectMonitoring) _then) = _$ProjectMonitoringCopyWithImpl;
+@override @useResult
+$Res call({
+ String id, DateTime createdAt, int utcOffset, String? timezone, Geolocation? geolocation
+});
+
+
+@override $GeolocationCopyWith<$Res>? get geolocation;
+
+}
+/// @nodoc
+class _$ProjectMonitoringCopyWithImpl<$Res>
+    implements $ProjectMonitoringCopyWith<$Res> {
+  _$ProjectMonitoringCopyWithImpl(this._self, this._then);
+
+  final ProjectMonitoring _self;
+  final $Res Function(ProjectMonitoring) _then;
+
+/// Create a copy of ProjectStatus
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? id = null,Object? createdAt = null,Object? utcOffset = null,Object? timezone = freezed,Object? geolocation = freezed,}) {
+  return _then(ProjectMonitoring(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,createdAt: null == createdAt ? _self.createdAt : createdAt // ignore: cast_nullable_to_non_nullable
 as DateTime,utcOffset: null == utcOffset ? _self.utcOffset : utcOffset // ignore: cast_nullable_to_non_nullable

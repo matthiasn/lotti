@@ -35,6 +35,7 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
         isPrivate: category.private,
         isActive: category.active,
         isFavorite: category.favorite ?? false,
+        isAvailableForDayPlan: category.isAvailableForDayPlan ?? false,
       ),
       onChanged: (field, {required value}) {
         switch (field) {
@@ -44,6 +45,8 @@ extension _CategoryDetailsFormSections on _CategoryDetailsPageState {
             controller.updateFormField(active: value);
           case SwitchFieldType.favorite:
             controller.updateFormField(favorite: value);
+          case SwitchFieldType.availableForDayPlan:
+            controller.updateFormField(isAvailableForDayPlan: value);
         }
       },
     );

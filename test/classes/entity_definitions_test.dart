@@ -257,6 +257,7 @@ void main() {
         private: false,
         active: true,
         favorite: true,
+        isAvailableForDayPlan: true,
         color: '#336699',
         defaultLanguageCode: 'en',
         speechDictionary: ['kg', 'steps', 'HR'],
@@ -266,7 +267,27 @@ void main() {
       final typed = decoded as CategoryDefinition;
       expect(typed.name, 'Health');
       expect(typed.speechDictionary, ['kg', 'steps', 'HR']);
+      expect(typed.isAvailableForDayPlan, isTrue);
     });
+
+    test(
+      'CategoryDefinition without isAvailableForDayPlan key decodes to null',
+      () {
+        // JSON written by an app version that predates the day-plan flag.
+        final def = EntityDefinition.categoryDefinition(
+          id: 'cat-legacy',
+          createdAt: date,
+          updatedAt: date,
+          name: 'Legacy',
+          vectorClock: null,
+          private: false,
+          active: true,
+        );
+        final json = def.toJson()..remove('isAvailableForDayPlan');
+        final decoded = EntityDefinition.fromJson(json) as CategoryDefinition;
+        expect(decoded.isAvailableForDayPlan, isNull);
+      },
+    );
 
     test('LabelDefinition round-trips', () {
       final def = EntityDefinition.labelDefinition(
@@ -762,6 +783,9 @@ class _GeneratedEntityDefinition {
         vectorClock: _vc,
         private: optionalsSlot.isOdd,
         active: optionalsSlot.isEven,
+        isAvailableForDayPlan: optionalsSlot % 3 == 0
+            ? null
+            : optionalsSlot.isEven,
         color: optionalsSlot % 3 == 0
             ? null
             : '#${idSlot.toRadixString(16).padLeft(6, '0')}',

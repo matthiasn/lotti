@@ -9,7 +9,14 @@ import 'package:lotti/features/sync/vector_clock.dart';
 /// variant), `entry_link_test.dart` (the `ProjectLink` variant), and
 /// `project_data_test.dart` (status/date/text primitives).
 
-enum GeneratedProjectStatusKind { open, active, onHold, completed, archived }
+enum GeneratedProjectStatusKind {
+  open,
+  active,
+  monitoring,
+  onHold,
+  completed,
+  archived,
+}
 
 class GeneratedProjectEntry {
   const GeneratedProjectEntry({
@@ -213,6 +220,11 @@ ProjectStatus projectStatusOf(
       utcOffset: idSlot,
     ),
     GeneratedProjectStatusKind.active => ProjectStatus.active(
+      id: id,
+      createdAt: date,
+      utcOffset: idSlot,
+    ),
+    GeneratedProjectStatusKind.monitoring => ProjectStatus.monitoring(
       id: id,
       createdAt: date,
       utcOffset: idSlot,

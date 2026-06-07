@@ -54,4 +54,4 @@ final class AiConfigInitializationProvider
 }
 
 String _$aiConfigInitializationHash() =>
-    r'f0c5fea0728f92cb37e494f1103fc067bd82049f';
+    r'944610dcbe94a73bedf07bbeb5322be3eaa4a912';

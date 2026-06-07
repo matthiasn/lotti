@@ -2369,6 +2369,13 @@ class AppLocalizationsCs extends AppLocalizations {
   String get categoryCreationError => 'Nepodařilo se vytvořit kategorii.';
 
   @override
+  String get categoryDayPlanDescription =>
+      'Zpřístupnit tuto kategorii pro výběr v denním plánu';
+
+  @override
+  String get categoryDayPlanLabel => 'Denní plánování';
+
+  @override
   String get categoryDefaultLanguageDescription =>
       'Nastavte výchozí jazyk pro úkoly v této kategorii';
 
@@ -3249,11 +3256,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get dailyOsNextCategoryFilterDescription =>
-      'Automatické zpracování Daily OS používá jen zapnuté kategorie.';
+      'Automatické zpracování Daily OS používá jen kategorie zapnuté pro denní plánování.';
 
   @override
   String get dailyOsNextCategoryFilterEmpty =>
-      'Zatím nejsou dostupné žádné kategorie.';
+      'Zatím nejsou aktivované žádné kategorie pro denní plánování.';
 
   @override
   String get dailyOsNextCategoryFilterIncludeAll => 'Zahrnout vše';
@@ -5782,6 +5789,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get projectStatusCompleted => 'Dokončený';
+
+  @override
+  String get projectStatusMonitoring => 'Sledování';
 
   @override
   String get projectStatusOnHold => 'Pozastavený';

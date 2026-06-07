@@ -2380,6 +2380,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a putut crea categoria. Vă rugăm să încercați din nou.';
 
   @override
+  String get categoryDayPlanDescription =>
+      'Faceți această categorie disponibilă pentru selecție în planul zilei';
+
+  @override
+  String get categoryDayPlanLabel => 'Planificarea zilei';
+
+  @override
   String get categoryDefaultLanguageDescription =>
       'Setați o limbă implicită pentru sarcinile din această categorie';
 
@@ -3281,11 +3288,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextCategoryFilterDescription =>
-      'Doar categoriile activate sunt folosite pentru procesarea automată Daily OS.';
+      'Doar categoriile activate pentru planificarea zilei sunt folosite pentru procesarea automată Daily OS.';
 
   @override
   String get dailyOsNextCategoryFilterEmpty =>
-      'Nu există încă nicio categorie disponibilă.';
+      'Nu există încă categorii activate pentru planificarea zilei.';
 
   @override
   String get dailyOsNextCategoryFilterIncludeAll => 'Include toate';
@@ -5816,6 +5823,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectStatusCompleted => 'Finalizat';
+
+  @override
+  String get projectStatusMonitoring => 'Monitorizare';
 
   @override
   String get projectStatusOnHold => 'În așteptare';

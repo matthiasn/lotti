@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1016]
 ### Added
+- Categories have a new "Day planning" switch. Day-plan category selection is
+  strictly opt-in: only categories with the switch turned on are offered in
+  the day plan — nothing is available by default.
+- Projects have a new "Monitoring" status for projects that are not closed
+  yet but have no time actively scheduled — they are only touched when
+  something comes up before they can be declared done.
 - Task agents now maintain their own day-planning attention requests during
   normal wakes, resolving stale requests when tasks are done or no longer need
   scheduled time.

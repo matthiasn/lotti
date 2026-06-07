@@ -12,7 +12,7 @@ Categories are persisted `CategoryDefinition` entities. In the current codebase 
 - Settings surfaces: `CategoriesListPage`, `CategoryDetailsPage`, and create mode
 - Reusable picker surfaces: `CategoryField`, `CategorySelectionModalContent`, and `CategoryCreateModal`
 - Category presentation metadata: `name`, `color`, `icon`
-- Category flags: `private`, `active`, `favorite`
+- Category flags: `private`, `active`, `favorite`, `isAvailableForDayPlan`
 - Stored defaults: `defaultLanguageCode`, `defaultProfileId`, `defaultTemplateId`
 - Category-scoped AI and speech context: `speechDictionary`, `correctionExamples`
 
@@ -82,8 +82,8 @@ The fields with verified runtime consumers are:
 
 - `name`, `color`, `icon`
   Used throughout list, detail, and picker widgets. `category_icon.dart` centralizes the icon catalog and display constants.
-- `private`, `active`, `favorite`
-  Used by settings tiles and picker behavior. `EntitiesCacheService.sortedCategories` returns only active categories, while favorite categories are surfaced first in the selection modal.
+- `private`, `active`, `favorite`, `isAvailableForDayPlan`
+  Used by settings tiles and picker behavior. `EntitiesCacheService.sortedCategories` returns only active categories, while favorite categories are surfaced first in the selection modal. `isAvailableForDayPlan` is a strict opt-in switch (nullable for JSON backward compatibility; `null` means not available): only categories with the switch turned on are offered for selection in the day plan (`lib/features/daily_os_next/logic/day_plan_availability.dart`). Note that category definitions sync last-writer-wins (no vector-clock merge), so an edit from an app version that predates a flag can drop it.
 - `defaultProfileId`
   Copied into `TaskData.profileId` when tasks are created from category-aware entry points.
 - `defaultTemplateId`
@@ -105,6 +105,7 @@ The fields with verified runtime consumers are:
   - `private: false`
   - `active: true`
   - `favorite: null`
+  - `isAvailableForDayPlan: null` (not available for day planning until opted in)
 - `deleteCategory()` is a soft delete that sets `deletedAt` and `updatedAt`
 - `getTaskCountsByCategory()` is a batch query used by the list UI
 

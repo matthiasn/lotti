@@ -22,6 +22,17 @@ sealed class ProjectStatus with _$ProjectStatus {
     Geolocation? geolocation,
   }) = ProjectActive;
 
+  /// Project that is not closed, but has no time actively scheduled for it.
+  /// Monitored projects are only touched when something comes up before they
+  /// can be declared done — they are excluded from day planning.
+  const factory ProjectStatus.monitoring({
+    required String id,
+    required DateTime createdAt,
+    required int utcOffset,
+    String? timezone,
+    Geolocation? geolocation,
+  }) = ProjectMonitoring;
+
   const factory ProjectStatus.onHold({
     required String id,
     required DateTime createdAt,
@@ -79,6 +90,7 @@ extension ProjectStatusExtension on ProjectStatus {
   String get toDbString => switch (this) {
     ProjectOpen() => 'OPEN',
     ProjectActive() => 'ACTIVE',
+    ProjectMonitoring() => 'MONITORING',
     ProjectOnHold() => 'ON HOLD',
     ProjectCompleted() => 'COMPLETED',
     ProjectArchived() => 'ARCHIVED',
@@ -88,6 +100,7 @@ extension ProjectStatusExtension on ProjectStatus {
   String get label => switch (this) {
     ProjectOpen() => 'Open',
     ProjectActive() => 'Active',
+    ProjectMonitoring() => 'Monitoring',
     ProjectOnHold() => 'On Hold',
     ProjectCompleted() => 'Completed',
     ProjectArchived() => 'Archived',

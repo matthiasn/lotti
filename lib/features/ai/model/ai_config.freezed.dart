@@ -579,17 +579,17 @@ class AiConfigInferenceProfile implements AiConfig {
 @override final  String id;
 @override final  String name;
 @override final  DateTime createdAt;
-/// providerModelId string for agentic thinking (tool calling, reasoning).
+/// Model config id for agentic thinking (tool calling, reasoning).
  final  String thinkingModelId;
-/// providerModelId string for high-end thinking tasks (e.g. coding prompt
+/// Model config id for high-end thinking tasks (e.g. coding prompt
 /// generation) where quality matters more than speed/cost.
 /// Falls back to the regular thinking model when not set.
  final  String? thinkingHighEndModelId;
-/// providerModelId string for image recognition / vision tasks.
+/// Model config id for image recognition / vision tasks.
  final  String? imageRecognitionModelId;
-/// providerModelId string for audio transcription.
+/// Model config id for audio transcription.
  final  String? transcriptionModelId;
-/// providerModelId string for image generation.
+/// Model config id for image generation.
  final  String? imageGenerationModelId;
 /// Whether this is a system-seeded default (non-deletable).
 @JsonKey() final  bool isDefault;

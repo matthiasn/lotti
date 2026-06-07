@@ -19,12 +19,13 @@ extension _AnyProjectFilter on glados.Any {
       glados.AnyUtils(this).choose(<String>[
         ProjectStatusFilterIds.open,
         ProjectStatusFilterIds.active,
+        ProjectStatusFilterIds.monitoring,
         ProjectStatusFilterIds.onHold,
         ProjectStatusFilterIds.completed,
         ProjectStatusFilterIds.archived,
       ]);
 
-  /// An arbitrary letter/digit string that is not one of the five canonical IDs.
+  /// An arbitrary letter/digit string that is not one of the six canonical IDs.
   glados.Generator<String> get unknownFilterId => glados.any.letterOrDigits;
 }
 
@@ -127,6 +128,7 @@ void main() {
         final isCanonical = [
           ProjectStatusFilterIds.open,
           ProjectStatusFilterIds.active,
+          ProjectStatusFilterIds.monitoring,
           ProjectStatusFilterIds.completed,
           ProjectStatusFilterIds.archived,
           // onHold contains a hyphen so it can never be a letterOrDigits hit
@@ -148,8 +150,8 @@ void main() {
   // -------------------------------------------------------------------------
 
   group('allProjectStatusKinds', () {
-    test('contains all five distinct kinds in declaration order', () {
-      expect(allProjectStatusKinds, hasLength(5));
+    test('contains all six distinct kinds in declaration order', () {
+      expect(allProjectStatusKinds, hasLength(6));
       expect(allProjectStatusKinds, containsAll(ProjectStatusKind.values));
     });
   });
@@ -165,6 +167,7 @@ void main() {
         final matchedKind = switch (status) {
           ProjectOpen() => ProjectStatusKind.open,
           ProjectActive() => ProjectStatusKind.active,
+          ProjectMonitoring() => ProjectStatusKind.monitoring,
           ProjectOnHold() => ProjectStatusKind.onHold,
           ProjectCompleted() => ProjectStatusKind.completed,
           ProjectArchived() => ProjectStatusKind.archived,

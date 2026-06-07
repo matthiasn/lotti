@@ -323,8 +323,9 @@ void main() {
     await tester.pumpAndSettle();
 
     // Selection modal content is rendered inline (no separate sheet widget)
-    expect(find.byType(DesignSystemCheckbox), findsNWidgets(5));
+    expect(find.byType(DesignSystemCheckbox), findsNWidgets(6));
     expect(find.byType(CheckboxListTile), findsNothing);
+    expect(find.text('Monitoring'), findsOneWidget);
     expect(find.text('Archived'), findsOneWidget);
   });
 

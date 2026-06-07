@@ -148,6 +148,24 @@ stateDiagram-v2
   the processing filter button; `ReconcileController` applies the same
   preference to parsed capture items and pending decisions before the user sees
   them.
+- Day-plan category availability is strictly opt-in via the category editor's
+  "Day planning" switch (`CategoryDefinition.isAvailableForDayPlan`). The pure
+  predicates in `logic/day_plan_availability.dart` define the day-plan
+  universe: `filterDayPlanCategories` (active, non-deleted, flag on) feeds the
+  processing filter button's category list, layered UNDER the session-scoped
+  exclusion preference above (exclusions are scoped to the day-plan
+  universe: confirming the picker rebuilds the persisted exclusion set from
+  the currently flagged categories, so exclusions of since-unflagged
+  categories are dropped). Projects are tiered via `dayPlanProjectPriority`:
+  `active` forms the scheduled pool; `open`/`monitoring`/`onHold` remain
+  available at lower (opportunistic) priority so something noticed in them
+  can still be planned; `completed`/`archived` are unavailable.
+  `filterDayPlanProjects` orders the scheduled tier first. The helpers are not yet
+  wired into the day-agent identity: `AgentIdentity.allowedCategoryIds` treats
+  an EMPTY set as allow-all, so passing the strict (possibly empty) opt-in set
+  there would invert the semantics — the identity also snapshots the set at
+  first capture of the day, so flag edits would not apply mid-day. Wiring the
+  agent layer needs an explicit "constrained" marker first.
 - Capture supports both voice and typed intake. The idle copy exposes a real
   "type instead" action that moves the controller directly to the editable
   transcript state without opening the microphone. When Capture is opened for a

@@ -23,10 +23,12 @@ void main() {
     work = CategoryTestUtils.createTestCategory(
       id: 'cat_work',
       name: 'Actual Work',
+      isAvailableForDayPlan: true,
     );
     personal = CategoryTestUtils.createTestCategory(
       id: 'cat_personal',
       name: 'Actual Personal',
+      isAvailableForDayPlan: true,
     );
     cache = MockEntitiesCacheService();
     _stubCategories(cache, [personal, work]);
@@ -151,6 +153,55 @@ void main() {
     ).called(1);
   });
 
+  testWidgets(
+    'only categories opted into day planning appear in the picker',
+    (tester) async {
+      final unflagged = CategoryTestUtils.createTestCategory(
+        id: 'cat_unflagged',
+        name: 'Not For Day Plan',
+      );
+      final optedOut = CategoryTestUtils.createTestCategory(
+        id: 'cat_opted_out',
+        name: 'Opted Out',
+        isAvailableForDayPlan: false,
+      );
+      _stubCategories(cache, [personal, work, unflagged, optedOut]);
+
+      await pumpButton(tester);
+      await openPicker(tester);
+
+      // Only the flagged categories form the day-plan universe.
+      expect(find.text('Actual Personal'), findsOneWidget);
+      expect(find.text('Actual Work'), findsOneWidget);
+      expect(find.text('Not For Day Plan'), findsNothing);
+      expect(find.text('Opted Out'), findsNothing);
+      expect(find.byIcon(Icons.check_circle_rounded), findsNWidgets(2));
+    },
+  );
+
+  testWidgets(
+    'shows the empty message when no category is enabled for day planning',
+    (tester) async {
+      // Categories exist, but none has the day-plan switch turned on —
+      // strict opt-in leaves the universe empty.
+      _stubCategories(cache, [
+        CategoryTestUtils.createTestCategory(
+          id: 'cat_unflagged',
+          name: 'Not For Day Plan',
+        ),
+      ]);
+
+      await pumpButton(tester);
+      await openPicker(tester);
+
+      expect(
+        find.text('No categories enabled for day planning yet.'),
+        findsOneWidget,
+      );
+      expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
+    },
+  );
+
   testWidgets('shows the empty message when no categories exist', (
     tester,
   ) async {
@@ -159,7 +210,10 @@ void main() {
     await pumpButton(tester);
     await openPicker(tester);
 
-    expect(find.text('No categories available yet.'), findsOneWidget);
+    expect(
+      find.text('No categories enabled for day planning yet.'),
+      findsOneWidget,
+    );
     expect(find.byIcon(Icons.check_circle_rounded), findsNothing);
     expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsNothing);
 

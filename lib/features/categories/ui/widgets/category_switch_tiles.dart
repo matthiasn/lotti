@@ -8,11 +8,13 @@ class CategorySwitchSettings {
     required this.isPrivate,
     required this.isActive,
     required this.isFavorite,
+    required this.isAvailableForDayPlan,
   });
 
   final bool isPrivate;
   final bool isActive;
   final bool isFavorite;
+  final bool isAvailableForDayPlan;
 }
 
 /// Callback type for switch value changes
@@ -20,12 +22,13 @@ typedef SwitchFieldChanged =
     void Function(SwitchFieldType field, {required bool value});
 
 /// Enum to identify which switch was changed
-enum SwitchFieldType { private, active, favorite }
+enum SwitchFieldType { private, active, favorite, availableForDayPlan }
 
-/// A widget that displays three switch tiles for category settings.
+/// A widget that displays four switch tiles for category settings.
 ///
-/// This widget shows switches for private, active, and favorite settings.
-/// It's designed to be independent of Riverpod for better testability.
+/// This widget shows switches for private, active, favorite, and
+/// day-plan availability settings. It's designed to be independent of
+/// Riverpod for better testability.
 class CategorySwitchTiles extends StatelessWidget {
   const CategorySwitchTiles({
     required this.settings,
@@ -64,6 +67,15 @@ class CategorySwitchTiles extends StatelessWidget {
           onChanged: (value) =>
               onChanged(SwitchFieldType.favorite, value: value),
           icon: Icons.star_outline,
+        ),
+        const SizedBox(height: 8),
+        LottiSwitchField(
+          title: context.messages.categoryDayPlanLabel,
+          subtitle: context.messages.categoryDayPlanDescription,
+          value: settings.isAvailableForDayPlan,
+          onChanged: (value) =>
+              onChanged(SwitchFieldType.availableForDayPlan, value: value),
+          icon: Icons.today_outlined,
         ),
       ],
     );

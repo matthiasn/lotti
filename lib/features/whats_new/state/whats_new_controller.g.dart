@@ -156,7 +156,7 @@ final class WhatsNewControllerProvider
 }
 
 String _$whatsNewControllerHash() =>
-    r'8b840cd5c3699e065f54778a34ae8ba141d671f3';
+    r'6b7328890eb399bc418dbacd978ef2c7788a42d1';
 
 /// Controller for the "What's New" feature.
 ///
