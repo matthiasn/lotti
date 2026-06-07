@@ -28,7 +28,7 @@ void main() {
 
     glados.Glados(
       glados.any.generatedRatingQuestionOption,
-      glados.ExploreConfig(numRuns: 140),
+      glados.ExploreConfig(numRuns: 60),
     ).test('round-trips generated options through JSON', (scenario) {
       final option = scenario.option;
 

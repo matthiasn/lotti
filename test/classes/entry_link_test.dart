@@ -3,7 +3,10 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/database/conversions.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+
+import 'project_test_generators.dart';
 
 void main() {
   group('EntryLink collapsed field', () {
@@ -223,6 +226,99 @@ void main() {
       expect(restored.collapsed, link.collapsed, reason: '$scenario');
       expect(restored.hidden, link.hidden, reason: '$scenario');
       expect(restored.runtimeType, link.runtimeType, reason: '$scenario');
+    }, tags: 'glados');
+  });
+
+  final projectTestDate = DateTime(2024, 3, 15, 10, 30);
+
+  group('EntryLink.project', () {
+    test('round-trip JSON serialization', () {
+      final link = EntryLink.project(
+        id: 'link-001',
+        fromId: 'project-001',
+        toId: 'task-001',
+        createdAt: projectTestDate,
+        updatedAt: projectTestDate,
+        vectorClock: null,
+      );
+
+      final json = jsonDecode(jsonEncode(link)) as Map<String, dynamic>;
+      final restored = EntryLink.fromJson(json);
+
+      expect(restored, isA<ProjectLink>());
+      final restoredLink = restored as ProjectLink;
+      expect(restoredLink.id, 'link-001');
+      expect(restoredLink.fromId, 'project-001');
+      expect(restoredLink.toId, 'task-001');
+    });
+
+    test('linkedDbEntity produces correct type', () {
+      final link = EntryLink.project(
+        id: 'link-001',
+        fromId: 'project-001',
+        toId: 'task-001',
+        createdAt: projectTestDate,
+        updatedAt: projectTestDate,
+        vectorClock: null,
+      );
+
+      final dbLink = linkedDbEntity(link);
+      expect(dbLink.type, 'ProjectLink');
+      expect(dbLink.fromId, 'project-001');
+      expect(dbLink.toId, 'task-001');
+    });
+
+    test('entryLinkFromLinkedDbEntry round-trips ProjectLink', () {
+      final link = EntryLink.project(
+        id: 'link-001',
+        fromId: 'project-001',
+        toId: 'task-001',
+        createdAt: projectTestDate,
+        updatedAt: projectTestDate,
+        vectorClock: null,
+      );
+
+      final dbLink = linkedDbEntity(link);
+      final restored = entryLinkFromLinkedDbEntry(dbLink);
+
+      expect(restored, isA<ProjectLink>());
+      expect(restored.id, 'link-001');
+    });
+
+    test('fallbackUnion deserializes unknown link types as BasicLink', () {
+      // Simulates an older app version encountering a ProjectLink
+      // by testing that the fallback works for truly unknown types
+      final json = <String, dynamic>{
+        'runtimeType': 'totally_unknown',
+        'id': 'link-999',
+        'fromId': 'a',
+        'toId': 'b',
+        'createdAt': projectTestDate.toIso8601String(),
+        'updatedAt': projectTestDate.toIso8601String(),
+        'vectorClock': null,
+      };
+
+      // The @Freezed(fallbackUnion: 'basic') ensures unknown types
+      // deserialize as BasicLink
+      final restored = EntryLink.fromJson(json);
+      expect(restored, isA<BasicLink>());
+    });
+
+    glados.Glados(
+      glados.any.generatedProjectLink,
+      glados.ExploreConfig(numRuns: 140),
+    ).test('round-trips generated project links through DB rows', (scenario) {
+      final link = scenario.link;
+
+      final dbLink = linkedDbEntity(link);
+      final restored = entryLinkFromLinkedDbEntry(dbLink);
+
+      expect(restored, equals(link), reason: '$scenario');
+      expect(restored, isA<ProjectLink>(), reason: '$scenario');
+      expect(dbLink.type, 'ProjectLink', reason: '$scenario');
+      expect(dbLink.fromId, link.fromId, reason: '$scenario');
+      expect(dbLink.toId, link.toId, reason: '$scenario');
+      expect(dbLink.hidden, link.hidden ?? false, reason: '$scenario');
     }, tags: 'glados');
   });
 }

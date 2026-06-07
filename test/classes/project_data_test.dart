@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/project_data.dart';
 
+import 'project_test_generators.dart';
+
 void main() {
   group('ProjectData', () {
     final testDate = DateTime(2024, 3, 15, 10, 30);
@@ -268,8 +270,6 @@ void main() {
   });
 }
 
-enum _GeneratedProjectStatusKind { open, active, onHold, completed, archived }
-
 class _GeneratedProjectStatus {
   const _GeneratedProjectStatus({
     required this.kind,
@@ -280,7 +280,7 @@ class _GeneratedProjectStatus {
     required this.reasonSlot,
   });
 
-  final _GeneratedProjectStatusKind kind;
+  final GeneratedProjectStatusKind kind;
   final int idSlot;
   final int dateSlot;
   final int utcOffset;
@@ -290,38 +290,38 @@ class _GeneratedProjectStatus {
   ProjectStatus get status {
     final common = (
       id: 'project-status-$idSlot',
-      createdAt: _projectDate(dateSlot),
+      createdAt: projectEntityDate(dateSlot),
       utcOffset: utcOffset,
-      timezone: _optionalProjectText(timezoneSlot, 'Timezone'),
+      timezone: optionalProjectText(timezoneSlot, 'Timezone'),
     );
 
     return switch (kind) {
-      _GeneratedProjectStatusKind.open => ProjectStatus.open(
+      GeneratedProjectStatusKind.open => ProjectStatus.open(
         id: common.id,
         createdAt: common.createdAt,
         utcOffset: common.utcOffset,
         timezone: common.timezone,
       ),
-      _GeneratedProjectStatusKind.active => ProjectStatus.active(
+      GeneratedProjectStatusKind.active => ProjectStatus.active(
         id: common.id,
         createdAt: common.createdAt,
         utcOffset: common.utcOffset,
         timezone: common.timezone,
       ),
-      _GeneratedProjectStatusKind.onHold => ProjectStatus.onHold(
+      GeneratedProjectStatusKind.onHold => ProjectStatus.onHold(
         id: common.id,
         createdAt: common.createdAt,
         utcOffset: common.utcOffset,
-        reason: _optionalProjectText(reasonSlot, 'Reason') ?? '',
+        reason: optionalProjectText(reasonSlot, 'Reason') ?? '',
         timezone: common.timezone,
       ),
-      _GeneratedProjectStatusKind.completed => ProjectStatus.completed(
+      GeneratedProjectStatusKind.completed => ProjectStatus.completed(
         id: common.id,
         createdAt: common.createdAt,
         utcOffset: common.utcOffset,
         timezone: common.timezone,
       ),
-      _GeneratedProjectStatusKind.archived => ProjectStatus.archived(
+      GeneratedProjectStatusKind.archived => ProjectStatus.archived(
         id: common.id,
         createdAt: common.createdAt,
         utcOffset: common.utcOffset,
@@ -331,19 +331,19 @@ class _GeneratedProjectStatus {
   }
 
   String get expectedDbString => switch (kind) {
-    _GeneratedProjectStatusKind.open => 'OPEN',
-    _GeneratedProjectStatusKind.active => 'ACTIVE',
-    _GeneratedProjectStatusKind.onHold => 'ON HOLD',
-    _GeneratedProjectStatusKind.completed => 'COMPLETED',
-    _GeneratedProjectStatusKind.archived => 'ARCHIVED',
+    GeneratedProjectStatusKind.open => 'OPEN',
+    GeneratedProjectStatusKind.active => 'ACTIVE',
+    GeneratedProjectStatusKind.onHold => 'ON HOLD',
+    GeneratedProjectStatusKind.completed => 'COMPLETED',
+    GeneratedProjectStatusKind.archived => 'ARCHIVED',
   };
 
   String get expectedLabel => switch (kind) {
-    _GeneratedProjectStatusKind.open => 'Open',
-    _GeneratedProjectStatusKind.active => 'Active',
-    _GeneratedProjectStatusKind.onHold => 'On Hold',
-    _GeneratedProjectStatusKind.completed => 'Completed',
-    _GeneratedProjectStatusKind.archived => 'Archived',
+    GeneratedProjectStatusKind.open => 'Open',
+    GeneratedProjectStatusKind.active => 'Active',
+    GeneratedProjectStatusKind.onHold => 'On Hold',
+    GeneratedProjectStatusKind.completed => 'Completed',
+    GeneratedProjectStatusKind.archived => 'Archived',
   };
 
   @override
@@ -384,12 +384,14 @@ class _GeneratedProjectData {
   ProjectData get data => ProjectData(
     title: title,
     status: status.status,
-    dateFrom: _projectDate(dateFromSlot),
-    dateTo: _projectDate(dateToSlot),
+    dateFrom: projectEntityDate(dateFromSlot),
+    dateTo: projectEntityDate(dateToSlot),
     statusHistory: statusHistory.map((generated) => generated.status).toList(),
-    targetDate: targetDateSlot.isEven ? null : _projectDate(targetDateSlot),
-    profileId: _optionalProjectText(profileIdSlot, 'profile'),
-    coverArtId: _optionalProjectText(coverArtIdSlot, 'cover'),
+    targetDate: targetDateSlot.isEven
+        ? null
+        : projectEntityDate(targetDateSlot),
+    profileId: optionalProjectText(profileIdSlot, 'profile'),
+    coverArtId: optionalProjectText(coverArtIdSlot, 'cover'),
     coverArtCropX: coverArtCropSlot / 100,
   );
 
@@ -418,8 +420,8 @@ extension _AnyProjectData on glados.Any {
         r'Project \ slash',
       ]);
 
-  glados.Generator<_GeneratedProjectStatusKind> get _projectStatusKind =>
-      glados.AnyUtils(this).choose(_GeneratedProjectStatusKind.values);
+  glados.Generator<GeneratedProjectStatusKind> get _projectStatusKind =>
+      glados.AnyUtils(this).choose(GeneratedProjectStatusKind.values);
 
   glados.Generator<_GeneratedProjectStatus> get generatedProjectStatus =>
       glados.CombinableAny(this).combine6(
@@ -430,7 +432,7 @@ extension _AnyProjectData on glados.Any {
         glados.IntAnys(this).intInRange(0, 20),
         glados.IntAnys(this).intInRange(0, 20),
         (
-          _GeneratedProjectStatusKind kind,
+          GeneratedProjectStatusKind kind,
           int idSlot,
           int dateSlot,
           int utcOffset,
@@ -483,23 +485,4 @@ extension _AnyProjectData on glados.Any {
           coverArtCropSlot: coverArtCropSlot,
         ),
       );
-}
-
-DateTime _projectDate(int slot) {
-  return DateTime.utc(
-    2024 + (slot % 4),
-    (slot % 12) + 1,
-    (slot % 28) + 1,
-    slot % 24,
-    slot % 60,
-  );
-}
-
-String? _optionalProjectText(int slot, String prefix) {
-  return switch (slot % 4) {
-    0 => null,
-    1 => '$prefix-$slot',
-    2 => '$prefix "$slot"',
-    _ => '$prefix \\ $slot',
-  };
 }

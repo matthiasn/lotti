@@ -1,6 +1,10 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/supported_language.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+
+import '../widget_test_utils.dart';
 
 void main() {
   group('SupportedLanguage', () {
@@ -88,6 +92,37 @@ void main() {
         reason: '$scenario',
       );
     }, tags: 'glados');
+  });
+  group('SupportedLanguage.localizedName', () {
+    testWidgets('every language resolves a non-empty localized label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(makeTestableWidgetWithScaffold(const SizedBox()));
+      final context = tester.element(find.byType(SizedBox));
+
+      for (final language in SupportedLanguage.values) {
+        expect(
+          language.localizedName(context),
+          isNotEmpty,
+          reason: '$language',
+        );
+      }
+
+      // Spot-check exact resolution against the live ARB bundle.
+      final messages = context.messages;
+      expect(
+        SupportedLanguage.en.localizedName(context),
+        messages.taskLanguageEnglish,
+      );
+      expect(
+        SupportedLanguage.de.localizedName(context),
+        messages.taskLanguageGerman,
+      );
+      expect(
+        SupportedLanguage.ro.localizedName(context),
+        messages.taskLanguageRomanian,
+      );
+    });
   });
 }
 

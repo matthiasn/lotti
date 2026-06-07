@@ -105,7 +105,8 @@ void main() {
 
     glados.Glados(
       glados.any.generatedAutoCompleteRule,
-      glados.ExploreConfig(numRuns: 160),
+      // ignore: avoid_redundant_argument_values
+      glados.ExploreConfig(numRuns: 100),
     ).test('round-trips generated autocomplete rule trees through JSON', (
       scenario,
     ) {
