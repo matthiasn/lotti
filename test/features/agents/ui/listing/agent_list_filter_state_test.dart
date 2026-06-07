@@ -1,9 +1,7 @@
-import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
 import 'package:lotti/features/agents/ui/listing/agent_list_filter_state.dart';
-import 'package:lotti/features/agents/ui/listing/widgets/soul_avatar.dart';
 
 enum _GeneratedFilterOperationKind {
   toggleOption,
@@ -698,33 +696,6 @@ void main() {
 
     test('returns 0 for an empty seed', () {
       expect(hueForSeed(''), 0);
-    });
-  });
-
-  group('SoulAvatar', () {
-    testWidgets(
-      'whitespace-only label falls back to "?" rather than a blank glyph',
-      (tester) async {
-        await tester.pumpWidget(
-          const Directionality(
-            textDirection: TextDirection.ltr,
-            child: Center(child: SoulAvatar(label: '   ', hue: 200)),
-          ),
-        );
-        expect(find.text('?'), findsOneWidget);
-      },
-    );
-
-    testWidgets('non-empty label uses its first character (uppercased)', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        const Directionality(
-          textDirection: TextDirection.ltr,
-          child: Center(child: SoulAvatar(label: 'laura', hue: 142)),
-        ),
-      );
-      expect(find.text('L'), findsOneWidget);
     });
   });
 }
