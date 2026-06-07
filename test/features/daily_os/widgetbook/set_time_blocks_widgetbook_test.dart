@@ -11,7 +11,8 @@ void main() {
   group('buildSetTimeBlocksWidgetbookFolder', () {
     late WidgetbookUseCase useCase;
 
-    setUp(() {
+    // The folder structure is immutable config — validate and cache once.
+    setUpAll(() {
       final folder = buildSetTimeBlocksWidgetbookFolder();
       final children = folder.children;
       expect(children, isNotNull);
@@ -103,8 +104,14 @@ void main() {
     testWidgets('renders save plan button', (tester) async {
       await pumpPage(tester);
 
-      // Scroll down to reveal the button pushed below the fold
-      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      // Reveal the button pushed below the fold — scrollUntilVisible is
+      // robust against content height drift across SDK updates (the lazy
+      // list hasn't built the button yet, so ensureVisible can't see it).
+      await tester.scrollUntilVisible(
+        find.text('Save plan'),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pump();
 
       expect(find.text('Save plan'), findsOneWidget);
@@ -114,8 +121,13 @@ void main() {
     testWidgets('renders other categories section', (tester) async {
       await pumpPage(tester);
 
-      // Scroll down to see other categories
-      await tester.drag(find.byType(ListView), const Offset(0, -300));
+      // Reveal the section below the fold (see note above on
+      // scrollUntilVisible vs a fixed-pixel drag).
+      await tester.scrollUntilVisible(
+        find.text('Commute'),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
       await tester.pump();
 
       expect(find.text('Commute'), findsOneWidget);

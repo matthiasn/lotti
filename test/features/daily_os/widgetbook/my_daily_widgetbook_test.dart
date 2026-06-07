@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os/state/daily_os_controller.dart';
 import 'package:lotti/features/daily_os/state/time_history_header_controller.dart';
+import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/widgetbook/my_daily_widgetbook.dart';
 import 'package:lotti/features/design_system/components/avatars/design_system_avatar.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_calendar_picker.dart';
@@ -108,6 +109,29 @@ void main() {
       expect(find.byKey(const Key('my-daily-now-indicator')), findsNothing);
     });
 
+    testWidgets(
+      'navigating to the earliest strip date keeps the header consistent '
+      'at the window boundary',
+      (tester) async {
+        final useCase = _useCase('Ongoing Day');
+
+        await tester.pumpWidget(_buildWidgetbookHarness(useCase));
+        await _settlePreview(tester);
+
+        // Oct 15 is the first date in the fixture window (offset -2).
+        await tester.tap(find.byKey(const Key('my-daily-date-2023-10-15')));
+        await _settlePreview(tester);
+
+        _expectNoPendingExceptions(tester);
+        expect(find.text('Sunday, Oct 15, 2023'), findsOneWidget);
+        // Not "today" (now is Oct 17): no live now-indicator.
+        expect(
+          find.byKey(const Key('my-daily-now-indicator')),
+          findsNothing,
+        );
+      },
+    );
+
     testWidgets('filter-by-time-block starts with the expected chips active', (
       tester,
     ) async {
@@ -186,6 +210,37 @@ void main() {
       expect(dimmedTasksOpacity.opacity, 1);
     });
 
+    testWidgets(
+      'deactivating every filter chip resets all categories to full '
+      'opacity',
+      (tester) async {
+        final useCase = _useCase('Filtered');
+
+        await tester.pumpWidget(_buildWidgetbookHarness(useCase));
+        await _settlePreview(tester);
+
+        // 'Filtered' starts with holiday + hiking active (tasks dimmed).
+        await tester.tap(find.byKey(const Key('my-daily-filter-holiday')));
+        await _settlePreview(tester);
+        await tester.tap(find.byKey(const Key('my-daily-filter-hiking')));
+        await _settlePreview(tester);
+
+        _expectNoPendingExceptions(tester);
+        // No filter selected — every category renders at full emphasis.
+        for (final key in const [
+          'my-daily-category-opacity-holiday',
+          'my-daily-category-opacity-lotti-tasks',
+          'my-daily-category-opacity-hiking',
+        ]) {
+          expect(
+            tester.widget<Opacity>(find.byKey(Key(key))).opacity,
+            1,
+            reason: key,
+          );
+        }
+      },
+    );
+
     testWidgets('uses compact cards and detailed long-block layouts onscreen', (
       tester,
     ) async {
@@ -235,6 +290,12 @@ Future<void> _settlePreview(WidgetTester tester) async {
 
   await container.read(dailyOsControllerProvider.future);
   await container.read(timeHistoryHeaderControllerProvider.future);
+  // The unified data family is wired per fixture date — settle the one for
+  // the currently selected date so results cannot depend on pump ordering.
+  final selectedDate = container.read(dailyOsSelectedDateProvider);
+  await container.read(
+    unifiedDailyOsDataControllerProvider(date: selectedDate).future,
+  );
 
   await tester.pump();
 }
