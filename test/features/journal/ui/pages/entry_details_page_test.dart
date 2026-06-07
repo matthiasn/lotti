@@ -13,6 +13,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
+import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_checklist_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/linked_from_task_widget.dart';
@@ -53,6 +54,16 @@ class _FakeDropItem extends Fake implements DropItem {
 }
 
 void main() {
+  // setUpTestGetIt pre-registers core services (JournalDb,
+  // UpdateNotifications, SettingsDb, loggers); groups swap in their own
+  // mocks instead of double-registering.
+  void reRegister<T extends Object>(T instance) {
+    if (getIt.isRegistered<T>()) {
+      getIt.unregister<T>();
+    }
+    getIt.registerSingleton<T>(instance);
+  }
+
   TestWidgetsFlutterBinding.ensureInitialized();
 
   var mockJournalDb = MockJournalDb();
@@ -78,17 +89,21 @@ void main() {
       final mockEditorStateService = MockEditorStateService();
       final mockHealthImport = MockHealthImport();
 
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      final docsDir = await getApplicationDocumentsDirectory();
+      await setUpTestGetIt(
+        additionalSetup: () {
+          reRegister<Directory>(docsDir);
+          reRegister<UserActivityService>(UserActivityService());
+          reRegister<UpdateNotifications>(mockUpdateNotifications);
+          reRegister<EditorStateService>(mockEditorStateService);
+          reRegister<EntitiesCacheService>(mockEntitiesCacheService);
+          reRegister<LinkService>(MockLinkService());
+          reRegister<HealthImport>(mockHealthImport);
+          reRegister<TimeService>(mockTimeService);
+          reRegister<JournalDb>(mockJournalDb);
+          reRegister<PersistenceLogic>(mockPersistenceLogic);
+        },
+      );
 
       when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
         (_) => [categoryMindfulness],
@@ -150,7 +165,7 @@ void main() {
       // Ensure ThemingController dependencies are registered
       ensureThemingServicesRegistered();
     });
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     testWidgets('Text Entry is rendered', (tester) async {
       when(
@@ -163,7 +178,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // test entry displays expected date
       expect(
@@ -201,7 +217,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // test entry displays expected date
       expect(
@@ -245,7 +262,8 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // LinkedFromChecklistWidget is present in the widget tree when item is
         // a ChecklistItem (covers source line 159).
@@ -287,7 +305,8 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // LinkedFromTaskWidget is present when the item is a Checklist
         // (covers source line 160).
@@ -311,7 +330,8 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Find the DropTarget wrapping the entry page body.
         final dropTargetFinder = find.descendant(
@@ -391,7 +411,8 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         final dropTargetFinder = find.descendant(
           of: find.byType(EntryDetailsPage),
@@ -465,7 +486,8 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Drag from a point within the viewport to trigger a scroll event
         // which fires the _scrollController listeners, exercising lines 51-54.
@@ -504,17 +526,21 @@ void main() {
       final mockEditorStateService = MockEditorStateService();
       final mockHealthImport = MockHealthImport();
 
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotificationsSat)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheServiceSat)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDbSat)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogicSat);
+      final docsDir = await getApplicationDocumentsDirectory();
+      await setUpTestGetIt(
+        additionalSetup: () {
+          reRegister<Directory>(docsDir);
+          reRegister<UserActivityService>(UserActivityService());
+          reRegister<UpdateNotifications>(mockUpdateNotificationsSat);
+          reRegister<EditorStateService>(mockEditorStateService);
+          reRegister<EntitiesCacheService>(mockEntitiesCacheServiceSat);
+          reRegister<LinkService>(MockLinkService());
+          reRegister<HealthImport>(mockHealthImport);
+          reRegister<TimeService>(mockTimeService);
+          reRegister<JournalDb>(mockJournalDbSat);
+          reRegister<PersistenceLogic>(mockPersistenceLogicSat);
+        },
+      );
 
       when(
         () => mockEntitiesCacheServiceSat.sortedCategories,
@@ -576,7 +602,7 @@ void main() {
       // Ensure ThemingController dependencies are registered
       ensureThemingServicesRegistered();
     });
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     testWidgets('consumes pre-existing focus intent on first build', (
       tester,
@@ -612,7 +638,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       // Allow initial timer to trigger
       await tester.pump(const Duration(milliseconds: 1));
 
@@ -624,6 +651,21 @@ void main() {
 
       // Verify intent was cleared after consumption
       expect(container.read(focusProvider), isNull);
+
+      // This harness exercises the retry-exhaustion path (the linked entry
+      // is never rendered, so ensureVisible has no context): the intent is
+      // consumed but the visual highlight must NOT be set. The page wires
+      // the mixin's highlight into LinkedEntriesWithTimer — assert through
+      // that seam; the set-then-clear success behavior is covered by the
+      // mixin's own mirror test.
+      expect(
+        tester
+            .widget<LinkedEntriesWithTimer>(
+              find.byType(LinkedEntriesWithTimer),
+            )
+            .highlightedEntryId,
+        isNull,
+      );
 
       container.dispose();
     });
@@ -641,7 +683,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify widget is rendered (indirect test that key builder is used)
       expect(find.byType(EntryDetailsPage), findsOneWidget);
@@ -660,7 +703,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the CustomScrollView widget
       final scrollView = find.byType(CustomScrollView);
@@ -668,7 +712,8 @@ void main() {
 
       // Trigger scroll to invoke the offset listener
       await tester.drag(scrollView, const Offset(0, -100));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // The scroll offset listener should have been called (line 48-49)
       // We verify this indirectly by checking the widget still renders correctly
@@ -704,7 +749,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify widget rendered successfully (scroll would have been attempted)
       // Line 71 would be executed if context exists
@@ -736,17 +782,21 @@ void main() {
       final mockEditorStateService = MockEditorStateService();
       final mockHealthImport = MockHealthImport();
 
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotificationsEdge)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheServiceEdge)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDbEdge)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogicEdge);
+      final docsDir = await getApplicationDocumentsDirectory();
+      await setUpTestGetIt(
+        additionalSetup: () {
+          reRegister<Directory>(docsDir);
+          reRegister<UserActivityService>(UserActivityService());
+          reRegister<UpdateNotifications>(mockUpdateNotificationsEdge);
+          reRegister<EditorStateService>(mockEditorStateService);
+          reRegister<EntitiesCacheService>(mockEntitiesCacheServiceEdge);
+          reRegister<LinkService>(MockLinkService());
+          reRegister<HealthImport>(mockHealthImport);
+          reRegister<TimeService>(mockTimeService);
+          reRegister<JournalDb>(mockJournalDbEdge);
+          reRegister<PersistenceLogic>(mockPersistenceLogicEdge);
+        },
+      );
 
       when(
         () => mockEntitiesCacheServiceEdge.sortedCategories,
@@ -809,7 +859,7 @@ void main() {
       ensureThemingServicesRegistered();
     });
 
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     testWidgets('scroll controller is properly disposed', (tester) async {
       when(
@@ -822,7 +872,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify widget is rendered
       expect(find.byType(EntryDetailsPage), findsOneWidget);
@@ -833,14 +884,18 @@ void main() {
 
       // Trigger scroll to verify listener is attached
       await tester.drag(scrollView, const Offset(0, -50));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Now pop the widget to trigger dispose
       await tester.pumpWidget(Container());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-      // If we get here without errors, dispose was successful
-      expect(true, isTrue);
+      // Dispose must tear the page down cleanly: no page left in the tree
+      // and no exception (e.g. from the scroll listener) recorded.
+      expect(find.byType(EntryDetailsPage), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('handles null item gracefully', (tester) async {
@@ -854,7 +909,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Should show empty scaffold when item is null
       expect(find.text(''), findsWidgets);
@@ -871,7 +927,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find the CustomScrollView
       final scrollView = find.byType(CustomScrollView);
@@ -879,11 +936,13 @@ void main() {
 
       // Scroll down to trigger offset listener
       await tester.drag(scrollView, const Offset(0, -100));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Scroll up to trigger offset listener again
       await tester.drag(scrollView, const Offset(0, 100));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify widget still renders correctly after multiple scroll events
       expect(find.byType(EntryDetailsPage), findsOneWidget);
@@ -902,7 +961,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify widget renders
       expect(find.byType(EntryDetailsPage), findsOneWidget);
@@ -922,7 +982,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify the design-system FAB is present (rounded-24 teal button
       // matching the Figma spec; swapped from Flutter's default FAB).
@@ -946,12 +1007,14 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify scroll controller is working by performing scroll action
       final scrollView = find.byType(CustomScrollView);
       await tester.drag(scrollView, const Offset(0, -200));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // If scroll worked without errors, listeners are properly set up
       expect(find.byType(EntryDetailsPage), findsOneWidget);
@@ -975,7 +1038,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // This test verifies that the debug print at line 83-85 is executed
       // when entry is not found (context is null)
@@ -996,7 +1060,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final scrollView = find.byType(CustomScrollView);
 
@@ -1010,7 +1075,8 @@ void main() {
       await tester.pump();
 
       await tester.drag(scrollView, const Offset(0, 50));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify widget still works after multiple listener calls
       expect(find.byType(EntryDetailsPage), findsOneWidget);

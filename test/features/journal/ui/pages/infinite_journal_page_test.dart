@@ -174,16 +174,12 @@ void main() {
       await tester.pump(const Duration(milliseconds: 16));
     }
 
-    testWidgets('page is rendered with text entry', (tester) async {
-      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
-        return mockPersistenceLogic.createMeasurementEntry(
-          data: any(named: 'data'),
-          private: false,
-        );
-      }
-
-      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
-
+    // Stubs the page query for a single [entity] and pumps the page —
+    // the shared scaffold of every per-entity render test below.
+    Future<void> pumpPageWithEntity(
+      WidgetTester tester,
+      JournalEntity entity,
+    ) async {
       when(
         () => mockJournalDb.getJournalEntities(
           types: any(named: 'types'),
@@ -195,19 +191,19 @@ void main() {
           offset: any(named: 'offset'),
           categoryIds: any(named: 'categoryIds'),
         ),
-      ).thenAnswer((_) async => [testTextEntry]);
-
+      ).thenAnswer((_) async => [entity]);
       when(
-        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
-      ).thenAnswer((_) async => testTextEntry);
+        () => mockJournalDb.journalEntityById(entity.meta.id),
+      ).thenAnswer((_) async => entity);
 
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(),
-        ),
+        makeTestableWidgetWithScaffold(const InfiniteJournalPage()),
       );
-
       await pumpWithDelay(tester);
+    }
+
+    testWidgets('page is rendered with text entry', (tester) async {
+      await pumpPageWithEntity(tester, testTextEntry);
 
       // test entry displays expected date
       expect(
@@ -223,39 +219,7 @@ void main() {
     });
 
     testWidgets('page is rendered with task entry', (tester) async {
-      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
-        return mockPersistenceLogic.createMeasurementEntry(
-          data: any(named: 'data'),
-          private: false,
-        );
-      }
-
-      when(
-        () => mockJournalDb.getJournalEntities(
-          types: any(named: 'types'),
-          starredStatuses: [true, false],
-          privateStatuses: [true, false],
-          flaggedStatuses: [1, 0],
-          ids: null,
-          limit: 50,
-          offset: any(named: 'offset'),
-          categoryIds: any(named: 'categoryIds'),
-        ),
-      ).thenAnswer((_) async => [testTask]);
-
-      when(
-        () => mockJournalDb.journalEntityById(testTask.meta.id),
-      ).thenAnswer((_) async => testTask);
-
-      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(),
-        ),
-      );
-
-      await pumpWithDelay(tester);
+      await pumpPageWithEntity(tester, testTask);
 
       // test task title is displayed
       expect(
@@ -265,39 +229,7 @@ void main() {
     });
 
     testWidgets('page is rendered with weight entry', (tester) async {
-      Future<MeasurementEntry?> mockCreateMeasurementEntry() {
-        return mockPersistenceLogic.createMeasurementEntry(
-          data: any(named: 'data'),
-          private: false,
-        );
-      }
-
-      when(
-        () => mockJournalDb.getJournalEntities(
-          types: any(named: 'types'),
-          starredStatuses: [true, false],
-          privateStatuses: [true, false],
-          flaggedStatuses: [1, 0],
-          ids: null,
-          limit: 50,
-          offset: any(named: 'offset'),
-          categoryIds: any(named: 'categoryIds'),
-        ),
-      ).thenAnswer((_) async => [testWeightEntry]);
-
-      when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
-
-      when(
-        () => mockJournalDb.journalEntityById(testWeightEntry.meta.id),
-      ).thenAnswer((_) async => testWeightEntry);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(),
-        ),
-      );
-
-      await pumpWithDelay(tester);
+      await pumpPageWithEntity(tester, testWeightEntry);
 
       // task entry displays expected date
       expect(
@@ -344,34 +276,9 @@ void main() {
           () => mockJournalDb.getMeasurableDataTypeById(any()),
         ).thenAnswer((_) async => measurableChocolate);
 
-        when(
-          () => mockJournalDb.getJournalEntities(
-            types: any(named: 'types'),
-            starredStatuses: [true, false],
-            privateStatuses: [true, false],
-            flaggedStatuses: [1, 0],
-            ids: null,
-            limit: 50,
-            offset: any(named: 'offset'),
-            categoryIds: any(named: 'categoryIds'),
-          ),
-        ).thenAnswer((_) async => [testMeasurementChocolateEntry]);
-
-        when(
-          () => mockJournalDb.journalEntityById(
-            testMeasurementChocolateEntry.meta.id,
-          ),
-        ).thenAnswer((_) async => testMeasurementChocolateEntry);
-
         when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const InfiniteJournalPage(),
-          ),
-        );
-
-        await pumpWithDelay(tester);
+        await pumpPageWithEntity(tester, testMeasurementChocolateEntry);
 
         // measurement entry displays expected date
         expect(
@@ -412,31 +319,7 @@ void main() {
         () => mockJournalDb.getMeasurableDataTypeById(any()),
       ).thenAnswer((_) async => measurableCoverage);
 
-      when(
-        () => mockJournalDb.getJournalEntities(
-          types: any(named: 'types'),
-          starredStatuses: [true, false],
-          privateStatuses: [true, false],
-          flaggedStatuses: [1, 0],
-          ids: null,
-          limit: 50,
-          offset: any(named: 'offset'),
-          categoryIds: any(named: 'categoryIds'),
-        ),
-      ).thenAnswer((_) async => [testMeasuredCoverageEntry]);
-
-      when(
-        () =>
-            mockJournalDb.journalEntityById(testMeasuredCoverageEntry.meta.id),
-      ).thenAnswer((_) async => testMeasuredCoverageEntry);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const InfiniteJournalPage(),
-        ),
-      );
-
-      await pumpWithDelay(tester);
+      await pumpPageWithEntity(tester, testMeasuredCoverageEntry);
 
       // measurement entry displays expected date
       expect(
@@ -655,6 +538,10 @@ void main() {
         ),
         findsOneWidget,
       );
+      // The null-pagingController branch shows the loading spinner instead
+      // of the paged list.
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byType(PagedSliverList<int, JournalEntity>), findsNothing);
     });
 
     testWidgets('renders paged list branch when pagingController is present', (
