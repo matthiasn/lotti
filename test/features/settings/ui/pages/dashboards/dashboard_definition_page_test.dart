@@ -266,8 +266,9 @@ void main() {
       );
 
       await tester.tap(measurableFinder.first, warnIfMissed: false);
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      // Modal open is a route transition — bounded pumps proved flaky in
+      // the batched CI run; settle until the sheet is fully mounted.
+      await tester.pumpAndSettle();
 
       // Tapping the measurement opens the DashboardItemModal with one
       // ChoiceChip per aggregation type.
@@ -283,8 +284,8 @@ void main() {
       // title re-renders with the new aggregation suffix, and the dirty
       // flag makes the save button appear.
       await tester.tap(find.text('dailyMax'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      // Modal close is a route transition as well — settle it.
+      await tester.pumpAndSettle();
 
       expect(find.textContaining('[dailyMax]'), findsOneWidget);
       expect(saveButtonFinder, findsOneWidget);
