@@ -26,6 +26,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
+import '../../../../widget_test_utils.dart';
 
 /// Mock controller that returns fixed unified data.
 class _TestUnifiedController extends UnifiedDailyOsDataController {
@@ -73,24 +74,23 @@ void main() {
 
   late MockEntitiesCacheService mockCacheService;
 
-  setUp(() {
+  setUp(() async {
     mockCacheService = MockEntitiesCacheService();
     when(
       () => mockCacheService.getCategoryById('cat-1'),
     ).thenReturn(testCategory);
     when(() => mockCacheService.getCategoryById(any())).thenReturn(null);
 
-    if (getIt.isRegistered<EntitiesCacheService>()) {
-      getIt.unregister<EntitiesCacheService>();
-    }
-    getIt.registerSingleton<EntitiesCacheService>(mockCacheService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<EntitiesCacheService>(mockCacheService);
+      },
+    );
   });
 
   tearDown(() async {
     beamToNamedOverride = null;
-    if (getIt.isRegistered<EntitiesCacheService>()) {
-      getIt.unregister<EntitiesCacheService>();
-    }
+    await tearDownTestGetIt();
   });
 
   DayPlanEntry createEmptyDayPlan(DateTime date) {

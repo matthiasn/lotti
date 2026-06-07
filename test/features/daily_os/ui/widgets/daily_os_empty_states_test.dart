@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/daily_os/ui/widgets/add_budget_sheet.dart';
 import 'package:lotti/features/daily_os/ui/widgets/daily_os_empty_states.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -56,13 +57,26 @@ void main() {
         ),
       );
 
-      // Initially animating
-      await tester.pump(const Duration(milliseconds: 100));
-      expect(find.byType(TimelineEmptyState), findsOneWidget);
+      double opacityAt() => tester
+          .widget<Opacity>(
+            find
+                .descendant(
+                  of: find.byType(TimelineEmptyState),
+                  matching: find.byType(Opacity),
+                )
+                .first,
+          )
+          .opacity;
 
-      // Animation completes
+      // Mid-animation the fade-in is genuinely partial…
+      await tester.pump(const Duration(milliseconds: 100));
+      final midOpacity = opacityAt();
+      expect(midOpacity, lessThan(1));
+
+      // …and it completes at full opacity.
       await tester.pump(const Duration(milliseconds: 900));
-      expect(find.byType(TimelineEmptyState), findsOneWidget);
+      expect(opacityAt(), 1);
+      expect(opacityAt(), greaterThan(midOpacity));
     });
 
     testWidgets('renders custom paint illustration', (tester) async {
@@ -346,8 +360,10 @@ void main() {
         await tester.ensureVisible(gestureDetector.first);
         await tester.tap(gestureDetector.first);
         await tester.pump();
-        // Sheet opened – close it so no modal is left open.
         await tester.pump(const Duration(milliseconds: 900));
+
+        // The tap must actually open the AddBlockSheet modal.
+        expect(find.byType(AddBlockSheet), findsOneWidget);
       },
     );
 

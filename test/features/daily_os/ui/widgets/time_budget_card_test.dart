@@ -21,24 +21,18 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/services/nav_service.dart' as nav_service;
+import 'package:lotti/services/nav_service.dart' show NavService;
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
-import '../../../../mocks/mocks.dart' hide MockNavService;
+import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
-
-class MockNavService extends Mock implements NavService {
-  final List<String> navigationHistory = [];
-
-  @override
-  void beamToNamed(String path, {Object? data}) {
-    navigationHistory.add(path);
-  }
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  final navigationHistory = <String>[];
 
   final testDate = DateTime(2026, 1, 15);
 
@@ -159,6 +153,30 @@ void main() {
         onTap: onTap,
         isExpanded: isExpanded,
         isFocusActive: isFocusActive,
+      ),
+    );
+  }
+
+  // Shared task factory for the Pinned/Contributing task-section groups.
+  Task createTask({
+    required String id,
+    required String title,
+    required TaskStatus status,
+  }) {
+    return Task(
+      meta: Metadata(
+        id: id,
+        createdAt: testDate,
+        updatedAt: testDate,
+        dateFrom: testDate,
+        dateTo: testDate.add(const Duration(hours: 1)),
+      ),
+      data: TaskData(
+        title: title,
+        dateFrom: testDate,
+        dateTo: testDate.add(const Duration(hours: 1)),
+        statusHistory: const [],
+        status: status,
       ),
     );
   }
@@ -457,29 +475,6 @@ void main() {
   });
 
   group('TimeBudgetCard - Pinned Tasks Section', () {
-    Task createTask({
-      required String id,
-      required String title,
-      required TaskStatus status,
-    }) {
-      return Task(
-        meta: Metadata(
-          id: id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate.add(const Duration(hours: 1)),
-        ),
-        data: TaskData(
-          title: title,
-          dateFrom: testDate,
-          dateTo: testDate.add(const Duration(hours: 1)),
-          statusHistory: const [],
-          status: status,
-        ),
-      );
-    }
-
     TaskDayProgress taskToProgress(Task task) {
       final isCompleted =
           task.data.status is TaskDone || task.data.status is TaskRejected;
@@ -814,29 +809,6 @@ void main() {
   });
 
   group('TimeBudgetCard - Contributing Tasks Section', () {
-    Task createTask({
-      required String id,
-      required String title,
-      required TaskStatus status,
-    }) {
-      return Task(
-        meta: Metadata(
-          id: id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate.add(const Duration(hours: 1)),
-        ),
-        data: TaskData(
-          title: title,
-          dateFrom: testDate,
-          dateTo: testDate.add(const Duration(hours: 1)),
-          statusHistory: const [],
-          status: status,
-        ),
-      );
-    }
-
     JournalEntity createEntry({required String id}) {
       return JournalEntity.journalEntry(
         meta: Metadata(
@@ -1887,6 +1859,10 @@ void main() {
       mockNavService = MockNavService();
       mockPersistenceLogic = MockPersistenceLogic();
       mockTaskAgentService = MockTaskAgentService();
+      navigationHistory.clear();
+      // Capture navigations through the top-level beamToNamed seam instead
+      // of a bespoke NavService subclass.
+      nav_service.beamToNamedOverride = navigationHistory.add;
 
       final mockEntitiesCache = MockEntitiesCacheService();
       when(() => mockEntitiesCache.getCategoryById(any())).thenReturn(null);
@@ -1898,6 +1874,7 @@ void main() {
     });
 
     tearDown(() async {
+      nav_service.beamToNamedOverride = null;
       await getIt.reset();
     });
 
@@ -1981,7 +1958,7 @@ void main() {
 
         // Verify navigation was called with the correct path
         expect(
-          mockNavService.navigationHistory,
+          navigationHistory,
           contains('/tasks/$testTaskId'),
         );
       },
@@ -2077,7 +2054,7 @@ void main() {
       await tester.pump();
 
       // Verify navigation was not called
-      expect(mockNavService.navigationHistory, isEmpty);
+      expect(navigationHistory, isEmpty);
     });
 
     testWidgets('works with null category', (tester) async {
@@ -2161,7 +2138,7 @@ void main() {
       expect(captured.first, isNull);
 
       // Verify navigation still occurred
-      expect(mockNavService.navigationHistory, contains('/tasks/$testTaskId'));
+      expect(navigationHistory, contains('/tasks/$testTaskId'));
     });
   });
 
@@ -2291,6 +2268,8 @@ void main() {
       await getIt.reset();
       mockNavService = MockNavService();
       mockPersistenceLogic = MockPersistenceLogic();
+      navigationHistory.clear();
+      nav_service.beamToNamedOverride = navigationHistory.add;
       final mockEntitiesCache = MockEntitiesCacheService();
       when(() => mockEntitiesCache.getCategoryById(any())).thenReturn(null);
 
@@ -2301,6 +2280,7 @@ void main() {
     });
 
     tearDown(() async {
+      nav_service.beamToNamedOverride = null;
       await getIt.reset();
     });
 
@@ -2380,7 +2360,7 @@ void main() {
 
         // Navigation to the task detail page should have occurred.
         expect(
-          mockNavService.navigationHistory,
+          navigationHistory,
           contains('/tasks/$taskId'),
         );
       },
