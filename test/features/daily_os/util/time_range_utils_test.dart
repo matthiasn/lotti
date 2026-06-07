@@ -143,6 +143,20 @@ void main() {
         expect(merged.end, DateTime(2024, 1, 15, 14));
         expect(merged.duration, const Duration(hours: 4));
       });
+
+      test('merging a range with itself returns an equal range', () {
+        final range = TimeRange(
+          start: DateTime(2024, 1, 15, 10),
+          end: DateTime(2024, 1, 15, 12),
+        );
+
+        final merged = range.merge(range);
+
+        expect(merged, equals(range));
+        expect(merged.start, range.start);
+        expect(merged.end, range.end);
+        expect(merged.duration, range.duration);
+      });
     });
 
     test('equality works correctly', () {

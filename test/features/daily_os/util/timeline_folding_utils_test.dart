@@ -159,8 +159,6 @@ List<({int startHour, int endHour, bool isCompressed})> _allRegions(
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
   final testDate = DateTime(2026, 1, 15);
 
   ActualTimeSlot createActualSlot({
@@ -993,9 +991,14 @@ void main() {
         actualSlots: slots,
       );
 
-      // Entry at 00:00-00:30 with buffer becomes 0-2 (can't go below 0)
-      expect(state.visibleClusters.first.startHour, 0);
-      expect(state.visibleClusters.first.endHour, lessThanOrEqualTo(3));
+      // 00:00-00:30 with the default zero buffer occupies hour 0 only, so the
+      // single visible cluster is exactly 0-1 and the rest of the day folds.
+      expect(state.visibleClusters, [
+        const VisibleCluster(startHour: 0, endHour: 1),
+      ]);
+      expect(state.compressedRegions, [
+        const CompressedRegion(startHour: 1, endHour: 24),
+      ]);
     });
 
     test('entry at hour 23 extends to midnight', () {
@@ -1016,9 +1019,15 @@ void main() {
         actualSlots: slots,
       );
 
-      // Even 5-minute entry should create valid cluster
-      expect(state.visibleClusters.isNotEmpty, isTrue);
-      expect(state.visibleClusters.first.startHour, 12); // No buffer
+      // 12:00-12:05 with no buffer occupies hour 12 only, producing exactly
+      // one visible cluster (12-13) flanked by two compressed regions.
+      expect(state.visibleClusters, [
+        const VisibleCluster(startHour: 12, endHour: 13),
+      ]);
+      expect(state.compressedRegions, [
+        const CompressedRegion(startHour: 0, endHour: 12),
+        const CompressedRegion(startHour: 13, endHour: 24),
+      ]);
     });
 
     test('entry with 59 minutes does not extend to next hour', () {
@@ -1029,8 +1038,11 @@ void main() {
         actualSlots: slots,
       );
 
-      // With no buffer (default), cluster should be 10-11 (hour 10 only)
-      expect(state.visibleClusters.first.startHour, lessThanOrEqualTo(10));
+      // With no buffer (default), the cluster is exactly 10-11 (hour 10 only);
+      // the 59-minute entry does not bleed into hour 11.
+      expect(state.visibleClusters, [
+        const VisibleCluster(startHour: 10, endHour: 11),
+      ]);
     });
 
     test('entry crossing exactly 1 hour boundary', () {
@@ -1043,8 +1055,12 @@ void main() {
         actualSlots: slots,
       );
 
-      // Should occupy hours 10 and 11 (11:30 rounds up)
-      expect(state.visibleClusters.first.hourCount, greaterThanOrEqualTo(2));
+      // 10:30-11:30 occupies hours 10 and 11 (11:30 rounds up to 12), so the
+      // single visible cluster is exactly 10-12 (hourCount 2).
+      expect(state.visibleClusters, [
+        const VisibleCluster(startHour: 10, endHour: 12),
+      ]);
+      expect(state.visibleClusters.first.hourCount, 2);
     });
 
     test('two entries at exactly the gap threshold apart', () {

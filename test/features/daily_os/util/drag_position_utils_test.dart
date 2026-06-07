@@ -83,6 +83,9 @@ extension _AnyGeneratedDragPosition on glados.Any {
         ),
       );
 
+  glados.Generator<int> get durationMinutes =>
+      glados.IntAnys(this).intInRange(0, 1440);
+
   glados.Generator<_GeneratedDateMinutesScenario> get dateMinutesScenario =>
       glados.CombinableAny(this).combine3(
         glados.IntAnys(this).intInRange(-2, 3),
@@ -97,8 +100,6 @@ extension _AnyGeneratedDragPosition on glados.Any {
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
   group('Constants', () {
     test('drag/resize constants keep their documented values', () {
       // Table-driven pin of the geometry contract: a deliberate change to
@@ -327,6 +328,25 @@ void main() {
       expect(formatDurationMinutes(480), equals('8h'));
       expect(formatDurationMinutes(485), equals('8h 5m'));
     });
+
+    test('negative input keeps a non-negative minute remainder', () {
+      // Documents the current (unguarded) behavior for negative durations.
+      // Dart `%` yields a non-negative remainder for a positive divisor and
+      // `~/` truncates toward zero, so the minute part is never negative while
+      // the hour part carries the sign.
+      expect(formatDurationMinutes(-30), equals('30m'));
+      expect(formatDurationMinutes(-60), equals('-1h'));
+      expect(formatDurationMinutes(-90), equals('-1h 30m'));
+    });
+
+    glados.Glados(
+      glados.any.durationMinutes,
+      glados.ExploreConfig(numRuns: 120),
+    ).test('round-trips non-negative durations through the label', (minutes) {
+      // For any non-negative duration, the formatted label must parse back to
+      // the exact same number of minutes.
+      expect(_parseDurationLabel(formatDurationMinutes(minutes)), minutes);
+    }, tags: 'glados');
   });
 
   group('Round-trip conversions', () {
@@ -395,4 +415,19 @@ void main() {
 int _parseTimeLabel(String label) {
   final parts = label.split(':');
   return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+}
+
+/// Parses a `formatDurationMinutes` label (e.g. "1h 30m", "45m", "2h") back
+/// into total minutes, the inverse of the formatter for non-negative inputs.
+int _parseDurationLabel(String label) {
+  var minutes = 0;
+  final hoursMatch = RegExp(r'(\d+)h').firstMatch(label);
+  if (hoursMatch != null) {
+    minutes += int.parse(hoursMatch.group(1)!) * 60;
+  }
+  final minutesMatch = RegExp(r'(\d+)m').firstMatch(label);
+  if (minutesMatch != null) {
+    minutes += int.parse(minutesMatch.group(1)!);
+  }
+  return minutes;
 }
