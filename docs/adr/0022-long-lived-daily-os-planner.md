@@ -122,10 +122,16 @@ assumption becomes more expensive.
     planner's life — relocating amnesia rather than curing it. Confirmed user
     knowledge (e.g. "never schedule deep work before 10:00") is therefore a
     keyed, supersedable, user-confirmable record, excluded from the compaction
-    fold and injected into the prompt as a stable standing block (cf. ADR 0014
-    critical-observation injection). Agent-inferred observations stay in the
-    compactable episodic stream until the slow loop or an explicit user
-    confirmation promotes them. The store is specified in the implementation
+    fold. To keep durable memory from growing the prompt without bound as the
+    planner ages, it is surfaced **two-tier**, borrowing Claude Code's
+    memory-index pattern: a compact **index of one-line hooks** is always
+    present, and the full statement of an item is pulled in **on demand, scoped**
+    to the active workspace (`global` always; `category:` / `project:` when the
+    wake touches that scope), reusing the same scoped-retrieval machinery as
+    attention claims. Always-on critical items may still be injected verbatim
+    (cf. ADR 0014 critical-observation injection). Agent-inferred observations
+    stay in the compactable episodic stream until the slow loop or an explicit
+    user confirmation promotes them. The store is specified in the implementation
     plan's "Durable Planner Knowledge" section.
 
 11. **Domain agents are peers, not part of the planner.** Specialist agents

@@ -95,13 +95,14 @@ PlannerKnowledgeEntity        // new AgentDomainEntity variant; durable, compact
   id
   agentId = plannerAgentId
   key                         // stable slug, e.g. "deep-work-earliest-start"
+  hook                        // one-line index entry (like memory `description`)
   value                       // structured or text, e.g. "10:00 local"
   statementText               // verbatim "never schedule deep work before 10am"
   source = userStated | agentInferred
   status = proposed | confirmed | retracted
   supersedesId?               // the prior entry this replaces (recency-wins)
   scope = global | category:<id> | project:<id>
-  createdAt, confirmedAt?, retractedAt?
+  createdAt, confirmedAt?, retractedAt?, reviewAfter?
   vectorClock
 ```
 
@@ -205,17 +206,41 @@ Fields are listed in Target Data Model above. Key properties:
    surfaced in the "What I've learned" panel. A `source = userStated` instruction
    may skip straight to `confirmed`. This is the path user instructions take
    instead of `record_observations`.
-3. **Compaction-exempt.** `PlannerKnowledgeEntity` is its own kind, **excluded
-   from `projectInputEvents`' fold substrate** and from the compaction tail. The
-   active `Head` set of confirmed knowledge is injected into the prompt as a
-   dedicated, byte-stable "Standing knowledge" block (cf. ADR 0014), so it is
-   never re-summarized and stays prefix-cache friendly. The summarizer's soft
-   "preserve preferences" instruction becomes a backstop, not the only defense.
-4. **Reconciled with the weekly ritual.** The weekly `TemplateEvolutionWorkflow`
+3. **Compaction-exempt, surfaced two-tier (Claude Code memory-index pattern).**
+   `PlannerKnowledgeEntity` is its own kind, **excluded from
+   `projectInputEvents`' fold substrate** and from the compaction tail, so it is
+   never re-summarized. But injecting the *entire* confirmed `Head` set every
+   wake re-creates unbounded prompt growth as the planner ages. Instead, mirror
+   Claude Code's `MEMORY.md`: each entry carries a one-line `hook` (like the
+   memory `description` field), and the prompt always carries only the **compact
+   index of hooks**. The full `statementText` of an item is retrieved **on
+   demand, scoped** to the active workspace — `scope = global` always present,
+   `category:` / `project:` pulled when the wake touches that scope — using the
+   same scoped-retrieval machinery as attention claims. A small set of always-on
+   critical items may still be injected verbatim (cf. ADR 0014). The summarizer's
+   soft "preserve preferences" instruction becomes a backstop, not the only
+   defense.
+4. **User-editable, with staleness re-confirm.** Borrowing Claude Code's
+   editable-and-dated memory: the "What I've learned" panel lets the user **edit**
+   a durable fact directly (not just confirm/retract), and each entry stamps
+   `confirmedAt` / `reviewAfter`. A durable preference that has gone stale or
+   unexercised re-surfaces for re-confirmation ("you told me 'no deep work before
+   10' a while ago — still true?") rather than being treated as permanent truth.
+   This closes the ADR 0022 stale-durable-memory risk.
+5. **Reconciled with the weekly ritual.** The weekly `TemplateEvolutionWorkflow`
    folds confirmed knowledge into the next user-approved template version. Daily
    = fast capture into the durable store; weekly = consolidation into directives.
    The knowledge store is the single source of truth both read, eliminating
    drift between "the template says X" and "an observation says not-X".
+
+### What we deliberately do NOT copy from Claude Code memory
+
+- **Agent-writes-freely.** Claude Code lets the agent write memories directly;
+  Lotti keeps the stricter `propose_knowledge` → user-`confirm_knowledge` gate,
+  appropriate for the planner's longer-horizon autonomy.
+- **The file/frontmatter format.** Lotti takes the *schema shape* (key, hook,
+  type, supersedes, scope) into a synced freezed entity with vector clocks and
+  conflict resolution (ADR 0016/0018), not single-machine Markdown files.
 
 Deep disposable analysis runs are deferred (ADR 0022 Decision 13); most
 questions they would answer ("why does this project keep displacing workouts?")
@@ -546,10 +571,13 @@ Add or update focused tests before broad suite runs:
 
 - durable-knowledge tests (PR5):
   - `propose_knowledge` then `confirm_knowledge` persists a confirmed entry;
-  - confirmed knowledge survives a compaction fold and appears in the next
-    wake's "Standing knowledge" prompt block;
+  - confirmed knowledge survives a compaction fold (not folded into the summary);
+  - the prompt always carries the hook index; a `category:`-scoped item's full
+    `statementText` is pulled in only on a wake touching that category;
   - contradicting knowledge supersedes by recency (`supersedesId`), not both;
-  - `retract_knowledge` removes an entry from the injected `Head` set;
+  - `retract_knowledge` removes an entry from the active `Head` set;
+  - a past-`reviewAfter` entry surfaces for re-confirmation rather than applying
+    silently;
   - `summarizeRecentPatterns` still sees multiple days under one planner.
 
 ## Verification Strategy
