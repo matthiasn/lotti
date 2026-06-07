@@ -4015,6 +4015,18 @@ abstract class AppLocalizations {
   /// **'Failed to create category. Please try again.'**
   String get categoryCreationError;
 
+  /// No description provided for @categoryDayPlanDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Make this category available for selection in the day plan'**
+  String get categoryDayPlanDescription;
+
+  /// No description provided for @categoryDayPlanLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Day planning'**
+  String get categoryDayPlanLabel;
+
   /// No description provided for @categoryDefaultLanguageDescription.
   ///
   /// In en, this message translates to:
@@ -5457,13 +5469,13 @@ abstract class AppLocalizations {
   /// No description provided for @dailyOsNextCategoryFilterDescription.
   ///
   /// In en, this message translates to:
-  /// **'Only enabled categories are surfaced for Daily OS automated processing.'**
+  /// **'Only categories enabled for day planning are surfaced for Daily OS automated processing.'**
   String get dailyOsNextCategoryFilterDescription;
 
   /// No description provided for @dailyOsNextCategoryFilterEmpty.
   ///
   /// In en, this message translates to:
-  /// **'No categories available yet.'**
+  /// **'No categories enabled for day planning yet.'**
   String get dailyOsNextCategoryFilterEmpty;
 
   /// No description provided for @dailyOsNextCategoryFilterIncludeAll.
@@ -9891,6 +9903,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Completed'**
   String get projectStatusCompleted;
+
+  /// No description provided for @projectStatusMonitoring.
+  ///
+  /// In en, this message translates to:
+  /// **'Monitoring'**
+  String get projectStatusMonitoring;
 
   /// No description provided for @projectStatusOnHold.
   ///

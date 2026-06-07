@@ -97,6 +97,8 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
         _pendingCategory!.private != _originalCategory!.private ||
         _pendingCategory!.active != _originalCategory!.active ||
         _pendingCategory!.favorite != _originalCategory!.favorite ||
+        _pendingCategory!.isAvailableForDayPlan !=
+            _originalCategory!.isAvailableForDayPlan ||
         _pendingCategory!.icon != _originalCategory!.icon ||
         _pendingCategory!.defaultLanguageCode !=
             _originalCategory!.defaultLanguageCode ||
@@ -139,6 +141,7 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
     bool? private,
     bool? active,
     bool? favorite,
+    bool? isAvailableForDayPlan,
     String? defaultLanguageCode,
     CategoryIcon? icon,
   }) {
@@ -151,6 +154,8 @@ class CategoryDetailsController extends Notifier<CategoryDetailsState> {
       private: private ?? _pendingCategory!.private,
       active: active ?? _pendingCategory!.active,
       favorite: favorite ?? _pendingCategory!.favorite,
+      isAvailableForDayPlan:
+          isAvailableForDayPlan ?? _pendingCategory!.isAvailableForDayPlan,
       defaultLanguageCode:
           defaultLanguageCode ?? _pendingCategory!.defaultLanguageCode,
       icon: icon ?? _pendingCategory!.icon,

@@ -1130,6 +1130,7 @@ void main() {
 const _statusAliasGroups = <(String, List<String>)>[
   ('open', ['open']),
   ('active', ['active', 'on_track', 'in_progress']),
+  ('monitoring', ['monitoring', 'monitor']),
   ('on_hold', ['on_hold', 'hold', 'blocked', 'at_risk']),
   ('completed', ['completed', 'complete', 'done']),
   ('archived', ['archived', 'archive', 'cancelled', 'canceled']),

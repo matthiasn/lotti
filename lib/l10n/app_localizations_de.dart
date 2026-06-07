@@ -2362,6 +2362,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Kategorie konnte nicht erstellt werden. Bitte versuche es erneut.';
 
   @override
+  String get categoryDayPlanDescription =>
+      'Diese Kategorie für die Auswahl im Tagesplan verfügbar machen';
+
+  @override
+  String get categoryDayPlanLabel => 'Tagesplanung';
+
+  @override
   String get categoryDefaultLanguageDescription =>
       'Standardsprache für Aufgaben in dieser Kategorie festlegen';
 
@@ -3252,11 +3259,11 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get dailyOsNextCategoryFilterDescription =>
-      'Nur aktivierte Kategorien werden für die automatische Daily-OS-Verarbeitung berücksichtigt.';
+      'Nur für die Tagesplanung aktivierte Kategorien werden für die automatische Daily-OS-Verarbeitung berücksichtigt.';
 
   @override
   String get dailyOsNextCategoryFilterEmpty =>
-      'Noch keine Kategorien verfügbar.';
+      'Noch keine Kategorien für die Tagesplanung aktiviert.';
 
   @override
   String get dailyOsNextCategoryFilterIncludeAll => 'Alle einbeziehen';
@@ -5759,6 +5766,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get projectStatusCompleted => 'Abgeschlossen';
+
+  @override
+  String get projectStatusMonitoring => 'Beobachtung';
 
   @override
   String get projectStatusOnHold => 'Pausiert';

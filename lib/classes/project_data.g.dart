@@ -49,6 +49,28 @@ Map<String, dynamic> _$ProjectActiveToJson(ProjectActive instance) =>
       'runtimeType': instance.$type,
     };
 
+ProjectMonitoring _$ProjectMonitoringFromJson(Map<String, dynamic> json) =>
+    ProjectMonitoring(
+      id: json['id'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      utcOffset: (json['utcOffset'] as num).toInt(),
+      timezone: json['timezone'] as String?,
+      geolocation: json['geolocation'] == null
+          ? null
+          : Geolocation.fromJson(json['geolocation'] as Map<String, dynamic>),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$ProjectMonitoringToJson(ProjectMonitoring instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'utcOffset': instance.utcOffset,
+      'timezone': instance.timezone,
+      'geolocation': instance.geolocation,
+      'runtimeType': instance.$type,
+    };
+
 ProjectOnHold _$ProjectOnHoldFromJson(Map<String, dynamic> json) =>
     ProjectOnHold(
       id: json['id'] as String,

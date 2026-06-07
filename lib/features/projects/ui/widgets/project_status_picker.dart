@@ -6,7 +6,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// A tappable widget that shows the current project status and opens a
-/// bottom sheet to choose from all five status variants.
+/// bottom sheet to choose from all project status variants.
 class ProjectStatusPicker extends StatelessWidget {
   const ProjectStatusPicker({
     required this.currentStatus,

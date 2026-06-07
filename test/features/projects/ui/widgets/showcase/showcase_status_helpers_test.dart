@@ -1,13 +1,18 @@
-// Tests for pure, public functions in
+// Tests for the public functions in
 // lib/features/projects/ui/widgets/showcase/showcase_status_helpers.dart.
 //
-// Only [showcaseFormatDuration] is testable without a BuildContext.
+// [showcaseFormatDuration] and [showcaseProjectStatusIcon] are pure.
 // [showcaseProjectStatusLabel] and [showcaseProjectStatusColor] require
-// BuildContext/l10n → those are widget-level and are skipped here.
+// BuildContext/l10n → those run inside a pumped widget below.
 
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
+import 'package:lotti/features/projects/ui/widgets/showcase/showcase_palette.dart';
 import 'package:lotti/features/projects/ui/widgets/showcase/showcase_status_helpers.dart';
+
+import '../../../../../test_helper.dart';
 
 // ---------------------------------------------------------------------------
 // Generators
@@ -26,6 +31,81 @@ extension _AnyDuration on glados.Any {
 // ---------------------------------------------------------------------------
 
 void main() {
+  group('showcase project status helpers', () {
+    final testDate = DateTime(2026, 3, 15, 10);
+    final statusesByKind = {
+      for (final kind in ProjectStatusKind.values)
+        kind: buildProjectStatus(kind, testDate),
+    };
+
+    test('icon is distinct per status variant', () {
+      const expectedIcons = <ProjectStatusKind, IconData>{
+        ProjectStatusKind.open: Icons.radio_button_unchecked_rounded,
+        ProjectStatusKind.active: Icons.play_arrow_rounded,
+        ProjectStatusKind.monitoring: Icons.visibility_outlined,
+        ProjectStatusKind.onHold: Icons.pause_circle_outline_rounded,
+        ProjectStatusKind.completed: Icons.check_circle_outline_rounded,
+        ProjectStatusKind.archived: Icons.archive_outlined,
+      };
+      expect(expectedIcons.keys, containsAll(ProjectStatusKind.values));
+
+      for (final entry in statusesByKind.entries) {
+        expect(
+          showcaseProjectStatusIcon(entry.value),
+          expectedIcons[entry.key],
+          reason: '${entry.key}',
+        );
+      }
+    });
+
+    testWidgets('label and color resolve for every status variant', (
+      tester,
+    ) async {
+      const expectedLabels = <ProjectStatusKind, String>{
+        ProjectStatusKind.open: 'Open',
+        ProjectStatusKind.active: 'Active',
+        ProjectStatusKind.monitoring: 'Monitoring',
+        ProjectStatusKind.onHold: 'On Hold',
+        ProjectStatusKind.completed: 'Completed',
+        ProjectStatusKind.archived: 'Archived',
+      };
+      expect(expectedLabels.keys, containsAll(ProjectStatusKind.values));
+
+      late BuildContext capturedContext;
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Builder(
+            builder: (context) {
+              capturedContext = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      final colors = <Color>[];
+      for (final entry in statusesByKind.entries) {
+        expect(
+          showcaseProjectStatusLabel(capturedContext, entry.value),
+          expectedLabels[entry.key],
+          reason: '${entry.key}',
+        );
+        colors.add(showcaseProjectStatusColor(capturedContext, entry.value));
+      }
+      // Every variant resolves to a concrete color (no throw, no null).
+      expect(colors, hasLength(ProjectStatusKind.values.length));
+      // The new monitoring variant maps to the showcase teal, distinct from
+      // its neighbours (active=amber, completed=timeGreen).
+      expect(
+        showcaseProjectStatusColor(
+          capturedContext,
+          statusesByKind[ProjectStatusKind.monitoring]!,
+        ),
+        ShowcasePalette.teal(capturedContext),
+      );
+    });
+  });
+
   // -------------------------------------------------------------------------
   // showcaseFormatDuration — worked examples (all branches)
   // -------------------------------------------------------------------------

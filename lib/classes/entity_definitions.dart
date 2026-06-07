@@ -154,6 +154,13 @@ sealed class EntityDefinition with _$EntityDefinition {
     /// Default agent template ID for new tasks in this category.
     /// An agent is auto-created from this template when a task is created.
     String? defaultTemplateId,
+
+    /// Opt-in switch making this category available for day planning.
+    /// Categories are NOT available by default — only categories with this
+    /// flag set to `true` are offered for selection in the day plan.
+    /// Nullable for JSON backward compatibility with already-synced
+    /// categories (absent key ⇒ `null` ⇒ not available).
+    bool? isAvailableForDayPlan,
   }) = CategoryDefinition;
 
   const factory EntityDefinition.labelDefinition({

@@ -8,6 +8,7 @@ String showcaseProjectStatusLabel(
   ProjectStatus status,
 ) => switch (status) {
   ProjectActive() => context.messages.projectStatusActive,
+  ProjectMonitoring() => context.messages.projectStatusMonitoring,
   ProjectCompleted() => context.messages.projectStatusCompleted,
   ProjectArchived() => context.messages.projectStatusArchived,
   ProjectOnHold() => context.messages.projectStatusOnHold,
@@ -16,6 +17,7 @@ String showcaseProjectStatusLabel(
 
 IconData showcaseProjectStatusIcon(ProjectStatus status) => switch (status) {
   ProjectActive() => Icons.play_arrow_rounded,
+  ProjectMonitoring() => Icons.visibility_outlined,
   ProjectCompleted() => Icons.check_circle_outline_rounded,
   ProjectArchived() => Icons.archive_outlined,
   ProjectOnHold() => Icons.pause_circle_outline_rounded,
@@ -27,6 +29,7 @@ Color showcaseProjectStatusColor(
   ProjectStatus status,
 ) => switch (status) {
   ProjectActive() => ShowcasePalette.amber(context),
+  ProjectMonitoring() => ShowcasePalette.teal(context),
   ProjectCompleted() => ShowcasePalette.timeGreen(context),
   ProjectArchived() => ShowcasePalette.mediumText(context),
   ProjectOnHold() => ShowcasePalette.amber(context),

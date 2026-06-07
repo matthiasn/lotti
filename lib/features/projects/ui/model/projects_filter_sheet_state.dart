@@ -20,6 +20,10 @@ DesignSystemTaskFilterState buildProjectsFilterSheetState(
       label: context.messages.projectStatusActive,
     ),
     DesignSystemTaskFilterOption(
+      id: ProjectStatusFilterIds.monitoring,
+      label: context.messages.projectStatusMonitoring,
+    ),
+    DesignSystemTaskFilterOption(
       id: ProjectStatusFilterIds.onHold,
       label: context.messages.projectStatusOnHold,
     ),

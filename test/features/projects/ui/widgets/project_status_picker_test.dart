@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
+import 'package:lotti/features/projects/ui/widgets/project_status_attributes.dart';
 import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/utils/file_utils.dart';
 
@@ -40,7 +41,7 @@ void main() {
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     });
 
-    testWidgets('tapping opens bottom sheet with all 5 status options', (
+    testWidgets('tapping opens bottom sheet with all 6 status options', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -60,14 +61,22 @@ void main() {
       // Bottom sheet title
       expect(find.text('Change Status'), findsOneWidget);
 
-      // All 5 options
+      // All 6 options
       // "Open" appears twice: once in the picker widget behind the sheet,
       // and once as an option in the sheet.
       expect(find.text('Open'), findsNWidgets(2));
       expect(find.text('Active'), findsOneWidget);
+      expect(find.text('Monitoring'), findsOneWidget);
       expect(find.text('On Hold'), findsOneWidget);
       expect(find.text('Completed'), findsOneWidget);
       expect(find.text('Archived'), findsOneWidget);
+
+      // Sheet renders one ListTile per status kind so the test stays
+      // resilient to future additions/removals.
+      expect(
+        find.byType(ListTile),
+        findsNWidgets(allProjectStatusKinds.length),
+      );
     });
 
     testWidgets('current status shows check mark in sheet', (tester) async {
@@ -159,6 +168,8 @@ void main() {
 
       expect(find.text('Change Status'), findsOneWidget);
 
+      await tester.ensureVisible(find.text('Completed'));
+      await tester.pump();
       await tester.tap(find.text('Completed'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));

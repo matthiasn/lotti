@@ -117,9 +117,10 @@ void main() {
       await tester.tap(statusField);
       await tester.pumpAndSettle();
 
-      expect(find.byType(DesignSystemCheckbox), findsNWidgets(5));
+      expect(find.byType(DesignSystemCheckbox), findsNWidgets(6));
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('Active'), findsOneWidget);
+      expect(find.text('Monitoring'), findsOneWidget);
       expect(find.text('On Hold'), findsOneWidget);
       expect(find.text('Completed'), findsOneWidget);
       expect(find.text('Archived'), findsOneWidget);

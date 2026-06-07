@@ -34,6 +34,8 @@
   <releases>
     <release version="0.9.1016" date="2026-06-06">
       <description>
+          <p>Categories: a new opt-in "Day planning" switch controls which categories are available for selection in the day plan — nothing is available by default.</p>
+          <p>Projects: a new "Monitoring" status for projects that are not closed but have no time actively scheduled.</p>
           <p>Task agents now maintain their own day-planning attention requests during normal wakes, resolving stale requests when tasks are done or no longer need scheduled time.</p>
           <p>Slow-query logging now starts from persisted logging settings during startup, so enabled slow_queries and super_slow_queries files capture boot-time database work instead of waiting for the next settings toggle.</p>
           <p>While the Daily OS tab is active, its desktop sidebar entry expands into a month calendar: today is highlighted, days with a Daily OS plan carry a dot, and tapping a day jumps straight to it.</p>

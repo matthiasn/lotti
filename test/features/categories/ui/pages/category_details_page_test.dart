@@ -242,10 +242,11 @@ void main() {
         expect(find.text('Private'), findsOneWidget);
         expect(find.text('Active'), findsOneWidget);
         expect(find.text('Favorite'), findsOneWidget);
+        expect(find.text('Day planning'), findsOneWidget);
         expect(
           find.byType(LottiSwitchField),
-          findsNWidgets(3),
-        ); // 3 toggle switches
+          findsNWidgets(4),
+        ); // 4 toggle switches
       });
 
       testWidgets('displays bottom bar with all buttons', (tester) async {
@@ -364,7 +365,8 @@ void main() {
 
         // Find and tap the private switch
         final switches = find.byType(Switch);
-        expect(switches, findsNWidgets(3)); // Private, Active, Favorite
+        // Private, Active, Favorite, Day planning
+        expect(switches, findsNWidgets(4));
 
         // Scroll to ensure the switch is visible before tapping
         await tester.ensureVisible(switches.first);
@@ -1234,10 +1236,11 @@ void main() {
       );
     });
 
-    group('Switch Tiles — active and favorite branches', () {
+    group('Switch Tiles — active, favorite, and day-plan branches', () {
       // The Private branch is already covered by the existing "toggle switches
       // trigger state changes" test (which taps switches.first). Here we
-      // cover Active (index 1) and Favorite (index 2) explicitly.
+      // cover Active (index 1), Favorite (index 2), and Day planning (3)
+      // explicitly.
 
       testWidgets(
         'toggling Active switch enables save button',
@@ -1259,10 +1262,10 @@ void main() {
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
 
-          // Three Switch widgets: Private(0), Active(1), Favorite(2).
-          // Tap the Switch widget at index 1 (Active) directly.
+          // Four Switch widgets: Private(0), Active(1), Favorite(2),
+          // Day planning(3). Tap the Switch widget at index 1 (Active).
           final switches = find.byType(Switch);
-          expect(switches, findsNWidgets(3));
+          expect(switches, findsNWidgets(4));
           await tester.ensureVisible(switches.at(1));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
@@ -1302,7 +1305,7 @@ void main() {
           await tester.pump(const Duration(milliseconds: 350));
 
           final switches = find.byType(Switch);
-          expect(switches, findsNWidgets(3));
+          expect(switches, findsNWidgets(4));
           await tester.ensureVisible(switches.at(2));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 350));
@@ -1315,6 +1318,46 @@ void main() {
             enabledSave,
             isNotNull,
             reason: 'Favorite toggle should enable save',
+          );
+
+          await streamController.close();
+        },
+      );
+
+      testWidgets(
+        'toggling Day planning switch enables save button',
+        (tester) async {
+          final streamController =
+              StreamController<CategoryDefinition?>.broadcast();
+          // Flag unset (null) — toggling it on marks the form dirty.
+          final category = CategoryTestUtils.createTestCategory(
+            favorite: false,
+          );
+
+          when(() => mockRepository.watchCategory(testCategoryId)).thenAnswer(
+            (_) => streamController.stream,
+          );
+
+          await pumpCategoryDetailsPage(tester);
+
+          streamController.add(category);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          final switches = find.byType(Switch);
+          expect(switches, findsNWidgets(4));
+          await tester.ensureVisible(switches.at(3));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+          await tester.tap(switches.at(3));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 350));
+
+          final enabledSave = findEnabledPrimaryButton(tester);
+          expect(
+            enabledSave,
+            isNotNull,
+            reason: 'Day planning toggle should enable save',
           );
 
           await streamController.close();

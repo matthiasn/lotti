@@ -54,6 +54,23 @@ void main() {
           state.categoryField!.options.map((option) => option.label).toList(),
           ['Work', 'Study'],
         );
+        // The status options expose every canonical status filter id in
+        // display order, including the monitoring status.
+        expect(
+          state.statusField!.options.map((option) => option.id).toList(),
+          [
+            ProjectStatusFilterIds.open,
+            ProjectStatusFilterIds.active,
+            ProjectStatusFilterIds.monitoring,
+            ProjectStatusFilterIds.onHold,
+            ProjectStatusFilterIds.completed,
+            ProjectStatusFilterIds.archived,
+          ],
+        );
+        expect(
+          state.statusField!.options.map((option) => option.label).toList(),
+          ['Open', 'Active', 'Monitoring', 'On Hold', 'Completed', 'Archived'],
+        );
       },
     );
   });

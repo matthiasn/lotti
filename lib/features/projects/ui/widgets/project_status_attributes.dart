@@ -30,6 +30,11 @@ import 'package:lotti/utils/file_utils.dart';
       isLight ? projectStatusDarkGreen : projectStatusGreen,
       Icons.play_circle_outline,
     ),
+    ProjectMonitoring() => (
+      messages.projectStatusMonitoring,
+      isLight ? colorScheme.tertiary : colorScheme.tertiaryFixedDim,
+      Icons.visibility_outlined,
+    ),
     ProjectOnHold() => (
       messages.projectStatusOnHold,
       isLight ? projectStatusDarkOrange : projectStatusOrange,
@@ -48,10 +53,10 @@ import 'package:lotti/utils/file_utils.dart';
   };
 }
 
-/// The five canonical project-status variants.
+/// The six canonical project-status variants.
 ///
 /// Shared so that status-picker UIs do not each need a private copy.
-enum ProjectStatusKind { open, active, onHold, completed, archived }
+enum ProjectStatusKind { open, active, monitoring, onHold, completed, archived }
 
 /// All status kinds in display order.
 const List<ProjectStatusKind> allProjectStatusKinds = ProjectStatusKind.values;
@@ -63,6 +68,7 @@ ProjectStatusKind projectStatusKindFromFilterId(String filterId) {
   return switch (filterId) {
     ProjectStatusFilterIds.open => ProjectStatusKind.open,
     ProjectStatusFilterIds.active => ProjectStatusKind.active,
+    ProjectStatusFilterIds.monitoring => ProjectStatusKind.monitoring,
     ProjectStatusFilterIds.onHold => ProjectStatusKind.onHold,
     ProjectStatusFilterIds.completed => ProjectStatusKind.completed,
     ProjectStatusFilterIds.archived => ProjectStatusKind.archived,
@@ -80,6 +86,11 @@ ProjectStatus buildProjectStatus(ProjectStatusKind kind, DateTime at) {
       utcOffset: utcOffset,
     ),
     ProjectStatusKind.active => ProjectStatus.active(
+      id: uuid.v1(),
+      createdAt: at,
+      utcOffset: utcOffset,
+    ),
+    ProjectStatusKind.monitoring => ProjectStatus.monitoring(
       id: uuid.v1(),
       createdAt: at,
       utcOffset: utcOffset,

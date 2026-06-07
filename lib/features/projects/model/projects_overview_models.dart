@@ -17,6 +17,7 @@ enum ProjectsSearchMode {
 abstract final class ProjectStatusFilterIds {
   static const open = 'open';
   static const active = 'active';
+  static const monitoring = 'monitoring';
   static const onHold = 'on-hold';
   static const completed = 'completed';
   static const archived = 'archived';
@@ -116,6 +117,7 @@ String projectStatusFilterId(ProjectStatus status) {
   return switch (status) {
     ProjectOpen() => ProjectStatusFilterIds.open,
     ProjectActive() => ProjectStatusFilterIds.active,
+    ProjectMonitoring() => ProjectStatusFilterIds.monitoring,
     ProjectOnHold() => ProjectStatusFilterIds.onHold,
     ProjectCompleted() => ProjectStatusFilterIds.completed,
     ProjectArchived() => ProjectStatusFilterIds.archived,

@@ -87,6 +87,16 @@ The important user-facing fields live in `ProjectData`:
 - `dateFrom`
 - `dateTo`
 
+`ProjectStatus` has six variants: `open`, `active`, `monitoring`, `onHold`
+(with a required reason), `completed`, and `archived`. `monitoring` marks a
+project that is not closed but has no time actively scheduled — it is only
+touched when something comes up before it can be declared done. Day planning
+tiers projects by status
+(`lib/features/daily_os_next/logic/day_plan_availability.dart`): `active`
+projects form the scheduled pool, while `open`/`monitoring`/`onHold` projects
+stay available at lower priority so something noticed along the way can still
+be planned; `completed`/`archived` are not available.
+
 Projects can also carry free-form body text through `entryText`. The newer
 top-level detail page uses that text as fallback text when no project-agent
 TL;DR exists yet.

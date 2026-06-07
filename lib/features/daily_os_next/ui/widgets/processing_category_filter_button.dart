@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
+import 'package:lotti/features/daily_os_next/logic/day_plan_availability.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
@@ -168,7 +169,10 @@ Set<String> _activeCategoryIds() {
 }
 
 List<CategoryDefinition> _activeCategories() {
-  return getIt<EntitiesCacheService>().sortedCategories;
+  // Day-plan universe: strictly opt-in via the category's day-plan switch.
+  return filterDayPlanCategories(
+    getIt<EntitiesCacheService>().sortedCategories,
+  );
 }
 
 class _ProcessingCategoryRow extends StatelessWidget {
