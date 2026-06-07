@@ -45,8 +45,10 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
   int pageSize = 200,
   int forwardPageCap = 50,
   Duration? overallTimeout,
+  DateTime Function()? now,
 }) async {
-  final start = DateTime.now();
+  final nowFn = now ?? DateTime.now;
+  final start = nowFn();
   final Timeline timeline;
   try {
     timeline = await room.getTimeline(eventContextId: anchorEventId);
@@ -101,7 +103,7 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
   try {
     while (true) {
       if (overallTimeout != null &&
-          DateTime.now().difference(start) >= overallTimeout) {
+          nowFn().difference(start) >= overallTimeout) {
         stopReason = BootstrapStopReason.error;
         break;
       }
@@ -155,7 +157,7 @@ Future<BootstrapResult> collectForwardForBootstrapImpl({
           totalEventsSoFar: totalEventsSoFar,
           oldestTimestampSoFar: newestTsSoFar,
           serverHasMore: timeline.canRequestFuture,
-          elapsed: DateTime.now().difference(start),
+          elapsed: nowFn().difference(start),
         );
         final shouldContinue = await sink.onPage(page, info);
         pageIndex++;

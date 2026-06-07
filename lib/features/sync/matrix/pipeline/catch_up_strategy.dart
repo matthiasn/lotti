@@ -335,6 +335,7 @@ class CatchUpStrategy {
     num? untilTimestamp,
     Duration? overallTimeout,
     int boundaryContinuationCap = 5,
+    DateTime Function()? now,
   }) => collectHistoryForBootstrapImpl(
     room: room,
     sink: sink,
@@ -343,6 +344,7 @@ class CatchUpStrategy {
     untilTimestamp: untilTimestamp,
     overallTimeout: overallTimeout,
     boundaryContinuationCap: boundaryContinuationCap,
+    now: now,
   );
 
   /// See [collectForwardForBootstrapImpl] in
@@ -355,6 +357,7 @@ class CatchUpStrategy {
     int pageSize = 200,
     int forwardPageCap = 50,
     Duration? overallTimeout,
+    DateTime Function()? now,
   }) => collectForwardForBootstrapImpl(
     room: room,
     sink: sink,
@@ -363,6 +366,7 @@ class CatchUpStrategy {
     pageSize: pageSize,
     forwardPageCap: forwardPageCap,
     overallTimeout: overallTimeout,
+    now: now,
   );
 
   static bool _isStrictlyAfter(
