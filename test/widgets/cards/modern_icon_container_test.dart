@@ -20,7 +20,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the icon
       expect(find.byIcon(testIcon), findsOneWidget);
@@ -44,7 +44,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final icon = tester.widget<Icon>(find.byIcon(testIcon));
       expect(icon.color, customColor);
@@ -61,7 +61,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text(testText), findsOneWidget);
       expect(find.byType(Icon), findsNothing);
@@ -86,7 +86,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Check container size
       final container = tester.widget<Container>(find.byType(Container));
@@ -114,7 +114,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Check container size
       final container = tester.widget<Container>(find.byType(Container));
@@ -140,7 +140,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration! as BoxDecoration;
@@ -159,7 +159,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration! as BoxDecoration;
@@ -180,7 +180,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find the SizedBox that wraps the child
       final sizedBox = tester.widget<SizedBox>(find.byType(SizedBox));
@@ -202,7 +202,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final sizedBox = tester.widget<SizedBox>(find.byType(SizedBox));
       expect(sizedBox.width, AppTheme.iconSizeCompact);
@@ -218,7 +218,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration! as BoxDecoration;
@@ -236,7 +236,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration! as BoxDecoration;
@@ -256,7 +256,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Check that the container has a Center widget as child
       final container = tester.widget<Container>(

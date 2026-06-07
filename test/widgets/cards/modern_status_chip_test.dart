@@ -24,7 +24,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text(testLabel), findsOneWidget);
     });
@@ -45,7 +45,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Check container decoration
       final container = tester.widget<Container>(find.byType(Container));
@@ -83,7 +83,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byIcon(testIcon), findsOneWidget);
       expect(find.text(testLabel), findsOneWidget);
@@ -109,7 +109,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(Icon), findsNothing);
 
@@ -121,63 +121,52 @@ void main() {
       expect(flexible.child, isA<Text>());
     });
 
-    testWidgets('dark mode adjusts alpha values correctly', (tester) async {
-      const testLabel = 'In Progress';
-      const testColor = Colors.blue;
+    // Dark and light mode differ only in the alpha values applied to the
+    // container background and the label text.
+    for (final mode in [
+      (
+        name: 'dark',
+        theme: ThemeData.dark(),
+        containerAlpha: AppTheme.alphaPrimaryContainerDark,
+        textAlpha: 0.9,
+      ),
+      (
+        name: 'light',
+        theme: ThemeData.light(),
+        containerAlpha: AppTheme.alphaPrimaryContainerLight,
+        textAlpha: 0.8,
+      ),
+    ]) {
+      testWidgets('${mode.name} mode adjusts alpha values correctly', (
+        tester,
+      ) async {
+        const testLabel = 'In Progress';
+        const testColor = Colors.blue;
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ModernStatusChip(
-            label: testLabel,
-            color: testColor,
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const ModernStatusChip(
+              label: testLabel,
+              color: testColor,
+            ),
+            theme: mode.theme,
           ),
-          theme: ThemeData.dark(),
-        ),
-      );
+        );
 
-      await tester.pumpAndSettle();
+        await tester.pump();
 
-      final container = tester.widget<Container>(find.byType(Container));
-      final decoration = container.decoration! as BoxDecoration;
+        final container = tester.widget<Container>(find.byType(Container));
+        final decoration = container.decoration! as BoxDecoration;
 
-      // Dark mode should use different alpha
-      expect(
-        decoration.color,
-        testColor.withValues(alpha: AppTheme.alphaPrimaryContainerDark),
-      );
+        expect(
+          decoration.color,
+          testColor.withValues(alpha: mode.containerAlpha),
+        );
 
-      // Text alpha should be different in dark mode
-      final text = tester.widget<Text>(find.text(testLabel));
-      expect(text.style?.color, testColor.withValues(alpha: 0.9));
-    });
-
-    testWidgets('light mode adjusts alpha values correctly', (tester) async {
-      const testLabel = 'Open';
-      const testColor = Colors.orange;
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const ModernStatusChip(
-            label: testLabel,
-            color: testColor,
-          ),
-          theme: ThemeData.light(),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      final container = tester.widget<Container>(find.byType(Container));
-      final decoration = container.decoration! as BoxDecoration;
-
-      expect(
-        decoration.color,
-        testColor.withValues(alpha: AppTheme.alphaPrimaryContainerLight),
-      );
-
-      final text = tester.widget<Text>(find.text(testLabel));
-      expect(text.style?.color, testColor.withValues(alpha: 0.8));
-    });
+        final text = tester.widget<Text>(find.text(testLabel));
+        expect(text.style?.color, testColor.withValues(alpha: mode.textAlpha));
+      });
+    }
 
     testWidgets('custom isDark parameter overrides theme', (tester) async {
       const testLabel = 'Done';
@@ -194,7 +183,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration! as BoxDecoration;
@@ -221,7 +210,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Check padding
       final container = tester.widget<Container>(find.byType(Container));
@@ -262,7 +251,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final container = tester.widget<Container>(find.byType(Container));
       final decoration = container.decoration! as BoxDecoration;
@@ -284,7 +273,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final text = tester.widget<Text>(find.text(testLabel));
       expect(text.style?.fontWeight, FontWeight.w600);
@@ -303,7 +292,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final row = tester.widget<Row>(find.byType(Row));
       expect(row.mainAxisSize, MainAxisSize.min);
@@ -324,7 +313,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final row = tester.widget<Row>(find.byType(Row));
       expect(row.children.length, 3); // Icon, SizedBox, Flexible(Text)

@@ -1,20 +1,17 @@
-import 'dart:async';
-
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/charts/habits/habit_completion_rate_chart.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 // Minimal TitleMeta for testing title widget callbacks.
 TitleMeta _makeMeta() => TitleMeta(
@@ -29,97 +26,89 @@ TitleMeta _makeMeta() => TitleMeta(
   rotationQuarterTurns: 0,
 );
 
+/// Returns the canned [HabitsState] instead of loading from the database —
+/// replaces the five former one-off controller subclasses.
+class _FixedStateController extends HabitsController {
+  _FixedStateController(this._state);
+
+  final HabitsState _state;
+
+  @override
+  HabitsState build() => _state;
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockJournalDb mockJournalDb;
-  late MockUpdateNotifications mockUpdateNotifications;
-  late MockNavService mockNavService;
-  late StreamController<List<HabitDefinition>> definitionsController;
-  late StreamController<Set<String>> updateController;
+  late TestGetItMocks mocks;
 
-  setUp(() {
-    mockJournalDb = MockJournalDb();
-    mockUpdateNotifications = MockUpdateNotifications();
-    mockNavService = MockNavService();
-    definitionsController = StreamController.broadcast();
-    updateController = StreamController.broadcast();
-
-    when(
-      mockJournalDb.getAllHabitDefinitions,
-    ).thenAnswer((_) async => <HabitDefinition>[]);
-
-    when(
-      () => mockJournalDb.getHabitCompletionsInRange(
-        rangeStart: any(named: 'rangeStart'),
-      ),
-    ).thenAnswer((_) async => []);
-
-    when(
-      () => mockUpdateNotifications.updateStream,
-    ).thenAnswer((_) => updateController.stream);
-
+  setUp(() async {
+    final mockNavService = MockNavService();
     when(() => mockNavService.habitsIndex).thenReturn(3);
     when(() => mockNavService.index).thenReturn(3);
     when(
       mockNavService.getIndexStream,
     ).thenAnswer((_) => const Stream<int>.empty());
 
-    getIt
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<NavService>(mockNavService);
+    mocks = await setUpTestGetIt(
+      additionalSetup: () {
+        getIt.registerSingleton<NavService>(mockNavService);
+      },
+    );
+
+    when(
+      mocks.journalDb.getAllHabitDefinitions,
+    ).thenAnswer((_) async => <HabitDefinition>[]);
+    when(
+      () => mocks.journalDb.getHabitCompletionsInRange(
+        rangeStart: any(named: 'rangeStart'),
+      ),
+    ).thenAnswer((_) async => []);
   });
 
-  tearDown(() async {
-    await definitionsController.close();
-    await updateController.close();
-    await getIt.reset();
-  });
+  tearDown(tearDownTestGetIt);
 
-  Widget createTestWidget() {
-    return const ProviderScope(
-      child: MaterialApp(
-        home: Scaffold(
-          body: HabitCompletionRateChart(),
+  /// Pumps the chart, optionally pinning the habits state to [state] instead
+  /// of letting the real controller load from the (mocked) database.
+  Future<void> pumpChart(WidgetTester tester, {HabitsState? state}) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          if (state != null)
+            habitsControllerProvider.overrideWith(
+              () => _FixedStateController(state),
+            ),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: HabitCompletionRateChart()),
         ),
       ),
     );
+    // Two pumps: one for the first frame, one for the controller's async load.
+    await tester.pump();
+    await tester.pump();
   }
 
   group('HabitCompletionRateChart', () {
-    testWidgets('renders chart widget', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
-
-      // Verify LineChart is rendered
-      expect(find.byType(LineChart), findsOneWidget);
-    });
-
     testWidgets('displays default info label when no day selected', (
       tester,
     ) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await pumpChart(tester);
 
-      // Should show the default message
+      expect(find.byType(LineChart), findsOneWidget);
       expect(find.textContaining('active habits'), findsOneWidget);
       expect(find.textContaining('Tap chart'), findsOneWidget);
     });
 
     testWidgets('chart tap triggers setInfoYmd on next frame', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pumpAndSettle();
+      await pumpChart(tester);
 
       // Find the LineChart
       final chartFinder = find.byType(LineChart);
       expect(chartFinder, findsOneWidget);
 
-      // Get the center of the chart
-      final chartCenter = tester.getCenter(chartFinder);
-
-      // Tap the chart
-      await tester.tapAt(chartCenter);
+      // Tap the center of the chart
+      await tester.tapAt(tester.getCenter(chartFinder));
 
       // Pump to allow addPostFrameCallback to execute. The original bug
       // modified provider state during paint (setState/markNeedsBuild while
@@ -138,83 +127,48 @@ void main() {
     testWidgets('displays percentage info when day is selected', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider.overrideWith(_TestHabitsController.new),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HabitCompletionRateChart(),
-            ),
-          ),
+      await pumpChart(
+        tester,
+        state: HabitsState.initial().copyWith(
+          selectedInfoYmd: '2025-12-30',
+          successPercentage: 75,
+          skippedPercentage: 10,
+          failedPercentage: 15,
         ),
       );
-      await tester.pumpAndSettle();
 
-      // The test controller sets selectedInfoYmd, so we should see percentages
+      // The pinned state sets selectedInfoYmd, so we should see percentages
       expect(find.textContaining('2025-12-30'), findsOneWidget);
       expect(find.textContaining('% successful'), findsOneWidget);
       expect(find.textContaining('% skipped'), findsOneWidget);
       expect(find.textContaining('% recorded fails'), findsOneWidget);
     });
 
-    testWidgets('handles empty days list without throwing', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider.overrideWith(_EmptyDaysController.new),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HabitCompletionRateChart(),
-            ),
-          ),
+    for (final edgeCase in [
+      (
+        description: 'handles empty days list without throwing',
+        state: HabitsState.initial().copyWith(days: [], timeSpanDays: 7),
+      ),
+      (
+        description: 'handles single day list without throwing',
+        state: HabitsState.initial().copyWith(
+          days: ['2025-12-30'],
+          timeSpanDays: 7,
         ),
-      );
-      await tester.pumpAndSettle();
+      ),
+      (
+        description: 'renders with zeroBased mode',
+        state: HabitsState.initial().copyWith(zeroBased: true, minY: 50),
+      ),
+    ]) {
+      testWidgets(edgeCase.description, (tester) async {
+        await pumpChart(tester, state: edgeCase.state);
 
-      // Should render without errors
-      expect(find.byType(LineChart), findsOneWidget);
-    });
-
-    testWidgets('handles single day list without throwing', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider.overrideWith(_SingleDayController.new),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HabitCompletionRateChart(),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Should render without errors - bounds checks prevent RangeError
-      expect(find.byType(LineChart), findsOneWidget);
-    });
-
-    testWidgets('renders with zeroBased mode', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            habitsControllerProvider.overrideWith(_ZeroBasedController.new),
-          ],
-          child: const MaterialApp(
-            home: Scaffold(
-              body: HabitCompletionRateChart(),
-            ),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Should render without errors
-      expect(find.byType(LineChart), findsOneWidget);
-    });
+        // Renders without errors — bounds checks prevent RangeError.
+        expect(tester.takeException(), isNull);
+        expect(find.byType(LineChart), findsOneWidget);
+      });
+    }
 
     test('preferredSize returns toolbar height', () {
       const chart = HabitCompletionRateChart();
@@ -223,60 +177,57 @@ void main() {
   });
 
   group('getTooltipItems callback', () {
-    testWidgets(
-      'returns empty list when spots is empty',
-      (tester) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              habitsControllerProvider.overrideWith(_WithDaysController.new),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(body: HabitCompletionRateChart()),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
-
-        final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-        final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
-
-        final items = tooltipData.getTooltipItems([]);
-        expect(items, isEmpty);
+    final withDaysState = HabitsState.initial().copyWith(
+      days: ['2024-03-13', '2024-03-14', '2024-03-15'],
+      timeSpanDays: 3,
+      successfulByDay: {
+        '2024-03-13': {'h1'},
+        '2024-03-14': {'h1'},
+        '2024-03-15': {'h1'},
+      },
+      allByDay: {
+        '2024-03-13': {'h1', 'h2'},
+        '2024-03-14': {'h1', 'h2'},
+        '2024-03-15': {'h1', 'h2'},
       },
     );
 
-    testWidgets(
-      'does not throw when spot index is out of bounds',
-      (tester) async {
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              habitsControllerProvider.overrideWith(_WithDaysController.new),
-            ],
-            child: const MaterialApp(
-              home: Scaffold(body: HabitCompletionRateChart()),
-            ),
-          ),
-        );
-        await tester.pumpAndSettle();
+    testWidgets('returns empty list when spots is empty', (tester) async {
+      await pumpChart(tester, state: withDaysState);
 
-        final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-        final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
 
-        // Use an x value far beyond the days list length
-        final barDataObj = LineChartBarData(spots: const [FlSpot(999, 50)]);
-        final spots = [LineBarSpot(barDataObj, 0, const FlSpot(999, 50))];
+      final items = tooltipData.getTooltipItems([]);
+      expect(items, isEmpty);
+    });
 
-        // Must not throw; returns one null per spot
-        final items = tooltipData.getTooltipItems(spots);
-        expect(items, hasLength(1));
-        expect(items.first, isNull);
-      },
-    );
+    testWidgets('does not throw when spot index is out of bounds', (
+      tester,
+    ) async {
+      await pumpChart(tester, state: withDaysState);
+
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      final tooltipData = lineChart.data.lineTouchData.touchTooltipData;
+
+      // Use an x value far beyond the days list length
+      final barDataObj = LineChartBarData(spots: const [FlSpot(999, 50)]);
+      final spots = [LineBarSpot(barDataObj, 0, const FlSpot(999, 50))];
+
+      // Must not throw; returns one null per spot
+      final items = tooltipData.getTooltipItems(spots);
+      expect(items, hasLength(1));
+      expect(items.first, isNull);
+    });
   });
 
   group('leftTitleWidgets', () {
+    Future<void> pumpTitleWidget(WidgetTester tester, double value) async {
+      await tester.pumpWidget(
+        MaterialApp(home: Scaffold(body: leftTitleWidgets(value, _makeMeta()))),
+      );
+    }
+
     for (final testCase in [
       (value: 20.0, expected: '20%'),
       (value: 40.0, expected: '40%'),
@@ -288,11 +239,7 @@ void main() {
         'returns ChartLabel with "${testCase.expected}" for value '
         '${testCase.value}',
         (tester) async {
-          final meta = _makeMeta();
-          final widget = leftTitleWidgets(testCase.value, meta);
-          await tester.pumpWidget(
-            MaterialApp(home: Scaffold(body: widget)),
-          );
+          await pumpTitleWidget(tester, testCase.value);
           expect(find.text(testCase.expected), findsOneWidget);
         },
       );
@@ -301,13 +248,9 @@ void main() {
     testWidgets('returns empty Container for non-labelled values', (
       tester,
     ) async {
-      final meta = _makeMeta();
       // Values like 0, 10, 30, 50 are not labelled.
       for (final value in [0.0, 10.0, 30.0, 50.0, 70.0, 90.0]) {
-        final widget = leftTitleWidgets(value, meta);
-        await tester.pumpWidget(
-          MaterialApp(home: Scaffold(body: widget)),
-        );
+        await pumpTitleWidget(tester, value);
         expect(find.byType(Container), findsWidgets);
         expect(
           find.text(value.toInt().toString()),
@@ -489,72 +432,4 @@ void main() {
       expect(result.aboveBarData.show, isTrue);
     });
   });
-}
-
-/// Test controller that provides a state with selectedInfoYmd set
-class _TestHabitsController extends HabitsController {
-  @override
-  HabitsState build() {
-    return HabitsState.initial().copyWith(
-      selectedInfoYmd: '2025-12-30',
-      successPercentage: 75,
-      skippedPercentage: 10,
-      failedPercentage: 15,
-    );
-  }
-}
-
-/// Test controller with minimal days to test bounds checking
-class _EmptyDaysController extends HabitsController {
-  @override
-  HabitsState build() {
-    return HabitsState.initial().copyWith(
-      days: [], // Empty days list
-      timeSpanDays: 7,
-    );
-  }
-}
-
-/// Test controller with only one day to test bounds checking
-class _SingleDayController extends HabitsController {
-  @override
-  HabitsState build() {
-    return HabitsState.initial().copyWith(
-      days: ['2025-12-30'], // Only one day
-      timeSpanDays: 7,
-    );
-  }
-}
-
-/// Test controller with zeroBased state
-class _ZeroBasedController extends HabitsController {
-  @override
-  HabitsState build() {
-    return HabitsState.initial().copyWith(
-      zeroBased: true,
-      minY: 50,
-    );
-  }
-}
-
-/// Test controller with multiple days so tooltip callback can resolve valid
-/// day indices.
-class _WithDaysController extends HabitsController {
-  @override
-  HabitsState build() {
-    return HabitsState.initial().copyWith(
-      days: ['2024-03-13', '2024-03-14', '2024-03-15'],
-      timeSpanDays: 3,
-      successfulByDay: {
-        '2024-03-13': {'h1'},
-        '2024-03-14': {'h1'},
-        '2024-03-15': {'h1'},
-      },
-      allByDay: {
-        '2024-03-13': {'h1', 'h2'},
-        '2024-03-14': {'h1', 'h2'},
-        '2024-03-15': {'h1', 'h2'},
-      },
-    );
-  }
 }

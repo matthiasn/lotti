@@ -328,12 +328,23 @@ void main() {
       await tester.tap(find.byType(TextField));
       await tester.pumpAndSettle();
 
-      // Tap Now button
+      // Tap Now button, bracketing the tap with wall-clock readings so the
+      // captured value can be pinned to the live-clock window.
+      final before = DateTime.now();
       await tester.tap(find.text('Now'));
       await tester.pumpAndSettle();
+      final after = DateTime.now();
 
-      // Verify callback was called exactly once with a DateTime value
+      // Verify callback was called exactly once with the current time
       expect(setDates, hasLength(1));
+      final captured = setDates.single;
+      expect(
+        !captured.isBefore(before) && !captured.isAfter(after),
+        isTrue,
+        reason:
+            'onNow must pass the wall-clock time of the tap, '
+            'got $captured outside [$before, $after]',
+      );
 
       // Verify modal is closed
       expect(find.byType(DateTimeBottomSheet), findsNothing);

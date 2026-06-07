@@ -85,6 +85,13 @@ void main() {
         '[dailyMax]',
       );
     });
+
+    test('returns formatted label for hourlySum', () {
+      expect(
+        aggregationLabel(AggregationType.hourlySum),
+        '[hourlySum]',
+      );
+    });
   });
 
   group('MeasurablesChartInfoWidget', () {

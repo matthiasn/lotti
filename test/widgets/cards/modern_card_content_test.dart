@@ -20,7 +20,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Find title text
       expect(find.text(testTitle), findsOneWidget);
@@ -49,7 +49,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final text = tester.widget<Text>(find.text(longTitle));
       expect(text.overflow, TextOverflow.ellipsis);
@@ -69,7 +69,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text(testTitle), findsOneWidget);
       expect(find.text(testSubtitle), findsOneWidget);
@@ -98,7 +98,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text(testTitle), findsOneWidget);
       expect(find.byIcon(Icons.star), findsOneWidget);
@@ -118,7 +118,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Leading widget should be before title
       final row = tester.widget<Row>(find.byType(Row).first);
@@ -143,7 +143,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Trailing widget should be at the end
       final row = tester.widget<Row>(find.byType(Row).first);
@@ -171,7 +171,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       // Check title font size
       final titleText = tester.widget<Text>(find.text(testTitle));
@@ -208,7 +208,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final text = tester.widget<Text>(find.text(testTitle));
       expect(text.style?.fontSize, 30);
@@ -235,7 +235,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final text = tester.widget<Text>(find.text(testSubtitle));
       expect(text.style?.fontSize, 20);
@@ -255,7 +255,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final text = tester.widget<Text>(find.text(testTitle));
       expect(text.maxLines, 3);
@@ -277,7 +277,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       final text = tester.widget<Text>(find.text(testSubtitle));
       expect(text.maxLines, 4);
@@ -295,7 +295,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text(testTitle), findsOneWidget);
       expect(find.text(''), findsNothing);
@@ -327,7 +327,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text(widgetText), findsOneWidget);
       expect(find.text(testSubtitle), findsNothing);
@@ -344,7 +344,7 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(Expanded), findsOneWidget);
     });
