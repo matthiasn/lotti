@@ -156,6 +156,40 @@ void main() {
   });
 
   testWidgets(
+    'onDeleted is a no-op (no toast, no crash) when the tree context is '
+    'already unmounted',
+    (tester) async {
+      stubPersisted(const [
+        SavedTaskFilter(id: 'sv-1', name: 'A', filter: _filterA),
+      ]);
+      final fake = FakeJournalPageController(const JournalPageState());
+
+      await _pumpTree(
+        tester,
+        fakeController: fake,
+        seed: const [],
+      );
+
+      // Capture the wired closure, then unmount the whole tree — this is
+      // the user-navigated-away-mid-delete case the context.mounted guard
+      // exists for.
+      final onDeleted = tester
+          .widget<SavedTaskFiltersSection>(
+            find.byType(SavedTaskFiltersSection),
+          )
+          .onDeleted!;
+
+      await tester.pumpWidget(const SizedBox());
+
+      onDeleted();
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(find.byType(SnackBar), findsNothing);
+    },
+  );
+
+  testWidgets(
     'controller delete mutation propagates into provider state',
     (tester) async {
       stubPersisted(const [
