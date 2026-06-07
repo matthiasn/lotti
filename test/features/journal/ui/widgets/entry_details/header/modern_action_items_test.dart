@@ -2667,6 +2667,34 @@ void main() {
       expect(find.text('Copy as Markdown'), findsNothing);
     });
 
+    testWidgets('Copy actions appear once text is added', (tester) async {
+      final controller = _CopyTextEntryController();
+
+      await tester.pumpWidget(
+        _wrapWithCopyApp(
+          const Column(
+            children: [
+              ModernCopyEntryTextItem(entryId: 'e2b', markdown: false),
+              ModernCopyEntryTextItem(entryId: 'e2b', markdown: true),
+            ],
+          ),
+          overrides: [
+            entryControllerProvider(id: 'e2b').overrideWith(() => controller),
+          ],
+        ),
+      );
+      await tester.pump();
+      expect(find.text('Copy as text'), findsNothing);
+
+      // Type content into the live quill document; the controller
+      // re-publishes state so the watchers re-evaluate visibility.
+      controller.addText('now has text');
+      await tester.pump();
+
+      expect(find.text('Copy as text'), findsOneWidget);
+      expect(find.text('Copy as Markdown'), findsOneWidget);
+    });
+
     testWidgets('Editor toolbar builds (coverage)', (tester) async {
       final controller = _CopyTextEntryController(initialText: 'Toolbar');
 
@@ -2695,6 +2723,11 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(QuillSimpleToolbar), findsOneWidget);
+      // The toolbar actually populated its formatting controls — the bold
+      // and italic toggles are rendered and wired to the live controller.
+      expect(find.byIcon(Icons.format_bold), findsOneWidget);
+      expect(find.byIcon(Icons.format_italic), findsOneWidget);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('InitialModalPageContent includes copy actions', (
@@ -2938,6 +2971,26 @@ class _CopyTextEntryController extends EntryController {
       showMap: false,
       isFocused: false,
       shouldShowEditorToolBar: true,
+    );
+  }
+
+  /// Inserts [text] into the live quill document and re-publishes the
+  /// state with a fresh `updatedAt` so widgets watching the provider
+  /// rebuild and re-evaluate the document-derived visibility.
+  void addText(String text) {
+    controller.document.insert(0, text);
+    final current = state.value!;
+    final entry = current.entry!;
+    state = AsyncData(
+      EntryState.saved(
+        entryId: current.entryId,
+        entry: entry.copyWith(
+          meta: entry.meta.copyWith(updatedAt: DateTime.utc(2024)),
+        ),
+        showMap: false,
+        isFocused: false,
+        shouldShowEditorToolBar: true,
+      ),
     );
   }
 
