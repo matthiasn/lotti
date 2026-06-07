@@ -36,9 +36,11 @@
 
 - [x] **[HIGH]** `test/features/ai/functions/lotti_batch_checklist_handler_test.dart` — **1 576 lines** for a 379-line impl (4.2× ratio). Similar structure to the update-handler file. The 34 tests cover `processFunctionCall`, `createBatchItems` (with/without existing checklist), and `createToolResponse`. A `_BatchChecklistTestBench` with `bench.createItems(...)` / `bench.processCall(...)` convenience methods would halve the boilerplate. **RESOLVED (adapted):** same approach as the update-handler item — extracted `stubTaskById()`, `stubAddItemEcho()`, and `stubAutoCreateChecklistEcho()` file-level helpers and collapsed the duplicated (sometimes triplicated-within-one-test) stub bodies; file now 1 303 lines with all 34+ tests passing.
 
-- [ ] **[MED]** `lib/features/ai/functions/lotti_checklist_update_handler.dart` — **532 lines**, slightly above the 500-line guideline. The `processFunctionCall` validation block (lines 116–253) is self-contained and long; it could be extracted as `_validateUpdateItems(List items)` returning a typed result to separate parse from execute.
+- [x] **[MED]** `lib/features/ai/functions/lotti_checklist_update_handler.dart` — **532 lines**, slightly above the 500-line guideline. The `processFunctionCall` validation block (lines 116–253) is self-contained and long; it could be extracted as `_validateUpdateItems(List items)` returning a typed result to separate parse from execute.
+  **RESOLVED:** the per-item validation moved out of `processFunctionCall` into `_validateUpdateItem(i, item)` returning a typed `({item, error})` record — parse is now separated from execute; all 65 handler tests pass unchanged.
 
-- [ ] **[MED]** `test/features/ai/functions/task_priority_handler_test.dart` — **1 117 lines** for a 300-line impl (3.7× ratio). The `confidence and reason handling` group (lines 1018–1115) contains three near-identical tests for `high`/`medium`/`low` confidence. A loop or parameterized helper would reduce these to one test.
+- [x] **[MED]** `test/features/ai/functions/task_priority_handler_test.dart` — **1 117 lines** for a 300-line impl (3.7× ratio). The `confidence and reason handling` group (lines 1018–1115) contains three near-identical tests for `high`/`medium`/`low` confidence. A loop or parameterized helper would reduce these to one test.
+  **RESOLVED:** the three confidence tests are now one loop over a `(priority, confidence, reason)` table; the optional-fields test stays separate (different shape).
 
 ---
 
@@ -50,14 +52,16 @@
 
 - [x] **[HIGH]** `test/features/ai/functions/lotti_checklist_update_handler_test.dart:121` and `test/features/ai/functions/lotti_batch_checklist_handler_test.dart:99` — both files use raw `getIt.registerSingleton<JournalDb>(mockJournalDb)` / `tearDown(getIt.reset)` instead of `setUpTestGetIt()` + `additionalSetup:`. This is explicitly prohibited by `AGENTS.md` ("Never write inline `getIt.isRegistered` / `getIt.unregister` / `getIt.registerSingleton` boilerplate").
 
-- [ ] **[MED]** `test/features/ai/functions/task_priority_handler_test.dart:1018–1115` — the `confidence and reason handling` group contains three separate tests for `high`, `medium`, and `low` confidence, each creating a task, creating a tool call, stubbing the repo, and asserting a single `result.confidence` value. These are copy-paste permutations of the same scenario. A single parameterized test would be cleaner:
+- [x] **[MED]** `test/features/ai/functions/task_priority_handler_test.dart:1018–1115` — the `confidence and reason handling` group contains three separate tests for `high`, `medium`, and `low` confidence, each creating a task, creating a tool call, stubbing the repo, and asserting a single `result.confidence` value. These are copy-paste permutations of the same scenario. A single parameterized test would be cleaner:
   ```dart
   for (final conf in ['high', 'medium', 'low']) {
     test('captures $conf confidence', () async { ... });
   }
   ```
+  **RESOLVED:** same fix as the duplicate item above — parameterized into one loop.
 
-- [ ] **[MED]** `test/features/ai/functions/task_priority_handler_test.dart:206–260` — the `parsePriority` group has 8 individual `test()` calls, several of which test the same property (e.g., `'should parse P0 to p0Urgent'` and `'should handle mixed case'` both assert `parsePriority('P0') == p0Urgent`). These should be collapsed into one parameterized property test.
+- [x] **[MED]** `test/features/ai/functions/task_priority_handler_test.dart:206–260` — the `parsePriority` group has 8 individual `test()` calls, several of which test the same property (e.g., `'should parse P0 to p0Urgent'` and `'should handle mixed case'` both assert `parsePriority('P0') == p0Urgent`). These should be collapsed into one parameterized property test.
+  **RESOLVED:** collapsed to a valid-code table test (10 case/whitespace variants), one invalid/non-string loop, and a Glados oracle property (see the Glados item).
 
 - [ ] **[LOW]** `test/features/ai/functions/label_functions_test.dart` — the single test is schema-structure only. There is no test verifying that `LabelFunctions.assignTaskLabels` constant equals `'assign_task_labels'`, and no test that the `confidence` enum in `labels.items.properties.confidence.enum` is `['low', 'medium', 'high', 'very_high']` in that specific order (the test uses `containsAll` which ignores order, but the schema description says "highest-confidence first" — the order matters for AI prompt quality).
 
@@ -72,9 +76,11 @@
 
 - [x] **[HIGH]** `lib/features/ai/functions/lotti_checklist_update_handler.dart` (`processFunctionCall` validation — especially the `normalizeWhitespace` delegation and `minReasonLength` boundary) — `normalizeWhitespace` is a pure string transform. A round-trip Glados property `normalizeWhitespace(s)` contains no leading/trailing whitespace and no consecutive internal spaces is trivially expressible and covers an infinite input space not reachable by hand.
 
-- [ ] **[MED]** `lib/features/ai/functions/task_functions.dart` (`TaskFunctionArgs.normalizeToString`, `extractReasonAndConfidence`) — these are already tested with several hand-rolled cases in `task_functions_test.dart`. A Glados property `∀ String s: normalizeToString(s) == s` (identity for strings) and `∀ non-string v: normalizeToString(v) == v.toString()` would collapse the four current static tests into one property with broader coverage.
+- [x] **[MED]** `lib/features/ai/functions/task_functions.dart` (`TaskFunctionArgs.normalizeToString`, `extractReasonAndConfidence`) — these are already tested with several hand-rolled cases in `task_functions_test.dart`. A Glados property `∀ String s: normalizeToString(s) == s` (identity for strings) and `∀ non-string v: normalizeToString(v) == v.toString()` would collapse the four current static tests into one property with broader coverage.
+  **RESOLVED:** the group now has the identity-for-strings Glados property, a numeric-sweep coercion property (ints, bools, lists via `toString`), the null case, and exact-representation examples — replacing the four hand-rolled coercion tests.
 
-- [ ] **[MED]** `lib/features/ai/functions/task_priority_handler.dart` (`parsePriority`) — pure function mapping strings to a 4-value enum (or null). A Glados property over `any.string` verifying `parsePriority(s) ∈ {P0,P1,P2,P3,null}` and `parsePriority(parsePriority(s)?.short) == parsePriority(s)` (round-trip idempotence) would replace the 8 fragmented static tests with one parameterized property.
+- [x] **[MED]** `lib/features/ai/functions/task_priority_handler.dart` (`parsePriority`) — pure function mapping strings to a 4-value enum (or null). A Glados property over `any.string` verifying `parsePriority(s) ∈ {P0,P1,P2,P3,null}` and `parsePriority(parsePriority(s)?.short) == parsePriority(s)` (round-trip idempotence) would replace the 8 fragmented static tests with one parameterized property.
+  **RESOLVED:** added the Glados property — result must equal a trim/uppercase reverse-map oracle (which implies membership in the 4-value+null set), and non-null results round-trip idempotently through their canonical code.
 
 - [ ] **[LOW]** `lib/features/ai/functions/checklist_completion_functions.dart` / `task_functions.dart` — JSON schema definitions (the `parameters` maps) are deeply nested Dart literals. A property `∀ valid tool call built from the schema: fromJson(toJson(result)) == result` on the `@freezed` data classes (`ChecklistCompletionSuggestion`, `SetTaskLanguageResult`) would catch any schema-vs-deserializer drift.
 
@@ -86,9 +92,11 @@
 
 - [x] **[HIGH]** `test/features/ai/functions/task_due_date_handler_test.dart` — the "no-op same date" branch (impl lines 222–240: `currentDue.dayAtMidnight == dueDate`) appears to have no dedicated test. The Glados scenario exercises it implicitly, but a named static test for this branch would document the `wasNoOp` / `wasSkipped` semantics clearly. **RESOLVED (already covered):** the group 'no-op when same due date' has a dedicated static test asserting `wasNoOp` for a matching current date.
 
-- [ ] **[MED]** `test/features/ai/functions/task_functions_test.dart` — `SetTaskLanguageResult.fromJson` round-trip is tested, but `unknownEnumValue` fallback (if `confidence` is an unrecognized string) is not. The impl uses `@JsonKey(unknownEnumValue: ...)` on `ChecklistCompletionSuggestion` but not on `SetTaskLanguageResult` / `LanguageDetectionConfidence`. The absence of a fallback annotation on `LanguageDetectionConfidence` means malformed AI output would throw rather than degrade gracefully — a gap worth testing.
+- [x] **[MED]** `test/features/ai/functions/task_functions_test.dart` — `SetTaskLanguageResult.fromJson` round-trip is tested, but `unknownEnumValue` fallback (if `confidence` is an unrecognized string) is not. The impl uses `@JsonKey(unknownEnumValue: ...)` on `ChecklistCompletionSuggestion` but not on `SetTaskLanguageResult` / `LanguageDetectionConfidence`. The absence of a fallback annotation on `LanguageDetectionConfidence` means malformed AI output would throw rather than degrade gracefully — a gap worth testing.
+  **RESOLVED (adapted):** added contract tests — every known confidence parses, and an unrecognized value throws, documenting that the caller's catch block drops the language update (the processor wraps `fromJson` in try/catch, so this degrades rather than crashes). Adding `unknownEnumValue` would change AI-facing behavior and regenerate freezed output — out of scope for a test-quality pass.
 
-- [ ] **[MED]** `test/features/ai/functions/lotti_batch_checklist_handler_test.dart` — the `failedItems` getter (impl line 323) and its contribution to `createToolResponse` output when *some* items succeed and *some* fail is tested, but the path where `autoChecklistService.autoCreateChecklist` returns `success: false` with a non-null `createdItems` list is not covered.
+- [x] **[MED]** `test/features/ai/functions/lotti_batch_checklist_handler_test.dart` — the `failedItems` getter (impl line 323) and its contribution to `createToolResponse` output when *some* items succeed and *some* fail is tested, but the path where `autoChecklistService.autoCreateChecklist` returns `success: false` with a non-null `createdItems` list is not covered.
+  **RESOLVED:** new test returns `success: false` WITH a non-null `createdItems` — the handler keys off `success`, records both items as failed ('Checklist creation failed'), and the tool response lists them.
 
 - [ ] **[LOW]** `test/features/ai/functions/function_handler_test.dart` — `FunctionCallResult.wasSkipped` and `wasNoOp` convenience getters are not exercised (they are defined on `TaskDueDateResult`/`TaskEstimateResult`/`TaskPriorityResult`, not on `FunctionCallResult` itself — which doesn't have them). Confirming that the base `FunctionCallResult` struct carries `success`, `functionName`, `arguments`, `data`, and `error` correctly is the actual gap.
 
@@ -98,9 +106,11 @@
 
 - [x] **[HIGH]** `test/features/ai/functions/task_due_date_handler_test.dart:638` — `glados.ExploreConfig(numRuns: 220)` is the only instance in this subdir that exceeds the recommended maximum (~200) from `test/README.md`. The date-handler scenario generator (`_GeneratedDueDateToolCallScenario`) has about the same combinatorial depth as the priority and estimate generators, which use 180 runs. Reducing to 150–180 would save ~20% on the property without meaningful regression risk.
 
-- [ ] **[MED]** `test/features/ai/functions/lotti_checklist_update_handler_test.dart` and `test/features/ai/functions/lotti_batch_checklist_handler_test.dart` — both setUp routines call raw `getIt.registerSingleton<JournalDb>` on every test and `tearDown(getIt.reset)` (full GetIt reset). A full `getIt.reset()` is the most expensive teardown option; using `setUpTestGetIt()` / `tearDownTestGetIt()` with scoped singletons would avoid the full global reset and reduce inter-test state contamination risk.
+- [x] **[MED]** `test/features/ai/functions/lotti_checklist_update_handler_test.dart` and `test/features/ai/functions/lotti_batch_checklist_handler_test.dart` — both setUp routines call raw `getIt.registerSingleton<JournalDb>` on every test and `tearDown(getIt.reset)` (full GetIt reset). A full `getIt.reset()` is the most expensive teardown option; using `setUpTestGetIt()` / `tearDownTestGetIt()` with scoped singletons would avoid the full global reset and reduce inter-test state contamination risk.
+  **RESOLVED (stale):** both files already use `setUpTestGetIt()` / `tearDownTestGetIt()` from `widget_test_utils.dart`.
 
-- [ ] **[MED]** `test/features/ai/functions/task_priority_handler_test.dart` — the `parsePriority` group (lines 206–260) contains 8 synchronous static tests that together exercise fewer than 15 distinct inputs. Since all are synchronous and cheap, the overhead is small, but collapsing them into a Glados property (see "Glados" section) would make the suite both faster and more thorough.
+- [x] **[MED]** `test/features/ai/functions/task_priority_handler_test.dart` — the `parsePriority` group (lines 206–260) contains 8 synchronous static tests that together exercise fewer than 15 distinct inputs. Since all are synchronous and cheap, the overhead is small, but collapsing them into a Glados property (see "Glados" section) would make the suite both faster and more thorough.
+  **RESOLVED:** same change as the parsePriority items above — table + Glados property.
 
 - [ ] **[LOW]** `test/features/ai/functions/task_estimate_handler_test.dart` — the `parseMinutes` group (lines 580–630) has a similar structure to the `parsePriority` group: 10 individual synchronous tests over a pure function. A Glados property over the input space would be more thorough and no slower (since Glados properties are only slightly heavier than a loop over 10 hand-rolled inputs).
 

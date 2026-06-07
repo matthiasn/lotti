@@ -163,100 +163,11 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
       final validatedItems = <Map<String, dynamic>>[];
 
       for (var i = 0; i < raw.length; i++) {
-        final item = raw[i];
-
-        if (item is! Map<String, dynamic>) {
-          return _createErrorResult(
-            call,
-            'Item at index $i is not an object. Each item must be an object '
-            'with id and at least one of isChecked or title.',
-          );
+        final validation = _validateUpdateItem(i, raw[i]);
+        if (validation.error != null) {
+          return _createErrorResult(call, validation.error!);
         }
-
-        final id = item['id'];
-        if (id is! String || id.trim().isEmpty) {
-          return _createErrorResult(
-            call,
-            'Item at index $i is missing required "id" field.',
-          );
-        }
-
-        final isChecked = item['isChecked'];
-        final title = item['title'];
-        final isArchived = item['isArchived'];
-        final reason = item['reason'];
-
-        // Must have at least one update field
-        if (isChecked == null && title == null && isArchived == null) {
-          return _createErrorResult(
-            call,
-            'Item at index $i (id: $id) has no update fields. '
-            'Provide at least one of isChecked, title, or isArchived.',
-          );
-        }
-
-        // Validate isChecked type if present
-        if (isChecked != null && isChecked is! bool) {
-          return _createErrorResult(
-            call,
-            'Item at index $i has invalid isChecked value. Must be a boolean.',
-          );
-        }
-
-        // Validate isArchived type if present
-        if (isArchived != null && isArchived is! bool) {
-          return _createErrorResult(
-            call,
-            'Item at index $i has invalid isArchived value. Must be a '
-            'boolean.',
-          );
-        }
-
-        // Validate reason type if present
-        if (reason != null && reason is! String) {
-          return _createErrorResult(
-            call,
-            'Item at index $i has invalid reason value. Must be a string.',
-          );
-        }
-
-        // Validate and normalize title if present
-        String? normalizedTitle;
-        if (title != null) {
-          if (title is! String) {
-            return _createErrorResult(
-              call,
-              'Item at index $i has invalid title value. Must be a string.',
-            );
-          }
-
-          normalizedTitle = normalizeWhitespace(title);
-
-          if (normalizedTitle.isEmpty) {
-            return _createErrorResult(
-              call,
-              'Item at index $i has empty title after normalization. '
-              'Title must not be blank.',
-            );
-          }
-
-          if (normalizedTitle.length > maxTitleLength) {
-            return _createErrorResult(
-              call,
-              'Item at index $i has title exceeding $maxTitleLength characters.',
-            );
-          }
-        }
-
-        final reasonStr = reason is String ? reason.trim() : null;
-
-        validatedItems.add({
-          'id': id.trim(),
-          'isChecked': ?isChecked,
-          'title': ?normalizedTitle,
-          'isArchived': ?isArchived,
-          if (reasonStr != null && reasonStr.isNotEmpty) 'reason': reasonStr,
-        });
+        validatedItems.add(validation.item!);
       }
 
       return FunctionCallResult(
@@ -272,6 +183,117 @@ class LottiChecklistUpdateHandler extends FunctionHandler {
     } catch (e) {
       return _createErrorResult(call, 'Invalid JSON: $e');
     }
+  }
+
+  /// Validates and normalizes a single raw update object from the model's
+  /// `items` array — separated from [processFunctionCall] so parsing stays
+  /// independent of execution. Returns the normalized item, or the first
+  /// violation as the error text.
+  ({Map<String, dynamic>? item, String? error}) _validateUpdateItem(
+    int i,
+    dynamic item,
+  ) {
+    if (item is! Map<String, dynamic>) {
+      return (
+        item: null,
+        error:
+            'Item at index $i is not an object. Each item must be an object '
+            'with id and at least one of isChecked or title.',
+      );
+    }
+
+    final id = item['id'];
+    if (id is! String || id.trim().isEmpty) {
+      return (
+        item: null,
+        error: 'Item at index $i is missing required "id" field.',
+      );
+    }
+
+    final isChecked = item['isChecked'];
+    final title = item['title'];
+    final isArchived = item['isArchived'];
+    final reason = item['reason'];
+
+    // Must have at least one update field
+    if (isChecked == null && title == null && isArchived == null) {
+      return (
+        item: null,
+        error:
+            'Item at index $i (id: $id) has no update fields. '
+            'Provide at least one of isChecked, title, or isArchived.',
+      );
+    }
+
+    // Validate isChecked type if present
+    if (isChecked != null && isChecked is! bool) {
+      return (
+        item: null,
+        error:
+            'Item at index $i has invalid isChecked value. Must be a boolean.',
+      );
+    }
+
+    // Validate isArchived type if present
+    if (isArchived != null && isArchived is! bool) {
+      return (
+        item: null,
+        error:
+            'Item at index $i has invalid isArchived value. Must be a '
+            'boolean.',
+      );
+    }
+
+    // Validate reason type if present
+    if (reason != null && reason is! String) {
+      return (
+        item: null,
+        error: 'Item at index $i has invalid reason value. Must be a string.',
+      );
+    }
+
+    // Validate and normalize title if present
+    String? normalizedTitle;
+    if (title != null) {
+      if (title is! String) {
+        return (
+          item: null,
+          error: 'Item at index $i has invalid title value. Must be a string.',
+        );
+      }
+
+      normalizedTitle = normalizeWhitespace(title);
+
+      if (normalizedTitle.isEmpty) {
+        return (
+          item: null,
+          error:
+              'Item at index $i has empty title after normalization. '
+              'Title must not be blank.',
+        );
+      }
+
+      if (normalizedTitle.length > maxTitleLength) {
+        return (
+          item: null,
+          error:
+              'Item at index $i has title exceeding $maxTitleLength characters.',
+        );
+      }
+    }
+
+    final reasonStr = reason is String ? reason.trim() : null;
+
+    return (
+      item: {
+        'id': id.trim(),
+        'isChecked': ?isChecked,
+        'title': ?normalizedTitle,
+        'isArchived': ?isArchived,
+        if (reasonStr != null && reasonStr.isNotEmpty) 'reason': reasonStr,
+      },
+      error: null,
+    );
   }
 
   /// Normalize whitespace: trim edges and collapse internal spaces.

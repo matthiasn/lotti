@@ -204,59 +204,76 @@ void main() {
   }
 
   group('parsePriority', () {
-    test('should parse P0 to p0Urgent', () {
-      expect(TaskPriorityHandler.parsePriority('P0'), TaskPriority.p0Urgent);
+    // One parameterized table for every valid code, including case and
+    // whitespace variants — replaces the former 6 copy-paste tests.
+    const validCases = <(String, TaskPriority)>[
+      ('P0', TaskPriority.p0Urgent),
+      ('p0', TaskPriority.p0Urgent),
+      ('  P0  ', TaskPriority.p0Urgent),
+      ('P1', TaskPriority.p1High),
+      ('p1', TaskPriority.p1High),
+      ('\tP1\n', TaskPriority.p1High),
+      ('P2', TaskPriority.p2Medium),
+      ('p2', TaskPriority.p2Medium),
+      ('P3', TaskPriority.p3Low),
+      ('p3', TaskPriority.p3Low),
+    ];
+
+    test('parses every valid code, case-insensitively and trimmed', () {
+      for (final (input, expected) in validCases) {
+        expect(
+          TaskPriorityHandler.parsePriority(input),
+          expected,
+          reason: 'input=${input.replaceAll('\n', r'\n')}',
+        );
+      }
     });
 
-    test('should parse P1 to p1High', () {
-      expect(TaskPriorityHandler.parsePriority('P1'), TaskPriority.p1High);
+    test('returns null for invalid and non-string values', () {
+      for (final invalid in <dynamic>[
+        null,
+        '',
+        'P4',
+        'P-1',
+        'urgent',
+        'high',
+        '0',
+        '1',
+        0,
+        1,
+        true,
+        ['P0'],
+      ]) {
+        expect(TaskPriorityHandler.parsePriority(invalid), isNull);
+      }
     });
 
-    test('should parse P2 to p2Medium', () {
-      expect(TaskPriorityHandler.parsePriority('P2'), TaskPriority.p2Medium);
-    });
+    glados.Glados<String>(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'for any string: result matches the trim/uppercase oracle and '
+      'round-trips through its canonical code',
+      (s) {
+        const byCode = {
+          'P0': TaskPriority.p0Urgent,
+          'P1': TaskPriority.p1High,
+          'P2': TaskPriority.p2Medium,
+          'P3': TaskPriority.p3Low,
+        };
+        final result = TaskPriorityHandler.parsePriority(s);
 
-    test('should parse P3 to p3Low', () {
-      expect(TaskPriorityHandler.parsePriority('P3'), TaskPriority.p3Low);
-    });
+        // Oracle: non-null iff the normalized string is a known code.
+        expect(result, byCode[s.trim().toUpperCase()], reason: 's="$s"');
 
-    test('should be case-insensitive', () {
-      expect(TaskPriorityHandler.parsePriority('p0'), TaskPriority.p0Urgent);
-      expect(TaskPriorityHandler.parsePriority('p1'), TaskPriority.p1High);
-      expect(TaskPriorityHandler.parsePriority('p2'), TaskPriority.p2Medium);
-      expect(TaskPriorityHandler.parsePriority('p3'), TaskPriority.p3Low);
-    });
-
-    test('should handle mixed case', () {
-      expect(TaskPriorityHandler.parsePriority('P0'), TaskPriority.p0Urgent);
-      expect(TaskPriorityHandler.parsePriority('p0'), TaskPriority.p0Urgent);
-    });
-
-    test('should trim whitespace', () {
-      expect(
-        TaskPriorityHandler.parsePriority('  P0  '),
-        TaskPriority.p0Urgent,
-      );
-      expect(TaskPriorityHandler.parsePriority('\tP1\n'), TaskPriority.p1High);
-    });
-
-    test('should return null for invalid values', () {
-      expect(TaskPriorityHandler.parsePriority(null), isNull);
-      expect(TaskPriorityHandler.parsePriority(''), isNull);
-      expect(TaskPriorityHandler.parsePriority('P4'), isNull);
-      expect(TaskPriorityHandler.parsePriority('P-1'), isNull);
-      expect(TaskPriorityHandler.parsePriority('urgent'), isNull);
-      expect(TaskPriorityHandler.parsePriority('high'), isNull);
-      expect(TaskPriorityHandler.parsePriority('0'), isNull);
-      expect(TaskPriorityHandler.parsePriority('1'), isNull);
-    });
-
-    test('should return null for non-string values', () {
-      expect(TaskPriorityHandler.parsePriority(0), isNull);
-      expect(TaskPriorityHandler.parsePriority(1), isNull);
-      expect(TaskPriorityHandler.parsePriority(true), isNull);
-      expect(TaskPriorityHandler.parsePriority(['P0']), isNull);
-    });
+        // Idempotent round-trip through the canonical code.
+        if (result != null) {
+          final code = byCode.entries.firstWhere((e) => e.value == result).key;
+          expect(TaskPriorityHandler.parsePriority(code), result);
+        }
+      },
+      tags: 'glados',
+    );
   });
 
   group('TaskPriorityHandler', () {
@@ -1016,74 +1033,38 @@ void main() {
     });
 
     group('confidence and reason handling', () {
-      test('should capture high confidence', () async {
-        final task = createTask();
-        final toolCall = createPriorityToolCall(
-          priority: 'P0',
-          confidence: 'high',
-          reason: 'User explicitly said P0',
-        );
+      // One loop over the three confidence levels — the scenario shape is
+      // identical, only the (priority, confidence, reason) triple varies.
+      const confidenceCases = <(String, String, String)>[
+        ('P0', 'high', 'User explicitly said P0'),
+        ('P1', 'medium', 'User implied importance'),
+        ('P3', 'low', 'Uncertain about priority level'),
+      ];
 
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
+      for (final (priority, confidence, reason) in confidenceCases) {
+        test('captures $confidence confidence with its reason', () async {
+          final task = createTask();
+          final toolCall = createPriorityToolCall(
+            priority: priority,
+            confidence: confidence,
+            reason: reason,
+          );
 
-        final handler = TaskPriorityHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
+          when(
+            () => mockJournalRepo.updateJournalEntity(any()),
+          ).thenAnswer((_) async => true);
 
-        final result = await handler.processToolCall(toolCall, mockManager);
+          final handler = TaskPriorityHandler(
+            task: task,
+            journalRepository: mockJournalRepo,
+          );
 
-        expect(result.confidence, 'high');
-        expect(result.reason, 'User explicitly said P0');
-      });
+          final result = await handler.processToolCall(toolCall, mockManager);
 
-      test('should capture medium confidence', () async {
-        final task = createTask();
-        final toolCall = createPriorityToolCall(
-          priority: 'P1',
-          confidence: 'medium',
-          reason: 'User implied importance',
-        );
-
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
-
-        final handler = TaskPriorityHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
-
-        final result = await handler.processToolCall(toolCall, mockManager);
-
-        expect(result.confidence, 'medium');
-        expect(result.reason, 'User implied importance');
-      });
-
-      test('should capture low confidence', () async {
-        final task = createTask();
-        final toolCall = createPriorityToolCall(
-          priority: 'P3',
-          confidence: 'low',
-          reason: 'Uncertain about priority level',
-        );
-
-        when(
-          () => mockJournalRepo.updateJournalEntity(any()),
-        ).thenAnswer((_) async => true);
-
-        final handler = TaskPriorityHandler(
-          task: task,
-          journalRepository: mockJournalRepo,
-        );
-
-        final result = await handler.processToolCall(toolCall, mockManager);
-
-        expect(result.confidence, 'low');
-        expect(result.reason, 'Uncertain about priority level');
-      });
+          expect(result.confidence, confidence);
+          expect(result.reason, reason);
+        });
+      }
 
       test('should work without optional fields', () async {
         final task = createTask();
