@@ -144,6 +144,43 @@ void main() {
     );
   });
 
+  group('InferenceModelPickerModal.show — modal chrome', () {
+    testWidgets(
+      'renders the supplied title in the modal header when the picker '
+      'actually opens (two or more models)',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            Builder(
+              builder: (ctx) => Center(
+                child: TextButton(
+                  onPressed: () => InferenceModelPickerModal.show(
+                    context: ctx,
+                    defaultModelId: 'm-1',
+                    models: [
+                      _model(id: 'm-1', name: 'Voxtral'),
+                      _model(id: 'm-2', name: 'Mistral Cloud'),
+                    ],
+                    title: 'Pick a model',
+                    defaultBadgeLabel: badgeLabel,
+                  ),
+                  child: const Text('open'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('open'));
+        // Modal open is a route transition — needs a real settle.
+        await tester.pumpAndSettle();
+
+        expect(find.byType(InferenceModelPickerModal), findsOneWidget);
+        expect(find.text('Pick a model'), findsOneWidget);
+      },
+    );
+  });
+
   group('InferenceModelPickerModal.show — short-circuits', () {
     testWidgets(
       'models.length == 1 short-circuits — the lone model id is '

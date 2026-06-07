@@ -43,32 +43,30 @@ void main() {
       addTearDown(tester.view.resetDevicePixelRatio);
 
       await tester.pumpWidget(widget);
-      await tester.pumpAndSettle();
+      await tester.pump();
     }
 
     group('basic rendering', () {
       testWidgets('displays error message', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.text('Test error message'), findsOneWidget);
       });
 
       testWidgets('displays error type title', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
-        // The error type title is localized, so we can't check for exact text
-        // Instead, check that there are at least 2 Text widgets (title and message)
-        final texts = tester.widgetList<Text>(find.byType(Text));
-        expect(texts.length, greaterThanOrEqualTo(2));
+        // networkConnection maps to the localised "Connection Failed" title.
+        expect(find.text('Connection Failed'), findsOneWidget);
       });
 
       testWidgets('displays appropriate icon for error type', (
         WidgetTester tester,
       ) async {
         await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byIcon(Icons.wifi_off_rounded), findsOneWidget);
       });
@@ -77,7 +75,7 @@ void main() {
         WidgetTester tester,
       ) async {
         await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Look for a Card with a border (matches new implementation)
         final card = tester.widget<Card>(find.byType(Card).first);
@@ -109,7 +107,7 @@ void main() {
           );
 
           await tester.pumpWidget(createTestWidget(error: error));
-          await tester.pumpAndSettle();
+          await tester.pump();
 
           expect(find.byIcon(entry.value), findsOneWidget);
         });
@@ -117,114 +115,81 @@ void main() {
     });
 
     group('suggestions', () {
-      testWidgets('shows suggestions for network errors', (
-        WidgetTester tester,
-      ) async {
-        final error = InferenceError(
-          message: 'Network error',
-          type: InferenceErrorType.networkConnection,
-        );
+      final suggestionCases = <String, (InferenceError, List<String>)>{
+        'network errors': (
+          InferenceError(
+            message: 'Network error',
+            type: InferenceErrorType.networkConnection,
+          ),
+          [
+            'Check your internet connection',
+            'Verify the server URL is correct',
+          ],
+        ),
+        'timeout errors': (
+          InferenceError(
+            message: 'Timeout error',
+            type: InferenceErrorType.timeout,
+          ),
+          ['Try again with a shorter prompt'],
+        ),
+        'authentication errors': (
+          InferenceError(
+            message: 'Auth error',
+            type: InferenceErrorType.authentication,
+          ),
+          ['Verify your API key is correct'],
+        ),
+        'rate limit errors': (
+          InferenceError(
+            message: 'Rate limit error',
+            type: InferenceErrorType.rateLimit,
+          ),
+          ['Wait a few minutes before trying again'],
+        ),
+        'Ollama model not found': (
+          InferenceError(
+            message: 'model "llama2" not found, try pulling it first',
+            type: InferenceErrorType.invalidRequest,
+          ),
+          ['Run: ollama pull llama2', 'Make sure Ollama is running'],
+        ),
+        'generic invalid request': (
+          InferenceError(
+            message: 'Invalid request',
+            type: InferenceErrorType.invalidRequest,
+          ),
+          ['Check your model configuration'],
+        ),
+        'server errors': (
+          InferenceError(
+            message: 'Server error',
+            type: InferenceErrorType.serverError,
+          ),
+          ['Wait a few minutes and try again'],
+        ),
+        'unknown errors': (
+          InferenceError(
+            message: 'Unknown error',
+            type: InferenceErrorType.unknown,
+          ),
+          ['Check the error details'],
+        ),
+      };
 
-        await pumpWide(tester, createTestWidget(error: error));
+      for (final entry in suggestionCases.entries) {
+        testWidgets('shows suggestions for ${entry.key}', (tester) async {
+          await pumpWide(tester, createTestWidget(error: entry.value.$1));
 
-        expect(find.text('Check your internet connection'), findsOneWidget);
-        expect(find.text('Verify the server URL is correct'), findsOneWidget);
-      });
-
-      testWidgets('shows suggestions for timeout errors', (
-        WidgetTester tester,
-      ) async {
-        final error = InferenceError(
-          message: 'Timeout error',
-          type: InferenceErrorType.timeout,
-        );
-
-        await pumpWide(tester, createTestWidget(error: error));
-
-        expect(find.text('Try again with a shorter prompt'), findsOneWidget);
-      });
-
-      testWidgets('shows suggestions for authentication errors', (
-        WidgetTester tester,
-      ) async {
-        final error = InferenceError(
-          message: 'Auth error',
-          type: InferenceErrorType.authentication,
-        );
-
-        await pumpWide(tester, createTestWidget(error: error));
-
-        expect(find.text('Verify your API key is correct'), findsOneWidget);
-      });
-
-      testWidgets('shows suggestions for rate limit errors', (
-        WidgetTester tester,
-      ) async {
-        final error = InferenceError(
-          message: 'Rate limit error',
-          type: InferenceErrorType.rateLimit,
-        );
-
-        await pumpWide(tester, createTestWidget(error: error));
-
-        expect(
-          find.text('Wait a few minutes before trying again'),
-          findsOneWidget,
-        );
-      });
-
-      testWidgets('shows Ollama-specific suggestions for model not found', (
-        WidgetTester tester,
-      ) async {
-        final error = InferenceError(
-          message: 'model "llama2" not found, try pulling it first',
-          type: InferenceErrorType.invalidRequest,
-        );
-
-        await pumpWide(tester, createTestWidget(error: error));
-
-        expect(find.text('Run: ollama pull llama2'), findsOneWidget);
-        expect(find.text('Make sure Ollama is running'), findsOneWidget);
-      });
-
-      testWidgets('shows generic invalid request suggestions', (
-        WidgetTester tester,
-      ) async {
-        final error = InferenceError(
-          message: 'Invalid request',
-          type: InferenceErrorType.invalidRequest,
-        );
-
-        await pumpWide(tester, createTestWidget(error: error));
-
-        expect(find.text('Check your model configuration'), findsOneWidget);
-      });
-
-      testWidgets('shows suggestions for server errors', (
-        WidgetTester tester,
-      ) async {
-        final error = InferenceError(
-          message: 'Server error',
-          type: InferenceErrorType.serverError,
-        );
-
-        await pumpWide(tester, createTestWidget(error: error));
-
-        expect(find.text('Wait a few minutes and try again'), findsOneWidget);
-      });
-
-      testWidgets('shows suggestions for unknown errors', (
-        WidgetTester tester,
-      ) async {
-        final error = InferenceError(
-          message: 'Unknown error',
-          type: InferenceErrorType.unknown,
-        );
-
-        await pumpWide(tester, createTestWidget(error: error));
-
-        expect(find.text('Check the error details'), findsOneWidget);
-      });
+          for (final suggestion in entry.value.$2) {
+            expect(
+              find.text(suggestion),
+              findsOneWidget,
+              reason: entry.key,
+            );
+          }
+        });
+      }
 
       testWidgets('shows suggestions container', (WidgetTester tester) async {
         await pumpWide(tester, createTestWidget(error: testError));
@@ -249,7 +214,7 @@ void main() {
             onRetry: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(FilledButton), findsNothing);
       });
@@ -268,7 +233,7 @@ void main() {
             onRetry: () {},
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(FilledButton), findsNothing);
       });
@@ -281,7 +246,7 @@ void main() {
             error: testError,
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(FilledButton), findsNothing);
       });
@@ -322,7 +287,7 @@ void main() {
     group('text selection', () {
       testWidgets('error message is selectable', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(SelectableText), findsWidgets);
 
@@ -334,7 +299,7 @@ void main() {
 
       testWidgets('suggestions are selectable', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should have multiple SelectableText widgets for suggestions
         final selectableTexts = tester.widgetList<SelectableText>(
@@ -349,7 +314,7 @@ void main() {
         WidgetTester tester,
       ) async {
         await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         expect(find.byType(AiErrorDisplay), findsOneWidget);
         expect(find.text('Test error message'), findsOneWidget);
@@ -361,7 +326,7 @@ void main() {
         WidgetTester tester,
       ) async {
         await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Check for SizedBox widgets used for spacing
         final sizedBoxes = tester.widgetList<SizedBox>(
@@ -387,7 +352,7 @@ void main() {
 
       testWidgets('uses proper padding', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         final container = tester.widget<Container>(
           find.byType(Container).first,
@@ -417,7 +382,7 @@ void main() {
       ) async {
         // All error types should have suggestions, but test the UI behavior
         await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Suggestions container should be present
         expect(find.textContaining('•'), findsWidgets);
@@ -432,7 +397,7 @@ void main() {
         );
 
         await tester.pumpWidget(createTestWidget(error: edgeCaseError));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Should still show model-related suggestions
         expect(find.textContaining('model'), findsWidgets);
@@ -442,7 +407,7 @@ void main() {
     group('accessibility', () {
       testWidgets('has proper semantics', (WidgetTester tester) async {
         await tester.pumpWidget(createTestWidget(error: testError));
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         // Icon should be visible
         expect(find.byIcon(Icons.wifi_off_rounded), findsOneWidget);
@@ -461,7 +426,7 @@ void main() {
           type: InferenceErrorType.authentication,
         );
         await tester.pumpWidget(createTestWidget(error: error));
-        await tester.pumpAndSettle();
+        await tester.pump();
         expect(find.text('API key missing'), findsOneWidget);
       });
 
@@ -483,7 +448,7 @@ void main() {
             },
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
         final retryText = find.text('Try Again');
         expect(retryText, findsOneWidget);
         final materialButton = find
