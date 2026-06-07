@@ -1,22 +1,24 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
-import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
-import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Entry point for the Daily OS Next surface.
 ///
-/// Routes between [CapturePage] (no drafted plan yet) and [DayPage]
-/// (plan exists) based on the currently selected date. Surfaces a
-/// small date picker on both paths so the user can choose the day
-/// before recording the planning capture.
+/// Shows the [DayPage] for the selected date: the real plan when one
+/// exists, otherwise the empty Day surface (its timeline still reflects
+/// any tracked time) whose footer CTA opens the day-planning modal
+/// ([showDayPlanningModal]) for the Capture → Reconcile → Drafting ritual.
+/// A small date strip lets the user pick the day first.
 class DailyOsNextRoot extends ConsumerStatefulWidget {
   const DailyOsNextRoot({super.key});
 
@@ -25,13 +27,6 @@ class DailyOsNextRoot extends ConsumerStatefulWidget {
 }
 
 class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
-  /// Day for which the user tapped the empty Day surface's "Speak a
-  /// check-in" CTA — forces Capture for that day even though it has
-  /// tracked time. Comparing against the current selection (instead of
-  /// listening + resetting a flag) means no `setState` inside a
-  /// provider listener and an automatic reset on date change.
-  DateTime? _checkInDate;
-
   DateTime get _today {
     final now = clock.now();
     return DateTime(now.year, now.month, now.day);
@@ -77,35 +72,13 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     final selectedDate = ref.watch(dailyOsNextSelectedDateProvider);
     final asyncPlan = ref.watch(currentDraftPlanProvider(selectedDate));
     if (asyncPlan.hasValue) {
-      final plan = asyncPlan.requireValue;
-      if (plan != null) return _buildSurface(selectedDate, plan);
-
-      // Wait for the tracked-time projection before choosing between
-      // Capture and the empty Day surface — rendering on a coerced
-      // empty list would flash Capture and then flip once the
-      // recorded sessions arrive. Errors fall through as "no tracked
-      // time" so a failing projection never blocks the ritual.
-      final actualBlocks = ref.watch(
-        dailyOsActualTimeBlocksProvider(selectedDate),
-      );
-      if (actualBlocks.isLoading && !actualBlocks.hasValue) {
-        return const _LoadingShell();
-      }
-      return _buildSurface(
-        selectedDate,
-        null,
-        actualBlocks: actualBlocks.value ?? const [],
-      );
+      return _buildSurface(selectedDate, asyncPlan.requireValue);
     }
     if (asyncPlan.hasError) return _ErrorShell(error: '${asyncPlan.error}');
     return const _LoadingShell();
   }
 
-  Widget _buildSurface(
-    DateTime selectedDate,
-    DraftPlan? plan, {
-    List<TimeBlock> actualBlocks = const [],
-  }) {
+  Widget _buildSurface(DateTime selectedDate, DraftPlan? plan) {
     final strip = _DateStrip(
       selected: selectedDate,
       isToday: selectedDate.isAtSameMomentAs(_today),
@@ -121,27 +94,21 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
         dateStrip: strip,
       );
     }
-    // No plan, but the day already has tracked time — land on the Day
-    // surface in its empty mode so the recorded sessions are visible
-    // on the timeline without creating a plan first (handoff v2 item
-    // 2). The footer CTA routes into Capture.
-    if (actualBlocks.isNotEmpty && _checkInDate != selectedDate) {
-      return DayPage(
-        key: ValueKey('empty-${selectedDate.toIso8601String()}'),
-        draft: DraftPlan.emptyForDay(selectedDate),
-        hasPlan: false,
-        onCheckIn: () => setState(() => _checkInDate = selectedDate),
-        dateStrip: strip,
-      );
-    }
-    // No plan for the selected date — drop into Capture so the
-    // user can start one for that day. Capture is keyed on
-    // [selectedDate] so the submitted capture lands on the
-    // chosen day's day-agent.
-    return CapturePage(
-      key: ValueKey('capture-${selectedDate.toIso8601String()}'),
-      forDate: selectedDate,
-      actualBlocks: actualBlocks,
+    // No plan for the selected date — show the Day surface in its empty
+    // mode so any recorded sessions are still visible on the timeline.
+    // The footer CTA opens the day-planning modal (Capture → Reconcile →
+    // Drafting), a full-height layer that covers the bottom nav.
+    return DayPage(
+      key: ValueKey('empty-${selectedDate.toIso8601String()}'),
+      draft: DraftPlan.emptyForDay(selectedDate),
+      hasPlan: false,
+      onCheckIn: () => unawaited(
+        showDayPlanningModal(
+          context: context,
+          dayDate: selectedDate,
+          intent: const DayPlanningCreate(),
+        ),
+      ),
       dateStrip: strip,
     );
   }

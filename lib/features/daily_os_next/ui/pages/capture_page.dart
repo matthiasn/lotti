@@ -203,6 +203,143 @@ class CapturePage extends ConsumerWidget {
   }
 }
 
+/// Scaffold-free capture content for hosting inside the day-planning modal.
+///
+/// Renders the same calm greeting → headline → voice orb → state row as the
+/// standalone capture surface, but without the page chrome (AppBar /
+/// bottom-nav padding / inline advance CTA) — the modal supplies a top bar
+/// and a sticky glass action bar instead. The voice orb stays the in-body
+/// hero recording control; advance/secondary actions live in the action
+/// bar. [trailingBuilder], when provided, appends a widget below the state
+/// row using the live [CaptureState] (used to keep the standalone page's
+/// inline CTA while it still exists).
+class CaptureModalContent extends ConsumerWidget {
+  const CaptureModalContent({
+    this.forDate,
+    this.actualBlocks = const [],
+    this.trailingBuilder,
+    super.key,
+  });
+
+  final DateTime? forDate;
+  final List<TimeBlock> actualBlocks;
+  final Widget Function(BuildContext, CaptureState)? trailingBuilder;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final state = ref.watch(captureControllerProvider);
+
+    return Column(
+      children: [
+        // "Today so far" pins to the top; greeting + orb stay centred in
+        // the remaining space below (handoff v2 item 1).
+        if (actualBlocks.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step5,
+              tokens.spacing.step4,
+              tokens.spacing.step5,
+              0,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 560),
+                child: TimeSpentCard(
+                  blocks: actualBlocks,
+                  title: _timeSpentTitle(context),
+                ),
+              ),
+            ),
+          ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final layout = CaptureLayoutMetrics.resolve(
+                tokens,
+                phase: state.phase,
+                viewportHeight: constraints.maxHeight,
+              );
+
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 560),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: tokens.spacing.step5,
+                          vertical: tokens.spacing.step6,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const _GreetingBlock(),
+                            SizedBox(height: tokens.spacing.step6),
+                            _Headline(forDate: forDate),
+                            _PastTrackingPrompt(forDate: forDate),
+                            SizedBox(height: tokens.spacing.step8),
+                            VoiceButton(
+                              phase: state.phase,
+                              dbfs: state.dbfs,
+                              semanticLabel: _voiceButtonLabel(
+                                context,
+                                state.phase,
+                              ),
+                              onTap: () => ref
+                                  .read(captureControllerProvider.notifier)
+                                  .toggle(),
+                            ),
+                            SizedBox(height: tokens.spacing.step5),
+                            _StateSlot(
+                              state: state,
+                              height: layout.stateSlotHeight,
+                              liveTranscriptLineCount:
+                                  layout.liveTranscriptLineCount,
+                              reviewTranscriptLineCount:
+                                  layout.reviewTranscriptLineCount,
+                            ),
+                            if (trailingBuilder != null)
+                              trailingBuilder!(context, state),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  String? _timeSpentTitle(BuildContext context) {
+    final date = forDate;
+    if (date == null) return null;
+    final now = clock.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final picked = DateTime(date.year, date.month, date.day);
+    if (picked.isAtSameMomentAs(today)) return null;
+    return context.messages.dailyOsNextTimeSpentTitlePast;
+  }
+
+  String _voiceButtonLabel(BuildContext context, CapturePhase phase) {
+    switch (phase) {
+      case CapturePhase.idle:
+      case CapturePhase.error:
+        return context.messages.dailyOsNextCaptureVoiceButtonStart;
+      case CapturePhase.listening:
+        return context.messages.dailyOsNextCaptureVoiceButtonStop;
+      case CapturePhase.transcribing:
+      case CapturePhase.captured:
+        return context.messages.dailyOsNextCaptureVoiceButtonReset;
+    }
+  }
+}
+
 class _GreetingBlock extends ConsumerWidget {
   const _GreetingBlock();
 

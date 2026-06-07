@@ -283,41 +283,91 @@ class _DefaultBehaviorHint extends StatelessWidget {
   }
 }
 
+/// The work the user has effectively committed to taking on for the day,
+/// derived from a reconcile result — the inputs the drafting step needs.
+///
+/// Matched/update parsed items and pending triage rows carry task IDs.
+/// NEW/unlinked parsed items carry parsed capture item IDs so drafting can
+/// still create tasks from the approved capture text before placing them.
+({List<String> taskIds, List<String> captureItemIds})
+reconcileDraftingSelections(ReconcileData data) {
+  final taskIds = <String>{};
+  final captureItemIds = <String>{};
+  for (final item in data.parsed) {
+    if (item.kind == ParsedItemKind.matched ||
+        item.kind == ParsedItemKind.update) {
+      final taskId = item.matchedTaskId;
+      if (taskId != null) {
+        taskIds.add(taskId);
+      } else {
+        captureItemIds.add(item.id);
+      }
+    } else {
+      captureItemIds.add(item.id);
+    }
+  }
+  for (final entry in data.triageDecisions.entries) {
+    final action = entry.value.action;
+    if (action == TriageAction.today || action == TriageAction.doNow) {
+      taskIds.add(entry.key);
+    }
+  }
+  return (taskIds: taskIds.toList(), captureItemIds: captureItemIds.toList());
+}
+
+/// Scaffold-free reconcile content (the Heard / Decide columns) for hosting
+/// inside the day-planning modal. Unlike [_ReconcileBody] it carries no
+/// footer — the modal's sticky glass action bar supplies the Re-record /
+/// Build day actions — and it does not scroll itself (the modal page's
+/// sliver scroll viewport owns scrolling).
+class ReconcileModalContent extends StatelessWidget {
+  const ReconcileModalContent({
+    required this.params,
+    required this.data,
+    super.key,
+  });
+
+  final ReconcileParams params;
+  final ReconcileData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final isWide = MediaQuery.sizeOf(context).width >= 720;
+    final heardColumn = _HeardColumn(params: params, items: data.parsed);
+    final decideColumn = _DecideColumn(params: params, items: data.pending);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step6,
+        vertical: tokens.spacing.step5,
+      ),
+      child: isWide
+          ? Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 6, child: heardColumn),
+                SizedBox(width: tokens.spacing.step6),
+                Expanded(flex: 5, child: decideColumn),
+              ],
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                heardColumn,
+                SizedBox(height: tokens.spacing.step6),
+                decideColumn,
+              ],
+            ),
+    );
+  }
+}
+
 class _ReconcileFooter extends StatelessWidget {
   const _ReconcileFooter({required this.params, required this.data});
 
   final ReconcileParams params;
   final ReconcileData data;
-
-  /// The work the user has effectively committed to taking on today.
-  ///
-  /// Matched/update parsed items and pending triage rows carry task IDs.
-  /// NEW/unlinked parsed items carry parsed capture item IDs so drafting can
-  /// still create tasks from the approved capture text before placing them.
-  ({List<String> taskIds, List<String> captureItemIds}) _draftingSelections() {
-    final taskIds = <String>{};
-    final captureItemIds = <String>{};
-    for (final item in data.parsed) {
-      if (item.kind == ParsedItemKind.matched ||
-          item.kind == ParsedItemKind.update) {
-        final taskId = item.matchedTaskId;
-        if (taskId != null) {
-          taskIds.add(taskId);
-        } else {
-          captureItemIds.add(item.id);
-        }
-      } else {
-        captureItemIds.add(item.id);
-      }
-    }
-    for (final entry in data.triageDecisions.entries) {
-      final action = entry.value.action;
-      if (action == TriageAction.today || action == TriageAction.doNow) {
-        taskIds.add(entry.key);
-      }
-    }
-    return (taskIds: taskIds.toList(), captureItemIds: captureItemIds.toList());
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -356,7 +406,7 @@ class _ReconcileFooter extends StatelessWidget {
     );
     final draftButton = FilledButton.icon(
       onPressed: () {
-        final selections = _draftingSelections();
+        final selections = reconcileDraftingSelections(data);
         Navigator.of(context).push<void>(
           MaterialPageRoute<void>(
             builder: (_) => DraftingPage(

@@ -88,7 +88,7 @@ class _DraftingPageState extends ConsumerState<DraftingPage> {
       backgroundColor: tokens.colors.background.level01,
       body: SafeArea(
         child: switch (asyncState) {
-          _ when asyncState.hasValue => _DraftingBody(
+          _ when asyncState.hasValue => DraftingModalContent(
             state: asyncState.requireValue,
           ),
           _ when asyncState.hasError => Center(
@@ -107,8 +107,11 @@ class _DraftingPageState extends ConsumerState<DraftingPage> {
   }
 }
 
-class _DraftingBody extends StatelessWidget {
-  const _DraftingBody({required this.state});
+/// Scaffold-free drafting wait content (indeterminate progress strip +
+/// reasoning skeleton / learning cards) for hosting inside the
+/// day-planning modal as well as the standalone [DraftingPage].
+class DraftingModalContent extends StatelessWidget {
+  const DraftingModalContent({required this.state, super.key});
 
   final DraftingState state;
 

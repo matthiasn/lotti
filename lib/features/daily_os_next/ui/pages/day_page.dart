@@ -11,7 +11,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/daily_os_next_routes.dart';
-import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
+import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/agenda_view.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/captures_panel.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
@@ -75,11 +75,12 @@ class _DayPageState extends ConsumerState<DayPage> {
   late PlanView _view = widget.hasPlan ? PlanView.agenda : PlanView.day;
 
   Future<void> _openRefine() async {
-    final updatedPlan = await showRefineModal(
+    await showDayPlanningModal(
       context: context,
-      draft: widget.draft,
+      dayDate: widget.draft.dayDate,
+      intent: DayPlanningAdapt(widget.draft),
     );
-    if (!mounted || updatedPlan == null) return;
+    if (!mounted) return;
     ref.invalidate(currentDraftPlanProvider(widget.draft.dayDate));
   }
 
