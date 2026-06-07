@@ -238,7 +238,6 @@ class UnifiedAiModal {
       entityId: journalEntity.id,
       skillId: skill.id,
       linkedTaskId: linkedTask.id,
-      categoryId: linkedTask.meta.categoryId,
       ref: ref,
     );
   }

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
 import 'package:lotti/features/ai/ui/image_generation/reference_image_selection_widget.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
@@ -17,33 +16,25 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   const testTaskId = 'test-task-id';
-  final testDate = DateTime(2025);
   late Directory mockDocumentsDirectory;
 
-  JournalImage buildTestImage(String id) {
-    return JournalImage(
-      meta: Metadata(
-        id: id,
-        createdAt: testDate,
-        updatedAt: testDate,
-        dateFrom: testDate,
-        dateTo: testDate,
-      ),
-      data: ImageData(
-        imageId: id,
-        imageFile: 'test_$id.jpg',
-        imageDirectory: '/test/images',
-        capturedAt: testDate,
-      ),
-    );
-  }
-
-  setUp(() async {
-    // Create a temp directory to simulate the documents directory
+  // One shared temp directory for the whole file: no test writes real image
+  // files, the directory only needs to exist for getDocumentsDirectory().
+  setUpAll(() {
     mockDocumentsDirectory = Directory.systemTemp.createTempSync(
       'ref_image_selection_test_',
     );
+  });
 
+  tearDownAll(() {
+    try {
+      mockDocumentsDirectory.deleteSync(recursive: true);
+    } catch (_) {
+      // Ignore cleanup errors
+    }
+  });
+
+  setUp(() async {
     await setUpTestGetIt(
       additionalSetup: () {
         // Register temp directory for getDocumentsDirectory()
@@ -52,14 +43,7 @@ void main() {
     );
   });
 
-  tearDown(() async {
-    await tearDownTestGetIt();
-    try {
-      mockDocumentsDirectory.deleteSync(recursive: true);
-    } catch (_) {
-      // Ignore cleanup errors
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   group('ReferenceImageSelectionWidget', () {
     testWidgets('shows loading indicator when isLoading is true', (
@@ -117,7 +101,7 @@ void main() {
       tester,
     ) async {
       final stateWithImages = ReferenceImageSelectionState(
-        availableImages: [buildTestImage('img-1')],
+        availableImages: [buildTestReferenceImage('img-1')],
       );
 
       await tester.pumpWidget(
@@ -149,7 +133,10 @@ void main() {
 
     testWidgets('shows selection counter', (tester) async {
       final stateWithSelection = ReferenceImageSelectionState(
-        availableImages: [buildTestImage('img-1'), buildTestImage('img-2')],
+        availableImages: [
+          buildTestReferenceImage('img-1'),
+          buildTestReferenceImage('img-2'),
+        ],
         selectedImageIds: const {'img-1'},
       );
 
@@ -176,7 +163,7 @@ void main() {
 
     testWidgets('shows Continue button', (tester) async {
       final stateWithImages = ReferenceImageSelectionState(
-        availableImages: [buildTestImage('img-1')],
+        availableImages: [buildTestReferenceImage('img-1')],
       );
 
       await tester.pumpWidget(
@@ -204,7 +191,10 @@ void main() {
       tester,
     ) async {
       final stateWithSelection = ReferenceImageSelectionState(
-        availableImages: [buildTestImage('img-1'), buildTestImage('img-2')],
+        availableImages: [
+          buildTestReferenceImage('img-1'),
+          buildTestReferenceImage('img-2'),
+        ],
         selectedImageIds: const {'img-1', 'img-2'},
       );
 
@@ -231,7 +221,7 @@ void main() {
 
     testWidgets('Continue button is disabled when processing', (tester) async {
       final processingState = ReferenceImageSelectionState(
-        availableImages: [buildTestImage('img-1')],
+        availableImages: [buildTestReferenceImage('img-1')],
         isProcessing: true,
       );
 
@@ -263,9 +253,9 @@ void main() {
     testWidgets('displays grid of images', (tester) async {
       final stateWithImages = ReferenceImageSelectionState(
         availableImages: [
-          buildTestImage('img-1'),
-          buildTestImage('img-2'),
-          buildTestImage('img-3'),
+          buildTestReferenceImage('img-1'),
+          buildTestReferenceImage('img-2'),
+          buildTestReferenceImage('img-3'),
         ],
       );
 
@@ -293,9 +283,9 @@ void main() {
     testWidgets('selection counter shows correct count', (tester) async {
       final stateWithSelection = ReferenceImageSelectionState(
         availableImages: [
-          buildTestImage('img-1'),
-          buildTestImage('img-2'),
-          buildTestImage('img-3'),
+          buildTestReferenceImage('img-1'),
+          buildTestReferenceImage('img-2'),
+          buildTestReferenceImage('img-3'),
         ],
         selectedImageIds: const {'img-1', 'img-2'},
       );
@@ -323,7 +313,7 @@ void main() {
 
     testWidgets('counter shows 0/3 when nothing selected', (tester) async {
       final stateWithImages = ReferenceImageSelectionState(
-        availableImages: [buildTestImage('img-1')],
+        availableImages: [buildTestReferenceImage('img-1')],
       );
 
       await tester.pumpWidget(
@@ -350,10 +340,10 @@ void main() {
     testWidgets('counter shows 3/3 when max selected', (tester) async {
       final stateAtMax = ReferenceImageSelectionState(
         availableImages: [
-          buildTestImage('img-1'),
-          buildTestImage('img-2'),
-          buildTestImage('img-3'),
-          buildTestImage('img-4'),
+          buildTestReferenceImage('img-1'),
+          buildTestReferenceImage('img-2'),
+          buildTestReferenceImage('img-3'),
+          buildTestReferenceImage('img-4'),
         ],
         selectedImageIds: const {'img-1', 'img-2', 'img-3'},
       );
@@ -409,10 +399,10 @@ void main() {
     testWidgets('displays correct number of grid items', (tester) async {
       final stateWithImages = ReferenceImageSelectionState(
         availableImages: [
-          buildTestImage('img-1'),
-          buildTestImage('img-2'),
-          buildTestImage('img-3'),
-          buildTestImage('img-4'),
+          buildTestReferenceImage('img-1'),
+          buildTestReferenceImage('img-2'),
+          buildTestReferenceImage('img-3'),
+          buildTestReferenceImage('img-4'),
         ],
       );
 
@@ -441,7 +431,7 @@ void main() {
     testWidgets('shows error state for missing image files', (tester) async {
       // Image with path that doesn't exist will show error placeholder
       final stateWithImages = ReferenceImageSelectionState(
-        availableImages: [buildTestImage('missing-img')],
+        availableImages: [buildTestReferenceImage('missing-img')],
       );
 
       await tester.pumpWidget(
@@ -472,7 +462,7 @@ void main() {
         // the Image.file errorBuilder directly (the real file load completes
         // asynchronously and is unreliable to await in a widget test).
         final stateWithImages = ReferenceImageSelectionState(
-          availableImages: [buildTestImage('missing-img')],
+          availableImages: [buildTestReferenceImage('missing-img')],
         );
 
         await tester.pumpWidget(
@@ -560,8 +550,8 @@ void main() {
     ) async {
       final stateWithImages = ReferenceImageSelectionState(
         availableImages: [
-          buildTestImage('img-1'),
-          buildTestImage('img-2'),
+          buildTestReferenceImage('img-1'),
+          buildTestReferenceImage('img-2'),
         ],
       );
 
@@ -608,12 +598,12 @@ void main() {
       // All 5 slots taken, img-6 is not selected and cannot be toggled
       final stateAtMax = ReferenceImageSelectionState(
         availableImages: [
-          buildTestImage('img-1'),
-          buildTestImage('img-2'),
-          buildTestImage('img-3'),
-          buildTestImage('img-4'),
-          buildTestImage('img-5'),
-          buildTestImage('img-6'),
+          buildTestReferenceImage('img-1'),
+          buildTestReferenceImage('img-2'),
+          buildTestReferenceImage('img-3'),
+          buildTestReferenceImage('img-4'),
+          buildTestReferenceImage('img-5'),
+          buildTestReferenceImage('img-6'),
         ],
         selectedImageIds: const {
           'img-1',
@@ -671,8 +661,8 @@ void main() {
     ) async {
       final stateWithSelection = ReferenceImageSelectionState(
         availableImages: [
-          buildTestImage('img-1'),
-          buildTestImage('img-2'),
+          buildTestReferenceImage('img-1'),
+          buildTestReferenceImage('img-2'),
         ],
         selectedImageIds: const {'img-1'},
       );
@@ -712,9 +702,9 @@ void main() {
       (tester) async {
         final stateWithImages = ReferenceImageSelectionState(
           availableImages: [
-            buildTestImage('img-1'),
-            buildTestImage('img-2'),
-            buildTestImage('img-3'),
+            buildTestReferenceImage('img-1'),
+            buildTestReferenceImage('img-2'),
+            buildTestReferenceImage('img-3'),
           ],
           selectedImageIds: const {'img-1'},
         );
@@ -783,8 +773,8 @@ void main() {
     ) async {
       final stateWithLinkedImage = ReferenceImageSelectionState(
         availableImages: [
-          buildTestImage('direct-img'),
-          buildTestImage('linked-img'),
+          buildTestReferenceImage('direct-img'),
+          buildTestReferenceImage('linked-img'),
         ],
         linkedTaskImageIds: const {'linked-img'},
       );
@@ -817,8 +807,8 @@ void main() {
     testWidgets('does not show link icon on direct images', (tester) async {
       final stateWithDirectOnly = ReferenceImageSelectionState(
         availableImages: [
-          buildTestImage('direct-1'),
-          buildTestImage('direct-2'),
+          buildTestReferenceImage('direct-1'),
+          buildTestReferenceImage('direct-2'),
         ],
       );
 
@@ -843,6 +833,59 @@ void main() {
 
       // No link icons should appear for directly linked images
       expect(find.byIcon(Icons.link_rounded), findsNothing);
+    });
+
+    group('continue button label', () {
+      testWidgets(
+        'reflects the selection count: 0 → plain, 1 and 2 → counted',
+        (
+          tester,
+        ) async {
+          final images = [
+            buildTestReferenceImage('img-1'),
+            buildTestReferenceImage('img-2'),
+          ];
+
+          for (final (selected, expectedLabel) in [
+            (<String>{}, 'Continue'),
+            ({'img-1'}, 'Continue (1)'),
+            ({'img-1', 'img-2'}, 'Continue (2)'),
+          ]) {
+            final state = ReferenceImageSelectionState(
+              availableImages: images,
+              selectedImageIds: selected,
+            );
+
+            await tester.pumpWidget(
+              RiverpodWidgetTestBench(
+                overrides: [
+                  referenceImageSelectionControllerProvider(
+                    taskId: testTaskId,
+                  ).overrideWith(
+                    () => FakeReferenceImageSelectionController(state),
+                  ),
+                ],
+                child: ReferenceImageSelectionWidget(
+                  taskId: testTaskId,
+                  onContinue: (_) {},
+                  onSkip: () {},
+                ),
+              ),
+            );
+            await tester.pump();
+
+            expect(
+              find.text(expectedLabel),
+              findsOneWidget,
+              reason: 'selected=$selected',
+            );
+
+            // Tear the scope down so the next iteration's override builds
+            // a fresh controller (overrides are fixed at scope creation).
+            await tester.pumpWidget(const SizedBox.shrink());
+          }
+        },
+      );
     });
   });
 }

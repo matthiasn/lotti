@@ -67,7 +67,6 @@ class ModernGenerateCoverArtItem extends ConsumerWidget {
       entityId: entryId,
       skillId: skillImageGenId,
       linkedTaskId: linkedTaskId,
-      categoryId: linkedTask.meta.categoryId,
       ref: ref,
     );
   }
