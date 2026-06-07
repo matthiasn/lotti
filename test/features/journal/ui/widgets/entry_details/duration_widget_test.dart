@@ -367,4 +367,50 @@ void main() {
       },
     );
   });
+
+  testWidgets('FormattedTime text width is stable across durations', (
+    tester,
+  ) async {
+    JournalEntity makeEntry(Duration duration) {
+      final now = DateTime(2025, 1, 1, 12);
+      final from = now.subtract(duration);
+      return JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'e1',
+          createdAt: from,
+          updatedAt: now,
+          dateFrom: from,
+          dateTo: now,
+        ),
+      );
+    }
+
+    Future<double> pumpAndMeasure(Duration d) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: resolveTestTheme(),
+          home: Scaffold(
+            body: Center(
+              child: FormattedTime(
+                labelColor: Colors.blueGrey,
+                displayed: makeEntry(d),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final textFinder = find.descendant(
+        of: find.byType(FormattedTime),
+        matching: find.byType(Text),
+      );
+      expect(textFinder, findsOneWidget);
+      return tester.getSize(textFinder).width;
+    }
+
+    // Tabular figures: different digits must not shift layout width.
+    final w1 = await pumpAndMeasure(const Duration(minutes: 41));
+    final w2 = await pumpAndMeasure(const Duration(minutes: 48));
+    expect(w1, w2);
+  });
 }

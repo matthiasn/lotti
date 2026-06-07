@@ -153,8 +153,6 @@ void main() {
       mockPersistenceLogic = MockPersistenceLogic();
       mockUpdateNotifications = MockUpdateNotifications();
 
-      await getIt.reset();
-
       when(
         () => mockUpdateNotifications.updateStream,
       ).thenAnswer((_) => const Stream.empty());
@@ -170,16 +168,22 @@ void main() {
         () => mockEditorStateService.getUnsavedStream(any(), any()),
       ).thenAnswer((_) => const Stream.empty());
 
-      getIt
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            // The modal must resolve THIS test's stubs, not the helper's
+            // stock mocks.
+            ..unregister<UpdateNotifications>()
+            ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockJournalDb)
+            ..registerSingleton<EditorStateService>(mockEditorStateService)
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+        },
+      );
     });
 
-    tearDown(() async {
-      await getIt.reset();
-    });
+    tearDown(tearDownTestGetIt);
 
     /// Opens the modal for the default [testTextEntry] with a tracked
     /// controller override — the common case across this file.

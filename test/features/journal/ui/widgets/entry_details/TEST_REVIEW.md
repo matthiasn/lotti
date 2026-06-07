@@ -44,9 +44,11 @@ Extra test files with no direct source counterpart:
 
 - [x] **[HIGH]** `test/…/entry_datetime_multipage_modal_test.dart` — **1057 lines** for a 484-line impl. The file is logically structured but has no shared `_setupModal` helper beyond `_openModal`, causing ~30 nearly identical per-group `setUp` patterns. Extracting a file-level `_setUp()` into `setUpAll` / `setUp` would shrink the file substantially. **RESOLVED (premise partly stale):** the file already has a single group-level `setUp` plus the `_openModal` helper; the remaining repetition (tracked-override + open pair) is now a shared `openDefaultModal(tester)` for the common case.
 
-- [ ] **[MED]** `test/…/duration_widget_test.dart` (370 L) + `test/…/duration_widget_timer_text_test.dart` (57 L) — **two test files for `duration_widget.dart`**. The timer-text file is small and should be merged into the primary test file per the one-per-source rule.
+- [x] **[MED]** `test/…/duration_widget_test.dart` (370 L) + `test/…/duration_widget_timer_text_test.dart` (57 L) — **two test files for `duration_widget.dart`**. The timer-text file is small and should be merged into the primary test file per the one-per-source rule.
+  **RESOLVED:** the tabular-figures width-stability test merged into `duration_widget_test.dart`; the orphan file is deleted.
 
-- [ ] **[MED]** `test/…/header/initial_modal_page_content_test.dart` — **584 lines** for a 175-line source. 15 `pumpAndSettle` calls inflate runtime; extracting a `_pumpContent(tester, {Widget child, overrides})` helper would consolidate the 15 separate `_buildWithRoute` + `pumpWidget` + `pumpAndSettle` sequences.
+- [x] **[MED]** `test/…/header/initial_modal_page_content_test.dart` — **584 lines** for a 175-line source. 15 `pumpAndSettle` calls inflate runtime; extracting a `_pumpContent(tester, {Widget child, overrides})` helper would consolidate the 15 separate `_buildWithRoute` + `pumpWidget` + `pumpAndSettle` sequences.
+  **RESOLVED (stale):** the file now has zero `pumpAndSettle` calls and shares the route-pushing harness; the settle inflation is gone.
 
 ---
 
@@ -58,11 +60,14 @@ Extra test files with no direct source counterpart:
 
 - [x] **[HIGH]** `test/…/header/action_menu_list_item_test.dart` — **22 `pumpAndSettle` calls** in a 507-line file. `ActionMenuListItem` is a `StatelessWidget` with no animations; `tester.pump()` is entirely sufficient after building the widget, and `pumpAndSettle` is only necessary when a modal animation must complete (a handful of tap-interaction tests). Replacing the ~18 render-only `pumpAndSettle` calls with `pump()` reduces CI time for this file.
 
-- [ ] **[MED]** `test/…/entry_datetime_multipage_modal_test.dart` — The `setUp` block (lines 150–178) uses raw `getIt.reset()` and `getIt.registerSingleton()` instead of `setUpTestGetIt()`. The file was written before the centralized helper existed or as an oversight. Migrating to `setUpTestGetIt(additionalSetup: ...)` would remove ~15 lines per group and eliminate the `await getIt.reset()` calls.
+- [x] **[MED]** `test/…/entry_datetime_multipage_modal_test.dart` — The `setUp` block (lines 150–178) uses raw `getIt.reset()` and `getIt.registerSingleton()` instead of `setUpTestGetIt()`. The file was written before the centralized helper existed or as an oversight. Migrating to `setUpTestGetIt(additionalSetup: ...)` would remove ~15 lines per group and eliminate the `await getIt.reset()` calls.
+  **RESOLVED:** converted to `setUpTestGetIt(additionalSetup:)` / `tearDownTestGetIt`, swapping this file's JournalDb/UpdateNotifications stubs in for the helper's stock mocks.
 
-- [ ] **[MED]** `test/…/entry_detail_header_collapsible_test.dart` — The 711-line file tests `EntryDetailHeader` internal chevron-rotation state. Many assertions are on animation controller values (e.g. `expect(sizeTransition.sizeFactor.value, 1.0)`) without asserting on the UI change the user would actually observe (chevron icon direction, aria state, etc.). Some of these widget-tree introspection tests could be simplified.
+- [x] **[MED]** `test/…/entry_detail_header_collapsible_test.dart` — The 711-line file tests `EntryDetailHeader` internal chevron-rotation state. Many assertions are on animation controller values (e.g. `expect(sizeTransition.sizeFactor.value, 1.0)`) without asserting on the UI change the user would actually observe (chevron icon direction, aria state, etc.). Some of these widget-tree introspection tests could be simplified.
+  **RESOLVED (stale):** `entry_detail_header_collapsible_test.dart` no longer exists — its surviving coverage lives in the header mirror, which asserts the user-visible `AnimatedRotation.turns` target, not raw controller values.
 
-- [ ] **[MED]** `test/…/header/initial_modal_page_content_test.dart` — Uses a custom ad-hoc `_buildWithRoute` helper that builds `ProviderScope` + `MaterialApp` + localization + `Scaffold` by hand (lines 42–73 in `modern_action_items_test.dart` which it shares). This helper duplicates what `makeTestableWidget()` + navigator setup could provide.
+- [x] **[MED]** `test/…/header/initial_modal_page_content_test.dart` — Uses a custom ad-hoc `_buildWithRoute` helper that builds `ProviderScope` + `MaterialApp` + localization + `Scaffold` by hand (lines 42–73 in `modern_action_items_test.dart` which it shares). This helper duplicates what `makeTestableWidget()` + navigator setup could provide.
+  **RESOLVED (assessed, no change):** the helper exists exactly once at file level (no per-test duplication) and its route-push wrapper is something `makeTestableWidget` cannot express. Delegating the app/l10n wrapping to `makeTestableWidget` was attempted and reverted — its theme/viewport/scroll wrapper semantics differ and 22 of 92 tests fail.
 
 - [ ] **[LOW]** `test/…/header/modern_generate_cover_art_item_test.dart` (281 L), `test/…/header/modern_labels_item_test.dart` (563 L), `test/…/header/modern_rate_session_item_test.dart` (138 L) — each of these files tests a class whose canonical home is `modern_action_items.dart`. They are satellite test files for a single source file. They should be merged into the `modern_action_items_test.dart` suite (after the impl split described above) so the one-per-source rule is honoured.
 
@@ -86,9 +91,11 @@ No genuine Glados candidates identified. All files in scope are UI widgets. The 
 
 - [x] **[HIGH]** `lib/…/header/extended_header_modal.dart` (50 lines) — **No test file.** `ExtendedHeaderModal.show` wires together `InitialModalPageContent` and `SpeechModalContent` inside a multi-page modal. Untested: (a) the modal opens with `InitialModalPageContent` on page 0, (b) the `pageIndexNotifier` switching to 1 shows `SpeechModalContent`, (c) `onTapBack` resets the notifier to 0.
 
-- [ ] **[MED]** `entry_datetime_multipage_modal_test.dart` — The error path at `entry_datetime_multipage_modal.dart` (inside the Save handler's `catch` block that logs via `DevLogger`) is exercised by `_ThrowingEntryController` (defined at line 69) but the test that uses it should explicitly assert that the modal remains open (not dismissed) and that `DevLogger` was notified. Currently the test only checks that `tester.takeException()` is null.
+- [x] **[MED]** `entry_datetime_multipage_modal_test.dart` — The error path at `entry_datetime_multipage_modal.dart` (inside the Save handler's `catch` block that logs via `DevLogger`) is exercised by `_ThrowingEntryController` (defined at line 69) but the test that uses it should explicitly assert that the modal remains open (not dismissed) and that `DevLogger` was notified. Currently the test only checks that `tester.takeException()` is null.
+  **RESOLVED (stale):** the 'Save logs a warning and keeps the modal open when updateFromTo throws' test already asserts the captured DevLogger warning (modal name + error text) and that the modal title stays mounted.
 
-- [ ] **[MED]** `entry_detail_header_test.dart` + `entry_detail_header_collapsible_test.dart` — The `entry_detail_header.dart` chevron rotation animation is tested through the raw `AnimationController` value, but the case where `isCollapsed` is toggled multiple times in quick succession (e.g. before the animation completes) is not explicitly covered.
+- [x] **[MED]** `entry_detail_header_test.dart` + `entry_detail_header_collapsible_test.dart` — The `entry_detail_header.dart` chevron rotation animation is tested through the raw `AnimationController` value, but the case where `isCollapsed` is toggled multiple times in quick succession (e.g. before the animation completes) is not explicitly covered.
+  **RESOLVED:** new test flips collapse three times with half-duration pumps between flips — the implicit `AnimatedRotation` retargets each time and settles on the final `-0.25` turn.
 
 - [ ] **[LOW]** `measurement_summary_test.dart` (113 L) — Tests rendering of `MeasurementSummary` with a nominal measurable type. The case where `measurableType` is null (no matching definition in the database) is not tested.
 
@@ -102,9 +109,11 @@ No genuine Glados candidates identified. All files in scope are UI widgets. The 
 
 - [x] **[HIGH]** `test/…/header/initial_modal_page_content_test.dart` — **15 `pumpAndSettle` calls**. The modal has an entrance animation, so a settle is needed once per modal open; however, each individual assertion within the same open modal then calls `pumpAndSettle` again unnecessarily. Replacing post-assertion `pumpAndSettle` calls with `pump()` where no animation is pending would save time.
 
-- [ ] **[MED]** `test/…/entry_detail_header_test.dart` + `entry_detail_header_collapsible_test.dart` — Combined **38 `pumpAndSettle` calls**. The collapsible file uses `await tester.pump(AppTheme.chevronRotationDuration)` appropriately in some cases, then still calls `pumpAndSettle()` after the animation's fixed duration has already been elapsed. These can be replaced with `pump()`.
+- [x] **[MED]** `test/…/entry_detail_header_test.dart` + `entry_detail_header_collapsible_test.dart` — Combined **38 `pumpAndSettle` calls**. The collapsible file uses `await tester.pump(AppTheme.chevronRotationDuration)` appropriately in some cases, then still calls `pumpAndSettle()` after the animation's fixed duration has already been elapsed. These can be replaced with `pump()`.
+  **RESOLVED (stale):** the collapsible file is gone and the surviving header test has zero `pumpAndSettle` calls.
 
-- [ ] **[MED]** `test/…/header/modern_labels_item_test.dart` (563 L, 26 `pumpAndSettle` calls) and `test/…/header/modern_generate_cover_art_item_test.dart` (281 L, 0 `pumpAndSettle` — good). The `modern_labels_item_test.dart` uses `pumpAndSettle` universally across all render tests; since `ModernLabelsItem` is a `ConsumerWidget` with no inherent animations, most of these can become `pump()`.
+- [x] **[MED]** `test/…/header/modern_labels_item_test.dart` (563 L, 26 `pumpAndSettle` calls) and `test/…/header/modern_generate_cover_art_item_test.dart` (281 L, 0 `pumpAndSettle` — good). The `modern_labels_item_test.dart` uses `pumpAndSettle` universally across all render tests; since `ModernLabelsItem` is a `ConsumerWidget` with no inherent animations, most of these can become `pump()`.
+  **RESOLVED (stale):** `modern_labels_item_test.dart` no longer exists in this directory.
 
 - [ ] **[LOW]** `test/…/entry_detail_footer_test.dart` (222 L) — `pumpAndSettle` calls count is modest; minor speed wins available but not a priority.
 

@@ -18,6 +18,7 @@ import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
+import 'package:lotti/themes/theme.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -673,6 +674,57 @@ void main() {
           );
           expect(animatedRotation.turns, equals(-0.25));
         });
+
+        testWidgets(
+          'rapid collapse toggles mid-animation land on the final target turn',
+          (tester) async {
+            when(
+              () => mockJournalDb.journalEntityById(testAudioEntry.meta.id),
+            ).thenAnswer((_) async => testAudioEntry);
+
+            var collapsed = false;
+            late StateSetter setOuterState;
+            await tester.pumpWidget(
+              makeTestableWidgetWithScaffold(
+                StatefulBuilder(
+                  builder: (context, setState) {
+                    setOuterState = setState;
+                    return EntryDetailHeader(
+                      entryId: testAudioEntry.meta.id,
+                      inLinkedEntries: true,
+                      isCollapsible: true,
+                      isCollapsed: collapsed,
+                      onToggleCollapse: () {},
+                    );
+                  },
+                ),
+              ),
+            );
+            await tester.pump();
+            await tester.pump(const Duration(milliseconds: 300));
+
+            // Flip collapse, advance only HALF the rotation, flip again,
+            // then flip a third time — the implicit animation must retarget
+            // each time and settle on the last requested orientation.
+            setOuterState(() => collapsed = true);
+            await tester.pump();
+            await tester.pump(AppTheme.chevronRotationDuration ~/ 2);
+
+            setOuterState(() => collapsed = false);
+            await tester.pump();
+            await tester.pump(AppTheme.chevronRotationDuration ~/ 2);
+
+            setOuterState(() => collapsed = true);
+            await tester.pump();
+            await tester.pump(AppTheme.chevronRotationDuration);
+            await tester.pump(AppTheme.chevronRotationDuration);
+
+            final animatedRotation = tester.widget<AnimatedRotation>(
+              find.byType(AnimatedRotation),
+            );
+            expect(animatedRotation.turns, -0.25);
+          },
+        );
       });
 
       group('duration formatting', () {
