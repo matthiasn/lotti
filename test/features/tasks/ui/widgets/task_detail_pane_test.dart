@@ -367,6 +367,73 @@ void main() {
     });
   });
 
+  group('TaskShowcaseDetailContent — time/audio tile data binding', () {
+    testWidgets(
+      'time tracker card binds the total label and per-entry tile fields',
+      (tester) async {
+        final record = _makeRecord(
+          trackedDurationLabel: '2h 15m',
+          trackerEntries: const [
+            TaskShowcaseTimeEntry(
+              title: 'Morning focus block',
+              subtitle: 'Today, 9:00',
+              durationLabel: '1h 30m',
+              note: 'Deep work on parser',
+            ),
+            TaskShowcaseTimeEntry(
+              title: 'Afternoon review',
+              subtitle: 'Today, 14:00',
+              durationLabel: '45m',
+              note: 'PR feedback round',
+            ),
+          ],
+        );
+        await _pumpDetailContent(tester, record, width: 1000);
+
+        // Card total from the record, not a constant.
+        expect(find.text('2h 15m'), findsOneWidget);
+        // Each tile binds its own entry's title and duration.
+        expect(find.text('Morning focus block'), findsOneWidget);
+        expect(find.text('1h 30m'), findsOneWidget);
+        expect(find.text('Afternoon review'), findsOneWidget);
+        expect(find.text('45m'), findsOneWidget);
+        // Two tiles → exactly one divider between them inside the card.
+        expect(find.text('Deep work on parser'), findsOneWidget);
+        expect(find.text('PR feedback round'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'audio card binds count, tile fields, play affordance, and waveform',
+      (tester) async {
+        final record = _makeRecord(
+          audioEntries: const [
+            TaskShowcaseAudioEntry(
+              title: 'Standup notes',
+              subtitle: 'Today, 9:15 · voice memo',
+              durationLabel: '0:42',
+              transcriptPreview: 'Discussed the rollout plan…',
+              waveform: [0.2, 0.8, 0.5, 1, 0.3],
+            ),
+          ],
+        );
+        await _pumpDetailContent(tester, record, width: 1000);
+
+        expect(find.text('Standup notes'), findsOneWidget);
+        expect(find.text('Today, 9:15 · voice memo'), findsOneWidget);
+        expect(find.text('0:42'), findsOneWidget);
+        expect(find.text('Discussed the rollout plan…'), findsOneWidget);
+        expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+
+        // The waveform widget receives the entry's samples verbatim.
+        final waveform = tester.widget<TaskShowcaseWaveform>(
+          find.byType(TaskShowcaseWaveform),
+        );
+        expect(waveform.samples, const [0.2, 0.8, 0.5, 1, 0.3]);
+      },
+    );
+  });
+
   group('TaskShowcaseDetailContent — checklist item icon color (line 671)', () {
     setUp(setUpTestGetIt);
     tearDown(tearDownTestGetIt);

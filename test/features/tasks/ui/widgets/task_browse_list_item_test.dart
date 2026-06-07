@@ -2,6 +2,7 @@
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -44,6 +45,46 @@ class _FakeTaskProgressController extends TaskProgressController {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// Pumps a [TaskBrowseListItem] built via [_makeWidget] and settles the
+/// first frame — the shared shape of nearly every test in this file.
+Future<void> _pumpItem(
+  WidgetTester tester,
+  Task task, {
+  TaskBrowseSectionKey? sectionKey,
+  bool showSectionHeader = false,
+  int? sectionCount,
+  TaskSortOption sortOption = TaskSortOption.byPriority,
+  bool showCreationDate = false,
+  bool showDueDate = false,
+  bool showCoverArt = false,
+  double? vectorDistance,
+  String? trackedDurationLabelOverride = '0h 0m',
+  String? sectionHeaderTitleOverride,
+  ValueNotifier<String?>? hoveredTaskIdNotifier,
+  List<Override> overrides = const [],
+}) async {
+  await tester.pumpWidget(
+    makeTestableWidget(
+      _makeWidget(
+        task,
+        sectionKey: sectionKey,
+        showSectionHeader: showSectionHeader,
+        sectionCount: sectionCount,
+        sortOption: sortOption,
+        showCreationDate: showCreationDate,
+        showDueDate: showDueDate,
+        showCoverArt: showCoverArt,
+        vectorDistance: vectorDistance,
+        trackedDurationLabelOverride: trackedDurationLabelOverride,
+        sectionHeaderTitleOverride: sectionHeaderTitleOverride,
+        hoveredTaskIdNotifier: hoveredTaskIdNotifier,
+      ),
+      overrides: overrides,
+    ),
+  );
+  await tester.pump();
+}
 
 TaskBrowseListItem _makeWidget(
   Task task, {
@@ -122,18 +163,14 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            sectionKey: const TaskBrowseSectionKey.priority(
-              TaskPriority.p1High,
-            ),
-            showSectionHeader: true,
-          ),
+      await _pumpItem(
+        tester,
+        task,
+        sectionKey: const TaskBrowseSectionKey.priority(
+          TaskPriority.p1High,
         ),
+        showSectionHeader: true,
       );
-      await tester.pump();
 
       // The priority section header renders a TaskShowcasePriorityGlyph
       expect(find.byType(TaskShowcasePriorityGlyph), findsAtLeastNWidgets(1));
@@ -149,16 +186,12 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            sectionKey: const TaskBrowseSectionKey.dueToday(),
-            showSectionHeader: true,
-          ),
-        ),
+      await _pumpItem(
+        tester,
+        task,
+        sectionKey: const TaskBrowseSectionKey.dueToday(),
+        showSectionHeader: true,
       );
-      await tester.pump();
 
       expect(find.text('Due Today'), findsOneWidget);
     });
@@ -170,16 +203,12 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            sectionKey: const TaskBrowseSectionKey.dueTomorrow(),
-            showSectionHeader: true,
-          ),
-        ),
+      await _pumpItem(
+        tester,
+        task,
+        sectionKey: const TaskBrowseSectionKey.dueTomorrow(),
+        showSectionHeader: true,
       );
-      await tester.pump();
 
       expect(find.text('Due Tomorrow'), findsOneWidget);
     });
@@ -191,16 +220,12 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            sectionKey: const TaskBrowseSectionKey.dueYesterday(),
-            showSectionHeader: true,
-          ),
-        ),
+      await _pumpItem(
+        tester,
+        task,
+        sectionKey: const TaskBrowseSectionKey.dueYesterday(),
+        showSectionHeader: true,
       );
-      await tester.pump();
 
       expect(find.text('Due Yesterday'), findsOneWidget);
     });
@@ -212,16 +237,12 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            sectionKey: TaskBrowseSectionKey.createdDate(DateTime(2026, 4, 8)),
-            showSectionHeader: true,
-          ),
-        ),
+      await _pumpItem(
+        tester,
+        task,
+        sectionKey: TaskBrowseSectionKey.createdDate(DateTime(2026, 4, 8)),
+        showSectionHeader: true,
       );
-      await tester.pump();
 
       // MaterialLocalizations.formatMediumDate(DateTime(2026, 4, 8)) → "Apr 8, 2026"
       expect(find.textContaining('Apr'), findsAtLeastNWidgets(1));
@@ -234,16 +255,12 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            sectionKey: TaskBrowseSectionKey.dueDate(DateTime(2026, 4, 15)),
-            showSectionHeader: true,
-          ),
-        ),
+      await _pumpItem(
+        tester,
+        task,
+        sectionKey: TaskBrowseSectionKey.dueDate(DateTime(2026, 4, 15)),
+        showSectionHeader: true,
       );
-      await tester.pump();
 
       // "Due: Apr 15, 2026"
       expect(find.textContaining('Due:'), findsAtLeastNWidgets(1));
@@ -257,16 +274,12 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            sectionKey: const TaskBrowseSectionKey.noDueDate(),
-            showSectionHeader: true,
-          ),
-        ),
+      await _pumpItem(
+        tester,
+        task,
+        sectionKey: const TaskBrowseSectionKey.noDueDate(),
+        showSectionHeader: true,
       );
-      await tester.pump();
 
       expect(find.text('No due date'), findsOneWidget);
     });
@@ -313,17 +326,13 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            sectionKey: const TaskBrowseSectionKey.dueToday(),
-            showSectionHeader: true,
-            sectionHeaderTitleOverride: 'My Custom Header',
-          ),
-        ),
+      await _pumpItem(
+        tester,
+        task,
+        sectionKey: const TaskBrowseSectionKey.dueToday(),
+        showSectionHeader: true,
+        sectionHeaderTitleOverride: 'My Custom Header',
       );
-      await tester.pump();
 
       expect(find.text('My Custom Header'), findsOneWidget);
       // "Due Today" should NOT appear since override takes precedence
@@ -347,16 +356,12 @@ void main() {
           dateFrom: DateTime(2026, 4, 8),
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            _makeWidget(
-              task,
-              sortOption: TaskSortOption.byPriority,
-              showCreationDate: true,
-            ),
-          ),
+        await _pumpItem(
+          tester,
+          task,
+          sortOption: TaskSortOption.byPriority,
+          showCreationDate: true,
         );
-        await tester.pump();
 
         // TaskShowcaseMetaChip with calendar icon represents the creation date
         final chips = tester.widgetList<TaskShowcaseMetaChip>(
@@ -378,16 +383,12 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            sortOption: TaskSortOption.byDate,
-            showCreationDate: true,
-          ),
-        ),
+      await _pumpItem(
+        tester,
+        task,
+        sortOption: TaskSortOption.byDate,
+        showCreationDate: true,
       );
-      await tester.pump();
 
       final chips = tester.widgetList<TaskShowcaseMetaChip>(
         find.byType(TaskShowcaseMetaChip),
@@ -419,16 +420,12 @@ void main() {
               ).copyWith(due: DateTime(2026, 4, 20)),
             );
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            _makeWidget(
-              task,
-              sortOption: TaskSortOption.byPriority,
-              showDueDate: true,
-            ),
-          ),
+        await _pumpItem(
+          tester,
+          task,
+          sortOption: TaskSortOption.byPriority,
+          showDueDate: true,
         );
-        await tester.pump();
 
         // DueDateText is rendered as a widget in the footer
         expect(find.byIcon(Icons.event_rounded), findsAtLeastNWidgets(1));
@@ -454,16 +451,12 @@ void main() {
             ).copyWith(due: DateTime(2026, 4, 20)),
           );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            sortOption: TaskSortOption.byPriority,
-            showDueDate: true,
-          ),
-        ),
+      await _pumpItem(
+        tester,
+        task,
+        sortOption: TaskSortOption.byPriority,
+        showDueDate: true,
       );
-      await tester.pump();
 
       // DueDateText should NOT appear for done tasks
       expect(find.byIcon(Icons.event_rounded), findsNothing);
@@ -488,16 +481,12 @@ void main() {
             ).copyWith(due: DateTime(2026, 4, 20)),
           );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            sortOption: TaskSortOption.byPriority,
-            showDueDate: true,
-          ),
-        ),
+      await _pumpItem(
+        tester,
+        task,
+        sortOption: TaskSortOption.byPriority,
+        showDueDate: true,
       );
-      await tester.pump();
 
       expect(find.byIcon(Icons.event_rounded), findsNothing);
     });
@@ -523,16 +512,12 @@ void main() {
             ).copyWith(due: DateTime(2026, 4, 20)),
           );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            sortOption: TaskSortOption.byDueDate,
-            showDueDate: true,
-          ),
-        ),
+      await _pumpItem(
+        tester,
+        task,
+        sortOption: TaskSortOption.byDueDate,
+        showDueDate: true,
       );
-      await tester.pump();
 
       expect(find.byIcon(Icons.event_rounded), findsNothing);
     });
@@ -546,15 +531,7 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            vectorDistance: 0.42,
-          ),
-        ),
-      );
-      await tester.pump();
+      await _pumpItem(tester, task, vectorDistance: 0.42);
 
       // TaskShowcaseMetaChip with hub icon for vector distance
       final chips = tester.widgetList<TaskShowcaseMetaChip>(
@@ -575,15 +552,7 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            vectorDistance: null,
-          ),
-        ),
-      );
-      await tester.pump();
+      await _pumpItem(tester, task, vectorDistance: null);
 
       final chips = tester.widgetList<TaskShowcaseMetaChip>(
         find.byType(TaskShowcaseMetaChip),
@@ -617,15 +586,7 @@ void main() {
               ).copyWith(coverArtId: coverArtImageId),
             );
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            _makeWidget(
-              task,
-              showCoverArt: true,
-            ),
-          ),
-        );
-        await tester.pump();
+        await _pumpItem(tester, task, showCoverArt: true);
 
         expect(find.byType(CoverArtThumbnail), findsOneWidget);
         final thumbnail = tester.widget<CoverArtThumbnail>(
@@ -652,15 +613,7 @@ void main() {
               ).copyWith(coverArtId: 'some-image'),
             );
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            _makeWidget(
-              task,
-              showCoverArt: false,
-            ),
-          ),
-        );
-        await tester.pump();
+        await _pumpItem(tester, task, showCoverArt: false);
 
         expect(find.byType(CoverArtThumbnail), findsNothing);
       },
@@ -678,15 +631,7 @@ void main() {
         );
         // task.data.coverArtId is null by default from TestTaskFactory
 
-        await tester.pumpWidget(
-          makeTestableWidget(
-            _makeWidget(
-              task,
-              showCoverArt: true,
-            ),
-          ),
-        );
-        await tester.pump();
+        await _pumpItem(tester, task, showCoverArt: true);
 
         expect(find.byType(CoverArtThumbnail), findsNothing);
       },
@@ -710,15 +655,7 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _makeWidget(
-            task,
-            hoveredTaskIdNotifier: hoveredNotifier,
-          ),
-        ),
-      );
-      await tester.pump();
+      await _pumpItem(tester, task, hoveredTaskIdNotifier: hoveredNotifier);
 
       // Simulate hover enter
       final gesture = await tester.createGesture(
@@ -757,15 +694,7 @@ void main() {
         );
 
         // This should render without error and use the non-ValueListenableBuilder path
-        await tester.pumpWidget(
-          makeTestableWidget(
-            _makeWidget(
-              task,
-              hoveredTaskIdNotifier: null,
-            ),
-          ),
-        );
-        await tester.pump();
+        await _pumpItem(tester, task, hoveredTaskIdNotifier: null);
 
         expect(find.byType(TaskBrowseListItem), findsOneWidget);
       },
@@ -920,10 +849,7 @@ void main() {
           dateFrom: DateTime(2026, 4, 8),
         );
 
-        await tester.pumpWidget(
-          makeTestableWidget(_makeWidget(task)),
-        );
-        await tester.pump();
+        await _pumpItem(tester, task);
 
         final finder = find.text('(untitled)');
         expect(finder, findsOneWidget);
@@ -1035,10 +961,7 @@ void main() {
         (_) => Stream.value(recordingEntry),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(_makeWidget(task)),
-      );
-      await tester.pump();
+      await _pumpItem(tester, task);
       await tester.pump();
 
       expect(find.byType(TimeRecordingIcon), findsOneWidget);
@@ -1061,10 +984,7 @@ void main() {
         dateFrom: DateTime(2026, 4, 8),
       );
 
-      await tester.pumpWidget(
-        makeTestableWidget(_makeWidget(task)),
-      );
-      await tester.pump();
+      await _pumpItem(tester, task);
       await tester.pump();
 
       expect(find.byType(TimeRecordingIcon), findsOneWidget);

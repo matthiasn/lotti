@@ -47,9 +47,11 @@
 
   Splitting into `task_showcase_chips.dart` (chips + pills, ≈ 250 ln) and `task_showcase_layout_widgets.dart` (hero banner, waveform, desktop action bar, ≈ 500 ln) would bring both below the threshold.
 
-- [ ] **[MED]** `lib/features/tasks/ui/widgets/task_action_bar.dart` — **686 lines**. The `_TrackTimePill` stateful widget and `_RoundActionButton` are independently testable and could each live in their own files. However this is below the 1 000-line hard limit so it is a preference-level concern.
+- [x] **[MED]** `lib/features/tasks/ui/widgets/task_action_bar.dart` — **686 lines**. The `_TrackTimePill` stateful widget and `_RoundActionButton` are independently testable and could each live in their own files. However this is below the 1 000-line hard limit so it is a preference-level concern.
+  **RESOLVED:** split via `part` file — `_TrackTimePill`, `_TrackTimePillContent`, `_RoundActionButton`, and the text-measure helper moved to `task_action_bar_buttons.dart` (294 ln); the host keeps the bar + glass constants the part shares (398 ln). The single mirror test stays valid.
 
-- [ ] **[MED]** `test/features/tasks/ui/widgets/task_browse_list_item_test.dart` — **1 081 lines** for a single test file. A `_TestBench` class with `setUp`/`pumpItem` helpers would reduce the repeated `setUpTestGetIt` + mock wiring visible in each group.
+- [x] **[MED]** `test/features/tasks/ui/widgets/task_browse_list_item_test.dart` — **1 081 lines** for a single test file. A `_TestBench` class with `setUp`/`pumpItem` helpers would reduce the repeated `setUpTestGetIt` + mock wiring visible in each group.
+  **RESOLVED (adapted):** `setUpTestGetIt` + a `_makeWidget` factory already existed; the missing piece was the pump boilerplate — a `_pumpItem(tester, task, {…, overrides})` helper now wraps build+pump, replacing 24 repeated `pumpWidget(makeTestableWidget(_makeWidget(…)))` blocks. A full bench class would add indirection without removing more duplication.
 
 ---
 
@@ -61,11 +63,14 @@
 
   Per AGENTS "Use centralized mocks," if a `MockTimeService` already exists in `test/mocks/mocks.dart` it should be used or extended there. However the test comments explain why `MockTimeService` cannot be used here (field reads via `mocktail` are not stubbable) — so `_FakeTimeService` is legitimately a hand-rolled fake; but the inline definition should be documented with this reasoning to prevent future reviewers from trying to centralize it.
 
-- [ ] **[MED]** `test/features/tasks/ui/widgets/task_showcase_shared_widgets_test.dart` — **194 lines** for a 766-line impl file. The test only exercises a handful of static rendering properties (chip heights, active state colors). Major shared widgets like `TaskShowcaseHeroBanner`, `TaskShowcaseWaveform`, `TaskShowcaseDesktopActionBar`, and `TaskShowcaseStatusLabel` are barely or not tested. The test-to-impl ratio (1:4) indicates significant behavioral gaps.
+- [x] **[MED]** `test/features/tasks/ui/widgets/task_showcase_shared_widgets_test.dart` — **194 lines** for a 766-line impl file. The test only exercises a handful of static rendering properties (chip heights, active state colors). Major shared widgets like `TaskShowcaseHeroBanner`, `TaskShowcaseWaveform`, `TaskShowcaseDesktopActionBar`, and `TaskShowcaseStatusLabel` are barely or not tested. The test-to-impl ratio (1:4) indicates significant behavioral gaps.
+  **RESOLVED (stale):** the file is now 381 lines and covers the previously-missing widgets — `TaskShowcaseHeroBanner` (height + bridge painter), `TaskShowcaseWaveform` (bar scaling from samples), `TaskShowcaseDesktopActionBar` (timer pill, four round actions, FAB), `TaskShowcaseStatusLabel`, status glyphs for all statuses, and priority glyph assets.
 
-- [ ] **[MED]** `test/features/tasks/ui/widgets/task_detail_pane_test.dart` — the `_pumpDetailContent` helper at line 120 uses `makeTestableWidget2` (not `makeTestableWidget`). This is correct for a presentational-only widget with no providers, but the pattern is different from the rest of the codebase. No infrastructure issue, but worth noting for consistency.
+- [x] **[MED]** `test/features/tasks/ui/widgets/task_detail_pane_test.dart` — the `_pumpDetailContent` helper at line 120 uses `makeTestableWidget2` (not `makeTestableWidget`). This is correct for a presentational-only widget with no providers, but the pattern is different from the rest of the codebase. No infrastructure issue, but worth noting for consistency.
+  **RESOLVED (assessed, no change):** as the item itself notes, `makeTestableWidget2` is the correct choice for a purely presentational widget with no providers — adding an unused `ProviderScope` for consistency would be noise.
 
-- [ ] **[MED]** `test/features/tasks/ui/widgets/task_list_detail_showcase_test.dart` — the test at line 88 asserts `tester.takeException() isNull` which only checks for runtime errors; this is a smoke test. All subsequent assertions only check that specific text widgets appear. No interactions are tested in this test.
+- [x] **[MED]** `test/features/tasks/ui/widgets/task_list_detail_showcase_test.dart` — the test at line 88 asserts `tester.takeException() isNull` which only checks for runtime errors; this is a smoke test. All subsequent assertions only check that specific text widgets appear. No interactions are tested in this test.
+  **RESOLVED:** the render test now binds the assertions to controller state — the default `selectedTask` title must match the detail-pane content — and drops the `takeException` smoke check. Interaction coverage (selection + priority filter) lives in the two sibling tests of the same group.
 
 - [ ] **[LOW]** `test/features/tasks/ui/widgets/task_detail_section_card_test.dart` line 67: `pumpAndSettle()` is used after `tester.tap(find.text('body'))` to confirm the tap count incremented. An `InkWell` ripple animation is the only thing that requires settling; using `tester.pump(const Duration(milliseconds: 200))` would be safer and explicit.
 
@@ -92,11 +97,14 @@ No strong Glados candidates exist in this subdir. The widgets are largely presen
   - `TaskShowcasePriorityGlyph` (priority icon + color)
   - `TaskShowcaseSectionPill` active-vs-inactive state transitions
 
-- [ ] **[MED]** `task_action_bar.dart` — the responsive layout branches at `minWidthForChecklistButton` (340) and `minWidthForImageButton` (400) are not tested. `task_action_bar_test.dart` tests at 420px but does not verify that the image button is hidden at ≤ 400 or that the checklist button disappears at ≤ 340.
+- [x] **[MED]** `task_action_bar.dart` — the responsive layout branches at `minWidthForChecklistButton` (340) and `minWidthForImageButton` (400) are not tested. `task_action_bar_test.dart` tests at 420px but does not verify that the image button is hidden at ≤ 400 or that the checklist button disappears at ≤ 340.
+  **RESOLVED (stale):** three tests now cover all bands — below 340 (image+checklist hidden, three affordances on one row), 340–400 (only image hidden), and ≥ 400 (everything rendered) — each asserting the row fits within the viewport.
 
-- [ ] **[MED]** `task_detail_pane.dart` — `_AiSummaryCard`, `_TimeEntryTile`, and `_AudioEntryTile` render significant content (text, icons, play button) but `task_detail_pane_test.dart` does not verify their specific data-binding. Tests at lines 290–303 assert AI summary text and description presence but not time-entry tile structure or audio waveform rendering.
+- [x] **[MED]** `task_detail_pane.dart` — `_AiSummaryCard`, `_TimeEntryTile`, and `_AudioEntryTile` render significant content (text, icons, play button) but `task_detail_pane_test.dart` does not verify their specific data-binding. Tests at lines 290–303 assert AI summary text and description presence but not time-entry tile structure or audio waveform rendering.
+  **RESOLVED:** new 'time/audio tile data binding' group — time tracker card binds the record's total label plus each tile's title/duration/note; audio card binds title/subtitle/duration/transcript, renders the play affordance, and passes the entry's samples verbatim into `TaskShowcaseWaveform`.
 
-- [ ] **[MED]** `task_list_pane.dart` — `task_list_pane_test.dart` (591 ln) appears well-covered; no significant gap.
+- [x] **[MED]** `task_list_pane.dart` — `task_list_pane_test.dart` (591 ln) appears well-covered; no significant gap.
+  **RESOLVED (assessed, no change):** the item records a positive finding — nothing to do.
 
 - [ ] **[LOW]** `task_showcase_filter_modal.dart` (23 ln) has no test. It is a thin orchestrating wrapper around `showDesignSystemFilterModal`. Integration coverage via parent tests is likely sufficient; a dedicated unit test for the function signature wiring would be low-value.
 
@@ -104,9 +112,11 @@ No strong Glados candidates exist in this subdir. The widgets are largely presen
 
 ## Test execution speed opportunities
 
-- [ ] **[MED]** `test/features/tasks/ui/widgets/task_mobile_list_detail_showcase_test.dart` — 2 `pumpAndSettle()` calls (lines 217, 242). Both follow user interactions that trigger navigation transitions. Using `tester.pump(const Duration(milliseconds: 350))` instead would avoid the 10-second default timeout while being explicit about what animation is settling.
+- [x] **[MED]** `test/features/tasks/ui/widgets/task_mobile_list_detail_showcase_test.dart` — 2 `pumpAndSettle()` calls (lines 217, 242). Both follow user interactions that trigger navigation transitions. Using `tester.pump(const Duration(milliseconds: 350))` instead would avoid the 10-second default timeout while being explicit about what animation is settling.
+  **RESOLVED:** both replaced with `pump()` + bounded `pump(350ms)` (a single 350 ms pump was empirically not enough for the Wolt sheet's first frame); all 9 tests green.
 
-- [ ] **[MED]** `test/features/tasks/ui/widgets/task_list_detail_showcase_test.dart` — 2 `pumpAndSettle()` calls (lines 138, 149). Both follow viewport resizes or task selection which trigger widget tree rebuilds, not time-based animations. `tester.pump()` is sufficient.
+- [x] **[MED]** `test/features/tasks/ui/widgets/task_list_detail_showcase_test.dart` — 2 `pumpAndSettle()` calls (lines 138, 149). Both follow viewport resizes or task selection which trigger widget tree rebuilds, not time-based animations. `tester.pump()` is sufficient.
+  **RESOLVED (adapted):** both replaced — but with `pump()` + bounded `pump(350ms)`, not a bare `pump()`: the sites sit on the filter-modal open/apply route transitions, which empirically need the animation frame.
 
 - [ ] **[LOW]** `test/features/tasks/ui/widgets/task_detail_section_card_test.dart` line 67: single `pumpAndSettle()` after an `InkWell` tap. Replacing with `tester.pump(const Duration(milliseconds: 200))` makes the intent explicit and avoids any risk of hanging on an unexpected animation.
 
