@@ -128,6 +128,29 @@ enum WakeReason {
   transcriptionComplete,
 }
 
+/// Where a durable planner-knowledge entry came from (ADR 0022 Decision 10).
+enum KnowledgeSource {
+  /// The user told the planner directly ("never schedule deep work before 10").
+  /// May skip straight to [KnowledgeStatus.confirmed].
+  userStated,
+
+  /// The planner inferred it; reaches durable knowledge only through the weekly
+  /// gate or an explicit user confirmation.
+  agentInferred,
+}
+
+/// Lifecycle of a durable planner-knowledge entry (ADR 0022 Decision 10).
+enum KnowledgeStatus {
+  /// Awaiting the user's confirmation in the "What I've learned" panel.
+  proposed,
+
+  /// User-confirmed (or user-stated). Part of the active Head set.
+  confirmed,
+
+  /// Explicitly retracted; excluded from the active Head set.
+  retracted,
+}
+
 /// Lifecycle status of a persisted scheduled-wake record (ADR 0022).
 enum ScheduledWakeStatus {
   /// Not yet fired; the scheduled-wake manager will enqueue it once due.

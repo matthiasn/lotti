@@ -458,6 +458,49 @@ void main() {
       expect(parsed.matchedTaskId, 'task-001');
     });
 
+    test('plannerKnowledge writes type/subtype and roundtrips', () {
+      final entity = AgentDomainEntity.plannerKnowledge(
+        id: 'pk-1',
+        agentId: 'daily_os_planner',
+        key: 'deep-work-earliest-start',
+        hook: 'no deep work before 10',
+        statementText: 'Never schedule deep work before 10:00.',
+        source: KnowledgeSource.userStated,
+        status: KnowledgeStatus.confirmed,
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: const VectorClock({'node-a': 3}),
+        scope: 'category:focus',
+      );
+
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+      expect(companion.type, const Value(AgentEntityTypes.plannerKnowledge));
+      // Subtype is the stable key for indexed Head lookups.
+      expect(companion.subtype, const Value('deep-work-earliest-start'));
+      expect(companion.createdAt, Value(createdAt));
+      expect(companion.updatedAt, Value(updatedAt));
+
+      final row = AgentEntity(
+        id: entity.id,
+        agentId: 'daily_os_planner',
+        type: AgentEntityTypes.plannerKnowledge,
+        subtype: 'deep-work-earliest-start',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, isA<PlannerKnowledgeEntity>());
+      final k = result as PlannerKnowledgeEntity;
+      expect(k.key, 'deep-work-earliest-start');
+      expect(k.statementText, 'Never schedule deep work before 10:00.');
+      expect(k.source, KnowledgeSource.userStated);
+      expect(k.status, KnowledgeStatus.confirmed);
+      expect(k.scope, 'category:focus');
+    });
+
     test('scheduledWake writes type/subtype and roundtrips through a row', () {
       final entity = AgentDomainEntity.scheduledWake(
         id: 'scheduled_wake:$agentId:day:dayplan-2026-05-25',

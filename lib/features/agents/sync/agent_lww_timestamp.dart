@@ -22,6 +22,7 @@ extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {
     agentReport: (e) => e.createdAt,
     agentReportHead: (e) => e.updatedAt,
     scheduledWake: (e) => e.updatedAt,
+    plannerKnowledge: (e) => e.updatedAt,
     capture: (e) => e.createdAt,
     parsedItem: (e) => e.createdAt,
     dayPlan: (e) => e.updatedAt,

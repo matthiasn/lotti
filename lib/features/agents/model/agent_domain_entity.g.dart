@@ -371,6 +371,73 @@ Map<String, dynamic> _$CaptureEntityToJson(CaptureEntity instance) =>
       'runtimeType': instance.$type,
     };
 
+PlannerKnowledgeEntity _$PlannerKnowledgeEntityFromJson(
+  Map<String, dynamic> json,
+) => PlannerKnowledgeEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  key: json['key'] as String,
+  hook: json['hook'] as String,
+  statementText: json['statementText'] as String,
+  source: $enumDecode(_$KnowledgeSourceEnumMap, json['source']),
+  status: $enumDecode(_$KnowledgeStatusEnumMap, json['status']),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  updatedAt: DateTime.parse(json['updatedAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  value: json['value'] as String? ?? '',
+  scope: json['scope'] as String? ?? 'global',
+  supersedesId: json['supersedesId'] as String?,
+  confirmedAt: json['confirmedAt'] == null
+      ? null
+      : DateTime.parse(json['confirmedAt'] as String),
+  retractedAt: json['retractedAt'] == null
+      ? null
+      : DateTime.parse(json['retractedAt'] as String),
+  reviewAfter: json['reviewAfter'] == null
+      ? null
+      : DateTime.parse(json['reviewAfter'] as String),
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$PlannerKnowledgeEntityToJson(
+  PlannerKnowledgeEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'key': instance.key,
+  'hook': instance.hook,
+  'statementText': instance.statementText,
+  'source': _$KnowledgeSourceEnumMap[instance.source]!,
+  'status': _$KnowledgeStatusEnumMap[instance.status]!,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'value': instance.value,
+  'scope': instance.scope,
+  'supersedesId': instance.supersedesId,
+  'confirmedAt': instance.confirmedAt?.toIso8601String(),
+  'retractedAt': instance.retractedAt?.toIso8601String(),
+  'reviewAfter': instance.reviewAfter?.toIso8601String(),
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$KnowledgeSourceEnumMap = {
+  KnowledgeSource.userStated: 'userStated',
+  KnowledgeSource.agentInferred: 'agentInferred',
+};
+
+const _$KnowledgeStatusEnumMap = {
+  KnowledgeStatus.proposed: 'proposed',
+  KnowledgeStatus.confirmed: 'confirmed',
+  KnowledgeStatus.retracted: 'retracted',
+};
+
 ParsedItemEntity _$ParsedItemEntityFromJson(Map<String, dynamic> json) =>
     ParsedItemEntity(
       id: json['id'] as String,
