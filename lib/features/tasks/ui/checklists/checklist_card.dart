@@ -183,9 +183,11 @@ class _ChecklistCardState extends State<ChecklistCard> {
   @override
   Widget build(BuildContext context) {
     final total = widget.totalCount ?? _itemIds.length;
-    final completed =
-        widget.completedCount ??
-        (total == 0 ? 0 : (widget.completionRate * total).round());
+    final completed = resolveCompletedCount(
+      completedCount: widget.completedCount,
+      completionRate: widget.completionRate,
+      total: total,
+    );
 
     final showBody = _isExpanded && !widget.isSortingMode;
     final animationDuration = _hasRendered
@@ -286,3 +288,13 @@ class _ChecklistCardState extends State<ChecklistCard> {
 // ─────────────────────────────────────────────────────────────────────────────
 // Header — full header shown in normal (non-sorting) mode.
 // ─────────────────────────────────────────────────────────────────────────────
+
+/// Resolves the completed-item count shown on the card header: an explicit
+/// [completedCount] wins; otherwise it is derived by rounding
+/// `completionRate * total` (zero when the checklist is empty).
+@visibleForTesting
+int resolveCompletedCount({
+  required int? completedCount,
+  required double completionRate,
+  required int total,
+}) => completedCount ?? (total == 0 ? 0 : (completionRate * total).round());
