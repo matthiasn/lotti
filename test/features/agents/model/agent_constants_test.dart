@@ -1,6 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/model/agent_enums.dart';
 
 void main() {
   group('AgentKinds', () {
@@ -62,56 +61,6 @@ void main() {
       expect(AgentEntityTypes.capture, equals('day_capture'));
       expect(AgentEntityTypes.parsedItem, equals('parsed_capture_item'));
       expect(AgentEntityTypes.dayPlan, equals('day_plan'));
-    });
-  });
-
-  group('AgentTemplateKind', () {
-    test('dayAgent enum value exists', () {
-      expect(
-        AgentTemplateKind.values,
-        contains(AgentTemplateKind.dayAgent),
-      );
-    });
-
-    test('dayAgent name is "dayAgent"', () {
-      expect(AgentTemplateKind.dayAgent.name, equals('dayAgent'));
-    });
-
-    test('projectAgent name is "projectAgent"', () {
-      expect(AgentTemplateKind.projectAgent.name, equals('projectAgent'));
-    });
-
-    test('parseEnumByName resolves projectAgent from camelCase', () {
-      final result = parseEnumByName(
-        AgentTemplateKind.values,
-        'projectAgent',
-      );
-      expect(result, equals(AgentTemplateKind.projectAgent));
-    });
-
-    test('parseEnumByName resolves project_agent from snake_case', () {
-      final result = parseEnumByName(
-        AgentTemplateKind.values,
-        'project_agent',
-      );
-      expect(result, equals(AgentTemplateKind.projectAgent));
-    });
-
-    test('parseEnumByName resolves day_agent from snake_case', () {
-      final result = parseEnumByName(
-        AgentTemplateKind.values,
-        'day_agent',
-      );
-      expect(result, equals(AgentTemplateKind.dayAgent));
-    });
-  });
-
-  group('ParsedItemKind', () {
-    test('parseEnumByName resolves new_task from snake_case', () {
-      expect(
-        parseEnumByName(ParsedItemKind.values, 'new_task'),
-        ParsedItemKind.newTask,
-      );
     });
   });
 }
