@@ -1,22 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/ai/ui/settings/form_bottom_bar.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/widgets/buttons/lotti_primary_button.dart';
 import 'package:lotti/widgets/buttons/lotti_tertiary_button.dart';
+
+import '../../../../widget_test_utils.dart';
 
 void main() {
   group('FormBottomBar', () {
     Widget buildTestWidget(Widget child) {
-      return MaterialApp(
-        theme: ThemeData.dark(),
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-        ],
-        home: Scaffold(
+      return makeTestableWidgetNoScroll(
+        Scaffold(
           body: Column(
             children: [
               const Spacer(),
@@ -24,6 +19,7 @@ void main() {
             ],
           ),
         ),
+        theme: ThemeData.dark(),
       );
     }
 

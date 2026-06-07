@@ -1,9 +1,13 @@
 import 'package:flutter/widgets.dart' show IconData;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/ai_provider_visual.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+
+import '../../../test_utils.dart';
 
 void main() {
   final messages = AppLocalizationsEn();
@@ -387,5 +391,78 @@ void main() {
         );
       },
     );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Glados properties for the pure helpers.
+  // ---------------------------------------------------------------------------
+  group('ai_provider_visual — properties', () {
+    glados.Glados2(
+      glados.AnyUtils(glados.any).choose(InferenceProviderType.values),
+      glados.AnyUtils(glados.any).choose(const ['', '   ', '\t', 'sk-key']),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'isProviderDraft is false for keyless types and otherwise mirrors '
+      'the trimmed-key emptiness',
+      (type, apiKey) {
+        final provider = AiTestDataFactory.createTestProvider(
+          type: type,
+          apiKey: apiKey,
+        );
+        final expected =
+            !ProviderConfig.noApiKeyRequired.contains(type) &&
+            apiKey.trim().isEmpty;
+        expect(
+          isProviderDraft(provider),
+          expected,
+          reason: '$type / "$apiKey"',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.IntAnys(glados.any).intInRange(0, 16),
+      glados.ExploreConfig(numRuns: 80),
+    ).test(
+      'modelCapabilityLabels is deterministic and ordered '
+      'thinking → vision → transcription → image generation',
+      (mask) {
+        List<String> labelsFor() => modelCapabilityLabels(
+          messages: messages,
+          isReasoning: mask & 1 != 0,
+          inputModalities: [
+            Modality.text,
+            if (mask & 2 != 0) Modality.image,
+            if (mask & 4 != 0) Modality.audio,
+          ],
+          outputModalities: [
+            Modality.text,
+            if (mask & 8 != 0) Modality.image,
+          ],
+        );
+
+        final labels = labelsFor();
+        // Idempotence: same inputs always produce the same ordered list.
+        expect(labelsFor(), labels, reason: 'mask=$mask');
+
+        final expected = <String>[
+          if (mask & 1 != 0) messages.aiCapabilityChipThinking,
+          if (mask & 2 != 0) messages.aiCapabilityChipImageRecognition,
+          if (mask & 4 != 0) messages.aiCapabilityChipTranscription,
+          if (mask & 8 != 0) messages.aiCapabilityChipImageGeneration,
+        ];
+        expect(labels, expected, reason: 'mask=$mask');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.AnyUtils(glados.any).choose(InferenceProviderType.values),
+      glados.ExploreConfig(numRuns: 60),
+    ).test('aiProviderKeyConsoleUrl never returns an empty string', (type) {
+      final url = aiProviderKeyConsoleUrl(type);
+      expect(url, anyOf(isNull, isNotEmpty), reason: '$type');
+    }, tags: 'glados');
   });
 }

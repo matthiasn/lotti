@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/settings/util/active_profile.dart';
 
@@ -485,5 +486,99 @@ void main() {
         );
       },
     );
+  });
+
+  // ---------------------------------------------------------------------------
+  // Glados properties over generated profile/model mixes.
+  // ---------------------------------------------------------------------------
+  group('pickActiveProfileForProvider — properties', () {
+    glados.Glados(
+      glados.any.list(glados.IntAnys(glados.any).intInRange(0, 1 << 10)),
+      // ignore: avoid_redundant_argument_values
+      glados.ExploreConfig(numRuns: 100),
+    ).test('winner is from the input list, touches a provider model, and '
+        'prefers defaults', (seeds) {
+      // One provider model id; each seed shapes a profile: bit0 = slot
+      // touches the provider model, bit1 = isDefault.
+      const ownedId = 'owned-model';
+      final providerModels = [
+        AiTestDataFactory.createTestModel(
+          id: 'm-owned',
+          providerModelId: ownedId,
+          inferenceProviderId: 'prov-1',
+        ),
+      ];
+      final profiles = [
+        for (final (i, seed) in seeds.indexed)
+          AiTestDataFactory.createTestProfile(
+            id: 'p$i',
+            thinkingModelId: seed.isEven ? ownedId : 'foreign-$i',
+            isDefault: seed & 2 != 0,
+          ),
+      ];
+
+      final winner = pickActiveProfileForProvider(
+        profiles: profiles,
+        providerModels: providerModels,
+      );
+
+      final touching = profiles
+          .where((p) => p.thinkingModelId == ownedId)
+          .toList();
+      if (touching.isEmpty) {
+        expect(winner, isNull, reason: '$seeds');
+      } else {
+        // Winner belongs to the input list and touches the provider model.
+        expect(profiles, contains(winner));
+        expect(winner!.thinkingModelId, ownedId);
+        // A default-marked toucher always beats a non-default one.
+        final defaults = touching.where((p) => p.isDefault);
+        if (defaults.isNotEmpty) {
+          expect(winner.isDefault, isTrue, reason: '$seeds');
+        } else {
+          expect(winner, same(touching.first), reason: '$seeds');
+        }
+      }
+    }, tags: 'glados');
+  });
+
+  group('activeProfileIdsForProviders — properties', () {
+    glados.Glados(
+      glados.any.list(glados.IntAnys(glados.any).intInRange(0, 1 << 10)),
+      // ignore: avoid_redundant_argument_values
+      glados.ExploreConfig(numRuns: 100),
+    ).test('result is always a subset of the input profile ids', (seeds) {
+      const ownedId = 'owned-model';
+      final provider = AiTestDataFactory.createTestProvider(id: 'prov-1');
+      final models = [
+        AiTestDataFactory.createTestModel(
+          id: 'm-owned',
+          providerModelId: ownedId,
+          inferenceProviderId: 'prov-1',
+        ),
+      ];
+      final profiles = [
+        for (final (i, seed) in seeds.indexed)
+          AiTestDataFactory.createTestProfile(
+            id: 'p$i',
+            thinkingModelId: seed.isEven ? ownedId : 'foreign-$i',
+            isDefault: seed & 2 != 0,
+          ),
+      ];
+
+      final ids = activeProfileIdsForProviders(
+        providers: [provider],
+        models: models,
+        profiles: profiles,
+      );
+
+      expect(
+        ids.difference(profiles.map((p) => p.id).toSet()),
+        isEmpty,
+        reason: '$seeds',
+      );
+      // At most one active profile per single provider.
+      expect(ids.length, lessThanOrEqualTo(1));
+    }, tags: 'glados');
   });
 }

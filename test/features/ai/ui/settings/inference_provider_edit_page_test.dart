@@ -14,6 +14,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show aiConfigRepositoryProvider;
 import 'package:lotti/features/ai/ui/settings/inference_provider_edit_page.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
+import 'package:lotti/features/ai/ui/settings/util/ai_settings_back_nav.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart'
@@ -24,6 +25,7 @@ import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -2831,10 +2833,18 @@ void main() {
 
         final goBack = find.text('Go Back');
         expect(goBack, findsOneWidget);
+
+        // The page is the home root (canPop == false), so the back
+        // affordance must fall through to the beam path — capture it.
+        final beamedPaths = <String>[];
+        nav_service.beamToNamedOverride = beamedPaths.add;
+        addTearDown(() => nav_service.beamToNamedOverride = null);
+
         await tester.tap(goBack);
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
+        expect(beamedPaths, [aiSettingsParentRoute]);
         expect(find.byType(InferenceProviderEditPage), findsOneWidget);
       },
     );
@@ -3113,6 +3123,13 @@ void main() {
         probe.completeWith(const ConnectionCheckIdle());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
+
+        // Idle renders SizedBox.shrink — the strip vanishes entirely.
+        expect(
+          find.text(strings.aiProviderConnectionCheckingLabel),
+          findsNothing,
+        );
+        expect(find.byType(CircularProgressIndicator), findsNothing);
       },
     );
 

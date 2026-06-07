@@ -85,7 +85,11 @@ void main() {
       ).thenAnswer((_) async => testModel as AiConfigModel);
     });
 
-    Widget createTestWidget(AiConfig config, {bool showCapabilities = false}) {
+    Widget createTestWidget(
+      AiConfig config, {
+      bool showCapabilities = false,
+      bool compact = false,
+    }) {
       return MaterialApp(
         localizationsDelegates: const [
           AppLocalizations.delegate,
@@ -103,6 +107,7 @@ void main() {
               config: config,
               onTap: () {},
               showCapabilities: showCapabilities,
+              compact: compact,
             ),
           ),
         ),
@@ -297,38 +302,9 @@ void main() {
     });
 
     group('Compact mode', () {
-      Widget createCompactWidget({
-        required AiConfig config,
-        bool compact = false,
-      }) {
-        return MaterialApp(
-          localizationsDelegates: const [
-            AppLocalizations.delegate,
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: ProviderScope(
-              overrides: [
-                aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-              ],
-              child: AiConfigCard(
-                config: config,
-                onTap: () {},
-                compact: compact,
-              ),
-            ),
-          ),
-        );
-      }
-
       testWidgets('shows chevron in normal mode', (WidgetTester tester) async {
         await tester.pumpWidget(
-          createCompactWidget(
-            config: testProvider,
-          ),
+          createTestWidget(testProvider),
         );
 
         expect(find.byIcon(Icons.chevron_right), findsOneWidget);
@@ -336,10 +312,7 @@ void main() {
 
       testWidgets('hides chevron in compact mode', (WidgetTester tester) async {
         await tester.pumpWidget(
-          createCompactWidget(
-            config: testProvider,
-            compact: true,
-          ),
+          createTestWidget(testProvider, compact: true),
         );
 
         expect(find.byIcon(Icons.chevron_right), findsNothing);
@@ -350,10 +323,7 @@ void main() {
       ) async {
         for (final compact in [false, true]) {
           await tester.pumpWidget(
-            createCompactWidget(
-              config: testProvider,
-              compact: compact,
-            ),
+            createTestWidget(testProvider, compact: compact),
           );
           expect(find.text(testProvider.name), findsOneWidget);
           expect(find.text(testProvider.description!), findsOneWidget);
@@ -365,12 +335,12 @@ void main() {
         'uses AnimatedContainer in normal mode but not in compact mode',
         (WidgetTester tester) async {
           // Normal mode has AnimatedContainer
-          await tester.pumpWidget(createCompactWidget(config: testProvider));
+          await tester.pumpWidget(createTestWidget(testProvider));
           expect(find.byType(AnimatedContainer), findsOneWidget);
 
           // Compact mode does not
           await tester.pumpWidget(
-            createCompactWidget(config: testProvider, compact: true),
+            createTestWidget(testProvider, compact: true),
           );
           expect(find.byType(AnimatedContainer), findsNothing);
         },
@@ -475,7 +445,11 @@ void main() {
           );
 
           await tester.pumpWidget(createTestWidget(provider));
-          expect(find.byIcon(entry.value), findsOneWidget);
+          expect(
+            find.byIcon(entry.value),
+            findsOneWidget,
+            reason: 'icon for ${entry.key.name}',
+          );
         }
       });
     });
@@ -509,7 +483,11 @@ void main() {
             );
 
             await tester.pumpWidget(createTestWidget(model));
-            expect(find.byIcon(test.$2), findsOneWidget);
+            expect(
+              find.byIcon(test.$2),
+              findsOneWidget,
+              reason: 'icon for model id ${test.$1}',
+            );
           }
         },
       );
