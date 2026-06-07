@@ -16,55 +16,61 @@ void main() {
 
   group('EntityStateHelper', () {
     group('getCurrentEntityState', () {
-      test(
-        'returns typed entity when fetch succeeds and type matches',
-        () async {
-          // Arrange
-          const entityId = 'test-image-id';
-          final expectedImage = JournalImage(
-            meta: Metadata(
-              id: entityId,
-              createdAt: DateTime(2024, 3, 15, 10, 30),
-              updatedAt: DateTime(2024, 3, 15, 10, 30),
-              dateFrom: DateTime(2024, 3, 15, 10, 30),
-              dateTo: DateTime(2024, 3, 15, 10, 30),
-            ),
-            data: ImageData(
-              capturedAt: DateTime(2024, 3, 15, 10, 30),
-              imageId: 'img-123',
-              imageFile: 'test.jpg',
-              imageDirectory: '/images/',
-            ),
-          );
-
-          when(
-            () => mockAiInputRepo.getEntity(entityId),
-          ).thenAnswer((_) async => expectedImage);
-
-          // Act
-          final result =
-              await EntityStateHelper.getCurrentEntityState<JournalImage>(
-                entityId: entityId,
-                aiInputRepo: mockAiInputRepo,
-                entityTypeName: 'image',
-              );
-
-          // Assert
-          expect(result, equals(expectedImage));
-          expect(result, isA<JournalImage>());
-          verify(() => mockAiInputRepo.getEntity(entityId)).called(1);
-        },
+      final testImage = JournalImage(
+        meta: Metadata(
+          id: 'entity-id',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          updatedAt: DateTime(2024, 3, 15, 10, 30),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
+        ),
+        data: ImageData(
+          capturedAt: DateTime(2024, 3, 15, 10, 30),
+          imageId: 'img-123',
+          imageFile: 'test.jpg',
+          imageDirectory: '/images/',
+        ),
+      );
+      final testTask = Task(
+        meta: Metadata(
+          id: 'entity-id',
+          createdAt: DateTime(2024, 3, 15, 10, 30),
+          updatedAt: DateTime(2024, 3, 15, 10, 30),
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
+        ),
+        data: TaskData(
+          title: 'Test Task',
+          dateFrom: DateTime(2024, 3, 15, 10, 30),
+          dateTo: DateTime(2024, 3, 15, 10, 30),
+          status: TaskStatus.open(
+            id: 'status-1',
+            createdAt: DateTime(2024, 3, 15, 10, 30),
+            utcOffset: 0,
+          ),
+          statusHistory: [],
+        ),
       );
 
-      test('returns null when entity is not found', () async {
-        // Arrange
-        const entityId = 'non-existent-id';
+      /// Drives one fetch-as-JournalImage case: [stubbed] is what the
+      /// repository returns ([throws] overrides it with an exception);
+      /// [expected] is the helper's result.
+      Future<void> runImageCase({
+        required JournalImage? expected,
+        JournalEntity? stubbed,
+        bool throws = false,
+      }) async {
+        const entityId = 'entity-id';
+        if (throws) {
+          when(
+            () => mockAiInputRepo.getEntity(entityId),
+          ).thenThrow(Exception('Repository error'));
+        } else {
+          when(
+            () => mockAiInputRepo.getEntity(entityId),
+          ).thenAnswer((_) async => stubbed);
+        }
 
-        when(
-          () => mockAiInputRepo.getEntity(entityId),
-        ).thenAnswer((_) async => null);
-
-        // Act
         final result =
             await EntityStateHelper.getCurrentEntityState<JournalImage>(
               entityId: entityId,
@@ -72,75 +78,25 @@ void main() {
               entityTypeName: 'image',
             );
 
-        // Assert
-        expect(result, isNull);
+        expect(result, expected);
         verify(() => mockAiInputRepo.getEntity(entityId)).called(1);
+      }
+
+      test('returns typed entity when fetch succeeds and type matches', () {
+        return runImageCase(stubbed: testImage, expected: testImage);
       });
 
-      test(
-        'returns null when entity type does not match expected type',
-        () async {
-          // Arrange
-          const entityId = 'task-id';
-          final task = Task(
-            meta: Metadata(
-              id: entityId,
-              createdAt: DateTime(2024, 3, 15, 10, 30),
-              updatedAt: DateTime(2024, 3, 15, 10, 30),
-              dateFrom: DateTime(2024, 3, 15, 10, 30),
-              dateTo: DateTime(2024, 3, 15, 10, 30),
-            ),
-            data: TaskData(
-              title: 'Test Task',
-              dateFrom: DateTime(2024, 3, 15, 10, 30),
-              dateTo: DateTime(2024, 3, 15, 10, 30),
-              status: TaskStatus.open(
-                id: 'status-1',
-                createdAt: DateTime(2024, 3, 15, 10, 30),
-                utcOffset: 0,
-              ),
-              statusHistory: [],
-            ),
-          );
+      test('returns null when entity is not found', () {
+        return runImageCase(expected: null);
+      });
 
-          when(
-            () => mockAiInputRepo.getEntity(entityId),
-          ).thenAnswer((_) async => task);
+      test('returns null when entity type does not match expected type', () {
+        // Expecting JournalImage but getting Task.
+        return runImageCase(stubbed: testTask, expected: null);
+      });
 
-          // Act
-          // Expecting JournalImage but getting Task
-          final result =
-              await EntityStateHelper.getCurrentEntityState<JournalImage>(
-                entityId: entityId,
-                aiInputRepo: mockAiInputRepo,
-                entityTypeName: 'image',
-              );
-
-          // Assert
-          expect(result, isNull);
-          verify(() => mockAiInputRepo.getEntity(entityId)).called(1);
-        },
-      );
-
-      test('returns null when repository throws exception', () async {
-        // Arrange
-        const entityId = 'error-id';
-
-        when(
-          () => mockAiInputRepo.getEntity(entityId),
-        ).thenThrow(Exception('Repository error'));
-
-        // Act
-        final result =
-            await EntityStateHelper.getCurrentEntityState<JournalImage>(
-              entityId: entityId,
-              aiInputRepo: mockAiInputRepo,
-              entityTypeName: 'image',
-            );
-
-        // Assert
-        expect(result, isNull);
-        verify(() => mockAiInputRepo.getEntity(entityId)).called(1);
+      test('returns null when repository throws exception', () {
+        return runImageCase(throws: true, expected: null);
       });
 
       test('works correctly with different entity types', () async {
