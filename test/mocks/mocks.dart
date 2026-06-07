@@ -301,6 +301,18 @@ class MockMatrixDatabase extends Mock implements DatabaseApi {}
 
 class MockDeviceKeys extends Mock implements DeviceKeys {}
 
+/// Identical fake used by both verification-modal test files: a fixed
+/// (emoji, name) pair for the SAS comparison row.
+class FakeKeyVerificationEmoji extends Fake implements KeyVerificationEmoji {
+  FakeKeyVerificationEmoji(this.emoji, this.name);
+
+  @override
+  final String emoji;
+
+  @override
+  final String name;
+}
+
 class MockDeviceKeysList extends Mock implements DeviceKeysList {}
 
 class MockMatrixSdkGateway extends Mock implements MatrixSdkGateway {}

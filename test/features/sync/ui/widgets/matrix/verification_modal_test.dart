@@ -10,8 +10,6 @@ import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/verification_modal.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/providers/service_providers.dart';
-import 'package:matrix/encryption.dart';
-import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -19,16 +17,6 @@ import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
 
 class _FakeDeviceKeys extends Fake implements DeviceKeys {}
-
-class FakeKeyVerificationEmoji extends Fake implements KeyVerificationEmoji {
-  FakeKeyVerificationEmoji(this.emoji, this.name);
-
-  @override
-  final String emoji;
-
-  @override
-  final String name;
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

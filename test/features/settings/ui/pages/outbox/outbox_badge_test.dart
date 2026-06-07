@@ -40,6 +40,59 @@ void main() {
   }
 
   group('OutboxBadgeIcon', () {
+    testWidgets('renders the bare icon while connection state is loading', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Scaffold(body: OutboxBadgeIcon(icon: inner)),
+          overrides: [
+            // Never emits: the connection-state provider stays loading.
+            outboxConnectionStateProvider.overrideWith(
+              (ref) => const Stream.empty(),
+            ),
+            loginStateStreamProvider.overrideWith(
+              (ref) => Stream.value(LoginState.loggedIn),
+            ),
+            outboxPendingCountProvider.overrideWith(
+              (ref) => Stream.value(5),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(const Key('inner-icon')), findsOneWidget);
+      expect(find.byType(Badge), findsNothing);
+    });
+
+    testWidgets('renders the bare icon when the connection state errors', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const Scaffold(body: OutboxBadgeIcon(icon: inner)),
+          overrides: [
+            outboxConnectionStateProvider.overrideWith(
+              (ref) => Stream.error(Exception('config watch failed')),
+            ),
+            loginStateStreamProvider.overrideWith(
+              (ref) => Stream.value(LoginState.loggedIn),
+            ),
+            outboxPendingCountProvider.overrideWith(
+              (ref) => Stream.value(5),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(find.byKey(const Key('inner-icon')), findsOneWidget);
+      expect(find.byType(Badge), findsNothing);
+    });
+
     testWidgets('renders the bare icon when sync is offline', (tester) async {
       await pumpBadge(
         tester,
