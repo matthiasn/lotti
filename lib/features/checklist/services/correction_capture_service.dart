@@ -204,7 +204,7 @@ class CorrectionCaptureService {
       after: normalizedAfter,
       categoryId: categoryId,
       categoryName: category.name,
-      createdAt: DateTime.now(),
+      createdAt: clock.now(),
     );
 
     developer.log(
@@ -257,7 +257,7 @@ class CorrectionCaptureService {
     final newExample = ChecklistCorrectionExample(
       before: normalizedBefore,
       after: normalizedAfter,
-      capturedAt: DateTime.now(),
+      capturedAt: clock.now(),
     );
 
     final updatedExamples = [...existingExamples, newExample];
@@ -280,6 +280,12 @@ class CorrectionCaptureService {
       );
     }
   }
+
+  /// Test-only access to the meaningfulness rule so its boundary algebra
+  /// can be property-tested without driving the full capture flow.
+  @visibleForTesting
+  bool debugIsMeaningfulCorrection(String before, String after) =>
+      _isMeaningfulCorrection(before, after);
 
   /// Determines if a correction is meaningful enough to capture.
   bool _isMeaningfulCorrection(String before, String after) {

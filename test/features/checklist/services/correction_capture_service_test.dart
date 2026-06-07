@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/checklist/services/correction_capture_service.dart';
@@ -53,6 +54,17 @@ void main() {
       categoryRepository: mockCategoryRepository,
     );
   });
+
+  /// A container with the category repository override — the shared shape
+  /// of every capture-flow test. Disposal is registered automatically.
+  ProviderContainer makeRepoContainer() {
+    final container = ProviderContainer(
+      overrides: [
+        categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
+      ],
+    );
+    return container;
+  }
 
   group('CorrectionCaptureService', () {
     group('captureCorrection', () {
@@ -149,14 +161,7 @@ void main() {
           () => mockCategoryRepository.getCategoryById('category-1'),
         ).thenAnswer((_) async => testCategory);
 
-        final container = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
+        final container = makeRepoContainer();
 
         // Listen for pending correction events
         PendingCorrection? capturedPending;
@@ -212,14 +217,7 @@ void main() {
           () => mockCategoryRepository.getCategoryById('category-1'),
         ).thenAnswer((_) async => testCategory);
 
-        final container = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
+        final container = makeRepoContainer();
 
         final serviceWithNotifier = container.read(
           correctionCaptureServiceProvider,
@@ -253,14 +251,7 @@ void main() {
           () => mockCategoryRepository.getCategoryById('category-1'),
         ).thenAnswer((_) async => testCategory);
 
-        final container = ProviderContainer(
-          overrides: [
-            categoryRepositoryProvider.overrideWithValue(
-              mockCategoryRepository,
-            ),
-          ],
-        );
-        addTearDown(container.dispose);
+        final container = makeRepoContainer();
 
         // Listen for pending correction events
         PendingCorrection? capturedPending;
@@ -553,40 +544,47 @@ void main() {
       });
     });
 
-    test('setPending starts timer and cancel prevents onSave', () async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+    test('setPending starts timer and cancel prevents onSave', () {
+      fakeAsync((async) {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      var saveCalled = false;
+        var saveCalled = false;
 
-      final pending = PendingCorrection(
-        before: 'before',
-        after: 'after',
-        categoryId: 'cat-1',
-        categoryName: 'Test',
-        createdAt: DateTime(2024, 3, 15, 10, 35),
-      );
+        final pending = PendingCorrection(
+          before: 'before',
+          after: 'after',
+          categoryId: 'cat-1',
+          categoryName: 'Test',
+          createdAt: DateTime(2024, 3, 15, 10, 35),
+        );
 
-      container
-          .read(correctionCaptureProvider.notifier)
-          .setPending(
-            pending: pending,
-            onSave: () async {
-              saveCalled = true;
-            },
-          );
+        container
+            .read(correctionCaptureProvider.notifier)
+            .setPending(
+              pending: pending,
+              onSave: () async {
+                saveCalled = true;
+              },
+            );
 
-      // State should be set
-      expect(container.read(correctionCaptureProvider), equals(pending));
+        // State should be set
+        expect(container.read(correctionCaptureProvider), equals(pending));
 
-      // Cancel immediately
-      container.read(correctionCaptureProvider.notifier).cancel();
+        // Cancel immediately
+        container.read(correctionCaptureProvider.notifier).cancel();
 
-      // State should be null
-      expect(container.read(correctionCaptureProvider), isNull);
+        // State should be null
+        expect(container.read(correctionCaptureProvider), isNull);
 
-      // Save should NOT have been called (cancelled before timer)
-      expect(saveCalled, isFalse);
+        // Elapse PAST the save delay: the cancelled timer must never fire,
+        // proving cancel suppresses the save rather than the test simply
+        // outrunning the wall clock.
+        async
+          ..elapse(kCorrectionSaveDelay + const Duration(milliseconds: 100))
+          ..flushMicrotasks();
+        expect(saveCalled, isFalse);
+      });
     });
 
     test('multiple setPending calls cancel previous timer', () {
@@ -892,21 +890,13 @@ void main() {
             () => mockCategoryRepository.updateCategory(any()),
           ).thenAnswer((_) async => testCategory);
 
-          final container = ProviderContainer(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(
-                mockCategoryRepository,
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
-
           // Keep the correctionCaptureProvider active so the timer fires.
-          container.listen<PendingCorrection?>(
-            correctionCaptureProvider,
-            (_, _) {},
-            fireImmediately: true,
-          );
+          final container = makeRepoContainer()
+            ..listen<PendingCorrection?>(
+              correctionCaptureProvider,
+              (_, _) {},
+              fireImmediately: true,
+            );
 
           // Kick off async captureCorrection inside fakeAsync. Flush once to
           // drain the initial getCategoryById + setPending calls, then advance
@@ -953,20 +943,12 @@ void main() {
             return callCount == 1 ? testCategory : null;
           });
 
-          final container = ProviderContainer(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(
-                mockCategoryRepository,
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
-
-          container.listen<PendingCorrection?>(
-            correctionCaptureProvider,
-            (_, _) {},
-            fireImmediately: true,
-          );
+          final container = makeRepoContainer()
+            ..listen<PendingCorrection?>(
+              correctionCaptureProvider,
+              (_, _) {},
+              fireImmediately: true,
+            );
 
           container
               .read(correctionCaptureServiceProvider)
@@ -1012,20 +994,12 @@ void main() {
             );
           });
 
-          final container = ProviderContainer(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(
-                mockCategoryRepository,
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
-
-          container.listen<PendingCorrection?>(
-            correctionCaptureProvider,
-            (_, _) {},
-            fireImmediately: true,
-          );
+          final container = makeRepoContainer()
+            ..listen<PendingCorrection?>(
+              correctionCaptureProvider,
+              (_, _) {},
+              fireImmediately: true,
+            );
 
           container
               .read(correctionCaptureServiceProvider)
@@ -1058,20 +1032,12 @@ void main() {
             () => mockCategoryRepository.updateCategory(any()),
           ).thenThrow(Exception('DB write failed'));
 
-          final container = ProviderContainer(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(
-                mockCategoryRepository,
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
-
-          container.listen<PendingCorrection?>(
-            correctionCaptureProvider,
-            (_, _) {},
-            fireImmediately: true,
-          );
+          final container = makeRepoContainer()
+            ..listen<PendingCorrection?>(
+              correctionCaptureProvider,
+              (_, _) {},
+              fireImmediately: true,
+            );
 
           container
               .read(correctionCaptureServiceProvider)
@@ -1111,20 +1077,12 @@ void main() {
             () => mockCategoryRepository.updateCategory(any()),
           ).thenAnswer((_) async => categoryWithExamples);
 
-          final container = ProviderContainer(
-            overrides: [
-              categoryRepositoryProvider.overrideWithValue(
-                mockCategoryRepository,
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
-
-          container.listen<PendingCorrection?>(
-            correctionCaptureProvider,
-            (_, _) {},
-            fireImmediately: true,
-          );
+          final container = makeRepoContainer()
+            ..listen<PendingCorrection?>(
+              correctionCaptureProvider,
+              (_, _) {},
+              fireImmediately: true,
+            );
 
           container
               .read(correctionCaptureServiceProvider)
@@ -1151,5 +1109,140 @@ void main() {
         });
       },
     );
+  });
+  group('meaningfulness rule properties', () {
+    glados.Glados2(
+      glados.StringAnys(glados.any).stringOf('aB '),
+      glados.StringAnys(glados.any).stringOf('aB '),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'only short case-insensitive-equal pairs are trivial',
+      (before, after) {
+        final container = makeRepoContainer();
+        final service = container.read(correctionCaptureServiceProvider);
+
+        final meaningful = service.debugIsMeaningfulCorrection(before, after);
+        final expected =
+            before.length >= 3 || before.toLowerCase() != after.toLowerCase();
+
+        expect(
+          meaningful,
+          expected,
+          reason: 'before="$before" after="$after"',
+        );
+      },
+      tags: 'glados',
+    );
+
+    test('the < 3 length boundary is exact', () {
+      final container = makeRepoContainer();
+      final service = container.read(correctionCaptureServiceProvider);
+
+      // 2 chars, case-only difference: trivial.
+      expect(service.debugIsMeaningfulCorrection('ab', 'AB'), isFalse);
+      // 3 chars, case-only difference: meaningful (boundary inclusive).
+      expect(service.debugIsMeaningfulCorrection('abc', 'ABC'), isTrue);
+      // 2 chars but different letters: meaningful.
+      expect(service.debugIsMeaningfulCorrection('ab', 'ax'), isTrue);
+    });
+  });
+
+  group('clock-driven timestamps', () {
+    test('the saved example carries the pinned capture time', () {
+      final pinned = DateTime(2026, 2, 3, 14, 30);
+      withClock(Clock.fixed(pinned), () {
+        fakeAsync((async) {
+          when(
+            () => mockCategoryRepository.getCategoryById('category-1'),
+          ).thenAnswer((_) async => testCategory);
+          when(
+            () => mockCategoryRepository.updateCategory(any()),
+          ).thenAnswer((_) async => testCategory);
+
+          final container = makeRepoContainer()
+            ..listen<PendingCorrection?>(
+              correctionCaptureProvider,
+              (_, _) {},
+              fireImmediately: true,
+            );
+
+          container
+              .read(correctionCaptureServiceProvider)
+              .captureCorrection(
+                categoryId: 'category-1',
+                beforeText: 'test flight',
+                afterText: 'TestFlight',
+              );
+          async
+            ..flushMicrotasks()
+            ..elapse(kCorrectionSaveDelay + const Duration(milliseconds: 100))
+            ..flushMicrotasks()
+            ..flushMicrotasks()
+            ..flushMicrotasks();
+
+          final saved =
+              verify(
+                    () => mockCategoryRepository.updateCategory(captureAny()),
+                  ).captured.single
+                  as CategoryDefinition;
+          // The impl reads clock.now(), which fakeAsync advances from the
+          // pinned base: the example is stamped exactly when the save timer
+          // fires — deterministic, no real-clock coupling.
+          expect(
+            saved.correctionExamples!.single.capturedAt,
+            pinned.add(kCorrectionSaveDelay),
+          );
+        });
+      });
+    });
+  });
+
+  group('rapid successive captures', () {
+    test('a second capture replaces the first; only the second saves', () {
+      fakeAsync((async) {
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => testCategory);
+        when(
+          () => mockCategoryRepository.updateCategory(any()),
+        ).thenAnswer((_) async => testCategory);
+
+        final container = makeRepoContainer()
+          ..listen<PendingCorrection?>(
+            correctionCaptureProvider,
+            (_, _) {},
+            fireImmediately: true,
+          );
+        final service = container.read(correctionCaptureServiceProvider)
+          ..captureCorrection(
+            categoryId: 'category-1',
+            beforeText: 'first before',
+            afterText: 'first after',
+          );
+        async.flushMicrotasks();
+        // Second capture lands inside the first capture's save window.
+        service.captureCorrection(
+          categoryId: 'category-1',
+          beforeText: 'second before',
+          afterText: 'second after',
+        );
+        async
+          ..flushMicrotasks()
+          ..elapse(kCorrectionSaveDelay + const Duration(milliseconds: 100))
+          ..flushMicrotasks()
+          ..flushMicrotasks()
+          ..flushMicrotasks();
+
+        // setPending cancels the previous timer: only the second correction
+        // reaches the repository.
+        final saved =
+            verify(
+                  () => mockCategoryRepository.updateCategory(captureAny()),
+                ).captured.single
+                as CategoryDefinition;
+        expect(saved.correctionExamples!.single.before, 'second before');
+        expect(saved.correctionExamples!.single.after, 'second after');
+      });
+    });
   });
 }
