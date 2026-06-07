@@ -128,7 +128,7 @@ void main() {
 
         final version = await db.customSelect('PRAGMA user_version').get();
         expect(version.first.read<int>('user_version'), db.schemaVersion);
-        expect(db.schemaVersion, 42);
+        expect(db.schemaVersion, 43);
 
         // v41 swapped the expression-keyed shape for a column-keyed one.
         final sql = await indexSql(db, 'idx_journal_tasks_due_open');

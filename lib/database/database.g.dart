@@ -5586,6 +5586,10 @@ abstract class _$JournalDb extends GeneratedDatabase {
     'idx_journal_tasks_status_priority_date',
     'CREATE INDEX idx_journal_tasks_status_priority_date ON journal (task_status COLLATE BINARY ASC, task_priority_rank COLLATE BINARY ASC, date_from COLLATE BINARY DESC) WHERE type = \'Task\' AND task = 1 AND deleted = FALSE',
   );
+  late final Index idxJournalInsightsTime = Index(
+    'idx_journal_insights_time',
+    'CREATE INDEX idx_journal_insights_time ON journal (date_from COLLATE BINARY ASC, date_to COLLATE BINARY ASC, category COLLATE BINARY ASC, private COLLATE BINARY ASC, id COLLATE BINARY ASC) WHERE type = \'JournalEntry\' AND deleted = FALSE',
+  );
   late final Conflicts conflicts = Conflicts(this);
   late final MeasurableTypes measurableTypes = MeasurableTypes(this);
   late final HabitDefinitions habitDefinitions = HabitDefinitions(this);
@@ -7778,6 +7782,7 @@ abstract class _$JournalDb extends GeneratedDatabase {
     idxJournalProjectId,
     idxJournalProjectTaskStatus,
     idxJournalTasksStatusPriorityDate,
+    idxJournalInsightsTime,
     conflicts,
     measurableTypes,
     habitDefinitions,

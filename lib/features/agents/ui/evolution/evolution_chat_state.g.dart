@@ -66,7 +66,7 @@ final class EvolutionChatStateProvider
 }
 
 String _$evolutionChatStateHash() =>
-    r'17e5cf3d0ff10147fe76a1ccc34453a1fa3b6b98';
+    r'b24acd41bedc817d942db63c94eb4d28364ba1c6';
 
 /// Manages the lifecycle of an evolution chat session for a specific template.
 ///

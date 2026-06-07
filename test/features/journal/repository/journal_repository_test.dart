@@ -928,8 +928,11 @@ void main() {
         verify(() => mockVectorClockService.getNextVectorClock()).called(1);
         verify(() => mockJournalDb.upsertEntryLink(any())).called(1);
         verify(
-          () =>
-              mockUpdateNotifications.notify({testLink.fromId, testLink.toId}),
+          () => mockUpdateNotifications.notify({
+            testLink.fromId,
+            testLink.toId,
+            linkNotification,
+          }),
         ).called(1);
         verify(() => mockOutboxService.enqueueMessage(any())).called(1);
       });
@@ -982,7 +985,11 @@ void main() {
           expect(result, 0);
           // Notification fires unconditionally — by design.
           verify(
-            () => mockUpdateNotifications.notify({'from-id', 'to-id'}),
+            () => mockUpdateNotifications.notify({
+              'from-id',
+              'to-id',
+              linkNotification,
+            }),
           ).called(1);
         },
       );
@@ -1011,7 +1018,13 @@ void main() {
         // Assert
         expect(result, equals(1));
         verify(() => mockJournalDb.deleteLink(fromId, toId)).called(1);
-        verify(() => mockUpdateNotifications.notify({fromId, toId})).called(1);
+        verify(
+          () => mockUpdateNotifications.notify({
+            fromId,
+            toId,
+            linkNotification,
+          }),
+        ).called(1);
       });
     });
 
@@ -2598,7 +2611,11 @@ void main() {
         await collapsedRepository.updateLink(updatedLink);
 
         verify(
-          () => collapsedMockUpdateNotifications.notify({'from-id', 'to-id'}),
+          () => collapsedMockUpdateNotifications.notify({
+            'from-id',
+            'to-id',
+            linkNotification,
+          }),
         ).called(1);
       });
     });

@@ -23,6 +23,7 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_sidebar_entry.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.dart';
@@ -572,8 +573,16 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             Icon(active ? Icons.today_rounded : Icons.today_outlined),
         // Month calendar (design handoff sidebar spec) renders beneath
         // the row only while Daily OS is the active tab — same slot the
-        // Tasks destination uses for its saved-filters tree.
-        expandedChildBuilder: () => const DailyOsSidebarCalendar(),
+        // Tasks destination uses for its saved-filters tree. The Time
+        // Analysis sub-entry sits under the calendar and opens the
+        // full-screen analytics surface at /calendar/time.
+        expandedChildBuilder: () => const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DailyOsSidebarCalendar(),
+            InsightsSidebarEntry(),
+          ],
+        ),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.habits,

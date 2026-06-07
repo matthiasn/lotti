@@ -81,6 +81,14 @@ class NavService {
   final ValueNotifier<String?> desktopSelectedDashboardId =
       ValueNotifier<String?>(null);
 
+  /// Whether the full-screen Time Analysis surface is active. Written
+  /// exclusively by `CalendarLocation` from the URL (`/calendar/time`) —
+  /// the URL is the single source of truth; the Daily OS sidebar
+  /// sub-entry only reads it for its highlight.
+  final ValueNotifier<bool> desktopShowTimeAnalysis = ValueNotifier<bool>(
+    false,
+  );
+
   /// Tracks the current settings sub-route on desktop so the right pane
   /// can render the matching content page.
   final ValueNotifier<DesktopSettingsRoute?> desktopSelectedSettingsRoute =
@@ -346,6 +354,7 @@ class NavService {
     desktopSelectedTaskId.dispose();
     desktopSelectedProjectId.dispose();
     desktopSelectedDashboardId.dispose();
+    desktopShowTimeAnalysis.dispose();
     desktopSelectedSettingsRoute.dispose();
     await _navigationFlagsSub.cancel();
     await indexStreamController.close();

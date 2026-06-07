@@ -4,6 +4,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.1017]
+### Added
+- New desktop "Time Analysis" dashboard under Daily OS, opened from a
+  sidebar entry beneath the month calendar onto the full screen: see where
+  your time went per category and per day, with quick range presets
+  (1d, 7d, 30d, MTD, YTD, last month) plus a custom date range, a
+  daily/cumulative chart toggle, headline totals, and a precise
+  per-category table with share and daily averages. Optional "focus
+  categories" split the headline into focus vs. other time. Range
+  switching is instantaneous even with years of entries, and private
+  entries stay hidden unless the private flag is on.
+
+### Fixed
+- Time tracked on entries created before mid-2024 could show up as
+  "Uncategorized" in time-by-category views (including the Daily OS time
+  history): the denormalized category column is now backfilled once from
+  the stored entry data.
+
 ## [0.9.1016]
 ### Added
 - Categories have a new "Day planning" switch. Day-plan category selection is

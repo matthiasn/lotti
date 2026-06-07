@@ -298,7 +298,11 @@ class JournalRepository {
 
         final res = await journalDb.upsertEntryLink(updated);
         if (res == 0) return false;
-        getIt<UpdateNotifications>().notify({link.fromId, link.toId});
+        getIt<UpdateNotifications>().notify({
+          link.fromId,
+          link.toId,
+          linkNotification,
+        });
         try {
           await getIt<OutboxService>().enqueueMessage(
             SyncMessage.entryLink(
@@ -346,7 +350,7 @@ class JournalRepository {
     required String toId,
   }) async {
     final res = getIt<JournalDb>().deleteLink(fromId, toId);
-    getIt<UpdateNotifications>().notify({fromId, toId});
+    getIt<UpdateNotifications>().notify({fromId, toId, linkNotification});
     return res;
   }
 

@@ -87,6 +87,7 @@ import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
+import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/state/linked_from_entries_controller.dart';
@@ -572,6 +573,8 @@ class MockEditorDb extends Mock implements EditorDb {}
 class MockEditorStateService extends Mock implements EditorStateService {}
 
 class MockLinkService extends Mock implements LinkService {}
+
+class MockInsightsRepository extends Mock implements InsightsRepository {}
 
 class MockUpdateNotifications extends Mock implements UpdateNotifications {
   @override

@@ -4854,6 +4854,103 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inputDataTypeTasksListName => 'Seznam úkolů';
 
   @override
+  String get insightsChartCumulative => 'Kumulativně';
+
+  @override
+  String get insightsChartCumulativeCaption => 'Průběžný součet za období';
+
+  @override
+  String get insightsChartDaily => 'Denně';
+
+  @override
+  String get insightsChartDailyCaption => 'Čas za den';
+
+  @override
+  String get insightsChartTitle => 'Čas podle kategorie';
+
+  @override
+  String get insightsChooseFocusCategories => 'Vybrat fokusové kategorie';
+
+  @override
+  String get insightsDeletedCategory => 'Smazaná kategorie';
+
+  @override
+  String get insightsEmptyBody =>
+      'Čas, který zaznamenáš u záznamů a úkolů, se zobrazí tady.';
+
+  @override
+  String get insightsEmptyChart => 'V tomto období nejsou žádná data';
+
+  @override
+  String get insightsEmptyShowYtd => 'Zobrazit celý rok';
+
+  @override
+  String get insightsEmptyTitle => 'V tomto období není zaznamenaný žádný čas';
+
+  @override
+  String get insightsFocusCategoriesEmpty => 'Zatím žádné aktivní kategorie.';
+
+  @override
+  String get insightsFocusCategoriesTitle => 'Fokusové kategorie';
+
+  @override
+  String get insightsKpiFocus => 'FOKUS';
+
+  @override
+  String get insightsKpiOther => 'OSTATNÍ';
+
+  @override
+  String get insightsKpiTotal => 'CELKEM';
+
+  @override
+  String get insightsLoadError => 'Data o čase se nepodařilo načíst';
+
+  @override
+  String get insightsOtherCategories => 'Ostatní';
+
+  @override
+  String get insightsPartialWeek => 'část týdne';
+
+  @override
+  String get insightsRange1d => '1d';
+
+  @override
+  String get insightsRange30d => '30d';
+
+  @override
+  String get insightsRange7d => '7d';
+
+  @override
+  String get insightsRangeCustom => 'Vlastní období';
+
+  @override
+  String get insightsRangeLastMonth => 'Minulý měsíc';
+
+  @override
+  String get insightsRangeMtd => 'MTD';
+
+  @override
+  String get insightsRangeYtd => 'YTD';
+
+  @override
+  String get insightsTableAvgPerDay => 'Ø/DEN';
+
+  @override
+  String get insightsTableCategory => 'KATEGORIE';
+
+  @override
+  String get insightsTableShare => 'PODÍL';
+
+  @override
+  String get insightsTableTotal => 'CELKEM';
+
+  @override
+  String get insightsTimeAnalysisTitle => 'Analýza času';
+
+  @override
+  String get insightsUncategorized => 'Bez kategorie';
+
+  @override
   String get journalCopyImageLabel => 'Kopírovat obrázek';
 
   @override

@@ -25,7 +25,10 @@ import 'package:lotti/features/daily_os_next/ui/pages/commit_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
+import 'package:lotti/features/insights/ui/time_analysis_page.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -161,12 +164,54 @@ void main() {
       );
       expect(location.pathPatterns, [
         '/calendar',
+        '/calendar/time',
         '/calendar/set-time-blocks',
         '/calendar/refine/:date',
         '/calendar/commit/:date',
         '/calendar/shutdown/:date',
       ]);
     });
+
+    test(
+      'pushes the full-screen Time Analysis page on /calendar/time and '
+      'mirrors the route into desktopShowTimeAnalysis',
+      () async {
+        final navService = MockNavService();
+        final showTimeAnalysis = ValueNotifier<bool>(false);
+        when(
+          () => navService.desktopShowTimeAnalysis,
+        ).thenReturn(showTimeAnalysis);
+        // Shared harness owns the GetIt lifecycle; NavService rides its
+        // additionalSetup extension point.
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt.registerSingleton<NavService>(navService);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
+        addTearDown(showTimeAnalysis.dispose);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/calendar/time'),
+        );
+        final location = CalendarLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final pages = location.buildPages(mockBuildContext, beamState);
+
+        expect(pages.length, 2);
+        expect(pages[0].child, isA<CalendarRoot>());
+        expect(pages[1].child, isA<TimeAnalysisPage>());
+        expect(showTimeAnalysis.value, isTrue);
+
+        // Navigating back to the root clears the highlight.
+        final rootInformation = RouteInformation(uri: Uri.parse('/calendar'));
+        CalendarLocation(rootInformation).buildPages(
+          mockBuildContext,
+          BeamState.fromRouteInformation(rootInformation),
+        );
+        expect(showTimeAnalysis.value, isFalse);
+      },
+    );
 
     test('builds a single CalendarRoot page for /calendar', () {
       final routeInformation = RouteInformation(uri: Uri.parse('/calendar'));

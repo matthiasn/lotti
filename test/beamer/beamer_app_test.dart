@@ -222,6 +222,11 @@ Future<void> _stubNavService(
   when(
     () => navService.desktopSelectedTaskId,
   ).thenReturn(ValueNotifier<String?>(null));
+  // The Time Analysis sidebar sub-entry (under the Daily OS calendar)
+  // reads this for its active-route highlight.
+  when(
+    () => navService.desktopShowTimeAnalysis,
+  ).thenReturn(ValueNotifier<bool>(false));
   when(() => navService.currentPath).thenReturn('/');
 }
 

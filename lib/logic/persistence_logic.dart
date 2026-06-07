@@ -234,7 +234,11 @@ class PersistenceLogic {
           link,
           subDomain: 'createLink.recordSent',
         );
-        _updateNotifications.notify({link.fromId, link.toId});
+        _updateNotifications.notify({
+          link.fromId,
+          link.toId,
+          linkNotification,
+        });
 
         try {
           await outboxService.enqueueMessage(
