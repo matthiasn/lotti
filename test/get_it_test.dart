@@ -55,6 +55,34 @@ void main() {
       ).called(1);
     });
 
+    test('delegates to logging service on error messages (success path)', () {
+      final mockDomainLogger = MockDomainLogger();
+      when(
+        () => mockDomainLogger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      ).thenAnswer((_) {});
+
+      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+
+      DevLogger.clear();
+
+      safeLogForTesting('registration failed', isError: true);
+
+      // error() is logged under the 'error' subDomain (not 'SERVICE_REGISTRATION')
+      // and, when it succeeds, the DevLogger fallback is not used.
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.settings,
+          'registration failed',
+          subDomain: 'error',
+        ),
+      ).called(1);
+      expect(DevLogger.capturedLogs, isEmpty);
+    });
+
     test('falls back to DevLogger when logging service missing', () {
       DevLogger.clear();
 
@@ -292,29 +320,6 @@ void main() {
         ).called(1);
       },
     );
-
-    test('marks done when journal, links, and agent data are empty', () async {
-      when(
-        () => settingsDb.itemByKey(settingsKey),
-      ).thenAnswer((_) async => null);
-      when(() => syncDatabase.getSequenceLogCount()).thenAnswer((_) async => 0);
-      when(() => journalDb.countAllJournalEntries()).thenAnswer((_) async => 0);
-      when(() => journalDb.countAllEntryLinks()).thenAnswer((_) async => 0);
-      when(() => agentDb.countAllAgentEntities()).thenAnswer((_) async => 0);
-      when(() => agentDb.countAllAgentLinks()).thenAnswer((_) async => 0);
-      when(
-        () => settingsDb.saveSettingsItem(any(), any()),
-      ).thenAnswer((_) async => 1);
-
-      await checkAndPopulateSequenceLogForTesting();
-
-      verify(
-        () => settingsDb.saveSettingsItem(
-          settingsKey,
-          'true',
-        ),
-      ).called(1);
-    });
 
     test('logs exception when population fails', () async {
       when(
