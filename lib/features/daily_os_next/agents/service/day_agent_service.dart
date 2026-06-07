@@ -59,122 +59,21 @@ class DayAgentService {
   static const _uuid = Uuid();
   static const String _agentKind = AgentKinds.dayAgent;
 
-  /// Create a new day agent for [date].
+  /// How far back the one-time legacy migration re-parents day-scoped entities
+  /// onto the planner (ADR 0022). Older days are archived in place to avoid
+  /// flooding sync for long-time experimental users.
+  static const _migrationLookback = Duration(days: 14);
+
+  /// Resolve the Daily OS planner that owns [date]'s workspace, if it exists.
   ///
-  /// One active day-agent identity is allowed per local calendar day.
-  Future<AgentIdentityEntity> createDayAgent({
-    required DateTime date,
-    Set<String> allowedCategoryIds = const {},
-    String? templateId,
-    String? profileId,
-    String? displayName,
-  }) async {
-    final dayId = dayAgentIdForDate(date);
-    final existing = await getDayAgentForDate(date);
-    if (existing != null) {
-      throw StateError(
-        'A day agent already exists for $dayId '
-        '(agent ${existing.agentId})',
-      );
-    }
-
-    final resolvedTemplateId = templateId ?? dayAgentTemplateId;
-
-    final identity = await syncService.runInTransaction(() async {
-      final duplicate = await _findDayAgentForDayId(dayId);
-      if (duplicate != null) {
-        throw StateError(
-          'A day agent already exists for $dayId '
-          '(agent ${duplicate.agentId})',
-        );
-      }
-
-      final templateEntity = await repository.getEntity(resolvedTemplateId);
-      if (templateEntity is! AgentTemplateEntity ||
-          templateEntity.deletedAt != null ||
-          templateEntity.kind != AgentTemplateKind.dayAgent) {
-        throw StateError(
-          'Template $resolvedTemplateId is not an active day-agent template.',
-        );
-      }
-
-      final identity = await agentService.createAgent(
-        kind: _agentKind,
-        displayName: displayName ?? _defaultDisplayName(dayId),
-        config: AgentConfig(
-          modelId: templateEntity.modelId,
-          profileId: profileId ?? templateEntity.profileId,
-        ),
-        allowedCategoryIds: allowedCategoryIds,
-      );
-
-      final state = await repository.getAgentState(identity.agentId);
-      if (state == null) {
-        throw StateError(
-          'Agent ${identity.agentId} was just created but has no state entity',
-        );
-      }
-
-      final now = clock.now();
-      await syncService.upsertEntity(
-        state.copyWith(
-          slots: state.slots.copyWith(activeDayId: dayId),
-          updatedAt: now,
-        ),
-      );
-
-      await syncService.upsertLink(
-        AgentLink.templateAssignment(
-          id: _uuid.v4(),
-          fromId: resolvedTemplateId,
-          toId: identity.agentId,
-          createdAt: now,
-          updatedAt: now,
-          vectorClock: null,
-        ),
-      );
-
-      // Agent → day link, mirroring the agentTask/agentProject slot links, so
-      // `slots.activeDayId` can be derived from the synced log
-      // (State-as-Projection, PR 4 B3). The cached slot above stays the read
-      // source until the cutover.
-      await syncService.upsertLink(
-        AgentLink.agentDay(
-          id: _uuid.v4(),
-          fromId: identity.agentId,
-          toId: dayId,
-          createdAt: now,
-          updatedAt: now,
-          vectorClock: null,
-        ),
-      );
-
-      return identity;
-    });
-
-    onPersistedStateChanged
-      ?..call(identity.agentId)
-      ..call(dayId);
-    orchestrator.enqueueManualWake(
-      agentId: identity.agentId,
-      reason: WakeReason.creation.name,
-      triggerTokens: {dayAgentPlanningDayToken(dayId)},
-      workspaceKey: dayAgentWorkspaceKey(dayId),
-    );
-
-    domainLogger.log(
-      LogDomain.agentRuntime,
-      'created day agent ${DomainLogger.sanitizeId(identity.agentId)} '
-      'for ${DomainLogger.sanitizeId(dayId)}',
-      subDomain: 'lifecycle',
-    );
-
-    return identity;
-  }
-
-  /// Find the active day agent for [date], if one exists.
+  /// ADR 0022: there is exactly one long-lived planner identity owning every
+  /// day, so [date] no longer selects the identity — day scope is carried by
+  /// wake tokens and entity `dayId`. This is a pure lookup: it returns `null`
+  /// when the planner has not been created yet (no Daily OS activity), so
+  /// read-only callers stay side-effect free. Write paths call
+  /// [getOrCreatePlannerAgent] to create it lazily.
   Future<AgentIdentityEntity?> getDayAgentForDate(DateTime date) {
-    return _findDayAgentForDayId(dayAgentIdForDate(date));
+    return agentService.getAgent(dailyOsPlannerAgentId);
   }
 
   /// Get or create the single long-lived Daily OS planner identity
@@ -185,10 +84,9 @@ class DayAgentService {
   /// on different devices converges to one identity via LWW instead of
   /// splitting the planner's memory across duplicates.
   ///
-  /// Unlike [createDayAgent], the planner gets **no** `activeDayId` slot and
-  /// **no** `AgentDayLink`: a day is an explicit workspace carried by wake
-  /// tokens, not part of the planner's identity or state (ADR 0022
-  /// Decisions 2–3).
+  /// The planner gets **no** `activeDayId` slot and **no** `AgentDayLink`: a
+  /// day is an explicit workspace carried by wake tokens, not part of the
+  /// planner's identity or state (ADR 0022 Decisions 2–3).
   Future<AgentIdentityEntity> getOrCreatePlannerAgent({
     Set<String> allowedCategoryIds = const {},
     String? templateId,
@@ -251,8 +149,148 @@ class DayAgentService {
         'created planner agent ${DomainLogger.sanitizeId(identity.agentId)}',
         subDomain: 'lifecycle',
       );
+      await _migrateLegacyDayAgents(planner: identity);
     }
     return identity;
+  }
+
+  /// One-time, idempotent migration from the old per-day identity model to the
+  /// single planner (ADR 0022 Decision 2).
+  ///
+  /// Runs once, when the planner is first created. For every other active
+  /// `day_agent` identity it:
+  /// 1. clears the agent's `scheduledWakeAt` so the scheduled-wake manager
+  ///    stops waking the now-defunct per-day agent, and
+  /// 2. archives it (lifecycle → dormant) so it no longer wakes or is
+  ///    restored, and
+  /// 3. re-parents its recent day-scoped entities (day plans, captures, parsed
+  ///    items) onto the planner so the user's existing plans stay visible and
+  ///    the planner's memory sees recent history.
+  ///
+  /// Re-parenting is **bounded to recent history** ([_migrationLookback]) and
+  /// chunked implicitly per agent, so a long-time experimental user does not
+  /// flood the sync channel; older days are archived in place (their entities
+  /// keep the old agent id and simply stop surfacing). Deterministic entity ids
+  /// (`day_agent_plan:<dayId>`) are preserved.
+  Future<void> _migrateLegacyDayAgents({
+    required AgentIdentityEntity planner,
+  }) async {
+    try {
+      final agents = await agentService.listAgents(
+        lifecycle: AgentLifecycle.active,
+      );
+      final legacy = agents
+          .where((a) => a.kind == _agentKind && a.agentId != planner.agentId)
+          .toList();
+      if (legacy.isEmpty) return;
+
+      final cutoff = clock.now().subtract(_migrationLookback);
+      var reparented = 0;
+      var migrated = 0;
+      for (final agent in legacy) {
+        // Each agent's archive + re-parent is atomic (one transaction). Isolate
+        // failures per agent: a single bad agent must not strand every later
+        // agent's live scheduledWakeAt, which would revive the exact zombie-wake
+        // the migration exists to kill (the migration never retries).
+        try {
+          await _migrateLegacyDayAgent(
+            agent: agent,
+            planner: planner,
+            cutoff: cutoff,
+            onReparent: () => reparented++,
+          );
+          migrated++;
+        } catch (e, s) {
+          domainLogger.error(
+            LogDomain.agentRuntime,
+            e,
+            message:
+                'failed to migrate legacy day agent '
+                '${DomainLogger.sanitizeId(agent.agentId)}',
+            stackTrace: s,
+          );
+        }
+      }
+      domainLogger.log(
+        LogDomain.agentRuntime,
+        'migrated $migrated/${legacy.length} legacy day agent(s) to planner; '
+        're-parented $reparented recent entit(ies)',
+        subDomain: 'migration',
+      );
+    } catch (e, s) {
+      // Migration is best-effort: a failure must not block planner creation or
+      // the wake that triggered it. The planner still works for new days;
+      // legacy data simply stays under its old id.
+      domainLogger.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'legacy day-agent migration failed',
+        stackTrace: s,
+      );
+    }
+  }
+
+  Future<void> _migrateLegacyDayAgent({
+    required AgentIdentityEntity agent,
+    required AgentIdentityEntity planner,
+    required DateTime cutoff,
+    required void Function() onReparent,
+  }) async {
+    final now = clock.now();
+    await syncService.runInTransaction(() async {
+      // Clear any scheduled wake and archive the identity so the scheduled-wake
+      // manager and restore path leave it alone.
+      final state = await repository.getAgentState(agent.agentId);
+      if (state != null && state.scheduledWakeAt != null) {
+        await syncService.upsertEntity(
+          state.copyWith(scheduledWakeAt: null, updatedAt: now),
+        );
+      }
+      await syncService.upsertEntity(
+        agent.copyWith(lifecycle: AgentLifecycle.dormant, updatedAt: now),
+      );
+
+      // Re-parent recent day-scoped entities onto the planner.
+      final entities = await repository.getEntitiesByAgentId(agent.agentId);
+      for (final entity in entities) {
+        final reparented = _reparentRecentEntity(
+          entity,
+          planner.agentId,
+          cutoff,
+        );
+        if (reparented != null) {
+          await syncService.upsertEntity(reparented);
+          onReparent();
+        }
+      }
+    });
+    onPersistedStateChanged?.call(agent.agentId);
+    onPersistedStateChanged?.call(planner.agentId);
+  }
+
+  /// Returns a copy of [entity] re-parented to [plannerId] when it is a recent
+  /// day-scoped entity worth migrating, or `null` to leave it untouched.
+  AgentDomainEntity? _reparentRecentEntity(
+    AgentDomainEntity entity,
+    String plannerId,
+    DateTime cutoff,
+  ) {
+    return entity.mapOrNull(
+      dayPlan: (plan) => plan.planDate.isBefore(cutoff)
+          ? null
+          : plan.copyWith(agentId: plannerId),
+      capture: (capture) => capture.capturedAt.isBefore(cutoff)
+          ? null
+          : capture.copyWith(agentId: plannerId),
+      parsedItem: (item) => item.createdAt.isBefore(cutoff)
+          ? null
+          : item.copyWith(agentId: plannerId),
+      // Re-parent recent change sets so a pre-cutover pending plan diff stays
+      // visible: pendingPlanDiffsForDay reads them by agentId.
+      changeSet: (cs) => cs.createdAt.isBefore(cutoff)
+          ? null
+          : cs.copyWith(agentId: plannerId),
+    );
   }
 
   /// Enqueue a drafting wake for the day agent that owns [dayDate].
@@ -274,8 +312,8 @@ class DayAgentService {
   /// yet; drafting carries their parsed details so the model can create a task
   /// before placing it.
   ///
-  /// Returns `false` when no active day agent exists for [dayDate]. Callers
-  /// are expected to either call [createDayAgent] first or surface the
+  /// Returns `false` when the planner does not exist yet. Callers are expected
+  /// to either call [getOrCreatePlannerAgent] first or surface the
   /// missing-agent state in the UI.
   Future<bool> enqueueDraftingWake({
     required DateTime dayDate,
@@ -470,23 +508,11 @@ class DayAgentService {
     );
   }
 
-  Future<AgentIdentityEntity?> _findDayAgentForDayId(String dayId) async {
-    return repository.getActiveAgentByKindAndActiveDayId(
-      kind: _agentKind,
-      activeDayId: dayId,
-    );
-  }
-
   Future<void> _hydrateThrottleDeadline(String agentId) async {
     final state = await repository.getAgentState(agentId);
     final deadline = state?.nextWakeAt;
     if (deadline != null) {
       orchestrator.restorePendingWake(agentId: agentId, dueAt: deadline);
     }
-  }
-
-  static String _defaultDisplayName(String dayId) {
-    final datePart = dayId.replaceFirst('dayplan-', '');
-    return 'Shepherd $datePart';
   }
 }

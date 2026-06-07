@@ -165,8 +165,12 @@ class DayAgentCaptureService {
       await syncService.upsertEntity(capture);
     });
 
+    // Emit the day workspace too (ADR 0022): post-cutover the agentId is the
+    // shared planner, so day-keyed providers (capturesForDateProvider) refresh
+    // on `dayId`, not the agent id.
     onPersistedStateChanged
       ?..call(agentId)
+      ..call(captureDayId(capture))
       ..call(capture.id);
 
     orchestrator.enqueueManualWake(

@@ -181,7 +181,7 @@ void main() {
       () => sut.execute(
         agentIdentity: identity(),
         runKey: runKey,
-        triggerTokens: triggerTokens ?? {'capture-1', dayId},
+        triggerTokens: triggerTokens ?? {dayAgentPlanningDayToken(dayId)},
         threadId: threadId,
       ),
     );
@@ -333,10 +333,11 @@ void main() {
       expect(upsertedEntities, isEmpty);
     });
 
-    test('fails the wake when the active day id is empty', () async {
-      currentState = state(activeDayId: '');
-
-      final result = await execute(workflow());
+    test('fails the wake when no day can be resolved from tokens', () async {
+      // Post-cutover the planner has no activeDayId slot: a wake with no day
+      // token and no capture cannot resolve a workspace and must fail fast
+      // (ADR 0022 Decision 3).
+      final result = await execute(workflow(), triggerTokens: const {});
 
       expect(result.success, isFalse);
       expect(result.error, 'No active day ID');
@@ -668,7 +669,10 @@ void main() {
         domainLogger: domainLogger,
         onPersistedStateChanged: changedTokens.add,
       );
-      final result = await execute(sut, triggerTokens: {dayId});
+      final result = await execute(
+        sut,
+        triggerTokens: {dayAgentPlanningDayToken(dayId)},
+      );
       expect(result.success, isTrue);
 
       // The SENT prompt carries the dayLog with capture transcripts and
@@ -734,7 +738,10 @@ void main() {
         domainLogger: domainLogger,
         onPersistedStateChanged: changedTokens.add,
       );
-      final result = await execute(sut, triggerTokens: {dayId});
+      final result = await execute(
+        sut,
+        triggerTokens: {dayAgentPlanningDayToken(dayId)},
+      );
       expect(result.success, isTrue);
 
       // No dayLog in the sent prompt, and the persisted payload stays a
@@ -818,7 +825,10 @@ void main() {
         ),
       );
 
-      final result = await execute(workflow(), triggerTokens: {dayId});
+      final result = await execute(
+        workflow(),
+        triggerTokens: {dayAgentPlanningDayToken(dayId)},
+      );
       expect(result.success, isTrue);
 
       final attentionPlanning =
@@ -872,7 +882,10 @@ void main() {
         ),
       ).thenThrow(StateError('attention window unavailable'));
 
-      final result = await execute(workflow(), triggerTokens: {dayId});
+      final result = await execute(
+        workflow(),
+        triggerTokens: {dayAgentPlanningDayToken(dayId)},
+      );
 
       // The throwing load path is actually exercised: if the workflow stopped
       // calling getAttentionPlanningInputsForWindow, this test would no longer
@@ -986,7 +999,7 @@ void main() {
         // Volatile wall-clock must be the trailing key so the rest of the
         // payload stays a stable prefix across wakes (prefix/KV-cache reuse).
         expect(userPayload.keys.last, 'currentLocalTime');
-        expect(userPayload['triggerTokens'], ['capture-1', dayId]);
+        expect(userPayload['triggerTokens'], [dayAgentPlanningDayToken(dayId)]);
         expect(
           userPayload['recentObservations'],
           [
@@ -1162,7 +1175,10 @@ void main() {
 
       final result = await execute(
         workflow(captureService: captureService),
-        triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+        triggerTokens: {
+          dayAgentCaptureSubmittedToken('capture-1'),
+          dayAgentPlanningDayToken(dayId),
+        },
       );
 
       expect(result.success, isTrue);
@@ -1239,7 +1255,10 @@ void main() {
 
           final result = await execute(
             workflow(captureService: captureService),
-            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+            triggerTokens: {
+              dayAgentCaptureSubmittedToken('capture-1'),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isTrue);
@@ -1303,7 +1322,10 @@ void main() {
 
           final result = await execute(
             workflow(captureService: captureService),
-            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+            triggerTokens: {
+              dayAgentCaptureSubmittedToken('capture-1'),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isFalse);
@@ -1339,7 +1361,10 @@ void main() {
 
           final result = await execute(
             workflow(captureService: captureService),
-            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+            triggerTokens: {
+              dayAgentCaptureSubmittedToken('capture-1'),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isTrue);
@@ -1404,7 +1429,10 @@ void main() {
 
           final result = await execute(
             workflow(captureService: captureService),
-            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+            triggerTokens: {
+              dayAgentCaptureSubmittedToken('capture-1'),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isFalse);
@@ -1432,7 +1460,10 @@ void main() {
 
         final result = await execute(
           workflow(planService: planService),
-          triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+          triggerTokens: {
+            dayAgentDraftingToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
         );
 
         expect(result.success, isTrue);
@@ -1491,7 +1522,10 @@ void main() {
 
         final result = await execute(
           workflow(planService: planService),
-          triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+          triggerTokens: {
+            dayAgentDraftingToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
         );
 
         expect(result.success, isTrue);
@@ -1522,7 +1556,7 @@ void main() {
 
         final result = await execute(
           workflow(planService: planService),
-          triggerTokens: {dayId},
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
         );
 
         expect(result.success, isTrue);
@@ -1711,7 +1745,10 @@ void main() {
 
           final result = await execute(
             workflow(planService: planService),
-            triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isTrue);
@@ -1819,7 +1856,10 @@ void main() {
 
           final result = await execute(
             workflow(planService: planService),
-            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+            triggerTokens: {
+              dayAgentCaptureSubmittedToken('capture-1'),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isTrue);
@@ -1871,7 +1911,10 @@ void main() {
 
           final result = await execute(
             workflow(planService: planService),
-            triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isFalse);
@@ -1900,7 +1943,10 @@ void main() {
 
           final result = await execute(
             workflow(planService: planService),
-            triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isFalse);
@@ -1967,7 +2013,10 @@ void main() {
 
         final result = await execute(
           workflow(planService: planService),
-          triggerTokens: {dayAgentRefineToken(dayId), dayId},
+          triggerTokens: {
+            dayAgentRefineToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
         );
 
         expect(result.success, isTrue);
@@ -2007,7 +2056,10 @@ void main() {
 
         final result = await execute(
           workflow(planService: planService),
-          triggerTokens: {dayAgentRefineToken(dayId), dayId},
+          triggerTokens: {
+            dayAgentRefineToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
         );
 
         expect(result.success, isTrue);
@@ -2027,7 +2079,7 @@ void main() {
 
         final result = await execute(
           workflow(planService: planService),
-          triggerTokens: {dayId},
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
         );
 
         expect(result.success, isTrue);
@@ -2145,6 +2197,39 @@ void main() {
         'dayId': dayId,
         'blocks': <Object?>[],
       });
+    });
+
+    test('rejects a tool call targeting a different day workspace', () async {
+      // ADR 0022 Decision 4: under one planner the model must never mutate a
+      // day other than the wake's workspace.
+      final planService = MockDayAgentPlanService();
+      conversationRepository.toolCalls = [
+        _toolCall(
+          name: DayAgentToolNames.draftDayPlan,
+          args: const {
+            'dayId': 'dayplan-2026-05-26',
+            'blocks': <Object?>[],
+          },
+        ),
+      ];
+
+      final result = await execute(workflow(planService: planService));
+
+      expect(result.success, isTrue);
+      expect(
+        conversationRepository.toolResponses.single,
+        contains('does not match the wake workspace'),
+      );
+      // The mismatched call is rejected before reaching the plan service.
+      verifyNever(
+        () => planService.executeTool(
+          agentId: any(named: 'agentId'),
+          threadId: any(named: 'threadId'),
+          runKey: any(named: 'runKey'),
+          toolName: any(named: 'toolName'),
+          args: any(named: 'args'),
+        ),
+      );
     });
 
     test('returns a tool error when plan tools are not configured', () async {
@@ -2615,11 +2700,14 @@ void main() {
     });
 
     test(
-      'rejects invalid active day IDs before starting a conversation',
+      'rejects an unparsable day id from the wake token',
       () async {
-        currentState = state(activeDayId: 'not-a-day-plan');
-
-        final result = await execute(workflow());
+        // A planning_day token whose id is not a parseable dayplan must be
+        // rejected before any conversation starts.
+        final result = await execute(
+          workflow(),
+          triggerTokens: {dayAgentPlanningDayToken('not-a-day-plan')},
+        );
 
         expect(result.success, isFalse);
         expect(result.error, contains('Invalid active day ID'));

@@ -76,9 +76,9 @@ class RealDayAgent implements DayAgentInterface {
     required DateTime capturedAt,
     String? audioId,
   }) async {
-    final existing = await dayAgentService.getDayAgentForDate(capturedAt);
-    final identity =
-        existing ?? await dayAgentService.createDayAgent(date: capturedAt);
+    // One long-lived planner owns every day (ADR 0022); create it lazily on
+    // the first capture.
+    final identity = await dayAgentService.getOrCreatePlannerAgent();
     final capture = await captureService.submitCapture(
       agentId: identity.agentId,
       transcript: transcript,

@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
@@ -781,10 +782,13 @@ void main() {
     }
 
     test(
-      'reuses an existing day-agent and forwards transcript + audioId',
+      'resolves the planner and forwards transcript + audioId',
       () async {
-        const agentId = 'day-agent-A';
-        when(() => bench.dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        // ADR 0022: submitCapture lazily resolves the single planner via
+        // getOrCreatePlannerAgent (which creates it on first use) and forwards
+        // the capture to it.
+        const agentId = dailyOsPlannerAgentId;
+        when(() => bench.dayAgentService.getOrCreatePlannerAgent()).thenAnswer(
           (_) async => makeTestIdentity(
             id: agentId,
             agentId: agentId,
@@ -807,9 +811,7 @@ void main() {
         );
 
         expect(captureId.value, 'cap-1');
-        verifyNever(
-          () => bench.dayAgentService.createDayAgent(date: any(named: 'date')),
-        );
+        verify(() => bench.dayAgentService.getOrCreatePlannerAgent()).called(1);
         verify(
           () => bench.captureService.submitCapture(
             agentId: agentId,
@@ -817,43 +819,6 @@ void main() {
             capturedAt: _asOf,
             audioRef: 'audio-1',
           ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'creates a fresh day-agent when none exists for the capture date',
-      () async {
-        const agentId = 'day-agent-B';
-        when(
-          () => bench.dayAgentService.getDayAgentForDate(any()),
-        ).thenAnswer((_) async => null);
-        when(
-          () => bench.dayAgentService.createDayAgent(date: any(named: 'date')),
-        ).thenAnswer(
-          (_) async => makeTestIdentity(
-            id: agentId,
-            agentId: agentId,
-            kind: AgentKinds.dayAgent,
-          ),
-        );
-        when(
-          () => bench.captureService.submitCapture(
-            agentId: any(named: 'agentId'),
-            transcript: any(named: 'transcript'),
-            capturedAt: any(named: 'capturedAt'),
-            audioRef: any(named: 'audioRef'),
-          ),
-        ).thenAnswer((_) async => buildCapture('cap-2', agentId));
-
-        final captureId = await bench.adapter.submitCapture(
-          transcript: 'first capture',
-          capturedAt: _asOf,
-        );
-
-        expect(captureId.value, 'cap-2');
-        verify(
-          () => bench.dayAgentService.createDayAgent(date: _asOf),
         ).called(1);
       },
     );

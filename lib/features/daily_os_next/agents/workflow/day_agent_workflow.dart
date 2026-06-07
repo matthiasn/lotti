@@ -142,10 +142,10 @@ class DayAgentWorkflow {
     }
 
     // Day workspace resolution (ADR 0022 Decisions 3–4): the wake's trigger
-    // tokens are authoritative. A capture-submitted wake carries no day token,
-    // so its day resolves from the capture's own `dayId` scope; the per-day
-    // `activeDayId` slot remains a last-resort fallback until the identity
-    // cutover removes per-day identities.
+    // tokens are authoritative. The long-lived planner has no `activeDayId`
+    // slot, so the day comes from the day tokens or — for a capture-submitted
+    // wake, which carries no day token — from the capture's own `dayId` scope.
+    // The workflow fails fast when no day can be resolved.
     final dayResolution = resolvePlannerWakeDay(triggerTokens);
     if (dayResolution.isAmbiguous) {
       final candidates = dayResolution.candidates.toList()..sort();
@@ -154,12 +154,8 @@ class DayAgentWorkflow {
         error: 'Ambiguous day workspace in trigger tokens: $candidates',
       );
     }
-    // Token day first, then the legacy per-day slot. Only when neither yields a
-    // day (a capture-only wake under one planner, where the slot is gone) do we
-    // load the capture to resolve its own `dayId` scope — avoiding a redundant
-    // capture read in the common per-day path.
-    var dayId = dayResolution.dayId ?? state.slots.activeDayId;
-    if (dayId == null || dayId.isEmpty) {
+    var dayId = dayResolution.dayId;
+    if (dayId == null) {
       final captureResolution = await _dayIdFromCaptureTokens(
         agentId: agentId,
         triggerTokens: triggerTokens,
@@ -487,6 +483,21 @@ class DayAgentWorkflow {
     required String toolName,
     required Map<String, dynamic> args,
   }) async {
+    // Reject day-scoped tool calls targeting a day other than this wake's
+    // workspace (ADR 0022 Decision 4). Under one planner the model must never
+    // mutate a different day than the wake it is running.
+    final argDayId = args['dayId'];
+    if (argDayId is String &&
+        argDayId.trim().isNotEmpty &&
+        argDayId.trim() != dayId) {
+      return DayAgentToolResult(
+        success: false,
+        output:
+            'Error: tool dayId "${argDayId.trim()}" does not match the wake '
+            'workspace "$dayId".',
+      );
+    }
+
     if (DayAgentToolNames.isCaptureReconcileTool(toolName)) {
       final service = captureService;
       if (service == null) {
@@ -673,7 +684,11 @@ class DayAgentWorkflow {
     ];
     final scaffold =
         '''
-You are a Daily OS day agent. You operate on exactly one local calendar day.
+You are the Daily OS planner: one durable agent that plans across days and
+learns over time. Each wake operates on exactly one day workspace — the `dayId`
+in the user message — but your memory and observations span every day you have
+planned. Confine this wake's tool calls to that `dayId`; never plan or mutate a
+different day than the one this wake targets.
 
 Available tools:
 
