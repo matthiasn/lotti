@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
+
 class UserActivityService {
   UserActivityService();
 
@@ -8,7 +10,7 @@ class UserActivityService {
       StreamController<DateTime>.broadcast();
 
   void updateActivity() {
-    _lastActivity = DateTime.now();
+    _lastActivity = clock.now();
     if (!_activityController.isClosed) {
       _activityController.add(_lastActivity);
     }
