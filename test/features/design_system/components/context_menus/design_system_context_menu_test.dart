@@ -158,6 +158,39 @@ void main() {
       expect(sizedBox.height, kSmallItemHeight);
     });
 
+    testWidgets('uses medium size spec by default', (tester) async {
+      const key = Key('medium-menu');
+
+      await _pumpContextMenu(
+        tester,
+        const DesignSystemContextMenu(
+          key: key,
+          items: [
+            DesignSystemContextMenuItem(label: 'Medium item'),
+          ],
+        ),
+      );
+
+      // The non-small branch: row height and text style step up.
+      final sizedBox = tester.widget<SizedBox>(
+        find.ancestor(
+          of: find.text('Medium item'),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is SizedBox &&
+                widget.height == dsTokensLight.spacing.step9,
+          ),
+        ),
+      );
+      expect(sizedBox.height, dsTokensLight.spacing.step9);
+
+      final text = tester.widget<Text>(find.text('Medium item'));
+      expect(
+        text.style?.fontSize,
+        dsTokensLight.typography.styles.body.bodyMedium.fontSize,
+      );
+    });
+
     testWidgets('provides semantics label', (tester) async {
       const key = Key('semantics-menu');
 

@@ -176,6 +176,71 @@ void main() {
       expect(semantics.properties.enabled, isTrue);
     });
 
+    testWidgets('renders the unchecked fill from dark tokens', (tester) async {
+      const checkboxKey = Key('checkbox-dark');
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DesignSystemCheckbox(
+            key: checkboxKey,
+            value: false,
+            label: 'Accept terms',
+            onChanged: _noop,
+          ),
+          theme: DesignSystemTheme.dark(),
+        ),
+      );
+
+      final decoratedBox = tester.widget<DecoratedBox>(
+        find.descendant(
+          of: find.byKey(checkboxKey),
+          matching: find.byWidgetPredicate(
+            (widget) =>
+                widget is DecoratedBox &&
+                widget.decoration is BoxDecoration &&
+                (widget.decoration as BoxDecoration).border != null,
+          ),
+        ),
+      );
+      final decoration = decoratedBox.decoration as BoxDecoration;
+      expect(decoration.color, dsTokensDark.colors.background.level01);
+      expect(
+        decoration.border!.top.color,
+        dsTokensDark.colors.text.mediumEmphasis,
+      );
+    });
+
+    // The glyph painter draws a checkmark PATH when checked but a single
+    // horizontal LINE when indeterminate — record the canvas commands.
+    for (final (description, value, expectedCall) in [
+      ('checked glyph draws the checkmark path', true, 'drawPath'),
+      ('indeterminate glyph draws the horizontal line', null, 'drawLine'),
+    ]) {
+      testWidgets(description, (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DesignSystemCheckbox(
+              value: value,
+              label: 'Glyph',
+              onChanged: _noop,
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        final customPaint = tester.widget<CustomPaint>(
+          find.descendant(
+            of: find.byType(DesignSystemCheckbox),
+            matching: find.byType(CustomPaint),
+          ),
+        );
+        final canvas = _RecordingCanvas();
+        customPaint.painter!.paint(canvas, const Size(20, 20));
+
+        expect(canvas.calls, [expectedCall], reason: description);
+      });
+    }
+
     testWidgets('applies token-driven disabled opacity', (tester) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -410,3 +475,18 @@ BoxDecoration _checkboxDecoration(WidgetTester tester) {
 }
 
 void _noop(bool? value) {}
+
+/// Captures which draw primitives a painter emits — enough to distinguish
+/// the checkmark path from the indeterminate line.
+class _RecordingCanvas implements Canvas {
+  final List<String> calls = [];
+
+  @override
+  void drawLine(Offset p1, Offset p2, Paint paint) => calls.add('drawLine');
+
+  @override
+  void drawPath(Path path, Paint paint) => calls.add('drawPath');
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}

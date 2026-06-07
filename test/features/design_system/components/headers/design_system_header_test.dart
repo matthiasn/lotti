@@ -163,8 +163,28 @@ void main() {
 
       await tester.pump();
 
-      expect(find.byType(DesignSystemHeader), findsOneWidget);
       expect(tester.takeException(), isNull);
+
+      // The fixed desktop height holds even with an overlong trail, and the
+      // breadcrumbs + avatar still render inside the row.
+      final headerBox = tester.renderObject<RenderBox>(
+        find.byType(DesignSystemHeader),
+      );
+      expect(headerBox.size.height, DesignSystemHeader.desktopHeight);
+      expect(
+        find.descendant(
+          of: find.byType(DesignSystemHeader),
+          matching: find.byType(DesignSystemBreadcrumbs),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(DesignSystemHeader),
+          matching: find.byType(DesignSystemAvatar),
+        ),
+        findsOneWidget,
+      );
     });
   });
 }
