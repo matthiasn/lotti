@@ -119,6 +119,26 @@ extension _AnyGeneratedChecklistValidationScenario on glados.Any {
           entries: entries,
         ),
       );
+
+  /// Sizes within the valid batch range: `[1, maxBatchSize]`.
+  glados.Generator<int> get validBatchSize => glados.IntAnys(
+    this,
+  ).intInRange(1, ChecklistValidation.maxBatchSize + 1);
+
+  /// Sizes strictly above `maxBatchSize`.
+  glados.Generator<int> get tooLargeBatchSize =>
+      glados.IntAnys(this).intInRange(
+        ChecklistValidation.maxBatchSize + 1,
+        ChecklistValidation.maxBatchSize + 1001,
+      );
+
+  /// Non-positive sizes: `<= 0`.
+  glados.Generator<int> get nonPositiveBatchSize =>
+      glados.IntAnys(this).intInRange(-1000, 1);
+
+  /// Strictly negative sizes: `< 0`, which hit the generic fallback message.
+  glados.Generator<int> get negativeBatchSize =>
+      glados.IntAnys(this).intInRange(-1000, 0);
 }
 
 void main() {
@@ -229,20 +249,6 @@ void main() {
         expect(result, isEmpty);
       });
 
-      test('should handle list with all invalid items', () {
-        final raw = [
-          '',
-          null,
-          123,
-          {'no_title': 'value'},
-          {'title': ''},
-          {'title': null},
-        ];
-
-        final result = ChecklistValidation.validateItems(raw);
-        expect(result, isEmpty);
-      });
-
       test('should preserve item order', () {
         final raw = [
           {'title': 'First', 'isChecked': true},
@@ -316,6 +322,12 @@ void main() {
         expect(error, contains('expected an object'));
       });
 
+      test('should return error for null entry', () {
+        final error = ChecklistValidation.validateItemEntry(null);
+        expect(error, contains('Invalid item format'));
+        expect(error, contains('expected an object'));
+      });
+
       test('should return error for missing title', () {
         final item = {'no_title': 'value'};
         final error = ChecklistValidation.validateItemEntry(item);
@@ -373,24 +385,48 @@ void main() {
 
     group('isValidBatchSize', () {
       test('should accept valid batch sizes', () {
-        expect(ChecklistValidation.isValidBatchSize(1), true);
-        expect(ChecklistValidation.isValidBatchSize(10), true);
-        expect(ChecklistValidation.isValidBatchSize(20), true);
+        expect(ChecklistValidation.isValidBatchSize(1), isTrue);
+        expect(ChecklistValidation.isValidBatchSize(10), isTrue);
+        expect(ChecklistValidation.isValidBatchSize(20), isTrue);
       });
 
       test('should reject invalid batch sizes', () {
-        expect(ChecklistValidation.isValidBatchSize(0), false);
-        expect(ChecklistValidation.isValidBatchSize(-1), false);
-        expect(ChecklistValidation.isValidBatchSize(21), false);
-        expect(ChecklistValidation.isValidBatchSize(100), false);
+        expect(ChecklistValidation.isValidBatchSize(0), isFalse);
+        expect(ChecklistValidation.isValidBatchSize(-1), isFalse);
+        expect(ChecklistValidation.isValidBatchSize(21), isFalse);
+        expect(ChecklistValidation.isValidBatchSize(100), isFalse);
       });
 
       test('should handle boundary values', () {
-        expect(ChecklistValidation.isValidBatchSize(1), true); // Min valid
-        expect(ChecklistValidation.isValidBatchSize(20), true); // Max valid
-        expect(ChecklistValidation.isValidBatchSize(0), false); // Below min
-        expect(ChecklistValidation.isValidBatchSize(21), false); // Above max
+        expect(ChecklistValidation.isValidBatchSize(1), isTrue); // Min valid
+        expect(ChecklistValidation.isValidBatchSize(20), isTrue); // Max valid
+        expect(ChecklistValidation.isValidBatchSize(0), isFalse); // Below min
+        expect(ChecklistValidation.isValidBatchSize(21), isFalse); // Above max
       });
+
+      glados.Glados(glados.any.validBatchSize).test(
+        'is true for every size within [1, maxBatchSize]',
+        (size) {
+          expect(ChecklistValidation.isValidBatchSize(size), isTrue);
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados(glados.any.tooLargeBatchSize).test(
+        'is false for every size above maxBatchSize',
+        (size) {
+          expect(ChecklistValidation.isValidBatchSize(size), isFalse);
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados(glados.any.nonPositiveBatchSize).test(
+        'is false for every non-positive size',
+        (size) {
+          expect(ChecklistValidation.isValidBatchSize(size), isFalse);
+        },
+        tags: 'glados',
+      );
     });
 
     group('getBatchSizeErrorMessage', () {
@@ -416,6 +452,28 @@ void main() {
         expect(message, contains('Too many items'));
         expect(message, contains('max 20'));
       });
+
+      glados.Glados(glados.any.tooLargeBatchSize).test(
+        'reports "Too many items" for every size above maxBatchSize',
+        (size) {
+          expect(
+            ChecklistValidation.getBatchSizeErrorMessage(size),
+            contains('Too many items'),
+          );
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados(glados.any.negativeBatchSize).test(
+        'reports the generic "Invalid batch size" message for negative sizes',
+        (size) {
+          expect(
+            ChecklistValidation.getBatchSizeErrorMessage(size),
+            'Invalid batch size: $size',
+          );
+        },
+        tags: 'glados',
+      );
     });
 
     group('integration scenarios', () {
@@ -464,7 +522,7 @@ void main() {
         final isValidSize = ChecklistValidation.isValidBatchSize(
           validated.length,
         );
-        expect(isValidSize, true);
+        expect(isValidSize, isTrue);
       });
 
       test('should handle Unicode and special characters', () {

@@ -66,7 +66,19 @@ void main() {
       expect(rpuiTask.task, same(task));
       expect(rpuiTask.task.identifier, 'build_task');
       expect(rpuiTask.onSubmit, same(cb));
-      expect(rpuiTask.onCancel, isNotNull);
+
+      // onCancel is wired to SurveyWidget's local closure (not the submit
+      // callback): driving it with a null result must log 'No result' and must
+      // never invoke resultCallback.
+      var submitFired = false;
+      final wiredRpuiTask = await pumpSurvey(
+        tester,
+        task: buildTask('cancel_wiring'),
+        resultCallback: (_) => submitFired = true,
+      );
+      wiredRpuiTask.onCancel!(null);
+      expect(submitFired, isFalse);
+      expect(DevLogger.capturedLogs, contains('[SurveyWidget] No result'));
     });
 
     testWidgets('onSubmit forwards the result to resultCallback', (

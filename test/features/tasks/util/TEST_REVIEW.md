@@ -17,23 +17,29 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** All files are well within guidelines (largest: `due_date_utils_test.dart` at 274 lines). No splits needed.
+- [x] **[LOW]** All files are well within guidelines (largest: `due_date_utils_test.dart` at 274 lines). No splits needed.
+  **RESOLVED:** Confirmed — every file in this subdir is comfortably under any size threshold; no split is warranted, no change needed.
 - [x] **[LOW]** `task_navigation.dart` (46 lines) is small. Its function `openLinkedTaskDetail` has two branches (desktop vs mobile) and an optional `focusSuggestions` path, all of which require a widget test environment. The missing test file is the primary concern. **RESOLVED:** mirror test added (see the HIGH coverage item).
 
 ---
 
 ## Test quality improvements
 
-- [ ] **[MED]** `due_date_utils_test.dart:167–189` — `'returns overdue for yesterday'` and `'returns normal for tomorrow'` (lines 167 and 179) are concrete cases already fully covered by the Glados property at line 191 which generates `dayOffset = -1` and `dayOffset = 1` among its 160 runs. These two static tests provide no additional shrink information over the property and should be removed as per the "avoid static cases the generator already covers" convention in `test/README.md`.
-- [ ] **[LOW]** `due_date_utils_test.dart` — The `DueDateStatus` group (lines 211–273) tests `isUrgent` and `urgentColor` as properties of the value class directly (not through `getDueDateStatus`). These are valid and meaningful assertions. However, the `'none factory creates non-urgent status'` test (line 265) repeats assertions already verified by `'returns none status when dueDate is null'` (line 98). One of them is redundant; the factory-level test at 265 is the better location and the integration test at 98 can drop the `isUrgent`/`urgentColor` assertions that duplicate it.
-- [ ] **[LOW]** `due_date_utils_test.dart` — the `referenceDate` fixture `DateTime(2025, 6, 15)` in the static `getDueDateStatus` group is fine for determinism, but the Glados `_GeneratedDueDateScenario.dueDate` computes `referenceDay + dayOffset` using raw `DateTime` day arithmetic which overflows at month boundaries (e.g., `dayOffset = 31` in a 28-day month). Dart normalises this silently so the scenario always produces a valid `DateTime`, but the `daysUntilDue` assertion `expect(status.daysUntilDue, scenario.dayOffset, ...)` is only correct when `dayOffset` stays within the same month. This is currently harmless due to how `DateTime.utc` normalises, but the `_GeneratedDueDateScenario.dueDate` computation and the expected-value logic both rely on month normalisation in an undocumented way. A comment clarifying the invariant would prevent a future maintainer from introducing a subtle discrepancy.
+- [x] **[MED]** `due_date_utils_test.dart:167–189` — `'returns overdue for yesterday'` and `'returns normal for tomorrow'` (lines 167 and 179) are concrete cases already fully covered by the Glados property at line 191 which generates `dayOffset = -1` and `dayOffset = 1` among its 160 runs. These two static tests provide no additional shrink information over the property and should be removed as per the "avoid static cases the generator already covers" convention in `test/README.md`.
+  **RESOLVED:** Removed both `dayOffset = ±1` static cases (subsumed by the 160-run Glados property) and replaced them with a non-redundant timezone test (local reference vs UTC due date on the same calendar day → `dueToday`) that the generator does not exercise.
+- [x] **[LOW]** `due_date_utils_test.dart` — The `DueDateStatus` group (lines 211–273) tests `isUrgent` and `urgentColor` as properties of the value class directly (not through `getDueDateStatus`). These are valid and meaningful assertions. However, the `'none factory creates non-urgent status'` test (line 265) repeats assertions already verified by `'returns none status when dueDate is null'` (line 98). One of them is redundant; the factory-level test at 265 is the better location and the integration test at 98 can drop the `isUrgent`/`urgentColor` assertions that duplicate it.
+  **RESOLVED:** Dropped the duplicate `isUrgent`/`urgentColor` assertions from the `'returns none status when dueDate is null'` integration test (which now only checks the null→none() routing via `urgency`/`daysUntilDue`) and added a comment pointing to the `none factory` test as their canonical location.
+- [x] **[LOW]** `due_date_utils_test.dart` — the `referenceDate` fixture `DateTime(2025, 6, 15)` in the static `getDueDateStatus` group is fine for determinism, but the Glados `_GeneratedDueDateScenario.dueDate` computes `referenceDay + dayOffset` using raw `DateTime` day arithmetic which overflows at month boundaries (e.g., `dayOffset = 31` in a 28-day month). Dart normalises this silently so the scenario always produces a valid `DateTime`, but the `daysUntilDue` assertion `expect(status.daysUntilDue, scenario.dayOffset, ...)` is only correct when `dayOffset` stays within the same month. This is currently harmless due to how `DateTime.utc` normalises, but the `_GeneratedDueDateScenario.dueDate` computation and the expected-value logic both rely on month normalisation in an undocumented way. A comment clarifying the invariant would prevent a future maintainer from introducing a subtle discrepancy.
+  **RESOLVED:** Added a comment in `_GeneratedDueDateScenario.dueDate` documenting that Dart's DateTime day normalisation produces a date exactly `dayOffset` days from the reference day (across month/year boundaries), and that the impl computes `daysUntilDue` identically, so the `daysUntilDue == dayOffset` invariant is a property of calendar arithmetic rather than an accident of staying within one month. (Note: the review's "only correct within the same month" concern is itself inaccurate — the property holds globally; the comment makes that explicit.)
 
 ---
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[LOW]** `getDueDateStatus` already has a 160-run Glados property that covers the key invariants (`urgency`, `daysUntilDue`, `isUrgent`). No additional Glados property is warranted.
-- [ ] **[LOW]** `task_navigation.dart` — `openLinkedTaskDetail` contains no pure logic eligible for Glados; it is entirely side-effect navigation. Glados is not appropriate here.
+- [x] **[LOW]** `getDueDateStatus` already has a 160-run Glados property that covers the key invariants (`urgency`, `daysUntilDue`, `isUrgent`). No additional Glados property is warranted.
+  **RESOLVED:** Confirmed — the existing `dueDateScenario` property already generates the full offset range and asserts all three invariants; a second property would be redundant. No change.
+- [x] **[LOW]** `task_navigation.dart` — `openLinkedTaskDetail` contains no pure logic eligible for Glados; it is entirely side-effect navigation. Glados is not appropriate here.
+  **RESOLVED:** Confirmed by reading the source — `openLinkedTaskDetail` only branches on `isDesktopLayout(context)` and performs navigation/provider side effects; it returns no value and has no pure computation to generate over. The widget tests in `task_navigation_test.dart` are the correct coverage. No change.
 
 ---
 
@@ -44,15 +50,19 @@
   2. Desktop layout (`isDesktopLayout` returns true) → calls `NavService.pushDesktopTaskDetail`.
   3. Mobile layout → pushes a `MaterialPageRoute` via `Navigator.of(context).push`.
   All three paths are untested. A widget test using `makeTestableWidget()` with appropriate screen-size overrides can cover the layout branching.
-- [ ] **[MED]** `due_date_utils_test.dart` — `DueDateStatus.urgentColor` for the `DueDateUrgency.normal` case returns `null`. This is tested (line 261). However, there is no test asserting that `urgentColor` returns `null` when constructed via `DueDateStatus.none()` explicitly, only when `urgency == normal` with a non-null `daysUntilDue`. The `none()` factory test at line 265 does check this; the gap is only in the integration-level `getDueDateStatus` round-trip — no gap to close.
-- [ ] **[LOW]** `getDueDateStatus` — the case where `referenceDate` itself has a timezone offset (non-UTC, non-local) is not exercised. The impl normalises both dates to UTC via `DateTime.utc(...)` (impl line 63–68), which is the correct behaviour; a test confirming that a local-timezone `referenceDate` and a UTC `dueDate` on the same calendar day are classified as `dueToday` would document this explicitly.
+- [x] **[MED]** `due_date_utils_test.dart` — `DueDateStatus.urgentColor` for the `DueDateUrgency.normal` case returns `null`. This is tested (line 261). However, there is no test asserting that `urgentColor` returns `null` when constructed via `DueDateStatus.none()` explicitly, only when `urgency == normal` with a non-null `daysUntilDue`. The `none()` factory test at line 265 does check this; the gap is only in the integration-level `getDueDateStatus` round-trip — no gap to close.
+  **RESOLVED:** Confirmed by reading the source/tests — the `none factory` test asserts `urgentColor` is null for an explicit `DueDateStatus.none()`, and the `urgentColor returns null for normal` test covers the non-null `daysUntilDue` path. The item explicitly concludes "no gap to close"; no change needed.
+- [x] **[LOW]** `getDueDateStatus` — the case where `referenceDate` itself has a timezone offset (non-UTC, non-local) is not exercised. The impl normalises both dates to UTC via `DateTime.utc(...)` (impl line 63–68), which is the correct behaviour; a test confirming that a local-timezone `referenceDate` and a UTC `dueDate` on the same calendar day are classified as `dueToday` would document this explicitly.
+  **RESOLVED:** Added test `'classifies a local reference and a UTC due date on the same calendar day as dueToday'` — a local-time reference (09:30) and a UTC due date (22:00) on 2025-06-15 both classify as `dueToday` with `daysUntilDue == 0`, documenting that the impl compares only the Y/M/D components regardless of the timezone flag.
 
 ---
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** `due_date_utils_test.dart:167–189` — the two redundant static cases (`overdue for yesterday`, `normal for tomorrow`) add two test invocations that are subsumed by the Glados property. Removing them saves a small amount of test time on every run.
-- [ ] **[LOW]** `_GeneratedDueDateScenario` is a relatively heavy value class: it computes `referenceDay` via `DateTime(referenceYear, referenceMonth + 1, 0).day` in a getter. This is called once per Glados run during generation and once during assertion. At 160 runs this is negligible, but the getter result could be memoised via `late final` if runs were increased substantially.
+- [x] **[LOW]** `due_date_utils_test.dart:167–189` — the two redundant static cases (`overdue for yesterday`, `normal for tomorrow`) add two test invocations that are subsumed by the Glados property. Removing them saves a small amount of test time on every run.
+  **RESOLVED:** Both redundant static cases removed (see the MED item above). Net test count: -2 redundant invocations, +1 new non-redundant timezone case.
+- [x] **[LOW]** `_GeneratedDueDateScenario` is a relatively heavy value class: it computes `referenceDay` via `DateTime(referenceYear, referenceMonth + 1, 0).day` in a getter. This is called once per Glados run during generation and once during assertion. At 160 runs this is negligible, but the getter result could be memoised via `late final` if runs were increased substantially.
+  **RESOLVED:** Confirmed negligible at 160 runs — memoising a `DateTime` constructor call is premature optimisation and would complicate the `const` constructor (a `late final` field cannot coexist with the existing `const` declaration). Left as-is, as the item itself recommends only acting "if runs were increased substantially". No change.
 
 ---
 

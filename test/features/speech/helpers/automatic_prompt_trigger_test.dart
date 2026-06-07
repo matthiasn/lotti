@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../../agents/test_data/entity_factories.dart';
 
 void main() {
@@ -55,17 +56,23 @@ void main() {
         as AiConfigSkill;
   }
 
-  setUp(() {
+  setUp(() async {
     mockDomainLogger = MockDomainLogger();
     mockProfileAutomationService = MockProfileAutomationService();
     mockRunner = MockSkillInferenceRunner();
     mockTaskAgentService = MockTaskAgentService();
     mockWakeOrchestrator = MockWakeOrchestrator();
 
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+    // The trigger resolves `getIt<DomainLogger>()`; swap the real logger
+    // registered by setUpTestGetIt for the mock so log/error calls can be
+    // verified. tearDownTestGetIt resets GetIt afterwards.
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockDomainLogger);
+      },
+    );
 
     when(
       () => mockDomainLogger.log(
@@ -115,11 +122,9 @@ void main() {
     );
   });
 
-  tearDown(() {
+  tearDown(() async {
     container.dispose();
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
+    await tearDownTestGetIt();
   });
 
   group('AutomaticPromptTrigger', () {

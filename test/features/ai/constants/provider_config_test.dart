@@ -56,6 +56,13 @@ void main() {
           equals('http://localhost:8002/v1'),
         );
       });
+
+      test('should have correct URL for openRouter', () {
+        expect(
+          ProviderConfig.defaultBaseUrls[InferenceProviderType.openRouter],
+          equals('https://openrouter.ai/api/v1'),
+        );
+      });
     });
 
     group('defaultNames', () {
@@ -102,6 +109,13 @@ void main() {
           equals('AI Proxy (local)'),
         );
       });
+
+      test('should have correct name for openRouter', () {
+        expect(
+          ProviderConfig.defaultNames[InferenceProviderType.openRouter],
+          equals('OpenRouter'),
+        );
+      });
     });
 
     group('noApiKeyRequired', () {
@@ -140,15 +154,6 @@ void main() {
           isNot(contains(InferenceProviderType.genericOpenAi)),
         );
       });
-
-      test('genericOpenAi should require API key', () {
-        expect(
-          ProviderConfig.noApiKeyRequired.contains(
-            InferenceProviderType.genericOpenAi,
-          ),
-          isFalse,
-        );
-      });
     });
 
     group('getDefaultBaseUrl', () {
@@ -160,15 +165,6 @@ void main() {
         expect(
           ProviderConfig.getDefaultBaseUrl(InferenceProviderType.gemini),
           equals('https://generativelanguage.googleapis.com/v1beta/openai'),
-        );
-      });
-
-      test('should return empty string for unknown provider', () {
-        // This tests the null-safety fallback behavior
-        // We can't create an invalid enum value, so we test the default behavior
-        expect(
-          ProviderConfig.defaultBaseUrls[null] ?? '',
-          equals(''),
         );
       });
     });
@@ -184,57 +180,47 @@ void main() {
           equals('Gemini'),
         );
       });
-
-      test('should return empty string for unknown provider', () {
-        expect(
-          ProviderConfig.defaultNames[null] ?? '',
-          equals(''),
-        );
-      });
     });
 
     group('requiresApiKey', () {
-      test('should return false for local providers', () {
-        expect(
-          ProviderConfig.requiresApiKey(InferenceProviderType.ollama),
-          isFalse,
-        );
-        expect(
-          ProviderConfig.requiresApiKey(InferenceProviderType.voxtral),
-          isFalse,
-        );
-        expect(
-          ProviderConfig.requiresApiKey(InferenceProviderType.whisper),
-          isFalse,
-        );
-        expect(
-          ProviderConfig.requiresApiKey(InferenceProviderType.mlxAudio),
-          isFalse,
-        );
+      test('returns false for every keyless provider type', () {
+        for (final type in ProviderConfig.noApiKeyRequired) {
+          expect(
+            ProviderConfig.requiresApiKey(type),
+            isFalse,
+            reason: '$type is in noApiKeyRequired and must not require a key',
+          );
+        }
       });
 
-      test('should return true for cloud providers and genericOpenAi', () {
+      test('returns true for every other provider type', () {
+        for (final type in InferenceProviderType.values) {
+          if (!ProviderConfig.noApiKeyRequired.contains(type)) {
+            expect(
+              ProviderConfig.requiresApiKey(type),
+              isTrue,
+              reason: '$type is not keyless and must require a key',
+            );
+          }
+        }
+      });
+    });
+
+    group('usesBaseUrl', () {
+      test('returns false only for mlxAudio', () {
         expect(
-          ProviderConfig.requiresApiKey(InferenceProviderType.alibaba),
-          isTrue,
+          ProviderConfig.usesBaseUrl(InferenceProviderType.mlxAudio),
+          isFalse,
         );
-        expect(
-          ProviderConfig.requiresApiKey(InferenceProviderType.gemini),
-          isTrue,
-        );
-        expect(
-          ProviderConfig.requiresApiKey(InferenceProviderType.openAi),
-          isTrue,
-        );
-        expect(
-          ProviderConfig.requiresApiKey(InferenceProviderType.anthropic),
-          isTrue,
-        );
-        // genericOpenAi (OpenAI Compatible) requires API key for authentication
-        expect(
-          ProviderConfig.requiresApiKey(InferenceProviderType.genericOpenAi),
-          isTrue,
-        );
+        for (final type in InferenceProviderType.values) {
+          if (type != InferenceProviderType.mlxAudio) {
+            expect(
+              ProviderConfig.usesBaseUrl(type),
+              isTrue,
+              reason: '$type talks to an HTTP base URL and must use one',
+            );
+          }
+        }
       });
     });
   });

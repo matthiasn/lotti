@@ -11,8 +11,6 @@ import 'package:record/record.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockAudioRecorder extends Mock implements AudioRecorder {}
-
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -55,10 +53,14 @@ void main() {
 
       expect(result, isTrue);
       verify(() => mockAudioRecorder.hasPermission()).called(1);
+      // Match ANY error invocation (including ones carrying a stackTrace) so the
+      // success branch is proven to log no error at all, not merely no
+      // stackTrace-less error.
       verifyNever(
         () => mockDomainLogger.error(
           any<LogDomain>(),
           any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
           subDomain: any(named: 'subDomain'),
         ),
       );

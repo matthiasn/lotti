@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/services/portals/screenshot_portal_service.dart';
 
@@ -86,37 +87,54 @@ void main() {
         }
       });
 
-      test('ensures app data is properly isolated', () {
-        // In Flatpak, app data should be in ~/.var/app/com.matthiasn.lotti/
-        if (PortalService.isRunningInFlatpak) {
-          final homeDir = Platform.environment['HOME'];
-          if (homeDir != null) {
-            final appDataPath = '$homeDir/.var/app/com.matthiasn.lotti';
+      test(
+        'app data isolation is enforced by the app-id and grant scoping',
+        () {
+          // Flatpak places per-app data under ~/.var/app/<app-id>/. That
+          // isolation is enforced by the app-id plus the absence of any
+          // broad filesystem grant, both of which live in the manifest and
+          // are assertable regardless of the host environment.
+          final manifest = _readManifest();
+          expect(manifest, contains('app-id: com.matthiasn.lotti'));
 
-            // We can't directly test existence without being in Flatpak,
-            // but we can verify the path structure
-            expect(appDataPath, contains('.var/app'));
-            expect(appDataPath, contains('com.matthiasn.lotti'));
+          final filesystemArgs = _manifestFinishArgs()
+              .where((arg) => arg.startsWith('--filesystem='))
+              .toList();
+          // None of the grants reach into another app's data sandbox.
+          for (final arg in filesystemArgs) {
+            expect(
+              arg,
+              isNot(contains('.var/app')),
+              reason: '$arg would break per-app data isolation',
+            );
           }
-        }
-      });
+        },
+      );
 
-      test('verifies system directories are not directly accessible', () {
-        // These directories should not be accessible in sandboxed environment
-        const systemPaths = [
-          '/usr/bin',
-          '/etc/passwd',
+      test('manifest grants no access to sensitive system directories', () {
+        // The sandbox only ever sees what the manifest declares. Verify the
+        // manifest never grants any of these sensitive host locations, so the
+        // app cannot reach them even when running on a Linux host.
+        const forbiddenGrantSubstrings = [
+          '/usr',
+          '/etc',
           '/var/log',
           '/root',
-          '/home', // Should not have direct access to other users' homes
+          'host',
+          'home',
         ];
 
-        if (PortalService.isRunningInFlatpak) {
-          for (final path in systemPaths) {
-            // In a proper sandbox, these would be blocked or bind-mounted
-            // We verify the app is aware it shouldn't access these
-            expect(path.startsWith('/'), isTrue);
-            expect(path, isNot(contains('.var/app')));
+        final filesystemArgs = _manifestFinishArgs()
+            .where((arg) => arg.startsWith('--filesystem='))
+            .toList();
+
+        for (final arg in filesystemArgs) {
+          for (final forbidden in forbiddenGrantSubstrings) {
+            expect(
+              arg.contains(forbidden),
+              isFalse,
+              reason: '$arg grants access to a sensitive location ($forbidden)',
+            );
           }
         }
       });
@@ -267,6 +285,53 @@ void main() {
         expect(timeout.inSeconds, greaterThan(0));
         expect(timeout.inSeconds, lessThanOrEqualTo(60));
       });
+
+      // Property: createHandleToken's format contract holds for any
+      // letter/digit prefix. The token is always `<prefix>_<timestamp>_
+      // <counter>` where the timestamp and counter are non-negative integers.
+      // letterOrDigits excludes '_', so splitting yields exactly three parts.
+      glados.Glados(glados.any.letterOrDigits).test(
+        'createHandleToken produces prefix_timestamp_counter for any prefix',
+        (prefix) {
+          final token = PortalService.createHandleToken(prefix);
+
+          expect(token, startsWith('${prefix}_'), reason: 'prefix=$prefix');
+
+          final parts = token.split('_');
+          expect(parts.length, equals(3), reason: 'token=$token');
+          expect(parts[0], equals(prefix), reason: 'token=$token');
+
+          final timestamp = int.tryParse(parts[1]);
+          expect(timestamp, isNotNull, reason: 'token=$token');
+          expect(timestamp, greaterThan(0), reason: 'token=$token');
+
+          final counter = int.tryParse(parts[2]);
+          expect(counter, isNotNull, reason: 'token=$token');
+          expect(counter, greaterThanOrEqualTo(0), reason: 'token=$token');
+        },
+        tags: 'glados',
+      );
+
+      // Property: successive tokens are always distinct, even when generated
+      // back-to-back, because the monotonic counter suffix guarantees it.
+      glados.Glados(glados.any.letterOrDigits).test(
+        'successive createHandleToken calls are unique for any prefix',
+        (prefix) {
+          final first = PortalService.createHandleToken(prefix);
+          final second = PortalService.createHandleToken(prefix);
+
+          expect(first, isNot(equals(second)), reason: 'prefix=$prefix');
+
+          final firstCounter = int.parse(first.split('_').last);
+          final secondCounter = int.parse(second.split('_').last);
+          expect(
+            secondCounter,
+            greaterThan(firstCounter),
+            reason: 'counter must be strictly monotonic; prefix=$prefix',
+          );
+        },
+        tags: 'glados',
+      );
     });
 
     group('Security Best Practices', () {

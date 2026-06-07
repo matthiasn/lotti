@@ -10,6 +10,11 @@ List<int> _choiceValues(RPQuestionStep step) =>
         .map((choice) => choice.value)
         .toList();
 
+List<String> _choiceLabels(RPQuestionStep step) =>
+    (step.answerFormat as RPChoiceAnswerFormat).choices
+        .map((choice) => choice.text)
+        .toList();
+
 void main() {
   group('ghq12 survey definition', () {
     test('task is bracketed by instruction and completion steps', () {
@@ -26,6 +31,14 @@ void main() {
         // Each GHQ-12 item defines its own labels but always scores 0..3.
         expect(_choiceValues(question), [0, 1, 2, 3]);
         expect(question.title, isNotEmpty);
+
+        // Every choice carries a distinct, non-empty label: GHQ-12 items reuse
+        // the 0..3 scale but each phrases its four options differently, so a
+        // copy/paste slip that blanks or duplicates a label would be a real
+        // defect.
+        final labels = _choiceLabels(question);
+        expect(labels, everyElement(isNotEmpty));
+        expect(labels.toSet(), hasLength(4));
       }
     });
 
