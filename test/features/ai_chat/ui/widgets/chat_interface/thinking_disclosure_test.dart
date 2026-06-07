@@ -10,19 +10,29 @@ void main() {
   setUp(setUpTestGetIt);
   tearDown(tearDownTestGetIt);
 
+  // The disclosure header rotates a chevron with a 170ms AnimatedRotation; the
+  // body itself appears/disappears synchronously via `if (_expanded)`. A bounded
+  // pump past the rotation duration is deterministic and avoids the 10s
+  // pumpAndSettle timeout risk.
+  const settleRotation = Duration(milliseconds: 200);
+
   testWidgets('ThinkingDisclosure toggles expansion', (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
         const ThinkingDisclosure(thinking: 'internal plan'),
       ),
     );
-    await tester.pumpAndSettle();
+    // Read the very first rendered tree (no animation pumped yet) to prove the
+    // disclosure is collapsed by default before any interaction.
+    await tester.pump();
 
     final context = tester.element(find.byType(ThinkingDisclosure));
     final messages = context.messages;
 
-    // Initially shows "Show reasoning"
+    // Initially shows "Show reasoning" and the thinking body is NOT in the tree.
     expect(find.text(messages.thinkingDisclosureShow), findsOneWidget);
+    expect(find.text(messages.thinkingDisclosureHide), findsNothing);
+    expect(find.textContaining('internal plan'), findsNothing);
     expect(
       find.bySemanticsLabel(
         '${messages.thinkingDisclosureShow}, '
@@ -33,9 +43,10 @@ void main() {
 
     // Tap to expand
     await tester.tap(find.text(messages.thinkingDisclosureShow));
-    await tester.pumpAndSettle();
+    await tester.pump(settleRotation);
 
     expect(find.text(messages.thinkingDisclosureHide), findsOneWidget);
+    expect(find.text(messages.thinkingDisclosureShow), findsNothing);
     expect(
       find.bySemanticsLabel(
         '${messages.thinkingDisclosureHide}, '
@@ -45,6 +56,12 @@ void main() {
     );
     // The content should become visible (rendered by GptMarkdown)
     expect(find.textContaining('internal plan'), findsOneWidget);
+
+    // Collapsing again removes the body from the tree.
+    await tester.tap(find.text(messages.thinkingDisclosureHide));
+    await tester.pump(settleRotation);
+    expect(find.text(messages.thinkingDisclosureShow), findsOneWidget);
+    expect(find.textContaining('internal plan'), findsNothing);
   });
 
   testWidgets('Keyboard toggles expansion and copy action writes clipboard', (
@@ -69,14 +86,14 @@ void main() {
         const ThinkingDisclosure(thinking: 'internal plan'),
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
 
     final context = tester.element(find.byType(ThinkingDisclosure));
     final messages = context.messages;
 
     // Toggle open via tap
     await tester.tap(find.byType(InkWell).first);
-    await tester.pumpAndSettle();
+    await tester.pump(settleRotation);
     expect(find.text(messages.thinkingDisclosureHide), findsOneWidget);
 
     // Trigger keyboard shortcut callbacks directly to validate both bindings.

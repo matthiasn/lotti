@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/ui/settings/services/provider_prompt_setup_service.dart';
 
 void main() {
@@ -25,5 +26,26 @@ void main() {
       expect(result.categoryName, isNull);
       expect(result.errors, isEmpty);
     });
+
+    // The two example fixtures above pin specific tallies; this property
+    // closes the rest of the (created, verified) grid: totalModels is
+    // exactly the sum for any non-negative model counts the setup helpers
+    // can report.
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(0, 1 << 12),
+      glados.IntAnys(glados.any).intInRange(0, 1 << 12),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('totalModels == modelsCreated + modelsVerified', (created, verified) {
+      final result = GeminiFtueResult(
+        modelsCreated: created,
+        modelsVerified: verified,
+        categoryCreated: false,
+      );
+      expect(
+        result.totalModels,
+        created + verified,
+        reason: 'created=$created verified=$verified',
+      );
+    }, tags: 'glados');
   });
 }

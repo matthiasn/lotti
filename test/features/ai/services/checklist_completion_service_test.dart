@@ -2,22 +2,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:lotti/features/ai/services/checklist_completion_service.dart';
-import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 void main() {
   late ProviderContainer container;
 
   setUp(() {
     container = ProviderContainer();
-
-    // Register fallback values
-    registerFallbackValue(
-      const CreateChatCompletionRequest(
-        messages: [],
-        model: ChatCompletionModel.modelId('gpt-4'),
-      ),
-    );
   });
 
   tearDown(() {
