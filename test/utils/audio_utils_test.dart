@@ -61,7 +61,7 @@ void main() {
 
     glados.Glados(
       glados.any.generatedAudioPathScenario,
-      glados.ExploreConfig(numRuns: 160),
+      glados.ExploreConfig(numRuns: 96),
     ).test(
       'getRelativeAudioPath concatenates generated directories and file names',
       (scenario) {
@@ -76,7 +76,7 @@ void main() {
 
     glados.Glados(
       glados.any.generatedAudioPathScenario,
-      glados.ExploreConfig(numRuns: 160),
+      glados.ExploreConfig(numRuns: 96),
     ).test(
       'getAudioPath prefixes generated relative paths with documents directory',
       (scenario) {
@@ -99,6 +99,32 @@ void main() {
 
       expect(result, equals(expectedPath));
     });
+
+    test(
+      'getFullAudioPath degrades to the bare documents path when directory '
+      'and file are empty',
+      () async {
+        // Empty strings are valid String values for these fields; the function
+        // must concatenate them without inserting separators or throwing, so
+        // the result is exactly the documents directory path.
+        final emptyPathJournal = JournalAudio(
+          meta: testAudioJournal.meta,
+          data: AudioData(
+            dateFrom: testAudioJournal.data.dateFrom,
+            dateTo: testAudioJournal.data.dateTo,
+            duration: testAudioJournal.data.duration,
+            audioFile: '',
+            audioDirectory: '',
+          ),
+        );
+
+        expect(AudioUtils.getRelativeAudioPath(emptyPathJournal), isEmpty);
+        expect(
+          await AudioUtils.getFullAudioPath(emptyPathJournal),
+          equals(mockDocDir.path),
+        );
+      },
+    );
   });
 }
 

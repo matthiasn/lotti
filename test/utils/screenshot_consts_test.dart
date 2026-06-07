@@ -138,21 +138,11 @@ void main() {
       });
     });
 
-    group('Screenshot Tool Configurations', () {
-      test('should have configuration for all Linux tools', () {
-        for (final tool in linuxScreenshotTools) {
-          final config = screenshotToolConfigs[tool];
-          expect(
-            config,
-            isNotNull,
-            reason: 'Tool $tool should have configuration',
-          );
-        }
-      });
-
-      // Per-tool argument equality lives in the 'Constants Consistency'
-      // group below — the former four per-tool copies added no information.
-    });
+    // Coverage that every Linux tool has a configuration, and that each
+    // config's arguments match the corresponding constant, lives in the
+    // 'Constants Consistency' group below. Keeping it in one place avoids the
+    // three-way duplication this file previously carried (per-tool configs,
+    // a separate 'Configuration Validation' group, and the consistency loop).
 
     group('ScreenshotToolConfig Class', () {
       test('should create configuration with arguments', () {
@@ -181,21 +171,6 @@ void main() {
       });
     });
 
-    group('Configuration Validation', () {
-      test('all tool configurations should have valid argument lists', () {
-        for (final config in screenshotToolConfigs.values) {
-          expect(config.arguments, isA<List<String>>());
-        }
-      });
-
-      test('all tools have configurations', () {
-        for (final tool in linuxScreenshotTools) {
-          final config = screenshotToolConfigs[tool];
-          expect(config, isNotNull);
-        }
-      });
-    });
-
     group('Constants Consistency', () {
       test('Linux tools list should match tool configurations', () {
         expect(
@@ -203,8 +178,14 @@ void main() {
           equals(screenshotToolConfigs.length),
         );
 
+        // Every advertised Linux tool resolves to a configuration. This
+        // subsumes the former standalone 'all tools have configurations' test.
         for (final tool in linuxScreenshotTools) {
-          expect(screenshotToolConfigs.containsKey(tool), isTrue);
+          expect(
+            screenshotToolConfigs.containsKey(tool),
+            isTrue,
+            reason: 'Tool $tool should have configuration',
+          );
         }
       });
 

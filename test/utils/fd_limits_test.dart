@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/utils/fd_limits.dart';
 
 void main() {
@@ -173,6 +174,93 @@ void main() {
         // hardBefore. Either choice yields 10240; verify we settle on one.
         expect(plan.newSoft, 10240);
       });
+
+      // -----------------------------------------------------------------------
+      // Glados properties for the clamping arithmetic
+      //
+      // The discrete examples above pin the named branches; these properties
+      // exercise the same branches across the whole integer space so a regressed
+      // comparison (`<` vs `<=`, swapped operands) is caught regardless of the
+      // particular magnitudes involved.
+      // -----------------------------------------------------------------------
+      glados.Glados(
+        glados.any.fdClampCase,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'soft below target and target above a positive hard clamps to hard',
+        (c) {
+          final plan = resolveFdSoftLimitPlan(
+            softBefore: c.softBefore,
+            hardBefore: c.hardBefore,
+            target: c.target,
+          );
+          expect(plan.alreadySatisfied, isFalse, reason: '$c');
+          // Invariant under test: when the hard limit is the binding cap, the
+          // new soft limit is exactly the hard limit — never the (larger)
+          // target, and never an arbitrary value.
+          expect(plan.newSoft, c.hardBefore, reason: '$c');
+          // The result must never exceed the hard cap.
+          expect(plan.newSoft, lessThanOrEqualTo(c.hardBefore), reason: '$c');
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados(
+        glados.any.fdTargetFitsCase,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'soft below target with hard headroom raises exactly to target',
+        (c) {
+          final plan = resolveFdSoftLimitPlan(
+            softBefore: c.softBefore,
+            hardBefore: c.hardBefore,
+            target: c.target,
+          );
+          expect(plan.alreadySatisfied, isFalse, reason: '$c');
+          expect(plan.newSoft, c.target, reason: '$c');
+          // Honouring the target must never breach the hard cap.
+          expect(plan.newSoft, lessThanOrEqualTo(c.hardBefore), reason: '$c');
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados(
+        glados.any.fdSatisfiedCase,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'soft at or above target is satisfied and left untouched',
+        (c) {
+          final plan = resolveFdSoftLimitPlan(
+            softBefore: c.softBefore,
+            hardBefore: c.hardBefore,
+            target: c.target,
+          );
+          expect(plan.alreadySatisfied, isTrue, reason: '$c');
+          // A satisfied soft limit must be returned verbatim — never lowered.
+          expect(plan.newSoft, c.softBefore, reason: '$c');
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados(
+        glados.any.fdUnlimitedSoftCase,
+        glados.ExploreConfig(numRuns: 96),
+      ).test(
+        'a negative (RLIM_INFINITY) soft limit is always satisfied, '
+        'never lowered to target',
+        (c) {
+          final plan = resolveFdSoftLimitPlan(
+            softBefore: c.softBefore,
+            hardBefore: c.hardBefore,
+            target: c.target,
+          );
+          expect(plan.alreadySatisfied, isTrue, reason: '$c');
+          // The negative reading is preserved, not clobbered with target.
+          expect(plan.newSoft, c.softBefore, reason: '$c');
+          expect(plan.newSoft, isNegative, reason: '$c');
+        },
+        tags: 'glados',
+      );
     });
 
     test('FdLimitAdjustment exposes all fields as provided', () {
@@ -217,4 +305,82 @@ void main() {
       },
     );
   });
+}
+
+/// A generated `(softBefore, hardBefore, target)` triple for one branch of
+/// [resolveFdSoftLimitPlan]. The raw generator seeds are reshaped into the
+/// ordering each scenario requires, so the property body never has to filter.
+class _FdPlanCase {
+  const _FdPlanCase({
+    required this.softBefore,
+    required this.hardBefore,
+    required this.target,
+  });
+
+  final int softBefore;
+  final int hardBefore;
+  final int target;
+
+  @override
+  String toString() =>
+      '_FdPlanCase(softBefore: $softBefore, hardBefore: $hardBefore, '
+      'target: $target)';
+}
+
+extension _AnyFdPlan on glados.Any {
+  // hard ∈ [1, 9999]; soft ∈ [0, hard) so soft < hard; target = hard + extra
+  // (extra ≥ 1) so target > hard ≥ soft. The hard limit is the binding cap.
+  glados.Generator<_FdPlanCase> get fdClampCase =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(1, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(1, 10000),
+        (int hard, int softSeed, int targetExtra) => _FdPlanCase(
+          hardBefore: hard,
+          softBefore: softSeed % hard,
+          target: hard + targetExtra,
+        ),
+      );
+
+  // target ∈ [1, 9999]; hard = target + extra (extra ≥ 0) so hard ≥ target;
+  // soft ∈ [0, target) so soft < target. The target fits under the hard cap.
+  glados.Generator<_FdPlanCase> get fdTargetFitsCase =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(1, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        (int target, int hardExtra, int softSeed) => _FdPlanCase(
+          target: target,
+          hardBefore: target + hardExtra,
+          softBefore: softSeed % target,
+        ),
+      );
+
+  // target ∈ [1, 9999]; soft = target + extra (extra ≥ 0) so soft ≥ target;
+  // hard is unconstrained — the soft limit already satisfies the target.
+  glados.Generator<_FdPlanCase> get fdSatisfiedCase =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(1, 10000),
+        glados.IntAnys(this).intInRange(0, 10000),
+        glados.IntAnys(this).intInRange(0, 100000),
+        (int target, int softExtra, int hard) => _FdPlanCase(
+          target: target,
+          softBefore: target + softExtra,
+          hardBefore: hard,
+        ),
+      );
+
+  // soft = -seed (seed ≥ 1) so soft is negative — a Linux RLIM_INFINITY
+  // readback. target and hard are arbitrary positive values.
+  glados.Generator<_FdPlanCase> get fdUnlimitedSoftCase =>
+      glados.CombinableAny(this).combine3(
+        glados.IntAnys(this).intInRange(1, 1000),
+        glados.IntAnys(this).intInRange(0, 100000),
+        glados.IntAnys(this).intInRange(0, 100000),
+        (int softSeed, int target, int hard) => _FdPlanCase(
+          softBefore: -softSeed,
+          target: target,
+          hardBefore: hard,
+        ),
+      );
 }
