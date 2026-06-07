@@ -64,6 +64,16 @@ void main() {
         'dayplan-2026-05-25',
       );
     });
+
+    test('buckets a UTC capturedAt by the local calendar day', () {
+      // A UTC-typed timestamp must resolve to the user's local day, not the
+      // UTC day, so a near-midnight capture is not filed under the wrong date.
+      final utcAt = DateTime.utc(2026, 5, 25, 23, 59);
+      expect(
+        captureDayId(capture(capturedAt: utcAt)),
+        'dayplan-${utcAt.toLocal().toIso8601String().substring(0, 10)}',
+      );
+    });
   });
 }
 
