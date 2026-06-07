@@ -187,6 +187,8 @@ void main() {
         ),
       );
 
+      // Bounded pumps were tried here and fail — the async error needs the
+      // full settle before the error branch renders.
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Error loading prompt'), findsOneWidget);
@@ -438,101 +440,80 @@ void main() {
       container.dispose();
     });
 
-    testWidgets('handles retry button click', (tester) async {
-      // This test verifies the _handleRetry method works
-      final container = ProviderContainer(
-        overrides: [
-          unifiedAiInferenceRepositoryProvider.overrideWithValue(
-            mockRepository,
-          ),
-          aiConfigByIdProvider('test-prompt-1').overrideWith(
-            (ref) async => testPromptConfig,
-          ),
-          categoryRepositoryProvider.overrideWithValue(
-            mockCategoryRepository,
-          ),
-        ],
-      );
+    testWidgets(
+      'retry button re-triggers inference through triggerNewInferenceProvider',
+      (tester) async {
+        // Wide surface so AiErrorDisplay's card fits without overflowing.
+        tester.view
+          ..physicalSize = const Size(1200, 900)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
 
-      // Set status to error to show retry button
-      container
-          .read(
-            inferenceStatusControllerProvider(
-              id: 'test-entity',
-              // ignore: deprecated_member_use_from_same_package
-              aiResponseType: AiResponseType.taskSummary,
-            ).notifier,
-          )
-          .setStatus(InferenceStatus.error);
+        var retriggerCount = 0;
 
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-            ],
-            home: Scaffold(
-              body: UnifiedAiProgressContent(
-                entityId: 'test-entity',
-                promptId: 'test-prompt-1',
-              ),
+        await tester.pumpWidget(
+          buildTestWidget(
+            const UnifiedAiProgressContent(
+              entityId: 'test-entity',
+              promptId: 'test-prompt-1',
+              shouldTriggerOnInit: false,
             ),
+            overrides: [
+              aiConfigByIdProvider('test-prompt-1').overrideWith(
+                (ref) async => testPromptConfig,
+              ),
+              unifiedAiControllerOverride(
+                const UnifiedAiState(message: 'Upstream server exploded'),
+              ),
+              inferenceStatusControllerProvider(
+                id: 'test-entity',
+                // ignore: deprecated_member_use_from_same_package
+                aiResponseType: AiResponseType.taskSummary,
+              ).overrideWith(
+                () => _TestInferenceStatusController(InferenceStatus.error),
+              ),
+              triggerNewInferenceProvider.overrideWith((ref, arg) async {
+                retriggerCount++;
+              }),
+            ],
           ),
-        ),
-      );
+        );
 
-      await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
-      await tester.pump(const Duration(milliseconds: 300));
+        // The error state renders AiErrorDisplay with its retry button.
+        final retryButton = find.text('Try Again');
+        expect(retryButton, findsOneWidget);
 
-      // Find and tap retry button if it exists
-      final retryButton = find.text('Retry');
-      if (retryButton.evaluate().isNotEmpty) {
+        await tester.ensureVisible(retryButton);
         await tester.tap(retryButton);
         await tester.pump();
-      }
 
-      expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
-
-      // Unmount and dispose in-body so cacheFor timers are cancelled before
-      // the pending-timer check.
-      await tester.pumpWidget(const SizedBox());
-      container.dispose();
-    });
+        expect(retriggerCount, 1);
+      },
+    );
 
     testWidgets('prevents duplicate inference triggers', (tester) async {
-      // This test ensures _hasTriggeredInference flag prevents duplicate calls
-      final container = ProviderContainer(
-        overrides: [
-          unifiedAiInferenceRepositoryProvider.overrideWithValue(
-            mockRepository,
-          ),
-          aiConfigByIdProvider('test-prompt-1').overrideWith(
-            (ref) async => testPromptConfig,
-          ),
-          categoryRepositoryProvider.overrideWithValue(
-            mockCategoryRepository,
-          ),
-        ],
-      );
+      // The _hasTriggeredInference flag must hold the post-frame trigger to
+      // exactly one provider invocation no matter how many frames pass.
+      var triggerCount = 0;
 
       await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: const MaterialApp(
-            localizationsDelegates: [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-            ],
-            home: Scaffold(
-              body: UnifiedAiProgressContent(
-                entityId: 'test-entity',
-                promptId: 'test-prompt-1',
-              ),
-            ),
+        buildTestWidget(
+          const UnifiedAiProgressContent(
+            entityId: 'test-entity',
+            promptId: 'test-prompt-1',
           ),
+          overrides: [
+            aiConfigByIdProvider('test-prompt-1').overrideWith(
+              (ref) async => testPromptConfig,
+            ),
+            triggerNewInferenceProvider.overrideWith((ref, arg) async {
+              triggerCount++;
+            }),
+          ],
         ),
       );
 
@@ -540,13 +521,10 @@ void main() {
       await tester.pump();
       await tester.pump();
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(UnifiedAiProgressContent), findsOneWidget);
-
-      // Unmount and dispose in-body so cacheFor timers are cancelled before
-      // the pending-timer check.
-      await tester.pumpWidget(const SizedBox());
-      container.dispose();
+      expect(triggerCount, 1);
     });
 
     testWidgets('handles model not installed error', (tester) async {
@@ -712,7 +690,7 @@ void main() {
         ),
       );
 
-      // Use pumpAndSettle to let FutureBuilder complete
+      // Bounded pumps let the FutureBuilder complete deterministically.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -818,7 +796,7 @@ void main() {
               )
               as AiConfigPrompt;
 
-      // Build the widget and test the page creation
+      // Build the widget and inspect the returned page wiring.
       await tester.pumpWidget(
         buildTestWidget(
           Builder(
@@ -829,10 +807,31 @@ void main() {
                 entityId: 'test-entity',
               );
 
-              // Verify page structure
-              expect(page, isNotNull);
+              // Top-bar title carries the prompt name.
+              final titlePadding = page.topBarTitle! as Padding;
+              expect((titlePadding.child! as Text).data, 'Test Prompt Title');
 
-              // Return a simple widget for the test
+              // Sticky action bar hosts the running animation keyed to this
+              // entity and the prompt's response type.
+              final align = page.stickyActionBar! as Align;
+              final animation = align.child! as AiRunningAnimationWrapper;
+              expect(animation.entryId, 'test-entity');
+              expect(
+                animation.responseTypes,
+                // ignore: deprecated_member_use_from_same_package
+                {AiResponseType.taskSummary},
+              );
+
+              // The single content sliver wraps UnifiedAiProgressContent
+              // wired to the entity + prompt, triggering on open.
+              final slivers = page.mainContentSliversBuilder(context);
+              final adapter = slivers.single as SliverToBoxAdapter;
+              final content = adapter.child! as UnifiedAiProgressContent;
+              expect(content.entityId, 'test-entity');
+              expect(content.promptId, 'test-prompt');
+              expect(content.shouldTriggerOnInit, isTrue);
+              expect(content.showExisting, isFalse);
+
               return const Center(child: Text('Test'));
             },
           ),
