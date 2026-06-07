@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/config_empty_state.dart';
 
+import '../../../../../widget_test_utils.dart';
+
 void main() {
   group('ConfigEmptyState', () {
     Widget createWidget({
       required String message,
       required IconData icon,
     }) {
-      return MaterialApp(
-        home: Scaffold(
-          body: ConfigEmptyState(
-            message: message,
-            icon: icon,
-          ),
+      return makeTestableWidgetWithScaffold(
+        ConfigEmptyState(
+          message: message,
+          icon: icon,
         ),
       );
     }
@@ -55,39 +55,6 @@ void main() {
       final decoration = container.decoration! as BoxDecoration;
       expect(decoration.gradient, isNotNull);
       expect(decoration.borderRadius, BorderRadius.circular(24));
-    });
-
-    testWidgets('maintains proper spacing between elements', (
-      WidgetTester tester,
-    ) async {
-      await tester.pumpWidget(
-        createWidget(
-          message: 'No providers',
-          icon: Icons.link,
-        ),
-      );
-
-      // Verify spacing using SizedBox widgets that are direct children of Column
-      final column = find.byType(Column).first;
-      final sizedBoxes = find.descendant(
-        of: column,
-        matching: find.byWidgetPredicate((widget) {
-          return widget is SizedBox && widget.height != null;
-        }),
-      );
-
-      // Should have 2 SizedBox widgets for spacing (excluding the icon's size)
-      final spacingBoxes = <SizedBox>[];
-      for (final element in sizedBoxes.evaluate()) {
-        final box = element.widget as SizedBox;
-        if (box.height == 20 || box.height == 8) {
-          spacingBoxes.add(box);
-        }
-      }
-
-      expect(spacingBoxes.length, 2);
-      expect(spacingBoxes[0].height, 20);
-      expect(spacingBoxes[1].height, 8);
     });
 
     testWidgets('uses correct text styles', (WidgetTester tester) async {

@@ -426,8 +426,11 @@ void main() {
           await expectLater(
             transcriptionStream.toList(),
             throwsA(
-              isA<VoxtralInferenceException>()
-                  .having((e) => e.statusCode, 'statusCode', 400),
+              isA<VoxtralInferenceException>().having(
+                (e) => e.statusCode,
+                'statusCode',
+                400,
+              ),
             ),
           );
           // Client errors are not retryable: exactly one request was sent.

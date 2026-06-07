@@ -369,6 +369,39 @@ void main() {
       // Verify it uses normal variant
       final toggle = tester.widget<UnifiedToggle>(find.byType(UnifiedToggle));
       expect(toggle.variant, UnifiedToggleVariant.normal);
+
+      // AI-specific container chrome: gradient backdrop and rounded corners.
+      final container = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byType(UnifiedAiToggleField),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final decoration = container.decoration! as BoxDecoration;
+      expect(decoration.gradient, isA<LinearGradient>());
+      expect(decoration.borderRadius, BorderRadius.circular(12));
+    });
+
+    testWidgets('reflects the initial value on the inner toggle', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData.light(),
+          home: Scaffold(
+            body: UnifiedAiToggleField(
+              label: 'AI Feature',
+              value: true,
+              onChanged: (_) {},
+            ),
+          ),
+        ),
+      );
+
+      final toggle = tester.widget<UnifiedToggle>(find.byType(UnifiedToggle));
+      expect(toggle.value, true);
     });
 
     testWidgets('with description', (WidgetTester tester) async {

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 import '../../../../../widget_test_utils.dart';
@@ -53,18 +54,36 @@ void main() {
     );
 
     testWidgets(
-      'each tab uses its own icon and a non-empty localized label',
+      'each tab uses its own icon and its exact localized label',
       (tester) async {
-        for (final (tab, icon) in [
-          (AiSettingsTab.providers, Icons.add_link_rounded),
-          (AiSettingsTab.models, Icons.auto_awesome_rounded),
-          (AiSettingsTab.profiles, Icons.tune_rounded),
+        // Resolve the live ARB bundle from the running tree so the asserts
+        // track copy changes instead of inlining English strings.
+        AppLocalizations l10n() => AppLocalizations.of(
+          tester.element(find.byType(AiSettingsFloatingActionButton)),
+        )!;
+
+        for (final (tab, icon, label) in [
+          (
+            AiSettingsTab.providers,
+            Icons.add_link_rounded,
+            (AppLocalizations m) => m.aiSettingsAddProviderButton,
+          ),
+          (
+            AiSettingsTab.models,
+            Icons.auto_awesome_rounded,
+            (AppLocalizations m) => m.aiSettingsAddModelButton,
+          ),
+          (
+            AiSettingsTab.profiles,
+            Icons.tune_rounded,
+            (AppLocalizations m) => m.aiSettingsAddProfileButton,
+          ),
         ]) {
           await pumpFab(tester, activeTab: tab);
 
           final fab = readFab(tester);
           expect(fab.icon, icon, reason: 'icon for $tab');
-          expect(fab.semanticLabel, isNotEmpty, reason: 'label for $tab');
+          expect(fab.semanticLabel, label(l10n()), reason: 'label for $tab');
         }
       },
     );

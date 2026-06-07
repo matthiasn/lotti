@@ -279,6 +279,7 @@ Widget makeTestableWidgetNoScroll(
   List<Override> overrides = const [],
   MediaQueryData? mediaQueryData,
   ThemeData? theme,
+  List<NavigatorObserver> navigatorObservers = const [],
 }) {
   final mq = mediaQueryData ?? phoneMediaQueryData;
 
@@ -287,6 +288,7 @@ Widget makeTestableWidgetNoScroll(
     child: MediaQuery(
       data: mq,
       child: MaterialApp(
+        navigatorObservers: navigatorObservers,
         theme: resolveTestTheme(theme),
         localizationsDelegates: const [
           AppLocalizations.delegate,

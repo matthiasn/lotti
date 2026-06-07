@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_search_bar.dart';
 
+import '../../../../../widget_test_utils.dart';
+
 void main() {
   group('AiSettingsSearchBar', () {
     late TextEditingController controller;
@@ -28,26 +30,24 @@ void main() {
       bool isCompact = false,
       ThemeData? theme,
     }) {
-      return MaterialApp(
-        theme: theme,
-        home: Scaffold(
-          body: AiSettingsSearchBar(
-            controller: controller,
-            hintText: hintText ?? 'Search AI configurations...',
-            isCompact: isCompact,
-            onClear:
-                onClear ??
-                () {
-                  onClearCalled = true;
-                },
-            onChanged:
-                onChanged ??
-                (value) {
-                  onChangedCalled = true;
-                  lastChangedValue = value;
-                },
-          ),
+      return makeTestableWidgetWithScaffold(
+        AiSettingsSearchBar(
+          controller: controller,
+          hintText: hintText ?? 'Search AI configurations...',
+          isCompact: isCompact,
+          onClear:
+              onClear ??
+              () {
+                onClearCalled = true;
+              },
+          onChanged:
+              onChanged ??
+              (value) {
+                onChangedCalled = true;
+                lastChangedValue = value;
+              },
         ),
+        theme: theme,
       );
     }
 
@@ -219,19 +219,17 @@ void main() {
     group('keyboard navigation', () {
       testWidgets('can be focused with tab', (WidgetTester tester) async {
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Column(
-                children: [
-                  const TextField(),
-                  AiSettingsSearchBar(
-                    controller: controller,
-                    hintText: 'Search...',
-                    onClear: () {},
-                    onChanged: (_) {},
-                  ),
-                ],
-              ),
+          makeTestableWidgetWithScaffold(
+            Column(
+              children: [
+                const TextField(),
+                AiSettingsSearchBar(
+                  controller: controller,
+                  hintText: 'Search...',
+                  onClear: () {},
+                  onChanged: (_) {},
+                ),
+              ],
             ),
           ),
         );
@@ -250,14 +248,12 @@ void main() {
         WidgetTester tester,
       ) async {
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: AiSettingsSearchBar(
-                controller: controller,
-                hintText: 'Search...',
-                onClear: () {}, // Required callback
-                onChanged: (_) {}, // Required callback
-              ),
+          makeTestableWidgetWithScaffold(
+            AiSettingsSearchBar(
+              controller: controller,
+              hintText: 'Search...',
+              onClear: () {}, // Required callback
+              onChanged: (_) {}, // Required callback
             ),
           ),
         );
@@ -392,11 +388,7 @@ void main() {
 
         // Remove widget from tree
         await tester.pumpWidget(
-          const MaterialApp(
-            home: Scaffold(
-              body: SizedBox(),
-            ),
-          ),
+          makeTestableWidgetWithScaffold(const SizedBox()),
         );
 
         // Widget should be disposed

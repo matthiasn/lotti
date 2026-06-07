@@ -353,7 +353,7 @@ void main() {
         // Let the post-frame callback run so _startDownload executes and the
         // overridden installModel throws into the dialog's catch block.
         await tester.pump();
-        await Future<void>.value();
+        await tester.pump();
         await tester.pump();
 
         // The dialog funnels the failure through FlutterError.reportError; the
@@ -389,7 +389,7 @@ void main() {
         ),
       );
       await tester.pump();
-      await Future<void>.value();
+      await tester.pump();
       await tester.pump();
 
       final indicator = tester.widget<LinearProgressIndicator>(
@@ -422,7 +422,7 @@ void main() {
           ),
         );
         await tester.pump();
-        await Future<void>.value();
+        await tester.pump();
         await tester.pump();
 
         final indicator = tester.widget<LinearProgressIndicator>(
@@ -460,9 +460,9 @@ void main() {
           ),
         );
         await tester.pump();
-        await Future<void>.value();
         await tester.pump();
-        await Future<void>.value();
+        await tester.pump();
+        await tester.pump();
         await tester.pump();
 
         final indicator = tester.widget<LinearProgressIndicator>(
@@ -502,7 +502,7 @@ void main() {
       await tester.tap(find.text('Open download'));
       await tester.pump();
       await tester.pump(kThemeAnimationDuration);
-      await Future<void>.value();
+      await tester.pump();
       await tester.pump();
 
       expect(find.byType(MlxAudioModelDownloadDialog), findsOneWidget);
@@ -540,9 +540,9 @@ void main() {
             ),
           );
           await tester.pump();
-          await Future<void>.value();
           await tester.pump();
-          await Future<void>.value();
+          await tester.pump();
+          await tester.pump();
           await tester.pump();
 
           final indicator = tester.widget<LinearProgressIndicator>(

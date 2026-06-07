@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -7,6 +8,31 @@ import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.da
 import 'package:lotti/features/ai/ui/settings/ai_config_card.dart';
 import 'package:lotti/features/ai/ui/settings/widgets/ai_settings_config_sliver.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+
+/// Hosts [slivers] inside the one MaterialApp + localization stack shared by
+/// every test in this file instead of rebuilding it ad hoc per group.
+Widget _buildSliverScaffold({
+  required List<Widget> slivers,
+  List<Override> overrides = const [],
+}) {
+  return ProviderScope(
+    overrides: overrides,
+    child: MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      home: Scaffold(
+        body: CustomScrollView(slivers: slivers),
+      ),
+    ),
+  );
+}
+
+/// Drains the async `aiConfigByIdProvider` loads (the overrides resolve in a
+/// microtask) with two bounded pumps instead of `pumpAndSettle`'s polling.
+Future<void> _settleProviderLoads(WidgetTester tester) async {
+  await tester.pump();
+  await tester.pump();
+}
 
 void main() {
   group('AiSettingsConfigSliver', () {
@@ -111,7 +137,7 @@ void main() {
       bool enableSwipeToDelete = true,
       VoidCallback? onRetry,
     }) {
-      return ProviderScope(
+      return _buildSliverScaffold(
         overrides: [
           // Mock the provider lookups for models
           aiConfigByIdProvider('provider-1').overrideWith((ref) async {
@@ -121,30 +147,22 @@ void main() {
             return testProviders[1];
           }),
         ],
-        child: MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: CustomScrollView(
-              slivers: [
-                AiSettingsConfigSliver<T>(
-                  configsAsync: configsAsync,
-                  filteredConfigs: filteredConfigs,
-                  emptyMessage: emptyMessage,
-                  emptyIcon: emptyIcon,
-                  showCapabilities: showCapabilities,
-                  onConfigTap:
-                      onConfigTap ??
-                      (config) {
-                        tappedConfigs.add(config);
-                      },
-                  enableSwipeToDelete: enableSwipeToDelete,
-                  onRetry: onRetry,
-                ),
-              ],
-            ),
+        slivers: [
+          AiSettingsConfigSliver<T>(
+            configsAsync: configsAsync,
+            filteredConfigs: filteredConfigs,
+            emptyMessage: emptyMessage,
+            emptyIcon: emptyIcon,
+            showCapabilities: showCapabilities,
+            onConfigTap:
+                onConfigTap ??
+                (config) {
+                  tappedConfigs.add(config);
+                },
+            enableSwipeToDelete: enableSwipeToDelete,
+            onRetry: onRetry,
           ),
-        ),
+        ],
       );
     }
 
@@ -303,7 +321,7 @@ void main() {
         expect(find.text('Test Model 2'), findsOneWidget);
 
         // Wait for provider data to load
-        await tester.pumpAndSettle();
+        await _settleProviderLoads(tester);
 
         // Capability chips are shown based on model properties
         // Text capability for both models (always shown as supported)
@@ -328,7 +346,7 @@ void main() {
         );
 
         // Wait for provider data to load
-        await tester.pumpAndSettle();
+        await _settleProviderLoads(tester);
 
         expect(find.text('Test Model 1'), findsOneWidget);
         expect(find.text('Test Model 2'), findsOneWidget);
@@ -679,35 +697,29 @@ void main() {
         WidgetTester tester,
       ) async {
         await tester.pumpWidget(
-          ProviderScope(
-            child: MaterialApp(
-              home: Scaffold(
-                body: CustomScrollView(
-                  slivers: [
-                    const SliverAppBar(
-                      title: Text('Test App Bar'),
-                    ),
-                    AiSettingsConfigSliver<AiConfigInferenceProvider>(
-                      configsAsync: AsyncValue.data(
-                        testProviders.cast<AiConfig>(),
-                      ),
-                      filteredConfigs: testProviders,
-                      emptyMessage: 'No providers',
-                      emptyIcon: Icons.hub,
-                      onConfigTap: (config) {
-                        tappedConfigs.add(config);
-                      },
-                    ),
-                    const SliverToBoxAdapter(
-                      child: Padding(
-                        padding: EdgeInsets.all(16),
-                        child: Text('Footer Content'),
-                      ),
-                    ),
-                  ],
+          _buildSliverScaffold(
+            slivers: [
+              const SliverAppBar(
+                title: Text('Test App Bar'),
+              ),
+              AiSettingsConfigSliver<AiConfigInferenceProvider>(
+                configsAsync: AsyncValue.data(
+                  testProviders.cast<AiConfig>(),
+                ),
+                filteredConfigs: testProviders,
+                emptyMessage: 'No providers',
+                emptyIcon: Icons.hub,
+                onConfigTap: (config) {
+                  tappedConfigs.add(config);
+                },
+              ),
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text('Footer Content'),
                 ),
               ),
-            ),
+            ],
           ),
         );
 
@@ -733,7 +745,7 @@ void main() {
         bool selectionMode = false,
         Set<String>? selected,
       }) {
-        return ProviderScope(
+        return _buildSliverScaffold(
           overrides: [
             aiConfigByIdProvider('model-1').overrideWith((ref) async {
               return testModels[0];
@@ -742,30 +754,22 @@ void main() {
               return testModels[1];
             }),
           ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: CustomScrollView(
-                slivers: [
-                  AiSettingsConfigSliver<AiConfigPrompt>(
-                    configsAsync: AsyncValue.data(prompts.cast<AiConfig>()),
-                    filteredConfigs: prompts,
-                    emptyMessage: 'No prompts',
-                    emptyIcon: Icons.psychology,
-                    onConfigTap: (config) {
-                      tappedConfigs.add(config);
-                    },
-                    selectionMode: selectionMode,
-                    selectedIds: selected ?? selectedIds,
-                    onSelectionChanged: (id) {
-                      selectionChanges.add(id);
-                    },
-                  ),
-                ],
-              ),
+          slivers: [
+            AiSettingsConfigSliver<AiConfigPrompt>(
+              configsAsync: AsyncValue.data(prompts.cast<AiConfig>()),
+              filteredConfigs: prompts,
+              emptyMessage: 'No prompts',
+              emptyIcon: Icons.psychology,
+              onConfigTap: (config) {
+                tappedConfigs.add(config);
+              },
+              selectionMode: selectionMode,
+              selectedIds: selected ?? selectedIds,
+              onSelectionChanged: (id) {
+                selectionChanges.add(id);
+              },
             ),
-          ),
+          ],
         );
       }
 
@@ -779,7 +783,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await _settleProviderLoads(tester);
 
         // Should find checkbox containers (custom animated containers)
         // In selection mode, cards have a leading checkbox area
@@ -799,7 +803,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await _settleProviderLoads(tester);
 
         // Should find one check icon for the selected prompt
         expect(find.byIcon(Icons.check), findsOneWidget);
@@ -816,7 +820,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await _settleProviderLoads(tester);
 
         // Should find check icons for both selected prompts
         expect(find.byIcon(Icons.check), findsNWidgets(2));
@@ -832,7 +836,7 @@ void main() {
             ),
           );
 
-          await tester.pumpAndSettle();
+          await _settleProviderLoads(tester);
           await tester.tap(find.text('Test Prompt 1'));
           await tester.pump();
 
@@ -851,7 +855,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await _settleProviderLoads(tester);
         await tester.tap(find.text('Test Prompt 1'));
         await tester.pump();
 
@@ -870,7 +874,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await _settleProviderLoads(tester);
 
         // Regular cards should show chevron, not checkbox
         expect(find.byIcon(Icons.chevron_right), findsNWidgets(2));
@@ -888,7 +892,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await _settleProviderLoads(tester);
 
         // The selected card should have different styling
         // We verify by checking the AnimatedContainer exists
@@ -906,7 +910,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await _settleProviderLoads(tester);
 
         // Tap first prompt
         await tester.tap(find.text('Test Prompt 1'));
@@ -933,7 +937,7 @@ void main() {
           ),
         );
 
-        await tester.pumpAndSettle();
+        await _settleProviderLoads(tester);
 
         // Try to swipe
         await tester.drag(find.text('Test Prompt 1'), const Offset(-100, 0));
