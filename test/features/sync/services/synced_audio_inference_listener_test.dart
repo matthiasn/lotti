@@ -127,6 +127,46 @@ void main() {
   );
 
   test(
+    'start() after dispose() re-subscribes — the listener supports restart',
+    () async {
+      // Real async on purpose: broadcast-stream cancel() does not resolve
+      // under fakeAsync (same documented exception as the wake
+      // orchestrator's replaces-subscription test), and dispose() must
+      // complete before restart can be observed. A manual broadcast
+      // controller stands in for UpdateNotifications so no real batching
+      // timers are involved.
+      final controller = StreamController<Set<String>>.broadcast();
+      final mockNotifications = MockUpdateNotifications();
+      when(
+        () => mockNotifications.syncUpdateStream,
+      ).thenAnswer((_) => controller.stream);
+      final restartListener = SyncedAudioInferenceListener(
+        updateNotifications: mockNotifications,
+        dispatcher: dispatcher,
+      );
+
+      restartListener.start();
+      controller.add({'audio-1'});
+      await pumpEventQueue();
+      verify(() => dispatcher.maybeDispatch('audio-1')).called(1);
+
+      await restartListener.dispose();
+      controller.add({'audio-while-disposed'});
+      await pumpEventQueue();
+      verifyNever(() => dispatcher.maybeDispatch('audio-while-disposed'));
+
+      // dispose() nulls the subscription, so start() attaches a fresh one.
+      restartListener.start();
+      controller.add({'audio-2'});
+      await pumpEventQueue();
+      verify(() => dispatcher.maybeDispatch('audio-2')).called(1);
+
+      await restartListener.dispose();
+      await controller.close();
+    },
+  );
+
+  test(
     'dispose() cancels the subscription — later sync emissions do not fire',
     () {
       fakeAsync((async) {
