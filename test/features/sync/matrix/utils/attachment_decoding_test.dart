@@ -21,6 +21,10 @@ void main() {
     registerFallbackValue(StackTrace.empty);
   });
 
+  // Contract boundary: this file owns decoding/transport concerns
+  // (decodeAttachmentBytes, download dedup, gzip helpers). Persisting the
+  // decoded bytes is atomicWriteBytes' contract, owned by
+  // atomic_write_test.dart — no write-path coverage belongs here.
   group('decodeAttachmentBytes', () {
     test(
       'returns bytes verbatim when no encoding header is present',
@@ -148,6 +152,9 @@ void main() {
         // reproducibility). Repetitive or low-entropy content compresses
         // below the 2 KB inline threshold and skips the offload branch
         // this test exists to exercise.
+        // fakeAsync is inapplicable: the offload runs through compute(),
+        // and a real isolate spawn cannot be driven by a fake clock — the
+        // ~100-400 ms cost is the price of exercising the real boundary.
         final rng = Random(0x5EED);
         final original = List<int>.generate(32 * 1024, (_) => rng.nextInt(256));
         final compressed = Uint8List.fromList(gzip.encode(original));
@@ -410,6 +417,18 @@ void main() {
           expect(err.message, contains('timed out'));
           expect(err.path, '/entries/stuck.json');
         });
+      },
+    );
+  });
+
+  group('wire-format constants', () {
+    test(
+      'encoding key and gzip marker are pinned against accidental rename',
+      () {
+        // These are wire-format identifiers shared with remote peers; renaming
+        // them breaks decoding of already-sent attachments.
+        expect(attachmentEncodingKey, 'com.lotti.encoding');
+        expect(attachmentEncodingGzip, 'gzip');
       },
     );
   });
