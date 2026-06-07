@@ -290,6 +290,38 @@ void main() {
       },
     );
 
+    test(
+      'summary with no pending activity is NOT outdated',
+      () async {
+        final scopedContainer = ProviderContainer(
+          overrides: [
+            projectRepositoryProvider.overrideWithValue(mockRepo),
+            projectHealthMetricsProvider(projectId).overrideWith(
+              (ref) async => makeTestProjectHealthMetrics(),
+            ),
+            projectAgentSummaryProvider(projectId).overrideWith(
+              (ref) async => ProjectAgentSummaryState(
+                hasReport: true,
+                scheduledWakeAt: DateTime(2026, 4, 3, 6),
+              ),
+            ),
+            projectRecommendationsProvider(projectId).overrideWith(
+              (ref) async => [],
+            ),
+          ],
+        );
+        addTearDown(scopedContainer.dispose);
+
+        final result = await scopedContainer.read(
+          projectHealthSnapshotProvider(projectId).future,
+        );
+
+        // hasReport && pendingProjectActivityAt == null → fresh.
+        expect(result.isSummaryOutdated, isFalse);
+        expect(result.scheduledWakeAt, DateTime(2026, 4, 3, 6));
+      },
+    );
+
     test('exposes null-safe getters when metrics and summary are absent', () {
       final project = makeTestProject(
         id: projectId,

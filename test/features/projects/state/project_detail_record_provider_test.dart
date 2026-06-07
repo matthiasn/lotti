@@ -133,6 +133,22 @@ void main() {
     utcOffset: 0,
   );
 
+  /// Loaded-and-idle detail state: the false/false/false triple every test
+  /// used to spell out inline.
+  ProjectDetailState makeDetailState({
+    ProjectEntry? project,
+    List<Task> linkedTasks = const [],
+    bool isLoading = false,
+    bool isSaving = false,
+    bool hasChanges = false,
+  }) => ProjectDetailState(
+    project: project,
+    linkedTasks: linkedTasks,
+    isLoading: isLoading,
+    isSaving: isSaving,
+    hasChanges: hasChanges,
+  );
+
   /// Builds a [ProviderContainer] with the given overrides for the record
   /// provider dependencies. Returns the container.
   ProviderContainer createContainer({
@@ -209,12 +225,9 @@ void main() {
       ];
 
       final container = createContainer(
-        detailState: ProjectDetailState(
+        detailState: makeDetailState(
           project: project,
           linkedTasks: tasks,
-          isLoading: false,
-          isSaving: false,
-          hasChanges: false,
         ),
         healthMetrics: makeTestProjectHealthMetrics(
           confidence: 0.75,
@@ -253,12 +266,9 @@ void main() {
         ];
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
             linkedTasks: tasks,
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -279,12 +289,9 @@ void main() {
         ];
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
             linkedTasks: tasks,
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -301,12 +308,8 @@ void main() {
         final project = makeTestProject(id: projectId, categoryId: categoryId);
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -330,12 +333,8 @@ void main() {
       }) async {
         final project = makeTestProject(id: projectId, categoryId: categoryId);
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
           healthMetrics: metricsPresent
               ? makeTestProjectHealthMetrics(
@@ -441,12 +440,8 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
           agent: agent,
           reportEntity: report,
@@ -477,12 +472,8 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
           agent: agent,
           reportEntity: report,
@@ -514,12 +505,8 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
           agent: agent,
           reportEntity: report,
@@ -541,12 +528,8 @@ void main() {
           );
 
           final container = createContainer(
-            detailState: ProjectDetailState(
+            detailState: makeDetailState(
               project: project,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
             ),
           );
 
@@ -570,12 +553,8 @@ void main() {
               );
 
           final container = createContainer(
-            detailState: ProjectDetailState(
+            detailState: makeDetailState(
               project: project,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
             ),
           );
 
@@ -604,12 +583,8 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
           agent: agent,
           reportEntity: report,
@@ -640,12 +615,8 @@ void main() {
               );
 
           final container = createContainer(
-            detailState: ProjectDetailState(
+            detailState: makeDetailState(
               project: project,
-              linkedTasks: const [],
-              isLoading: false,
-              isSaving: false,
-              hasChanges: false,
             ),
           );
 
@@ -666,12 +637,8 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -691,12 +658,8 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -720,12 +683,8 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
           agent: agent,
           agentState: state,
@@ -744,12 +703,9 @@ void main() {
       /// titles in their sorted order.
       Future<List<String>> sortedTitles(List<Task> tasks) async {
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: makeTestProject(id: projectId, categoryId: categoryId),
             linkedTasks: tasks,
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
         final result = await container.read(
@@ -906,12 +862,9 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
             linkedTasks: [task1, task2, task3],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -972,12 +925,9 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
             linkedTasks: [task1, task2],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -1028,12 +978,9 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
             linkedTasks: [task1, task2],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -1062,12 +1009,9 @@ void main() {
         ).thenAnswer((_) async => const <String, AgentReportEntity>{});
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
             linkedTasks: [task1, task2, task3],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -1087,12 +1031,8 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -1124,12 +1064,8 @@ void main() {
         ];
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
           recommendations: recs,
         );
@@ -1151,12 +1087,8 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -1176,12 +1108,8 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -1200,12 +1128,8 @@ void main() {
         );
 
         final container = createContainer(
-          detailState: ProjectDetailState(
+          detailState: makeDetailState(
             project: project,
-            linkedTasks: const [],
-            isLoading: false,
-            isSaving: false,
-            hasChanges: false,
           ),
         );
 
@@ -1218,15 +1142,38 @@ void main() {
     });
   });
 
+  group('loading state with a project already present', () {
+    test('record resolves from the project even while isLoading', () async {
+      final project = makeTestProject(id: projectId, title: 'Mid refresh');
+      final container = createContainer(
+        detailState: makeDetailState(project: project, isLoading: true),
+      );
+
+      final record = await container.read(
+        projectDetailRecordProvider(projectId).future,
+      );
+
+      // A background refresh (loading-with-data) must not blank the record.
+      expect(record, isNotNull);
+      expect(record!.project.meta.id, projectId);
+      expect(record.project.data.title, 'Mid refresh');
+    });
+  });
+
   group('projectDetailNowProvider', () {
-    test('returns a function that produces a DateTime', () {
+    test('returns a wall-clock function (bounded by the test run)', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
       final nowFn = container.read(projectDetailNowProvider);
+      final before = DateTime.now();
       final result = nowFn();
+      final after = DateTime.now();
 
-      expect(result, isA<DateTime>());
+      // The default wiring is DateTime.now — the result must fall inside
+      // the sampling window, not just be any DateTime.
+      expect(result.isBefore(before), isFalse);
+      expect(result.isAfter(after), isFalse);
     });
   });
 }
