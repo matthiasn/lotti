@@ -8,6 +8,7 @@ import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -23,30 +24,42 @@ void main() {
   setUpAll(registerSyncProcessorFallbacks);
   setUp(setUpProcessorMocks);
 
+  /// Builds the in-memory NotificationsDb + scheduler + processor trio used
+  /// by both groups; only the optional sequence log differs.
+  ({
+    NotificationsDb db,
+    MockNotificationScheduler scheduler,
+    SyncEventProcessor processor,
+  })
+  buildNotificationProcessor({SyncSequenceLogService? sequenceLogService}) {
+    final db = NotificationsDb(inMemoryDatabase: true, background: false);
+    final scheduler = MockNotificationScheduler();
+    when(
+      () => scheduler.schedule(any<NotificationEntity>()),
+    ).thenAnswer((_) async {});
+    final processor = SyncEventProcessor(
+      loggingService: loggingService,
+      updateNotifications: updateNotifications,
+      aiConfigRepository: aiConfigRepository,
+      settingsDb: settingsDb,
+      journalEntityLoader: journalEntityLoader,
+      notificationsDb: db,
+      notificationScheduler: scheduler,
+      sequenceLogService: sequenceLogService,
+    );
+    return (db: db, scheduler: scheduler, processor: processor);
+  }
+
   group('SyncEventProcessor - Notifications', () {
     late NotificationsDb notificationsDb;
     late MockNotificationScheduler scheduler;
     late SyncEventProcessor notificationProcessor;
 
     setUp(() {
-      notificationsDb = NotificationsDb(
-        inMemoryDatabase: true,
-        background: false,
-      );
-      scheduler = MockNotificationScheduler();
-      when(
-        () => scheduler.schedule(any<NotificationEntity>()),
-      ).thenAnswer((_) async {});
-
-      notificationProcessor = SyncEventProcessor(
-        loggingService: loggingService,
-        updateNotifications: updateNotifications,
-        aiConfigRepository: aiConfigRepository,
-        settingsDb: settingsDb,
-        journalEntityLoader: journalEntityLoader,
-        notificationsDb: notificationsDb,
-        notificationScheduler: scheduler,
-      );
+      final bench = buildNotificationProcessor();
+      notificationsDb = bench.db;
+      scheduler = bench.scheduler;
+      notificationProcessor = bench.processor;
     });
 
     tearDown(() async {
@@ -211,28 +224,13 @@ void main() {
     late SyncEventProcessor processorWithLog;
 
     setUp(() {
-      notificationsDb = NotificationsDb(
-        inMemoryDatabase: true,
-        background: false,
-      );
-      scheduler = MockNotificationScheduler();
-      when(
-        () => scheduler.schedule(any<NotificationEntity>()),
-      ).thenAnswer((_) async {});
-
       sequenceLog = MockSyncSequenceLogService();
       _stubRecordReceived(sequenceLog);
+      final bench = buildNotificationProcessor(sequenceLogService: sequenceLog);
+      notificationsDb = bench.db;
+      scheduler = bench.scheduler;
 
-      processorWithLog = SyncEventProcessor(
-        loggingService: loggingService,
-        updateNotifications: updateNotifications,
-        aiConfigRepository: aiConfigRepository,
-        settingsDb: settingsDb,
-        journalEntityLoader: journalEntityLoader,
-        notificationsDb: notificationsDb,
-        notificationScheduler: scheduler,
-        sequenceLogService: sequenceLog,
-      );
+      processorWithLog = bench.processor;
     });
 
     tearDown(() async {

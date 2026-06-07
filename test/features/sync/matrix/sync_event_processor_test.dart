@@ -1540,6 +1540,49 @@ void main() {
 
   group('SyncEventProcessor - self-echo skip', () {
     test(
+      'treats the local host as unknown when getHost() throws — the event '
+      'is still processed (no self-echo skip) and the error is logged',
+      () async {
+        final localVcService = MockVectorClockService();
+        when(localVcService.getHost).thenThrow(StateError('host boom'));
+
+        final processorWithVc = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          vectorClockService: localVcService,
+        );
+
+        // Even a message claiming to originate from 'host-self' must be
+        // processed when the local host id cannot be resolved.
+        const bundle = SyncOutboxBundle(
+          children: [SyncMessage.aiConfigDelete(id: 'cfg-err')],
+          originatingHostId: 'host-self',
+        );
+        when(() => event.text).thenReturn(encodeMessage(bundle));
+
+        await processorWithVc.process(event: event, journalDb: journalDb);
+
+        verify(
+          () => aiConfigRepository.deleteConfig(
+            'cfg-err',
+            fromSync: true,
+          ),
+        ).called(1);
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'processor.selfEcho.hostLookup',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'short-circuits prepare for any SyncMessage whose originatingHostId '
       'matches the local host — proves a self-echoed bundle never '
       'touches `_resolveOutboxBundleManifest` (no descriptor download, '
