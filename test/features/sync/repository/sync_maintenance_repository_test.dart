@@ -1254,15 +1254,17 @@ void main() {
       SyncStep.dashboards: 'fetchTotals_dashboards',
       SyncStep.habits: 'fetchTotals_habits',
       SyncStep.aiSettings: 'fetchTotals_aiSettings',
-      SyncStep.backfillAgentEntityClocks: 'fetchTotals_backfillAgentEntityClocks',
+      SyncStep.backfillAgentEntityClocks:
+          'fetchTotals_backfillAgentEntityClocks',
       SyncStep.backfillAgentLinkClocks: 'fetchTotals_backfillAgentLinkClocks',
       SyncStep.agentEntities: 'fetchTotals_agentEntities',
       SyncStep.agentLinks: 'fetchTotals_agentLinks',
     };
 
     test('maps every non-complete step to its sync and totals subDomain', () {
-      for (final step
-          in SyncStep.values.where((step) => step != SyncStep.complete)) {
+      for (final step in SyncStep.values.where(
+        (step) => step != SyncStep.complete,
+      )) {
         expect(
           syncMaintenanceRepository.debugSyncDomainFor(step),
           expectedSyncDomains[step],

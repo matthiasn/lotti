@@ -47,6 +47,11 @@ void main() {
   });
 
   testWidgets('marks exactly the active preset as selected', (tester) async {
+    // getSemantics requires an active semantics client; without the
+    // handle the semantics tree may not be generated on all platforms.
+    // Disposed in the test body — teardown runs after the framework's
+    // end-of-test handle verification.
+    final semanticsHandle = tester.ensureSemantics();
     await pumpSelector(
       tester,
       range: resolvePreset(InsightsRangePreset.ytd, now),
@@ -71,6 +76,7 @@ void main() {
           .first,
     );
     expect(unselected.flagsCollection.isSelected, isNot(Tristate.isTrue));
+    semanticsHandle.dispose();
   });
 
   testWidgets('tapping a preset pill reports the preset', (tester) async {

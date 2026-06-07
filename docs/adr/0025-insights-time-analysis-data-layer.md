@@ -6,8 +6,8 @@ Accepted (2026-06-07)
 
 ## Context
 
-The Insights tab gains a desktop-only Time Analysis dashboard
-(`lib/features/insights/`, route `/dashboards/time`) that must aggregate
+The Daily OS tab gains a desktop-only Time Analysis dashboard
+(`lib/features/insights/`, route `/calendar/time`) that must aggregate
 10k+ time entries per category per day and switch between date ranges
 (1d/7d/30d/MTD/YTD/last month/custom) in under 200ms. The codebase already
 contains three divergent "time spent" computations (calendar query,

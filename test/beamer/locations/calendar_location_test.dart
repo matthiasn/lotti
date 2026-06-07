@@ -175,14 +175,20 @@ void main() {
     test(
       'pushes the full-screen Time Analysis page on /calendar/time and '
       'mirrors the route into desktopShowTimeAnalysis',
-      () {
+      () async {
         final navService = MockNavService();
         final showTimeAnalysis = ValueNotifier<bool>(false);
         when(
           () => navService.desktopShowTimeAnalysis,
         ).thenReturn(showTimeAnalysis);
-        getIt.registerSingleton<NavService>(navService);
-        addTearDown(() => getIt.unregister<NavService>());
+        // Shared harness owns the GetIt lifecycle; NavService rides its
+        // additionalSetup extension point.
+        await setUpTestGetIt(
+          additionalSetup: () {
+            getIt.registerSingleton<NavService>(navService);
+          },
+        );
+        addTearDown(tearDownTestGetIt);
         addTearDown(showTimeAnalysis.dispose);
 
         final routeInformation = RouteInformation(

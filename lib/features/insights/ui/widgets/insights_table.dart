@@ -38,7 +38,12 @@ class InsightsTable extends StatelessWidget {
     final brightness = Theme.of(context).brightness;
     if (rows.isEmpty) return const SizedBox.shrink();
 
-    final maxShare = rows.first.share;
+    // Max across all rows: buildTableRows sorts descending, but the
+    // normalization must not silently distort if a caller ever doesn't.
+    final maxShare = rows.fold<double>(
+      0,
+      (max, row) => row.share > max ? row.share : max,
+    );
     // mediumEmphasis: lowEmphasis column headers wash out on light theme.
     final headerStyle = calmEyebrowStyle(
       tokens,

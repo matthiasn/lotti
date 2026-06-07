@@ -1,29 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/insights/state/insights_preferences_controller.dart';
-import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   late MockSettingsDb settingsDb;
 
-  setUp(() {
-    settingsDb = MockSettingsDb();
-    if (getIt.isRegistered<SettingsDb>()) {
-      getIt.unregister<SettingsDb>();
-    }
-    getIt.registerSingleton<SettingsDb>(settingsDb);
+  setUp(() async {
+    // Shared harness registers the SettingsDb mock (among others); stub
+    // against the instance it provides.
+    final mocks = await setUpTestGetIt();
+    settingsDb = mocks.settingsDb;
     when(
       () => settingsDb.saveSettingsItem(any(), any()),
     ).thenAnswer((_) async => 1);
   });
 
-  tearDown(() {
-    getIt.unregister<SettingsDb>();
-  });
+  tearDown(tearDownTestGetIt);
 
   ProviderContainer makeContainer() {
     final container = ProviderContainer();

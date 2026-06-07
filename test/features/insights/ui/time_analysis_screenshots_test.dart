@@ -219,6 +219,9 @@ void main() {
       categories: insightsScenarioCategories,
     );
     expect(find.text('Time Analysis'), findsOneWidget);
+    expect(find.text('Time per day'), findsOneWidget); // daily mode default
+    // KPI tile label + table column header.
+    expect(find.text('TOTAL'), findsNWidgets(2));
     await _capture(tester, '01_7d_default_dark');
   });
 
@@ -230,6 +233,7 @@ void main() {
       brightness: Brightness.light,
     );
     expect(find.text('Time Analysis'), findsOneWidget);
+    expect(find.text('Choose focus categories'), findsOneWidget);
     await _capture(tester, '02_7d_default_light');
   });
 
@@ -251,6 +255,7 @@ void main() {
       categories: insightsScenarioCategories,
     );
     await _tap(tester, find.text('30d'));
+    expect(find.text('May 9 – Jun 7'), findsOneWidget);
     await _capture(tester, '04_30d_dark');
   });
 
@@ -275,6 +280,8 @@ void main() {
     );
     await _tap(tester, find.text('30d'));
     await _tap(tester, find.text('Cumulative'));
+    expect(find.text('Running total over the range'), findsOneWidget);
+    expect(find.text('Time per day'), findsNothing);
     await _capture(tester, '06_30d_cumulative_dark');
   });
 
@@ -285,6 +292,9 @@ void main() {
       categories: insightsScenarioCategories,
     );
     await _tap(tester, find.text('1d'));
+    // Single-day range: avg/day would repeat the total, so it is hidden.
+    expect(find.text('AVG/DAY'), findsNothing);
+    expect(find.text('Jun 7'), findsOneWidget); // single-date range label
     await _capture(tester, '07_1d_hourly_dark');
   });
 
@@ -305,6 +315,9 @@ void main() {
       categories: insightsScenarioCategories,
     );
     await _tap(tester, find.text('30d'));
+    // Sparse data: sub-minute averages render the <0:01 guard.
+    expect(find.text('<0:01'), findsWidgets);
+    expect(find.text('Uncategorized'), findsWidgets);
     await _capture(tester, '09_sparse_30d_dark');
   });
 
@@ -314,6 +327,9 @@ void main() {
       rows: insightsSingleCategoryRows(_now),
       categories: insightsScenarioCategories,
     );
+    // Single series: caption names it, the one-item legend is suppressed.
+    expect(find.text('Time per day · Client Work'), findsOneWidget);
+    expect(find.text('100%'), findsOneWidget);
     await _capture(tester, '10_single_category_dark');
   });
 }
