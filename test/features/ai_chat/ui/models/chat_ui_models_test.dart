@@ -163,7 +163,13 @@ void main() {
         expect(domainSession.messages, equals(messages));
         expect(domainSession.createdAt, equals(messages.first.timestamp));
         expect(domainSession.lastMessageAt, equals(messages.last.timestamp));
-        expect(domainSession.metadata, equals({}));
+        // With no selectedModelId and no source metadata, toDomain must not
+        // inject a model key. Assert the absence of that key rather than exact
+        // map equality so an unrelated future metadata key would not break it.
+        expect(
+          domainSession.metadata,
+          isNot(contains('selectedModelId')),
+        );
       });
 
       test('a single message anchors both createdAt and lastMessageAt', () {
@@ -275,6 +281,40 @@ void main() {
         expect(model.streamingMessage, isNull);
       });
 
+      test('streamingMessage returns the first when several are streaming', () {
+        final firstStreaming = ChatMessage(
+          id: 'streaming-1',
+          content: 'First...',
+          role: ChatMessageRole.assistant,
+          timestamp: DateTime(2024, 3, 15, 10, 30),
+          isStreaming: true,
+        );
+        final secondStreaming = ChatMessage(
+          id: 'streaming-2',
+          content: 'Second...',
+          role: ChatMessageRole.assistant,
+          timestamp: DateTime(2024, 3, 15, 10, 31),
+          isStreaming: true,
+        );
+
+        final model = ChatSessionUiModel(
+          id: 'test-id',
+          title: 'Test',
+          messages: [
+            ChatMessage.user('Hello'),
+            firstStreaming,
+            secondStreaming,
+          ],
+          isLoading: false,
+          isStreaming: true,
+        );
+
+        // firstOrNull resolves multi-streaming ambiguity to document order:
+        // the earliest streaming message wins, not the latest.
+        expect(model.streamingMessage, equals(firstStreaming));
+        expect(model.streamingMessage, isNot(equals(secondStreaming)));
+      });
+
       test('hasMessages returns correct boolean', () {
         final emptyModel = ChatSessionUiModel.empty();
         final modelWithMessages = ChatSessionUiModel(
@@ -333,6 +373,31 @@ void main() {
         expect(modelWithTitle.displayTitle, equals('Custom Title'));
         expect(emptyModel.displayTitle, equals('New Chat'));
       });
+
+      glados.Glados<String>(
+        glados.any.chatTitle,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        'displayTitle: empty falls back to "New Chat", else identity',
+        (
+          title,
+        ) {
+          final model = ChatSessionUiModel(
+            id: 'id',
+            title: title,
+            messages: const [],
+            isLoading: false,
+            isStreaming: false,
+          );
+
+          if (title.isEmpty) {
+            expect(model.displayTitle, 'New Chat', reason: 'title="$title"');
+          } else {
+            expect(model.displayTitle, title, reason: 'title="$title"');
+          }
+        },
+        tags: 'glados',
+      );
 
       glados.Glados(
         glados.any.generatedChatSessionUiModel,
@@ -718,6 +783,12 @@ class _GeneratedChatMessage {
 }
 
 extension _AnyChatUiModels on glados.Any {
+  /// Titles for the displayTitle invariant: letterOrDigits can be empty (it is
+  /// built from `list(...)`), so both the fallback and identity branches are
+  /// exercised.
+  glados.Generator<String> get chatTitle =>
+      glados.StringAnys(this).letterOrDigits;
+
   glados.Generator<String> get _chatText => glados.AnyUtils(this).choose(const [
     '',
     'Chat',
