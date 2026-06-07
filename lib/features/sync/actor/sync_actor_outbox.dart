@@ -29,6 +29,21 @@ extension SyncActorOutbox on SyncActorCommandHandler {
         message.contains('bad parameter or other API misuse');
   }
 
+  /// Test seam for [_runWithRetries] — exposes the retry/backoff loop for
+  /// direct property testing.
+  @visibleForTesting
+  Future<T> debugRunWithRetries<T>(
+    Future<T> Function() operation, {
+    int maxRetries = 5,
+    Duration? baseDelay,
+    bool Function(Object)? isRetryable,
+  }) => _runWithRetries(
+    operation,
+    maxRetries: maxRetries,
+    baseDelay: baseDelay,
+    isRetryable: isRetryable,
+  );
+
   Future<T> _runWithRetries<T>(
     Future<T> Function() operation, {
     int maxRetries = 5,

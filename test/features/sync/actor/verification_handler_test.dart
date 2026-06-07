@@ -1,3 +1,4 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/actor/verification_handler.dart';
@@ -617,5 +618,49 @@ void main() {
       expect(events.last['emojis'], isEmpty);
       expect(handler.snapshot()['outgoingEmojis'], isEmpty);
     });
+  });
+
+  group('periodic poll timer', () {
+    test(
+      'the Timer.periodic path emits when state changes between poll ticks',
+      () {
+        fakeAsync((async) {
+          final events = <Map<String, Object?>>[];
+          final verification = MockKeyVerification();
+
+          var step = 'm.key.verification.request';
+          when(() => verification.lastStep).thenAnswer((_) => step);
+          when(() => verification.isDone).thenReturn(false);
+          when(() => verification.canceled).thenReturn(false);
+          when(
+            () => verification.sasEmojis,
+          ).thenAnswer((_) => <KeyVerificationEmoji>[]);
+          when(() => verification.onUpdate).thenAnswer((_) => null);
+          when(() => verification.onUpdate = any()).thenAnswer((_) {
+            return;
+          });
+          when(verification.cancel).thenAnswer((_) async {});
+
+          final handler = VerificationHandler(
+            onStateChanged: events.add,
+          )..trackIncoming(verification);
+          expect(events, hasLength(1)); // forced initial emission
+
+          // No change between ticks → the poll emits nothing.
+          async.elapse(const Duration(milliseconds: 100));
+          expect(events, hasLength(1));
+
+          // Mutate the step WITHOUT firing onUpdate — only the periodic
+          // poll can observe this, proving the Timer.periodic branch.
+          step = 'm.key.verification.ready';
+          async.elapse(const Duration(milliseconds: 100));
+          expect(events, hasLength(2));
+          expect(events.last['step'], 'm.key.verification.ready');
+
+          handler.dispose();
+          async.flushTimers();
+        });
+      },
+    );
   });
 }

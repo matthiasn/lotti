@@ -184,7 +184,11 @@ void main() {
       );
       expect(eventPortResponse['ok'], isTrue);
 
-      final event = await validEvent.future.timeout(const Duration(seconds: 2));
+      final event = await validEvent.future.timeout(
+        // Isolate round-trips resolve in milliseconds; 500 ms is
+        // hang-failure headroom, not a wait.
+        const Duration(milliseconds: 500),
+      );
       expect(event['event'], 'afterRaw');
       expect(events, hasLength(1));
       await sub.cancel();
