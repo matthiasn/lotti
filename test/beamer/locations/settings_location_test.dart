@@ -39,6 +39,7 @@ import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.da
 import 'package:lotti/features/settings/ui/pages/settings_page.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/settings/ui/pages/theming_page.dart';
+import 'package:lotti/features/sync/ui/backfill_settings_page.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
@@ -51,8 +52,6 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../mocks/mocks.dart';
-
-class MockBuildContext extends Mock implements BuildContext {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -81,8 +80,13 @@ void main() {
         settingsDb: mockSettingsDb,
       );
 
+      for (final unregister in [
+        if (getIt.isRegistered<JournalDb>()) getIt.unregister<JournalDb>,
+        if (getIt.isRegistered<NavService>()) getIt.unregister<NavService>,
+      ]) {
+        unregister();
+      }
       getIt
-        ..allowReassignment = true
         ..registerSingleton<JournalDb>(mockJournalDb)
         ..registerSingleton<NavService>(navService);
     });
@@ -419,7 +423,7 @@ void main() {
       );
       expect(pages.length, 2);
       expect(pages[0].child, isA<SettingsPage>());
-      // Second page is SyncSettingsPage; type check omitted to avoid import churn
+      expect(pages[1].child, isA<SyncSettingsPage>());
     });
 
     test('buildPages builds MatrixSyncMaintenancePage', () {
@@ -1086,8 +1090,7 @@ void main() {
       expect(pages.length, 3);
       expect(pages[0].child, isA<SettingsPage>());
       expect(pages[1].child, isA<SyncSettingsPage>());
-      // Third page is BackfillSettingsPage
-      expect(pages[2].child, isA<Widget>());
+      expect(pages[2].child, isA<BackfillSettingsPage>());
     });
 
     test('categories navigation stack has list page', () {
@@ -1189,6 +1192,37 @@ void main() {
         expect(route!.path, '/settings/labels/create');
         expect(route.queryParameters['name'], 'test');
       });
+
+      test(
+        'AI detail routes set the notifier with their path parameter and '
+        'still push only the root page',
+        () {
+          const cases = <(String path, String paramKey, String paramValue)>[
+            ('/settings/ai/provider/prov-1', 'providerId', 'prov-1'),
+            ('/settings/ai/model/model-2', 'modelId', 'model-2'),
+            ('/settings/ai/profile/profile-3', 'profileId', 'profile-3'),
+          ];
+          for (final (path, paramKey, paramValue) in cases) {
+            final routeInfo = RouteInformation(uri: Uri.parse(path));
+            final location = SettingsLocation(routeInfo);
+            var beamState = BeamState.fromRouteInformation(routeInfo);
+            beamState = beamState.copyWith(
+              pathParameters: {paramKey: paramValue},
+            );
+            final pages = location.buildPages(mockBuildContext, beamState);
+
+            // Desktop divergence: single root page + notifier update,
+            // versus the 3-page stack the mobile branch builds.
+            expect(pages, hasLength(1), reason: path);
+            expect(pages[0].child, isA<SettingsRootPage>(), reason: path);
+
+            final route = navService.desktopSelectedSettingsRoute.value;
+            expect(route, isNotNull, reason: path);
+            expect(route!.path, path, reason: path);
+            expect(route.pathParameters[paramKey], paramValue, reason: path);
+          }
+        },
+      );
 
       test('does not push sub-pages on desktop', () {
         for (final path in [

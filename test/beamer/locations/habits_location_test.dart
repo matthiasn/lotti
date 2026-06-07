@@ -3,9 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/habits_location.dart';
 import 'package:lotti/features/habits/ui/habits_page.dart';
-import 'package:mocktail/mocktail.dart';
-
-class MockBuildContext extends Mock implements BuildContext {}
+import '../../mocks/mocks.dart';
 
 void main() {
   group('HabitsLocation', () {

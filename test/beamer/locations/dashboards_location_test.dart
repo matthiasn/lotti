@@ -11,8 +11,6 @@ import 'package:uuid/uuid.dart';
 
 import '../../mocks/mocks.dart';
 
-class MockBuildContext extends Mock implements BuildContext {}
-
 void main() {
   group('DashboardsLocation', () {
     late MockBuildContext mockBuildContext;
@@ -23,9 +21,10 @@ void main() {
       mockBuildContext = MockBuildContext();
       mockNavService = MockNavService();
       when(() => mockNavService.isDesktopMode).thenReturn(false);
-      getIt
-        ..allowReassignment = true
-        ..registerSingleton<NavService>(mockNavService);
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
+      getIt.registerSingleton<NavService>(mockNavService);
     });
 
     tearDown(() {

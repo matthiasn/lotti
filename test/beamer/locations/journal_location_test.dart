@@ -4,10 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/infinite_journal_page.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
-
-class MockBuildContext extends Mock implements BuildContext {}
+import '../../mocks/mocks.dart';
 
 void main() {
   group('JournalLocation', () {
@@ -70,7 +68,12 @@ void main() {
       expect(entryDetailsPage.itemId, entryId);
     });
 
-    test('buildPages builds FillSurveyWithTypePage', () {
+    test('fill_survey route resolves to the journal root page only', () {
+      // `/journal/fill_survey/:surveyType` is a registered path pattern, but
+      // buildPages deliberately does NOT push a survey page: the survey is
+      // presented modally by the caller, and deep links into it land on the
+      // journal root. The surveyType parameter must not be mistaken for an
+      // entryId (only UUIDs push EntryDetailsPage).
       const surveyType = 'some-survey';
       final routeInformation = RouteInformation(
         uri: Uri.parse('/journal/fill_survey/$surveyType'),

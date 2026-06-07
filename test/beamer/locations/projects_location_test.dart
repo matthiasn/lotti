@@ -23,9 +23,10 @@ void main() {
       mockBuildContext = _MockBuildContext();
       mockNavService = MockNavService();
       when(() => mockNavService.isDesktopMode).thenReturn(false);
-      getIt
-        ..allowReassignment = true
-        ..registerSingleton<NavService>(mockNavService);
+      if (getIt.isRegistered<NavService>()) {
+        getIt.unregister<NavService>();
+      }
+      getIt.registerSingleton<NavService>(mockNavService);
     });
 
     tearDown(() {
