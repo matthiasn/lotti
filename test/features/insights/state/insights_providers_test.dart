@@ -16,6 +16,7 @@ import '../../../mocks/mocks.dart';
 void main() {
   final fixedNow = DateTime(2026, 6, 7, 16);
   final windowStartDay = epochDay(DateTime(2026));
+  final window = (startDay: windowStartDay, endYear: 2026);
 
   late MockInsightsRepository repository;
   late MockUpdateNotifications notifications;
@@ -70,7 +71,7 @@ void main() {
   /// while listened to) and returns the first emitted buckets.
   Future<InsightsDayBuckets> listenAndAwait(
     ProviderContainer container,
-    int window, {
+    InsightsWindow window, {
     List<AsyncValue<InsightsDayBuckets>>? into,
   }) {
     final sub = container.listen(
@@ -90,7 +91,7 @@ void main() {
       stubRows([row(hour: 9)]);
       final container = makeContainer();
 
-      final buckets = await listenAndAwait(container, windowStartDay);
+      final buckets = await listenAndAwait(container, window);
 
       expect(buckets.windowStartDay, windowStartDay);
       expect(
@@ -111,7 +112,7 @@ void main() {
       stubRows([row(hour: 9)]);
       final container = makeContainer();
 
-      await listenAndAwait(container, windowStartDay);
+      await listenAndAwait(container, window);
 
       verify(
         () => repository.fetchTimeRows(
@@ -126,7 +127,7 @@ void main() {
       final container = makeContainer(withNotifications: notifications);
 
       final states = <AsyncValue<InsightsDayBuckets>>[];
-      await listenAndAwait(container, windowStartDay, into: states);
+      await listenAndAwait(container, window, into: states);
 
       // New data arrives, then a matching notification fires.
       stubRows([row(hour: 9), row(hour: 14)]);
@@ -154,7 +155,7 @@ void main() {
         final container = makeContainer(withNotifications: notifications);
 
         final states = <AsyncValue<InsightsDayBuckets>>[];
-        await listenAndAwait(container, windowStartDay, into: states);
+        await listenAndAwait(container, window, into: states);
 
         // The link lands and the entry is now attributed to the task's
         // category — standalone link creation fires only linkNotification.
@@ -181,7 +182,7 @@ void main() {
       stubRows([row(hour: 9)]);
       final container = makeContainer(withNotifications: notifications);
 
-      await listenAndAwait(container, windowStartDay);
+      await listenAndAwait(container, window);
 
       notificationController.add({audioNotification, 'SOMETHING_ELSE'});
       await Future<void>.delayed(Duration.zero);
@@ -201,7 +202,7 @@ void main() {
         final container = makeContainer(withNotifications: notifications);
 
         final states = <AsyncValue<InsightsDayBuckets>>[];
-        await listenAndAwait(container, windowStartDay, into: states);
+        await listenAndAwait(container, window, into: states);
 
         await withClock(Clock.fixed(fixedNow), () async {
           notificationController.add({taskNotification});
@@ -226,18 +227,26 @@ void main() {
     test('different windows are independent provider instances', () async {
       stubRows([row(hour: 9)]);
       final container = makeContainer();
-      final previousYearWindow = epochDay(DateTime(2025));
+      final previousYearWindow = (
+        startDay: epochDay(DateTime(2025)),
+        endYear: 2025,
+      );
 
-      await listenAndAwait(container, windowStartDay);
+      await listenAndAwait(container, window);
       await listenAndAwait(container, previousYearWindow);
 
       final captured = verify(
         () => repository.fetchTimeRows(
           start: captureAny(named: 'start'),
-          end: any(named: 'end'),
+          end: captureAny(named: 'end'),
         ),
       ).captured;
-      expect(captured, [DateTime(2026), DateTime(2025)]);
+      expect(captured[0], DateTime(2026)); // current-year start
+      expect(captured[1], DateTime(2026, 6, 9)); // moving end of tomorrow
+      expect(captured[2], DateTime(2025)); // past-year start
+      // Past-year windows are capped at Jan 1 of the following year —
+      // a small 2025 range never fetches 2026 data.
+      expect(captured[3], DateTime(2026));
     });
   });
 

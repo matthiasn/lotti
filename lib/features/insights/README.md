@@ -85,9 +85,11 @@ stateDiagram-v2
 ```
 
 - The fetch window is **January 1st of the range-start year through the end
-  of tomorrow**; the Riverpod family key is the window start day (an int).
-  Every preset within one year shares one in-memory bucket cache, so range
-  switching never touches the database (measured: all six presets in ~5ms
+  of tomorrow, capped at January 1st after the range-end year** — a
+  past-year custom range loads only its own year(s). The Riverpod family
+  key is a value-equal `({startDay, endYear})` record; every preset within
+  one year shares one in-memory bucket cache, so range switching never
+  touches the database (measured: all six presets in ~5ms
   on a 10k-entry year; cold fetch+bucketize ~35ms —
   `test/database/insights_performance_test.dart`).
 - A different year is a different provider instance — there is no mutable

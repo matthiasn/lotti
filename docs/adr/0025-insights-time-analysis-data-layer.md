@@ -51,9 +51,12 @@ adopted design.
    anchor). Property tests assert duration conservation and merge
    idempotence.
 6. **Year-keyed window cache.** Buckets are served by a
-   `StreamProvider.family` keyed on the window start day (January 1st of
-   the range-start year, an int). Every preset within a year shares one
-   in-memory cache, so range switching is a pure memory slice (measured:
+   `StreamProvider.family` keyed on a `({startDay, endYear})` record —
+   January 1st of the range-start year through the range-end year (the
+   fetch end is capped at January 1st after `endYear`, so past-year
+   custom ranges never load every year through today). Every preset
+   within a year shares one in-memory cache, so range switching is a
+   pure memory slice (measured:
    all six presets ~5ms on a 10k-entry year; cold fetch+bucketize ~35ms).
    A different year is a different provider instance — no mutable shared
    window, no stale-write races. Refetches ride

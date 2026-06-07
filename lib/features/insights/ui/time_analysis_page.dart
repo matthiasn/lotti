@@ -33,7 +33,7 @@ class TimeAnalysisPage extends ConsumerWidget {
 
     final range = ref.watch(insightsRangeControllerProvider);
     final bucketsAsync = ref.watch(
-      insightsBucketsProvider(windowStartDayFor(range)),
+      insightsBucketsProvider(insightsWindowFor(range)),
     );
     final preferences = ref.watch(insightsPreferencesControllerProvider);
     final categories =

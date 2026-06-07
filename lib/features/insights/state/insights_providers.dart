@@ -50,22 +50,25 @@ final insightsRefetchThrottleProvider = Provider<Duration?>(
 );
 
 final insightsBucketsProvider = StreamProvider.autoDispose
-    .family<InsightsDayBuckets, int>(
-      (ref, windowStartDay) {
+    .family<InsightsDayBuckets, InsightsWindow>(
+      (ref, window) {
         ref.cacheFor(dashboardCacheDuration);
         final repository = ref.watch(insightsRepositoryProvider);
         final notifications = ref.watch(maybeUpdateNotificationsProvider);
         final refetchThrottle = ref.watch(insightsRefetchThrottleProvider);
 
         Future<InsightsDayBuckets> fetch() async {
+          // End of tomorrow for current-year windows (read at fetch time so
+          // notification-driven refetches track a moving "now"), capped at
+          // January 1st after the window's end year — a past-year custom
+          // range never loads every year through today.
+          final movingEnd = dayStart(epochDay(clock.now()) + 2);
+          final cappedEnd = DateTime(window.endYear + 1);
           final rows = await repository.fetchTimeRows(
-            start: dayStart(windowStartDay),
-            // End of tomorrow: the dashboard analyzes recorded time, and
-            // every preset range ends today. Read at fetch time so
-            // notification-driven refetches track a moving "now".
-            end: dayStart(epochDay(clock.now()) + 2),
+            start: dayStart(window.startDay),
+            end: cappedEnd.isBefore(movingEnd) ? cappedEnd : movingEnd,
           );
-          return bucketize(rows, windowStartDay: windowStartDay);
+          return bucketize(rows, windowStartDay: window.startDay);
         }
 
         if (notifications == null) {

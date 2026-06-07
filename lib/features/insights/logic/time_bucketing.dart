@@ -30,13 +30,18 @@ DateTime dayStart(int day) {
   return DateTime(anchor.year, anchor.month, anchor.day);
 }
 
-/// Local midnight at the start of the day **after** [dt]'s calendar day.
+/// Midnight at the start of the day **after** [dt]'s calendar day, in
+/// [dt]'s own timezone flavor.
 ///
 /// `DateTime(y, m, d + 1)` lets Dart normalize month/year rollover and lands
 /// exactly on the next local midnight even across 23h/25h DST days, unlike
-/// `dt.add(const Duration(days: 1))`.
-DateTime nextLocalMidnight(DateTime dt) =>
-    DateTime(dt.year, dt.month, dt.day + 1);
+/// `dt.add(const Duration(days: 1))`. App inputs are always local (Drift's
+/// default DateTime mapping), but the UTC branch keeps this pure function
+/// total: a UTC input never silently mixes its calendar fields into a
+/// local-zone construction.
+DateTime nextLocalMidnight(DateTime dt) => dt.isUtc
+    ? DateTime.utc(dt.year, dt.month, dt.day + 1)
+    : DateTime(dt.year, dt.month, dt.day + 1);
 
 /// Merges overlapping or touching intervals into a sorted, disjoint list.
 ///

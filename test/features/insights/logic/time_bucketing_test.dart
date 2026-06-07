@@ -89,6 +89,14 @@ void main() {
   });
 
   group('nextLocalMidnight', () {
+    test('preserves the input timezone flavor — UTC in, UTC out', () {
+      final next = nextLocalMidnight(DateTime.utc(2024, 3, 9, 22));
+      expect(next.isUtc, isTrue);
+      expect(next, DateTime.utc(2024, 3, 10));
+      // Local inputs (the only flavor the app produces) stay local.
+      expect(nextLocalMidnight(DateTime(2024, 3, 9, 22)).isUtc, isFalse);
+    });
+
     test('lands on the next calendar day across month and year ends', () {
       expect(
         nextLocalMidnight(DateTime(2024, 12, 31, 18)),

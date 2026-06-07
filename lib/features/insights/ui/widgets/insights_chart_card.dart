@@ -321,7 +321,9 @@ class _StackedBarChart extends StatelessWidget {
                     child: Text(
                       // Hide zero and the ragged max-value tick fl_chart
                       // appends — only clean interval multiples earn ink.
-                      value == 0 || value % interval != 0
+                      // Rounded modulo: tick values are doubles and FP
+                      // error in interval multiples would hide labels.
+                      value == 0 || value.round() % interval.round() != 0
                           ? ''
                           : _axisLabel(value),
                       style: axisStyle,
@@ -492,7 +494,9 @@ class _StackedAreaChart extends StatelessWidget {
               getTitlesWidget: (value, meta) => SideTitleWidget(
                 meta: meta,
                 child: Text(
-                  value == 0 || value % interval != 0 ? '' : _axisLabel(value),
+                  value == 0 || value.round() % interval.round() != 0
+                      ? ''
+                      : _axisLabel(value),
                   style: axisStyle,
                 ),
               ),

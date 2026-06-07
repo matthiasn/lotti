@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -46,7 +47,7 @@ class InsightsRangeSelector extends StatelessWidget {
   }
 
   Future<void> _pickCustomRange(BuildContext context) async {
-    final now = DateTime.now();
+    final now = clock.now();
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(now.year - 10),

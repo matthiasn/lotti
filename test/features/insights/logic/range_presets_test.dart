@@ -81,6 +81,48 @@ void main() {
     });
   });
 
+  group('insightsWindowFor', () {
+    test('current-year presets share one window key', () {
+      final d7 = insightsWindowFor(resolvePreset(InsightsRangePreset.d7, now));
+      final ytd = insightsWindowFor(
+        resolvePreset(InsightsRangePreset.ytd, now),
+      );
+      expect(d7, ytd);
+      expect(d7.endYear, 2026);
+    });
+
+    test('a past-year custom range is bounded to its own year', () {
+      final window = insightsWindowFor(
+        customRange(DateTime(2020, 5, 3), DateTime(2020, 5, 5)),
+      );
+      expect(dayStart(window.startDay), DateTime(2020));
+      expect(window.endYear, 2020);
+    });
+
+    test('a multi-year custom range spans start year through end year', () {
+      final window = insightsWindowFor(
+        customRange(DateTime(2024, 12, 20), DateTime(2026, 1, 5)),
+      );
+      expect(dayStart(window.startDay), DateTime(2024));
+      expect(window.endYear, 2026);
+    });
+  });
+
+  group('timezone-agnostic helpers', () {
+    test('epochDay reads only calendar fields — construction flavor is '
+        'irrelevant', () {
+      // Locks the property that makes resolvePreset's local-DateTime
+      // helpers safe even for a UTC `now`: the epoch-day of a calendar
+      // date is identical regardless of the intermediate's timezone.
+      expect(epochDay(DateTime(2026, 6)), epochDay(DateTime.utc(2026, 6)));
+      expect(
+        epochDay(DateTime(2025, 12, 31)),
+        epochDay(DateTime.utc(2025, 12, 31)),
+      );
+      expect(epochDay(DateTime(2024)), epochDay(DateTime.utc(2024)));
+    });
+  });
+
   group('windowStartDayFor', () {
     test('is January 1st of the range-start year', () {
       final range = resolvePreset(InsightsRangePreset.d7, now);

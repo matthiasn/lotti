@@ -72,9 +72,23 @@ InsightsRange customRange(DateTime a, DateTime b) {
 ///
 /// The window is deliberately wider than the range so every preset within
 /// the same year is served from the same in-memory buckets — switching
-/// presets never touches the database. The key is a single int, which makes
-/// it a cheap, stable Riverpod family argument.
+/// presets never touches the database.
 int windowStartDayFor(InsightsRange range) {
   final start = dayStart(range.startDay);
   return epochDay(DateTime(start.year));
+}
+
+/// Fetch-window key for a range: a cheap value-equal record used as the
+/// Riverpod family argument.
+///
+/// The record's `endYear` bounds the fetch for ranges that end in a past
+/// year — a 3-day custom range in 2020 loads only 2020, not every year
+/// through today. Current-year ranges all share one key (their fetch end
+/// tracks the moving "now"), so preset switching stays a pure memory
+/// slice.
+typedef InsightsWindow = ({int startDay, int endYear});
+
+InsightsWindow insightsWindowFor(InsightsRange range) {
+  final lastDay = dayStart(range.endDayExclusive - 1);
+  return (startDay: windowStartDayFor(range), endYear: lastDay.year);
 }
