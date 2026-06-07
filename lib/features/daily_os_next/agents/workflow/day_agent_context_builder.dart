@@ -14,11 +14,19 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required _DraftingContext? draftingContext,
     required _RefineContext? refineContext,
     required AttentionPlanningInputs attentionPlanning,
+    required _KnowledgeContext knowledge,
     String? compactedLog,
   }) {
     final payload = <String, Object?>{
       'dayId': dayId,
       'planDate': planDate.toIso8601String(),
+      // Durable, compaction-exempt planner knowledge (ADR 0022 Decisions 9–10),
+      // two-tier: the always-on `hookIndex` plus the scope-filtered full
+      // `statements` for what this wake touches. Placed early — it is global
+      // and slow-changing, so it belongs in the stable prompt prefix for
+      // KV-cache reuse.
+      if (knowledge.hookIndex.isNotEmpty || knowledge.statements.isNotEmpty)
+        'standingKnowledge': knowledge.toJson(),
       // The compacted day log (ADR 0017): capture transcripts and the
       // agent's observations as an append-only event tail behind a summary.
       // Placed before the per-wake volatile fields so the JSON-encoded
@@ -46,6 +54,39 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       'currentLocalTime': now.toIso8601String(),
     };
     return const JsonEncoder.withIndent('  ').convert(payload);
+  }
+
+  /// Loads the planner's durable knowledge and renders the two-tier prompt
+  /// blocks (ADR 0022 Decisions 9–10): the always-on hook index plus the
+  /// scope-filtered full statements for the categories this wake touches
+  /// (`global` always; the planner's allowed categories as `category:` scopes).
+  /// Returns empty blocks (and the caller omits the field) when no knowledge or
+  /// no service is configured.
+  Future<_KnowledgeContext> _knowledgeContext({
+    required AgentIdentityEntity agentIdentity,
+    required DateTime now,
+  }) async {
+    final service = knowledgeService;
+    if (service == null) return const _KnowledgeContext.empty();
+    try {
+      final active = await service.activeFor(agentIdentity.agentId);
+      if (active.isEmpty) return const _KnowledgeContext.empty();
+      final touched = {
+        for (final categoryId in agentIdentity.allowedCategoryIds)
+          knowledgeCategoryScope(categoryId),
+      };
+      return _KnowledgeContext(
+        hookIndex: renderKnowledgeHookIndex(active),
+        statements: renderKnowledgeStatements(active, touched, now: now),
+      );
+    } catch (e, s) {
+      _logError(
+        'failed to load durable planner knowledge',
+        error: e,
+        stackTrace: s,
+      );
+      return const _KnowledgeContext.empty();
+    }
   }
 
   Future<AttentionPlanningInputs> _attentionPlanningContext(

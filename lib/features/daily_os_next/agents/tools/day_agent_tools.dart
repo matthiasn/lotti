@@ -508,4 +508,47 @@ const dayAgentTools = <AgentToolDefinition>[
       'additionalProperties': false,
     },
   ),
+  AgentToolDefinition(
+    name: DayAgentToolNames.proposeKnowledge,
+    description:
+        'Durably remember something about how the user wants to be planned '
+        '("memorize what I tell you"). Use a stable, reusable key (e.g. '
+        '"deep-work-earliest-start"), a one-line hook for the always-on index, '
+        'and the full verbatim statement. Set source to "userStated" only when '
+        'the user told you directly — that confirms it immediately; otherwise '
+        "use \"agentInferred\" and it awaits the user's confirmation. Re-using "
+        'an existing key supersedes the prior value (recency wins).',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'key': {
+          'type': 'string',
+          'description': 'Stable slug grouping this knowledge across updates.',
+        },
+        'hook': {
+          'type': 'string',
+          'description': 'One-line summary for the always-on knowledge index.',
+        },
+        'statement': {
+          'type': 'string',
+          'description': 'The full, verbatim thing to remember.',
+        },
+        'value': {
+          'type': 'string',
+          'description': 'Optional structured value, e.g. "10:00 local".',
+        },
+        'scope': {
+          'type': 'string',
+          'description':
+              '"global" (default), "category:<id>", or "project:<id>".',
+        },
+        'source': {
+          'type': 'string',
+          'enum': ['userStated', 'agentInferred'],
+        },
+      },
+      'required': ['key', 'hook', 'statement'],
+      'additionalProperties': false,
+    },
+  ),
 ];

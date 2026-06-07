@@ -486,7 +486,7 @@ void main() {
           scope: 'category:focus',
           supersedesId: 'pk-0',
           confirmedAt: updatedAt,
-          reviewAfter: DateTime(2026, 7, 1),
+          reviewAfter: DateTime(2026, 7, 15),
         );
 
         final roundtripped = roundtrip(original);

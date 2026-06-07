@@ -27,7 +27,9 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
@@ -53,6 +55,7 @@ class DayAgentWorkflow {
     required this.domainLogger,
     this.captureService,
     this.planService,
+    this.knowledgeService,
     this.soulDocumentService,
     this.onPersistedStateChanged,
     this.config = const DayAgentConfig(),
@@ -87,6 +90,9 @@ class DayAgentWorkflow {
 
   /// Day-plan backend tool implementation.
   final DayAgentPlanService? planService;
+
+  /// Durable-knowledge backend tool implementation (ADR 0022).
+  final DayAgentKnowledgeService? knowledgeService;
 
   /// Structured logger.
   final DomainLogger domainLogger;
@@ -272,6 +278,10 @@ class DayAgentWorkflow {
       wakeContext: wakeContext,
     );
     final attentionPlanning = await _attentionPlanningContext(dayDate);
+    final knowledge = await _knowledgeContext(
+      agentIdentity: agentIdentity,
+      now: now,
+    );
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
       dayId: resolvedDayId,
@@ -284,6 +294,7 @@ class DayAgentWorkflow {
       draftingContext: draftingContext,
       refineContext: refineContext,
       attentionPlanning: attentionPlanning,
+      knowledge: knowledge,
       compactedLog: memoryView.useCompactedLog ? memoryView.compactedLog : null,
     );
 
@@ -540,6 +551,25 @@ class DayAgentWorkflow {
       );
     }
 
+    if (DayAgentToolNames.isKnowledgeTool(toolName)) {
+      final service = knowledgeService;
+      if (service == null) {
+        return const DayAgentToolResult(
+          success: false,
+          output: 'Error: durable-knowledge tools are not configured.',
+        );
+      }
+      final result = await service.executeTool(
+        agentId: agentId,
+        toolName: toolName,
+        args: args,
+      );
+      return DayAgentToolResult(
+        success: result.success,
+        output: result.output,
+      );
+    }
+
     if (!DayAgentToolNames.isSetNextWakeTool(toolName)) {
       return DayAgentToolResult(
         success: false,
@@ -676,11 +706,16 @@ class DayAgentWorkflow {
     const planToolLines =
         '- `draft_day_plan`: persist a drafted day plan with blocks and reasons.\n'
         '- `summarize_recent_patterns`: return learning cards from recent day drafts.';
+    const knowledgeToolLines =
+        '- `propose_knowledge`: durably remember how the user wants to be '
+        'planned. Use source "userStated" only when the user told you '
+        'directly (that confirms it); otherwise it awaits their confirmation.';
     final toolLines = <String>[
       '- `record_observations`: private memory for learnings and uncertainty.',
       '- `set_next_wake`: schedule the next useful pre-warm wake.',
       if (captureService != null) captureToolLines,
       if (planService != null) planToolLines,
+      if (knowledgeService != null) knowledgeToolLines,
     ];
     final scaffold =
         '''
@@ -830,6 +865,9 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     }
     if (DayAgentToolNames.isPlanTool(toolName)) {
       return planService != null;
+    }
+    if (DayAgentToolNames.isKnowledgeTool(toolName)) {
+      return knowledgeService != null;
     }
     return true;
   }
@@ -1212,4 +1250,20 @@ class _RefineContext {
             },
     };
   }
+}
+
+/// Rendered durable-knowledge prompt blocks (ADR 0022): the always-on hook
+/// index and the scope-filtered full statements for the current wake.
+class _KnowledgeContext {
+  const _KnowledgeContext({required this.hookIndex, required this.statements});
+
+  const _KnowledgeContext.empty() : hookIndex = '', statements = '';
+
+  final String hookIndex;
+  final String statements;
+
+  Map<String, Object?> toJson() => <String, Object?>{
+    if (hookIndex.isNotEmpty) 'hookIndex': hookIndex,
+    if (statements.isNotEmpty) 'statements': statements,
+  };
 }

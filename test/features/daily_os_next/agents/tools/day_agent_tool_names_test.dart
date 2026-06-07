@@ -21,6 +21,7 @@ void main() {
       DayAgentToolNames.revertDiff,
       DayAgentToolNames.commitDay,
       DayAgentToolNames.uncommitDay,
+      DayAgentToolNames.proposeKnowledge,
     ];
 
     test('uses the wire names expected by the day-agent prompt', () {
@@ -42,6 +43,7 @@ void main() {
         'revert_diff',
         'commit_day',
         'uncommit_day',
+        'propose_knowledge',
       ]);
     });
 
@@ -95,11 +97,16 @@ void main() {
         },
       );
       expect(
+        DayAgentToolNames.knowledgeTools,
+        {DayAgentToolNames.proposeKnowledge},
+      );
+      expect(
         DayAgentToolNames.workflowHandlerTools,
         {
           DayAgentToolNames.setNextWake,
           ...DayAgentToolNames.captureReconcileTools,
           ...DayAgentToolNames.planTools,
+          ...DayAgentToolNames.knowledgeTools,
         },
       );
     });

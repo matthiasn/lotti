@@ -156,6 +156,7 @@ void main() {
     MockSoulDocumentService? soulDocumentService,
     MockDayAgentCaptureService? captureService,
     MockDayAgentPlanService? planService,
+    MockDayAgentKnowledgeService? knowledgeService,
   }) {
     return DayAgentWorkflow(
       agentRepository: repository,
@@ -167,6 +168,7 @@ void main() {
       soulDocumentService: soulDocumentService,
       captureService: captureService,
       planService: planService,
+      knowledgeService: knowledgeService,
       domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
     );
@@ -2230,6 +2232,74 @@ void main() {
           args: any(named: 'args'),
         ),
       );
+    });
+
+    test(
+      'injects the durable-knowledge hook index + scoped statements',
+      () async {
+        final knowledgeService = MockDayAgentKnowledgeService();
+        final globalEntry =
+            AgentDomainEntity.plannerKnowledge(
+                  id: 'k-global',
+                  agentId: agentId,
+                  key: 'deep-work',
+                  hook: 'no deep work before 10',
+                  statementText: 'Never schedule deep work before 10:00.',
+                  source: KnowledgeSource.userStated,
+                  status: KnowledgeStatus.confirmed,
+                  createdAt: DateTime(2026, 5, 20),
+                  updatedAt: DateTime(2026, 5, 20),
+                  vectorClock: null,
+                )
+                as PlannerKnowledgeEntity;
+        when(
+          () => knowledgeService.activeFor(agentId),
+        ).thenAnswer((_) async => [globalEntry]);
+
+        final result = await execute(
+          workflow(knowledgeService: knowledgeService),
+        );
+
+        expect(result.success, isTrue);
+        final sent =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        final knowledge = sent['standingKnowledge'] as Map<String, dynamic>;
+        // Hook index always present; the global statement is pulled in.
+        expect(
+          knowledge['hookIndex'],
+          contains('[deep-work] no deep work before 10 (scope: global)'),
+        );
+        expect(
+          knowledge['statements'],
+          contains('Never schedule deep work before 10:00.'),
+        );
+        // Prefix-cache stability: standingKnowledge precedes the volatile
+        // wall-clock, which stays the trailing key.
+        final keys = sent.keys.toList();
+        expect(
+          keys.indexOf('standingKnowledge'),
+          lessThan(keys.indexOf('currentLocalTime')),
+        );
+        expect(keys.last, 'currentLocalTime');
+      },
+    );
+
+    test('omits standingKnowledge when there is no active knowledge', () async {
+      final knowledgeService = MockDayAgentKnowledgeService();
+      when(
+        () => knowledgeService.activeFor(agentId),
+      ).thenAnswer((_) async => []);
+
+      final result = await execute(
+        workflow(knowledgeService: knowledgeService),
+      );
+
+      expect(result.success, isTrue);
+      final sent =
+          jsonDecode(conversationRepository.lastUserMessage!)
+              as Map<String, dynamic>;
+      expect(sent.containsKey('standingKnowledge'), isFalse);
     });
 
     test('returns a tool error when plan tools are not configured', () async {

@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -39,6 +40,18 @@ DayAgentCaptureService dayAgentCaptureService(Ref ref) {
     journalRepository: ref.watch(journalRepositoryProvider),
     fts5Db: getIt<Fts5Db>(),
     orchestrator: ref.watch(wakeOrchestratorProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
+    onPersistedStateChanged: persistedStateChangedNotifier(notifications),
+  );
+}
+
+/// The Daily OS durable-knowledge service (ADR 0022).
+@Riverpod(keepAlive: true)
+DayAgentKnowledgeService dayAgentKnowledgeService(Ref ref) {
+  final notifications = ref.watch(updateNotificationsProvider);
+  return DayAgentKnowledgeService(
+    agentRepository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
   );
