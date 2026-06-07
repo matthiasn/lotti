@@ -78,51 +78,6 @@ class _NullEntryController extends EntryController {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Simplified test widget that mimics EntryDetailsWidget behavior
-class TestEntryDetailsWidget extends StatelessWidget {
-  const TestEntryDetailsWidget({
-    required this.isTask,
-    required this.showTaskDetails,
-    super.key,
-  });
-
-  final bool isTask;
-  final bool showTaskDetails;
-
-  @override
-  Widget build(BuildContext context) {
-    if (isTask && !showTaskDetails) {
-      return Padding(
-        padding: const EdgeInsets.only(
-          left: AppTheme.spacingXSmall,
-          right: AppTheme.spacingXSmall,
-          bottom: AppTheme.spacingXSmall,
-        ),
-        child: Container(
-          key: const Key('modern-journal-card'),
-          height: 100,
-          color: Colors.blue,
-          child: const Text('Mock Modern Journal Card'),
-        ),
-      );
-    }
-
-    return const Card(
-      key: Key('entry-details-card'),
-      margin: EdgeInsets.only(
-        left: AppTheme.spacingXSmall,
-        right: AppTheme.spacingXSmall,
-        bottom: AppTheme.spacingMedium,
-      ),
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: AppTheme.spacingMedium),
-        child: Text('Entry Details Content'),
-      ),
-    );
-  }
-}
-
 /// Finds private widget types (e.g. `_PulsingBorder`) by runtime type name.
 Finder _byPrivateType(String typeName) =>
     find.byWidgetPredicate((w) => w.runtimeType.toString() == typeName);
@@ -141,6 +96,10 @@ typedef _EntryDetailsMocks = ({
 /// the baseline stubs (no categories/labels, private flag on, no unsaved
 /// changes, idle timer). Tests re-stub the returned mocks where needed —
 /// later when() stubs win in mocktail.
+/// Cached fake documents directory — resolved once per suite instead of one
+/// real filesystem call per test.
+Directory? _cachedDocsDir;
+
 Future<_EntryDetailsMocks> _registerEntryDetailsMocks() async {
   final journalDb = mockJournalDbWithMeasurableTypes([]);
   final persistenceLogic = MockPersistenceLogic();
@@ -150,7 +109,9 @@ Future<_EntryDetailsMocks> _registerEntryDetailsMocks() async {
   final editorStateService = MockEditorStateService();
 
   getIt
-    ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+    ..registerSingleton<Directory>(
+      _cachedDocsDir ??= await getApplicationDocumentsDirectory(),
+    )
     ..registerSingleton<UserActivityService>(UserActivityService())
     ..registerSingleton<UpdateNotifications>(updateNotifications)
     ..registerSingleton<EditorStateService>(editorStateService)
@@ -205,114 +166,6 @@ Future<_EntryDetailsMocks> _registerEntryDetailsMocks() async {
 }
 
 void main() {
-  group('EntryDetailsWidget Layout Tests', () {
-    testWidgets(
-      'wraps task cards with proper padding when showTaskDetails is false',
-      (tester) async {
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const TestEntryDetailsWidget(
-              isTask: true,
-              showTaskDetails: false,
-            ),
-          ),
-        );
-
-        // Find the container that represents our mock card
-        final containerFinder = find.byKey(const Key('modern-journal-card'));
-        expect(containerFinder, findsOneWidget);
-
-        // Find the padding widget that wraps it
-        final paddingFinder = find.ancestor(
-          of: containerFinder,
-          matching: find.byType(Padding),
-        );
-
-        expect(paddingFinder, findsOneWidget);
-
-        final padding = tester.widget<Padding>(paddingFinder);
-        expect(
-          padding.padding,
-          const EdgeInsets.only(
-            left: AppTheme.spacingXSmall,
-            right: AppTheme.spacingXSmall,
-            bottom: AppTheme.spacingXSmall,
-          ),
-        );
-      },
-    );
-
-    testWidgets('renders card layout when showTaskDetails is true', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const TestEntryDetailsWidget(
-            isTask: true,
-            showTaskDetails: true,
-          ),
-        ),
-      );
-
-      // When showTaskDetails is true, it should render a Card
-      expect(find.byType(Card), findsOneWidget);
-      expect(find.byKey(const Key('entry-details-card')), findsOneWidget);
-
-      // Mock modern journal card should not be present
-      expect(find.byKey(const Key('modern-journal-card')), findsNothing);
-
-      // Verify card margins
-      final card = tester.widget<Card>(find.byType(Card));
-      expect(
-        card.margin,
-        const EdgeInsets.only(
-          left: AppTheme.spacingXSmall,
-          right: AppTheme.spacingXSmall,
-          bottom: AppTheme.spacingMedium,
-        ),
-      );
-    });
-
-    testWidgets('renders card layout for non-task entries', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const TestEntryDetailsWidget(
-            isTask: false,
-            showTaskDetails: false,
-          ),
-        ),
-      );
-
-      // Non-task entries should always render a Card
-      expect(find.byType(Card), findsOneWidget);
-      expect(find.byKey(const Key('entry-details-card')), findsOneWidget);
-    });
-
-    testWidgets('verifies padding structure for task cards', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const TestEntryDetailsWidget(
-            isTask: true,
-            showTaskDetails: false,
-          ),
-        ),
-      );
-
-      // Verify the widget tree structure
-      final container = find.byKey(const Key('modern-journal-card'));
-      final padding = find.ancestor(
-        of: container,
-        matching: find.byType(Padding),
-      );
-
-      expect(container, findsOneWidget);
-      expect(padding, findsOneWidget);
-
-      // Verify no Card widget is present
-      expect(find.byType(Card), findsNothing);
-    });
-  });
-
   group('EntryDetailsWidget Highlight Tests', () {
     TestWidgetsFlutterBinding.ensureInitialized();
 
