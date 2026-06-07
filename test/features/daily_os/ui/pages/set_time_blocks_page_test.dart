@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -87,10 +90,14 @@ DailyOsData _makeData({List<PlannedBlock> blocks = const []}) {
 }
 
 class _TestUnifiedController extends UnifiedDailyOsDataController {
-  _TestUnifiedController(this._data, {this.shouldThrow = false});
+  _TestUnifiedController(this._data, {this.shouldThrow = false, this.saveGate});
 
   final DailyOsData _data;
   final bool shouldThrow;
+
+  /// When set, [setPlannedBlocks] stays in flight until the gate completes,
+  /// so tests can assert the saving (button-disabled) state.
+  final Completer<void>? saveGate;
   List<PlannedBlock>? savedBlocks;
 
   @override
@@ -98,6 +105,9 @@ class _TestUnifiedController extends UnifiedDailyOsDataController {
 
   @override
   Future<void> setPlannedBlocks(List<PlannedBlock> blocks) async {
+    if (saveGate != null) {
+      await saveGate!.future;
+    }
     if (shouldThrow) {
       throw Exception('Save failed');
     }
@@ -136,7 +146,11 @@ void main() {
     WidgetTester tester, {
     DailyOsData? data,
   }) async {
-    testController = _TestUnifiedController(data ?? _makeData());
+    // The page stops watching the autoDispose provider once initialized, so
+    // riverpod may dispose and re-initialize it (e.g. on save). The factory
+    // must therefore mint a fresh notifier per init; `testController` always
+    // tracks the latest instance.
+    final effectiveData = data ?? _makeData();
 
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -145,13 +159,67 @@ void main() {
         overrides: [
           dailyOsSelectedDateProvider.overrideWithValue(_testDate),
           unifiedDailyOsDataControllerProvider(date: _testDate).overrideWith(
-            () => testController,
+            () => testController = _TestUnifiedController(effectiveData),
           ),
         ],
       ),
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  /// Pumps the page inside a two-route [Navigator] so that
+  /// `Navigator.of(context).pop()` (save success and the back button) can
+  /// be verified.
+  Future<void> pumpPageWithNavigator(
+    WidgetTester tester, {
+    DailyOsData? data,
+    bool shouldThrow = false,
+    Completer<void>? saveGate,
+  }) async {
+    final effectiveData = data ?? _makeData();
+    _TestUnifiedController createController() =>
+        testController = _TestUnifiedController(
+          effectiveData,
+          shouldThrow: shouldThrow,
+          saveGate: saveGate,
+        );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Navigator(
+          onGenerateRoute: (_) => MaterialPageRoute<void>(
+            builder: (_) => Builder(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SetTimeBlocksPage(),
+                      ),
+                    );
+                  },
+                  child: const Text('Open'),
+                ),
+              ),
+            ),
+          ),
+        ),
+        theme: DesignSystemTheme.light(),
+        overrides: [
+          dailyOsSelectedDateProvider.overrideWithValue(_testDate),
+          unifiedDailyOsDataControllerProvider(date: _testDate).overrideWith(
+            createController,
+          ),
+        ],
+      ),
+    );
+    // Route transitions need real settles.
+    await tester.pumpAndSettle();
+
+    // Navigate to the page under test.
+    await tester.tap(find.text('Open'));
+    await tester.pumpAndSettle();
   }
 
   group('SetTimeBlocksPage — layout', () {
@@ -374,58 +442,6 @@ void main() {
   });
 
   group('SetTimeBlocksPage — save success', () {
-    /// Pumps the page inside a two-route [Navigator] so that
-    /// `Navigator.of(context).pop()` can be verified.
-    Future<void> pumpPageWithNavigator(
-      WidgetTester tester, {
-      DailyOsData? data,
-      bool shouldThrow = false,
-      DateTime? selectedDate,
-    }) async {
-      final date = selectedDate ?? _testDate;
-      testController = _TestUnifiedController(
-        data ?? _makeData(),
-        shouldThrow: shouldThrow,
-      );
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Navigator(
-            onGenerateRoute: (_) => MaterialPageRoute<void>(
-              builder: (_) => Builder(
-                builder: (context) => Scaffold(
-                  body: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const SetTimeBlocksPage(),
-                        ),
-                      );
-                    },
-                    child: const Text('Open'),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          theme: DesignSystemTheme.light(),
-          overrides: [
-            dailyOsSelectedDateProvider.overrideWithValue(date),
-            unifiedDailyOsDataControllerProvider(date: date).overrideWith(
-              () => testController,
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Navigate to the page under test.
-      await tester.tap(find.text('Open'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-    }
-
     testWidgets(
       'successful save shows success toast and pops navigator',
       (tester) async {
@@ -508,46 +524,95 @@ void main() {
         expect(button.onPressed, isNotNull);
       },
     );
+
+    testWidgets(
+      'save button is disabled while the save is in flight',
+      (tester) async {
+        final existingBlock = PlannedBlock(
+          id: 'existing-1',
+          categoryId: 'cat-work',
+          startTime: DateTime(2026, 3, 15, 9),
+          endTime: DateTime(2026, 3, 15, 12),
+        );
+        final saveGate = Completer<void>();
+
+        await pumpPageWithNavigator(
+          tester,
+          data: _makeData(blocks: [existingBlock]),
+          saveGate: saveGate,
+        );
+        await tester.pump();
+
+        // Enabled before the tap.
+        expect(
+          tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+          isNotNull,
+        );
+
+        // Tap save — the gated controller keeps the future pending.
+        await tester.tap(find.byType(FilledButton));
+        await tester.pump();
+
+        // _isSaving == true: button disabled while the save is in flight.
+        expect(
+          tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+          isNull,
+        );
+        expect(testController.savedBlocks, isNull);
+
+        // Release the gate: save completes and the page pops.
+        saveGate.complete();
+        await tester.pumpAndSettle();
+
+        expect(testController.savedBlocks, hasLength(1));
+        expect(find.text('Set time blocks'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'deleting every existing block still allows saving an empty plan',
+      (tester) async {
+        final existingBlock = PlannedBlock(
+          id: 'existing-1',
+          categoryId: 'cat-work',
+          startTime: DateTime(2026, 3, 15, 9),
+          endTime: DateTime(2026, 3, 15, 12),
+        );
+
+        await pumpPageWithNavigator(
+          tester,
+          data: _makeData(blocks: [existingBlock]),
+        );
+        await tester.pump();
+
+        // Expand the Work category and delete its only block.
+        await tester.tap(find.text('Work'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // _hadExistingBlocks keeps _hasChanges true: clearing a previously
+        // saved plan is a change the user must be able to persist.
+        final button = tester.widget<FilledButton>(find.byType(FilledButton));
+        expect(button.onPressed, isNotNull);
+
+        await tester.tap(find.byType(FilledButton));
+        await tester.pumpAndSettle();
+
+        // The controller received the now-empty plan and the page popped.
+        expect(testController.savedBlocks, isNotNull);
+        expect(testController.savedBlocks, isEmpty);
+        expect(find.text('Set time blocks'), findsNothing);
+      },
+    );
   });
 
   group('SetTimeBlocksPage — back button', () {
     testWidgets('tapping back arrow pops the navigator', (tester) async {
-      testController = _TestUnifiedController(_makeData());
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Navigator(
-            onGenerateRoute: (_) => MaterialPageRoute<void>(
-              builder: (_) => Builder(
-                builder: (context) => Scaffold(
-                  body: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute<void>(
-                          builder: (_) => const SetTimeBlocksPage(),
-                        ),
-                      );
-                    },
-                    child: const Text('Open'),
-                  ),
-                ),
-              ),
-            ),
-          ),
-          theme: DesignSystemTheme.light(),
-          overrides: [
-            dailyOsSelectedDateProvider.overrideWithValue(_testDate),
-            unifiedDailyOsDataControllerProvider(date: _testDate).overrideWith(
-              () => testController,
-            ),
-          ],
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Navigate to the page.
-      await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+      await pumpPageWithNavigator(tester);
 
       // Verify we're on the set time blocks page.
       expect(find.text('Set time blocks'), findsOneWidget);
@@ -566,50 +631,14 @@ void main() {
     testWidgets('shows "Today" prefix when selected date is today', (
       tester,
     ) async {
-      // Use today's actual date so the isToday check passes.
-      final now = DateTime.now();
-      final todayDate = DateTime(now.year, now.month, now.day);
-      final todayData = DailyOsData(
-        date: todayDate,
-        dayPlan: DayPlanEntry(
-          meta: Metadata(
-            id: 'plan-today',
-            createdAt: todayDate,
-            updatedAt: todayDate,
-            dateFrom: todayDate,
-            dateTo: todayDate.add(const Duration(days: 1)),
-          ),
-          data: DayPlanData(
-            planDate: todayDate,
-            status: const DayPlanStatus.draft(),
-            plannedBlocks: [],
-          ),
-        ),
-        timelineData: DailyTimelineData(
-          date: todayDate,
-          plannedSlots: const [],
-          actualSlots: const [],
-          dayStartHour: 7,
-          dayEndHour: 22,
-        ),
-        budgetProgress: [],
+      // Deterministic: the impl reads clock.now(), so fix "today" to the
+      // test date instead of depending on the real wall clock.
+      await withClock(
+        Clock.fixed(_testDate.add(const Duration(hours: 10))),
+        () async {
+          await pumpPage(tester);
+        },
       );
-      testController = _TestUnifiedController(todayData);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          const SetTimeBlocksPage(),
-          theme: DesignSystemTheme.light(),
-          overrides: [
-            dailyOsSelectedDateProvider.overrideWithValue(todayDate),
-            unifiedDailyOsDataControllerProvider(date: todayDate).overrideWith(
-              () => testController,
-            ),
-          ],
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
 
       // The label should contain the "Today" prefix.
       expect(
