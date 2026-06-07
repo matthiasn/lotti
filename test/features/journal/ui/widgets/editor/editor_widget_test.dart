@@ -26,55 +26,60 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../helpers/fallbacks.dart';
 import '../../../../../mocks/mocks.dart';
-import '../../../../../test_data/test_data.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
+  // One shared heavy setup for the whole file: both widget-test groups
+  // (EditorWidget and the context-menu group) need the identical GetIt
+  // wiring with in-memory JournalDb/EditorDb — open them once.
+  final mockTimeService = MockTimeService();
+
+  setUpAll(() async {
+    registerAllFallbackValues();
+
+    final mockUpdateNotifications = MockUpdateNotifications();
+    when(() => mockUpdateNotifications.updateStream).thenAnswer(
+      (_) => Stream<Set<String>>.fromIterable([]),
+    );
+    when(
+      mockTimeService.getStream,
+    ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+          ..registerSingleton<VectorClockService>(MockVectorClockService())
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
+          ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
+          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+          ..registerSingleton<TimeService>(mockTimeService)
+          ..registerSingleton<EditorStateService>(EditorStateService());
+      },
+    );
+  });
+
+  tearDownAll(() async {
+    // Ensure databases are closed and service locator is reset
+    if (getIt.isRegistered<JournalDb>()) {
+      await getIt<JournalDb>().close();
+    }
+    if (getIt.isRegistered<EditorDb>()) {
+      await getIt<EditorDb>().close();
+    }
+    await getIt.reset();
+  });
+
   group('EditorWidget', () {
-    final mockTimeService = MockTimeService();
-
-    setUpAll(() async {
-      final mockUpdateNotifications = MockUpdateNotifications();
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
-
-      await setUpTestGetIt(
-        additionalSetup: () {
-          getIt
-            ..unregister<UpdateNotifications>()
-            ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-            ..registerSingleton<VectorClockService>(MockVectorClockService())
-            ..unregister<JournalDb>()
-            ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-            ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
-            ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-            ..registerSingleton<TimeService>(mockTimeService)
-            ..registerSingleton<EditorStateService>(EditorStateService());
-        },
-      );
-    });
-
-    tearDownAll(() async {
-      // Ensure databases are closed and service locator is reset
-      if (getIt.isRegistered<JournalDb>()) {
-        await getIt<JournalDb>().close();
-      }
-      if (getIt.isRegistered<EditorDb>()) {
-        await getIt<EditorDb>().close();
-      }
-      await getIt.reset();
-    });
-
     testWidgets('editor toolbar is invisible without autofocus', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EditorWidget(entryId: testTextEntry.meta.id),
+        buildEditorTestWidget(
+          entryId: 'toolbar-invisible-no-autofocus',
+          showToolbar: false,
         ),
       );
 
@@ -276,6 +281,9 @@ void main() {
       // The widget should be removed without errors
       // (dispose was called properly)
       expect(find.byType(EditorWidget), findsNothing);
+      // The real contract: removal disposed the ScrollController without
+      // throwing (a double-dispose or use-after-dispose would surface here).
+      expect(tester.takeException(), isNull);
     });
   });
 
@@ -606,43 +614,8 @@ void main() {
     late AppLocalizations messages;
 
     setUpAll(() async {
-      registerAllFallbackValues();
-
-      final mockUpdateNotifications = MockUpdateNotifications();
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
-      final mockTimeService = MockTimeService();
-      when(mockTimeService.getStream).thenAnswer(
-        (_) => Stream<JournalEntity>.fromIterable([]),
-      );
-
-      await setUpTestGetIt(
-        additionalSetup: () {
-          getIt
-            ..unregister<UpdateNotifications>()
-            ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-            ..registerSingleton<VectorClockService>(MockVectorClockService())
-            ..unregister<JournalDb>()
-            ..registerSingleton<JournalDb>(JournalDb(inMemoryDatabase: true))
-            ..registerSingleton<EditorDb>(EditorDb(inMemoryDatabase: true))
-            ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
-            ..registerSingleton<TimeService>(mockTimeService)
-            ..registerSingleton<EditorStateService>(EditorStateService());
-        },
-      );
-
+      // GetIt + in-memory DBs come from the file-level setUpAll.
       messages = await AppLocalizations.delegate.load(const Locale('en'));
-    });
-
-    tearDownAll(() async {
-      if (getIt.isRegistered<JournalDb>()) {
-        await getIt<JournalDb>().close();
-      }
-      if (getIt.isRegistered<EditorDb>()) {
-        await getIt<EditorDb>().close();
-      }
-      await getIt.reset();
     });
 
     testWidgets(
@@ -748,195 +721,101 @@ void main() {
       },
     );
 
-    testWidgets(
-      '_addToDictionary calls service and shows toast on success',
-      (tester) async {
-        const entryId = 'ctx-menu-add-dict-success';
-        final mockDictionaryService = MockSpeechDictionaryService();
-        when(
-          () => mockDictionaryService.addTermForEntry(
-            entryId: any(named: 'entryId'),
-            term: any(named: 'term'),
-          ),
-        ).thenAnswer((_) async => SpeechDictionaryResult.success);
+    /// Drives the full context-menu add-to-dictionary flow for [result]:
+    /// selects 'Hello', presses the dictionary button, and asserts the
+    /// expected toast (or its absence for silent results).
+    Future<void> runAddToDictionaryCase(
+      WidgetTester tester, {
+      required SpeechDictionaryResult result,
+      required String? Function(AppLocalizations messages) expectedToast,
+    }) async {
+      final entryId = 'ctx-menu-add-dict-${result.name}';
+      final mockDictionaryService = MockSpeechDictionaryService();
+      when(
+        () => mockDictionaryService.addTermForEntry(
+          entryId: any(named: 'entryId'),
+          term: any(named: 'term'),
+        ),
+      ).thenAnswer((_) async => result);
 
-        await tester.pumpWidget(
-          buildEditorTestWidget(
-            entryId: entryId,
-            showToolbar: false,
-            speechDictionaryServiceOverride: mockDictionaryService,
-          ),
-        );
-        await tester.pump(const Duration(milliseconds: 450));
+      await tester.pumpWidget(
+        buildEditorTestWidget(
+          entryId: entryId,
+          showToolbar: false,
+          speechDictionaryServiceOverride: mockDictionaryService,
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 450));
 
-        final quillEditor = tester.widget<QuillEditor>(
-          find.byType(QuillEditor),
-        );
-        // Select 'Hello' in the document.
-        quillEditor.controller.document.insert(0, 'Hello World');
-        quillEditor.controller.updateSelection(
-          const TextSelection(baseOffset: 0, extentOffset: 5),
-          ChangeSource.local,
-        );
-        await tester.pump();
+      final quillEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));
+      quillEditor.controller.document.insert(0, 'Hello World');
+      quillEditor.controller.updateSelection(
+        const TextSelection(baseOffset: 0, extentOffset: 5),
+        ChangeSource.local,
+      );
+      await tester.pump();
 
-        final freshEditor = tester.widget<QuillEditor>(
-          find.byType(QuillEditor),
-        );
-        final rawEditorState = tester.state<QuillRawEditorState>(
-          find.byType(QuillRawEditor),
-        );
+      final freshEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));
+      final rawEditorState = tester.state<QuillRawEditorState>(
+        find.byType(QuillRawEditor),
+      );
+      final toolbar =
+          freshEditor.config.contextMenuBuilder!(
+                tester.element(find.byType(QuillEditor)),
+                rawEditorState,
+              )
+              as AdaptiveTextSelectionToolbar;
+      final dictionaryButtonItem = (toolbar.buttonItems ?? []).firstWhere(
+        (item) => item.label == messages.addToDictionary,
+      );
 
-        // Build the context menu and find the dictionary button item.
-        final toolbar =
-            freshEditor.config.contextMenuBuilder!(
-                  tester.element(find.byType(QuillEditor)),
-                  rawEditorState,
-                )
-                as AdaptiveTextSelectionToolbar;
+      dictionaryButtonItem.onPressed?.call();
+      await tester.pump(const Duration(milliseconds: 450));
 
-        final dictionaryButtonItem = (toolbar.buttonItems ?? []).firstWhere(
-          (item) => item.label == messages.addToDictionary,
-        );
+      verify(
+        () => mockDictionaryService.addTermForEntry(
+          entryId: entryId,
+          term: 'Hello',
+        ),
+      ).called(1);
 
-        // Press the "Add to Dictionary" button.
-        dictionaryButtonItem.onPressed?.call();
-        await tester.pump(const Duration(milliseconds: 450));
-
-        // The service should have been called with the selected term.
-        verify(
-          () => mockDictionaryService.addTermForEntry(
-            entryId: entryId,
-            term: 'Hello',
-          ),
-        ).called(1);
-        // A success toast should be visible.
-        expect(find.text(messages.addToDictionarySuccess), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      '_addToDictionary shows warning toast for noCategory result',
-      (tester) async {
-        const entryId = 'ctx-menu-add-dict-no-category';
-        final mockDictionaryService = MockSpeechDictionaryService();
-        when(
-          () => mockDictionaryService.addTermForEntry(
-            entryId: any(named: 'entryId'),
-            term: any(named: 'term'),
-          ),
-        ).thenAnswer((_) async => SpeechDictionaryResult.noCategory);
-
-        await tester.pumpWidget(
-          buildEditorTestWidget(
-            entryId: entryId,
-            showToolbar: false,
-            speechDictionaryServiceOverride: mockDictionaryService,
-          ),
-        );
-        await tester.pump(const Duration(milliseconds: 450));
-
-        final quillEditor = tester.widget<QuillEditor>(
-          find.byType(QuillEditor),
-        );
-        quillEditor.controller.document.insert(0, 'Term');
-        quillEditor.controller.updateSelection(
-          const TextSelection(baseOffset: 0, extentOffset: 4),
-          ChangeSource.local,
-        );
-        await tester.pump();
-
-        final freshEditor = tester.widget<QuillEditor>(
-          find.byType(QuillEditor),
-        );
-        final rawEditorState = tester.state<QuillRawEditorState>(
-          find.byType(QuillRawEditor),
-        );
-
-        final toolbar =
-            freshEditor.config.contextMenuBuilder!(
-                  tester.element(find.byType(QuillEditor)),
-                  rawEditorState,
-                )
-                as AdaptiveTextSelectionToolbar;
-
-        final dictionaryButtonItem = (toolbar.buttonItems ?? []).firstWhere(
-          (item) => item.label == messages.addToDictionary,
-        );
-        dictionaryButtonItem.onPressed?.call();
-        await tester.pump(const Duration(milliseconds: 450));
-
-        verify(
-          () => mockDictionaryService.addTermForEntry(
-            entryId: entryId,
-            term: 'Term',
-          ),
-        ).called(1);
-        expect(find.text(messages.addToDictionaryNoCategory), findsOneWidget);
-      },
-    );
-
-    testWidgets(
-      '_addToDictionary is silent for emptyTerm (no toast shown)',
-      (tester) async {
-        const entryId = 'ctx-menu-add-dict-empty';
-        final mockDictionaryService = MockSpeechDictionaryService();
-        when(
-          () => mockDictionaryService.addTermForEntry(
-            entryId: any(named: 'entryId'),
-            term: any(named: 'term'),
-          ),
-        ).thenAnswer((_) async => SpeechDictionaryResult.emptyTerm);
-
-        await tester.pumpWidget(
-          buildEditorTestWidget(
-            entryId: entryId,
-            showToolbar: false,
-            speechDictionaryServiceOverride: mockDictionaryService,
-          ),
-        );
-        await tester.pump(const Duration(milliseconds: 450));
-
-        final quillEditor = tester.widget<QuillEditor>(
-          find.byType(QuillEditor),
-        );
-        quillEditor.controller.document.insert(0, 'Word');
-        quillEditor.controller.updateSelection(
-          const TextSelection(baseOffset: 0, extentOffset: 4),
-          ChangeSource.local,
-        );
-        await tester.pump();
-
-        final freshEditor = tester.widget<QuillEditor>(
-          find.byType(QuillEditor),
-        );
-        final rawEditorState = tester.state<QuillRawEditorState>(
-          find.byType(QuillRawEditor),
-        );
-
-        final toolbar =
-            freshEditor.config.contextMenuBuilder!(
-                  tester.element(find.byType(QuillEditor)),
-                  rawEditorState,
-                )
-                as AdaptiveTextSelectionToolbar;
-
-        final dictionaryButtonItem = (toolbar.buttonItems ?? []).firstWhere(
-          (item) => item.label == messages.addToDictionary,
-        );
-        dictionaryButtonItem.onPressed?.call();
-        await tester.pump(const Duration(milliseconds: 450));
-
-        // Service was called but result is silent — no toast rendered.
-        verify(
-          () => mockDictionaryService.addTermForEntry(
-            entryId: entryId,
-            term: 'Word',
-          ),
-        ).called(1);
+      final toast = expectedToast(messages);
+      if (toast == null) {
+        // Silent result — no toast rendered.
         expect(find.byType(DesignSystemToast), findsNothing);
-      },
-    );
+      } else {
+        expect(find.text(toast), findsOneWidget);
+      }
+    }
+
+    // Every message-producing result shows its toast; silent results
+    // (emptyTerm) show nothing — one parameterized flow per case.
+    for (final (result, expectedToast)
+        in <(SpeechDictionaryResult, String? Function(AppLocalizations))>[
+          (SpeechDictionaryResult.success, (m) => m.addToDictionarySuccess),
+          (
+            SpeechDictionaryResult.noCategory,
+            (m) => m.addToDictionaryNoCategory,
+          ),
+          (SpeechDictionaryResult.duplicate, (m) => m.addToDictionaryDuplicate),
+          (SpeechDictionaryResult.termTooLong, (m) => m.addToDictionaryTooLong),
+          (
+            SpeechDictionaryResult.saveFailed,
+            (m) => m.addToDictionarySaveFailed,
+          ),
+          (SpeechDictionaryResult.emptyTerm, (m) => null),
+        ]) {
+      testWidgets(
+        '_addToDictionary handles ${result.name} via the context menu',
+        (tester) async {
+          await runAddToDictionaryCase(
+            tester,
+            result: result,
+            expectedToast: expectedToast,
+          );
+        },
+      );
+    }
   });
 }
 

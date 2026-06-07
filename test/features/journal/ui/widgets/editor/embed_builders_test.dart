@@ -46,7 +46,28 @@ void main() {
         ),
       );
 
-      expect(find.byType(Divider), findsOneWidget);
+      // Builder contract: registered under the 'divider' key, expanded.
+      const builder = DividerEmbedBuilder();
+      expect(builder.key, 'divider');
+      expect(builder.expanded, isTrue);
+
+      // Rendered output: a hairline divider with the dimmed theme color,
+      // padded vertically.
+      final divider = tester.widget<Divider>(find.byType(Divider));
+      expect(divider.thickness, 1);
+      expect(divider.height, 1);
+      final theme = Theme.of(tester.element(find.byType(Divider)));
+      expect(
+        divider.color,
+        theme.dividerColor.withValues(alpha: 0.6),
+      );
+      expect(
+        find.ancestor(
+          of: find.byType(Divider),
+          matching: find.byType(Padding),
+        ),
+        findsWidgets,
+      );
     });
 
     testWidgets('renders fallback widget for unknown embed types', (
@@ -80,7 +101,15 @@ void main() {
 
       await tester.pumpAndSettle();
 
+      // Builder contract: registered as the unknown fallback, expanded.
+      const builder = UnknownEmbedBuilder();
+      expect(builder.key, 'unknown');
+      expect(builder.expanded, isTrue);
+
+      // Rendered output: warning glyph plus the labelled fallback text
+      // carrying the unknown embed's type name.
       expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+      expect(find.text('Unsupported content (unsupported)'), findsOneWidget);
     });
   });
 }
