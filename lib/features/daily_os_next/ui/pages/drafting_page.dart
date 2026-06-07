@@ -88,7 +88,7 @@ class _DraftingPageState extends ConsumerState<DraftingPage> {
       backgroundColor: tokens.colors.background.level01,
       body: SafeArea(
         child: switch (asyncState) {
-          _ when asyncState.hasValue => _DraftingBody(
+          _ when asyncState.hasValue => DraftingModalContent(
             state: asyncState.requireValue,
           ),
           _ when asyncState.hasError => Center(
@@ -107,16 +107,23 @@ class _DraftingPageState extends ConsumerState<DraftingPage> {
   }
 }
 
-class _DraftingBody extends StatelessWidget {
-  const _DraftingBody({required this.state});
+/// Scaffold-free drafting wait content (indeterminate progress strip +
+/// reasoning skeleton / learning cards) for hosting inside the
+/// day-planning modal as well as the standalone [DraftingPage].
+class DraftingModalContent extends StatelessWidget {
+  const DraftingModalContent({required this.state, super.key});
 
   final DraftingState state;
+
+  /// Width at/above which the skeleton and learning cards sit side by side.
+  /// Compared against the actual available width (the modal/dialog box), not
+  /// the screen, so the dialog never forces two cramped columns.
+  static const double _twoColumnBreakpoint = 760;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
-    final isWide = MediaQuery.sizeOf(context).width >= 900;
 
     final left = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -145,23 +152,29 @@ class _DraftingBody extends StatelessWidget {
         Expanded(
           child: SingleChildScrollView(
             padding: EdgeInsets.all(tokens.spacing.step6),
-            child: isWide
-                ? Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(child: left),
-                      SizedBox(width: tokens.spacing.step6),
-                      Expanded(child: right),
-                    ],
-                  )
-                : Column(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isWide = constraints.maxWidth >= _twoColumnBreakpoint;
+                if (!isWide) {
+                  return Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       left,
                       SizedBox(height: tokens.spacing.step6),
                       right,
                     ],
-                  ),
+                  );
+                }
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: left),
+                    SizedBox(width: tokens.spacing.step6),
+                    Expanded(child: right),
+                  ],
+                );
+              },
+            ),
           ),
         ),
       ],

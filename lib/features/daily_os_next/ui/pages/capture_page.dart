@@ -21,6 +21,11 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 part 'capture_layout_metrics.dart';
 
+/// Max width for the centred capture column and the "Today so far" card so
+/// the calm single column reads comfortably on wide layouts. Defined once so
+/// the standalone page and the modal content can't drift apart.
+const double _captureContentMaxWidth = 560;
+
 /// Entry surface of the agentic Daily OS — voice-first check-in.
 ///
 /// Layout: vertically centred greeting → headline → voice button →
@@ -93,7 +98,9 @@ class CapturePage extends ConsumerWidget {
                   ),
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 560),
+                      constraints: const BoxConstraints(
+                        maxWidth: _captureContentMaxWidth,
+                      ),
                       child: TimeSpentCard(
                         blocks: actualBlocks,
                         title: _timeSpentTitle(context),
@@ -117,7 +124,9 @@ class CapturePage extends ConsumerWidget {
                         ),
                         child: Center(
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 560),
+                            constraints: const BoxConstraints(
+                              maxWidth: _captureContentMaxWidth,
+                            ),
                             child: Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal: tokens.spacing.step5,
@@ -179,6 +188,144 @@ class CapturePage extends ConsumerWidget {
 
   /// "Today so far" for today; the date-neutral "Time spent" label for
   /// any other day so the eyebrow never misleads.
+  String? _timeSpentTitle(BuildContext context) {
+    final date = forDate;
+    if (date == null) return null;
+    final now = clock.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final picked = DateTime(date.year, date.month, date.day);
+    if (picked.isAtSameMomentAs(today)) return null;
+    return context.messages.dailyOsNextTimeSpentTitlePast;
+  }
+
+  String _voiceButtonLabel(BuildContext context, CapturePhase phase) {
+    switch (phase) {
+      case CapturePhase.idle:
+      case CapturePhase.error:
+        return context.messages.dailyOsNextCaptureVoiceButtonStart;
+      case CapturePhase.listening:
+        return context.messages.dailyOsNextCaptureVoiceButtonStop;
+      case CapturePhase.transcribing:
+      case CapturePhase.captured:
+        return context.messages.dailyOsNextCaptureVoiceButtonReset;
+    }
+  }
+}
+
+/// Scaffold-free capture content for hosting inside the day-planning modal.
+///
+/// Renders the same calm greeting → headline → voice orb → state row as the
+/// standalone capture surface, but without the page chrome (AppBar /
+/// bottom-nav padding / inline advance CTA) — the modal supplies a top bar
+/// and a sticky glass action bar instead. The voice orb stays the in-body
+/// hero recording control; advance/secondary actions live in the action bar.
+class CaptureModalContent extends ConsumerWidget {
+  const CaptureModalContent({
+    this.forDate,
+    this.actualBlocks = const [],
+    super.key,
+  });
+
+  final DateTime? forDate;
+  final List<TimeBlock> actualBlocks;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final state = ref.watch(captureControllerProvider);
+
+    return Column(
+      children: [
+        // "Today so far" pins to the top; greeting + orb stay centred in
+        // the remaining space below (handoff v2 item 1).
+        if (actualBlocks.isNotEmpty)
+          Padding(
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step5,
+              tokens.spacing.step4,
+              tokens.spacing.step5,
+              0,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: _captureContentMaxWidth,
+                ),
+                child: TimeSpentCard(
+                  blocks: actualBlocks,
+                  title: _timeSpentTitle(context),
+                ),
+              ),
+            ),
+          ),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final layout = CaptureLayoutMetrics.resolve(
+                tokens,
+                phase: state.phase,
+                viewportHeight: constraints.maxHeight,
+              );
+
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxWidth: _captureContentMaxWidth,
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: tokens.spacing.step5,
+                          vertical: tokens.spacing.step6,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const _GreetingBlock(),
+                            SizedBox(height: tokens.spacing.step6),
+                            _Headline(forDate: forDate),
+                            _PastTrackingPrompt(forDate: forDate),
+                            SizedBox(height: tokens.spacing.step8),
+                            VoiceButton(
+                              phase: state.phase,
+                              dbfs: state.dbfs,
+                              semanticLabel: _voiceButtonLabel(
+                                context,
+                                state.phase,
+                              ),
+                              onTap: () => ref
+                                  .read(captureControllerProvider.notifier)
+                                  .toggle(),
+                            ),
+                            SizedBox(height: tokens.spacing.step5),
+                            _StateSlot(
+                              state: state,
+                              height: layout.stateSlotHeight,
+                              liveTranscriptLineCount:
+                                  layout.liveTranscriptLineCount,
+                              reviewTranscriptLineCount:
+                                  layout.reviewTranscriptLineCount,
+                              // The modal's sticky glass bar already offers a
+                              // "Type instead" pill, so drop the redundant
+                              // inline link from the idle hint.
+                              showInlineTypeInstead: false,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
   String? _timeSpentTitle(BuildContext context) {
     final date = forDate;
     if (date == null) return null;
@@ -324,12 +471,18 @@ class _StateSlot extends StatelessWidget {
     required this.height,
     required this.liveTranscriptLineCount,
     required this.reviewTranscriptLineCount,
+    this.showInlineTypeInstead = true,
   });
 
   final CaptureState state;
   final double height;
   final int liveTranscriptLineCount;
   final int reviewTranscriptLineCount;
+
+  /// Whether the idle hint includes the inline "Type instead" link. The
+  /// modal host sets this false because its sticky glass bar carries the
+  /// same action.
+  final bool showInlineTypeInstead;
 
   @override
   Widget build(BuildContext context) {
@@ -340,6 +493,7 @@ class _StateSlot extends StatelessWidget {
         height: height,
         liveTranscriptLineCount: liveTranscriptLineCount,
         reviewTranscriptLineCount: reviewTranscriptLineCount,
+        showInlineTypeInstead: showInlineTypeInstead,
       ),
     );
 
@@ -365,12 +519,14 @@ class _StateRow extends ConsumerWidget {
     required this.height,
     required this.liveTranscriptLineCount,
     required this.reviewTranscriptLineCount,
+    this.showInlineTypeInstead = true,
   });
 
   final CaptureState state;
   final double height;
   final int liveTranscriptLineCount;
   final int reviewTranscriptLineCount;
+  final bool showInlineTypeInstead;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -380,6 +536,7 @@ class _StateRow extends ConsumerWidget {
     switch (state.phase) {
       case CapturePhase.idle:
         return _IdleCaptureActions(
+          showTypeInstead: showInlineTypeInstead,
           onTypeInstead: () =>
               ref.read(captureControllerProvider.notifier).startTyping(),
         );
@@ -495,9 +652,17 @@ String? _captureErrorMessage(BuildContext context, CaptureError? error) {
 }
 
 class _IdleCaptureActions extends StatelessWidget {
-  const _IdleCaptureActions({required this.onTypeInstead});
+  const _IdleCaptureActions({
+    required this.onTypeInstead,
+    this.showTypeInstead = true,
+  });
 
   final VoidCallback onTypeInstead;
+
+  /// When false, only the "Tap to talk" hint renders — the inline
+  /// "Type instead" link is dropped (the modal host carries it on its
+  /// sticky glass bar instead).
+  final bool showTypeInstead;
 
   @override
   Widget build(BuildContext context) {
@@ -505,15 +670,19 @@ class _IdleCaptureActions extends StatelessWidget {
     final dotStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.lowEmphasis,
     );
+    final talkHint = Text(
+      context.messages.dailyOsNextCaptureIdleTalk,
+      style: dotStyle,
+    );
+    if (!showTypeInstead) {
+      return talkHint;
+    }
     return Wrap(
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
       spacing: tokens.spacing.step2,
       children: [
-        Text(
-          context.messages.dailyOsNextCaptureIdleTalk,
-          style: dotStyle,
-        ),
+        talkHint,
         Container(
           width: tokens.spacing.step1,
           height: tokens.spacing.step1,

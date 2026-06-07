@@ -79,39 +79,52 @@ Runtime behavior:
   `capture_submitted:<captureId>` trigger token.
 - The selected local plan date lives in `dailyOsNextSelectedDateProvider`
   (`state/selected_date_provider.dart`); `DailyOsNextRoot` watches it and keeps
-  the date strip visible on Capture and Day surfaces, while the desktop
-  sidebar's month calendar (shown beneath the active Daily OS nav row)
-  drives the same provider.
-  Capture submissions use that selected date for day-agent routing, Reconcile
-  carries it into pending decisions, and Drafting returns to the root after the
-  plan persists so the date-aware shell remains in control. Background agent or
-  sync updates reload the current plan stale-while-revalidate: the root keeps
-  rendering the last Capture or Day surface while the provider re-fetches, and
-  only shows the loading shell for the initial route load. The same Riverpod
-  contract applies inside Reconcile, Drafting, Shutdown, and the Day captures
-  panel: if an `AsyncValue` still has a previous value, the UI renders that
-  value instead of replacing the section or page with a spinner.
-- Routing on a day without a plan is tracked-time aware (design handoff v2,
-  item 2): when the day already has recorded sessions, the root mounts
-  `DayPage` in **empty mode** (`hasPlan: false` with a synthetic
-  `DraftPlan.emptyForDay`) so the timeline is visible without creating a plan
-  first. Empty mode lands on the Day view, renders an honest "No plan yet"
-  stat strip (neutral `CapacityDonut` over tracked minutes, tracked legend),
-  swaps the Refine/Commit footer for a single "Speak a check-in" CTA that
-  routes into Capture, and hides the delete-plan menu entry. A completely
-  empty day still lands directly on Capture.
+  the date strip visible on the Day surface, while the desktop sidebar's month
+  calendar (shown beneath the active Daily OS nav row) drives the same provider.
+  `DailyOsNextRoot` always renders `DayPage` for the selected date — the real
+  plan when one exists, otherwise the empty Day surface. The
+  Capture → Reconcile → Drafting ritual runs inside a full-height
+  **day-planning modal** (`showDayPlanningModal`,
+  `ui/pages/day_planning_modal.dart`), a Wolt multi-page sheet pushed on the
+  root navigator (full-height bottom sheet on phones — covering the bottom nav
+  — dialog on wide). The modal is opened from the empty surface's footer CTA
+  (`DayPlanningCreate`) and from the Day surface's Refine CTA
+  (`DayPlanningAdapt`). Each step submits against the selected date for
+  day-agent routing; on create the Drafting step closes the whole modal once
+  the plan is ready and invalidates `currentDraftPlanProvider` so the root
+  re-renders the new plan. Background agent or sync updates reload the current
+  plan stale-while-revalidate: the root keeps rendering the last Day surface
+  while the provider re-fetches, and only shows the loading shell for the
+  initial route load. The same Riverpod contract applies inside the modal's
+  Reconcile and Drafting steps, Shutdown, and the Day captures panel: if an
+  `AsyncValue` still has a previous value, the UI renders that value instead of
+  replacing the section or page with a spinner.
+- The root surface is identical on every no-plan day (design handoff v2,
+  item 2): `DailyOsNextRoot` mounts `DayPage` in **empty mode**
+  (`hasPlan: false` with a synthetic `DraftPlan.emptyForDay`) so any recorded
+  sessions stay visible on the timeline without creating a plan first. Empty
+  mode renders an honest "No plan yet" stat strip (neutral `CapacityDonut` over
+  tracked minutes, tracked legend), swaps the Refine/Commit footer for a single
+  "Speak a check-in" CTA that opens the day-planning modal, and hides the
+  delete-plan menu entry. The modal's Capture step still shows the "Today so
+  far" `TimeSpentCard` for the day's tracked time, fed by
+  `dailyOsActualTimeBlocksProvider`.
 
 ```mermaid
 stateDiagram-v2
   [*] --> Loading: route enters date
   Loading --> DayPlan: plan exists
-  Loading --> DayEmpty: no plan, tracked time
-  Loading --> Capture: no plan, nothing tracked
-  DayEmpty --> Capture: "Speak a check-in" CTA
-  Capture --> Reconcile: submit capture
-  Reconcile --> Drafting: build my day
-  Drafting --> DayPlan: plan persists
-  DayPlan --> Capture: plan deleted
+  Loading --> DayEmpty: no plan (timeline still shows tracked time)
+  DayEmpty --> Modal: "Speak a check-in" CTA (create)
+  DayPlan --> Modal: Refine CTA (adapt)
+  state Modal {
+    [*] --> Capture
+    Capture --> Reconcile: continue
+    Reconcile --> Drafting: build my day
+    [*] --> Refine: adapt intent
+  }
+  Modal --> DayPlan: Drafting ready / refine diff persists
+  DayPlan --> DayEmpty: plan deleted
 ```
 
 - The "Today so far" tracked-time block is one shared widget,
@@ -295,9 +308,11 @@ stateDiagram-v2
   a diff. Final refine transcripts stop in the same editable review field as
   initial capture, and the controller submits its current reviewed text to
   `propose_plan_diff` so stale widget parameters cannot drop the user's edits.
-  From Day, refinement opens in a Wolt modal over the existing plan surface
-  (bottom sheet on narrow screens, dialog on wider screens); the full
-  `RefinePage` remains as a direct-route fallback. Failed or empty proposals
+  From Day, the Refine CTA opens the shared day-planning modal with a
+  `DayPlanningAdapt` intent (`showDayPlanningModal`), whose Refine step hosts
+  `RefineModalContent` over the existing plan surface (bottom sheet on narrow
+  screens, dialog on wider screens); the full `RefinePage` remains as a
+  direct-route fallback. Failed or empty proposals
   keep the review field open and show inline feedback instead of silently
   closing. Proposed changes render as independent suggestion cards, matching
   task-agent approval affordances: each row can be accepted or rejected, then

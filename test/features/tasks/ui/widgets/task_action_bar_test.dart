@@ -493,19 +493,18 @@ void main() {
     ).called(1);
   });
 
-  /// Reads the round audio button's background color directly off the
-  /// inner Container so we can compare against the design tokens'
-  /// alert/error red and the default surface-hover color.
+  /// Reads the round audio button's background color off the [Ink] widget
+  /// (the fill lives there, not the inner Container, so the InkWell splash
+  /// renders above it) to compare against the design tokens' alert/error red
+  /// and the default surface-hover color.
   Color audioButtonFill(WidgetTester tester) {
-    final container = tester.widget<Container>(
+    final ink = tester.widget<Ink>(
       find.descendant(
         of: find.byKey(TaskActionBar.audioKey),
-        matching: find.byWidgetPredicate(
-          (w) => w is Container && w.decoration is BoxDecoration,
-        ),
+        matching: find.byType(Ink),
       ),
     );
-    return (container.decoration! as BoxDecoration).color!;
+    return (ink.decoration! as BoxDecoration).color!;
   }
 
   testWidgets(

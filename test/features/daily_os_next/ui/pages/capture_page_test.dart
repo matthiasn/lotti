@@ -18,6 +18,7 @@ import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/reconcile_page.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/time_spent_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -1056,6 +1057,207 @@ void main() {
         );
       },
     );
+  });
+
+  group('CaptureModalContent', () {
+    TimeBlock blockOn(DateTime day) => TimeBlock(
+      id: 'actual:entry-1',
+      title: 'Client follow-up',
+      start: DateTime(day.year, day.month, day.day, 9),
+      end: DateTime(day.year, day.month, day.day, 10),
+      type: TimeBlockType.manual,
+      state: TimeBlockState.completed,
+      category: _category,
+      taskId: 'task-1',
+    );
+
+    // The modal hosts the scaffold-free content inside a bounded box over a
+    // Material surface (the Wolt sheet); mirror that here so the body's
+    // Expanded/LayoutBuilder has a finite viewport and its InkWells find a
+    // Material ancestor.
+    Widget host(Widget child) => Material(
+      type: MaterialType.transparency,
+      child: SizedBox(height: 760, child: child),
+    );
+
+    testWidgets(
+      'renders the calm capture body and omits the time-spent card when '
+      'there is no tracked time',
+      (tester) async {
+        final harness = _AudioHarness()..arm();
+        await _pumpCapture(
+          tester,
+          harness: harness,
+          page: host(const CaptureModalContent()),
+        );
+
+        final messages = tester
+            .element(find.byType(CaptureModalContent))
+            .messages;
+        expect(find.byType(VoiceButton), findsOneWidget);
+        expect(find.text(messages.dailyOsNextCaptureIdleTalk), findsOneWidget);
+        expect(find.byType(TimeSpentCard), findsNothing);
+        // The inline "Type instead" link is dropped in the modal — its
+        // sticky glass bar carries that action instead.
+        expect(
+          find.text(messages.dailyOsNextCaptureTypeInstead),
+          findsNothing,
+        );
+
+        await harness.dispose();
+      },
+    );
+
+    testWidgets(
+      'surfaces the Today so far card for tracked time on the current day',
+      (tester) async {
+        final harness = _AudioHarness()..arm();
+        await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+          await _pumpCapture(
+            tester,
+            harness: harness,
+            page: host(
+              CaptureModalContent(
+                forDate: DateTime(2026, 5, 26),
+                actualBlocks: [blockOn(DateTime(2026, 5, 26))],
+              ),
+            ),
+          );
+
+          final messages = tester
+              .element(find.byType(CaptureModalContent))
+              .messages;
+          expect(find.byType(TimeSpentCard), findsOneWidget);
+          expect(find.text('Client follow-up'), findsOneWidget);
+          // forDate == today → the present-tense eyebrow.
+          expect(
+            find.text(messages.dailyOsNextTimeSpentTitle),
+            findsOneWidget,
+          );
+          expect(
+            find.text(messages.dailyOsNextTimeSpentTitlePast),
+            findsNothing,
+          );
+        });
+        await harness.dispose();
+      },
+    );
+
+    testWidgets('uses the date-neutral eyebrow when tracking a past day', (
+      tester,
+    ) async {
+      final harness = _AudioHarness()..arm();
+      await withClock(Clock.fixed(DateTime(2026, 5, 26, 9)), () async {
+        await _pumpCapture(
+          tester,
+          harness: harness,
+          page: host(
+            CaptureModalContent(
+              forDate: DateTime(2026, 5, 24),
+              actualBlocks: [blockOn(DateTime(2026, 5, 24))],
+            ),
+          ),
+        );
+
+        final messages = tester
+            .element(find.byType(CaptureModalContent))
+            .messages;
+        expect(
+          find.text(messages.dailyOsNextTimeSpentTitlePast),
+          findsOneWidget,
+        );
+        expect(find.text(messages.dailyOsNextTimeSpentTitle), findsNothing);
+      });
+      await harness.dispose();
+    });
+
+    testWidgets(
+      'falls back to the present-tense eyebrow when no forDate is given',
+      (tester) async {
+        final harness = _AudioHarness()..arm();
+        await _pumpCapture(
+          tester,
+          harness: harness,
+          page: host(
+            CaptureModalContent(
+              actualBlocks: [blockOn(DateTime(2026, 5, 26))],
+            ),
+          ),
+        );
+
+        final messages = tester
+            .element(find.byType(CaptureModalContent))
+            .messages;
+        // forDate == null → _timeSpentTitle returns null → default eyebrow.
+        expect(find.text(messages.dailyOsNextTimeSpentTitle), findsOneWidget);
+        expect(
+          find.text(messages.dailyOsNextTimeSpentTitlePast),
+          findsNothing,
+        );
+
+        await harness.dispose();
+      },
+    );
+
+    testWidgets('tapping the voice button arms the listening phase', (
+      tester,
+    ) async {
+      final harness = _AudioHarness()..arm();
+      await _pumpCapture(
+        tester,
+        harness: harness,
+        page: host(const CaptureModalContent()),
+      );
+
+      await tester.tap(find.byType(VoiceButton));
+      await tester.pump();
+      await tester.pump();
+
+      final messages = tester
+          .element(find.byType(CaptureModalContent))
+          .messages;
+      expect(find.text(messages.dailyOsNextCaptureListening), findsOneWidget);
+
+      await harness.dispose();
+    });
+
+    for (final (phase, labelOf)
+        in <(CapturePhase, String Function(AppLocalizations))>[
+          (CapturePhase.idle, (m) => m.dailyOsNextCaptureVoiceButtonStart),
+          (CapturePhase.error, (m) => m.dailyOsNextCaptureVoiceButtonStart),
+          (CapturePhase.listening, (m) => m.dailyOsNextCaptureVoiceButtonStop),
+          (
+            CapturePhase.transcribing,
+            (m) => m.dailyOsNextCaptureVoiceButtonReset,
+          ),
+          (CapturePhase.captured, (m) => m.dailyOsNextCaptureVoiceButtonReset),
+        ]) {
+      testWidgets('voice button semantic label for $phase', (tester) async {
+        await tester.pumpWidget(
+          _wrap(
+            host(const CaptureModalContent()),
+            overrides: [
+              captureControllerProvider.overrideWith(
+                _StubCaptureController.factory(
+                  CaptureState(
+                    phase: phase,
+                    transcript: '',
+                    amplitudes: const [],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester
+            .element(find.byType(CaptureModalContent))
+            .messages;
+        final button = tester.widget<VoiceButton>(find.byType(VoiceButton));
+        expect(button.semanticLabel, labelOf(messages));
+      });
+    }
   });
 
   group('CaptureLayoutMetrics', () {

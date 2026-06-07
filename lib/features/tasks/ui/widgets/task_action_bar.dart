@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -34,8 +35,10 @@ part 'task_action_bar_buttons.dart';
 ///   items like Event / Text / Paste image / link to event / capture
 ///   screenshot — the latter is desktop-only inside that menu)
 ///
-/// The action row is a [Wrap], so on narrow viewports — typically
-/// phones — the trailing icons reflow onto a second run instead of
+/// The action row is a single [Row] with width-based priority drop: on
+/// narrow viewports the lower-priority trailing icons (image, then
+/// checklist) are hidden once the inner width falls below
+/// [minWidthForImageButton] / [minWidthForChecklistButton] instead of
 /// overflowing the right edge.
 class TaskActionBar extends ConsumerStatefulWidget {
   const TaskActionBar({
@@ -114,25 +117,6 @@ class TaskActionBar extends ConsumerStatefulWidget {
   @override
   ConsumerState<TaskActionBar> createState() => _TaskActionBarState();
 }
-
-/// Shared "glass chip" styling values used by both [_TrackTimePill] (idle
-/// state) and [_RoundActionButton] (when no caller override is supplied).
-///
-/// These exist as file-level constants so the alpha bumps stay in sync
-/// across the action bar — no `surface.*` token covers "chip on glass
-/// over arbitrary underlying content", so the values are intentionally
-/// hard-coded here rather than fragmenting across widgets.
-
-/// Alpha applied to the chip fill on top of `surface.focusPressed`. Sits
-/// above any `surface.*` token so the chip silhouette stays opaque
-/// enough to contrast the foreground against bright content (e.g. white
-/// chat bubbles or embedded screenshots bleeding through the glass blur).
-const double _glassFillAlpha = 0.55;
-
-/// Alpha for the hairline outline drawn over the chip fill. Painted via
-/// `foregroundDecoration` so it doesn't widen the chip and trip the
-/// action-row layout thresholds.
-const double _glassBorderAlpha = 0.45;
 
 class _TaskActionBarState extends ConsumerState<TaskActionBar> {
   final TimeService _timeService = getIt<TimeService>();
@@ -349,7 +333,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                       onStop: _onStopTimer,
                     ),
                     SizedBox(width: spacing.step4),
-                    _RoundActionButton(
+                    DsGlassRoundButton(
                       key: TaskActionBar.audioKey,
                       icon: Icons.mic_rounded,
                       semanticLabel: isRecordingAudio
@@ -363,7 +347,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                     ),
                     if (showChecklist) ...[
                       SizedBox(width: spacing.step4),
-                      _RoundActionButton(
+                      DsGlassRoundButton(
                         key: TaskActionBar.checklistKey,
                         icon: Icons.checklist_rounded,
                         semanticLabel: messages.addActionAddChecklist,
@@ -372,7 +356,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                     ],
                     if (showImage) ...[
                       SizedBox(width: spacing.step4),
-                      _RoundActionButton(
+                      DsGlassRoundButton(
                         key: TaskActionBar.imageKey,
                         icon: Icons.image_rounded,
                         semanticLabel: messages.addActionImportImage,
@@ -380,7 +364,7 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                       ),
                     ],
                     SizedBox(width: spacing.step4),
-                    _RoundActionButton(
+                    DsGlassRoundButton(
                       key: TaskActionBar.moreKey,
                       icon: Icons.more_horiz_rounded,
                       semanticLabel: messages.taskActionBarMoreActions,

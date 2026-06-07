@@ -89,7 +89,7 @@ class AiRunningAnimationWrapper extends ConsumerWidget {
   }
 }
 
-class AiRunningDecoderBars extends ConsumerStatefulWidget {
+class AiRunningDecoderBars extends ConsumerWidget {
   const AiRunningDecoderBars({
     required this.entryId,
     required this.responseTypes,
@@ -103,6 +103,7 @@ class AiRunningDecoderBars extends ConsumerStatefulWidget {
   static const defaultRandomness = 1.0;
   static const defaultAmplitude = 0.7;
   static const defaultPulse = 0.6;
+  static const defaultLineCount = 5;
   static const transitionDuration = Duration(milliseconds: 340);
 
   @visibleForTesting
@@ -123,11 +124,99 @@ class AiRunningDecoderBars extends ConsumerStatefulWidget {
   final bool isInteractive;
 
   @override
-  ConsumerState<AiRunningDecoderBars> createState() =>
-      _AiRunningDecoderBarsState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    // The presence envelope (fade/scale in & out, collapse to zero) lives in
+    // [AiThinkingShaderPresence]; here we only feed it the entry's
+    // inference-running signal and, when interactive, the tap-to-progress
+    // affordance.
+    final isRunning = ref.watch(
+      inferenceRunningControllerProvider(
+        id: entryId,
+        responseTypes: responseTypes,
+      ),
+    );
+
+    final bars = AiThinkingShaderPresence(
+      isRunning: isRunning,
+      height: height,
+      indicatorKey: indicatorKey,
+    );
+
+    if (!isInteractive) {
+      return bars;
+    }
+
+    return Semantics(
+      button: true,
+      label: context.messages.aiRunningActivityOpenProgress,
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => _handleAiActivityTap(
+          context: context,
+          ref: ref,
+          entryId: entryId,
+          responseTypes: responseTypes,
+        ),
+        child: bars,
+      ),
+    );
+  }
 }
 
-class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
+/// Reusable presence/fade envelope around [AiThinkingLineShader].
+///
+/// Renders nothing while [isRunning] is false and the exit animation has
+/// finished; on `isRunning` → true it fades and scales the shader in over
+/// [transitionDuration], and reverses on the way out before collapsing to
+/// zero reserved height. The shader amplitude, pulse, and opacity are
+/// scaled by the eased presence progress so entry/exit read as a single
+/// motion.
+///
+/// Extracted from [AiRunningDecoderBars] so surfaces that aren't tied to
+/// the per-entry inference provider — e.g. the day-planning modal action
+/// bar — can show the same "AI is thinking" shader driven by their own
+/// busy signal.
+class AiThinkingShaderPresence extends StatefulWidget {
+  const AiThinkingShaderPresence({
+    required this.isRunning,
+    this.height = AiRunningDecoderBars.defaultHeight,
+    this.speed = AiRunningDecoderBars.defaultSpeed,
+    this.amplitude = AiRunningDecoderBars.defaultAmplitude,
+    this.randomness = AiRunningDecoderBars.defaultRandomness,
+    this.pulse = AiRunningDecoderBars.defaultPulse,
+    this.lineCount = AiRunningDecoderBars.defaultLineCount,
+    this.transitionDuration = AiRunningDecoderBars.transitionDuration,
+    this.primaryColor,
+    this.secondaryColor,
+    this.indicatorKey,
+    super.key,
+  });
+
+  final bool isRunning;
+  final double height;
+  final double speed;
+  final double amplitude;
+  final double randomness;
+  final double pulse;
+  final int lineCount;
+  final Duration transitionDuration;
+
+  /// Defaults to `tokens.colors.interactive.enabled` when null.
+  final Color? primaryColor;
+
+  /// Defaults to `tokens.colors.text.highEmphasis` when null.
+  final Color? secondaryColor;
+
+  /// Optional key placed on the animated reserved-height box so hosts can
+  /// assert presence/absence in tests.
+  final Key? indicatorKey;
+
+  @override
+  State<AiThinkingShaderPresence> createState() =>
+      _AiThinkingShaderPresenceState();
+}
+
+class _AiThinkingShaderPresenceState extends State<AiThinkingShaderPresence>
     with SingleTickerProviderStateMixin {
   late final AnimationController _presenceController;
 
@@ -138,7 +227,7 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
     super.initState();
     _presenceController = AnimationController(
       vsync: this,
-      duration: AiRunningDecoderBars.transitionDuration,
+      duration: widget.transitionDuration,
     );
     _presenceController.addStatusListener((status) {
       if (status == AnimationStatus.dismissed && mounted) {
@@ -146,18 +235,22 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
       }
     });
 
-    // `ref.listen` (in build) only reacts to subsequent changes, so seed the
-    // presence here for inference that is already running when this widget
-    // first mounts — fully shown, without an entry animation.
-    final isRunning = ref.read(
-      inferenceRunningControllerProvider(
-        id: widget.entryId,
-        responseTypes: widget.responseTypes,
-      ),
-    );
-    if (isRunning) {
+    // Seed the presence for a busy signal that is already true when this
+    // widget first mounts — fully shown, without an entry animation.
+    if (widget.isRunning) {
       _buildBars = true;
       _presenceController.value = 1;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant AiThinkingShaderPresence oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.transitionDuration != oldWidget.transitionDuration) {
+      _presenceController.duration = widget.transitionDuration;
+    }
+    if (widget.isRunning != oldWidget.isRunning) {
+      _syncPresence(widget.isRunning);
     }
   }
 
@@ -192,20 +285,13 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
 
   @override
   Widget build(BuildContext context) {
-    // React to running-state changes via a listener rather than mutating the
-    // controller during build (which would be a build-phase side effect).
-    ref.listen<bool>(
-      inferenceRunningControllerProvider(
-        id: widget.entryId,
-        responseTypes: widget.responseTypes,
-      ),
-      (_, isRunning) => _syncPresence(isRunning),
-    );
-
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
     final bottomGap = spacing.step2;
-    final bars = AnimatedBuilder(
+    final primary = widget.primaryColor ?? tokens.colors.interactive.enabled;
+    final secondary = widget.secondaryColor ?? tokens.colors.text.highEmphasis;
+
+    return AnimatedBuilder(
       animation: _presenceController,
       builder: (context, _) {
         final progress = _presenceProgress;
@@ -215,7 +301,7 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
         }
 
         return SizedBox(
-          key: AiRunningDecoderBars.indicatorKey,
+          key: widget.indicatorKey,
           height: (widget.height + bottomGap) * progress,
           width: double.infinity,
           child: Align(
@@ -232,14 +318,14 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
                   return AiThinkingLineShader(
                     width: width,
                     height: shaderHeight,
-                    speed: AiRunningDecoderBars.defaultSpeed,
-                    amplitude: AiRunningDecoderBars.defaultAmplitude * progress,
-                    randomness: AiRunningDecoderBars.defaultRandomness,
-                    lineCount: 5,
-                    pulse: AiRunningDecoderBars.defaultPulse * progress,
+                    speed: widget.speed,
+                    amplitude: widget.amplitude * progress,
+                    randomness: widget.randomness,
+                    lineCount: widget.lineCount,
+                    pulse: widget.pulse * progress,
                     opacity: progress,
-                    primaryColor: tokens.colors.interactive.enabled,
-                    secondaryColor: tokens.colors.text.highEmphasis,
+                    primaryColor: primary,
+                    secondaryColor: secondary,
                     backgroundColor: Colors.transparent,
                   );
                 },
@@ -248,25 +334,6 @@ class _AiRunningDecoderBarsState extends ConsumerState<AiRunningDecoderBars>
           ),
         );
       },
-    );
-
-    if (!widget.isInteractive) {
-      return bars;
-    }
-
-    return Semantics(
-      button: true,
-      label: context.messages.aiRunningActivityOpenProgress,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => _handleAiActivityTap(
-          context: context,
-          ref: ref,
-          entryId: widget.entryId,
-          responseTypes: widget.responseTypes,
-        ),
-        child: bars,
-      ),
     );
   }
 }

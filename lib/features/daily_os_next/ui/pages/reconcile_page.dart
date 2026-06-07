@@ -1,9 +1,12 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/reconcile_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/drafting_page.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/day_planning_thinking_shader.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/parsed_card.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/pending_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
@@ -12,6 +15,16 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+
+/// Width at/above which the reconcile surface lays the Heard / Decide
+/// columns side by side; below it they stack. Shared by the page, the modal
+/// content, and the footer so the breakpoint can't drift between them.
+const double _reconcileTwoColumnBreakpoint = 720;
+
+/// Flex weights for the side-by-side Heard / Decide columns — the Heard
+/// column (parsed items) gets slightly more room than the Decide column.
+const int _heardColumnFlex = 6;
+const int _decideColumnFlex = 5;
 
 /// Second screen of the agentic loop — turn the spoken check-in into
 /// editable structure and fold in the existing corpus.
@@ -93,7 +106,8 @@ class _ReconcileBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final isWide = MediaQuery.sizeOf(context).width >= 720;
+    final isWide =
+        MediaQuery.sizeOf(context).width >= _reconcileTwoColumnBreakpoint;
 
     final heardColumn = _HeardColumn(params: params, items: data.parsed);
     final decideColumn = _DecideColumn(
@@ -113,9 +127,9 @@ class _ReconcileBody extends ConsumerWidget {
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(flex: 6, child: heardColumn),
+                      Expanded(flex: _heardColumnFlex, child: heardColumn),
                       SizedBox(width: tokens.spacing.step6),
-                      Expanded(flex: 5, child: decideColumn),
+                      Expanded(flex: _decideColumnFlex, child: decideColumn),
                     ],
                   )
                 : Column(
@@ -143,6 +157,14 @@ class _HeardColumn extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    // While the capture-submitted parse wake is still running, the parsed
+    // cards haven't landed yet — surface the AI thinking shader above the
+    // empty placeholder so the column reads as "working", not "done/empty".
+    final isParsing =
+        ref
+            .watch(agentIsRunningProvider(dayAgentIdForDate(params.dayDate)))
+            .value ??
+        false;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -151,7 +173,11 @@ class _HeardColumn extends ConsumerWidget {
           count: items.length,
         ),
         SizedBox(height: tokens.spacing.step4),
-        if (items.isEmpty)
+        if (items.isEmpty) ...[
+          if (isParsing) ...[
+            const DayPlanningThinkingShader(isThinking: true),
+            SizedBox(height: tokens.spacing.step3),
+          ],
           DsDashedBorder(
             color: tokens.colors.decorative.level02,
             radius: tokens.radii.m,
@@ -166,6 +192,7 @@ class _HeardColumn extends ConsumerWidget {
               ),
             ),
           ),
+        ],
         for (final item in items) ...[
           ParsedCard(
             item: item,
@@ -283,47 +310,106 @@ class _DefaultBehaviorHint extends StatelessWidget {
   }
 }
 
+/// The work the user has effectively committed to taking on for the day,
+/// derived from a reconcile result — the inputs the drafting step needs.
+///
+/// Matched/update parsed items and pending triage rows carry task IDs.
+/// NEW/unlinked parsed items carry parsed capture item IDs so drafting can
+/// still create tasks from the approved capture text before placing them.
+({List<String> taskIds, List<String> captureItemIds})
+reconcileDraftingSelections(ReconcileData data) {
+  final taskIds = <String>{};
+  final captureItemIds = <String>{};
+  for (final item in data.parsed) {
+    if (item.kind == ParsedItemKind.matched ||
+        item.kind == ParsedItemKind.update) {
+      final taskId = item.matchedTaskId;
+      if (taskId != null) {
+        taskIds.add(taskId);
+      } else {
+        captureItemIds.add(item.id);
+      }
+    } else {
+      captureItemIds.add(item.id);
+    }
+  }
+  for (final entry in data.triageDecisions.entries) {
+    final action = entry.value.action;
+    if (action == TriageAction.today || action == TriageAction.doNow) {
+      taskIds.add(entry.key);
+    }
+  }
+  return (taskIds: taskIds.toList(), captureItemIds: captureItemIds.toList());
+}
+
+/// Scaffold-free reconcile content (the Heard / Decide columns) for hosting
+/// inside the day-planning modal. Unlike [_ReconcileBody] it carries no
+/// footer — the modal's sticky glass action bar supplies the Re-record /
+/// Build day actions — and it does not scroll itself (the modal page's
+/// sliver scroll viewport owns scrolling).
+class ReconcileModalContent extends StatelessWidget {
+  const ReconcileModalContent({
+    required this.params,
+    required this.data,
+    super.key,
+  });
+
+  final ReconcileParams params;
+  final ReconcileData data;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final heardColumn = _HeardColumn(params: params, items: data.parsed);
+    final decideColumn = _DecideColumn(params: params, items: data.pending);
+
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: tokens.spacing.step6,
+        vertical: tokens.spacing.step5,
+      ),
+      // Decide two-column vs stacked from the actual available width (the
+      // modal/dialog box), not the screen size — the dialog can be far
+      // narrower than the screen.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth >= _reconcileTwoColumnBreakpoint;
+          if (!isWide) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                heardColumn,
+                SizedBox(height: tokens.spacing.step6),
+                decideColumn,
+              ],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(flex: _heardColumnFlex, child: heardColumn),
+              SizedBox(width: tokens.spacing.step6),
+              Expanded(flex: _decideColumnFlex, child: decideColumn),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
 class _ReconcileFooter extends StatelessWidget {
   const _ReconcileFooter({required this.params, required this.data});
 
   final ReconcileParams params;
   final ReconcileData data;
 
-  /// The work the user has effectively committed to taking on today.
-  ///
-  /// Matched/update parsed items and pending triage rows carry task IDs.
-  /// NEW/unlinked parsed items carry parsed capture item IDs so drafting can
-  /// still create tasks from the approved capture text before placing them.
-  ({List<String> taskIds, List<String> captureItemIds}) _draftingSelections() {
-    final taskIds = <String>{};
-    final captureItemIds = <String>{};
-    for (final item in data.parsed) {
-      if (item.kind == ParsedItemKind.matched ||
-          item.kind == ParsedItemKind.update) {
-        final taskId = item.matchedTaskId;
-        if (taskId != null) {
-          taskIds.add(taskId);
-        } else {
-          captureItemIds.add(item.id);
-        }
-      } else {
-        captureItemIds.add(item.id);
-      }
-    }
-    for (final entry in data.triageDecisions.entries) {
-      final action = entry.value.action;
-      if (action == TriageAction.today || action == TriageAction.doNow) {
-        taskIds.add(entry.key);
-      }
-    }
-    return (taskIds: taskIds.toList(), captureItemIds: captureItemIds.toList());
-  }
-
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final isWide = MediaQuery.sizeOf(context).width >= 720;
+    final isWide =
+        MediaQuery.sizeOf(context).width >= _reconcileTwoColumnBreakpoint;
     final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
     );
@@ -356,7 +442,7 @@ class _ReconcileFooter extends StatelessWidget {
     );
     final draftButton = FilledButton.icon(
       onPressed: () {
-        final selections = _draftingSelections();
+        final selections = reconcileDraftingSelections(data);
         Navigator.of(context).push<void>(
           MaterialPageRoute<void>(
             builder: (_) => DraftingPage(

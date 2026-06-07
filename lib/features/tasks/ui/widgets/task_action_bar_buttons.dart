@@ -1,6 +1,7 @@
-// The action bar's pill and round-button widgets — part of the
-// task_action_bar library so they share the file-level glass-chip
-// styling constants.
+// The action bar's Track time pill widgets — part of the
+// task_action_bar library. Glass-chip fill/outline styling comes from the
+// shared `glass_action_bar.dart` helpers (`dsGlassChipFill` /
+// `dsGlassChipBorder`); the round affordances use `DsGlassRoundButton`.
 part of 'task_action_bar.dart';
 
 /// Primary "Track time" pill.
@@ -44,9 +45,7 @@ class _TrackTimePill extends StatelessWidget {
     // underlying content without losing the glass aesthetic.
     final fillColor = isTracking
         ? tokens.colors.alert.error.defaultColor
-        : tokens.colors.surface.focusPressed.withValues(
-            alpha: _glassFillAlpha,
-          );
+        : dsGlassChipFill(tokens);
     // The error palette has no dedicated on-color token — its
     // defaultColor is a vivid red across both themes, so a fixed white
     // foreground stays legible on top.
@@ -96,11 +95,7 @@ class _TrackTimePill extends StatelessWidget {
                 ? null
                 : BoxDecoration(
                     borderRadius: pillRadius,
-                    border: Border.all(
-                      color: tokens.colors.decorative.level01.withValues(
-                        alpha: _glassBorderAlpha,
-                      ),
-                    ),
+                    border: dsGlassChipBorder(tokens),
                   ),
             child: ConstrainedBox(
               constraints: BoxConstraints(minWidth: idleContentWidth),
@@ -209,82 +204,6 @@ class _PillStopButton extends StatelessWidget {
               Icons.stop_rounded,
               size: TaskActionBar.pillStopIconSize,
               color: Colors.white,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Circular icon-only action button — the round affordances after the
-/// Track time pill. [backgroundColor] / [iconColor] are optional
-/// overrides; when null, the default surface-hover + high-emphasis
-/// colors are used. The audio button passes the alert-error fill while
-/// a recording session for the open task is active.
-class _RoundActionButton extends StatelessWidget {
-  const _RoundActionButton({
-    required this.icon,
-    required this.semanticLabel,
-    required this.onPressed,
-    this.backgroundColor,
-    this.iconColor,
-    super.key,
-  });
-
-  final IconData icon;
-  final String semanticLabel;
-  final VoidCallback onPressed;
-  final Color? backgroundColor;
-  final Color? iconColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    // Round buttons sit on a translucent glass strip; when no caller
-    // override is supplied the chip uses the shared "glass chip"
-    // styling (`_glassFillAlpha`, `_glassBorderAlpha`) so the
-    // silhouette and glyph stay visible regardless of what's behind the
-    // bar. Caller overrides (e.g. recording = solid red) already carry
-    // their own contrast.
-    final isTranslucent = backgroundColor == null;
-    final defaultFill = tokens.colors.surface.focusPressed.withValues(
-      alpha: _glassFillAlpha,
-    );
-    return Semantics(
-      button: true,
-      label: semanticLabel,
-      excludeSemantics: true,
-      child: Material(
-        color: Colors.transparent,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: onPressed,
-          child: Container(
-            width: TaskActionBar.buttonSize,
-            height: TaskActionBar.buttonSize,
-            decoration: BoxDecoration(
-              color: backgroundColor ?? defaultFill,
-              shape: BoxShape.circle,
-            ),
-            // foregroundDecoration so the hairline outline doesn't eat
-            // into the icon's content rect — keeps the icon centered
-            // exactly the same as before the outline was added.
-            foregroundDecoration: isTranslucent
-                ? BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: tokens.colors.decorative.level01.withValues(
-                        alpha: _glassBorderAlpha,
-                      ),
-                    ),
-                  )
-                : null,
-            child: Icon(
-              icon,
-              size: TaskActionBar.iconSize,
-              color: iconColor ?? tokens.colors.text.highEmphasis,
             ),
           ),
         ),

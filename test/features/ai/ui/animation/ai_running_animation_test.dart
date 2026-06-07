@@ -1245,4 +1245,54 @@ void main() {
       );
     });
   });
+
+  group('AiThinkingShaderPresence', () {
+    const key = ValueKey('presence-box');
+
+    testWidgets('adopts a new transitionDuration on rebuild', (tester) async {
+      // Seeded fully shown at mount with a short exit duration.
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const Center(
+            child: AiThinkingShaderPresence(
+              isRunning: true,
+              transitionDuration: Duration(milliseconds: 100),
+              indicatorKey: key,
+            ),
+          ),
+        ),
+      );
+      expect(find.byKey(key), findsOneWidget);
+
+      // Rebuild with isRunning false AND a much longer transitionDuration:
+      // didUpdateWidget must adopt the new duration for the exit animation.
+      await tester.pumpWidget(
+        makeTestableWidget(
+          const Center(
+            child: AiThinkingShaderPresence(
+              isRunning: false,
+              transitionDuration: Duration(seconds: 1),
+              indicatorKey: key,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Past the OLD 100ms duration the shader would be gone; with the
+      // adopted 1s duration it is still mid-exit.
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byKey(key), findsOneWidget);
+      final shader = tester.widget<AiThinkingLineShader>(
+        find.byType(AiThinkingLineShader),
+      );
+      expect(shader.opacity, greaterThan(0));
+      expect(shader.opacity, lessThan(1));
+
+      // After the full new duration it collapses away.
+      await tester.pump(const Duration(seconds: 1));
+      expect(find.byKey(key), findsNothing);
+      expect(find.byType(AiThinkingLineShader), findsNothing);
+    });
+  });
 }

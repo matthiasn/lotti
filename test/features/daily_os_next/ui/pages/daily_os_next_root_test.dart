@@ -109,7 +109,7 @@ void main() {
 
     testWidgets(
       'a no-plan day with tracked time lands on the empty Day surface; '
-      'the check-in CTA routes into Capture with the tracked card',
+      'the check-in CTA opens the day-planning modal over it',
       (tester) async {
         final actualBlock = TimeBlock(
           id: 'actual:entry-1',
@@ -155,18 +155,18 @@ void main() {
           expect(cta, findsOneWidget);
           expect(find.text(messages.dailyOsNextDayRefineCta), findsNothing);
 
-          // The CTA drops into Capture; the tracked card rides along.
+          // The CTA opens the day-planning modal (Capture step) as a
+          // full-cover layer; the Day surface stays mounted underneath.
           await tester.tap(cta);
           await tester.pump();
-          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
 
-          expect(find.byType(CapturePage), findsOneWidget);
-          expect(find.byType(DayPage), findsNothing);
-          expect(
-            find.text(messages.dailyOsNextTimeSpentTitle),
-            findsOneWidget,
-          );
-          expect(find.text('Client follow-up'), findsOneWidget);
+          expect(find.byType(CaptureModalContent), findsOneWidget);
+          expect(find.byType(DayPage), findsOneWidget);
+          // The tracked-time the user saw on the Day surface now also rides
+          // the top of the modal's capture step (handoff v2 item 1): the
+          // session title appears both on the timeline and in the card.
+          expect(find.text('Client follow-up'), findsNWidgets(2));
         });
       },
     );
