@@ -343,70 +343,48 @@ void main() {
       },
     );
 
-    testWidgets(
-      'onHoverChanged fires when the pointer enters and leaves the row '
-      'so parent lists can coordinate cross-row state such as hiding the '
-      'divider below the currently-hovered item',
-      (tester) async {
-        const itemKey = Key('hover-item');
-        final events = <bool>[];
+    // onHoverChanged must fire [true, false] across the pointer enter/leave
+    // cycle regardless of whether the internal visual state is free-running
+    // or pinned via forcedState, so parent lists can coordinate cross-row
+    // state (e.g. hiding the divider below the hovered item) even during
+    // previews. Parameterised over the forcedState dimension to avoid two
+    // near-identical bodies.
+    for (final forcedState in <DesignSystemListItemVisualState?>[
+      null,
+      DesignSystemListItemVisualState.idle,
+    ]) {
+      testWidgets(
+        'onHoverChanged fires [true, false] on enter/leave '
+        '(forcedState: $forcedState)',
+        (tester) async {
+          const itemKey = Key('hover-item');
+          final events = <bool>[];
 
-        await _pumpListItem(
-          tester,
-          DesignSystemListItem(
-            key: itemKey,
-            title: 'Hoverable',
-            onTap: () {},
-            onHoverChanged: events.add,
-          ),
-        );
+          await _pumpListItem(
+            tester,
+            DesignSystemListItem(
+              key: itemKey,
+              title: 'Hoverable',
+              forcedState: forcedState,
+              onTap: () {},
+              onHoverChanged: events.add,
+            ),
+          );
 
-        final gesture = await tester.createGesture(
-          kind: PointerDeviceKind.mouse,
-        );
-        addTearDown(gesture.removePointer);
-        await gesture.addPointer(location: Offset.zero);
-        await gesture.moveTo(tester.getCenter(find.byKey(itemKey)));
-        await tester.pump();
-        await gesture.moveTo(const Offset(-100, -100));
-        await tester.pump();
+          final gesture = await tester.createGesture(
+            kind: PointerDeviceKind.mouse,
+          );
+          addTearDown(gesture.removePointer);
+          await gesture.addPointer(location: Offset.zero);
+          await gesture.moveTo(tester.getCenter(find.byKey(itemKey)));
+          await tester.pump();
+          await gesture.moveTo(const Offset(-100, -100));
+          await tester.pump();
 
-        expect(events, [true, false]);
-      },
-    );
-
-    testWidgets(
-      'onHoverChanged still fires when forcedState is set so parent lists '
-      'can coordinate cross-row state even during previews that pin the '
-      'internal visual state',
-      (tester) async {
-        const itemKey = Key('forced-hover-item');
-        final events = <bool>[];
-
-        await _pumpListItem(
-          tester,
-          DesignSystemListItem(
-            key: itemKey,
-            title: 'Forced idle, external hover',
-            forcedState: DesignSystemListItemVisualState.idle,
-            onTap: () {},
-            onHoverChanged: events.add,
-          ),
-        );
-
-        final gesture = await tester.createGesture(
-          kind: PointerDeviceKind.mouse,
-        );
-        addTearDown(gesture.removePointer);
-        await gesture.addPointer(location: Offset.zero);
-        await gesture.moveTo(tester.getCenter(find.byKey(itemKey)));
-        await tester.pump();
-        await gesture.moveTo(const Offset(-100, -100));
-        await tester.pump();
-
-        expect(events, [true, false]);
-      },
-    );
+          expect(events, [true, false]);
+        },
+      );
+    }
 
     testWidgets('uses overridden activated background color', (tester) async {
       const itemKey = Key('custom-activated-item');

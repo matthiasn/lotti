@@ -10,11 +10,9 @@ import '../../../../widget_test_utils.dart';
 
 void main() {
   group('DesignSystemSearch', () {
-    testWidgets('renders placeholder styles and clears entered text', (
+    testWidgets('renders placeholder styles and reveals the clear affordance', (
       tester,
     ) async {
-      var cleared = false;
-
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           const SizedBox(
@@ -109,6 +107,12 @@ void main() {
             .abs(),
         lessThanOrEqualTo(1),
       );
+    });
+
+    testWidgets('tapping the clear icon empties the field and fires onClear', (
+      tester,
+    ) async {
+      var cleared = false;
 
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -122,12 +126,17 @@ void main() {
           theme: DesignSystemTheme.light(),
         ),
       );
+
       await tester.enterText(find.byType(TextField), 'Lotti search');
       await tester.pump();
+      // Typing reveals the clear affordance.
+      expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
+
       await tester.tap(find.byIcon(Icons.cancel_rounded));
       await tester.pump();
 
       expect(find.text('Lotti search'), findsNothing);
+      expect(find.byIcon(Icons.cancel_rounded), findsNothing);
       expect(cleared, isTrue);
     });
 

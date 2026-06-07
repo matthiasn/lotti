@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
@@ -112,14 +113,22 @@ void main() {
         const DsPill(variant: DsPillVariant.muted, label: 'No estimate'),
       );
 
-      // The muted variant uses CustomPaint instead of a DecoratedBox shell.
-      expect(
-        find.descendant(
-          of: find.byType(DsPill),
-          matching: find.byType(CustomPaint),
-        ),
-        findsWidgets,
-      );
+      // The muted variant draws its border via DsDashedBorder's
+      // DashedBorderPainter rather than a DecoratedBox shell. Assert the
+      // actual painter subtype and that it is wired to the decorative token
+      // and the pill radius — not merely that *some* CustomPaint exists.
+      final dashedPainter = tester
+          .widgetList<CustomPaint>(
+            find.descendant(
+              of: find.byType(DsPill),
+              matching: find.byType(CustomPaint),
+            ),
+          )
+          .map((paint) => paint.painter)
+          .whereType<DashedBorderPainter>()
+          .single;
+      expect(dashedPainter.color, dsTokensDark.colors.decorative.level02);
+      expect(dashedPainter.radius, dsTokensDark.radii.badgesPills);
 
       final richText = tester.widget<RichText>(
         find.descendant(

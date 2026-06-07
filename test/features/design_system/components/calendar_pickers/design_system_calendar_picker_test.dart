@@ -86,6 +86,38 @@ void main() {
       );
     });
 
+    testWidgets('resolves the selected card treatment from dark tokens', (
+      tester,
+    ) async {
+      const selectedKey = Key('dark-selected-card');
+
+      await _pumpDesignSystem(
+        tester,
+        const DesignSystemCalendarDateCard(
+          key: selectedKey,
+          weekdayLabel: 'Sun',
+          dayLabel: '15',
+          selected: true,
+          onPressed: _noop,
+        ),
+        theme: DesignSystemTheme.dark(),
+      );
+
+      final decoration = _firstDecoration(tester, selectedKey);
+      final selectedDay = _findTextNode(tester, selectedKey, '15');
+
+      expect(decoration.color, dsTokensDark.colors.surface.selected);
+      expect(
+        (decoration.border! as Border).top.color,
+        dsTokensDark.colors.interactive.enabled,
+      );
+      expectTextStyle(
+        selectedDay.style!,
+        dsTokensDark.typography.styles.subtitle.subtitle2,
+        dsTokensDark.colors.interactive.enabled,
+      );
+    });
+
     // Uncovered: lines 104–107
     // onEnter/onExit callbacks fire when the card is enabled and not selected,
     // toggling the hover background.
@@ -676,12 +708,13 @@ void main() {
 
 Future<void> _pumpDesignSystem(
   WidgetTester tester,
-  Widget child,
-) async {
+  Widget child, {
+  ThemeData? theme,
+}) async {
   await tester.pumpWidget(
     makeTestableWidgetWithScaffold(
       child,
-      theme: DesignSystemTheme.light(),
+      theme: theme ?? DesignSystemTheme.light(),
     ),
   );
 }

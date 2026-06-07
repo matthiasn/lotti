@@ -26,6 +26,27 @@ void main() {
       expect(interactions[1].topOverlap, 1);
     });
 
+    test('a single row has no edges, so no overlap and no divider', () {
+      final interactions = buildGroupedCardRowInteractions(
+        priorities: const [0],
+        connectedBelow: const [],
+      );
+
+      expect(interactions, hasLength(1));
+      expect(interactions.single.topOverlap, 0);
+      expect(interactions.single.bottomOverlap, 0);
+      expect(interactions.single.showDividerBelow, isFalse);
+    });
+
+    test('an empty list yields no interactions', () {
+      final interactions = buildGroupedCardRowInteractions(
+        priorities: const [],
+        connectedBelow: const [],
+      );
+
+      expect(interactions, isEmpty);
+    });
+
     test('does not coordinate rows across disconnected boundaries', () {
       final interactions = buildGroupedCardRowInteractions(
         priorities: const [0, 1],

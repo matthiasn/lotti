@@ -327,6 +327,36 @@ void main() {
     tags: 'glados',
   );
 
+  // DesignSystemTaskFilterOption.toJson serializes exactly id/label/glyph, and
+  // fromJson restores those three. The state-level round-trip above only checks
+  // option ids, so this property exercises the option round-trip directly over
+  // every glyph value (the wider scenario builder never sets a non-default
+  // glyph).
+  const glyphs = DesignSystemTaskFilterGlyph.values;
+  glados.Glados3<int, String, String>(
+    glados.any.intInRange(0, glyphs.length),
+    glados.any.letterOrDigits,
+    glados.any.letterOrDigits,
+    glados.ExploreConfig(numRuns: 120),
+  ).test(
+    'DesignSystemTaskFilterOption fromJson(toJson()) preserves id/label/glyph '
+    'for every glyph',
+    (glyphIndex, id, label) {
+      final option = DesignSystemTaskFilterOption(
+        id: id,
+        label: label,
+        glyph: glyphs[glyphIndex % glyphs.length],
+      );
+
+      final restored = DesignSystemTaskFilterOption.fromJson(option.toJson());
+
+      expect(restored.id, option.id);
+      expect(restored.label, option.label);
+      expect(restored.glyph, option.glyph);
+    },
+    tags: 'glados',
+  );
+
   glados.Glados<_FilterStateScenario>(
     glados.any.filterStateScenario,
     glados.ExploreConfig(numRuns: 160),
