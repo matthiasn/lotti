@@ -10,6 +10,7 @@ import 'package:lotti/features/dashboards/config/dashboard_workout_config.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/chart_multi_select.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/create_dashboard_page.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_definition_page.dart';
+import 'package:lotti/features/settings/ui/pages/dashboards/dashboard_item_card.dart';
 import 'package:lotti/features/settings/ui/pages/dashboards/dashboards_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -256,18 +257,21 @@ void main() {
       expect(getTrimmed(formData, 'name'), testDashboardName);
       expect(getTrimmed(formData, 'description'), testDashboardDescription);
 
-      final measurableFinder = find.text(measurableChocolate.displayName);
-      expect(measurableFinder, findsWidgets);
-
-      await tester.dragUntilVisible(
-        measurableFinder.first,
-        find.byType(SingleChildScrollView),
-        const Offset(0, 50),
+      // Tap the measurable item card deterministically: a coordinate tap on
+      // the text proved flaky in the batched CI run (silent miss behind
+      // warnIfMissed: false when fonts/layout drift across the shared
+      // isolate). Invoke the card ListTile's onTap directly instead.
+      final chocolateTile = tester.widget<ListTile>(
+        find.ancestor(
+          of: find.descendant(
+            of: find.byType(MeasurableItemCard),
+            matching: find.textContaining(measurableChocolate.displayName),
+          ),
+          matching: find.byType(ListTile),
+        ),
       );
-
-      await tester.tap(measurableFinder.first, warnIfMissed: false);
-      // Modal open is a route transition — bounded pumps proved flaky in
-      // the batched CI run; settle until the sheet is fully mounted.
+      chocolateTile.onTap!();
+      // Modal open is a route transition — settle until fully mounted.
       await tester.pumpAndSettle();
 
       // Tapping the measurement opens the DashboardItemModal with one
