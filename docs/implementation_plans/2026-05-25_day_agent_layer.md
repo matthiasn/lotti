@@ -1,8 +1,10 @@
 # Day Agent Layer — Implementation Plan
 
 **Date:** 2026-05-25
-**Status:** Plan committed; awaiting selection of phase-1 starting slice
-**Scope:** Agentic layer that powers the Daily OS surface (9 screens in `Claude_Design/design_handoff_daily_os/`). Mirrors the existing task-agent layer in `lib/features/agents/`, scoped to one agent instance per calendar date.
+**Status:** Superseded by [ADR 0022](../adr/0022-long-lived-daily-os-planner.md)
+and the [long-lived Daily OS planner implementation plan](./2026-06-07_long_lived_daily_os_planner.md).
+**Scope:** Historical plan for the day-agent layer. Its one-agent-per-calendar-date
+identity decision is no longer the target architecture.
 
 ---
 
