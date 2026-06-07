@@ -318,6 +318,10 @@ Work:
    taught the workspace/reason taxonomy or they will collide cross-day under one
    planner. Define the reason-class taxonomy (capture / draft / refine /
    creation) so same-day-different-reason work is not wrongly dropped.
+   Non-workspace agents (task / project) pass a `null` workspace key, and the
+   queue helpers must treat `null` safely — `null` partitions only with `null`,
+   never matching a Daily OS `day:<dayId>` key — so this change cannot introduce
+   cross-agent collisions for agents that do not use workspaces.
 3. Preserve the existing single-flight runner by `agentId`. Document that one
    planner therefore serializes day work across days (acceptable for planner
    judgment; revisit only with evidence).
@@ -434,8 +438,11 @@ Work:
 2. Add `propose_knowledge` / `confirm_knowledge` / `retract_knowledge` handlers;
    surface them in the "What I've learned" panel. `source = userStated` may go
    straight to `confirmed`.
-3. Exempt knowledge from compaction; inject the confirmed `Head` set as a stable
-   "Standing knowledge" prompt block (cf. ADR 0014).
+3. Exempt knowledge from compaction; inject a compact **hook index** derived from
+   the confirmed `Head` set as the stable "Standing knowledge" prompt block (cf.
+   ADR 0014). Full `statementText` is retrieved on demand, scoped, per the
+   two-tier pattern (property #3 above) — not the full entries, to avoid
+   unbounded prompt growth.
 4. Split memory: feed compacted episodic memory as cross-day context; feed raw
    captures, parsed items, baseline plan, refine transcript, and decided items
    only for the active `dayId`; keep `summarize_recent_patterns` cross-day.
@@ -630,10 +637,10 @@ Before merging the full refactor:
 
 ## Open Decisions
 
-1. **(Resolved — must be decided in PR2, not left open.)** Day-scoped scheduled
-   wakes cannot ride a single `scheduledWakeAt`. PR2 must pick: global-only
-   planner wakes, or persisted scheduled-wake records with workspace key +
-   trigger tokens. Either way the day-scoped morning pre-warm must survive.
+1. **(To be resolved in PR2.)** Day-scoped scheduled wakes cannot ride a single
+   `scheduledWakeAt`. PR2 must pick: global-only planner wakes, or persisted
+   scheduled-wake records with workspace key + trigger tokens. Either way the
+   day-scoped morning pre-warm must survive.
 2. Should observation scope be represented directly in `ObservationRecord`, or
    should scoped observations be modeled as message/link metadata?
 3. Should wake queue workspace keys be generic across all agent kinds now, or
@@ -641,9 +648,11 @@ Before merging the full refactor:
 4. When the implementation is complete, should the persisted kind be renamed
    from `day_agent` to `daily_os_planner`, or is that churn not worth the
    migration?
-5. Should `PlannerKnowledgeEntity` be its own `AgentDomainEntity` variant
-   (preferred, mirroring `Version`/`Head`), or can confirmed knowledge ride an
-   `AgentReportEntity` scope?
+5. The Target Data Model and PR5 assume `PlannerKnowledgeEntity` is a new
+   `AgentDomainEntity` variant (the preferred approach, mirroring
+   `Version`/`Head`). The only point left to confirm before PR5 is the fallback:
+   if the variant's generated-code churn proves unjustified, ride an
+   `AgentReportEntity` scope instead. Treat the new variant as the default.
 6. What is the promotion threshold from agent-inferred observation to `proposed`
    knowledge — N recurrences across distinct days, the weekly gate only, or both?
 7. Do domain agents (ADR 0023) reuse `PlannerKnowledgeEntity` for their own

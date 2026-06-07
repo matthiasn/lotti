@@ -51,3 +51,4 @@ Each ADR should contain:
 - [`0021-llm-mediated-attention-claim-weighing.md`](./0021-llm-mediated-attention-claim-weighing.md)
 - [`0022-long-lived-daily-os-planner.md`](./0022-long-lived-daily-os-planner.md)
 - [`0023-durable-domain-agents-and-time-negotiation.md`](./0023-durable-domain-agents-and-time-negotiation.md)
+- [`0024-correction-lexicon-and-transcript-correction.md`](./0024-correction-lexicon-and-transcript-correction.md)
