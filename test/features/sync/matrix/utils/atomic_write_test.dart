@@ -11,123 +11,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../../mocks/mocks.dart';
-
-/// Minimal base subclass of [IOOverrides] that lets the outer [IOOverrides]
-/// scope call the default (real) file factory without re-entering the zone and
-/// causing infinite recursion.
-base class _BaseIO extends IOOverrides {}
-
-/// A [File] wrapper that throws a [FileSystemException] on the first [rename]
-/// call and then delegates to the real [File] on every subsequent call.
-///
-/// This is used to drive the rename-failure recovery branch of
-/// [atomicWriteBytes]: the very first `tmpFile.rename(dest)` fails, which sends
-/// execution into the `on FileSystemException catch` block, while the retry
-/// rename inside that block succeeds because it forwards to the real file.
-class _FailFirstRenameFile implements File {
-  _FailFirstRenameFile(this._real);
-  final File _real;
-  var _failedOnce = false;
-
-  @override
-  String get path => _real.path;
-
-  @override
-  Directory get parent => _real.parent;
-
-  @override
-  Future<File> writeAsBytes(
-    List<int> bytes, {
-    FileMode mode = FileMode.write,
-    bool flush = false,
-  }) => _real.writeAsBytes(bytes, mode: mode, flush: flush);
-
-  @override
-  Future<bool> exists() => _real.exists();
-
-  @override
-  Future<FileSystemEntity> delete({bool recursive = false}) =>
-      _real.delete(recursive: recursive);
-
-  @override
-  Future<File> rename(String newPath) async {
-    if (!_failedOnce) {
-      _failedOnce = true;
-      throw FileSystemException('injected first-rename failure', path);
-    }
-    return _real.rename(newPath);
-  }
-
-  @override
-  dynamic noSuchMethod(Invocation i) => _real.noSuchMethod(i);
-}
-
-/// A [File] wrapper whose [rename] always throws a [FileSystemException]. All
-/// other calls are forwarded to the real delegate.
-class _AlwaysFailRenameFile implements File {
-  _AlwaysFailRenameFile(this._real);
-  final File _real;
-
-  @override
-  String get path => _real.path;
-
-  @override
-  Directory get parent => _real.parent;
-
-  @override
-  Future<File> writeAsBytes(
-    List<int> bytes, {
-    FileMode mode = FileMode.write,
-    bool flush = false,
-  }) => _real.writeAsBytes(bytes, mode: mode, flush: flush);
-
-  @override
-  Future<bool> exists() => _real.exists();
-
-  @override
-  Future<FileSystemEntity> delete({bool recursive = false}) =>
-      _real.delete(recursive: recursive);
-
-  @override
-  Future<File> rename(String newPath) async =>
-      throw FileSystemException('injected always-rename failure', path);
-
-  @override
-  dynamic noSuchMethod(Invocation i) => _real.noSuchMethod(i);
-}
-
-/// A [File] wrapper whose [delete] always throws a [FileSystemException]. Used
-/// to drive the inner cleanup-failure log branch when the tmp delete fails.
-class _UndeletableFile implements File {
-  _UndeletableFile(this._real);
-  final File _real;
-
-  @override
-  String get path => _real.path;
-
-  @override
-  Directory get parent => _real.parent;
-
-  @override
-  Future<File> writeAsBytes(
-    List<int> bytes, {
-    FileMode mode = FileMode.write,
-    bool flush = false,
-  }) => _real.writeAsBytes(bytes, mode: mode, flush: flush);
-
-  @override
-  Future<bool> exists() => _real.exists();
-
-  @override
-  Future<File> rename(String newPath) => _real.rename(newPath);
-
-  @override
-  Future<FileSystemEntity> delete({bool recursive = false}) async =>
-      throw FileSystemException('injected delete failure', path);
-
-  @override
-  dynamic noSuchMethod(Invocation i) => _real.noSuchMethod(i);
-}
+import 'atomic_write_test_helpers.dart';
 
 void main() {
   late Directory tempDir;
@@ -371,7 +255,7 @@ void main() {
           ..createSync(recursive: true)
           ..writeAsStringSync('OLD');
 
-        final baseIO = _BaseIO();
+        final baseIO = BaseIOOverrides();
 
         // The tmp file's first rename throws (driving into the catch block);
         // every other file — including the dest move-aside, the tmp retry
@@ -386,7 +270,7 @@ void main() {
           createFile: (filePath) {
             final real = baseIO.createFile(filePath);
             if (filePath.startsWith('$path.tmp.')) {
-              return _FailFirstRenameFile(real);
+              return FailFirstRenameFile(real);
             }
             return real;
           },
@@ -429,7 +313,7 @@ void main() {
           ..createSync(recursive: true)
           ..writeAsStringSync('OLD');
 
-        final baseIO = _BaseIO();
+        final baseIO = BaseIOOverrides();
 
         await IOOverrides.runZoned(
           () => atomicWriteBytes(
@@ -441,13 +325,13 @@ void main() {
             final real = baseIO.createFile(filePath);
             // tmp: first rename fails, retry succeeds.
             if (filePath.startsWith('$path.tmp.')) {
-              return _FailFirstRenameFile(real);
+              return FailFirstRenameFile(real);
             }
             // dest: the move-aside (dest.rename(bak)) fails, so `movedAside`
             // stays false and the moveAside.failed branch is logged. The
             // dest file still exists for the retry rename to overwrite.
             if (filePath == path) {
-              return _AlwaysFailRenameFile(real);
+              return AlwaysFailRenameFile(real);
             }
             return real;
           },
@@ -498,7 +382,7 @@ void main() {
           ..createSync(recursive: true)
           ..writeAsStringSync('OLD');
 
-        final baseIO = _BaseIO();
+        final baseIO = BaseIOOverrides();
 
         await IOOverrides.runZoned(
           () => atomicWriteBytes(
@@ -509,12 +393,12 @@ void main() {
           createFile: (filePath) {
             final real = baseIO.createFile(filePath);
             if (filePath.startsWith('$path.tmp.')) {
-              return _FailFirstRenameFile(real);
+              return FailFirstRenameFile(real);
             }
             // The backup file (created by moving the dest aside) cannot be
             // deleted — drives the cleanup.bakDelete.failed log branch.
             if (filePath.startsWith('$path.bak.')) {
-              return _UndeletableFile(real);
+              return UndeletableFile(real);
             }
             return real;
           },
@@ -552,7 +436,7 @@ void main() {
           ..createSync(recursive: true)
           ..writeAsStringSync('ORIGINAL');
 
-        final baseIO = _BaseIO();
+        final baseIO = BaseIOOverrides();
 
         // The tmp file always fails to rename — both the initial attempt and
         // the retry inside the catch — driving the restore-and-rethrow path.
@@ -568,7 +452,7 @@ void main() {
             createFile: (filePath) {
               final real = baseIO.createFile(filePath);
               if (filePath.startsWith('$path.tmp.')) {
-                return _AlwaysFailRenameFile(real);
+                return AlwaysFailRenameFile(real);
               }
               return real;
             },
@@ -612,7 +496,7 @@ void main() {
           ..createSync(recursive: true)
           ..writeAsStringSync('ORIGINAL');
 
-        final baseIO = _BaseIO();
+        final baseIO = BaseIOOverrides();
 
         // tmp: retry rename always fails AND its delete fails (tmpDelete log).
         // bak: its restore rename fails (restore.failed log).
@@ -633,7 +517,7 @@ void main() {
                 // The dest move-aside (dest.rename(bak)) is real, but the
                 // restore (bak.rename(dest)) is driven through this wrapper and
                 // fails — exercising the restore.failed branch.
-                return _AlwaysFailRenameFile(real);
+                return AlwaysFailRenameFile(real);
               }
               return real;
             },
