@@ -91,4 +91,71 @@ void main() {
       expect(find.text('Diagnostics'), findsOneWidget);
     },
   );
+
+  testWidgets(
+    'empty metrics hide the KPI block and render the em-dash timestamp',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: SyncMetricsSection(
+              metrics: const {},
+              lastUpdated: null,
+              title: 'Sync Metrics',
+              lastUpdatedLabel: 'Last updated:',
+              onForceRescan: () {},
+              onRetryNow: () {},
+              onCopyDiagnostics: () {},
+              onRefresh: () {},
+              fetchDiagnostics: () async => '',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // No KPI entries → the KPI header is omitted entirely.
+      expect(find.text('Top KPIs'), findsNothing);
+      // Null lastUpdated renders the em-dash placeholder.
+      expect(find.textContaining('Last updated: \u2014'), findsOneWidget);
+      // The fixed group headers still render (with empty grids), but the
+      // conditional Signals group is absent.
+      expect(find.text('Throughput'), findsOneWidget);
+      expect(find.text('Reliability'), findsOneWidget);
+      expect(find.text('DB Apply'), findsOneWidget);
+      expect(find.text('Signals'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'Signals group appears only when a signal metric is non-zero',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          SingleChildScrollView(
+            child: SyncMetricsSection(
+              metrics: const {
+                'signalClientStream': 5,
+                // Zero-valued signals are filtered out of the group.
+                'signalConnectivity': 0,
+              },
+              lastUpdated: DateTime(2025, 1, 1, 12),
+              title: 'Sync Metrics',
+              lastUpdatedLabel: 'Last updated:',
+              onForceRescan: () {},
+              onRetryNow: () {},
+              onCopyDiagnostics: () {},
+              onRefresh: () {},
+              fetchDiagnostics: () async => '',
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Signals'), findsOneWidget);
+      expect(find.text('Signals (client stream)'), findsOneWidget);
+      expect(find.text('Signals (connectivity)'), findsNothing);
+    },
+  );
 }
