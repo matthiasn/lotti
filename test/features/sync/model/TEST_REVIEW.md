@@ -45,7 +45,8 @@ and `lib/features/sync/models/` ↔ `test/features/sync/models/`
 - [x] **[MED]** `sync_error_test.dart` lines 53–116: the keyword-detection tests (`'database error occurred'`, `'network timeout'`, `'connection refused'`, `'outbox queue full'`) assert the right `SyncErrorType` is returned when the message string contains a specific keyword. These are brittle string-matching tests. If the error classification logic changes (e.g., a new keyword is added), the tests will silently under-test the new keyword. This is an ideal Glados candidate (see below).
   - **RESOLVED:** done — superseded by the Glados classification property (see the Glados item); the four concrete keyword tests stay as readable examples while the property sweeps arbitrary message shapes.
 
-- [ ] **[LOW]** `sync_models_test.dart` line 92–98: `'copyWith without error clears it'` asserts `cleared.error == null`, but the `copyWith` implementation may default to `null` rather than truly clearing. The comment "error parameter defaults to null in copyWith, clearing previous error" suggests uncertainty. Add an assertion that explicitly sets an error first and then confirms it is gone, with a reason string explaining the semantics.
+- [x] **[LOW]** `sync_models_test.dart` line 92–98: `'copyWith without error clears it'` asserts `cleared.error == null`, but the `copyWith` implementation may default to `null` rather than truly clearing. The comment "error parameter defaults to null in copyWith, clearing previous error" suggests uncertainty. Add an assertion that explicitly sets an error first and then confirms it is gone, with a reason string explaining the semantics.
+  **RESOLVED:** rewrote as `'copyWith always clears error unless explicitly re-supplied'` — it now pins all three halves of the deliberate asymmetry (`error` is assigned directly, not `?? this.error`): supplied error is retained, no-arg copyWith drops it to null, and a new error overwrites the old one. Each branch has a reason string documenting the intent, so a future refactor to `error ?? this.error` is caught.
 
 ---
 
@@ -56,7 +57,8 @@ and `lib/features/sync/models/` ↔ `test/features/sync/models/`
 - [x] **[MED]** `sync_error_test.dart`: `SyncError.fromException` keyword-classification is a pure mapping function. A Glados property over generated exception message strings could verify the exhaustive rule: the returned `SyncErrorType` is one of the four valid values, and any message containing `'database'` always maps to `SyncErrorType.database`, etc. This replaces the brittle one-keyword-one-test pattern.
   - **RESOLVED:** done — added a Glados2 property (keyword choice × keyword-free noise, numRuns 150, `tags: 'glados'`): the resolved type matches the keyword rule (with absence → unknown) and the user-facing message is exactly the canonical text for the type, never raw exception output.
 
-- [ ] **[LOW]** `sync_node_profile_test.dart`: `SyncNodeProfile` JSON round-trip is partially covered by static tests. Adding a Glados property over generated `(hostId, displayName, platform, capabilities)` tuples would catch any future serialization regression without needing to add a new static test per new optional field.
+- [x] **[LOW]** `sync_node_profile_test.dart`: `SyncNodeProfile` JSON round-trip is partially covered by static tests. Adding a Glados property over generated `(hostId, displayName, platform, capabilities)` tuples would catch any future serialization regression without needing to add a new static test per new optional field.
+  **RESOLVED:** added a `SyncNodeProfile — Glados JSON round-trip` group with a private `_GeneratedNodeProfile` value class (with `toString()`) and a `combine10`-based generator covering all 10 fields — required scalars, the capability list, a deterministic UTC `updatedAt` (built from a generated ms offset, never `DateTime.now()`), and the four optional hardware fields plus `appVersion` as nullable. Property 1 asserts whole-object value equality `decode(encode(profile)) == profile` (freezed `==` uses `DeepCollectionEquality` for capabilities — verified in the generated code) plus field-level spell-outs and `updatedAt.isUtc`; property 2 asserts capability `orderedEquals` to lock wire ordering. Both `numRuns: 120`, `tags: 'glados'`. No new optional field can silently fail to (de)serialize without breaking property 1.
 
 ---
 
@@ -68,17 +70,21 @@ and `lib/features/sync/models/` ↔ `test/features/sync/models/`
 - [x] **[MED]** `sync_error_test.dart`: `SyncError.fromException` is called with `LoggingService` wired, but the test never verifies that `loggingService.log` or `loggingService.error` is actually invoked. The `MockDomainLogger` is set up but never queried with `verify`. Add at least one `verify(() => loggingService.error(...)).called(1)` call to confirm the logging side-effect.
   - **RESOLVED:** done — same fix as the smoke-test item: the logging side effect is now verified with exact arguments.
 
-- [ ] **[LOW]** `sync_models_test.dart`: `SyncState.copyWith` is tested for individual field overrides, but the combination path (set `isSyncing=true` + `stepProgress` map with entries, then `copyWith()` with no args) is not tested. This is how the controller transitions state — ensure the no-arg `copyWith` preserves nested map contents correctly.
+- [x] **[LOW]** `sync_models_test.dart`: `SyncState.copyWith` is tested for individual field overrides, but the combination path (set `isSyncing=true` + `stepProgress` map with entries, then `copyWith()` with no args) is not tested. This is how the controller transitions state — ensure the no-arg `copyWith` preserves nested map contents correctly.
+  **RESOLVED:** added `'no-arg copyWith preserves nested stepProgress and selectedSteps'` — builds a mid-sync state (isSyncing, currentStep, progress, a 2-entry `stepProgress` map, a 2-entry `selectedSteps` set), calls `copyWith()` with no args, and asserts the scalars survive, the nested Map/Set are passed through by identity (no defensive copy via `?? this.field`), and the map's `StepProgress` contents are intact via `isA<StepProgress>().having(...)`.
 
-- [ ] **[LOW]** `sync_node_profile_test.dart`: `SyncNodeProfile` equality tests cover `displayName` and `capabilities` differences, but not `hostId` or `updatedAt` differences. Trivial to add; catches a future equality regression.
+- [x] **[LOW]** `sync_node_profile_test.dart`: `SyncNodeProfile` equality tests cover `displayName` and `capabilities` differences, but not `hostId` or `updatedAt` differences. Trivial to add; catches a future equality regression.
+  **RESOLVED:** added `'differing hostId compares unequal'` and `'differing updatedAt compares unequal'`, each with a comment tying the field to its sync role (hostId = per-device identity / dedup key; updatedAt = broadcast timestamp / upsert tiebreaker). The generated freezed `==` already compares both (verified in `sync_node_profile.freezed.dart`), so these lock that contract.
 
 ---
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** `sync_message_test.dart`: all tests are synchronous `jsonEncode`/`jsonDecode` operations — no timers or async. Speed is not a concern. The only cost driver is the number of test cases; DRY-ing via the helper described above reduces the parse cost per test by ~60%.
+- [x] **[LOW]** `sync_message_test.dart`: all tests are synchronous `jsonEncode`/`jsonDecode` operations — no timers or async. Speed is not a concern. The only cost driver is the number of test cases; DRY-ing via the helper described above reduces the parse cost per test by ~60%.
+  **RESOLVED (observation, no change):** confirmed true — the file is fully synchronous (no `Future.delayed`/`Timer`/`async`), so there is no speed problem to fix. The DRY win it references was already realized by the `_roundTripSyncMessage`/`_roundTripAgentEntity`/`_roundTripAgentLink` helpers from the HIGH item above; nothing further to do.
 
-- [ ] **[LOW]** `sync_node_profile_test.dart`: all tests are synchronous. No speed concerns.
+- [x] **[LOW]** `sync_node_profile_test.dart`: all tests are synchronous. No speed concerns.
+  **RESOLVED (observation, no change):** confirmed true — all tests are synchronous `jsonEncode`/`jsonDecode` and equality checks with no timers or async. The two added Glados properties run 120 deterministic synchronous iterations each (no I/O, no real time), so speed remains a non-issue.
 
 ---
 
