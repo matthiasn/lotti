@@ -1,3 +1,4 @@
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 
@@ -37,4 +38,24 @@ class FakeReferenceImageSelectionController
   Future<List<ProcessedReferenceImage>> processSelectedImages() async {
     return processedImages;
   }
+}
+
+/// Minimal [JournalImage] fixture for reference-image selection tests.
+JournalImage buildTestReferenceImage(String id) {
+  final testDate = DateTime(2025);
+  return JournalImage(
+    meta: Metadata(
+      id: id,
+      createdAt: testDate,
+      updatedAt: testDate,
+      dateFrom: testDate,
+      dateTo: testDate,
+    ),
+    data: ImageData(
+      imageId: id,
+      imageFile: 'test_$id.jpg',
+      imageDirectory: '/test/images',
+      capturedAt: testDate,
+    ),
+  );
 }

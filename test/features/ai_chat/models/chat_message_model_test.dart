@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 
 void main() {
@@ -33,5 +34,53 @@ void main() {
       expect(back.role, ChatMessageRole.user);
       expect(back.metadata?['k'], 'v');
     });
+
+    test('copyWith(isStreaming: true) flips only the streaming flag', () {
+      final base = ChatMessage(
+        id: 'id1',
+        content: 'content',
+        role: ChatMessageRole.assistant,
+        timestamp: DateTime(2024, 1, 2, 3),
+        metadata: const {'k': 'v'},
+      );
+
+      final streaming = base.copyWith(isStreaming: true);
+
+      expect(streaming.isStreaming, isTrue);
+      expect(streaming.id, base.id);
+      expect(streaming.content, base.content);
+      expect(streaming.role, base.role);
+      expect(streaming.timestamp, base.timestamp);
+      expect(streaming.metadata, base.metadata);
+      // And back again.
+      expect(streaming.copyWith(isStreaming: false), base);
+    });
+
+    glados.Glados2<int, int>(
+      glados.IntAnys(glados.any).intInRange(0, 1 << 16),
+      glados.IntAnys(glados.any).intInRange(0, 3),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'fromJson(toJson(m)) == m for all roles and arbitrary metadata',
+      (seed, roleIndex) {
+        final message = ChatMessage(
+          id: 'id-$seed',
+          content: 'content-$seed \n with “unicode” 😀',
+          role: ChatMessageRole.values[roleIndex % 3],
+          timestamp: DateTime.fromMillisecondsSinceEpoch(seed * 1000),
+          isStreaming: seed.isEven,
+          metadata: seed % 3 == 0
+              ? null
+              : {
+                  'k$seed': 'v$seed',
+                  'n': seed,
+                  'nested': {'a': seed},
+                },
+        );
+
+        expect(ChatMessage.fromJson(message.toJson()), message);
+      },
+      tags: 'glados',
+    );
   });
 }

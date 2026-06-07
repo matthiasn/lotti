@@ -24,6 +24,15 @@ void main() {
 
       expect(find.text('Time Formats'), findsOneWidget);
       expect(find.byType(DesignSystemTimePicker), findsNWidgets(2));
+
+      // Interaction smoke: tapping the first DesignSystemTimePicker (interactive or not)
+      // must not throw — covers tap plumbing on the overview page.
+      await tester.tap(
+        find.byType(DesignSystemTimePicker).first,
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     });
   });
 }

@@ -20,15 +20,20 @@ void main() {
       expect(useCase.name, 'Interactive');
     });
 
+    /// Pumps the interactive use case under the given brightness.
+    Future<void> pumpUseCase(WidgetTester tester, {bool dark = false}) {
+      return tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(builder: useCase.builder),
+          theme: dark ? DesignSystemTheme.dark() : DesignSystemTheme.light(),
+        ),
+      );
+    }
+
     testWidgets('renders checklist with title and progress indicator', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       expect(find.text('Todos'), findsOneWidget);
       expect(find.text('0/2 done'), findsOneWidget);
@@ -38,48 +43,28 @@ void main() {
     testWidgets('renders header with chevron and menu icons', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       expect(find.byIcon(Icons.expand_more), findsOneWidget);
       expect(find.byIcon(Icons.more_vert), findsOneWidget);
     });
 
     testWidgets('renders open items by default (filtered)', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       expect(find.text('Fix payment status update bug'), findsOneWidget);
       expect(find.text('Fix handover status update bug'), findsOneWidget);
     });
 
     testWidgets('filter tabs show labels without counts', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       expect(find.text('Open'), findsOneWidget);
       expect(find.text('All'), findsOneWidget);
     });
 
     testWidgets('shows all items when "All" tab is tapped', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       // Check an item so it becomes completed
       await tester.tap(find.byType(Checkbox).first);
@@ -99,12 +84,7 @@ void main() {
     });
 
     testWidgets('toggling item updates progress counter', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       final checkboxes = find.byType(Checkbox);
       expect(checkboxes, findsNWidgets(2));
@@ -115,12 +95,7 @@ void main() {
     });
 
     testWidgets('edit icons are present and tappable', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       expect(find.byIcon(Icons.mode_edit_outlined), findsNWidgets(2));
 
@@ -133,12 +108,7 @@ void main() {
     });
 
     testWidgets('inline edit saves new title on submit', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       await tester.tap(find.byIcon(Icons.mode_edit_outlined).first);
       await tester.pump();
@@ -153,12 +123,7 @@ void main() {
     });
 
     testWidgets('swipe left deletes an item', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       expect(find.text('Fix payment status update bug'), findsOneWidget);
 
@@ -173,12 +138,7 @@ void main() {
     });
 
     testWidgets('swipe right archives an item', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       expect(find.byType(Checkbox), findsNWidgets(2));
 
@@ -202,24 +162,14 @@ void main() {
     });
 
     testWidgets('add item field is a rounded form field', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Add a new item'), findsOneWidget);
     });
 
     testWidgets('submitting text adds new item', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       await tester.enterText(find.byType(TextField), 'New task');
       await tester.testTextInput.receiveAction(TextInputAction.done);
@@ -230,37 +180,29 @@ void main() {
     });
 
     testWidgets('drag handles are present', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       expect(find.byIcon(Icons.drag_indicator), findsNWidgets(2));
     });
 
     testWidgets('renders in dark mode without errors', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.dark(),
-        ),
-      );
+      await pumpUseCase(tester, dark: true);
 
+      // The full interactive surface must render under the dark theme:
+      // header, progress counter + ring, both items, and the add field.
       expect(find.text('Todos'), findsOneWidget);
+      expect(find.text('0/2 done'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.text('Fix payment status update bug'), findsOneWidget);
+      expect(find.text('Fix handover status update bug'), findsOneWidget);
+      expect(find.byType(TextField), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
     testWidgets('shows all-done message when all items checked', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       // Check all visible items until none remain
       while (find.byType(Checkbox).evaluate().isNotEmpty) {
@@ -272,12 +214,7 @@ void main() {
     });
 
     testWidgets('chevron collapses and expands the body', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       expect(find.text('Fix payment status update bug'), findsOneWidget);
 
@@ -294,26 +231,19 @@ void main() {
     });
 
     testWidgets('items list does not scroll independently', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
-      // ReorderableListView exists but with NeverScrollableScrollPhysics
-      expect(find.byType(ReorderableListView), findsOneWidget);
+      final listView = tester.widget<ReorderableListView>(
+        find.byType(ReorderableListView),
+      );
+      expect(listView.physics, isA<NeverScrollableScrollPhysics>());
+      expect(listView.shrinkWrap, isTrue);
     });
 
     testWidgets('inline edit cancels when submitting empty text', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       // Start editing
       await tester.tap(find.byIcon(Icons.mode_edit_outlined).first);
@@ -334,12 +264,7 @@ void main() {
     testWidgets('tapping Open tab while already on Open triggers callback', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
+      await pumpUseCase(tester);
 
       // Switch to All first
       await tester.tap(find.text('All'));
@@ -353,19 +278,8 @@ void main() {
       expect(find.text('Fix payment status update bug'), findsOneWidget);
     });
 
-    testWidgets('three-dot menu is tappable', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
-      );
-
-      // Tapping menu icon does not throw
-      await tester.tap(find.byIcon(Icons.more_vert));
-      await tester.pump();
-
-      expect(tester.takeException(), isNull);
-    });
+    // The three-dot menu's onTap is an intentionally empty lambda in this
+    // showcase widget (it exists for visual parity only), so a tap test
+    // proves nothing; the icon's presence is asserted in the header test.
   });
 }

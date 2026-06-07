@@ -26,7 +26,6 @@ class CoverArtSkillModal extends ConsumerStatefulWidget {
     required this.skillId,
     required this.linkedTaskId,
     required this.parentRef,
-    this.categoryId,
     super.key,
   });
 
@@ -40,7 +39,6 @@ class CoverArtSkillModal extends ConsumerStatefulWidget {
   final String linkedTaskId;
 
   /// Optional category ID for the generated image entry.
-  final String? categoryId;
 
   /// A [WidgetRef] from the parent context, used to trigger the skill
   /// provider after the modal closes.
@@ -53,7 +51,6 @@ class CoverArtSkillModal extends ConsumerStatefulWidget {
     required String skillId,
     required String linkedTaskId,
     required WidgetRef ref,
-    String? categoryId,
   }) async {
     await ModalUtils.showSinglePageModal<void>(
       context: context,
@@ -62,7 +59,6 @@ class CoverArtSkillModal extends ConsumerStatefulWidget {
         entityId: entityId,
         skillId: skillId,
         linkedTaskId: linkedTaskId,
-        categoryId: categoryId,
         parentRef: ref,
       ),
     );

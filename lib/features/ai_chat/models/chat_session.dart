@@ -10,6 +10,10 @@ const _uuid = Uuid();
 
 @freezed
 abstract class ChatSession with _$ChatSession {
+  // explicitToJson so nested ChatMessage objects serialize deeply — without
+  // it, toJson() leaves message instances in the map and a fromJson(toJson())
+  // roundtrip fails.
+  @JsonSerializable(explicitToJson: true)
   const factory ChatSession({
     required String id,
     required String title,

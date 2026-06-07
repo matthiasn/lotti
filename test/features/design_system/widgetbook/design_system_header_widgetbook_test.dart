@@ -36,5 +36,25 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('renders the header overview under the dark theme', (
+      tester,
+    ) async {
+      final useCase =
+          buildDesignSystemHeaderWidgetbookComponent().useCases.single;
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          Builder(builder: useCase.builder),
+          theme: DesignSystemTheme.dark(),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Desktop'), findsOneWidget);
+      expect(find.text('Mobile'), findsOneWidget);
+      expect(find.byType(DesignSystemHeader), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
   });
 }

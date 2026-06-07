@@ -111,11 +111,11 @@ void main() {
           ),
         );
 
-        // First pump renders the widget
+        // pump 1: build (registers the auto-skip post-frame callback);
+        // pump 2: post-frame fires → onSkip → setState(_isGenerating);
+        // pump 3: rebuild renders the progress view.
         await tester.pump();
-        // Second pump triggers the post-frame callback (auto-skip)
         await tester.pump();
-        // Third pump renders the progress view
         await tester.pump();
 
         // Should have triggered with null reference images
@@ -298,37 +298,9 @@ void main() {
       },
     );
 
-    testWidgets('passes categoryId through to widget', (tester) async {
-      const refImageState = ReferenceImageSelectionState(isLoading: true);
-
-      await tester.pumpWidget(
-        RiverpodWidgetTestBench(
-          overrides: [
-            referenceImageSelectionControllerProvider(
-              taskId: testLinkedTaskId,
-            ).overrideWith(
-              () => FakeReferenceImageSelectionController(refImageState),
-            ),
-          ],
-          child: const _CoverArtSkillModalHost(
-            entityId: testEntityId,
-            skillId: testSkillId,
-            linkedTaskId: testLinkedTaskId,
-            categoryId: 'cat-123',
-          ),
-        ),
-      );
-
-      await tester.pump();
-
-      final modal = tester.widget<CoverArtSkillModal>(
-        find.byType(CoverArtSkillModal),
-      );
-      expect(modal.categoryId, 'cat-123');
-      expect(modal.entityId, testEntityId);
-      expect(modal.skillId, testSkillId);
-      expect(modal.linkedTaskId, testLinkedTaskId);
-    });
+    // The former 'passes categoryId through to widget' test asserted a
+    // widget property that nothing ever read — the parameter was dead
+    // plumbing and has been removed from CoverArtSkillModal entirely.
 
     testWidgets('progress view shows completion when status becomes idle', (
       tester,
@@ -460,13 +432,11 @@ class _CoverArtSkillModalHost extends ConsumerWidget {
     required this.entityId,
     required this.skillId,
     required this.linkedTaskId,
-    this.categoryId,
   });
 
   final String entityId;
   final String skillId;
   final String linkedTaskId;
-  final String? categoryId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -474,7 +444,6 @@ class _CoverArtSkillModalHost extends ConsumerWidget {
       entityId: entityId,
       skillId: skillId,
       linkedTaskId: linkedTaskId,
-      categoryId: categoryId,
       parentRef: ref,
     );
   }

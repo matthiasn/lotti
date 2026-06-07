@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
 import 'package:lotti/services/dev_logger.dart';
 
+import '../../../../widget_test_utils.dart';
+
 // Test widget that uses the mixin
 class TestWidgetWithMixin extends StatefulWidget {
   const TestWidgetWithMixin({
@@ -152,6 +154,72 @@ class ThrowingScrollHostState extends State<ThrowingScrollHost>
   }
 }
 
+/// Host whose entry list grows on the live State (no recreation), so the
+/// mixin's retry timer can find a key that appears after the first attempt.
+class LateEntryHost extends StatefulWidget {
+  const LateEntryHost({super.key});
+
+  @override
+  State<LateEntryHost> createState() => LateEntryHostState();
+}
+
+class LateEntryHostState extends State<LateEntryHost>
+    with HighlightScrollMixin {
+  final List<String> entryIds = [];
+  final Map<String, GlobalKey> _entryKeys = {};
+
+  @override
+  void dispose() {
+    disposeHighlight();
+    super.dispose();
+  }
+
+  GlobalKey _getEntryKey(String entryId) =>
+      _entryKeys.putIfAbsent(entryId, GlobalKey.new);
+
+  void addEntry(String id) => setState(() => entryIds.add(id));
+
+  void triggerScroll(String entryId, {VoidCallback? onScrolled}) {
+    scrollToEntry(
+      entryId,
+      0.5,
+      getEntryKey: _getEntryKey,
+      onScrolled: onScrolled,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: ListView(
+        children: [
+          for (final id in entryIds)
+            Container(
+              key: _getEntryKey(id),
+              height: 100,
+              color: highlightedEntryId == id ? Colors.yellow : Colors.white,
+              child: Text('Entry $id'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Harness with a short highlight window so the auto-clear test doesn't
+/// need to pump 4.8 s of virtual time.
+class ShortHighlightHost extends TestWidgetWithMixin {
+  const ShortHighlightHost({required super.entryIds, super.key});
+
+  @override
+  State<TestWidgetWithMixin> createState() => ShortHighlightHostState();
+}
+
+class ShortHighlightHostState extends TestWidgetWithMixinState {
+  @override
+  Duration get highlightDuration => const Duration(milliseconds: 50);
+}
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -169,8 +237,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: TestWidgetWithMixin(entryIds: ['entry-1']),
+        makeTestableWidgetNoScroll(
+          const TestWidgetWithMixin(entryIds: ['entry-1']),
         ),
       );
 
@@ -187,8 +255,8 @@ void main() {
 
     testWidgets('highlightedEntryId setter updates state', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: TestWidgetWithMixin(entryIds: ['entry-1']),
+        makeTestableWidgetNoScroll(
+          const TestWidgetWithMixin(entryIds: ['entry-1']),
         ),
       );
 
@@ -209,8 +277,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: TestWidgetWithMixin(entryIds: ['entry-1']),
+        makeTestableWidgetNoScroll(
+          const TestWidgetWithMixin(entryIds: ['entry-1']),
         ),
       );
 
@@ -226,8 +294,8 @@ void main() {
 
     testWidgets('scrollToEntry calls onScrolled callback', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: TestWidgetWithMixin(entryIds: ['entry-1', 'entry-2']),
+        makeTestableWidgetNoScroll(
+          const TestWidgetWithMixin(entryIds: ['entry-1', 'entry-2']),
         ),
       );
 
@@ -244,7 +312,8 @@ void main() {
       );
 
       // Wait for post-frame callback
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
 
       expect(callbackInvoked, isTrue);
       expect(state.onScrolledCallCount, equals(1));
@@ -254,8 +323,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: TestWidgetWithMixin(entryIds: ['entry-1', 'entry-2']),
+        makeTestableWidgetNoScroll(
+          const TestWidgetWithMixin(entryIds: ['entry-1', 'entry-2']),
         ),
       );
 
@@ -279,11 +348,14 @@ void main() {
           },
         );
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
 
-      // Both callbacks should be called (they're added to postFrameCallback),
-      // but the second scroll operation is blocked
-      expect(callCount, greaterThan(0));
+      // The dedup guard drops the second scroll entirely: only the first
+      // onScrolled fires and the original entry ends up highlighted.
+      expect(callCount, 1);
+      expect(state.onScrolledCallCount, 1);
+      expect(state.highlightedEntryId, 'entry-1');
       expect(tester.takeException(), isNull);
     });
 
@@ -291,8 +363,8 @@ void main() {
       'scrollToEntry sets highlighted entry after successful scroll',
       (tester) async {
         await tester.pumpWidget(
-          const MaterialApp(
-            home: TestWidgetWithMixin(
+          makeTestableWidgetNoScroll(
+            const TestWidgetWithMixin(
               entryIds: ['entry-1', 'entry-2', 'entry-3'],
             ),
           ),
@@ -305,7 +377,8 @@ void main() {
         expect(state.highlightedEntryId, isNull);
 
         state.triggerScroll('entry-1');
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
 
         expect(state.highlightedEntryId, equals('entry-1'));
       },
@@ -314,31 +387,37 @@ void main() {
     testWidgets('highlight auto-clears after highlight duration', (
       tester,
     ) async {
+      // ShortHighlightHost overrides highlightDuration to 50 ms so the
+      // auto-clear assertion doesn't pump 4.8 s of virtual time.
       await tester.pumpWidget(
-        const MaterialApp(
-          home: TestWidgetWithMixin(
+        makeTestableWidgetNoScroll(
+          const ShortHighlightHost(
             entryIds: ['entry-1', 'entry-2', 'entry-3'],
           ),
         ),
       );
 
-      final state = tester.state<TestWidgetWithMixinState>(
-        find.byType(TestWidgetWithMixin),
+      final state = tester.state<ShortHighlightHostState>(
+        find.byType(ShortHighlightHost),
       )..triggerScroll('entry-1');
-      await tester.pumpAndSettle();
+      // 100 ms scroll timer → post-frame; entry-1 is already visible so
+      // ensureVisible resolves immediately and the highlight is set on the
+      // following microtask pump.
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
 
       expect(state.highlightedEntryId, equals('entry-1'));
 
-      // Wait for highlight duration (4.8 seconds to match multi-pulse sequences)
-      await tester.pump(const Duration(milliseconds: 4800));
+      // The overridden 50 ms window elapses → highlight clears.
+      await tester.pump(const Duration(milliseconds: 60));
 
       expect(state.highlightedEntryId, isNull);
     });
 
     testWidgets('disposed widget does not trigger highlight', (tester) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: TestWidgetWithMixin(entryIds: ['entry-1']),
+        makeTestableWidgetNoScroll(
+          const TestWidgetWithMixin(entryIds: ['entry-1']),
         ),
       );
 
@@ -350,7 +429,8 @@ void main() {
             ..disposeHighlight()
             // Try to scroll after dispose
             ..triggerScroll('entry-1');
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
 
       // Should not crash or set highlight
       expect(state.highlightedEntryId, isNull);
@@ -361,8 +441,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: TestWidgetWithMixin(
+        makeTestableWidgetNoScroll(
+          const TestWidgetWithMixin(
             entryIds: ['entry-1', 'entry-2', 'entry-3'],
           ),
         ),
@@ -374,7 +454,8 @@ void main() {
             )
             // Test different alignment values don't crash
             ..triggerScroll('entry-1', alignment: 0);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
       expect(state.highlightedEntryId, equals('entry-1'));
       expect(tester.takeException(), isNull);
     });
@@ -385,8 +466,8 @@ void main() {
       DevLogger.clear();
 
       await tester.pumpWidget(
-        const MaterialApp(
-          home: TestWidgetWithMixin(entryIds: ['entry-1']),
+        makeTestableWidgetNoScroll(
+          const TestWidgetWithMixin(entryIds: ['entry-1']),
         ),
       );
 
@@ -407,7 +488,8 @@ void main() {
       }
 
       // Drain remaining post-frame callbacks.
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
 
       // Should not crash and should not highlight anything
       expect(state.highlightedEntryId, isNull);
@@ -439,8 +521,8 @@ void main() {
         DevLogger.clear();
 
         await tester.pumpWidget(
-          const MaterialApp(
-            home: ThrowingScrollHost(entryIds: ['entry-1', 'entry-2']),
+          makeTestableWidgetNoScroll(
+            const ThrowingScrollHost(entryIds: ['entry-1', 'entry-2']),
           ),
         );
 
@@ -502,45 +584,79 @@ void main() {
       },
     );
 
-    testWidgets('scroll operation completes when entry becomes available', (
-      tester,
-    ) async {
-      // Start with empty list
-      final entryIds = <String>[];
-      final widget = TestWidgetWithMixin(entryIds: entryIds);
+    testWidgets(
+      'retry finds an entry added after the first attempt and highlights it',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(const LateEntryHost()),
+        );
 
-      await tester.pumpWidget(MaterialApp(home: widget));
+        final state = tester.state<LateEntryHostState>(
+          find.byType(LateEntryHost),
+        );
 
-      final state =
-          tester.state<TestWidgetWithMixinState>(
-              find.byType(TestWidgetWithMixin),
-            )
-            // Try to scroll to an entry that doesn't exist yet
-            ..triggerScroll('entry-1');
-      await tester.pump();
+        var scrolled = false;
+        state.triggerScroll('entry-late', onScrolled: () => scrolled = true);
 
-      // Entry is still not available
-      expect(state.highlightedEntryId, isNull);
+        // First attempt: the entry is not in the list yet → retry scheduled.
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
+        expect(state.highlightedEntryId, isNull);
+        expect(scrolled, isFalse);
 
-      // Now rebuild with the entry available
-      entryIds.add('entry-1');
-      await tester.pumpWidget(
-        MaterialApp(home: TestWidgetWithMixin(entryIds: entryIds)),
-      );
+        // Add the entry to the SAME state (no widget recreation), as the
+        // real list does when new entries stream in.
+        state.addEntry('entry-late');
+        await tester.pump();
 
-      // Note: In this simplified test, the entry key won't actually be found
-      // because we're recreating the widget. In the real app, entries would
-      // be added to an existing list. This test verifies no crash occurs.
-      await tester.pumpAndSettle();
-      expect(tester.takeException(), isNull);
-    });
+        // The next retry tick (50 ms in test mode) finds the key and the
+        // scroll succeeds: intent cleared, highlight set.
+        await tester.pump(const Duration(milliseconds: 60));
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
+
+        expect(scrolled, isTrue);
+        expect(state.highlightedEntryId, 'entry-late');
+      },
+    );
+
+    testWidgets(
+      'disposal between timer fire and post-frame hits the inner guard',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const TestWidgetWithMixin(entryIds: ['entry-1']),
+          ),
+        );
+
+        final state = tester.state<TestWidgetWithMixinState>(
+          find.byType(TestWidgetWithMixin),
+        )..triggerScroll('entry-1');
+
+        // Registered BEFORE the mixin's own post-frame callback (which is
+        // added when the 100 ms scroll timer fires inside the next pump),
+        // so it runs first within the same frame — disposing right between
+        // the outer `_disposed` check and the inner post-frame guard.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          state.disposeHighlight();
+        });
+
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
+
+        // The inner guard swallowed the scroll: no highlight, no crash.
+        expect(state.highlightedEntryId, isNull);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('concurrent scroll to different entry cancels previous', (
       tester,
     ) async {
       await tester.pumpWidget(
-        const MaterialApp(
-          home: TestWidgetWithMixin(
+        makeTestableWidgetNoScroll(
+          const TestWidgetWithMixin(
             entryIds: ['entry-1', 'entry-2', 'entry-3'],
           ),
         ),
@@ -555,10 +671,33 @@ void main() {
             // Immediately start scroll to entry-2 (different entry)
             ..triggerScroll('entry-2');
 
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump();
 
       // Only entry-2 should be highlighted (entry-1 scroll was superseded)
       expect(state.highlightedEntryId, equals('entry-2'));
+    });
+
+    test('shouldRetryScroll: exhaustive attempt × budget matrix', () {
+      // Small finite space — exhaustive beats Glados. For any budget M,
+      // attempts 0..M-2 retry and attempt M-1 (the last) gives up, so
+      // exactly M-1 retries fire after the initial attempt.
+      for (var max = 1; max <= 8; max++) {
+        var retries = 0;
+        for (var attempt = 0; attempt <= max; attempt++) {
+          final retry = HighlightScrollMixin.shouldRetryScroll(
+            attempt: attempt,
+            maxRetries: max,
+          );
+          expect(
+            retry,
+            attempt < max - 1,
+            reason: 'attempt=$attempt max=$max',
+          );
+          if (retry) retries++;
+        }
+        expect(retries, max - 1, reason: 'budget $max');
+      }
     });
   });
 }

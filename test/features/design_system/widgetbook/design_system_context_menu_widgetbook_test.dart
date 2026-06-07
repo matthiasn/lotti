@@ -24,6 +24,15 @@ void main() {
 
       expect(find.text('Context Menu Variants'), findsOneWidget);
       expect(find.byType(DesignSystemContextMenu), findsNWidgets(3));
+
+      // Interaction smoke: tapping the first DesignSystemContextMenu (interactive or not)
+      // must not throw — covers tap plumbing on the overview page.
+      await tester.tap(
+        find.byType(DesignSystemContextMenu).first,
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     });
   });
 }
