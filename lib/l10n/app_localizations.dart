@@ -2509,6 +2509,12 @@ abstract class AppLocalizations {
   /// **'missing'**
   String get aiProfileSlotModelMissing;
 
+  /// No description provided for @aiPromptGenerationPickerTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a prompt generation model'**
+  String get aiPromptGenerationPickerTitle;
+
   /// No description provided for @aiProviderAlibabaDescription.
   ///
   /// In en, this message translates to:

@@ -59,8 +59,8 @@ class CloudInferenceRepository {
     int? maxTokens,
     List<ChatCompletionTool>? tools,
     ChatCompletionToolChoiceOption? toolChoice,
-    bool stream = true,
     ReasoningEffort? reasoningEffort,
+    bool stream = true,
   }) {
     final ChatCompletionToolChoiceOption? effectiveToolChoice;
     if (toolChoice != null) {
@@ -241,6 +241,7 @@ class CloudInferenceRepository {
     AiConfigInferenceProvider? provider,
     List<ChatCompletionTool>? tools,
     String? systemMessage,
+    GeminiThinkingMode? geminiThinkingMode,
   }) {
     final client =
         overrideClient ??
@@ -263,6 +264,15 @@ class CloudInferenceRepository {
     }
 
     // For other providers, use the standard OpenAI-compatible format
+    final reasoningEffort =
+        provider?.inferenceProviderType == InferenceProviderType.gemini &&
+            GeminiThinkingConfig.isGemini3(model)
+        ? _geminiReasoningEffort(
+            model,
+            geminiThinkingMode ?? GeminiThinkingMode.low,
+          )
+        : null;
+
     if (tools != null && tools.isNotEmpty) {
       developer.log(
         'Passing ${tools.length} tools to image API: ${tools.map((t) => t.function.name).join(', ')}',
@@ -296,6 +306,7 @@ class CloudInferenceRepository {
         temperature: temperature,
         maxTokens: maxCompletionTokens,
         tools: tools,
+        reasoningEffort: reasoningEffort,
       ),
     );
 
@@ -338,6 +349,7 @@ class CloudInferenceRepository {
         ChatCompletionMessageInputAudioFormat.mp3,
     List<String>? speechDictionaryTerms,
     String? systemMessage,
+    GeminiThinkingMode? geminiThinkingMode,
   }) {
     // For Whisper, use the dedicated repository
     if (provider.inferenceProviderType == InferenceProviderType.whisper) {
@@ -448,6 +460,14 @@ class CloudInferenceRepository {
         provider.inferenceProviderType.requiresDataUriForAudio
         ? 'data:;base64,$audioBase64'
         : audioBase64;
+    final reasoningEffort =
+        provider.inferenceProviderType == InferenceProviderType.gemini &&
+            GeminiThinkingConfig.isGemini3(model)
+        ? _geminiReasoningEffort(
+            model,
+            geminiThinkingMode ?? GeminiThinkingMode.low,
+          )
+        : null;
 
     return client
         .createChatCompletionStream(
@@ -472,20 +492,7 @@ class CloudInferenceRepository {
             model: model,
             maxCompletionTokens: maxCompletionTokens,
             tools: tools,
-            // Audio-in-chat-completions calls on Gemini are effectively
-            // transcription / short-answer tasks (record button, voice
-            // capture). Thinking tokens add latency and cost without
-            // changing the transcript, so we pin reasoning to `low` here
-            // regardless of the model's default thinking config. This is
-            // intentionally independent of the workflow-side
-            // `geminiThinkingMode` setting (PR #3216), which applies to
-            // text/chat reasoning where extra thinking is useful.
-            // Other providers ignore `reasoningEffort` — only Gemini
-            // currently honours it, so we only set it for Gemini.
-            reasoningEffort:
-                provider.inferenceProviderType == InferenceProviderType.gemini
-                ? ReasoningEffort.low
-                : null,
+            reasoningEffort: reasoningEffort,
             stream: stream,
           ),
         )
@@ -628,6 +635,22 @@ class CloudInferenceRepository {
       thinkingMode: base.thinkingMode,
       includeThoughts: base.thinkingBudget != 0,
     );
+  }
+
+  /// Maps a [GeminiThinkingMode] to the OpenAI-compatible `reasoning_effort`
+  /// value for [model], collapsing modes that the model does not support
+  /// (non-Flash Gemini 3 only accepts low/high) via
+  /// [GeminiThinkingConfig.effectiveMode].
+  ReasoningEffort _geminiReasoningEffort(
+    String model,
+    GeminiThinkingMode mode,
+  ) {
+    return switch (GeminiThinkingConfig.effectiveMode(model, mode)) {
+      GeminiThinkingMode.minimal => ReasoningEffort.minimal,
+      GeminiThinkingMode.low => ReasoningEffort.low,
+      GeminiThinkingMode.medium => ReasoningEffort.medium,
+      GeminiThinkingMode.high => ReasoningEffort.high,
+    };
   }
 
   // Delegate Ollama-specific methods to OllamaInferenceRepository

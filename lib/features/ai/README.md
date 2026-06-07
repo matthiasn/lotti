@@ -180,13 +180,16 @@ Resolution for `resolveForCategory`:
 2. resolve it through `ProfileResolver.resolveByProfileId`
 
 Only the thinking slot is fatal. Optional slots resolve best-effort.
-Model slots store provider-native `providerModelId` strings, not the local
-model row IDs. When multiple synced model rows share the same
-`providerModelId`, provider resolution walks every candidate and uses the
-first provider row that still exists, has the required credentials, and matches
-the provider type that owns that known model ID. This is intentional sync
-hygiene: an orphaned duplicate row from another device must not abort an agent
-wake when a valid provider/model pair is still configured locally.
+Model slots store `AiConfigModel.id` (the local model row ID) with a legacy
+`providerModelId` fallback: `resolveInferenceProviderForProfileSlot` first
+tries an exact model-row ID match and only then falls back to the old
+provider-native lookup for profiles written before the migration. On the
+legacy path, when multiple synced model rows share the same `providerModelId`,
+provider resolution walks every candidate and uses the first provider row that
+still exists, has the required credentials, and matches the provider type that
+owns that known model ID. This is intentional sync hygiene: an orphaned
+duplicate row from another device must not abort an agent wake when a valid
+provider/model pair is still configured locally.
 
 Recording-triggered transcription has a direct fallback in
 `ProfileAutomationService`: it first tries the profile automation path above,
@@ -424,8 +427,8 @@ flowchart LR
 | Operation | Dedicated branches | Fallback |
 | --- | --- | --- |
 | `generate()` | Ollama, Gemini, Mistral | OpenAI-compatible chat streaming |
-| `generateWithImages()` | Ollama | OpenAI-compatible multimodal chat |
-| `generateWithAudio()` | Whisper, Voxtral, MLX Audio native bridge, OpenAI transcription endpoint, Mistral transcription endpoint | OpenAI-compatible audio chat completions |
+| `generateWithImages()` | Ollama | OpenAI-compatible multimodal chat; Gemini receives `reasoning_effort` for its thinking mode |
+| `generateWithAudio()` | Whisper, Voxtral, MLX Audio native bridge, OpenAI transcription endpoint, Mistral transcription endpoint | OpenAI-compatible audio chat completions; Gemini receives `reasoning_effort` for its thinking mode |
 | `generateWithMessages()` | Gemini, Ollama, Mistral | OpenAI-compatible full-history chat |
 | `generateImage()` | Gemini, Alibaba DashScope | Unsupported for all other provider types |
 
@@ -435,8 +438,11 @@ This routing is implemented in code, not inferred from documentation. If a provi
 
 Gemini thinking effort is stored on the configured model row as
 `AiConfigModel.geminiThinkingMode`. The field defaults to `low`, so older model
-rows that do not have the JSON key deserialize to the faster setting. The model
-edit form only shows the selector when the row's owning provider is Gemini.
+rows that do not have the JSON key deserialize to the faster setting. This is a
+default for the saved model row, not a global policy: popup-triggered skills can
+override the Gemini effort for one invocation after the model has been selected.
+The model edit form only shows the selector when the row's owning provider is
+Gemini.
 
 Runtime routing uses the resolved `AiConfigModel`, not a provider-model-name
 lookup table:
@@ -444,15 +450,21 @@ lookup table:
 ```mermaid
 flowchart TD
   Settings["InferenceModelEditPage"] --> ModelRow["AiConfig.model<br/>geminiThinkingMode"]
-  Profile["AiConfig.inferenceProfile<br/>providerModelId slot"] --> Resolver["ProfileResolver / resolveInferenceProviderWithModel"]
+  Profile["AiConfig.inferenceProfile<br/>AiConfigModel.id slot"] --> Resolver["ProfileResolver / resolveInferenceProviderForProfileSlot"]
   Resolver --> ModelRow
+  Popup["AI popup skill run"] --> ModelPick["Model picker"]
+  ModelPick --> EffortPick{"Gemini provider?"}
+  EffortPick -->|yes| Override["Per-run thinking mode"]
+  EffortPick -->|no| NoOverride["Use model-row default"]
   ModelRow --> CallSite["Chat, skill, prompt, and agent call sites"]
+  Override --> CallSite
+  NoOverride --> CallSite
   CallSite --> Cloud["CloudInferenceRepository"]
   Cloud --> IsGemini{"provider.type == gemini?"}
   IsGemini -->|yes| Config["GeminiThinkingConfig.fromMode(mode ?? low)"]
   IsGemini -->|no| Other["Provider-specific or OpenAI-compatible path"]
   Config --> Gemini3{"modelId starts with gemini-3?"}
-  Gemini3 -->|yes| Level["thinkingConfig.thinkingLevel<br/>minimal / low / medium / high"]
+  Gemini3 -->|yes| Level["thinkingConfig.thinkingLevel<br/>Flash: minimal / low / medium / high<br/>Pro: low / high"]
   Gemini3 -->|no| Budget["thinkingConfig.thinkingBudget<br/>mapped fallback"]
 ```
 
@@ -584,9 +596,9 @@ Operational details from the seeded definitions:
 - `Local (Ollama)` ships with image-analysis automation but no transcription slot
 - `Local Power (Ollama)` currently ships with no default skill assignments
 
-`seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Once a profile exists, the seeder never touches it again — user edits to model slots, the `isDefault` flag, names, descriptions, and skill assignments survive every restart and app upgrade. Updating a bundled default in code (e.g. swapping the Ollama thinking model) therefore only affects fresh installs; existing installs keep whatever the user has.
+`seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 
-`upgradeExisting()` is a one-time backfill that adds default `skillAssignments` to existing default profiles whose `skillAssignments` are still empty (legacy installs from before the field existed). It only ever fills empties — non-empty assignment lists are preserved.
+`upgradeExisting()` backfills two migration-safe pieces after model rows exist: legacy profile slots that still contain provider-native model IDs are rewritten to `AiConfigModel.id` when the match is unambiguous, and default `skillAssignments` are added only to existing default profiles whose `skillAssignments` are still empty. Non-empty assignment lists are preserved.
 
 `ModelPrepopulationService.backfillNewModels()` seeds known model rows for
 configured providers at startup. Known model identity is the

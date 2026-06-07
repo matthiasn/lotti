@@ -404,6 +404,9 @@ class UnifiedAiInferenceRepository {
       final speechDictionaryTerms = await promptBuilderHelper
           .getSpeechDictionaryTerms(entity);
 
+      final speechTerms = speechDictionaryTerms.isNotEmpty
+          ? speechDictionaryTerms
+          : null;
       return cloudRepo.generateWithAudio(
         prompt,
         model: model.providerModelId,
@@ -414,8 +417,10 @@ class UnifiedAiInferenceRepository {
         maxCompletionTokens: model.maxCompletionTokens,
         stream: isAiStreamingEnabled,
         audioFormat: preparedAudio.format,
-        speechDictionaryTerms: speechDictionaryTerms.isNotEmpty
-            ? speechDictionaryTerms
+        speechDictionaryTerms: speechTerms,
+        geminiThinkingMode:
+            provider.inferenceProviderType == InferenceProviderType.gemini
+            ? model.geminiThinkingMode
             : null,
       );
     } else if (images.isNotEmpty) {
@@ -435,6 +440,10 @@ class UnifiedAiInferenceRepository {
         apiKey: provider.apiKey,
         provider: provider,
         maxCompletionTokens: model.maxCompletionTokens,
+        geminiThinkingMode:
+            provider.inferenceProviderType == InferenceProviderType.gemini
+            ? model.geminiThinkingMode
+            : null,
       );
     } else {
       // No tools attached — checklist updates and task summaries are

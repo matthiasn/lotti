@@ -1393,6 +1393,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get aiProfileSlotModelMissing => 'chybí';
 
   @override
+  String get aiPromptGenerationPickerTitle =>
+      'Vyber model pro generování promptů';
+
+  @override
   String get aiProviderAlibabaDescription =>
       'Rodina modelů Qwen od Alibaba Cloud přes DashScope API';
 

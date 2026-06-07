@@ -18,6 +18,7 @@ enum _GeneratedGeminiThinkingModelKind {
   nullModel,
   gemini3WithPrefix,
   gemini3WithoutPrefix,
+  gemini3FlashWithPrefix,
   gemini3LegacyWithPrefix,
   gemini25,
   gemini20,
@@ -45,6 +46,8 @@ String? _generatedThinkingModelId(_GeneratedGeminiThinkingModelKind kind) {
       'models/gemini-3.1-pro-preview',
     _GeneratedGeminiThinkingModelKind.gemini3WithoutPrefix =>
       'gemini-3.1-pro-preview',
+    _GeneratedGeminiThinkingModelKind.gemini3FlashWithPrefix =>
+      'models/gemini-3-flash-preview',
     _GeneratedGeminiThinkingModelKind.gemini3LegacyWithPrefix =>
       'models/gemini-3-pro-preview',
     _GeneratedGeminiThinkingModelKind.gemini25 => 'models/gemini-2.5-pro',
@@ -55,12 +58,26 @@ String? _generatedThinkingModelId(_GeneratedGeminiThinkingModelKind kind) {
   };
 }
 
-String _generatedThinkingLevel(int budget) {
-  if (budget == -1) return 'high';
-  if (budget == 0) return 'minimal';
-  if (budget < 4096) return 'low';
-  if (budget < 8192) return 'medium';
-  return 'high';
+String _generatedThinkingLevel(int budget, {String? modelId}) {
+  final level = switch (budget) {
+    -1 => 'high',
+    0 => 'minimal',
+    < 4096 => 'low',
+    < 8192 => 'medium',
+    _ => 'high',
+  };
+
+  if (modelId != null &&
+      GeminiThinkingConfig.isGemini3(modelId) &&
+      !GeminiThinkingConfig.isGemini3Flash(modelId)) {
+    return switch (level) {
+      'minimal' || 'low' => 'low',
+      'medium' || 'high' => 'high',
+      _ => level,
+    };
+  }
+
+  return level;
 }
 
 class _GeneratedGeminiThinkingScenario {
@@ -84,7 +101,7 @@ class _GeneratedGeminiThinkingScenario {
   Map<String, dynamic> get expectedJson {
     if (isGemini3Model) {
       return {
-        'thinkingLevel': _generatedThinkingLevel(budget),
+        'thinkingLevel': _generatedThinkingLevel(budget, modelId: modelId),
         'includeThoughts': includeThoughts,
       };
     }
@@ -233,6 +250,16 @@ void main() {
           expect(
             config.toJson(modelId: 'gemini-3.1-pro-preview'),
             {
+              'thinkingLevel': switch (entry.key) {
+                GeminiThinkingMode.minimal || GeminiThinkingMode.low => 'low',
+                GeminiThinkingMode.medium || GeminiThinkingMode.high => 'high',
+              },
+              'includeThoughts': entry.key != GeminiThinkingMode.minimal,
+            },
+          );
+          expect(
+            config.toJson(modelId: 'gemini-3-flash-preview'),
+            {
               'thinkingLevel': entry.value.$2,
               'includeThoughts': entry.key != GeminiThinkingMode.minimal,
             },
@@ -364,11 +391,11 @@ void main() {
         expect(json['thinkingLevel'], 'high');
       });
 
-      test('maps disabled preset to minimal for Gemini 3', () {
+      test('maps disabled preset to low for Gemini 3 Pro', () {
         final json = GeminiThinkingConfig.disabled.toJson(
           modelId: 'gemini-3.1-pro-preview',
         );
-        expect(json['thinkingLevel'], 'minimal');
+        expect(json['thinkingLevel'], 'low');
       });
 
       test('maps standard preset (8192) to high for Gemini 3', () {
@@ -378,10 +405,10 @@ void main() {
         expect(json['thinkingLevel'], 'high');
       });
 
-      test('maps budget 4096 to medium for Gemini 3', () {
+      test('maps budget 4096 to high for Gemini 3 Pro', () {
         const config = GeminiThinkingConfig(thinkingBudget: 4096);
         final json = config.toJson(modelId: 'gemini-3-pro-preview');
-        expect(json['thinkingLevel'], 'medium');
+        expect(json['thinkingLevel'], 'high');
       });
 
       test('maps budget 2048 to low for Gemini 3', () {

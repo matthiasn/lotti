@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
@@ -289,9 +290,16 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
   /// persisting an inconsistent state where a skill claims to be automated
   /// but the profile has no model to execute it.
   ///
+  /// Takes the *normalized* slot values being persisted (not the raw form
+  /// state) so a slot cleared during save — e.g. an ambiguous legacy id —
+  /// also disables its dependent skill automation.
+  ///
   /// Note: only checks built-in skills — custom/future skills pass through
   /// unchanged. Extend this when custom skill editing is added.
-  List<SkillAssignment> _sanitizedSkillAssignments() {
+  List<SkillAssignment> _sanitizedSkillAssignments({
+    required String? transcriptionModelId,
+    required String? imageRecognitionModelId,
+  }) {
     // First, deduplicate legacy same-SkillType entries: keep only the last
     // assignment per SkillType so profiles migrated from older formats
     // don't persist conflicting duplicates.
@@ -313,7 +321,11 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
       if (!a.automate) return a;
       final skill = builtInSkills.where((s) => s.id == a.skillId).firstOrNull;
       if (skill == null) return a;
-      final hasModel = _modelIdForSkillType(skill.skillType) != null;
+      final hasModel = switch (skill.skillType) {
+        SkillType.transcription => transcriptionModelId != null,
+        SkillType.imageAnalysis => imageRecognitionModelId != null,
+        _ => false,
+      };
       if (hasModel) return a;
       return SkillAssignment(skillId: a.skillId);
     }).toList();
@@ -361,17 +373,60 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
     setState(() => _isSaving = true);
     try {
       final now = DateTime.now();
+      final repository = ref.read(aiConfigRepositoryProvider);
+      final modelConfigs = await repository.getConfigsByType(
+        AiConfigType.model,
+      );
+      final models = modelConfigs.whereType<AiConfigModel>().toList(
+        growable: false,
+      );
+      final thinkingModelId = _normalizeModelSlotId(
+        _thinkingModelId,
+        models,
+      );
+      final thinkingHighEndModelId = _normalizeModelSlotId(
+        _thinkingHighEndModelId,
+        models,
+      );
+      final imageRecognitionModelId = _normalizeModelSlotId(
+        _imageRecognitionModelId,
+        models,
+      );
+      final transcriptionModelId = _normalizeModelSlotId(
+        _transcriptionModelId,
+        models,
+      );
+      final imageGenerationModelId = _normalizeModelSlotId(
+        _imageGenerationModelId,
+        models,
+      );
+      // An ambiguous legacy id normalizes to null; the thinking slot is
+      // required, so force an explicit re-selection instead of persisting
+      // an arbitrary or unresolved value.
+      if (thinkingModelId == null) {
+        if (mounted) {
+          setState(() => _thinkingModelId = null);
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: context.messages.inferenceProfileThinkingRequired,
+          );
+        }
+        return;
+      }
       final profile =
           AiConfig.inferenceProfile(
                 id: widget.existingProfile?.id ?? const Uuid().v4(),
                 name: _nameController.text.trim(),
-                thinkingModelId: _thinkingModelId!,
-                thinkingHighEndModelId: _thinkingHighEndModelId,
-                imageRecognitionModelId: _imageRecognitionModelId,
-                transcriptionModelId: _transcriptionModelId,
-                imageGenerationModelId: _imageGenerationModelId,
+                thinkingModelId: thinkingModelId,
+                thinkingHighEndModelId: thinkingHighEndModelId,
+                imageRecognitionModelId: imageRecognitionModelId,
+                transcriptionModelId: transcriptionModelId,
+                imageGenerationModelId: imageGenerationModelId,
                 desktopOnly: _desktopOnly,
-                skillAssignments: _sanitizedSkillAssignments(),
+                skillAssignments: _sanitizedSkillAssignments(
+                  transcriptionModelId: transcriptionModelId,
+                  imageRecognitionModelId: imageRecognitionModelId,
+                ),
                 isDefault: widget.existingProfile?.isDefault ?? false,
                 // The selector mutates `_pinnedHostId`; on a brand-new
                 // profile this is null and the auto-trigger stays inert
@@ -405,6 +460,42 @@ class _InferenceProfileFormState extends ConsumerState<InferenceProfileForm> {
       }
     }
   }
+}
+
+/// Resolves a slot value to the model row it identifies: an exact
+/// [AiConfigModel.id] match first, then a unique legacy `providerModelId`
+/// fallback. Ambiguous (2+ rows sharing the legacy id) or unknown values
+/// return `null` so the UI never shows an arbitrary row as selected.
+AiConfigModel? _resolveModelSlot(
+  String? slotValue,
+  List<AiConfigModel> models,
+) {
+  if (slotValue == null) return null;
+  final exact = models.where((model) => model.id == slotValue).firstOrNull;
+  if (exact != null) return exact;
+
+  final matches = models
+      .where((model) => model.providerModelId == slotValue)
+      .toList(growable: false);
+  return matches.length == 1 ? matches.single : null;
+}
+
+/// Maps a slot value to the canonical [AiConfigModel.id] for persistence,
+/// using the same resolution rule as [_resolveModelSlot]:
+///
+/// - exact model-row id match → kept as-is
+/// - unique legacy `providerModelId` match → normalized to that row's id
+/// - ambiguous legacy id (2+ rows) → `null`, forcing re-selection so an
+///   arbitrary row is never silently persisted
+/// - no match → kept as-is (the model row may not have synced yet)
+String? _normalizeModelSlotId(String? slotValue, List<AiConfigModel> models) {
+  if (slotValue == null) return null;
+  final resolved = _resolveModelSlot(slotValue, models);
+  if (resolved != null) return resolved.id;
+
+  final isAmbiguous =
+      models.where((model) => model.providerModelId == slotValue).length > 1;
+  return isAmbiguous ? null : slotValue;
 }
 
 /// A toggle tile for a single skill assignment.

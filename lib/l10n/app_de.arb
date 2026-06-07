@@ -634,6 +634,7 @@
   "aiProfileCardActiveBadge": "Aktiv",
   "aiProfileModelPickerSearchHint": "Modelle suchen…",
   "aiProfileSlotModelMissing": "fehlt",
+  "aiPromptGenerationPickerTitle": "Wähle ein Modell für die Prompt-Generierung",
   "aiProviderAlibabaDescription": "Alibaba Clouds Qwen-Modellfamilie über die DashScope-API",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "Anthropics Claude-Familie von AI-Assistenten",

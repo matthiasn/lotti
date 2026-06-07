@@ -13,12 +13,9 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 /// model. This function fails closed instead: a referenced model whose model
 /// or provider config can't be looked up is treated as **not local**.
 ///
-/// Profile slots store the `providerModelId` string (see `ai_config.dart`
-/// docstring on `inferenceProfile`). The lookup chain therefore matches the
-/// same pattern as `resolveInferenceProvider`: scan all `AiConfigModel` rows
-/// for a `providerModelId` match, then `getConfigById` on the model's
-/// `inferenceProviderId`. We must not assume the stored slot value equals a
-/// row's primary key.
+/// New profile slots store `AiConfigModel.id`; legacy profiles may still store
+/// provider-native `providerModelId` strings. The lookup below supports both
+/// shapes, but always prefers the exact model-row id when present.
 ///
 /// Used by the synced-audio dispatcher to refuse running an entry against a
 /// profile that could route any slot through a cloud provider. A profile with
@@ -43,15 +40,17 @@ Future<bool> profileIsLocal(
 
   if (referencedModelIds.isEmpty) return true;
 
-  // Load every model + provider row once; profile slots reference
-  // `providerModelId`, not the row's primary key, so a single scan is the
-  // load-bearing lookup. Providers are batch-fetched too so we don't hit
-  // the repository per slot inside the loop below.
+  // Load every model + provider row once. Providers are batch-fetched too so
+  // we don't hit the repository per slot inside the loop below.
   final modelRows = await repository.getConfigsByType(AiConfigType.model);
-  final modelsByProviderModelId = <String, AiConfigModel>{
-    for (final config in modelRows.whereType<AiConfigModel>())
-      config.providerModelId: config,
-  };
+  final modelsById = <String, AiConfigModel>{};
+  final modelsByProviderModelId = <String, List<AiConfigModel>>{};
+  for (final config in modelRows.whereType<AiConfigModel>()) {
+    modelsById[config.id] = config;
+    (modelsByProviderModelId[config.providerModelId] ??= <AiConfigModel>[]).add(
+      config,
+    );
+  }
   final providerRows = await repository.getConfigsByType(
     AiConfigType.inferenceProvider,
   );
@@ -60,8 +59,12 @@ Future<bool> profileIsLocal(
       config.id: config,
   };
 
-  for (final providerModelId in referencedModelIds) {
-    final modelConfig = modelsByProviderModelId[providerModelId];
+  for (final modelId in referencedModelIds) {
+    final legacyMatches =
+        modelsByProviderModelId[modelId] ?? const <AiConfigModel>[];
+    final modelConfig =
+        modelsById[modelId] ??
+        (legacyMatches.length == 1 ? legacyMatches.single : null);
     if (modelConfig == null) {
       // Referenced-but-unresolved model id. Fail closed.
       return false;

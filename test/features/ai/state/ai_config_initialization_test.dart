@@ -122,7 +122,10 @@ void main() {
     test('completes normally and still seeds profiles when model backfill '
         'throws', () async {
       when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
+      when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
       // Backfill reads inference-provider configs first; make that throw.
+      // Seeding and upgrading read model/profile configs, which stay stubbed
+      // above, so they must still run after the backfill failure.
       when(
         () => repo.getConfigsByType(AiConfigType.inferenceProvider),
       ).thenThrow(Exception('db unavailable'));
@@ -136,7 +139,38 @@ void main() {
         completes,
       );
 
-      // Profile seeding ran to completion before the backfill failure.
+      // Profile seeding ran to completion despite the backfill failure.
+      expect(
+        savedConfigs(),
+        hasLength(ProfileSeedingService.defaultProfiles.length),
+      );
+
+      // The upgrade pass also ran: it reads the existing inference profiles.
+      verify(
+        () => repo.getConfigsByType(AiConfigType.inferenceProfile),
+      ).called(1);
+    });
+
+    test('completes normally and still backfills models when profile '
+        'upgrade throws', () async {
+      when(() => repo.getConfigById(any())).thenAnswer((_) async => null);
+      when(() => repo.getConfigsByType(any())).thenAnswer((_) async => []);
+      // upgradeExisting() is the only step reading inference profiles.
+      when(
+        () => repo.getConfigsByType(AiConfigType.inferenceProfile),
+      ).thenThrow(Exception('db unavailable'));
+
+      final container = createContainer();
+
+      await expectLater(
+        container.read(aiConfigInitializationProvider.future),
+        completes,
+      );
+
+      // Backfill and seeding both completed before the upgrade failure.
+      verify(
+        () => repo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).called(1);
       expect(
         savedConfigs(),
         hasLength(ProfileSeedingService.defaultProfiles.length),

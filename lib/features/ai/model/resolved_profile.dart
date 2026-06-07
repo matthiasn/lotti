@@ -29,7 +29,7 @@ class ResolvedProfile {
     this.skillAssignments = const [],
   });
 
-  /// The providerModelId string for the thinking slot.
+  /// The provider-native model id for the thinking slot.
   final String thinkingModelId;
 
   /// The resolved inference provider for thinking.
@@ -38,7 +38,7 @@ class ResolvedProfile {
   /// The configured model row used for thinking, when resolved from a profile.
   final AiConfigModel? thinkingModel;
 
-  /// The providerModelId string for high-end thinking (nullable).
+  /// The provider-native model id for high-end thinking (nullable).
   /// Falls back to [thinkingModelId] when not set.
   final String? thinkingHighEndModelId;
 
@@ -49,7 +49,7 @@ class ResolvedProfile {
   /// The configured model row used for high-end thinking, when set.
   final AiConfigModel? thinkingHighEndModel;
 
-  /// The providerModelId string for image recognition (nullable).
+  /// The provider-native model id for image recognition (nullable).
   final String? imageRecognitionModelId;
 
   /// The resolved inference provider for image recognition (nullable).
@@ -58,7 +58,7 @@ class ResolvedProfile {
   /// The configured model row used for image recognition, when set.
   final AiConfigModel? imageRecognitionModel;
 
-  /// The providerModelId string for transcription (nullable).
+  /// The provider-native model id for transcription (nullable).
   final String? transcriptionModelId;
 
   /// The resolved inference provider for transcription (nullable).
@@ -67,7 +67,7 @@ class ResolvedProfile {
   /// The configured model row used for transcription, when set.
   final AiConfigModel? transcriptionModel;
 
-  /// The providerModelId string for image generation (nullable).
+  /// The provider-native model id for image generation (nullable).
   final String? imageGenerationModelId;
 
   /// The resolved inference provider for image generation (nullable).

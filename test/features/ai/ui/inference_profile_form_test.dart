@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/inference_profile_controller.dart';
@@ -13,18 +14,22 @@ import 'package:lotti/features/ai/ui/widgets/profile_pinning_selector.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
 
 void main() {
   late StreamController<List<AiConfig>> profileStreamController;
   late _FakeInferenceProfileController fakeProfileController;
+  late MockAiConfigRepository mockAiConfigRepository;
 
   setUp(() {
     profileStreamController = StreamController<List<AiConfig>>();
     fakeProfileController = _FakeInferenceProfileController()
       ..streamController = profileStreamController;
+    mockAiConfigRepository = MockAiConfigRepository();
   });
 
   tearDown(() {
@@ -37,9 +42,14 @@ void main() {
     List<AiConfig> providers = const [],
     List<SyncNodeProfile> knownNodes = const [],
   }) {
+    when(
+      () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => models);
+
     return makeTestableWidgetNoScroll(
       InferenceProfileForm(existingProfile: existingProfile),
       overrides: [
+        aiConfigRepositoryProvider.overrideWithValue(mockAiConfigRepository),
         inferenceProfileControllerProvider.overrideWith(() {
           return fakeProfileController;
         }),
@@ -344,7 +354,7 @@ void main() {
       expect(fakeProfileController.savedProfiles.first.name, 'My New Profile');
       expect(
         fakeProfileController.savedProfiles.first.thinkingModelId,
-        'models/flash',
+        'tm-1',
       );
     });
 
@@ -1419,7 +1429,7 @@ void main() {
 
       expect(fakeProfileController.savedProfiles, hasLength(1));
       final saved = fakeProfileController.savedProfiles.first;
-      expect(saved.thinkingHighEndModelId, 'models/gemini-pro');
+      expect(saved.thinkingHighEndModelId, 'tm-2');
     });
 
     testWidgets('preserves existing profile ID when editing', (tester) async {
@@ -1555,9 +1565,11 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
+        // Slots persist the canonical AiConfigModel.id, not the wire-level
+        // providerModelId.
         expect(
           fakeProfileController.savedProfiles.first.imageRecognitionModelId,
-          'models/vision',
+          'ir-1',
         );
       },
     );
@@ -1617,9 +1629,11 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
+        // Slots persist the canonical AiConfigModel.id, not the wire-level
+        // providerModelId.
         expect(
           fakeProfileController.savedProfiles.first.transcriptionModelId,
-          'models/whisper',
+          'tr-1',
         );
       },
     );
@@ -1679,10 +1693,113 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         expect(fakeProfileController.savedProfiles, hasLength(1));
+        // Slots persist the canonical AiConfigModel.id, not the wire-level
+        // providerModelId.
         expect(
           fakeProfileController.savedProfiles.first.imageGenerationModelId,
-          'models/imagen',
+          'ig-1',
         );
+      },
+    );
+  });
+
+  group('save-time slot normalization', () {
+    final visionModel =
+        AiConfig.model(
+              id: 'vision-row',
+              name: 'Vision Model',
+              providerModelId: 'models/vision',
+              inferenceProviderId: 'prov-1',
+              createdAt: DateTime(2024),
+              inputModalities: const [Modality.text, Modality.image],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+              supportsFunctionCalling: true,
+            )
+            as AiConfigModel;
+
+    AiConfigModel duplicateThinkingModel(String id) =>
+        AiConfig.model(
+              id: id,
+              name: 'Dup $id',
+              providerModelId: 'models/dup-thinking',
+              inferenceProviderId: 'prov-1',
+              createdAt: DateTime(2024),
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+              supportsFunctionCalling: true,
+            )
+            as AiConfigModel;
+
+    testWidgets(
+      'keeps image-analysis automation enabled when the slot resolves',
+      (tester) async {
+        final imageSkill = builtInSkills.firstWhere(
+          (s) => s.skillType == SkillType.imageAnalysis,
+        );
+        final profile = testInferenceProfile(
+          id: 'p-img-skill',
+          name: 'Image Skill Profile',
+          thinkingModelId: 'vision-row',
+          imageRecognitionModelId: 'vision-row',
+          skillAssignments: [
+            SkillAssignment(skillId: imageSkill.id, automate: true),
+          ],
+        );
+
+        await tester.pumpWidget(
+          buildSubject(existingProfile: profile, models: [visionModel]),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(fakeProfileController.savedProfiles, hasLength(1));
+        final saved = fakeProfileController.savedProfiles.first;
+        // The slot resolves to a real model row, so the automated
+        // image-analysis assignment survives the save-time sanitizer.
+        final assignment = saved.skillAssignments.singleWhere(
+          (a) => a.skillId == imageSkill.id,
+        );
+        expect(assignment.automate, isTrue);
+      },
+    );
+
+    testWidgets(
+      'aborts the save with a toast when the thinking slot value is an '
+      'ambiguous legacy id',
+      (tester) async {
+        // Two model rows share the legacy providerModelId the profile's
+        // thinking slot still stores — persisting either would pick an
+        // arbitrary row, so the save must force a re-selection instead.
+        final profile = testInferenceProfile(
+          id: 'p-ambiguous',
+          name: 'Ambiguous Profile',
+          thinkingModelId: 'models/dup-thinking',
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            existingProfile: profile,
+            models: [
+              duplicateThinkingModel('dup-a'),
+              duplicateThinkingModel('dup-b'),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Save'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(fakeProfileController.savedProfiles, isEmpty);
+        expect(find.text('A thinking model is required'), findsOneWidget);
       },
     );
   });

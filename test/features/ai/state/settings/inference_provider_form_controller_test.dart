@@ -207,6 +207,7 @@ void main() {
   setUpAll(() {
     registerFallbackValue(testConfig);
     registerFallbackValue(ollamaConfig);
+    registerFallbackValue(AiConfigType.model);
   });
 
   setUp(() {
@@ -269,7 +270,7 @@ void main() {
       // Arrange
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
+        () => mockRepository.getConfigsByType(any()),
       ).thenAnswer((_) async => []);
 
       // Act
@@ -1151,10 +1152,7 @@ void main() {
       // Arrange
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(any()),
       ).thenAnswer((_) async => []);
 
       // Act
@@ -1181,10 +1179,7 @@ void main() {
       // Arrange
       when(() => mockRepository.saveConfig(any())).thenAnswer((_) async {});
       when(
-        () => mockRepository.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => []);
-      when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
+        () => mockRepository.getConfigsByType(any()),
       ).thenAnswer((_) async => []);
 
       // Act
@@ -1203,11 +1198,13 @@ void main() {
 
       await controller.addConfig(geminiConfig);
 
-      // Assert - should save provider and check for existing models
+      // Assert - should save provider and check for existing models.
+      // Two reads: the model prepopulation pass and the subsequent
+      // profile upgrade pass each fetch the model rows.
       verify(() => mockRepository.saveConfig(geminiConfig)).called(1);
       verify(
         () => mockRepository.getConfigsByType(AiConfigType.model),
-      ).called(1);
+      ).called(2);
     });
   });
 

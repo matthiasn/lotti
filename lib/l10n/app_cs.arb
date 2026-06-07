@@ -474,6 +474,7 @@
   "aiProfileCardActiveBadge": "Aktivní",
   "aiProfileModelPickerSearchHint": "Hledat modely…",
   "aiProfileSlotModelMissing": "chybí",
+  "aiPromptGenerationPickerTitle": "Vyber model pro generování promptů",
   "aiProviderAlibabaDescription": "Rodina modelů Qwen od Alibaba Cloud přes DashScope API",
   "aiProviderAlibabaName": "Alibaba Cloud (Qwen)",
   "aiProviderAnthropicDescription": "Rodina AI asistentů Claude od Anthropic",

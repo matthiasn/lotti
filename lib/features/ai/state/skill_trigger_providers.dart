@@ -107,16 +107,20 @@ final hasAvailableSkillsProvider = FutureProvider.autoDispose
 /// popup-menu pickers set it when the user chooses a non-default model
 /// for one specific entry, and the dispatch in [triggerSkillProvider]
 /// forwards it to the matching `SkillInferenceRunner` entry point
-/// (only [SkillType.transcription] and [SkillType.imageAnalysis]
-/// honour it today; other skill types ignore it). The runner routes
-/// the call to that model + its parent provider instead of the
-/// profile slot.
+/// (transcription, image analysis, and prompt generation honour it today).
+/// The runner routes the call to that model + its parent provider instead of
+/// the profile slot.
+///
+/// `geminiThinkingMode` is also per-invocation. When set for a Gemini-backed
+/// run, it overrides the selected model row's saved default effort for this
+/// call only.
 typedef TriggerSkillParams = ({
   String entityId,
   String skillId,
   String? linkedTaskId,
   List<ProcessedReferenceImage>? referenceImages,
   String? overrideModelId,
+  GeminiThinkingMode? geminiThinkingMode,
 });
 
 /// Provider to trigger a skill-based inference run.
@@ -223,6 +227,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 automationResult: automationResult,
                 linkedTaskId: params.linkedTaskId,
                 overrideModelId: params.overrideModelId,
+                geminiThinkingMode: params.geminiThinkingMode,
               );
             case SkillType.imageAnalysis:
               await runner.runImageAnalysis(
@@ -230,6 +235,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 automationResult: automationResult,
                 linkedTaskId: params.linkedTaskId,
                 overrideModelId: params.overrideModelId,
+                geminiThinkingMode: params.geminiThinkingMode,
               );
             case SkillType.promptGeneration:
             case SkillType.imagePromptGeneration:
@@ -237,6 +243,8 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 entryId: params.entityId,
                 automationResult: automationResult,
                 linkedTaskId: params.linkedTaskId,
+                overrideModelId: params.overrideModelId,
+                geminiThinkingMode: params.geminiThinkingMode,
               );
             case SkillType.imageGeneration:
               final linkedTaskId = params.linkedTaskId;

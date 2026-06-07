@@ -763,6 +763,21 @@ void main() {
 
     testWidgets('closes modal after skill selection', (tester) async {
       // Arrange
+      final now = DateTime(2024, 3, 15, 10);
+      final promptModel = _buildModel(
+        id: 'prompt-model',
+        name: 'Prompt Model',
+        providerModelId: 'gpt-4o',
+        providerId: 'provider-openai',
+        modality: Modality.text,
+        t: now,
+      );
+      final promptProvider = _buildProvider(
+        id: 'provider-openai',
+        name: 'OpenAI',
+        t: now,
+      );
+      TriggerSkillParams? capturedParams;
       await tester.pumpWidget(
         buildTestWidget(
           UnifiedAiPopUpMenu(
@@ -770,14 +785,16 @@ void main() {
             linkedFromId: null,
           ),
           overrides: [
-            hasAvailableSkillsProvider((
-              entityId: testTaskEntity.id,
-              linkedFromId: null,
-            )).overrideWith((ref) => Future.value(true)),
-            availableSkillsForEntityProvider((
-              entityId: testTaskEntity.id,
-              linkedFromId: null,
-            )).overrideWith((ref) => Future.value([testSkills.last])),
+            ..._baseOverrides(
+              entity: testTaskEntity,
+              skill: testSkills.last,
+              models: [promptModel],
+              resolver: _NullProfileResolver(),
+              configs: [promptModel, promptProvider],
+            ),
+            triggerSkillProvider.overrideWith((ref, params) async {
+              capturedParams = params;
+            }),
           ],
         ),
       );
@@ -788,20 +805,161 @@ void main() {
 
       // Act - Open the modal
       await tester.tap(find.byIcon(Icons.assistant_rounded));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
       // Verify modal is open
       expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
 
       // Select a skill
       await tester.tap(find.text('Prompt Generation Skill'));
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpAndSettle();
 
       // Assert - Modal should be closed
       expect(find.byType(UnifiedAiSkillsList), findsNothing);
+      expect(capturedParams?.overrideModelId, promptModel.id);
     });
+
+    testWidgets(
+      'Gemini 3 prompt generation asks for thinking mode and forwards it',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 10);
+        final geminiProvider =
+            AiConfig.inferenceProvider(
+                  id: 'provider-gemini',
+                  baseUrl: 'https://generativelanguage.googleapis.com',
+                  name: 'Gemini',
+                  inferenceProviderType: InferenceProviderType.gemini,
+                  apiKey: '',
+                  createdAt: now,
+                )
+                as AiConfigInferenceProvider;
+        final geminiModel =
+            AiConfig.model(
+                  id: 'gemini-text-model',
+                  name: 'Gemini 3 Flash',
+                  providerModelId: 'gemini-3-flash-preview',
+                  inferenceProviderId: geminiProvider.id,
+                  createdAt: now,
+                  inputModalities: const [Modality.text],
+                  outputModalities: const [Modality.text],
+                  isReasoningModel: true,
+                )
+                as AiConfigModel;
+        TriggerSkillParams? capturedParams;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testTaskEntity,
+              linkedFromId: null,
+            ),
+            overrides: [
+              ..._baseOverrides(
+                entity: testTaskEntity,
+                skill: testSkills.last,
+                models: [geminiModel],
+                resolver: _NullProfileResolver(),
+                configs: [geminiModel, geminiProvider],
+              ),
+              triggerSkillProvider.overrideWith((ref, params) async {
+                capturedParams = params;
+              }),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Prompt Generation Skill'));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(UnifiedAiSkillsList), findsNothing);
+        expect(find.text('Gemini thinking mode'), findsOneWidget);
+
+        await tester.tap(find.text('High'));
+        await tester.pumpAndSettle();
+
+        expect(capturedParams?.overrideModelId, geminiModel.id);
+        expect(capturedParams?.geminiThinkingMode, GeminiThinkingMode.high);
+      },
+    );
+
+    testWidgets(
+      'prompt generation marks the profile high-end thinking row as the '
+      'picker default via its AiConfigModel.id and collapses picking it '
+      'to a null override',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 10);
+        final provider = _buildProvider(id: 'p-a', name: 'Provider A', t: now);
+        final defaultModel = _buildModel(
+          id: 'm-default',
+          name: 'Default Thinker',
+          providerModelId: 'wire-a',
+          providerId: 'p-a',
+          modality: Modality.text,
+          t: now,
+        );
+        final otherModel = _buildModel(
+          id: 'm-other',
+          name: 'Other Thinker',
+          providerModelId: 'wire-b',
+          providerId: 'p-a',
+          modality: Modality.text,
+          t: now,
+        );
+        // The profile's high-end slot resolved to the actual model row, so
+        // the popup must match it by AiConfigModel.id — not by walking the
+        // wire-level providerModelId.
+        final profile = ResolvedProfile(
+          thinkingModelId: 'wire-a',
+          thinkingProvider: provider,
+          thinkingModel: defaultModel,
+        );
+        TriggerSkillParams? capturedParams;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testTaskEntity,
+              linkedFromId: null,
+            ),
+            overrides: [
+              ..._baseOverrides(
+                entity: testTaskEntity,
+                skill: testSkills.last,
+                models: [defaultModel, otherModel],
+                resolver: _FixedProfileResolver(profile),
+                configs: [defaultModel, otherModel, provider],
+              ),
+              triggerSkillProvider.overrideWith((ref, params) async {
+                capturedParams = params;
+              }),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        await tester.tap(find.byIcon(Icons.assistant_rounded));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Prompt Generation Skill'));
+        await tester.pumpAndSettle();
+
+        // Picker shows both text-capable rows.
+        expect(find.byType(InferenceModelPickerModal), findsOneWidget);
+        expect(find.text('Default Thinker'), findsOneWidget);
+        expect(find.text('Other Thinker'), findsOneWidget);
+
+        // Picking the default row collapses the override to null so the
+        // runner reads the profile slot.
+        await tester.tap(find.text('Default Thinker'));
+        await tester.pumpAndSettle();
+
+        expect(capturedParams, isNotNull);
+        expect(capturedParams!.overrideModelId, isNull);
+        expect(capturedParams!.geminiThinkingMode, isNull);
+      },
+    );
   });
 
   group('Image Generation Skill Handling', () {

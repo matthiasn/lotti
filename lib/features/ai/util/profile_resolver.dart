@@ -89,7 +89,7 @@ class ProfileResolver {
     AiConfigInferenceProfile config,
   ) async {
     // Resolve thinking slot (fatal if missing).
-    final thinkingSlot = await resolveInferenceProviderWithModel(
+    final thinkingSlot = await resolveInferenceProviderForProfileSlot(
       modelId: config.thinkingModelId,
       aiConfigRepository: _aiConfigRepository,
       logTag: _logTag,
@@ -105,7 +105,7 @@ class ProfileResolver {
 
     // Resolve optional slots (non-fatal).
     final thinkingHighEndSlot = config.thinkingHighEndModelId != null
-        ? await resolveInferenceProviderWithModel(
+        ? await resolveInferenceProviderForProfileSlot(
             modelId: config.thinkingHighEndModelId!,
             aiConfigRepository: _aiConfigRepository,
             logTag: _logTag,
@@ -113,7 +113,7 @@ class ProfileResolver {
         : null;
 
     final imageRecognitionSlot = config.imageRecognitionModelId != null
-        ? await resolveInferenceProviderWithModel(
+        ? await resolveInferenceProviderForProfileSlot(
             modelId: config.imageRecognitionModelId!,
             aiConfigRepository: _aiConfigRepository,
             logTag: _logTag,
@@ -121,7 +121,7 @@ class ProfileResolver {
         : null;
 
     final transcriptionSlot = config.transcriptionModelId != null
-        ? await resolveInferenceProviderWithModel(
+        ? await resolveInferenceProviderForProfileSlot(
             modelId: config.transcriptionModelId!,
             aiConfigRepository: _aiConfigRepository,
             logTag: _logTag,
@@ -129,7 +129,7 @@ class ProfileResolver {
         : null;
 
     final imageGenerationSlot = config.imageGenerationModelId != null
-        ? await resolveInferenceProviderWithModel(
+        ? await resolveInferenceProviderForProfileSlot(
             modelId: config.imageGenerationModelId!,
             aiConfigRepository: _aiConfigRepository,
             logTag: _logTag,
@@ -137,27 +137,19 @@ class ProfileResolver {
         : null;
 
     return ResolvedProfile(
-      thinkingModelId: config.thinkingModelId,
+      thinkingModelId: thinkingSlot.model.providerModelId,
       thinkingProvider: thinkingSlot.provider,
       thinkingModel: thinkingSlot.model,
-      thinkingHighEndModelId: thinkingHighEndSlot != null
-          ? config.thinkingHighEndModelId
-          : null,
+      thinkingHighEndModelId: thinkingHighEndSlot?.model.providerModelId,
       thinkingHighEndProvider: thinkingHighEndSlot?.provider,
       thinkingHighEndModel: thinkingHighEndSlot?.model,
-      imageRecognitionModelId: imageRecognitionSlot != null
-          ? config.imageRecognitionModelId
-          : null,
+      imageRecognitionModelId: imageRecognitionSlot?.model.providerModelId,
       imageRecognitionProvider: imageRecognitionSlot?.provider,
       imageRecognitionModel: imageRecognitionSlot?.model,
-      transcriptionModelId: transcriptionSlot != null
-          ? config.transcriptionModelId
-          : null,
+      transcriptionModelId: transcriptionSlot?.model.providerModelId,
       transcriptionProvider: transcriptionSlot?.provider,
       transcriptionModel: transcriptionSlot?.model,
-      imageGenerationModelId: imageGenerationSlot != null
-          ? config.imageGenerationModelId
-          : null,
+      imageGenerationModelId: imageGenerationSlot?.model.providerModelId,
       imageGenerationProvider: imageGenerationSlot?.provider,
       imageGenerationModel: imageGenerationSlot?.model,
       skillAssignments: config.skillAssignments,

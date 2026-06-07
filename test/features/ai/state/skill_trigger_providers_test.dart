@@ -1077,6 +1077,7 @@ void main() {
           linkedTaskId: 'task-1',
           referenceImages: null,
           overrideModelId: null,
+          geminiThinkingMode: null,
         )).future,
       );
 
@@ -1137,6 +1138,7 @@ void main() {
             linkedTaskId: null,
             referenceImages: null,
             overrideModelId: null,
+            geminiThinkingMode: null,
           )).future,
         );
 
@@ -1181,6 +1183,7 @@ void main() {
           linkedTaskId: 'task-no-profile',
           referenceImages: null,
           overrideModelId: null,
+          geminiThinkingMode: null,
         )).future,
       );
 
@@ -1238,6 +1241,8 @@ void main() {
           audioEntryId: any(named: 'audioEntryId'),
           automationResult: any(named: 'automationResult'),
           linkedTaskId: any(named: 'linkedTaskId'),
+          overrideModelId: any(named: 'overrideModelId'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
         ),
       ).thenAnswer((_) async {});
 
@@ -1257,6 +1262,7 @@ void main() {
           linkedTaskId: 'task-1',
           referenceImages: null,
           overrideModelId: null,
+          geminiThinkingMode: null,
         )).future,
       );
 
@@ -1265,6 +1271,8 @@ void main() {
           audioEntryId: 'audio-entry-1',
           automationResult: any(named: 'automationResult'),
           linkedTaskId: 'task-1',
+          overrideModelId: any(named: 'overrideModelId'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
         ),
       ).called(1);
     });
@@ -1309,6 +1317,8 @@ void main() {
             audioEntryId: any(named: 'audioEntryId'),
             automationResult: any(named: 'automationResult'),
             linkedTaskId: any(named: 'linkedTaskId'),
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenThrow(StateError('runner blew up'));
 
@@ -1330,6 +1340,7 @@ void main() {
             linkedTaskId: 'task-1',
             referenceImages: null,
             overrideModelId: null,
+            geminiThinkingMode: null,
           )).future,
         );
 
@@ -1415,6 +1426,8 @@ void main() {
             audioEntryId: any(named: 'audioEntryId'),
             automationResult: any(named: 'automationResult'),
             linkedTaskId: any(named: 'linkedTaskId'),
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((_) async {});
 
@@ -1435,6 +1448,7 @@ void main() {
             linkedTaskId: null,
             referenceImages: null,
             overrideModelId: null,
+            geminiThinkingMode: null,
           )).future,
         );
 
@@ -1446,6 +1460,8 @@ void main() {
           () => mockRunner.runTranscription(
             audioEntryId: 'standalone-audio-1',
             automationResult: any(named: 'automationResult'),
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).called(1);
       },
@@ -1484,6 +1500,7 @@ void main() {
             linkedTaskId: null,
             referenceImages: null,
             overrideModelId: null,
+            geminiThinkingMode: null,
           )).future,
         );
 
@@ -1543,6 +1560,8 @@ void main() {
           imageEntryId: any(named: 'imageEntryId'),
           automationResult: any(named: 'automationResult'),
           linkedTaskId: any(named: 'linkedTaskId'),
+          overrideModelId: any(named: 'overrideModelId'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
         ),
       ).thenAnswer((_) async {});
 
@@ -1562,6 +1581,7 @@ void main() {
           linkedTaskId: 'task-img',
           referenceImages: null,
           overrideModelId: null,
+          geminiThinkingMode: null,
         )).future,
       );
 
@@ -1570,6 +1590,8 @@ void main() {
           imageEntryId: 'image-entry-1',
           automationResult: any(named: 'automationResult'),
           linkedTaskId: 'task-img',
+          overrideModelId: any(named: 'overrideModelId'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
         ),
       ).called(1);
     });
@@ -1632,6 +1654,7 @@ void main() {
             automationResult: any(named: 'automationResult'),
             linkedTaskId: any(named: 'linkedTaskId'),
             overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((_) async {});
 
@@ -1651,6 +1674,7 @@ void main() {
             linkedTaskId: 'task-img',
             referenceImages: null,
             overrideModelId: 'override-vision-model-id',
+            geminiThinkingMode: null,
           )).future,
         );
 
@@ -1660,6 +1684,7 @@ void main() {
             automationResult: any(named: 'automationResult'),
             linkedTaskId: 'task-img',
             overrideModelId: 'override-vision-model-id',
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).called(1);
       },
@@ -1703,6 +1728,8 @@ void main() {
           entryId: any(named: 'entryId'),
           automationResult: any(named: 'automationResult'),
           linkedTaskId: any(named: 'linkedTaskId'),
+          overrideModelId: any(named: 'overrideModelId'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
         ),
       ).thenAnswer((_) async {});
 
@@ -1722,6 +1749,7 @@ void main() {
           linkedTaskId: 'task-prompt',
           referenceImages: null,
           overrideModelId: null,
+          geminiThinkingMode: null,
         )).future,
       );
 
@@ -1730,6 +1758,8 @@ void main() {
           entryId: 'audio-entry-2',
           automationResult: any(named: 'automationResult'),
           linkedTaskId: 'task-prompt',
+          overrideModelId: any(named: 'overrideModelId'),
+          geminiThinkingMode: any(named: 'geminiThinkingMode'),
         ),
       ).called(1);
     });
@@ -1795,6 +1825,7 @@ void main() {
           linkedTaskId: 'task-imggen',
           referenceImages: null,
           overrideModelId: null,
+          geminiThinkingMode: null,
         )).future,
       );
 
@@ -1878,6 +1909,7 @@ void main() {
           linkedTaskId: 'task-imggen2',
           referenceImages: refImages,
           overrideModelId: null,
+          geminiThinkingMode: null,
         )).future,
       );
 
@@ -1932,6 +1964,8 @@ void main() {
             entryId: any(named: 'entryId'),
             automationResult: any(named: 'automationResult'),
             linkedTaskId: any(named: 'linkedTaskId'),
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((_) async {});
 
@@ -1951,6 +1985,7 @@ void main() {
             linkedTaskId: 'task-img-prompt',
             referenceImages: null,
             overrideModelId: null,
+            geminiThinkingMode: null,
           )).future,
         );
 
@@ -1959,6 +1994,8 @@ void main() {
             entryId: 'entry-img-prompt',
             automationResult: any(named: 'automationResult'),
             linkedTaskId: 'task-img-prompt',
+            overrideModelId: any(named: 'overrideModelId'),
+            geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).called(1);
         verifyNever(
@@ -2047,6 +2084,7 @@ void main() {
             linkedTaskId: null,
             referenceImages: null,
             overrideModelId: null,
+            geminiThinkingMode: null,
           )).future,
         );
 
