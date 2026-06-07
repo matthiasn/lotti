@@ -27,6 +27,15 @@ void main() {
         find.byType(DesignSystemListItem),
         findsAtLeastNWidgets(5),
       );
+
+      // Interaction smoke: tapping the first DesignSystemListItem (interactive or not)
+      // must not throw — covers tap plumbing on the overview page.
+      await tester.tap(
+        find.byType(DesignSystemListItem).first,
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     });
   });
 }

@@ -127,7 +127,8 @@ void main() {
           find.byType(DesignSystemTaskFilterSheet),
         );
         filterSheet.onFieldPressed?.call(DesignSystemTaskFilterSection.status);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.byType(DesignSystemCheckbox), findsNWidgets(3));
         expect(find.byType(CheckboxListTile), findsNothing);
@@ -146,10 +147,74 @@ void main() {
         );
         await tester.ensureVisible(applyButton);
         await tester.tap(applyButton);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         expect(_serializedState(tester), contains('"blocked"'));
       },
     );
+    testWidgets(
+      'opens the selection modal for every other filter section too',
+      (tester) async {
+        final useCase =
+            buildDesignSystemTaskFilterWidgetbookComponent().useCases.single;
+        await tester.binding.setSurfaceSize(const Size(1100, 1900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        await tester.pumpWidget(
+          makeTestableWidget2(
+            Theme(
+              data: DesignSystemTheme.dark(),
+              child: Scaffold(
+                body: SizedBox(
+                  width: 900,
+                  height: 1800,
+                  child: Builder(builder: useCase.builder),
+                ),
+              ),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(1100, 1900)),
+          ),
+        );
+        await tester.pump();
+
+        // The status path is covered above; the category/label/project
+        // sections route through the same onFieldPressed seam but open
+        // their own option sets.
+        // The widgetbook state carries no project options, so the project
+        // section is a no-op there; category and label open the modal.
+        for (final section in [
+          DesignSystemTaskFilterSection.category,
+          DesignSystemTaskFilterSection.label,
+        ]) {
+          final filterSheet = tester.widget<DesignSystemTaskFilterSheet>(
+            find.byType(DesignSystemTaskFilterSheet),
+          );
+          filterSheet.onFieldPressed?.call(section);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          // The shared DS selection modal mounts with its apply button and
+          // at least one checkbox option for this section.
+          final applyButton = find.byKey(
+            const ValueKey('design-system-filter-selection-apply'),
+          );
+          expect(applyButton, findsOneWidget, reason: '$section');
+          expect(
+            find.byType(DesignSystemCheckbox),
+            findsAtLeastNWidgets(1),
+            reason: '$section',
+          );
+
+          // Close via apply so the next section starts clean.
+          await tester.ensureVisible(applyButton);
+          await tester.tap(applyButton);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+        }
+        expect(tester.takeException(), isNull);
+      },
+    );
+
     testWidgets(
       'preserves user selections across didChangeDependencies rebuild',
       (tester) async {

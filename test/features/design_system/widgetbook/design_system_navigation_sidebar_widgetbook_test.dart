@@ -86,5 +86,35 @@ void main() {
       expect(iconCenter.dx, moreOrLessEquals(buttonCenter.dx, epsilon: 0.01));
       expect(iconCenter.dy, moreOrLessEquals(buttonCenter.dy, epsilon: 0.01));
     });
+
+    testWidgets(
+      'renders the sidebar overview under the dark theme (Brightness branch)',
+      (tester) async {
+        tester.view
+          ..physicalSize = const Size(1200, 1000)
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        final useCase = buildDesignSystemNavigationSidebarWidgetbookComponent()
+            .useCases
+            .single;
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Builder(builder: useCase.builder),
+            theme: DesignSystemTheme.dark(),
+          ),
+        );
+
+        // The overview reads Theme.of(context).brightness and feeds it into
+        // every sidebar variant — the dark branch must render the same
+        // sections without throwing.
+        expect(find.text('Sidebar Variants'), findsOneWidget);
+        expect(find.text('Daily Filter'), findsOneWidget);
+        expect(find.byType(DesignSystemBrandLogo), findsOneWidget);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

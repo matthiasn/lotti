@@ -24,6 +24,15 @@ void main() {
 
       expect(find.text('Textarea Variants'), findsOneWidget);
       expect(find.byType(DesignSystemTextarea), findsNWidgets(6));
+
+      // Interaction smoke: tapping the first DesignSystemTextarea (interactive or not)
+      // must not throw — covers tap plumbing on the overview page.
+      await tester.tap(
+        find.byType(DesignSystemTextarea).first,
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     });
   });
 }

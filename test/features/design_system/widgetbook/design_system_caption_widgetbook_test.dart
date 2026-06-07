@@ -25,6 +25,15 @@ void main() {
       expect(find.text('Caption Variants'), findsOneWidget);
       // 3 icon positions × 2 action options = 6 captions
       expect(find.byType(DesignSystemCaption), findsNWidgets(6));
+
+      // Interaction smoke: tapping the first DesignSystemCaption (interactive or not)
+      // must not throw — covers tap plumbing on the overview page.
+      await tester.tap(
+        find.byType(DesignSystemCaption).first,
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     });
   });
 }

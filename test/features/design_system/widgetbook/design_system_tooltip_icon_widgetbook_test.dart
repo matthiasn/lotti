@@ -24,6 +24,15 @@ void main() {
 
       expect(find.text('Tooltip Icon'), findsOneWidget);
       expect(find.byType(DesignSystemTooltipIcon), findsNWidgets(3));
+
+      // Interaction smoke: tapping the first DesignSystemTooltipIcon (interactive or not)
+      // must not throw — covers tap plumbing on the overview page.
+      await tester.tap(
+        find.byType(DesignSystemTooltipIcon).first,
+        warnIfMissed: false,
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
     });
   });
 }

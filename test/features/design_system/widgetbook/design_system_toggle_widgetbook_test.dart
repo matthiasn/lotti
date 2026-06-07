@@ -30,6 +30,32 @@ void main() {
       expect(find.text('Disabled'), findsAtLeastNWidgets(1));
       expect(find.byType(DesignSystemToggle), findsNWidgets(38));
 
+      // The overview previews are display-only (no-op onChanged), so a tap
+      // can't flip state; instead verify the toggled SEMANTICS property
+      // mirrors each preview's configured value for on and off samples
+      // (the same pattern the radio-button test uses with `selected`).
+      final onToggle = find.byWidgetPredicate(
+        (w) => w is DesignSystemToggle && w.value,
+      );
+      final offToggle = find.byWidgetPredicate(
+        (w) => w is DesignSystemToggle && !w.value,
+      );
+      expect(onToggle, findsAtLeastNWidgets(1));
+      expect(offToggle, findsAtLeastNWidgets(1));
+
+      Semantics innerSemantics(Finder toggle) => tester.widget<Semantics>(
+        find
+            .descendant(
+              of: toggle.first,
+              matching: find.byWidgetPredicate(
+                (w) => w is Semantics && w.properties.toggled != null,
+              ),
+            )
+            .first,
+      );
+      expect(innerSemantics(onToggle).properties.toggled, isTrue);
+      expect(innerSemantics(offToggle).properties.toggled, isFalse);
+
       await tester.tap(find.byType(DesignSystemToggle).first);
       await tester.pump();
 
