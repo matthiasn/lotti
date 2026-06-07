@@ -9,22 +9,36 @@ import '../../widget_test_utils.dart';
 
 // Plain closures (counters / captured-value lists) replace the former
 // one-off Mock classes — callback assertions don't need mocktail here.
+
+/// Pumps a [DateTimeField] inside the standard testable scaffold. Only the
+/// parts that vary between tests are parameterised; the boilerplate is fixed.
+Future<void> _pumpField(
+  WidgetTester tester, {
+  required DateTime? dateTime,
+  String labelText = 'Select Date',
+  void Function(DateTime)? setDateTime,
+  void Function()? clear,
+  CupertinoDatePickerMode mode = CupertinoDatePickerMode.dateAndTime,
+}) {
+  return tester.pumpWidget(
+    makeTestableWidgetWithScaffold(
+      DateTimeField(
+        dateTime: dateTime,
+        labelText: labelText,
+        setDateTime: setDateTime ?? (_) {},
+        clear: clear,
+        mode: mode,
+      ),
+    ),
+  );
+}
+
 void main() {
   group('DateTimeField Widget Tests', () {
     testWidgets('displays formatted date when dateTime is provided', (
       WidgetTester tester,
     ) async {
-      final testDate = DateTime(2024, 1, 15, 14, 30);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DateTimeField(
-            dateTime: testDate,
-            labelText: 'Select Date',
-            setDateTime: (_) {},
-          ),
-        ),
-      );
+      await _pumpField(tester, dateTime: DateTime(2024, 1, 15, 14, 30));
 
       // Verify the date is displayed in the text field
       expect(find.text('2024-01-15 14:30'), findsOneWidget);
@@ -34,15 +48,7 @@ void main() {
     testWidgets('displays empty field when dateTime is null', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DateTimeField(
-            dateTime: null,
-            labelText: 'Select Date',
-            setDateTime: (_) {},
-          ),
-        ),
-      );
+      await _pumpField(tester, dateTime: null);
 
       // Verify the field is empty
       expect(find.text(''), findsOneWidget);
@@ -53,15 +59,10 @@ void main() {
       WidgetTester tester,
     ) async {
       var clearCount = 0;
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DateTimeField(
-            dateTime: DateTime(2024, 3, 15, 10, 30),
-            labelText: 'Select Date',
-            setDateTime: (_) {},
-            clear: () => clearCount++,
-          ),
-        ),
+      await _pumpField(
+        tester,
+        dateTime: DateTime(2024, 3, 15, 10, 30),
+        clear: () => clearCount++,
       );
 
       // Verify clear button is visible
@@ -77,15 +78,7 @@ void main() {
     testWidgets('opens modal when field is tapped', (
       WidgetTester tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DateTimeField(
-            dateTime: null,
-            labelText: 'Select Date',
-            setDateTime: (_) {},
-          ),
-        ),
-      );
+      await _pumpField(tester, dateTime: null);
 
       // Tap the text field
       await tester.tap(find.byType(TextField));
@@ -99,17 +92,10 @@ void main() {
     testWidgets('displays date only format for date mode', (
       WidgetTester tester,
     ) async {
-      final testDate = DateTime(2024, 1, 15, 14, 30);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DateTimeField(
-            dateTime: testDate,
-            labelText: 'Select Date',
-            setDateTime: (_) {},
-            mode: CupertinoDatePickerMode.date,
-          ),
-        ),
+      await _pumpField(
+        tester,
+        dateTime: DateTime(2024, 1, 15, 14, 30),
+        mode: CupertinoDatePickerMode.date,
       );
 
       // Verify date-only format
@@ -119,17 +105,11 @@ void main() {
     testWidgets('displays time only format for time mode', (
       WidgetTester tester,
     ) async {
-      final testDate = DateTime(2024, 1, 15, 14, 30);
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DateTimeField(
-            dateTime: testDate,
-            labelText: 'Select Time',
-            setDateTime: (_) {},
-            mode: CupertinoDatePickerMode.time,
-          ),
-        ),
+      await _pumpField(
+        tester,
+        dateTime: DateTime(2024, 1, 15, 14, 30),
+        labelText: 'Select Time',
+        mode: CupertinoDatePickerMode.time,
       );
 
       // Verify time-only format
@@ -280,14 +260,10 @@ void main() {
       final initialDate = DateTime(2024, 1, 15, 14, 30);
       final setDates = <DateTime>[];
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DateTimeField(
-            dateTime: initialDate,
-            labelText: 'Select Date',
-            setDateTime: setDates.add,
-          ),
-        ),
+      await _pumpField(
+        tester,
+        dateTime: initialDate,
+        setDateTime: setDates.add,
       );
 
       // Tap field to open modal
@@ -314,15 +290,7 @@ void main() {
     ) async {
       final setDates = <DateTime>[];
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DateTimeField(
-            dateTime: null,
-            labelText: 'Select Date',
-            setDateTime: setDates.add,
-          ),
-        ),
-      );
+      await _pumpField(tester, dateTime: null, setDateTime: setDates.add);
 
       // Tap field to open modal
       await tester.tap(find.byType(TextField));
@@ -356,14 +324,10 @@ void main() {
       final initialDate = DateTime(2024, 1, 15, 14, 30);
       final setDates = <DateTime>[];
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          DateTimeField(
-            dateTime: initialDate,
-            labelText: 'Select Date',
-            setDateTime: setDates.add,
-          ),
-        ),
+      await _pumpField(
+        tester,
+        dateTime: initialDate,
+        setDateTime: setDates.add,
       );
 
       // Tap field to open modal

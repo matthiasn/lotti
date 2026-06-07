@@ -93,7 +93,8 @@
 
 - [x] **[MED]** `test/widgets/selection/selection_modal_base_test.dart` — 610 lines for a 75-line impl (8× ratio). Contains a 48-line `TestSelectionModal` concrete class that reconstructs the modal layout manually instead of using `SelectionModalBase` directly. **RESOLVED:** (assessed, no change) `SelectionModalBase.show` is a static void wrapper around `ModalUtils.showSinglePageModal`, so most behaviors are only reachable through a host widget; the real show path is exercised by the dedicated show test, and the reconstruction keeps the remaining tests modal-free and fast.
 
-- [ ] **[LOW]** `test/widgets/form/lotti_text_field_test.dart` — 740 lines for a 269-line impl; structurally sound but the `readOnly` test (lines 130–153) checks `lottiTextField.readOnly` is true rather than attempting and verifying an edit is rejected.
+- [x] **[LOW]** `test/widgets/form/lotti_text_field_test.dart` — 740 lines for a 269-line impl; structurally sound but the `readOnly` test (lines 130–153) checks `lottiTextField.readOnly` is true rather than attempting and verifying an edit is rejected.
+  **RESOLVED:** done — the readOnly test now asserts the flag reaches the underlying `TextField` AND its `EditableText`, then taps the field and asserts `tester.testTextInput.hasAnyClients` is `false` (a read-only `EditableText` returns early from `_openInputConnection` because `_shouldCreateInputConnection == !readOnly` on the default non-web/non-macOS test platform — verified in editable_text.dart:2599/3941), proving no edit can be applied, with the pre-set text unchanged. Added a contrast test confirming an editable field DOES accept `enterText`. Avoided calling `enterText` on the read-only field (no input connection → would throw).
 
 ---
 
@@ -119,11 +120,14 @@
 
 - [x] **[MED]** `test/widgets/selection/unified_toggle_test.dart` lines 9–265: Five variant tests (`normal`, `warning`, `priority`, `archived`, `cupertino`) each spin up an independent `MaterialApp` + `Scaffold` + assertion. The `normal` / `warning` / `priority` / `archived` variants only differ in the `variant` parameter and the `activeTrackColor` expectation. Replace with a loop or parameterized helper reducing ~120 lines to ~25. **RESOLVED:** the four material variants are now a parameterized loop asserting each variant's active track color; cupertino keeps its own structural test, and the duplicate no-variant test was removed.
 
-- [ ] **[LOW]** `test/widgets/ui/lotti_animated_checkbox_test.dart` lines 271–285: `respects minimum hit target size` finds a widget but contains no size assertion. Add `expect(tester.getSize(find.byType(LottiAnimatedCheckbox)).height, greaterThanOrEqualTo(48))`.
+- [x] **[LOW]** `test/widgets/ui/lotti_animated_checkbox_test.dart` lines 271–285: `respects minimum hit target size` finds a widget but contains no size assertion. Add `expect(tester.getSize(find.byType(LottiAnimatedCheckbox)).height, greaterThanOrEqualTo(48))`.
+  **RESOLVED:** (already done; suggested constant adjusted) the test now asserts `renderBox.size.height >= 40` on the `InkWell`. The suggested `>= 48` would be wrong: the widget's content is a 20px checkbox inside a Container with `vertical: 10` padding (~40px total), so 48 would fail. 40 is the true minimum hit target.
 
-- [ ] **[LOW]** `test/widgets/misc/desktop_menu_test.dart` lines 9–31: `stores zoom callbacks` and `zoom callbacks default to null` instantiate `DesktopMenuWrapper` and check property existence without invoking the widget in a widget tree. These are constructor property tests with near-zero value.
+- [x] **[LOW]** `test/widgets/misc/desktop_menu_test.dart` lines 9–31: `stores zoom callbacks` and `zoom callbacks default to null` instantiate `DesktopMenuWrapper` and check property existence without invoking the widget in a widget tree. These are constructor property tests with near-zero value.
+  **RESOLVED:** done — deleted the pure `zoom callbacks default to null` `isNull` smoke test (the default-construction path is already exercised by the two `build` tests) and removed the redundant `isNotNull` checks from the other. The remaining callback test now invokes each closure and asserts distinct, independent side-effect counters `(1,0,0)→(1,1,0)→(1,1,1)`, proving the wrapper forwards the exact callbacks wired into the View-menu items. (PlatformMenuBar items dispatch to the platform channel and aren't tappable in tests, so closure invocation is the strongest reachable assertion.)
 
-- [ ] **[LOW]** `test/widgets/search/lotti_search_bar_test.dart` lines 248–260: `handles empty hint text` asserts `findsAtLeastNWidgets(1)` on empty-string `Text` — always trivially true. Either remove this test or assert the hint is absent when no hint is configured.
+- [x] **[LOW]** `test/widgets/search/lotti_search_bar_test.dart` lines 248–260: `handles empty hint text` asserts `findsAtLeastNWidgets(1)` on empty-string `Text` — always trivially true. Either remove this test or assert the hint is absent when no hint is configured.
+  **RESOLVED:** done — replaced the trivial `findsAtLeastNWidgets(1)` with `expect(field.decoration?.hintText, '')` (reading the actual `TextField` `InputDecoration`), proving the empty hint is forwarded rather than falling back to the default. Added a companion test asserting the unconfigured default is `'Search...'`.
 
 ---
 
@@ -133,7 +137,8 @@
 
 - [x] **[MED]** `lib/widgets/search/entry_type_filter.dart`: The `_shouldShowChip` predicate (feature-flag filtering) is a pure boolean function of `(ConfigFlag set, String entryType)`. A Glados property over arbitrary flag-status combinations would replace 14 current example tests with a single exhaustive property. **RESOLVED:** (assessed, no change) the predicate was already extracted as the pure `computeAllowedEntryTypes` and `test/features/journal/utils/entry_type_gating_test.dart` covers it with exhaustive flag combinations — stronger than a sampled property.
 
-- [ ] **[LOW]** `lib/widgets/selection/unified_toggle.dart` (`_colorForVariant` helper): The mapping `UnifiedToggleVariant → Color` is a pure function with a finite domain. While not strictly generative, a `for`-loop table test over all enum values would replace 5 copy-paste tests with fewer lines and auto-cover new variants.
+- [x] **[LOW]** `lib/widgets/selection/unified_toggle.dart` (`_colorForVariant` helper): The mapping `UnifiedToggleVariant → Color` is a pure function with a finite domain. While not strictly generative, a `for`-loop table test over all enum values would replace 5 copy-paste tests with fewer lines and auto-cover new variants.
+  **RESOLVED:** (already done) `unified_toggle_test.dart` lines 11–47 iterate a `(variant, colorOf)` table over the four material variants, asserting each resolves its active track color (`primary`/`error`/`starredGold`/`outline`) from the live `BuildContext`; cupertino is covered separately because it renders `CupertinoSwitch` instead of `Switch`. (The actual helper is the BuildContext-dependent instance method `_getActiveColor`, not a context-free `_colorForVariant`, so a BuildContext-backed widget table is the correct form.)
 
 ---
 
@@ -153,9 +158,11 @@
 
 - [x] **[MED]** `test/widgets/modal/modal_utils_test.dart` — `modalTypeBuilder` tests (lines 21–77) only verify `isA<WoltModalType>()` regardless of screen width. The comment `// WoltModalType doesn't expose its type directly` is correct, but the wide-vs-narrow distinction is the whole point of the function. Consider comparing `runtimeType` or the actual sheet behavior to distinguish `bottomSheet` vs `dialog` variants. **RESOLVED:** the three tests now compare against `WoltModalType.bottomSheet()/dialog()` runtimeTypes, distinguishing the breakpoint behavior.
 
-- [ ] **[LOW]** `test/widgets/selection/selection_modal_base_test.dart` — `SelectionModalBase.show` is tested by opening the modal once (line 124), but there is no test that the modal actually **closes** (dismiss on barrier tap, or via pop). The `TestSelectionModal` class also bypasses `SelectionModalBase.show` for most tests, meaning the real modal opening path is barely exercised.
+- [x] **[LOW]** `test/widgets/selection/selection_modal_base_test.dart` — `SelectionModalBase.show` is tested by opening the modal once (line 124), but there is no test that the modal actually **closes** (dismiss on barrier tap, or via pop). The `TestSelectionModal` class also bypasses `SelectionModalBase.show` for most tests, meaning the real modal opening path is barely exercised.
+  **RESOLVED:** done — added a `modal dismisses on barrier tap` test driving the real `SelectionModalBase.show` path: it opens the modal, asserts the child renders, then taps the scrim at `(10, 10)` and asserts the child is gone. Mirrors the proven `modal_utils_test.dart` barrier-dismiss pattern; verified `showSinglePageModal` sets `barrierDismissible: true` (modal_utils.dart:196). (The remaining `TestSelectionModal`-based tests are content/layout tests; per the part-1 resolution of the file-size item, the static `show` wrapper's open/close path is the only behavior reachable through a host widget and is now covered by both the open and the close tests.)
 
-- [ ] **[LOW]** `test/widgets/misc/sidebar_audio_recording_section_test.dart` line 329: one test registers `JournalDb` via `getIt.registerSingleton` without cleanup (no paired unregister or tearDown). This is a potential in-suite contamination risk.
+- [x] **[LOW]** `test/widgets/misc/sidebar_audio_recording_section_test.dart` line 329: one test registers `JournalDb` via `getIt.registerSingleton` without cleanup (no paired unregister or tearDown). This is a potential in-suite contamination risk.
+  **RESOLVED:** done — migrated the `linked entry provider + modal tap` group off the inline `getIt.reset()`/`registerSingleton<JournalDb>` boilerplate onto `setUpTestGetIt()` (using the harness-provided `mocks.journalDb`) + `tearDownTestGetIt`, per the centralized-GetIt convention. (The group already had a paired `tearDown` reset, but the harness is the sanctioned pattern and guarantees full cleanup.) Removed the now-unused `get_it.dart` and `database/database.dart` imports. The specific `journalEntityById('entry-db'/'entry-tap')` stubs override the harness's catch-all `journalEntityById(any()) → null`.
 
 ---
 
@@ -175,9 +182,11 @@
 
 - [x] **[MED]** `test/widgets/ui/lotti_animated_checkbox_test.dart` — 5 `pumpAndSettle` calls. The checkbox animation (lines 217–256) legitimately needs to settle. But the 4 calls on non-animated state checks (show checked, show unchecked, call onChanged, disabled) could be `tester.pump()`. **RESOLVED:** all five settles are now bounded `pump()` + `pump(200ms)` pairs covering the 180ms check animation.
 
-- [ ] **[LOW]** `test/widgets/modal/animated_modal_item_test.dart` — 6 `pumpAndSettle` calls. The hover/tap animation tests legitimately `pumpAndSettle` to await animation completion. The `applies correct container styling` test (line 228) has no animation and could use `tester.pump()`.
+- [x] **[LOW]** `test/widgets/modal/animated_modal_item_test.dart` — 6 `pumpAndSettle` calls. The hover/tap animation tests legitimately `pumpAndSettle` to await animation completion. The `applies correct container styling` test (line 228) has no animation and could use `tester.pump()`.
+  **RESOLVED:** (no change) the `applies correct container styling` test (lines 228–257) already contains zero `pumpAndSettle` — it only pumps the widget once and reads the `Container.margin`. All 6 `pumpAndSettle` calls (133, 181, 223, 308, 384, 411) sit in the hover/tap/dispose tests that assert `controller.value == 0.0` after the animation settles, which genuinely requires waiting for completion — exactly the legitimate use the item acknowledges.
 
-- [ ] **[LOW]** `test/widgets/selection/unified_toggle_test.dart` — 3 `pumpAndSettle` calls. Switch tap triggers a brief ripple animation; these are borderline appropriate. Verify with `tester.pump(Duration(milliseconds: 150))` for determinism.
+- [x] **[LOW]** `test/widgets/selection/unified_toggle_test.dart` — 3 `pumpAndSettle` calls. Switch tap triggers a brief ripple animation; these are borderline appropriate. Verify with `tester.pump(Duration(milliseconds: 150))` for determinism.
+  **RESOLVED:** (already done) the file no longer contains any `pumpAndSettle`; all three switch-tap sites (lines 131, 261, 479) already use the suggested bounded `tester.pump(const Duration(milliseconds: 150))`.
 
 ---
 

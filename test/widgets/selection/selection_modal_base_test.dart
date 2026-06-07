@@ -151,6 +151,41 @@ void main() {
         // Verify modal content is shown
         expect(find.text('Test Child'), findsOneWidget);
       });
+
+      testWidgets('modal dismisses on barrier tap', (tester) async {
+        await tester.pumpWidget(
+          WidgetTestBench(
+            child: Builder(
+              builder: (context) {
+                return ElevatedButton(
+                  onPressed: () {
+                    SelectionModalBase.show(
+                      context: context,
+                      title: 'Test Title',
+                      child: const Text('Dismissible Child'),
+                    );
+                  },
+                  child: const Text('Open Modal'),
+                );
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.text('Open Modal'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(find.text('Dismissible Child'), findsOneWidget);
+
+        // Tapping the scrim outside the sheet dismisses the modal (the
+        // SelectionModalBase.show path is barrierDismissible by default).
+        await tester.tapAt(const Offset(10, 10));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
+
+        expect(find.text('Dismissible Child'), findsNothing);
+      });
     });
 
     group('Child Content', () {
