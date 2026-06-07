@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
+import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
@@ -23,7 +24,8 @@ final _thinkBlockPattern = RegExp(
   caseSensitive: false,
 );
 
-String? _stripThinkBlocks(String? content) {
+@visibleForTesting
+String? stripThinkBlocks(String? content) {
   if (content == null) return null;
   final stripped = content.replaceAll(_thinkBlockPattern, '').trim();
   return stripped.isEmpty ? null : stripped;
@@ -69,6 +71,125 @@ class ConversationRepository extends _$ConversationRepository {
     _conversations[conversationId] = manager;
 
     return conversationId;
+  }
+
+  /// True when a streamed delta looks like Gemini's style of sending
+  /// multiple *complete* tool calls in a single chunk: more than one entry,
+  /// all with empty/absent ids, null indices, and non-empty arguments.
+  @visibleForTesting
+  static bool isGeminiStyleToolCallDelta(
+    List<ChatCompletionStreamMessageToolCallChunk> chunks,
+  ) {
+    return chunks.length > 1 &&
+        chunks.every(
+          (tc) =>
+              (tc.id == null || tc.id!.isEmpty) &&
+              tc.index == null &&
+              tc.function?.arguments != null &&
+              tc.function!.arguments!.isNotEmpty,
+        );
+  }
+
+  /// Appends Gemini's complete-in-one-chunk tool calls to [toolCalls],
+  /// synthesizing ids unique across conversation turns
+  /// (`tool_turn<turn>_<n>`).
+  @visibleForTesting
+  static void appendGeminiToolCalls({
+    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<ChatCompletionStreamMessageToolCallChunk> chunks,
+    required int turn,
+  }) {
+    for (final toolCallChunk in chunks) {
+      if (toolCallChunk.function != null) {
+        final toolCallId = 'tool_turn${turn}_${toolCalls.length}';
+        toolCalls.add(
+          ChatCompletionMessageToolCall(
+            id: toolCallId,
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: toolCallChunk.function!.name ?? '',
+              arguments: toolCallChunk.function!.arguments ?? '',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  /// Standard OpenAI-style streaming accumulation: tool-call argument
+  /// fragments are stitched per tool call (matched by id first, then by
+  /// chunk index) via [argumentBuffers] so JSON split across chunks — even
+  /// mid-character — reassembles intact.
+  @visibleForTesting
+  static void accumulateOpenAiToolCallChunks({
+    required List<ChatCompletionMessageToolCall> toolCalls,
+    required Map<String, StringBuffer> argumentBuffers,
+    required List<ChatCompletionStreamMessageToolCallChunk> chunks,
+  }) {
+    for (final toolCallChunk in chunks) {
+      // Find existing tool call by ID or index
+      var existingIndex = -1;
+
+      // First try to find by ID if available
+      if (toolCallChunk.id != null && toolCallChunk.id!.isNotEmpty) {
+        existingIndex = toolCalls.indexWhere(
+          (tc) => tc.id == toolCallChunk.id,
+        );
+      }
+
+      // If not found by ID and we have an index, use the index
+      if (existingIndex < 0 && toolCallChunk.index != null) {
+        final chunkIndex = toolCallChunk.index!;
+        if (chunkIndex < toolCalls.length) {
+          existingIndex = chunkIndex;
+        }
+      }
+
+      if (existingIndex >= 0) {
+        // Append to existing tool call's argument buffer
+        final existing = toolCalls[existingIndex];
+        final toolCallKey = existing.id;
+
+        // Get or create buffer for this tool call
+        final buffer =
+            argumentBuffers[toolCallKey] ??
+            StringBuffer(existing.function.arguments);
+        argumentBuffers[toolCallKey] = buffer;
+
+        // Append new chunk to buffer
+        buffer.write(toolCallChunk.function?.arguments ?? '');
+
+        // Update the tool call with buffered arguments
+        toolCalls[existingIndex] = ChatCompletionMessageToolCall(
+          id: existing.id,
+          type: existing.type,
+          function: ChatCompletionMessageFunctionCall(
+            name: existing.function.name,
+            arguments: buffer.toString(),
+          ),
+        );
+      } else if (toolCallChunk.function != null) {
+        // Add new tool call
+        final toolCallId =
+            toolCallChunk.id ??
+            'tool_${toolCallChunk.index ?? toolCalls.length}';
+
+        // Initialize buffer for new tool call
+        final initialArgs = toolCallChunk.function!.arguments ?? '';
+        argumentBuffers[toolCallId] = StringBuffer(initialArgs);
+
+        toolCalls.add(
+          ChatCompletionMessageToolCall(
+            id: toolCallId,
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: toolCallChunk.function!.name ?? '',
+              arguments: initialArgs,
+            ),
+          ),
+        );
+      }
+    }
   }
 
   /// Get a conversation manager
@@ -171,13 +292,6 @@ class ConversationRepository extends _$ConversationRepository {
           if (response.choices?.isNotEmpty ?? false) {
             final delta = response.choices!.first.delta;
 
-            // DEBUG: Print full response chunk
-            if (delta?.toolCalls != null) {
-              for (var i = 0; i < delta!.toolCalls!.length; i++) {
-                // Tool call processing handled below
-              }
-            }
-
             // Collect content
             if (delta?.content != null) {
               contentBuffer.write(delta!.content);
@@ -185,107 +299,19 @@ class ConversationRepository extends _$ConversationRepository {
 
             // Collect tool calls
             if (delta?.toolCalls != null) {
-              // Special handling for Gemini which sends multiple complete tool calls in one chunk
-              // with empty IDs and null indices
-              final isGeminiStyle =
-                  delta!.toolCalls!.length > 1 &&
-                  delta.toolCalls!.every(
-                    (tc) =>
-                        (tc.id == null || tc.id!.isEmpty) &&
-                        tc.index == null &&
-                        tc.function?.arguments != null &&
-                        tc.function!.arguments!.isNotEmpty,
-                  );
-
-              if (isGeminiStyle) {
-                // Handle Gemini's multiple complete tool calls in one chunk
-                // Use turn-prefixed ID for uniqueness across conversation turns
-                final turn = manager.turnCount;
-                for (var i = 0; i < delta.toolCalls!.length; i++) {
-                  final toolCallChunk = delta.toolCalls![i];
-                  if (toolCallChunk.function != null) {
-                    final toolCallId = 'tool_turn${turn}_${toolCalls.length}';
-                    toolCalls.add(
-                      ChatCompletionMessageToolCall(
-                        id: toolCallId,
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: toolCallChunk.function!.name ?? '',
-                          arguments: toolCallChunk.function!.arguments ?? '',
-                        ),
-                      ),
-                    );
-                  }
-                }
+              final chunks = delta!.toolCalls!;
+              if (isGeminiStyleToolCallDelta(chunks)) {
+                appendGeminiToolCalls(
+                  toolCalls: toolCalls,
+                  chunks: chunks,
+                  turn: manager.turnCount,
+                );
               } else {
-                // Standard OpenAI-style streaming accumulation
-                for (final toolCallChunk in delta.toolCalls!) {
-                  // Find existing tool call by ID or index
-                  var existingIndex = -1;
-
-                  // First try to find by ID if available
-                  if (toolCallChunk.id != null &&
-                      toolCallChunk.id!.isNotEmpty) {
-                    existingIndex = toolCalls.indexWhere(
-                      (tc) => tc.id == toolCallChunk.id,
-                    );
-                  }
-
-                  // If not found by ID and we have an index, use the index
-                  if (existingIndex < 0 && toolCallChunk.index != null) {
-                    final chunkIndex = toolCallChunk.index!;
-                    if (chunkIndex < toolCalls.length) {
-                      existingIndex = chunkIndex;
-                    }
-                  }
-
-                  if (existingIndex >= 0) {
-                    // Append to existing tool call's argument buffer
-                    final existing = toolCalls[existingIndex];
-                    final toolCallKey = existing.id;
-
-                    // Get or create buffer for this tool call
-                    final buffer =
-                        toolCallArgumentBuffers[toolCallKey] ??
-                        StringBuffer(existing.function.arguments);
-                    toolCallArgumentBuffers[toolCallKey] = buffer;
-
-                    // Append new chunk to buffer
-                    buffer.write(toolCallChunk.function?.arguments ?? '');
-
-                    // Update the tool call with buffered arguments
-                    toolCalls[existingIndex] = ChatCompletionMessageToolCall(
-                      id: existing.id,
-                      type: existing.type,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: existing.function.name,
-                        arguments: buffer.toString(),
-                      ),
-                    );
-                  } else if (toolCallChunk.function != null) {
-                    // Add new tool call
-                    final toolCallId =
-                        toolCallChunk.id ??
-                        'tool_${toolCallChunk.index ?? toolCalls.length}';
-
-                    // Initialize buffer for new tool call
-                    final initialArgs = toolCallChunk.function!.arguments ?? '';
-                    toolCallArgumentBuffers[toolCallId] = StringBuffer(
-                      initialArgs,
-                    );
-
-                    toolCalls.add(
-                      ChatCompletionMessageToolCall(
-                        id: toolCallId,
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: toolCallChunk.function!.name ?? '',
-                          arguments: initialArgs,
-                        ),
-                      ),
-                    );
-                  }
-                }
+                accumulateOpenAiToolCallChunks(
+                  toolCalls: toolCalls,
+                  argumentBuffers: toolCallArgumentBuffers,
+                  chunks: chunks,
+                );
               }
             }
           }
@@ -304,7 +330,7 @@ class ConversationRepository extends _$ConversationRepository {
         // `getMessagesForRequest()`, and we must not echo past reasoning
         // back to the model.
         final rawContent = contentBuffer.toString();
-        final persistedContent = _stripThinkBlocks(rawContent);
+        final persistedContent = stripThinkBlocks(rawContent);
 
         developer.log(
           'Stream completed: collected ${toolCalls.length} tool calls, '
