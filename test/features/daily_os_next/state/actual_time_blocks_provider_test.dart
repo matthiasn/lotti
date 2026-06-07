@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -286,6 +287,144 @@ void main() {
 
       expect(blocks, isEmpty);
     });
+  });
+
+  group('debugProjectCategory (pure color/category normalizer)', () {
+    glados.Glados2(
+      glados.AnyUtils(glados.any).choose(const [null, '', 'cat-1']),
+      glados.AnyUtils(glados.any).choose(const [
+        '5ED4B7',
+        '#5ED4B7',
+        '#AABBCCDD',
+        'AABBCCDD',
+        '#ABC',
+        'ABC',
+        '',
+        '#',
+      ]),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('always yields a 6-char colorHex without a # prefix', (
+      categoryId,
+      rawColor,
+    ) {
+      final result = debugProjectCategory(
+        categoryId,
+        (id) => _category(id: id, name: 'Named', color: rawColor),
+      );
+      final reason = 'categoryId=$categoryId rawColor="$rawColor"';
+
+      expect(result.colorHex.length, 6, reason: reason);
+      expect(result.colorHex.contains('#'), isFalse, reason: reason);
+
+      if (categoryId == null || categoryId.isEmpty) {
+        // Fallback category, untouched by the raw color.
+        expect(result, debugFallbackActualCategory, reason: reason);
+      } else {
+        expect(result.id, categoryId, reason: reason);
+        expect(result.name, 'Named', reason: reason);
+        final stripped = rawColor.replaceFirst('#', '');
+        expect(
+          result.colorHex,
+          stripped.length >= 6
+              ? stripped.substring(0, 6)
+              : debugFallbackActualCategory.colorHex,
+          reason: reason,
+        );
+      }
+    }, tags: 'glados');
+  });
+
+  group('debugResolveLinkedFrom (pure linked-from picker)', () {
+    final day = DateTime(2026, 5, 27);
+
+    glados.Glados(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        0,
+        5,
+        glados.AnyUtils(
+          glados.any,
+        ).choose(const ['task', 'entry', 'rating', 'deleted-task', 'missing']),
+      ),
+      glados.ExploreConfig(numRuns: 140),
+    ).test(
+      'prefers tasks, excludes ratings and tombstones, falls back to the '
+      'first surviving non-task',
+      (kinds) {
+        final pool = <String, JournalEntity>{
+          'task': _task(
+            id: 'task',
+            title: 'A task',
+            categoryId: 'cat',
+            day: day,
+          ),
+          'entry': _entry(id: 'entry', day: day, startHour: 9, endHour: 10),
+          'rating': JournalEntity.rating(
+            meta: Metadata(
+              id: 'rating',
+              createdAt: day,
+              updatedAt: day,
+              dateFrom: day,
+              dateTo: day,
+            ),
+            data: const RatingData(targetId: 'entry', dimensions: []),
+          ),
+          'deleted-task': JournalEntity.task(
+            meta: Metadata(
+              id: 'deleted-task',
+              createdAt: day,
+              updatedAt: day,
+              dateFrom: day,
+              dateTo: day,
+              deletedAt: day,
+            ),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'dt-status',
+                createdAt: day,
+                utcOffset: 0,
+              ),
+              dateFrom: day,
+              dateTo: day,
+              statusHistory: const [],
+              title: 'Deleted',
+            ),
+          ),
+        };
+        // Insertion-ordered set mirrors the production LinkedHashSet input.
+        final ids = <String>{...kinds};
+
+        final result = debugResolveLinkedFrom(
+          linkedFromIds: ids,
+          linkedFromById: pool,
+        );
+        final reason = 'kinds=$kinds';
+
+        // Oracle: first surviving Task wins; else first non-rating
+        // survivor; tombstones and ratings never surface.
+        JournalEntity? expected;
+        for (final id in ids) {
+          final entity = pool[id];
+          if (entity == null || entity.meta.deletedAt != null) continue;
+          if (entity is Task) {
+            expected = entity;
+            break;
+          }
+          if (entity is RatingEntry) continue;
+          expected ??= entity;
+        }
+
+        expect(result?.meta.id, expected?.meta.id, reason: reason);
+        expect(result is RatingEntry, isFalse, reason: reason);
+        expect(result?.meta.deletedAt, isNull, reason: reason);
+
+        // Null ids short-circuit to null.
+        expect(
+          debugResolveLinkedFrom(linkedFromIds: null, linkedFromById: pool),
+          isNull,
+        );
+      },
+      tags: 'glados',
+    );
   });
 
   group('actualTimelineUpdateBatches', () {

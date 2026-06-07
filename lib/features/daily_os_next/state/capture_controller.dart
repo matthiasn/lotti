@@ -355,6 +355,13 @@ class CaptureController extends Notifier<CaptureState> {
     }
   }
 
+  /// Test-only seam for the realtime finish path: the
+  /// `noActiveRealtimeSession` guard below is defensive (the public state
+  /// machine always sets the session fields before reaching it), so tests
+  /// invoke the method directly to pin the guard's behavior.
+  @visibleForTesting
+  Future<void> debugFinishListeningRealtime() => _finishListeningRealtime();
+
   Future<void> _finishListeningRealtime() async {
     final recorder = _realtimeRecorder;
     final outputBase = _realtimeOutputBasePath;
