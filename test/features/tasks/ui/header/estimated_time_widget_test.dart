@@ -72,6 +72,52 @@ void main() {
     },
   );
 
+  testWidgets(
+    'zero initial estimate: picker opens at zero and Done without a change '
+    'does not invoke the callback',
+    (tester) async {
+      var callbackCalled = false;
+
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: Builder(
+            builder: (context) {
+              return Scaffold(
+                body: Center(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      showEstimatePicker(
+                        context: context,
+                        initialDuration: Duration.zero,
+                        onEstimateChanged: (newDuration) async {
+                          callbackCalled = true;
+                        },
+                      );
+                    },
+                    child: const Text('open'),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+
+      final picker = tester.widget<CupertinoTimerPicker>(
+        find.byType(CupertinoTimerPicker),
+      );
+      expect(picker.initialTimerDuration, Duration.zero);
+
+      await tester.tap(find.text('Done'));
+      await tester.pumpAndSettle();
+
+      expect(callbackCalled, isFalse);
+    },
+  );
+
   testWidgets('showEstimatePicker calls callback when duration changes', (
     tester,
   ) async {
