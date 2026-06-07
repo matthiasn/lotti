@@ -906,6 +906,91 @@ void main() {
         expect(ready, greaterThan(0));
       },
     );
+
+    test(
+      'retrying row with nextDueAt > leaseUntil surfaces the backoff '
+      'deadline, not the released lease',
+      () async {
+        final frozen = DateTime.fromMillisecondsSinceEpoch(100000);
+        await withClock(Clock.fixed(frozen), () async {
+          await queue.enqueueLive(
+            _buildSyncEvent(eventId: r'$retry', roomId: roomA, originTsMs: 1),
+          );
+          final entry = (await queue.peekBatchReady()).single;
+          await queue.scheduleRetry(
+            entry,
+            const Duration(seconds: 30),
+            reason: RetryReason.retriable,
+          );
+
+          // scheduleRetry releases the lease (leaseUntil=0) and pushes
+          // nextDueAt into the future - MAX(nextDueAt, leaseUntil) must
+          // surface the backoff deadline, not zero and not the lease.
+          expect(
+            await queue.earliestReadyAt(),
+            frozen.millisecondsSinceEpoch + 30000,
+          );
+        });
+      },
+    );
+  });
+
+  group('stats() five-bucket pivot', () {
+    test(
+      'one row in each status bucket is counted individually in the same '
+      'snapshot',
+      () async {
+        final frozen = DateTime.fromMillisecondsSinceEpoch(100000);
+        await withClock(Clock.fixed(frozen), () async {
+          Future<InboundQueueEntry> enqueueAndLease(String eventId) async {
+            await queue.enqueueLive(
+              _buildSyncEvent(eventId: eventId, roomId: roomA, originTsMs: 1),
+            );
+            return (await queue.peekBatchReady()).single;
+          }
+
+          // applied
+          await queue.commitApplied(await enqueueAndLease(r'$applied'));
+          // retrying (future backoff -> not ready)
+          await queue.scheduleRetry(
+            await enqueueAndLease(r'$retrying'),
+            const Duration(seconds: 30),
+            reason: RetryReason.retriable,
+          );
+          // abandoned
+          await queue.markSkipped(
+            await enqueueAndLease(r'$abandoned'),
+            reason: 'poison',
+          );
+          // leased (lease until frozen+1s, clock is frozen -> stays leased)
+          await enqueueAndLease(r'$leased');
+          // enqueued (never peeked)
+          await queue.enqueueLive(
+            _buildSyncEvent(
+              eventId: r'$enqueued',
+              roomId: roomA,
+              originTsMs: 1,
+            ),
+          );
+
+          final stats = await queue.stats();
+
+          // Active depth: enqueued + leased + retrying.
+          expect(stats.total, 3);
+          expect(stats.byProducer[InboundEventProducer.live], 3);
+          // Ledger buckets, each exactly one.
+          expect(stats.applied, 1);
+          expect(stats.abandoned, 1);
+          expect(stats.retrying, 1);
+          // Only the never-peeked row is ready right now: the leased row
+          // holds a live lease and the retrying row's backoff is in the
+          // future.
+          expect(stats.readyNow, 1);
+          // All rows were enqueued under the frozen clock.
+          expect(stats.oldestEnqueuedAt, frozen.millisecondsSinceEpoch);
+        });
+      },
+    );
   });
 
   group('marker-clamp planner alignment', () {

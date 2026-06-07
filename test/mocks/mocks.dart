@@ -117,6 +117,7 @@ import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/queue/bridge_coordinator.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
@@ -954,6 +955,16 @@ class MockSyncSequenceLogService extends Mock
     implements SyncSequenceLogService {}
 
 class MockInboundQueue extends Mock implements InboundQueue {}
+
+class MockBridgeCoordinator extends Mock implements BridgeCoordinator {}
+
+class MockPreparedSyncEvent extends Mock implements PreparedSyncEvent {}
+
+/// Unlike [MockSyncEventProcessor] — whose `prepare`/`apply` are concrete
+/// no-op overrides and therefore NOT interceptable by `when(...)` — this is a
+/// plain mock for tests that need to stub the prepare/apply split.
+class MockStubbableSyncEventProcessor extends Mock
+    implements SyncEventProcessor {}
 
 class MockQueuePipelineCoordinator extends Mock
     implements QueuePipelineCoordinator {}

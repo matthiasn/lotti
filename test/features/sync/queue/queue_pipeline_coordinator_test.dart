@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Value;
@@ -7,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_ingestor.dart';
 import 'package:lotti/features/sync/matrix/pipeline/catch_up_strategy.dart';
@@ -19,6 +21,7 @@ import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/features/sync/queue/queue_marker_seeder.dart';
 import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
@@ -547,8 +550,27 @@ class _GladosBench {
     ).thenAnswer((_) async {});
   }
 
-  final syncDb = SyncDatabase(inMemoryDatabase: true);
-  final journalDb = JournalDb(inMemoryDatabase: true);
+  /// Shared placeholder databases for the coordinator's required
+  /// constructor args. The Glados properties mock the queue/worker/pen,
+  /// so these are never written - sharing one pair across every generated
+  /// run avoids ~5-10ms of Drift in-memory setup per run. Closed once via
+  /// [closeSharedDbs] in the file's tearDownAll.
+  static SyncDatabase? _sharedSyncDb;
+  static JournalDb? _sharedJournalDb;
+
+  static Future<void> closeSharedDbs() async {
+    await _sharedSyncDb?.close();
+    _sharedSyncDb = null;
+    await _sharedJournalDb?.close();
+    _sharedJournalDb = null;
+  }
+
+  final SyncDatabase syncDb = _sharedSyncDb ??= SyncDatabase(
+    inMemoryDatabase: true,
+  );
+  final JournalDb journalDb = _sharedJournalDb ??= JournalDb(
+    inMemoryDatabase: true,
+  );
   final settingsDb = MockSettingsDb();
   final sessionManager = _MockSessionManager();
   final roomManager = _MockRoomManager();
@@ -597,8 +619,80 @@ class _GladosBench {
   Future<void> dispose() async {
     await timelineCtl.close();
     await syncCtl.close();
-    await syncDb.close();
-    await journalDb.close();
+    // The shared databases stay open across runs; see [closeSharedDbs].
+  }
+}
+
+/// Builds a fully stubbed live sync event for the pipeline-integration group.
+Event _buildLiveSyncEvent({
+  required String eventId,
+  required String roomId,
+  required int originTsMs,
+}) {
+  final event = MockEvent();
+  final content = <String, dynamic>{'msgtype': syncMessageType};
+  when(() => event.eventId).thenReturn(eventId);
+  when(() => event.roomId).thenReturn(roomId);
+  when(() => event.type).thenReturn(EventTypes.Message);
+  // Integration tests inject events via the coordinator's live timeline;
+  // `_handleLiveEvent` drops non-`synced` emissions as SDK fake-sync
+  // artefacts.
+  when(() => event.status).thenReturn(EventStatus.synced);
+  when(() => event.content).thenReturn(content);
+  when(() => event.text).thenReturn('stub');
+  when(
+    () => event.originServerTs,
+  ).thenReturn(DateTime.fromMillisecondsSinceEpoch(originTsMs));
+  when(event.toJson).thenReturn(<String, dynamic>{
+    'event_id': eventId,
+    'room_id': roomId,
+    'origin_server_ts': originTsMs,
+    'type': EventTypes.Message,
+    'sender': '@tester:example.org',
+    'content': content,
+  });
+  return event;
+}
+
+/// Completes when [matches] holds for the queue's stats, re-checking on every
+/// depth change. Hard 5s timeout so a stalled `depthChanges` fails fast
+/// instead of hanging the suite.
+Future<void> _waitForQueueStats(
+  InboundQueue queue,
+  bool Function(QueueStats stats) matches,
+) async {
+  final completer = Completer<void>();
+
+  Future<void> check() async {
+    if (completer.isCompleted) return;
+    final stats = await queue.stats();
+    if (matches(stats) && !completer.isCompleted) {
+      completer.complete();
+    }
+  }
+
+  final sub = queue.depthChanges.listen((_) async {
+    try {
+      await check();
+    } catch (error, stack) {
+      if (!completer.isCompleted) {
+        completer.completeError(error, stack);
+      }
+    }
+  });
+  try {
+    await check();
+    // Fail-fast guard, not a wait: this fires only if depthChanges stops
+    // emitting (a regression in _emitDepth) — without it the integration
+    // tests would hang until the CI job timeout instead of failing here.
+    await completer.future.timeout(
+      const Duration(seconds: 5),
+      onTimeout: () => throw TimeoutException(
+        'queue stats never matched within 5s - depthChanges stalled?',
+      ),
+    );
+  } finally {
+    await sub.cancel();
   }
 }
 
@@ -625,6 +719,8 @@ void main() {
     registerFallbackValue(StackTrace.empty);
     registerFallbackValue(MockEvent());
   });
+
+  tearDownAll(_GladosBench.closeSharedDbs);
 
   setUp(() {
     syncDb = SyncDatabase(inMemoryDatabase: true);
@@ -733,7 +829,7 @@ void main() {
 
     when(() => pen.hold(any())).thenReturn(true);
     timelineCtl.add(buildEvent(EventTypes.Encrypted));
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
 
     verifyNever(() => queue.enqueueLive(any()));
     verify(() => pen.hold(any())).called(1);
@@ -745,7 +841,7 @@ void main() {
     await coordinator.start();
 
     timelineCtl.add(buildEvent(EventTypes.Message));
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
 
     verify(() => pen.hold(any())).called(1);
     verify(() => queue.enqueueLive(any())).called(1);
@@ -763,7 +859,7 @@ void main() {
       when(() => foreign.roomId).thenReturn('!someOtherRoom:example.org');
       when(() => foreign.type).thenReturn(EventTypes.Message);
       timelineCtl.add(foreign);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       verifyNever(() => pen.hold(any()));
       verifyNever(() => queue.enqueueLive(any()));
@@ -1138,8 +1234,7 @@ void main() {
 
     syncCtl.add(SyncUpdate(nextBatch: 'x'));
     // Allow the async listener to fire and the follow-up postLoad future.
-    await Future<void>.delayed(Duration.zero);
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
 
     verify(room.postLoad).called(1);
     await coordinator.stop();
@@ -1157,7 +1252,7 @@ void main() {
       await coordinator.start();
 
       syncCtl.add(SyncUpdate(nextBatch: 'x'));
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       verifyNever(room.postLoad);
       await coordinator.stop();
@@ -1172,8 +1267,7 @@ void main() {
     await coordinator.start();
 
     timelineCtl.add(buildEvent(EventTypes.Message));
-    await Future<void>.delayed(Duration.zero);
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
 
     verify(
       () => logging.error(
@@ -1359,8 +1453,7 @@ void main() {
     await coordinator.start();
 
     syncCtl.add(SyncUpdate(nextBatch: 'x'));
-    await Future<void>.delayed(Duration.zero);
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
 
     verify(
       () => logging.error(
@@ -1378,7 +1471,7 @@ void main() {
     await coordinator.start();
 
     syncCtl.addError(StateError('sync broke'), StackTrace.current);
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
 
     verify(
       () => logging.error(
@@ -1439,13 +1532,12 @@ void main() {
       timelineCtl.add(buildEvent(EventTypes.Message));
       // Let _handleLiveEvent run through pen.hold and _safeEnqueue so the
       // gated enqueueLive future is registered in _inFlightEnqueues.
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       verify(() => queue.enqueueLive(any())).called(1);
 
       var stopDone = false;
       final stopFuture = coordinator.stop().then((_) => stopDone = true);
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
       // stop() is parked on Future.wait(_inFlightEnqueues) — the queue
       // must not be disposed while the enqueue is still in flight.
       expect(
@@ -1494,8 +1586,7 @@ void main() {
         final coordinator = build();
         await coordinator.start();
         // The unawaited safeStartupBridge microtask needs to settle.
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         verify(bridge.bridgeNow).called(1);
         await coordinator.stop();
@@ -1508,7 +1599,7 @@ void main() {
         when(() => roomManager.currentRoomId).thenReturn(null);
         final coordinator = build();
         await coordinator.start();
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         verifyNever(bridge.bridgeNow);
         await coordinator.stop();
@@ -1521,8 +1612,7 @@ void main() {
         when(bridge.bridgeNow).thenThrow(StateError('bridge broke'));
         final coordinator = build();
         await coordinator.start();
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         verify(
           () => logging.error(
@@ -2229,7 +2319,7 @@ void main() {
         when(() => event.eventId).thenReturn(r'$attachmentEvent');
         attachmentIndex.record(event);
 
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         await coordinator.flushPendingPathResurrectionsForTest();
 
         final captured =
@@ -2287,7 +2377,7 @@ void main() {
           attachmentIndex.record(event);
         }
         // Flush all queued microtasks first, then drain the timer.
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         await coordinator.flushPendingPathResurrectionsForTest();
 
         final captured =
@@ -2363,21 +2453,21 @@ void main() {
         });
         when(() => event.eventId).thenReturn(r'$ev');
         attachmentIndex.record(event);
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         // Trigger the debounce window so the flush kicks off.
         // We can't `await` the flush here — it's parked on the
         // completer — but we can let the timer fire by relying on
         // the visible-for-test entry point which schedules the
         // flush right now.
         unawaited(coordinator.flushPendingPathResurrectionsForTest());
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         // Start stop() and release the flush after one microtask.
         // If stop() does not await the in-flight flush, it returns
         // before the flush completer resolves and the verify below
         // would see called=0 at that moment.
         final stopFuture = coordinator.stop();
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         flushCompleter.complete(1);
         await stopFuture;
 
@@ -2463,7 +2553,7 @@ void main() {
         await coordinator.start();
 
         timelineCtl.add(buildEvent(EventTypes.Message));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         expect(ingestor.processCalls, hasLength(1));
         // `scheduleDownload` must be `true` so the coordinator routes
@@ -2738,7 +2828,7 @@ void main() {
         });
         when(() => event.eventId).thenReturn(r'$attachment');
         attachmentIndex.record(event);
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         await coordinator.flushPendingPathResurrectionsForTest();
 
         verify(
@@ -2840,7 +2930,7 @@ void main() {
         await coordinator.start();
 
         attachmentIndex.errorCtl.addError(StateError('path source boom'));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         verify(
           () => logging.error(
@@ -2889,7 +2979,7 @@ void main() {
         await coordinator.start();
 
         updateNotifications.errorCtl.addError(StateError('update source boom'));
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
 
         verify(
           () => logging.error(
@@ -3554,8 +3644,7 @@ void main() {
         // NOT completed while recovery is gated, then release the gate.
         var stopDone = false;
         final stopFuture = coordinator.stop().then((_) => stopDone = true);
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        await pumpEventQueue();
         expect(
           stopDone,
           isFalse,
@@ -4066,6 +4155,699 @@ void main() {
         expect(await firstProcessed.future, same(e));
         expect(ingestor.processCalls, hasLength(1));
         expect(ingestor.processCalls.single[#event], same(e));
+      },
+    );
+
+    test(
+      'dispatch matrix: forward walk runs iff an anchor exists; backward '
+      'walk runs iff there is no anchor or the forward walk made no '
+      'progress (errorNoProgress)',
+      () async {
+        const cases =
+            <
+              ({
+                String name,
+                bool anchorPresent,
+                String forwardOutcome,
+                bool expectForward,
+                bool expectBackward,
+                bool expectedCompleted,
+              })
+            >[
+              (
+                name: 'anchor+completed',
+                anchorPresent: true,
+                forwardOutcome: 'completed',
+                expectForward: true,
+                expectBackward: false,
+                expectedCompleted: true,
+              ),
+              (
+                name: 'anchor+incomplete',
+                anchorPresent: true,
+                forwardOutcome: 'incomplete',
+                expectForward: true,
+                expectBackward: false,
+                expectedCompleted: false,
+              ),
+              (
+                name: 'anchor+errorNoProgress',
+                anchorPresent: true,
+                forwardOutcome: 'errorNoProgress',
+                expectForward: true,
+                expectBackward: true,
+                expectedCompleted: true,
+              ),
+              (
+                name: 'noAnchor',
+                anchorPresent: false,
+                forwardOutcome: 'completed',
+                expectForward: false,
+                expectBackward: true,
+                expectedCompleted: true,
+              ),
+            ];
+
+        for (final scenario in cases) {
+          final realQueue = InboundQueue(db: syncDb, logging: logging);
+          final coordinator = QueuePipelineCoordinator(
+            syncDb: syncDb,
+            settingsDb: settingsDb,
+            journalDb: journalDb,
+            sessionManager: sessionManager,
+            roomManager: roomManager,
+            eventProcessor: processor,
+            sequenceLogService: sequenceLog,
+            activityGate: null,
+            logging: logging,
+            queueOverride: realQueue,
+            workerOverride: worker,
+            bridgeOverride: bridge,
+            penOverride: pen,
+            seederOverride: seeder,
+          );
+          await coordinator.start();
+
+          final room = MockRoom();
+          when(() => room.id).thenReturn(roomId);
+
+          // Forward-walk timeline stub shaped by the scenario outcome.
+          final forwardTl = MockTimeline();
+          when(forwardTl.cancelSubscriptions).thenAnswer((_) {});
+          switch (scenario.forwardOutcome) {
+            case 'completed':
+              // Anchor resolves, no future pages -> boundary reached.
+              final anchor = MockEvent();
+              when(() => anchor.eventId).thenReturn(r'$anchor');
+              when(
+                () => anchor.originServerTs,
+              ).thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
+              when(() => forwardTl.events).thenReturn(<Event>[anchor]);
+              when(() => forwardTl.canRequestFuture).thenReturn(false);
+            case 'incomplete':
+              // First page succeeds (anchor + one newer event), the next
+              // pagination throws -> error with totalPages > 0 ->
+              // incomplete (no fallback).
+              final anchor = MockEvent();
+              when(() => anchor.eventId).thenReturn(r'$anchor');
+              when(
+                () => anchor.originServerTs,
+              ).thenReturn(DateTime.fromMillisecondsSinceEpoch(100));
+              final newer = MockEvent();
+              when(() => newer.eventId).thenReturn(r'$newer');
+              when(
+                () => newer.originServerTs,
+              ).thenReturn(DateTime.fromMillisecondsSinceEpoch(110));
+              when(() => newer.roomId).thenReturn(roomId);
+              when(() => newer.type).thenReturn(EventTypes.Message);
+              when(() => newer.content).thenReturn(<String, dynamic>{});
+              when(newer.toJson).thenReturn(<String, dynamic>{
+                'event_id': r'$newer',
+                'room_id': roomId,
+                'origin_server_ts': 110,
+                'type': EventTypes.Message,
+                'content': <String, dynamic>{},
+              });
+              when(() => forwardTl.events).thenReturn(<Event>[anchor, newer]);
+              when(() => forwardTl.canRequestFuture).thenReturn(true);
+              when(
+                () => forwardTl.requestFuture(
+                  historyCount: any(named: 'historyCount'),
+                ),
+              ).thenThrow(StateError('network lost'));
+            case 'errorNoProgress':
+              // Anchor unresolvable: empty context chunk, no pages.
+              when(() => forwardTl.events).thenReturn(<Event>[]);
+              when(() => forwardTl.canRequestFuture).thenReturn(true);
+          }
+          when(
+            () => room.getTimeline(
+              eventContextId: any(named: 'eventContextId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => forwardTl);
+
+          // Backward-walk timeline: empty + server exhausted -> true.
+          final backwardTl = MockTimeline();
+          when(() => backwardTl.events).thenReturn(<Event>[]);
+          when(() => backwardTl.canRequestHistory).thenReturn(false);
+          when(backwardTl.cancelSubscriptions).thenAnswer((_) {});
+          when(
+            () => room.getTimeline(limit: any(named: 'limit')),
+          ).thenAnswer((_) async => backwardTl);
+          when(() => roomManager.currentRoom).thenReturn(room);
+
+          final completed = await coordinator.runBootstrapForTest(
+            room: room,
+            untilTimestamp: 50,
+            anchorEventId: scenario.anchorPresent ? r'$anchor' : null,
+          );
+
+          expect(completed, scenario.expectedCompleted, reason: scenario.name);
+          if (scenario.expectForward) {
+            verify(
+              () => room.getTimeline(
+                eventContextId: r'$anchor',
+                limit: any(named: 'limit'),
+              ),
+            ).called(1);
+          } else {
+            // The backward walk passes eventContextId: null, which a bare
+            // any() would also match — constrain to non-null to assert
+            // "no forward walk" specifically.
+            verifyNever(
+              () => room.getTimeline(
+                eventContextId: any(named: 'eventContextId', that: isNotNull),
+                limit: any(named: 'limit'),
+              ),
+            );
+          }
+          if (scenario.expectBackward) {
+            verify(
+              () => room.getTimeline(limit: any(named: 'limit')),
+            ).called(1);
+          } else {
+            verifyNever(
+              () => room.getTimeline(limit: any(named: 'limit')),
+            );
+          }
+
+          await coordinator.stop();
+          await realQueue.dispose();
+        }
+      },
+    );
+  });
+
+  // ──────────────────────────────────────────────────────────────────────
+  // Pipeline integration coverage (merged from the dissolved
+  // queue_pipeline_integration_test.dart per the one-test-file-per-source
+  // rule): real InboundQueue + worker + pen + marker writes against the
+  // in-memory SyncDatabase; only the session/room/processor edges are
+  // mocked.
+  group('pipeline integration (real queue/worker/pen)', () {
+    late MockStubbableSyncEventProcessor liveProcessor;
+    late SyncSequenceLogService liveSequenceLog;
+    late MockRoom room;
+
+    setUpAll(() {
+      registerFallbackValue(MockPreparedSyncEvent());
+    });
+
+    setUp(() {
+      liveProcessor = MockStubbableSyncEventProcessor();
+      liveSequenceLog = SyncSequenceLogService(
+        syncDatabase: syncDb,
+        vectorClockService: MockVectorClockService(),
+        loggingService: MockDomainLogger(),
+      );
+      room = MockRoom();
+      when(() => roomManager.currentRoom).thenReturn(room);
+      when(() => room.id).thenReturn(roomId);
+      // Non-partial so the coordinator's _maybePostLoadCurrentRoom
+      // short-circuits instead of trying to call room.postLoad() on a
+      // bare mock.
+      when(() => room.partial).thenReturn(false);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => null);
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventTs),
+      ).thenAnswer((_) async => null);
+    });
+
+    QueuePipelineCoordinator buildIntegration({
+      AttachmentIndex? attachmentIndex,
+      AttachmentIngestor? attachmentIngestor,
+    }) => QueuePipelineCoordinator(
+      syncDb: syncDb,
+      settingsDb: settingsDb,
+      journalDb: journalDb,
+      sessionManager: sessionManager,
+      roomManager: roomManager,
+      eventProcessor: liveProcessor,
+      sequenceLogService: liveSequenceLog,
+      activityGate: null,
+      logging: logging,
+      bridgeOverride: bridge,
+      attachmentIndex: attachmentIndex,
+      attachmentIngestor: attachmentIngestor,
+    );
+
+    test(
+      'flag-on path: live event flows through pen -> queue -> worker -> apply',
+      () async {
+        final prepared = MockPreparedSyncEvent();
+        when(
+          () => liveProcessor.prepare(event: any(named: 'event')),
+        ).thenAnswer((_) async => prepared);
+        final applied = Completer<void>();
+        when(
+          () => liveProcessor.apply(
+            prepared: any(named: 'prepared'),
+            journalDb: journalDb,
+          ),
+        ).thenAnswer((_) async {
+          if (!applied.isCompleted) {
+            applied.complete();
+          }
+          return null;
+        });
+
+        final coordinator = buildIntegration();
+        await coordinator.start();
+        addTearDown(() => coordinator.stop(drainFirst: true));
+
+        // Emit a live event. The coordinator's subscription routes it
+        // through the pen (not encrypted) -> enqueueLive -> queue row.
+        // The running worker loop wakes on the depth signal and applies.
+        final event = _buildLiveSyncEvent(
+          eventId: r'$live1',
+          roomId: roomId,
+          originTsMs: 1000,
+        );
+        timelineCtl.add(event);
+
+        await applied.future;
+        await coordinator.queue.waitForDrainAtMostTo(0);
+
+        verify(
+          () => liveProcessor.prepare(event: any(named: 'event')),
+        ).called(1);
+        verify(
+          () => liveProcessor.apply(
+            prepared: prepared,
+            journalDb: journalDb,
+          ),
+        ).called(1);
+
+        // Queue is empty post-apply.
+        final stats = await coordinator.queue.stats();
+        expect(stats.total, 0);
+
+        // Marker advanced under the monotonic guard (F2).
+        final marker = await (syncDb.select(
+          syncDb.queueMarkers,
+        )..where((t) => t.roomId.equals(roomId))).getSingle();
+        expect(marker.lastAppliedTs, 1000);
+      },
+    );
+
+    test(
+      'encrypted-then-decrypted event eventually applies via the pen',
+      () async {
+        final prepared = MockPreparedSyncEvent();
+        when(
+          () => liveProcessor.prepare(event: any(named: 'event')),
+        ).thenAnswer((_) async => prepared);
+        final bothApplied = Completer<void>();
+        var applyCount = 0;
+        when(
+          () => liveProcessor.apply(
+            prepared: any(named: 'prepared'),
+            journalDb: journalDb,
+          ),
+        ).thenAnswer((_) async {
+          applyCount++;
+          if (applyCount == 2 && !bothApplied.isCompleted) {
+            bothApplied.complete();
+          }
+          return null;
+        });
+
+        final coordinator = buildIntegration();
+        await coordinator.start();
+        addTearDown(() => coordinator.stop(drainFirst: true));
+
+        // Build an encrypted event and a decrypted variant that the SDK
+        // would return from `room.getEventById` once the Megolm session
+        // key arrives.
+        final encrypted = MockEvent();
+        final encryptedContent = <String, dynamic>{
+          'msgtype': syncMessageType,
+          'algorithm': 'm.megolm.v1.aes-sha2',
+        };
+        when(() => encrypted.eventId).thenReturn(r'$enc');
+        when(() => encrypted.roomId).thenReturn(roomId);
+        when(() => encrypted.type).thenReturn(EventTypes.Encrypted);
+        when(() => encrypted.status).thenReturn(EventStatus.synced);
+        when(() => encrypted.content).thenReturn(encryptedContent);
+        when(() => encrypted.text).thenReturn('cipher');
+        when(
+          () => encrypted.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(2000));
+        when(encrypted.toJson).thenReturn(<String, dynamic>{
+          'event_id': r'$enc',
+          'room_id': roomId,
+          'origin_server_ts': 2000,
+          'type': EventTypes.Encrypted,
+          'sender': '@tester:example.org',
+          'content': encryptedContent,
+        });
+
+        final decrypted = _buildLiveSyncEvent(
+          eventId: r'$enc',
+          roomId: roomId,
+          originTsMs: 2000,
+        );
+        when(
+          () => room.getEventById(r'$enc'),
+        ).thenAnswer((_) async => decrypted);
+
+        // Step 1: encrypted event arrives - pen holds it, queue stays
+        // empty.
+        timelineCtl.add(encrypted);
+        final statsAfterHold = await coordinator.queue.stats();
+        expect(statsAfterHold.total, 0);
+
+        // Step 2: let the worker loop tick through its pen-flush. The
+        // loop's idleTick is 5s, so we trigger another depth-change
+        // event to wake it - any plain event routed into the queue
+        // triggers the wake.
+        final wakeEvent = _buildLiveSyncEvent(
+          eventId: r'$wake',
+          roomId: roomId,
+          originTsMs: 1500,
+        );
+        timelineCtl.add(wakeEvent);
+
+        await bothApplied.future;
+
+        // Both the wake event and the now-decrypted event applied.
+        verify(
+          () => liveProcessor.apply(
+            prepared: prepared,
+            journalDb: journalDb,
+          ),
+        ).called(2);
+      },
+    );
+
+    test(
+      'pendingAttachment -> abandoned -> AttachmentIndex.record -> '
+      'resurrection -> apply: proves the end-to-end self-healing flow '
+      'through real SyncDatabase + real coordinator + real AttachmentIndex',
+      () async {
+        final prepared = MockPreparedSyncEvent();
+        var attachmentAvailable = false;
+        when(
+          () => liveProcessor.prepare(event: any(named: 'event')),
+        ).thenAnswer((_) async {
+          if (!attachmentAvailable) {
+            throw const FileSystemException(
+              'attachment descriptor not yet available',
+            );
+          }
+          return prepared;
+        });
+        final appliedDone = Completer<void>();
+        when(
+          () => liveProcessor.apply(
+            prepared: any(named: 'prepared'),
+            journalDb: journalDb,
+          ),
+        ).thenAnswer((_) async {
+          if (!appliedDone.isCompleted) {
+            appliedDone.complete();
+          }
+          return null;
+        });
+
+        final attachmentIndex = AttachmentIndex(logging: MockDomainLogger());
+        addTearDown(attachmentIndex.dispose);
+
+        final coordinator = buildIntegration(
+          attachmentIndex: attachmentIndex,
+        );
+        await coordinator.start();
+        addTearDown(() => coordinator.stop(drainFirst: true));
+
+        // Emit a sync event referencing an attachment JSON path. The
+        // coordinator's enqueue path reads `jsonPath` from the event
+        // content and persists it on the queue row so the later
+        // resurrection-by-path lookup has something to match.
+        const path = '/audio/2026-04-21/pending.m4a.json';
+        final event = MockEvent();
+        final content = <String, dynamic>{
+          'msgtype': syncMessageType,
+          'jsonPath': path,
+        };
+        when(() => event.eventId).thenReturn(r'$pendingAttach');
+        when(() => event.roomId).thenReturn(roomId);
+        when(() => event.type).thenReturn(EventTypes.Message);
+        when(() => event.status).thenReturn(EventStatus.synced);
+        when(() => event.content).thenReturn(content);
+        when(() => event.text).thenReturn('stub');
+        when(
+          () => event.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(3000));
+        when(event.toJson).thenReturn(<String, dynamic>{
+          'event_id': r'$pendingAttach',
+          'room_id': roomId,
+          'origin_server_ts': 3000,
+          'type': EventTypes.Message,
+          'sender': '@tester:example.org',
+          'content': content,
+        });
+
+        timelineCtl.add(event);
+
+        // Phase 1 - wait for the row to start retrying, then transition
+        // it straight to abandoned so we can exercise resurrection
+        // without sleeping through the full 30s -> 10min ladder.
+        {
+          await _waitForQueueStats(
+            coordinator.queue,
+            (stats) => stats.retrying > 0 || stats.abandoned > 0,
+          );
+          final entries = await (syncDb.select(
+            syncDb.inboundEventQueue,
+          )..where((t) => t.eventId.equals(r'$pendingAttach'))).get();
+          expect(entries, hasLength(1));
+          await (syncDb.update(
+            syncDb.inboundEventQueue,
+          )..where((t) => t.queueId.equals(entries.first.queueId))).write(
+            InboundEventQueueCompanion(
+              status: const Value('abandoned'),
+              abandonedAt: Value(
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch,
+              ),
+              lastErrorReason: const Value('maxAttempts(pendingAttachment)'),
+            ),
+          );
+        }
+
+        // Sanity check: the row is abandoned, the path column carries
+        // our attachment key, no prepare/apply happened since the
+        // pending race started.
+        {
+          final abandoned = await (syncDb.select(
+            syncDb.inboundEventQueue,
+          )..where((t) => t.eventId.equals(r'$pendingAttach'))).getSingle();
+          expect(abandoned.status, 'abandoned');
+          expect(abandoned.jsonPath, path);
+        }
+
+        // Phase 2 - simulate the attachment landing. We flip the
+        // processor's retriable flag so the next prepare succeeds,
+        // then record an attachment event for the matching path. The
+        // coordinator's `pathRecorded` subscription fires, calls
+        // `queue.resurrectByPath`, and the worker wakes.
+        attachmentAvailable = true;
+
+        final attachmentEvent = MockEvent();
+        when(() => attachmentEvent.content).thenReturn(<String, dynamic>{
+          'relativePath': path,
+        });
+        when(() => attachmentEvent.eventId).thenReturn(r'$attachmentLanded');
+        when(
+          () => attachmentEvent.attachmentMimetype,
+        ).thenReturn('application/json');
+        attachmentIndex.record(attachmentEvent);
+
+        // Phase 3 - wait for resurrection + apply + marker advance.
+        await appliedDone.future;
+        await _waitForQueueStats(
+          coordinator.queue,
+          (stats) => stats.applied > 0,
+        );
+
+        verify(
+          () => liveProcessor.apply(
+            prepared: prepared,
+            journalDb: journalDb,
+          ),
+        ).called(1);
+
+        final applied = await (syncDb.select(
+          syncDb.inboundEventQueue,
+        )..where((t) => t.eventId.equals(r'$pendingAttach'))).getSingle();
+        expect(applied.status, 'applied');
+        expect(applied.resurrectionCount, 1);
+
+        final marker = await (syncDb.select(
+          syncDb.queueMarkers,
+        )..where((t) => t.roomId.equals(roomId))).getSingle();
+        expect(marker.lastAppliedTs, 3000);
+      },
+    );
+
+    test(
+      'live attachment descriptor event: coordinator runs it through '
+      'AttachmentIngestor, which records it in AttachmentIndex, which '
+      'fires pathRecorded, which resurrects the abandoned sync-payload '
+      'row - full production chain with no manual index poking',
+      () async {
+        final prepared = MockPreparedSyncEvent();
+        var attachmentAvailable = false;
+        when(
+          () => liveProcessor.prepare(event: any(named: 'event')),
+        ).thenAnswer((_) async {
+          if (!attachmentAvailable) {
+            throw const FileSystemException(
+              'attachment descriptor not yet available',
+            );
+          }
+          return prepared;
+        });
+        final appliedDone = Completer<void>();
+        when(
+          () => liveProcessor.apply(
+            prepared: any(named: 'prepared'),
+            journalDb: journalDb,
+          ),
+        ).thenAnswer((_) async {
+          if (!appliedDone.isCompleted) {
+            appliedDone.complete();
+          }
+          return null;
+        });
+
+        final attachmentIndex = AttachmentIndex(logging: MockDomainLogger());
+        addTearDown(attachmentIndex.dispose);
+        // documentsDirectory=null skips the download step - we only
+        // need the ingestor's record() side effect, which runs before
+        // any download work and fires `pathRecorded`. A real device
+        // would pass its documents dir and actually save the JSON.
+        final ingestor = AttachmentIngestor();
+        addTearDown(ingestor.dispose);
+
+        final coordinator = buildIntegration(
+          attachmentIndex: attachmentIndex,
+          attachmentIngestor: ingestor,
+        );
+        await coordinator.start();
+        addTearDown(() => coordinator.stop(drainFirst: true));
+
+        // Phase 1 - a sync-payload event references an attachment
+        // that has not landed yet. The worker retries once, we flip
+        // it straight to abandoned to skip the real 30 s ladder.
+        const path = '/audio/2026-04-21/descriptor-live.m4a.json';
+        final syncEvent = MockEvent();
+        final syncContent = <String, dynamic>{
+          'msgtype': syncMessageType,
+          'jsonPath': path,
+        };
+        when(() => syncEvent.eventId).thenReturn(r'$liveSyncAwaiting');
+        when(() => syncEvent.roomId).thenReturn(roomId);
+        when(() => syncEvent.type).thenReturn(EventTypes.Message);
+        when(() => syncEvent.status).thenReturn(EventStatus.synced);
+        when(() => syncEvent.content).thenReturn(syncContent);
+        when(() => syncEvent.text).thenReturn('stub');
+        when(
+          () => syncEvent.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(4000));
+        when(syncEvent.toJson).thenReturn(<String, dynamic>{
+          'event_id': r'$liveSyncAwaiting',
+          'room_id': roomId,
+          'origin_server_ts': 4000,
+          'type': EventTypes.Message,
+          'sender': '@tester:example.org',
+          'content': syncContent,
+        });
+
+        timelineCtl.add(syncEvent);
+
+        // Wait for the row to become retrying; then flip to abandoned
+        // (shortcut past the production ladder).
+        {
+          await _waitForQueueStats(
+            coordinator.queue,
+            (stats) => stats.retrying > 0 || stats.abandoned > 0,
+          );
+          final entries = await (syncDb.select(
+            syncDb.inboundEventQueue,
+          )..where((t) => t.eventId.equals(r'$liveSyncAwaiting'))).get();
+          expect(entries, hasLength(1));
+          await (syncDb.update(
+            syncDb.inboundEventQueue,
+          )..where((t) => t.queueId.equals(entries.first.queueId))).write(
+            InboundEventQueueCompanion(
+              status: const Value('abandoned'),
+              abandonedAt: Value(
+                DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch,
+              ),
+              lastErrorReason: const Value('maxAttempts(pendingAttachment)'),
+            ),
+          );
+        }
+
+        // Phase 2 - the attachment descriptor event lands on the
+        // coordinator's live stream. The coordinator runs it through
+        // `AttachmentIngestor.process` which calls
+        // `attachmentIndex.record(event)` synchronously. That fires
+        // `pathRecorded` -> the coordinator's own subscription calls
+        // `queue.resurrectByPath(path)` -> the row flips back to
+        // `enqueued` and the next prepare succeeds (we flip the flag
+        // right before emitting the event).
+        attachmentAvailable = true;
+
+        final attachmentEvent = MockEvent();
+        final attachmentContent = <String, dynamic>{
+          'relativePath': path,
+        };
+        when(() => attachmentEvent.eventId).thenReturn(r'$descriptorLanded');
+        when(() => attachmentEvent.roomId).thenReturn(roomId);
+        when(() => attachmentEvent.type).thenReturn(EventTypes.Message);
+        when(() => attachmentEvent.status).thenReturn(EventStatus.synced);
+        when(() => attachmentEvent.content).thenReturn(attachmentContent);
+        when(() => attachmentEvent.text).thenReturn('attachment');
+        when(
+          () => attachmentEvent.originServerTs,
+        ).thenReturn(DateTime.fromMillisecondsSinceEpoch(4500));
+        when(
+          () => attachmentEvent.attachmentMimetype,
+        ).thenReturn('application/json');
+        when(attachmentEvent.toJson).thenReturn(<String, dynamic>{
+          'event_id': r'$descriptorLanded',
+          'room_id': roomId,
+          'origin_server_ts': 4500,
+          'type': EventTypes.Message,
+          'sender': '@tester:example.org',
+          'content': attachmentContent,
+        });
+
+        timelineCtl.add(attachmentEvent);
+
+        // Phase 3 - wait for resurrection + apply.
+        await appliedDone.future;
+        await _waitForQueueStats(
+          coordinator.queue,
+          (stats) => stats.applied > 0,
+        );
+
+        verify(
+          () => liveProcessor.apply(
+            prepared: prepared,
+            journalDb: journalDb,
+          ),
+        ).called(1);
+
+        final applied = await (syncDb.select(
+          syncDb.inboundEventQueue,
+        )..where((t) => t.eventId.equals(r'$liveSyncAwaiting'))).getSingle();
+        expect(applied.status, 'applied');
+        expect(applied.resurrectionCount, 1);
       },
     );
   });
