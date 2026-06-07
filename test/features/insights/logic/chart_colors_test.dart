@@ -68,6 +68,54 @@ void main() {
     });
   });
 
+  group('otherChartColor', () {
+    test('is a cool slate distinct from the neutral gray, per theme', () {
+      for (final brightness in Brightness.values) {
+        final other = HSLColor.fromColor(otherChartColor(brightness));
+        final neutral = HSLColor.fromColor(neutralChartColor(brightness));
+        expect(other.hue, closeTo(220, 5)); // cool blue cast
+        expect(other.saturation, greaterThan(neutral.saturation));
+        expect(
+          otherChartColor(brightness),
+          isNot(neutralChartColor(brightness)),
+        );
+      }
+      // The two themes get different lightness treatments.
+      expect(
+        otherChartColor(Brightness.dark),
+        isNot(otherChartColor(Brightness.light)),
+      );
+    });
+  });
+
+  group('bandEdgeColor', () {
+    test('lightens fills on dark and darkens them on light', () {
+      const fill = Color(0xFF4C7EF3);
+      final base = HSLColor.fromColor(fill).lightness;
+      expect(
+        HSLColor.fromColor(bandEdgeColor(fill, Brightness.dark)).lightness,
+        greaterThan(base),
+      );
+      expect(
+        HSLColor.fromColor(bandEdgeColor(fill, Brightness.light)).lightness,
+        lessThan(base),
+      );
+    });
+
+    test('clamps at the lightness extremes instead of overflowing', () {
+      const nearWhite = Color(0xFFFEFEFE);
+      final edge = HSLColor.fromColor(
+        bandEdgeColor(nearWhite, Brightness.dark),
+      );
+      expect(edge.lightness, lessThanOrEqualTo(1));
+      const nearBlack = Color(0xFF010101);
+      final darkEdge = HSLColor.fromColor(
+        bandEdgeColor(nearBlack, Brightness.light),
+      );
+      expect(darkEdge.lightness, greaterThanOrEqualTo(0));
+    });
+  });
+
   group('chartColorFor / swatchColorFor', () {
     test('null hex falls back to neutral gray', () {
       expect(

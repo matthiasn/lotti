@@ -7,7 +7,9 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/insights/logic/range_presets.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
+import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/features/insights/state/insights_providers.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -285,6 +287,19 @@ void main() {
       expect(range.preset, isNull);
       expect(dayStart(range.startDay), DateTime(2026, 5, 3));
       expect(dayStart(range.endDayExclusive), DateTime(2026, 5, 11));
+    });
+  });
+
+  group('insightsRepositoryProvider', () {
+    test('default factory builds a repository over journalDbProvider', () {
+      final container = ProviderContainer(
+        overrides: [journalDbProvider.overrideWithValue(MockJournalDb())],
+      );
+      addTearDown(container.dispose);
+      expect(
+        container.read(insightsRepositoryProvider),
+        isA<InsightsRepository>(),
+      );
     });
   });
 

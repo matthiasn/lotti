@@ -119,6 +119,33 @@ void main() {
     },
   );
 
+  testWidgets('the picker explains itself when no categories exist yet', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidget(
+        mediaQueryData: desktopMq,
+        InsightsKpiRow(
+          kpis: const InsightsKpis(
+            totalSeconds: 3600,
+            focusSeconds: null,
+            otherSeconds: null,
+          ),
+          categories: const [],
+          focusCategoryIds: const {},
+          onToggleFocusCategory: (_) {},
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Choose focus categories'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('No active categories yet.'), findsOneWidget);
+    expect(find.byType(CheckboxListTile), findsNothing);
+  });
+
   testWidgets('configured row exposes an edit affordance on the focus tile', (
     tester,
   ) async {

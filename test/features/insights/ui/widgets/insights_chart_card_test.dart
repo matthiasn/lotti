@@ -185,4 +185,164 @@ void main() {
     expect(borders.sublist(0, 6), everyElement(0.0));
     expect(borders.last, greaterThan(0.0));
   });
+
+  group('tooltips', () {
+    testWidgets(
+      'bar tooltip reads out every band for the bucket, largest first',
+      (tester) async {
+        await pumpCard(tester);
+
+        final chart = tester.widget<BarChart>(find.byType(BarChart));
+        final tooltipData = chart.data.barTouchData.touchTooltipData;
+        // Bucket 0: cat-a 1h, cat-b 30m → header total 1h 30m, rows desc.
+        final group = chart.data.barGroups[0];
+        final item = tooltipData.getTooltipItem(
+          group,
+          0,
+          group.barRods.single,
+          0,
+        )!;
+        expect(item.text, contains('Mon 1'));
+        expect(item.text, contains('1h 30m'));
+        final rows = item.children!.map((span) => span.toPlainText()).join();
+        expect(rows, contains('Client Work  1h'));
+        expect(rows, contains('Admin  30m'));
+        expect(
+          rows.indexOf('Client Work'),
+          lessThan(rows.indexOf('Admin')),
+        );
+        // Zero-value bands are skipped: bucket 1 has no cat-a.
+        final group1 = chart.data.barGroups[1];
+        final item1 = tooltipData.getTooltipItem(
+          group1,
+          1,
+          group1.barRods.single,
+          0,
+        )!;
+        expect(
+          item1.children!.map((s) => s.toPlainText()).join(),
+          isNot(contains('Client Work')),
+        );
+        // Tooltip background resolves from tokens.
+        expect(tooltipData.getTooltipColor(group), isA<Color>());
+      },
+    );
+
+    testWidgets('weekly tooltip flags a truncated first week as partial', (
+      tester,
+    ) async {
+      final data = InsightsChartData(
+        granularity: InsightsGranularity.week,
+        bucketStarts: [DateTime(2026), DateTime(2026, 1, 5)],
+        seriesKeys: const ['cat-a'],
+        values: const [
+          [3600, 7200],
+        ],
+        partialFirstBucket: true,
+      );
+      await pumpCard(tester, data: data);
+
+      final chart = tester.widget<BarChart>(find.byType(BarChart));
+      final tooltipData = chart.data.barTouchData.touchTooltipData;
+      final first = chart.data.barGroups[0];
+      final item = tooltipData.getTooltipItem(
+        first,
+        0,
+        first.barRods.single,
+        0,
+      )!;
+      expect(item.text, contains('partial week'));
+      // The full second week carries no flag.
+      final second = chart.data.barGroups[1];
+      final item1 = tooltipData.getTooltipItem(
+        second,
+        1,
+        second.barRods.single,
+        0,
+      )!;
+      expect(item1.text, isNot(contains('partial week')));
+    });
+
+    testWidgets(
+      'cumulative tooltip de-stacks to running per-series totals',
+      (tester) async {
+        await pumpCard(tester);
+        await tester.tap(find.text('Cumulative'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 600));
+
+        final chart = tester.widget<LineChart>(find.byType(LineChart));
+        final tooltipData = chart.data.lineTouchData.touchTooltipData;
+        // Hover bucket index 2: cat-a cumulative 1h+0+2h = 3h,
+        // cat-b 30m+15m+0 = 45m → grand total 3h 45m.
+        final spots = [
+          for (
+            var barIndex = 0;
+            barIndex < chart.data.lineBarsData.length;
+            barIndex++
+          )
+            LineBarSpot(
+              chart.data.lineBarsData[barIndex],
+              barIndex,
+              chart.data.lineBarsData[barIndex].spots[2],
+            ),
+        ];
+        final items = tooltipData.getTooltipItems(spots);
+        expect(items, hasLength(spots.length));
+        // One combined readout on the first spot, nulls for the rest.
+        expect(items.skip(1), everyElement(isNull));
+        final item = items.first!;
+        expect(item.text, contains('Wed 3'));
+        expect(item.text, contains('3h 45m'));
+        final rows = item.children!.map((s) => s.toPlainText()).join();
+        expect(rows, contains('Client Work  3h'));
+        expect(rows, contains('Admin  45m'));
+        expect(tooltipData.getTooltipColor(spots.first), isA<Color>());
+      },
+    );
+  });
+
+  group('axis edge cases', () {
+    testWidgets('absurdly large totals fall back to the coarsest interval', (
+      tester,
+    ) async {
+      final data = InsightsChartData(
+        granularity: InsightsGranularity.day,
+        bucketStarts: [DateTime(2026, 6)],
+        seriesKeys: const ['cat-a'],
+        values: const [
+          // ~8000h in one bucket — beyond the largest nice step.
+          [28800000],
+        ],
+      );
+      await pumpCard(tester, data: data);
+      // Renders without exceptions using the fallback interval.
+      expect(find.byType(BarChart), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('cumulative mode thins labels for long ranges too', (
+      tester,
+    ) async {
+      final data = InsightsChartData(
+        granularity: InsightsGranularity.day,
+        bucketStarts: [
+          for (var d = 0; d < 30; d++) DateTime(2026, 5, 9 + d),
+        ],
+        seriesKeys: const ['cat-a'],
+        values: [
+          [for (var d = 0; d < 30; d++) 1800],
+        ],
+      );
+      await pumpCard(tester, data: data);
+      await tester.tap(find.text('Cumulative'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(find.byType(LineChart), findsOneWidget);
+      // Thinned to every 5th label: May 9 shown, May 10 suppressed.
+      expect(find.text('May 9'), findsOneWidget);
+      expect(find.text('May 10'), findsNothing);
+    });
+  });
 }

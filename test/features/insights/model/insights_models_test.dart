@@ -175,6 +175,84 @@ void main() {
     });
   });
 
+  group('hashCode and toString contracts', () {
+    test('equal values hash equally across all model classes', () {
+      const range = InsightsRange(startDay: 10, endDayExclusive: 17);
+      expect(
+        range.hashCode,
+        const InsightsRange(startDay: 10, endDayExclusive: 17).hashCode,
+      );
+      const tableRow = InsightsTableRow(
+        categoryId: 'a',
+        seconds: 1,
+        share: 0.5,
+        avgSecondsPerDay: 1,
+      );
+      expect(
+        tableRow.hashCode,
+        const InsightsTableRow(
+          categoryId: 'a',
+          seconds: 1,
+          share: 0.5,
+          avgSecondsPerDay: 1,
+        ).hashCode,
+      );
+      const kpis = InsightsKpis(
+        totalSeconds: 1,
+        focusSeconds: null,
+        otherSeconds: null,
+      );
+      expect(
+        kpis.hashCode,
+        const InsightsKpis(
+          totalSeconds: 1,
+          focusSeconds: null,
+          otherSeconds: null,
+        ).hashCode,
+      );
+      final chart = InsightsChartData(
+        granularity: InsightsGranularity.day,
+        bucketStarts: [DateTime(2024)],
+        seriesKeys: const ['a'],
+        values: const [
+          [1],
+        ],
+      );
+      expect(
+        chart.hashCode,
+        InsightsChartData(
+          granularity: InsightsGranularity.day,
+          bucketStarts: [DateTime(2024)],
+          seriesKeys: const ['a'],
+          values: const [
+            [1],
+          ],
+        ).hashCode,
+      );
+    });
+
+    test('toString surfaces the identifying fields for debugging', () {
+      final row = InsightsTimeRow(
+        dateFrom: DateTime(2024, 3, 1, 9),
+        dateTo: DateTime(2024, 3, 1, 10),
+        categoryId: 'work',
+      );
+      expect(row.toString(), contains('work'));
+      final interval = TimeInterval(
+        DateTime(2024, 3, 1, 9),
+        DateTime(2024, 3, 1, 10),
+      );
+      expect(interval.toString(), contains('TimeInterval'));
+      const range = InsightsRange(
+        startDay: 10,
+        endDayExclusive: 17,
+        preset: InsightsRangePreset.d7,
+      );
+      expect(range.toString(), contains('d7'));
+      expect(range.toString(), contains('10'));
+    });
+  });
+
   test('kInsightsOtherCategoryKey cannot collide with category UUIDs', () {
     expect(kInsightsOtherCategoryKey, startsWith('__'));
   });

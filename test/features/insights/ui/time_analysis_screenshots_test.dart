@@ -36,6 +36,11 @@ import 'package:path/path.dart' as p;
 import '../../../mocks/mocks.dart';
 import 'insights_test_scenarios.dart';
 
+// Deliberately LOCAL, matching app reality (`clock.now()` is always
+// local): scenario rows, the fixed clock, presets, and labels all derive
+// from the same local calendar fields, so renders are identical in every
+// host timezone. A UTC instant here would mix frames (UTC clock against
+// locally-constructed rows) without changing the output.
 final DateTime _now = DateTime(2026, 6, 7, 16, 30);
 const Size _desktopSize = Size(1400, 900);
 const ValueKey<String> _boundaryKey = ValueKey<String>('insights-screenshot');

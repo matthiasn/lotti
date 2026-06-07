@@ -114,6 +114,11 @@ void main() {
       InsightsPreferences(focusCategoryIds: const {'a', 'b'}),
       InsightsPreferences(focusCategoryIds: const {'b', 'a'}),
     );
+    // Unordered hash: insertion order must not affect the hashCode.
+    expect(
+      InsightsPreferences(focusCategoryIds: const {'a', 'b'}).hashCode,
+      InsightsPreferences(focusCategoryIds: const {'b', 'a'}).hashCode,
+    );
     expect(
       InsightsPreferences(focusCategoryIds: const {'a'}),
       isNot(InsightsPreferences(focusCategoryIds: const {'b'})),
