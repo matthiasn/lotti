@@ -23,6 +23,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/nav_service.dart' as nav_service;
 import 'package:lotti/services/nav_service.dart' show NavService;
+import 'package:lotti/utils/color.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fake_entry_controller.dart';
@@ -383,8 +384,30 @@ void main() {
       );
       await tester.pump();
 
-      // Widget should have enhanced styling when highlighted
-      expect(find.byType(AnimatedContainer), findsWidgets);
+      // When highlighted, the outer AnimatedContainer's BoxDecoration gains a
+      // 2px border tinted with the category color (otherwise the border is null).
+      final container = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
+      final decoration = container.decoration! as BoxDecoration;
+      final border = decoration.border! as Border;
+      expect(border.top.width, 2);
+      expect(border.top.color, colorFromCssHex(testCategory.color));
+    });
+
+    testWidgets('has no border when category is not highlighted', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestWidget(progress: createProgress()),
+      );
+      await tester.pump();
+
+      final container = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
+      final decoration = container.decoration! as BoxDecoration;
+      expect(decoration.border, isNull);
     });
 
     testWidgets('handles long press callback', (tester) async {

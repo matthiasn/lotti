@@ -132,11 +132,44 @@ void main() {
       expect(find.text('50%'), findsOneWidget);
     });
 
-    testWidgets('renders DaySummary widget', (tester) async {
-      await tester.pumpWidget(createTestWidget());
+    testWidgets('shows remaining value formatted with hours and minutes', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          stats: const DayBudgetStats(
+            totalPlanned: Duration(hours: 4, minutes: 30),
+            totalRecorded: Duration(hours: 2),
+            budgetCount: 2,
+            overBudgetCount: 0,
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
-      expect(find.byType(DaySummary), findsOneWidget);
+      // totalRemaining = 2h30m -> "2h 30m" formatting path.
+      expect(find.text('2h 30m'), findsOneWidget);
+      expect(find.text('Remaining'), findsOneWidget);
+    });
+
+    testWidgets('renders over-budget value in the error color', (tester) async {
+      await tester.pumpWidget(
+        createTestWidget(
+          stats: const DayBudgetStats(
+            totalPlanned: Duration(hours: 2),
+            totalRecorded: Duration(hours: 3),
+            budgetCount: 2,
+            overBudgetCount: 1,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // totalRemaining.abs() = 1h -> "1 hour" shown with the error color.
+      final context = tester.element(find.byType(DaySummary));
+      final errorColor = Theme.of(context).colorScheme.error;
+      final overValueText = tester.widget<Text>(find.text('1 hour'));
+      expect(overValueText.style?.color, errorColor);
     });
   });
 }

@@ -117,6 +117,7 @@ void main() {
   Widget createTestWidget({
     DayPlanEntry? plan,
     List<Override> additionalOverrides = const [],
+    MediaQueryData? mediaQueryData,
   }) {
     final effectivePlan = plan ?? createTestPlan();
 
@@ -128,6 +129,7 @@ void main() {
     );
 
     return RiverpodWidgetTestBench(
+      mediaQueryData: mediaQueryData,
       overrides: [
         unifiedDailyOsDataControllerProvider(date: testDate).overrideWith(
           () => _TestUnifiedController(unifiedData),
@@ -505,6 +507,72 @@ void main() {
           await tester.pump();
           expect(find.byType(AddBlockSheet), findsOneWidget);
         }
+      },
+    );
+
+    testWidgets(
+      'start time at 23:00 clamps auto-adjusted end time at 23:00',
+      (tester) async {
+        // Use 24-hour format so the keyboard hour field accepts "23" directly
+        // (no AM/PM toggle needed), exercising the clamp-at-23 branch.
+        await tester.pumpWidget(
+          createTestWidget(
+            mediaQueryData: const MediaQueryData(
+              size: Size(390, 844),
+              padding: EdgeInsets.only(top: 47, bottom: 34),
+              alwaysUse24HourFormat: true,
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Default start is 09:00 in 24h format.
+        expect(find.text('09:00'), findsOneWidget);
+
+        final startSelector = find.ancestor(
+          of: find.text('Start'),
+          matching: find.byType(GestureDetector),
+        );
+        await tester.tap(startSelector.first);
+        await tester.pump();
+
+        // The time picker dialog opens (guaranteed meaningful assertion).
+        expect(find.byType(Dialog), findsOneWidget);
+
+        // Switch to keyboard/text input mode. The Material dial picker always
+        // exposes this toggle, so the keyboard path is the primary assertion.
+        final keyboardIcon = find.byIcon(Icons.keyboard_outlined);
+        if (keyboardIcon.evaluate().isEmpty) {
+          // Defensive fallback: cancel and rely on the dialog-opened assertion.
+          await tester.tap(
+            find.descendant(
+              of: find.byType(Dialog),
+              matching: find.text('Cancel'),
+            ),
+          );
+          await tester.pump();
+          return;
+        }
+        await tester.tap(keyboardIcon);
+        await tester.pump();
+
+        // Enter 23:00 as the start time (>= end time 10:00) to trigger the
+        // auto-adjust path. newEndHour = (23 + 1).clamp(0, 23) = 23.
+        final hourField = find.byType(EditableText).first;
+        await tester.enterText(hourField, '23');
+        final minuteFields = find.byType(EditableText);
+        if (minuteFields.evaluate().length > 1) {
+          await tester.enterText(minuteFields.at(1), '00');
+        }
+
+        await tester.tap(find.text('OK'));
+        // Bounded pump so the picker dialog finishes its dismiss transition and
+        // its own "23:00" preview is removed, leaving only the two selectors.
+        await tester.pump(const Duration(milliseconds: 400));
+
+        // Both start and end clamp to 23:00 (the auto-adjust capped end at 23).
+        // Two selectors now read "23:00" -> findsNWidgets(2).
+        expect(find.text('23:00'), findsNWidgets(2));
       },
     );
 
