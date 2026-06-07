@@ -86,7 +86,7 @@ void main() {
       'collapses concurrent calls in the same microtask into one batch '
       'round-trip and returns the right plan for each date',
       () async {
-        final d1 = DateTime(2026, 4, 1);
+        final d1 = DateTime(2026, 4);
         final d2 = DateTime(2026, 4, 2);
         final d3 = DateTime(2026, 4, 3);
         final p1 = makePlan(d1);
@@ -375,7 +375,7 @@ void main() {
     test(
       'delegates to JournalDb.getDayPlansInRange and returns the result',
       () async {
-        final start = DateTime(2024, 3, 1);
+        final start = DateTime(2024, 3);
         final end = DateTime(2024, 3, 31);
         final p1 = makePlan(DateTime(2024, 3, 10));
         final p2 = makePlan(DateTime(2024, 3, 20));
@@ -405,7 +405,7 @@ void main() {
     test(
       'returns empty list when no plans exist in the range',
       () async {
-        final start = DateTime(2024, 6, 1);
+        final start = DateTime(2024, 6);
         final end = DateTime(2024, 6, 30);
 
         when(

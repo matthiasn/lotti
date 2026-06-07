@@ -131,6 +131,12 @@ void main() {
         find.text('Fix payment status update bug'),
         const Offset(-300, 0),
       );
+      // A real Dismissible delete: fling (200ms) + resize collapse (300ms),
+      // then onDismissed mutates the showcase controller and the checklist
+      // rebuilds to the new count. pumpAndSettle is the right tool here — the
+      // whole sequence genuinely needs to complete before the "0/1 done"
+      // progress reflects the remaining single item. (It settles in well
+      // under a second; the default timeout is only a never-settle guard.)
       await tester.pumpAndSettle();
 
       expect(find.text('Fix payment status update bug'), findsNothing);
@@ -147,7 +153,11 @@ void main() {
         find.text('Fix payment status update bug'),
         const Offset(300, 0),
       );
-      await tester.pumpAndSettle();
+      // confirmDismiss returns false here (archive, no dismiss), so the row
+      // slides back over movementDuration (200ms). Bound the pump instead of
+      // pumpAndSettle so the timing is explicit and deterministic.
+      await tester.pump(); // start the slide-back animation
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Archived: removed from Open view
       expect(find.text('Fix payment status update bug'), findsNothing);

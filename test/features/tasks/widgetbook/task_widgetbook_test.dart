@@ -9,6 +9,7 @@ import 'package:lotti/features/tasks/widgetbook/task_widgetbook.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:widgetbook/widgetbook.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
@@ -42,6 +43,20 @@ void main() {
       (ref, agentId) => const Stream<Set<String>>.empty(),
     ),
   ];
+
+  group('buildTasksWidgetbookFolder', () {
+    test('groups the two task components under the Tasks folder', () {
+      final folder = buildTasksWidgetbookFolder();
+
+      expect(folder.name, 'Tasks');
+      final children = folder.children;
+      expect(children, isNotNull);
+      expect(
+        children!.whereType<WidgetbookComponent>().map((c) => c.name),
+        ['Task list & detail', 'Desktop task header'],
+      );
+    });
+  });
 
   group('buildTaskListDetailWidgetbookComponent', () {
     testWidgets('renders the desktop task list and detail showcase', (
@@ -81,7 +96,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(tester.takeException(), isNull);
+      // No redundant takeException(): the content finders below would already
+      // fail if rendering had thrown.
       expect(find.text('Tasks'), findsAtLeastNWidgets(2));
       expect(find.text('Payment confirmation'), findsAtLeastNWidgets(2));
       expect(find.text('AI Task Summary'), findsOneWidget);
@@ -117,7 +133,8 @@ void main() {
       );
       await tester.pump();
 
-      expect(tester.takeException(), isNull);
+      // No redundant takeException(): the content finders below would already
+      // fail if rendering had thrown.
       expect(find.text('Tasks'), findsAtLeastNWidgets(2));
       expect(find.text('AI Task Summary'), findsOneWidget);
     });
