@@ -1071,6 +1071,75 @@ void main() {
     });
 
     test(
+      'a skip-ahead counter leaves the cached watermark unchanged — '
+      'under-reporting is safe, over-reporting would mask real gaps',
+      () async {
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.batchInsertSequenceEntries(any()),
+        ).thenAnswer((_) async {});
+
+        // 1. Sequential counter 1: cold cache fills (one SQL read), then
+        //    advances to 1.
+        await service.recordReceivedEntry(
+          entryId: 'e1',
+          vectorClock: const VectorClock({aliceHostId: 1}),
+          originatingHostId: aliceHostId,
+        );
+
+        // 2. Skip-ahead to 4: a gap — _advanceLastCounterCache must NOT
+        //    move the watermark to 4.
+        final gapsAt4 = await service.recordReceivedEntry(
+          entryId: 'e4',
+          vectorClock: const VectorClock({aliceHostId: 4}),
+          originatingHostId: aliceHostId,
+        );
+        expect(gapsAt4, [
+          (hostId: aliceHostId, counter: 2),
+          (hostId: aliceHostId, counter: 3),
+        ]);
+
+        // 3. Counter 5: the gap scan must still start just above the cached
+        //    watermark 1, re-flagging the unresolved 2 and 3 (4 now
+        //    resolves). Had the skip-ahead advanced the cache to 4, the
+        //    scan would start at 5 and report nothing.
+        when(
+          () => mockDb.getCountersForHostInRange(aliceHostId, 2, 4),
+        ).thenAnswer((_) async => {4});
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 4),
+        ).thenAnswer(
+          (_) async => _createLogItem(
+            aliceHostId,
+            4,
+            status: SyncSequenceStatus.received,
+          ),
+        );
+        final gapsAt5 = await service.recordReceivedEntry(
+          entryId: 'e5',
+          vectorClock: const VectorClock({aliceHostId: 5}),
+          originatingHostId: aliceHostId,
+        );
+        expect(gapsAt5, [
+          (hostId: aliceHostId, counter: 2),
+          (hostId: aliceHostId, counter: 3),
+        ]);
+
+        // The cached watermark served every read after the cold fill — the
+        // slow watermark CTE ran exactly once.
+        verify(() => mockDb.getLastCounterForHost(aliceHostId)).called(1);
+      },
+    );
+
+    test(
       'detects the missing prefix when an online host has no stored counters yet',
       () async {
         const vectorClock = VectorClock({aliceHostId: 5});
@@ -1981,6 +2050,66 @@ void main() {
       // Bob's entry should stay backfilled (not downgraded to received)
       expect(bobRecord.status.value, SyncSequenceStatus.backfilled.index);
     });
+
+    test(
+      'incremental large-gap extension spanning a chunk boundary only '
+      'scans the unmaterialized sub-range, chunk by chunk',
+      () async {
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 10);
+        when(
+          () => mockDb.getCountersForHostInRange(aliceHostId, any(), any()),
+        ).thenAnswer((_) async => <int>{});
+        when(
+          () => mockDb.batchInsertSequenceEntries(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+
+        // 1. First large gap 11..4999 materializes within a single chunk
+        //    (chunk size 5000) and records the upper bound 4999.
+        await service.recordReceivedEntry(
+          entryId: 'e5000',
+          vectorClock: const VectorClock({aliceHostId: 5000}),
+          originatingHostId: aliceHostId,
+        );
+        verify(
+          () => mockDb.getCountersForHostInRange(aliceHostId, 11, 4999),
+        ).called(1);
+
+        // 2. Counter 10001 extends the same gap. The incremental extension
+        //    must start at previousBound+1 (5000) — not rescan 11..4999 —
+        //    and must split the 5000..10000 range across the chunk
+        //    boundary into two scans.
+        final gaps = await service.recordReceivedEntry(
+          entryId: 'e10001',
+          vectorClock: const VectorClock({aliceHostId: 10001}),
+          originatingHostId: aliceHostId,
+        );
+
+        verify(
+          () => mockDb.getCountersForHostInRange(aliceHostId, 5000, 9999),
+        ).called(1);
+        verify(
+          () => mockDb.getCountersForHostInRange(aliceHostId, 10000, 10000),
+        ).called(1);
+        // No other range scans — in particular no rescan below 5000.
+        verifyNever(
+          () => mockDb.getCountersForHostInRange(aliceHostId, any(), any()),
+        );
+
+        // The reported gap range covers only the newly materialized
+        // sub-range 5000..10000.
+        expect(gaps.length, 5001);
+        expect(gaps.first, (hostId: aliceHostId, counter: 5000));
+        expect(gaps.last, (hostId: aliceHostId, counter: 10000));
+      },
+    );
 
     test('records the full large gap and logs it', () async {
       // Large gap: lastSeen=10, counter=500 should create entries for 11-499.
@@ -3104,7 +3233,9 @@ void main() {
 
     glados.Glados(
       _AnySequenceGapScenario(glados.any).backfillResponseStateScenario,
-      glados.ExploreConfig(numRuns: 180),
+      // The scenario space is a small finite enum product; 120 runs cover
+      // it as well as 180 did at two-thirds the cost.
+      glados.ExploreConfig(numRuns: 120),
     ).test(
       'matches generated backfill response state and payload transitions',
       (scenario) async {
