@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:meta/meta.dart';
 
 /// Keeps task-suggestion inbox rows aligned with the backing change set.
 ///
@@ -74,6 +75,13 @@ class ChangeSetNotificationService {
     );
   }
 }
+
+/// Test seam for the locale resolver — `ui.PlatformDispatcher.instance`
+/// cannot be faked through the test binding's `localeTestValue`, so the
+/// resolution logic is exercised directly.
+@visibleForTesting
+ui.Locale resolveSupportedLocaleForTest(ui.Locale locale) =>
+    _resolveSupportedLocale(locale);
 
 ui.Locale _resolveSupportedLocale(ui.Locale locale) {
   const supportedLocales = AppLocalizations.supportedLocales;

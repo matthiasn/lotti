@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/service/change_set_notification_service.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -243,4 +244,28 @@ void main() {
       expect(captured[1], 'Open the task to review.');
     },
   );
+
+  group('resolveSupportedLocaleForTest', () {
+    test(
+      'exact match wins, language-only match follows, fallback is first',
+      () {
+        // Exact supported locale passes through.
+        expect(
+          resolveSupportedLocaleForTest(const ui.Locale('de')),
+          const ui.Locale('de'),
+        );
+        // Language-code match without country: de-AT → de (not the English
+        // fallback) — the second loop in _resolveSupportedLocale.
+        expect(
+          resolveSupportedLocaleForTest(const ui.Locale('de', 'AT')),
+          const ui.Locale('de'),
+        );
+        // Unsupported language falls back to the first supported locale.
+        expect(
+          resolveSupportedLocaleForTest(const ui.Locale('zz')),
+          AppLocalizations.supportedLocales.first,
+        );
+      },
+    );
+  });
 }

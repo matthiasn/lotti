@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/tools/running_timer_update_handler.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:meta/meta.dart';
 import 'package:uuid/uuid.dart';
 
 typedef ConfirmedDecisionCallback =
@@ -718,6 +719,11 @@ class ChangeSetConfirmationService {
     'timerId',
     'title',
   };
+
+  /// Test seam for the PII-safe arg formatter — pure, no state.
+  @visibleForTesting
+  static String debugDescribeArgsForLog(Map<String, dynamic> args) =>
+      _describeArgsForLog(args);
 
   static String _describeArgsForLog(Map<String, dynamic> args) {
     final knownNames =

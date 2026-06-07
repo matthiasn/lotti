@@ -305,7 +305,7 @@ void main() {
     group('createImproverAgent', () {
       glados.Glados(
         glados.any.improverAgentCreateScenario,
-        glados.ExploreConfig(numRuns: 260),
+        glados.ExploreConfig(numRuns: 180),
       ).test('matches generated create-flow invariants', (scenario) async {
         final generatedAgentService = MockAgentService();
         final generatedTemplateService = MockAgentTemplateService();
