@@ -27,6 +27,7 @@ part 'database_config_flags.dart';
 part 'database_data_queries.dart';
 part 'database_definitions.dart';
 part 'database_entity_ops.dart';
+part 'database_insights_queries.dart';
 part 'database_journal_queries.dart';
 part 'database_links_ratings.dart';
 part 'database_project_queries.dart';
@@ -86,6 +87,7 @@ const int _sqliteInListChunk = 500;
 class JournalDb extends _$JournalDb
     with
         _JournalDbConfigFlags,
+        _JournalDbInsightsQueries,
         _JournalDbJournalQueries,
         _JournalDbTaskQueries,
         _JournalDbTaskDueQueries,

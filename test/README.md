@@ -404,6 +404,29 @@ If tests work with real time but fail with fake time:
 - Add strategic `flushMicrotasks()` calls
 - Use state-based assertions instead of counting intermediate events
 
+## Design-Review Screenshots from Widget Tests
+
+Widget tests can produce real-looking PNGs for design review — see
+`test/features/insights/ui/time_analysis_screenshots_test.dart` for the
+canonical harness. The three ingredients:
+
+1. **Real fonts.** Tests render the blocky FlutterTest font by default.
+   Load the bundled families with `FontLoader` in `setUpAll`, reading the
+   bytes straight from the repo files (`assets/fonts/...`) — `rootBundle`
+   cannot load them in unit tests. MaterialIcons comes from the Flutter
+   SDK (`$FLUTTER_ROOT/bin/cache/artifacts/material_fonts/`, falling back
+   to `.fvm/flutter_sdk`), otherwise icons render as tofu boxes.
+2. **Desktop surface.** `tester.view.physicalSize`/`devicePixelRatio` set
+   the real render surface; `MediaQueryData` alone does NOT resize the
+   viewport (lazy lists won't build below the 800×600 default fold).
+3. **Capture.** Wrap the tree in a keyed `RepaintBoundary`, then inside
+   `tester.runAsync`: `boundary.toImage` → `toByteData(png)` → write to
+   `screenshots/` (gitignored).
+
+Charts gotcha: fl_chart animates data swaps implicitly (~150ms). Pump past
+the animation (`tester.pump(const Duration(milliseconds: 600))`) after any
+tap that changes chart data, or captures show mid-lerp frames.
+
 ## Migration Status
 
 This codebase is in the process of migrating all tests to fake time. See:

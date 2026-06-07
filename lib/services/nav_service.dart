@@ -81,6 +81,15 @@ class NavService {
   final ValueNotifier<String?> desktopSelectedDashboardId =
       ValueNotifier<String?>(null);
 
+  /// Whether the desktop Insights detail pane shows the Time Analysis
+  /// dashboard. Written exclusively by `DashboardsLocation` from the URL
+  /// (`/dashboards/time`), mutually exclusive with
+  /// [desktopSelectedDashboardId] by construction — the URL is the single
+  /// source of truth for the pane selection.
+  final ValueNotifier<bool> desktopShowTimeAnalysis = ValueNotifier<bool>(
+    false,
+  );
+
   /// Tracks the current settings sub-route on desktop so the right pane
   /// can render the matching content page.
   final ValueNotifier<DesktopSettingsRoute?> desktopSelectedSettingsRoute =
@@ -346,6 +355,7 @@ class NavService {
     desktopSelectedTaskId.dispose();
     desktopSelectedProjectId.dispose();
     desktopSelectedDashboardId.dispose();
+    desktopShowTimeAnalysis.dispose();
     desktopSelectedSettingsRoute.dispose();
     await _navigationFlagsSub.cancel();
     await indexStreamController.close();

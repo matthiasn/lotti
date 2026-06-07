@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/dashboards_location.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
+import 'package:lotti/features/insights/ui/time_analysis_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -91,11 +92,15 @@ void main() {
       () {
         final dashboardId = const Uuid().v4();
         final desktopSelectedDashboardId = ValueNotifier<String?>(null);
+        final desktopShowTimeAnalysis = ValueNotifier<bool>(false);
 
         when(() => mockNavService.isDesktopMode).thenReturn(true);
         when(
           () => mockNavService.desktopSelectedDashboardId,
         ).thenReturn(desktopSelectedDashboardId);
+        when(
+          () => mockNavService.desktopShowTimeAnalysis,
+        ).thenReturn(desktopShowTimeAnalysis);
 
         final routeInformation = RouteInformation(
           uri: Uri.parse('/dashboards/$dashboardId'),
@@ -121,11 +126,15 @@ void main() {
       () {
         final dashboardId = const Uuid().v4();
         final desktopSelectedDashboardId = ValueNotifier<String?>(null);
+        final desktopShowTimeAnalysis = ValueNotifier<bool>(true);
 
         when(() => mockNavService.isDesktopMode).thenReturn(true);
         when(
           () => mockNavService.desktopSelectedDashboardId,
         ).thenReturn(desktopSelectedDashboardId);
+        when(
+          () => mockNavService.desktopShowTimeAnalysis,
+        ).thenReturn(desktopShowTimeAnalysis);
 
         final routeInformation = RouteInformation(
           uri: Uri.parse('/dashboards/$dashboardId'),
@@ -142,7 +151,62 @@ void main() {
         location.buildPages(mockBuildContext, newBeamState);
 
         expect(desktopSelectedDashboardId.value, dashboardId);
+        // A dashboard selection always clears the time-analysis flag —
+        // the URL is the single writer for the pane selection.
+        expect(desktopShowTimeAnalysis.value, isFalse);
       },
     );
+
+    test(
+      'in desktop mode, /dashboards/time selects time analysis and clears '
+      'any dashboard selection',
+      () {
+        final desktopSelectedDashboardId = ValueNotifier<String?>(
+          const Uuid().v4(),
+        );
+        final desktopShowTimeAnalysis = ValueNotifier<bool>(false);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.desktopSelectedDashboardId,
+        ).thenReturn(desktopSelectedDashboardId);
+        when(
+          () => mockNavService.desktopShowTimeAnalysis,
+        ).thenReturn(desktopShowTimeAnalysis);
+
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/dashboards/time'),
+        );
+        final location = DashboardsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final newBeamState = beamState.copyWith(
+          pathParameters: {...beamState.pathParameters, 'dashboardId': 'time'},
+        );
+
+        final pages = location.buildPages(mockBuildContext, newBeamState);
+
+        expect(pages.length, 1);
+        expect(desktopShowTimeAnalysis.value, isTrue);
+        expect(desktopSelectedDashboardId.value, isNull);
+      },
+    );
+
+    test('on mobile, /dashboards/time pushes the TimeAnalysisPage', () {
+      when(() => mockNavService.isDesktopMode).thenReturn(false);
+
+      final routeInformation = RouteInformation(
+        uri: Uri.parse('/dashboards/time'),
+      );
+      final location = DashboardsLocation(routeInformation);
+      final beamState = BeamState.fromRouteInformation(routeInformation);
+      final newBeamState = beamState.copyWith(
+        pathParameters: {...beamState.pathParameters, 'dashboardId': 'time'},
+      );
+
+      final pages = location.buildPages(mockBuildContext, newBeamState);
+
+      expect(pages.length, 2);
+      expect(pages[1].child, isA<TimeAnalysisPage>());
+    });
   });
 }

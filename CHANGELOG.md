@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1016]
 ### Added
+- New desktop "Time Analysis" dashboard under the Insights tab: see where
+  your time went per category and per day, with quick range presets
+  (1d, 7d, 30d, MTD, YTD, last month) plus a custom date range, a
+  daily/cumulative chart toggle, headline totals, and a precise
+  per-category table with share and daily averages. Optional "focus
+  categories" split the headline into focus vs. other time. Range
+  switching is instantaneous even with years of entries.
 - Categories have a new "Day planning" switch. Day-plan category selection is
   strictly opt-in: only categories with the switch turned on are offered in
   the day plan — nothing is available by default.

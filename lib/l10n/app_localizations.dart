@@ -8382,6 +8382,198 @@ abstract class AppLocalizations {
   /// **'Tasks List'**
   String get inputDataTypeTasksListName;
 
+  /// No description provided for @insightsChartCumulative.
+  ///
+  /// In en, this message translates to:
+  /// **'Cumulative'**
+  String get insightsChartCumulative;
+
+  /// No description provided for @insightsChartCumulativeCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Running total over the range'**
+  String get insightsChartCumulativeCaption;
+
+  /// No description provided for @insightsChartDaily.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily'**
+  String get insightsChartDaily;
+
+  /// No description provided for @insightsChartDailyCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'Time per day'**
+  String get insightsChartDailyCaption;
+
+  /// No description provided for @insightsChartTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'TIME BY CATEGORY'**
+  String get insightsChartTitle;
+
+  /// No description provided for @insightsChooseFocusCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose focus categories'**
+  String get insightsChooseFocusCategories;
+
+  /// No description provided for @insightsDeletedCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted category'**
+  String get insightsDeletedCategory;
+
+  /// No description provided for @insightsEmptyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Time you track on entries and tasks will show up here.'**
+  String get insightsEmptyBody;
+
+  /// No description provided for @insightsEmptyChart.
+  ///
+  /// In en, this message translates to:
+  /// **'No data in this range'**
+  String get insightsEmptyChart;
+
+  /// No description provided for @insightsEmptyShowYtd.
+  ///
+  /// In en, this message translates to:
+  /// **'View year to date'**
+  String get insightsEmptyShowYtd;
+
+  /// No description provided for @insightsEmptyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'No tracked time in this range'**
+  String get insightsEmptyTitle;
+
+  /// No description provided for @insightsFocusCategoriesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No active categories yet.'**
+  String get insightsFocusCategoriesEmpty;
+
+  /// No description provided for @insightsFocusCategoriesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Focus categories'**
+  String get insightsFocusCategoriesTitle;
+
+  /// No description provided for @insightsKpiFocus.
+  ///
+  /// In en, this message translates to:
+  /// **'FOCUS'**
+  String get insightsKpiFocus;
+
+  /// No description provided for @insightsKpiOther.
+  ///
+  /// In en, this message translates to:
+  /// **'OTHER'**
+  String get insightsKpiOther;
+
+  /// No description provided for @insightsKpiTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL'**
+  String get insightsKpiTotal;
+
+  /// No description provided for @insightsLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load time data'**
+  String get insightsLoadError;
+
+  /// No description provided for @insightsOtherCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get insightsOtherCategories;
+
+  /// No description provided for @insightsPartialWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'partial week'**
+  String get insightsPartialWeek;
+
+  /// No description provided for @insightsRange1d.
+  ///
+  /// In en, this message translates to:
+  /// **'1d'**
+  String get insightsRange1d;
+
+  /// No description provided for @insightsRange30d.
+  ///
+  /// In en, this message translates to:
+  /// **'30d'**
+  String get insightsRange30d;
+
+  /// No description provided for @insightsRange7d.
+  ///
+  /// In en, this message translates to:
+  /// **'7d'**
+  String get insightsRange7d;
+
+  /// No description provided for @insightsRangeCustom.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom range'**
+  String get insightsRangeCustom;
+
+  /// No description provided for @insightsRangeLastMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'Last month'**
+  String get insightsRangeLastMonth;
+
+  /// No description provided for @insightsRangeMtd.
+  ///
+  /// In en, this message translates to:
+  /// **'MTD'**
+  String get insightsRangeMtd;
+
+  /// No description provided for @insightsRangeYtd.
+  ///
+  /// In en, this message translates to:
+  /// **'YTD'**
+  String get insightsRangeYtd;
+
+  /// No description provided for @insightsTableAvgPerDay.
+  ///
+  /// In en, this message translates to:
+  /// **'AVG/DAY'**
+  String get insightsTableAvgPerDay;
+
+  /// No description provided for @insightsTableCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'CATEGORY'**
+  String get insightsTableCategory;
+
+  /// No description provided for @insightsTableShare.
+  ///
+  /// In en, this message translates to:
+  /// **'SHARE'**
+  String get insightsTableShare;
+
+  /// No description provided for @insightsTableTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTAL'**
+  String get insightsTableTotal;
+
+  /// No description provided for @insightsTimeAnalysisTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Time Analysis'**
+  String get insightsTimeAnalysisTitle;
+
+  /// No description provided for @insightsUncategorized.
+  ///
+  /// In en, this message translates to:
+  /// **'Uncategorized'**
+  String get insightsUncategorized;
+
   /// No description provided for @journalCopyImageLabel.
   ///
   /// In en, this message translates to:

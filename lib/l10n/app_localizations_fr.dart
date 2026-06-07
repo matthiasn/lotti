@@ -4892,6 +4892,104 @@ class AppLocalizationsFr extends AppLocalizations {
   String get inputDataTypeTasksListName => 'Liste de tâches';
 
   @override
+  String get insightsChartCumulative => 'Cumulé';
+
+  @override
+  String get insightsChartCumulativeCaption => 'Total cumulé sur la période';
+
+  @override
+  String get insightsChartDaily => 'Quotidien';
+
+  @override
+  String get insightsChartDailyCaption => 'Temps par jour';
+
+  @override
+  String get insightsChartTitle => 'TEMPS PAR CATÉGORIE';
+
+  @override
+  String get insightsChooseFocusCategories => 'Choisir les catégories focus';
+
+  @override
+  String get insightsDeletedCategory => 'Catégorie supprimée';
+
+  @override
+  String get insightsEmptyBody =>
+      'Le temps que tu suis sur tes notes et tâches apparaîtra ici.';
+
+  @override
+  String get insightsEmptyChart => 'Aucune donnée sur cette période';
+
+  @override
+  String get insightsEmptyShowYtd => 'Voir l\'année en cours';
+
+  @override
+  String get insightsEmptyTitle => 'Aucun temps suivi sur cette période';
+
+  @override
+  String get insightsFocusCategoriesEmpty =>
+      'Aucune catégorie active pour le moment.';
+
+  @override
+  String get insightsFocusCategoriesTitle => 'Catégories focus';
+
+  @override
+  String get insightsKpiFocus => 'FOCUS';
+
+  @override
+  String get insightsKpiOther => 'AUTRE';
+
+  @override
+  String get insightsKpiTotal => 'TOTAL';
+
+  @override
+  String get insightsLoadError => 'Impossible de charger les données de temps';
+
+  @override
+  String get insightsOtherCategories => 'Autre';
+
+  @override
+  String get insightsPartialWeek => 'semaine partielle';
+
+  @override
+  String get insightsRange1d => '1j';
+
+  @override
+  String get insightsRange30d => '30j';
+
+  @override
+  String get insightsRange7d => '7j';
+
+  @override
+  String get insightsRangeCustom => 'Période personnalisée';
+
+  @override
+  String get insightsRangeLastMonth => 'Dernier mois';
+
+  @override
+  String get insightsRangeMtd => 'MTD';
+
+  @override
+  String get insightsRangeYtd => 'YTD';
+
+  @override
+  String get insightsTableAvgPerDay => 'MOY./JOUR';
+
+  @override
+  String get insightsTableCategory => 'CATÉGORIE';
+
+  @override
+  String get insightsTableShare => 'PART';
+
+  @override
+  String get insightsTableTotal => 'TOTAL';
+
+  @override
+  String get insightsTimeAnalysisTitle => 'Analyse du temps';
+
+  @override
+  String get insightsUncategorized => 'Sans catégorie';
+
+  @override
   String get journalCopyImageLabel => 'Copier l\'image';
 
   @override

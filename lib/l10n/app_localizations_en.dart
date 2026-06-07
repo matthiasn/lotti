@@ -4796,6 +4796,103 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inputDataTypeTasksListName => 'Tasks List';
 
   @override
+  String get insightsChartCumulative => 'Cumulative';
+
+  @override
+  String get insightsChartCumulativeCaption => 'Running total over the range';
+
+  @override
+  String get insightsChartDaily => 'Daily';
+
+  @override
+  String get insightsChartDailyCaption => 'Time per day';
+
+  @override
+  String get insightsChartTitle => 'TIME BY CATEGORY';
+
+  @override
+  String get insightsChooseFocusCategories => 'Choose focus categories';
+
+  @override
+  String get insightsDeletedCategory => 'Deleted category';
+
+  @override
+  String get insightsEmptyBody =>
+      'Time you track on entries and tasks will show up here.';
+
+  @override
+  String get insightsEmptyChart => 'No data in this range';
+
+  @override
+  String get insightsEmptyShowYtd => 'View year to date';
+
+  @override
+  String get insightsEmptyTitle => 'No tracked time in this range';
+
+  @override
+  String get insightsFocusCategoriesEmpty => 'No active categories yet.';
+
+  @override
+  String get insightsFocusCategoriesTitle => 'Focus categories';
+
+  @override
+  String get insightsKpiFocus => 'FOCUS';
+
+  @override
+  String get insightsKpiOther => 'OTHER';
+
+  @override
+  String get insightsKpiTotal => 'TOTAL';
+
+  @override
+  String get insightsLoadError => 'Couldn\'t load time data';
+
+  @override
+  String get insightsOtherCategories => 'Other';
+
+  @override
+  String get insightsPartialWeek => 'partial week';
+
+  @override
+  String get insightsRange1d => '1d';
+
+  @override
+  String get insightsRange30d => '30d';
+
+  @override
+  String get insightsRange7d => '7d';
+
+  @override
+  String get insightsRangeCustom => 'Custom range';
+
+  @override
+  String get insightsRangeLastMonth => 'Last month';
+
+  @override
+  String get insightsRangeMtd => 'MTD';
+
+  @override
+  String get insightsRangeYtd => 'YTD';
+
+  @override
+  String get insightsTableAvgPerDay => 'AVG/DAY';
+
+  @override
+  String get insightsTableCategory => 'CATEGORY';
+
+  @override
+  String get insightsTableShare => 'SHARE';
+
+  @override
+  String get insightsTableTotal => 'TOTAL';
+
+  @override
+  String get insightsTimeAnalysisTitle => 'Time Analysis';
+
+  @override
+  String get insightsUncategorized => 'Uncategorized';
+
+  @override
   String get journalCopyImageLabel => 'Copy image';
 
   @override

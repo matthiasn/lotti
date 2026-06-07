@@ -4895,6 +4895,105 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inputDataTypeTasksListName => 'Listă de sarcini';
 
   @override
+  String get insightsChartCumulative => 'Cumulativ';
+
+  @override
+  String get insightsChartCumulativeCaption => 'Total cumulat pe interval';
+
+  @override
+  String get insightsChartDaily => 'Zilnic';
+
+  @override
+  String get insightsChartDailyCaption => 'Timp pe zi';
+
+  @override
+  String get insightsChartTitle => 'TIMP PE CATEGORIE';
+
+  @override
+  String get insightsChooseFocusCategories =>
+      'Alegeți categoriile de focalizare';
+
+  @override
+  String get insightsDeletedCategory => 'Categorie ștearsă';
+
+  @override
+  String get insightsEmptyBody =>
+      'Timpul pe care îl înregistrați în notițe și sarcini va apărea aici.';
+
+  @override
+  String get insightsEmptyChart => 'Nu există date în acest interval';
+
+  @override
+  String get insightsEmptyShowYtd => 'Afișați anul curent';
+
+  @override
+  String get insightsEmptyTitle =>
+      'Nu există timp înregistrat în acest interval';
+
+  @override
+  String get insightsFocusCategoriesEmpty => 'Nu există încă categorii active.';
+
+  @override
+  String get insightsFocusCategoriesTitle => 'Categorii de focalizare';
+
+  @override
+  String get insightsKpiFocus => 'FOCALIZARE';
+
+  @override
+  String get insightsKpiOther => 'ALTELE';
+
+  @override
+  String get insightsKpiTotal => 'TOTAL';
+
+  @override
+  String get insightsLoadError => 'Datele despre timp nu au putut fi încărcate';
+
+  @override
+  String get insightsOtherCategories => 'Altele';
+
+  @override
+  String get insightsPartialWeek => 'săptămână parțială';
+
+  @override
+  String get insightsRange1d => '1z';
+
+  @override
+  String get insightsRange30d => '30z';
+
+  @override
+  String get insightsRange7d => '7z';
+
+  @override
+  String get insightsRangeCustom => 'Interval personalizat';
+
+  @override
+  String get insightsRangeLastMonth => 'Luna trecută';
+
+  @override
+  String get insightsRangeMtd => 'MTD';
+
+  @override
+  String get insightsRangeYtd => 'YTD';
+
+  @override
+  String get insightsTableAvgPerDay => 'MEDIE/ZI';
+
+  @override
+  String get insightsTableCategory => 'CATEGORIE';
+
+  @override
+  String get insightsTableShare => 'PONDERE';
+
+  @override
+  String get insightsTableTotal => 'TOTAL';
+
+  @override
+  String get insightsTimeAnalysisTitle => 'Analiza timpului';
+
+  @override
+  String get insightsUncategorized => 'Fără categorie';
+
+  @override
   String get journalCopyImageLabel => 'Copiați imaginea';
 
   @override

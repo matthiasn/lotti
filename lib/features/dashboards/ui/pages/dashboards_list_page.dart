@@ -3,11 +3,13 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboards_filter.dart';
 import 'package:lotti/features/dashboards/ui/widgets/dashboards_list.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/insights/ui/time_analysis_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -77,6 +79,52 @@ class _DashboardsListPageState extends ConsumerState<DashboardsListPage> {
                 ),
               ),
             ),
+            // Desktop-only pinned entry for the Time Analysis dashboard;
+            // the detail pane renders the page when the route is
+            // /dashboards/time.
+            if (isDesktop)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.spacing.step5,
+                    0,
+                    tokens.spacing.step5,
+                    tokens.spacing.step4,
+                  ),
+                  child: ValueListenableBuilder<bool>(
+                    valueListenable:
+                        getIt<NavService>().desktopShowTimeAnalysis,
+                    builder: (context, showTimeAnalysis, _) {
+                      return DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: tokens.colors.background.level02,
+                          borderRadius: BorderRadius.circular(tokens.radii.m),
+                          border: Border.all(
+                            color: tokens.colors.decorative.level01,
+                          ),
+                        ),
+                        child: DesignSystemListItem(
+                          title: context.messages.insightsTimeAnalysisTitle,
+                          activated: showTimeAnalysis,
+                          leading: Icon(
+                            showTimeAnalysis
+                                ? Icons.bar_chart_rounded
+                                : Icons.bar_chart_outlined,
+                            size: tokens.spacing.step6,
+                            color: tokens.colors.text.mediumEmphasis,
+                          ),
+                          trailing: Icon(
+                            Icons.chevron_right_rounded,
+                            size: tokens.spacing.step6,
+                            color: tokens.colors.text.lowEmphasis,
+                          ),
+                          onTap: () => beamToNamed('/dashboards/time'),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
             const DashboardsList(),
             const SliverToBoxAdapter(
               child: SizedBox(height: _kBottomListClearance),
@@ -104,9 +152,18 @@ class _DashboardsListPageState extends ConsumerState<DashboardsListPage> {
               .updateListPaneWidth(delta),
         ),
         Expanded(
-          child: ValueListenableBuilder<String?>(
-            valueListenable: getIt<NavService>().desktopSelectedDashboardId,
-            builder: (context, selectedDashboardId, _) {
+          child: ListenableBuilder(
+            listenable: Listenable.merge([
+              getIt<NavService>().desktopSelectedDashboardId,
+              getIt<NavService>().desktopShowTimeAnalysis,
+            ]),
+            builder: (context, _) {
+              final navService = getIt<NavService>();
+              if (navService.desktopShowTimeAnalysis.value) {
+                return const TimeAnalysisPage();
+              }
+              final selectedDashboardId =
+                  navService.desktopSelectedDashboardId.value;
               if (selectedDashboardId != null) {
                 return DashboardPage(dashboardId: selectedDashboardId);
               }
