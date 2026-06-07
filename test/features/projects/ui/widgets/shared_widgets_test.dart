@@ -562,7 +562,8 @@ Longer report content.
         expect(find.text('Ship the fix'), findsNothing);
 
         await tester.tap(find.byIcon(Icons.chevron_right_rounded));
-        await tester.pumpAndSettle();
+        // Drive the 180ms AnimatedSize expand to completion deterministically.
+        await tester.pump(const Duration(milliseconds: 200));
 
         expect(find.textContaining('Longer report content'), findsOneWidget);
         expect(find.text('TLDR'), findsNothing);
@@ -642,7 +643,8 @@ Longer report content.
         expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
 
         await tester.tap(find.byIcon(Icons.chevron_right_rounded));
-        await tester.pumpAndSettle();
+        // Drive the 180ms AnimatedSize expand to completion deterministically.
+        await tester.pump(const Duration(milliseconds: 200));
 
         expect(
           find.textContaining('Full report body with more context'),
@@ -1725,7 +1727,8 @@ Full details here.
 
       // Collapse
       await tester.tap(find.byIcon(Icons.keyboard_arrow_down_rounded));
-      await tester.pumpAndSettle();
+      // Drive the 180ms AnimatedSize collapse to completion deterministically.
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.textContaining('Full details here'), findsNothing);
       expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
@@ -1786,7 +1789,8 @@ Full details here.
       expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
 
       await tester.tap(find.byIcon(Icons.chevron_right_rounded));
-      await tester.pumpAndSettle();
+      // Drive the 180ms AnimatedSize expand to completion deterministically.
+      await tester.pump(const Duration(milliseconds: 200));
 
       // H1 should NOT appear in the expanded content
       expect(find.textContaining('My Project'), findsNothing);
@@ -1822,7 +1826,8 @@ Full details here.
         expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
 
         await tester.tap(find.byIcon(Icons.chevron_right_rounded));
-        await tester.pumpAndSettle();
+        // Drive the 180ms AnimatedSize expand to completion deterministically.
+        await tester.pump(const Duration(milliseconds: 200));
 
         // The H1 should be stripped from expanded view
         expect(find.textContaining('Project Title'), findsNothing);

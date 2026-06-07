@@ -169,7 +169,7 @@ void main() {
     });
 
     testWidgets(
-      'split-view: clears search query via onSearchCleared (lines 53-54)',
+      'split-view: clears search query when the clear icon is tapped',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(920, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -211,7 +211,7 @@ void main() {
     );
 
     testWidgets(
-      'split-view: opens projects filter modal (lines 56-58)',
+      'split-view: opens the projects filter modal',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(920, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -236,7 +236,7 @@ void main() {
     );
 
     testWidgets(
-      'compact: clears search query via onSearchCleared (lines 87-88)',
+      'compact: clears search query when the clear icon is tapped',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(430, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -278,7 +278,7 @@ void main() {
     );
 
     testWidgets(
-      'compact: opens projects filter modal (lines 90-92)',
+      'compact: opens the projects filter modal',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(430, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -302,7 +302,7 @@ void main() {
     );
 
     testWidgets(
-      'shows NoResultsPane when search matches nothing (line 167)',
+      'shows NoResultsPane when search matches nothing',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(430, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -334,7 +334,7 @@ void main() {
     );
 
     testWidgets(
-      'tapping FAB in list screen triggers no-op (line 167)',
+      'tapping the FAB in the list screen leaves selection unchanged',
       (tester) async {
         await tester.binding.setSurfaceSize(const Size(430, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));

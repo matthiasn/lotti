@@ -55,7 +55,8 @@
   Splitting is not urgent (under 500) but the painter logic belongs in a focused file.
   **RESOLVED:** split via `part` files — `project_list_row.dart` (ProjectRow + `_metaSpans`) and `project_list_progress_ring.dart` (`_progressRingColor` + ring widget/painter); host keeps group header/section + interaction priority. Importers untouched; the mirror test stays single per the one-test-file-per-source rule.
 
-- [ ] **[LOW]** `lib/features/projects/ui/widgets/project_tasks_panel.dart` (356 lines) — could extract `TaskSummaryRow` to its own file once `ProjectTasksSliverPanel` gets tests.
+- [x] **[LOW]** `lib/features/projects/ui/widgets/project_tasks_panel.dart` (356 lines) — could extract `TaskSummaryRow` to its own file once `ProjectTasksSliverPanel` gets tests.
+  **RESOLVED (assessed, no change):** `ProjectTasksSliverPanel` and `TaskSummaryRow` now both have direct tests in `project_tasks_panel_test.dart`, so the prerequisite is met — but the extraction itself is a purely cosmetic lib-side move with no test-quality benefit (the file is 356 lines, under the 500 threshold). It is also outside this batch's test-directory scope; left as-is intentionally.
 
 ---
 
@@ -79,9 +80,11 @@
 - [x] **[MED]** `test/.../health_panel_test.dart:44,59` — uses `findsAtLeastNWidgets(1)` to check for a count value (e.g., `'3'`). Because `'3'` might match unrelated text widgets, use `find.widgetWithText(Text, '3')` scoped to the metric area, or assert the exact text widget's content.
   **RESOLVED:** assertions now match the exact localized strings ('3 tasks blocked', '3 Blocked', '4/8 tasks completed', '4 Completed') so stray digits elsewhere can't satisfy them.
 
-- [ ] **[LOW]** `test/.../project_mobile_list_detail_showcase_test.dart` — several test names contain source-code line references like `(lines 53-54)`, `(lines 87-88)`, `(line 167)`. These references rot with every refactor. Rename tests to describe the behaviour, not the implementation location.
+- [x] **[LOW]** `test/.../project_mobile_list_detail_showcase_test.dart` — several test names contain source-code line references like `(lines 53-54)`, `(lines 87-88)`, `(line 167)`. These references rot with every refactor. Rename tests to describe the behaviour, not the implementation location.
+  **RESOLVED:** all six test names stripped of their `(lines …)` / `(line 167)` suffixes and reworded to describe behaviour (e.g. "split-view: clears search query when the clear icon is tapped", "tapping the FAB in the list screen leaves selection unchanged"). No line/Line/lines references remain in the file.
 
-- [ ] **[LOW]** `test/.../projects_overview_content_test.dart` — single test (45 lines). Only one structural invariant is covered (header outside scroll view). All content-rendering branches (groups non-empty, project tap callback, empty state) are untested.
+- [x] **[LOW]** `test/.../projects_overview_content_test.dart` — single test (45 lines). Only one structural invariant is covered (header outside scroll view). All content-rendering branches (groups non-empty, project tap callback, empty state) are untested.
+  **RESOLVED (already addressed):** this is the same gap closed by the MED item below (empty groups → `NoResultsPane`, non-empty groups render project titles, `onProjectTap` forwards the tapped item). The file now has four tests sharing a `_pumpContent` helper, so the "single test" observation no longer holds.
 
 ---
 
@@ -99,6 +102,7 @@
   **RESOLVED (mostly stale):** never-empty, negative-clamp, shape, and two-digit-seconds properties already existed; added the missing strong one — a round-trip property parsing `h:mm:ss`/`m:ss` back to the clamped input seconds. (Pure-function idempotence was skipped as assertion theater.)
 
 - [ ] **[LOW]** `lib/features/projects/ui/widgets/project_list_shared.dart:299` — `_interactionPriority(...)` is a pure 3-case comparator. Any combination of `{projectId, selectedProjectId, hoveredProjectId}` should return exactly one of `{0, 1, 2}`. A Glados property over arbitrary string triples would exhaustively verify the exclusive-priority invariant. Currently not tested at all.
+  **DEFERRED:** `_interactionPriority` is library-private (in the `project_list_shared` part-file library); an isolated/Glados test requires exposing it via `@visibleForTesting`, which is a lib-source edit outside this batch's test-directory-only scope. Its selected/hovered priority behaviour is already exercised indirectly through `ProjectGroupSection`'s divider-hiding tests (`hides the divider for hovered/selected rows`).
 
 ---
 
@@ -127,6 +131,7 @@
   **RESOLVED:** added a shared `_pumpContent` helper and three tests — empty groups → `NoResultsPane` (and no sliver list), non-empty groups render project titles (and no empty pane), and `onProjectTap` forwards the tapped item through the content widget.
 
 - [ ] **[LOW]** `lib/features/projects/ui/widgets/project_list_shared.dart:372` — `_progressRingColor` three-threshold color logic (≥80 → green, ≥50 → amber, <50 → error) is only exercised indirectly through `ProjectRow` widget tests. An isolated unit test would document and protect each threshold boundary.
+  **DEFERRED:** `_progressRingColor` is library-private (lives in the `project_list_progress_ring.dart` part of the `project_list_shared` library) and takes a `BuildContext`; an isolated test requires exposing it via `@visibleForTesting`, a lib-source edit outside this batch's test-directory-only scope. The three thresholds remain covered indirectly through `ProjectRow` rendering.
 
 ---
 
@@ -142,9 +147,11 @@
 - [x] **[MED]** `test/.../project_list_detail_showcase_test.dart` — **6 `pumpAndSettle` calls** in filter-modal interaction tests. The modal open needs one settle; each sub-field `tap` does not. Could reduce to 2 per test.
   **RESOLVED (adapted):** the in-modal option-toggle settle is now a plain `pump()`. The remaining 5 settles each sit on a genuine Wolt modal route transition (sheet open ×2, nested selection open, nested apply/close, main apply/close) — the same class of transition that empirically broke when bounded in `projects_filter_modal_test.dart`.
 
-- [ ] **[LOW]** `test/.../project_mobile_list_detail_showcase_test.dart` — **2 `pumpAndSettle` calls**, both for filter-modal opens. These are legitimate (bottom-sheet animation). No change needed.
+- [x] **[LOW]** `test/.../project_mobile_list_detail_showcase_test.dart` — **2 `pumpAndSettle` calls**, both for filter-modal opens. These are legitimate (bottom-sheet animation). No change needed.
+  **RESOLVED (assessed, no change):** confirmed both `pumpAndSettle` calls sit immediately after tapping `Icons.filter_list_rounded` to open the Wolt filter modal — the same genuine route-transition class that empirically broke when bounded in `projects_filter_modal_test.dart`. Left as-is, as the item itself recommends.
 
-- [ ] **[LOW]** `test/.../shared_widgets_test.dart` — **5 `pumpAndSettle` calls**, all in `ExpandableReportSection` expand/collapse tests. Each drives an `AnimatedSize` transition. The `AnimatedSize` duration is 180 ms; `tester.pump(const Duration(milliseconds: 200))` is sufficient and deterministic, removing the open-ended animation settle.
+- [x] **[LOW]** `test/.../shared_widgets_test.dart` — **5 `pumpAndSettle` calls**, all in `ExpandableReportSection` expand/collapse tests. Each drives an `AnimatedSize` transition. The `AnimatedSize` duration is 180 ms; `tester.pump(const Duration(milliseconds: 200))` is sufficient and deterministic, removing the open-ended animation settle.
+  **RESOLVED:** verified the only animation in the expand/collapse path is the single 180ms `AnimatedSize` (`expandable_report_section.dart:234`) wrapping synchronous `GptMarkdown`. All five settles replaced with bounded `await tester.pump(const Duration(milliseconds: 200))`; the file now contains zero `pumpAndSettle` calls.
 
 ---
 

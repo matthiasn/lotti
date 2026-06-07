@@ -1,4 +1,3 @@
-// ignore_for_file: avoid_redundant_argument_values
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -26,7 +25,6 @@ void main() {
       data: DayPlanData(
         planDate: date,
         status: const DayPlanStatus.draft(),
-        plannedBlocks: const [],
       ),
     );
   }
@@ -46,6 +44,42 @@ void main() {
       updateNotifications: updateNotifications,
     );
   });
+
+  // Wires the new-plan branch: getDayPlanById returns null so save() routes
+  // through createDbEntity. Pass [throws] to make createDbEntity fail.
+  void stubCreateBranch(DayPlanEntry plan, {Object? throws}) {
+    when(
+      () => journalDb.getDayPlanById(plan.meta.id),
+    ).thenAnswer((_) async => null);
+    final createStub = when(() => persistenceLogic.createDbEntity(plan));
+    if (throws != null) {
+      createStub.thenThrow(throws);
+    } else {
+      createStub.thenAnswer((_) async => true);
+    }
+  }
+
+  // Wires the update branch: getDayPlanById returns [original] so save()
+  // routes through updateMetadata + updateDbEntity. updateMetadata yields
+  // [updatedMeta]. Pass [throws] to make updateDbEntity fail.
+  void stubUpdateBranch(
+    DayPlanEntry original,
+    Metadata updatedMeta, {
+    Object? throws,
+  }) {
+    when(
+      () => journalDb.getDayPlanById(original.meta.id),
+    ).thenAnswer((_) async => original);
+    when(
+      () => persistenceLogic.updateMetadata(original.meta),
+    ).thenAnswer((_) async => updatedMeta);
+    final updateStub = when(() => persistenceLogic.updateDbEntity(any()));
+    if (throws != null) {
+      updateStub.thenThrow(throws);
+    } else {
+      updateStub.thenAnswer((_) async => true);
+    }
+  }
 
   group('getDayPlan microtask coalescing', () {
     test(
@@ -197,12 +231,7 @@ void main() {
         final date = DateTime(2024, 3, 15);
         final plan = makePlan(date);
 
-        when(
-          () => journalDb.getDayPlanById(plan.meta.id),
-        ).thenAnswer((_) async => null);
-        when(
-          () => persistenceLogic.createDbEntity(plan),
-        ).thenAnswer((_) async => true);
+        stubCreateBranch(plan);
 
         final result = await repository.save(plan);
 
@@ -224,15 +253,7 @@ void main() {
         );
         final expectedResult = original.copyWith(meta: updatedMeta);
 
-        when(
-          () => journalDb.getDayPlanById(original.meta.id),
-        ).thenAnswer((_) async => original);
-        when(
-          () => persistenceLogic.updateMetadata(original.meta),
-        ).thenAnswer((_) async => updatedMeta);
-        when(
-          () => persistenceLogic.updateDbEntity(expectedResult),
-        ).thenAnswer((_) async => true);
+        stubUpdateBranch(original, updatedMeta);
 
         final result = await repository.save(original);
 
@@ -254,15 +275,7 @@ void main() {
           updatedAt: DateTime(2024, 3, 17, 9),
         );
 
-        when(
-          () => journalDb.getDayPlanById(original.meta.id),
-        ).thenAnswer((_) async => original);
-        when(
-          () => persistenceLogic.updateMetadata(original.meta),
-        ).thenAnswer((_) async => updatedMeta);
-        when(
-          () => persistenceLogic.updateDbEntity(any()),
-        ).thenAnswer((_) async => true);
+        stubUpdateBranch(original, updatedMeta);
 
         final result = await repository.save(original);
 
@@ -276,12 +289,7 @@ void main() {
     test('propagates a createDbEntity throw on the new-plan branch', () async {
       final plan = makePlan(DateTime(2024, 3, 18));
 
-      when(
-        () => journalDb.getDayPlanById(plan.meta.id),
-      ).thenAnswer((_) async => null);
-      when(
-        () => persistenceLogic.createDbEntity(plan),
-      ).thenThrow(StateError('create failed'));
+      stubCreateBranch(plan, throws: StateError('create failed'));
 
       await expectLater(() => repository.save(plan), throwsStateError);
     });
@@ -292,15 +300,11 @@ void main() {
         updatedAt: DateTime(2024, 3, 19, 12),
       );
 
-      when(
-        () => journalDb.getDayPlanById(original.meta.id),
-      ).thenAnswer((_) async => original);
-      when(
-        () => persistenceLogic.updateMetadata(original.meta),
-      ).thenAnswer((_) async => updatedMeta);
-      when(
-        () => persistenceLogic.updateDbEntity(any()),
-      ).thenThrow(StateError('update failed'));
+      stubUpdateBranch(
+        original,
+        updatedMeta,
+        throws: StateError('update failed'),
+      );
 
       await expectLater(() => repository.save(original), throwsStateError);
     });
@@ -419,13 +423,53 @@ void main() {
         expect(results, isEmpty);
       },
     );
+
+    test(
+      'forwards a backwards range (rangeStart > rangeEnd) verbatim without '
+      'normalizing the bounds',
+      () async {
+        // rangeStart is after rangeEnd. The repository performs no validation
+        // or reordering — it delegates the bounds exactly as given and the DB
+        // decides the outcome (empty for an inverted range in SQLite).
+        final start = DateTime(2024, 7, 31);
+        final end = DateTime(2024, 7);
+
+        when(
+          () => journalDb.getDayPlansInRange(
+            rangeStart: start,
+            rangeEnd: end,
+          ),
+        ).thenAnswer((_) async => []);
+
+        final results = await repository.getDayPlansInRange(
+          rangeStart: start,
+          rangeEnd: end,
+        );
+
+        expect(results, isEmpty);
+        // The exact (inverted) bounds are passed straight through — no swap.
+        verify(
+          () => journalDb.getDayPlansInRange(
+            rangeStart: start,
+            rangeEnd: end,
+          ),
+        ).called(1);
+        verifyNever(
+          () => journalDb.getDayPlansInRange(
+            rangeStart: end,
+            rangeEnd: start,
+          ),
+        );
+      },
+    );
   });
 
   group('updateStream', () {
     test(
-      'exposes the updateStream from UpdateNotifications',
+      'relays every event from UpdateNotifications, not just the first',
       () async {
-        final ids = <String>{'dayplan-2024-03-15', 'dayplan-2024-03-16'};
+        final ids1 = <String>{'dayplan-2024-03-15', 'dayplan-2024-03-16'};
+        final ids2 = <String>{'dayplan-2024-03-17'};
         final controller = StreamController<Set<String>>();
         when(
           () => updateNotifications.updateStream,
@@ -433,12 +477,19 @@ void main() {
 
         final emitted = <Set<String>>[];
         final sub = repository.updateStream.listen(emitted.add);
-        controller.add(ids);
+
+        controller.add(ids1);
         // Drain the pending event-queue turns deterministically — no
         // real-time yield involved.
         await pumpEventQueue();
+        expect(emitted, [ids1]);
 
-        expect(emitted, [ids]);
+        // A second event must also reach the listener: the repository exposes
+        // the underlying stream as a persistent relay, not a one-shot.
+        controller.add(ids2);
+        await pumpEventQueue();
+        expect(emitted, [ids1, ids2]);
+
         await sub.cancel();
         await controller.close();
       },
