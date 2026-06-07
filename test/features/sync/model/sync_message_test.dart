@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:json_annotation/json_annotation.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -1019,5 +1020,21 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+  group('forward compatibility', () {
+    test('an unknown runtimeType from a newer peer throws on fromJson', () {
+      // Pins the current contract: freezed unions have no fallback case, so
+      // a message type this build does not know fails deserialization. The
+      // sync inbound pipeline treats that as a per-message error rather
+      // than a crash; if a silent-skip fallback is ever desired, add a
+      // fallback union case and update this test.
+      expect(
+        () => SyncMessage.fromJson(const {
+          'runtimeType': 'unknownFutureVariant',
+          'somePayload': 42,
+        }),
+        throwsA(isA<CheckedFromJsonException>()),
+      );
+    });
   });
 }

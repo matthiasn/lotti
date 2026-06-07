@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/models/sync_error.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -116,21 +118,20 @@ void main() {
         );
       });
 
-      test('logs the exception via logging service without error', () {
-        // DomainLogger is a no-op in test env, but we verify it does not throw
-        SyncError.fromException(
-          Exception('test error'),
-          StackTrace.current,
-          loggingService,
-        );
-      });
+      test('logs the exception on the sync domain', () {
+        final original = Exception('test error');
+        final trace = StackTrace.current;
 
-      test('uses custom domain without error', () {
-        SyncError.fromException(
-          Exception('test error'),
-          StackTrace.current,
-          loggingService,
-        );
+        SyncError.fromException(original, trace, loggingService);
+
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            original,
+            stackTrace: trace,
+            subDomain: 'SYNC_CONTROLLER',
+          ),
+        ).called(1);
       });
 
       test('preserves original error', () {
@@ -155,5 +156,49 @@ void main() {
         expect(error.stackTrace, stackTrace);
       });
     });
+  });
+  group('fromException classification properties', () {
+    glados.Glados2(
+      glados.AnyUtils(glados.any).choose(
+        const ['database', 'network', 'connection', 'outbox', ''],
+      ),
+      glados.StringAnys(glados.any).stringOf('xyz '),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'keyword presence drives the type; absence falls back to unknown',
+      (keyword, noise) {
+        final loggingService = MockDomainLogger();
+        // Surround the keyword with keyword-free noise so the property
+        // sweeps arbitrary message shapes.
+        final message = '$noise$keyword$noise';
+        final error = SyncError.fromException(
+          Exception(message),
+          StackTrace.current,
+          loggingService,
+        );
+
+        final expected = switch (keyword) {
+          'database' => SyncErrorType.database,
+          'network' || 'connection' => SyncErrorType.network,
+          'outbox' => SyncErrorType.outbox,
+          _ => SyncErrorType.unknown,
+        };
+        expect(error.type, expected, reason: 'message="$message"');
+        // The user-facing message is exactly the canonical text for the
+        // resolved type — never raw exception output.
+        const friendly = {
+          SyncErrorType.database: 'Failed to access local data. '
+              'Please try again.',
+          SyncErrorType.network: 'Network connection issue. '
+              'Please check your internet connection.',
+          SyncErrorType.outbox: 'Failed to queue sync items. '
+              'Please try again.',
+          SyncErrorType.unknown: 'An unexpected error occurred. '
+              'Please try again.',
+        };
+        expect(error.message, friendly[error.type], reason: 'msg="$message"');
+      },
+      tags: 'glados',
+    );
   });
 }
