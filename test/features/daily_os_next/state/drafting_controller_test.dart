@@ -49,6 +49,45 @@ class _CancelProbeAgent extends MockDayAgent {
   }
 }
 
+/// Agent whose draft fails while learnings stay parked. This drives the
+/// controller's synchronous rethrow path: the fire-and-forget listener records
+/// the draft error before `await learningsFuture` returns, so build() must
+/// surface that error instead of emitting a drafting state.
+class _DraftErrorAgent extends MockDayAgent {
+  _DraftErrorAgent({required this.learningsGate})
+    : super(
+        summarizeLatency: Duration.zero,
+        clock: () => DateTime(2026, 5, 25, 7),
+      );
+
+  /// Held until the test has let the draft error land.
+  final Completer<void> learningsGate;
+
+  @override
+  Future<List<LearningCard>> summarizeRecentPatterns({
+    required DateTime asOf,
+    int lookbackDays = 7,
+  }) async {
+    await learningsGate.future;
+    return super.summarizeRecentPatterns(
+      asOf: asOf,
+      lookbackDays: lookbackDays,
+    );
+  }
+
+  @override
+  Future<DraftPlan> draftDayPlan({
+    required CaptureId captureId,
+    required List<String> decidedTaskIds,
+    required DateTime dayDate,
+    List<String> decidedCaptureItemIds = const [],
+    List<TimeBlock> calendarBlocks = const [],
+    bool Function()? isCancelled,
+  }) async {
+    throw StateError('draft boom');
+  }
+}
+
 void main() {
   group('DraftingController', () {
     late MockDayAgent agent;
@@ -136,6 +175,27 @@ void main() {
         // already disposed so the resolution is a no-op.
         probe.gate.complete();
         await pumpEventQueue();
+      },
+    );
+
+    test(
+      'surfaces a draft error that lands before learnings resolve',
+      () async {
+        final agent = _DraftErrorAgent(learningsGate: Completer<void>());
+        final container = makeContainer(agent);
+
+        final future = container.read(
+          draftingControllerProvider(params()).future,
+        );
+
+        // Let the fire-and-forget draft listener record the failure while
+        // build() is still parked on the gated learnings future. With state
+        // still loading, the listener's `state.value == null` guard returns
+        // without emitting an AsyncError.
+        await pumpEventQueue();
+        agent.learningsGate.complete();
+
+        await expectLater(future, throwsA(isA<StateError>()));
       },
     );
   });

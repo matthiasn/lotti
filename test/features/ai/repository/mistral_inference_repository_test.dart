@@ -317,6 +317,52 @@ void main() {
         });
       });
 
+      test('serializes each tool-choice mode to its Mistral spelling', () async {
+        const expected = {
+          ChatCompletionToolChoiceMode.none: 'none',
+          ChatCompletionToolChoiceMode.auto: 'auto',
+          // Mistral forces a tool call with `any`, not OpenAI's `required`.
+          ChatCompletionToolChoiceMode.required: 'any',
+        };
+
+        for (final mode in expected.keys) {
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => createSseStreamedResponse(
+              events: [
+                createSseChunkEvent(content: 'ok'),
+                createSseFinalEvent(),
+              ],
+            ),
+          );
+
+          await repository
+              .generateText(
+                prompt: prompt,
+                model: model,
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                tools: const [
+                  ChatCompletionTool(
+                    type: ChatCompletionToolType.function,
+                    function: FunctionObject(name: 'draft_day_plan'),
+                  ),
+                ],
+                toolChoice: ChatCompletionToolChoiceOption.mode(mode),
+              )
+              .toList();
+        }
+
+        final sent = verify(() => mockHttpClient.send(captureAny()))
+            .captured
+            .cast<http.Request>()
+            .map(
+              (r) =>
+                  (jsonDecode(r.body) as Map<String, dynamic>)['tool_choice'],
+            )
+            .toList();
+        expect(sent, expected.values.toList());
+      });
+
       test('should handle HTTP error responses', () async {
         // Arrange
         final stream = Stream.fromIterable([

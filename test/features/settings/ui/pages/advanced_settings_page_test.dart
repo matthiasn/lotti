@@ -19,6 +19,11 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   const n = 111;
 
+  // These tests override the mutable platform flag; capture the boot value so
+  // tearDown can restore it. Without this `isMobile = true` leaks into other
+  // tests under `very_good` (single isolate). See test/README.md.
+  final originalIsMobile = platform.isMobile;
+
   final mockSyncDatabase = MockSyncDatabase();
   final mockJournalDb = MockJournalDb();
 
@@ -36,7 +41,10 @@ void main() {
     ensureThemingServicesRegistered();
   });
 
-  tearDown(getIt.reset);
+  tearDown(() {
+    platform.isMobile = originalIsMobile;
+    getIt.reset();
+  });
 
   group('AdvancedSettingsPage', () {
     testWidgets('renders DesignSystemListItem for each setting', (
