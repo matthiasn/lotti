@@ -9,6 +9,7 @@ import 'package:glados/glados.dart'
         ExploreConfig,
         Generator,
         Glados,
+        Glados2,
         IntAnys,
         ListAnys,
         any;
@@ -209,42 +210,57 @@ void main() {
     );
   }
 
+  /// Materializes a generated scenario into the planned/actual slot lists
+  /// shared by every Glados property in this file.
+  (List<PlannedTimeSlot>, List<ActualTimeSlot>) slotsForScenario(
+    _GeneratedTimelineFoldingScenario scenario,
+  ) {
+    return (
+      [
+        for (final slot in scenario.slots)
+          if (slot.kind == _GeneratedTimelineSlotKind.planned)
+            createPlannedSlot(
+              hour: slot.startHour,
+              minute: slot.startMinute,
+              durationMinutes: slot.durationMinutes,
+            ),
+      ],
+      [
+        for (final slot in scenario.slots)
+          if (slot.kind == _GeneratedTimelineSlotKind.actual)
+            createActualSlot(
+              hour: slot.startHour,
+              minute: slot.startMinute,
+              durationMinutes: slot.durationMinutes,
+            ),
+      ],
+    );
+  }
+
   group('VisibleCluster', () {
     test('calculates hourCount correctly', () {
       const cluster = VisibleCluster(startHour: 9, endHour: 12);
       expect(cluster.hourCount, 3);
     });
 
-    test('equality works correctly', () {
-      const cluster1 = VisibleCluster(startHour: 9, endHour: 12);
-      const cluster2 = VisibleCluster(startHour: 9, endHour: 12);
-      const cluster3 = VisibleCluster(startHour: 10, endHour: 12);
+    test('equality and hashCode evaluate both hour fields', () {
+      const reference = VisibleCluster(startHour: 9, endHour: 12);
+      // Table-driven: each case must differ from the reference for the
+      // stated reason — including the endHour-only case, so == cannot
+      // short-circuit on startHour alone.
+      const differing = <String, Object>{
+        'different startHour': VisibleCluster(startHour: 10, endHour: 12),
+        'different endHour only': VisibleCluster(startHour: 9, endHour: 15),
+        'non-VisibleCluster type': CompressedRegion(startHour: 9, endHour: 12),
+      };
 
-      expect(cluster1, equals(cluster2));
-      expect(cluster1, isNot(equals(cluster3)));
-    });
+      const equalTwin = VisibleCluster(startHour: 9, endHour: 12);
+      expect(reference, equals(equalTwin));
+      expect(reference.hashCode, equalTwin.hashCode);
 
-    test('equality differentiates on endHour when startHour matches', () {
-      // Same startHour but different endHour: the == operator must evaluate
-      // the endHour comparison term rather than short-circuiting on startHour.
-      const cluster1 = VisibleCluster(startHour: 9, endHour: 12);
-      const sameStartDifferentEnd = VisibleCluster(startHour: 9, endHour: 15);
-
-      expect(cluster1 == sameStartDifferentEnd, isFalse);
-      expect(cluster1, isNot(equals(sameStartDifferentEnd)));
-    });
-
-    test('equality returns false for a non-VisibleCluster object', () {
-      const cluster = VisibleCluster(startHour: 9, endHour: 12);
-      const Object other = CompressedRegion(startHour: 9, endHour: 12);
-      expect(cluster == other, isFalse);
-    });
-
-    test('hashCode is consistent with equality', () {
-      const cluster1 = VisibleCluster(startHour: 9, endHour: 12);
-      const cluster2 = VisibleCluster(startHour: 9, endHour: 12);
-
-      expect(cluster1.hashCode, equals(cluster2.hashCode));
+      for (final MapEntry(key: reason, value: other) in differing.entries) {
+        expect(reference == other, isFalse, reason: reason);
+      }
     });
 
     test('toString returns readable representation', () {
@@ -586,24 +602,7 @@ void main() {
     Glados(any.timelineFoldingScenario, ExploreConfig(numRuns: 160)).test(
       'partitions the generated day and keeps occupied hours visible',
       (scenario) {
-        final plannedSlots = [
-          for (final slot in scenario.slots)
-            if (slot.kind == _GeneratedTimelineSlotKind.planned)
-              createPlannedSlot(
-                hour: slot.startHour,
-                minute: slot.startMinute,
-                durationMinutes: slot.durationMinutes,
-              ),
-        ];
-        final actualSlots = [
-          for (final slot in scenario.slots)
-            if (slot.kind == _GeneratedTimelineSlotKind.actual)
-              createActualSlot(
-                hour: slot.startHour,
-                minute: slot.startMinute,
-                durationMinutes: slot.durationMinutes,
-              ),
-        ];
+        final (plannedSlots, actualSlots) = slotsForScenario(scenario);
 
         final state = calculateFoldingState(
           plannedSlots: plannedSlots,
@@ -661,6 +660,48 @@ void main() {
             reason: 'Occupied hour $hour must not be compressed for $scenario',
           );
         }
+      },
+      tags: 'glados',
+    );
+
+    // numRuns 100 is the Glados default.
+    Glados(any.timelineFoldingScenario).test(
+      'is pure: repeated calls agree and inputs are not mutated',
+      (scenario) {
+        final (plannedSlots, actualSlots) = slotsForScenario(scenario);
+        final plannedSnapshot = List.of(plannedSlots);
+        final actualSnapshot = List.of(actualSlots);
+
+        final first = calculateFoldingState(
+          plannedSlots: plannedSlots,
+          actualSlots: actualSlots,
+          gapThreshold: scenario.gapThreshold,
+          bufferHours: scenario.bufferHours,
+        );
+        final second = calculateFoldingState(
+          plannedSlots: plannedSlots,
+          actualSlots: actualSlots,
+          gapThreshold: scenario.gapThreshold,
+          bufferHours: scenario.bufferHours,
+        );
+
+        // Equivalent folding state on every call with the same input.
+        expect(
+          second.visibleClusters,
+          first.visibleClusters,
+          reason: '$scenario',
+        );
+        expect(
+          second.compressedRegions,
+          first.compressedRegions,
+          reason: '$scenario',
+        );
+
+        // The input lists must come back untouched (same instances, same
+        // order) — a regression that sorts or consumes them in place would
+        // break the second call.
+        expect(plannedSlots, orderedEquals(plannedSnapshot));
+        expect(actualSlots, orderedEquals(actualSnapshot));
       },
       tags: 'glados',
     );
@@ -808,24 +849,7 @@ void main() {
     Glados(any.timelineFoldingScenario, ExploreConfig(numRuns: 120)).test(
       'is monotonic and ends at the generated folded height',
       (scenario) {
-        final plannedSlots = [
-          for (final slot in scenario.slots)
-            if (slot.kind == _GeneratedTimelineSlotKind.planned)
-              createPlannedSlot(
-                hour: slot.startHour,
-                minute: slot.startMinute,
-                durationMinutes: slot.durationMinutes,
-              ),
-        ];
-        final actualSlots = [
-          for (final slot in scenario.slots)
-            if (slot.kind == _GeneratedTimelineSlotKind.actual)
-              createActualSlot(
-                hour: slot.startHour,
-                minute: slot.startMinute,
-                durationMinutes: slot.durationMinutes,
-              ),
-        ];
+        final (plannedSlots, actualSlots) = slotsForScenario(scenario);
 
         final state = calculateFoldingState(
           plannedSlots: plannedSlots,
@@ -1530,6 +1554,42 @@ void main() {
         isTrue,
       );
     });
+
+    test(
+      'block overlapping only the expanded one of two regions returns false',
+      () {
+        // Two compressed regions: 10-14 (expanded) and 18-24 (collapsed).
+        const foldingState = TimelineFoldingState(
+          visibleClusters: [
+            VisibleCluster(startHour: 6, endHour: 10),
+            VisibleCluster(startHour: 14, endHour: 18),
+          ],
+          compressedRegions: [
+            CompressedRegion(startHour: 0, endHour: 6),
+            CompressedRegion(startHour: 10, endHour: 14),
+            CompressedRegion(startHour: 18, endHour: 24),
+          ],
+        );
+
+        // Block 11:00-13:00 sits entirely inside the expanded 10-14 region
+        // and never touches the collapsed 0-6 / 18-24 regions.
+        final block = createBlock(
+          startHour: 11,
+          startMinute: 0,
+          endHour: 13,
+          endMinute: 0,
+        );
+
+        expect(
+          blockOverlapsCompressedRegion(
+            block: block,
+            foldingState: foldingState,
+            expandedRegions: {10},
+          ),
+          isFalse,
+        );
+      },
+    );
   });
 
   group('calculateContiguousDragBounds', () {
@@ -1690,5 +1750,73 @@ void main() {
       expect(bounds.startHour, 20);
       expect(bounds.endHour, 22);
     });
+
+    test(
+      'backward expansion through two adjacent expanded regions stops at a '
+      'collapsed region',
+      () {
+        const foldingState = TimelineFoldingState(
+          visibleClusters: [VisibleCluster(startHour: 10, endHour: 14)],
+          compressedRegions: [
+            CompressedRegion(startHour: 0, endHour: 2),
+            CompressedRegion(startHour: 2, endHour: 6),
+            CompressedRegion(startHour: 6, endHour: 10),
+            CompressedRegion(startHour: 14, endHour: 24),
+          ],
+        );
+
+        // 6-10 and 2-6 are both expanded; the leftmost region 0-2 stays
+        // collapsed and must bound the backward expansion at hour 2.
+        final bounds = calculateContiguousDragBounds(
+          sectionStartHour: 10,
+          sectionEndHour: 14,
+          foldingState: foldingState,
+          expandedRegions: {2, 6},
+        );
+
+        expect(bounds.startHour, 2);
+        expect(bounds.endHour, 14);
+      },
+    );
+
+    // numRuns 100 is the Glados default.
+    Glados2(
+      any.timelineFoldingScenario,
+      any.intInRange(0, 64),
+    ).test(
+      'bounds only ever widen the section, inside the 0-24 day',
+      (scenario, sectionSeed) {
+        final (plannedSlots, actualSlots) = slotsForScenario(scenario);
+        final state = calculateFoldingState(
+          plannedSlots: plannedSlots,
+          actualSlots: actualSlots,
+          gapThreshold: scenario.gapThreshold,
+          bufferHours: scenario.bufferHours,
+        );
+        final regions = _allRegions(state);
+        final section = regions[sectionSeed % regions.length];
+
+        final bounds = calculateContiguousDragBounds(
+          sectionStartHour: section.startHour,
+          sectionEndHour: section.endHour,
+          foldingState: state,
+          expandedRegions: scenario.expandedRegionsFor(state),
+        );
+
+        expect(
+          bounds.startHour,
+          lessThanOrEqualTo(section.startHour),
+          reason: '$scenario section $section',
+        );
+        expect(
+          bounds.endHour,
+          greaterThanOrEqualTo(section.endHour),
+          reason: '$scenario section $section',
+        );
+        expect(bounds.startHour, greaterThanOrEqualTo(0));
+        expect(bounds.endHour, lessThanOrEqualTo(24));
+      },
+      tags: 'glados',
+    );
   });
 }
