@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 
@@ -209,19 +209,18 @@ void main() {
       }
     });
 
-    test(
-      'DayAgentInterface is implementable; equality on value objects works',
-      () {
-        // Compile-time check — Mock is an implementation.
-        const DayAgentInterface i = _NullAgent();
-        expect(i, isA<DayAgentInterface>());
-        expect(const CaptureId('x'), const CaptureId('x'));
-        expect(
-          const DayAgentCategory(id: 'a', name: 'A', colorHex: 'fff'),
-          const DayAgentCategory(id: 'a', name: 'A', colorHex: 'fff'),
-        );
-      },
-    );
+    test('value-object equality holds for CaptureId and DayAgentCategory', () {
+      expect(const CaptureId('x'), const CaptureId('x'));
+      expect(const CaptureId('x'), isNot(const CaptureId('y')));
+      expect(
+        const DayAgentCategory(id: 'a', name: 'A', colorHex: 'fff'),
+        const DayAgentCategory(id: 'a', name: 'A', colorHex: 'fff'),
+      );
+      expect(
+        const DayAgentCategory(id: 'a', name: 'A', colorHex: 'fff'),
+        isNot(const DayAgentCategory(id: 'b', name: 'A', colorHex: 'fff')),
+      );
+    });
   });
 
   // Lifecycle tools added when the Commit, Shutdown and Tasks corpus
@@ -766,152 +765,73 @@ void main() {
       expect(await agent.currentPlanForDate(DateTime(2026, 5, 25)), isNull);
     });
   });
-}
+  group('debugMatchesFilter — properties', () {
+    const categories = ['cat-a', 'cat-b'];
+    const queries = [null, '', '  ', 'deck', 'DECK', 'zzz'];
 
-class _NullAgent implements DayAgentInterface {
-  const _NullAgent();
-
-  @override
-  Future<CaptureId> submitCapture({
-    required String transcript,
-    required DateTime capturedAt,
-    String? audioId,
-  }) async => const CaptureId('null');
-
-  @override
-  Future<DraftPlan?> currentPlanForDate(DateTime date) async => null;
-
-  @override
-  Future<bool> deletePlanForDate(DateTime date) async => true;
-
-  @override
-  Future<List<ParsedItem>> parseCaptureToItems(CaptureId id) async => const [];
-
-  @override
-  Future<List<PendingItem>> surfacePendingDecisions({
-    DateTime? forDate,
-  }) async => const [];
-
-  @override
-  Future<ParsedItem> breakCaptureLink(String parsedItemId) async =>
-      throw UnimplementedError();
-
-  @override
-  Future<TriageResult> applyTriage({
-    required String taskId,
-    required TriageAction action,
-    DateTime? deferTo,
-  }) async => TriageResult(taskId: taskId, action: action);
-
-  @override
-  Future<DraftPlan> draftDayPlan({
-    required CaptureId captureId,
-    required List<String> decidedTaskIds,
-    required DateTime dayDate,
-    List<String> decidedCaptureItemIds = const [],
-    List<TimeBlock> calendarBlocks = const [],
-    bool Function()? isCancelled,
-  }) async => DraftPlan(
-    dayDate: dayDate,
-    blocks: const [],
-    bands: const [],
-    capacityMinutes: 0,
-    scheduledMinutes: 0,
-  );
-
-  @override
-  Future<List<LearningCard>> summarizeRecentPatterns({
-    required DateTime asOf,
-    int lookbackDays = 7,
-  }) async => const [];
-
-  @override
-  Future<PlanDiff> proposePlanDiff({
-    required DraftPlan currentPlan,
-    required String voiceTranscript,
-    bool Function()? isCancelled,
-  }) async => PlanDiff(
-    id: 'null',
-    transcript: voiceTranscript,
-    changes: const [],
-    updatedPlan: currentPlan,
-  );
-
-  @override
-  Future<DraftPlan> acceptDiff(
-    PlanDiff diff, {
-    List<int>? itemIndices,
-  }) async => diff.updatedPlan;
-
-  @override
-  Future<DraftPlan> revertDiff({
-    required PlanDiff diff,
-    required DraftPlan originalPlan,
-    List<int>? itemIndices,
-  }) async => originalPlan;
-
-  @override
-  Future<DraftPlan> commitDay(DraftPlan plan) async =>
-      plan.copyWith(state: DayState.committed);
-
-  @override
-  Future<DraftPlan> renameBlock({
-    required DraftPlan plan,
-    required String blockId,
-    required String title,
-  }) async {
-    return plan.copyWith(
-      blocks: [
-        for (final block in plan.blocks)
-          if (block.id == blockId) block.copyWith(title: title) else block,
-      ],
+    TaskCorpusItem item(int seed) => TaskCorpusItem(
+      id: 'task-$seed',
+      title: seed.isEven ? 'Paint the deck $seed' : 'Inbox triage $seed',
+      category: DayAgentCategory(
+        id: categories[seed % categories.length],
+        name: 'Cat',
+        colorHex: '8E8E8E',
+      ),
+      state: TaskCorpusState
+          .values[1 + seed % (TaskCorpusState.values.length - 1)],
+      updatedLabel: 'today',
     );
-  }
 
-  @override
-  Future<
-    ({
-      List<CompletedItem> completed,
-      List<CarryoverItem> carryover,
-      ShutdownMetrics metrics,
-    })
-  >
-  surfaceShutdownData({required DateTime forDate}) async => (
-    completed: const <CompletedItem>[],
-    carryover: const <CarryoverItem>[],
-    metrics: const ShutdownMetrics(
-      focusMinutes: 0,
-      flowSessions: 0,
-      contextSwitches: 0,
-      contextSwitchesWeekAvg: 0,
-      energyScore: 0,
-      energyDeltaVsWeek: 0,
-    ),
-  );
+    glados.Glados3(
+      glados.any.intInRange(0, 50),
+      glados.any.intInRange(0, TaskCorpusState.values.length),
+      glados.any.intInRange(0, 12),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'every item matching a narrowed filter also matches state=all with '
+      'the same category/query (all is a superset)',
+      (seed, stateIndex, filterSeed) {
+        final agent = MockDayAgent();
+        final candidate = item(seed);
+        final state =
+            TaskCorpusState.values[stateIndex % TaskCorpusState.values.length];
+        final categoryId = filterSeed.isEven
+            ? null
+            : categories[filterSeed % categories.length];
+        final query = queries[filterSeed % queries.length];
 
-  @override
-  Future<void> recordReflection({
-    required DateTime forDate,
-    required String text,
-    required ReflectionSource source,
-  }) async {}
+        final narrowed = agent.debugMatchesFilter(
+          candidate,
+          state,
+          categoryId,
+          query,
+        );
+        final broad = agent.debugMatchesFilter(
+          candidate,
+          TaskCorpusState.all,
+          categoryId,
+          query,
+        );
 
-  @override
-  Future<void> recordCarryoverDecision({
-    required String taskId,
-    required CarryoverAction action,
-    DateTime? when,
-  }) async {}
+        if (narrowed) {
+          expect(
+            broad,
+            isTrue,
+            reason: 'state=$state cat=$categoryId q="$query" item=$seed',
+          );
+        }
 
-  @override
-  Future<TomorrowNote> generateTomorrowNote({
-    required DateTime forDate,
-  }) async => const TomorrowNote(body: '', maturity: 1);
-
-  @override
-  Future<List<TaskCorpusItem>> surfaceTaskCorpus({
-    TaskCorpusState stateFilter = TaskCorpusState.all,
-    String? categoryId,
-    String? query,
-  }) async => const [];
+        // Oracle for the broad filter itself: category and query are the
+        // only remaining predicates under state=all.
+        final q = query?.trim().toLowerCase();
+        final expectedBroad =
+            (categoryId == null || candidate.category.id == categoryId) &&
+            (q == null ||
+                q.isEmpty ||
+                candidate.title.toLowerCase().contains(q));
+        expect(broad, expectedBroad);
+      },
+      tags: 'glados',
+    );
+  });
 }

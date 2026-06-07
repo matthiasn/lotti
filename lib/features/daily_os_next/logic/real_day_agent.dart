@@ -13,6 +13,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_servi
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_interface.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:meta/meta.dart';
 
 part 'real_day_agent_projection.dart';
 

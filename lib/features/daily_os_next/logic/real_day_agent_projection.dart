@@ -107,9 +107,21 @@ extension RealDayAgentProjection on RealDayAgent {
     );
   }
 
+  /// Test seam for [_projectCategory] — pure hex normalisation.
+  @visibleForTesting
+  DayAgentCategory debugProjectCategory(CategoryDefinition def) =>
+      _projectCategory(def);
+
+  /// Test seam for [_daysBetween] — calendar-day difference.
+  @visibleForTesting
+  int debugDaysBetween(DateTime from, DateTime to) => _daysBetween(from, to);
+
   int _daysBetween(DateTime from, DateTime to) {
-    final fromDay = DateTime(from.year, from.month, from.day);
-    final toDay = DateTime(to.year, to.month, to.day);
+    // UTC dates: local DateTime.difference().inDays truncates across DST
+    // spring-forward (a 23-hour day), under-counting by one. UTC days are
+    // uniformly 24h — same pattern as daysAtNoonForRange in daily_os.
+    final fromDay = DateTime.utc(from.year, from.month, from.day);
+    final toDay = DateTime.utc(to.year, to.month, to.day);
     return toDay.difference(fromDay).inDays;
   }
 
@@ -145,6 +157,10 @@ extension RealDayAgentProjection on RealDayAgent {
   /// per `taskId`; standalone blocks become one agenda item each so
   /// the Agenda surface mirrors the Day timeline instead of going
   /// silent when the model has not linked tasks yet.
+  /// Test seam for [_agendaFor] — pure block→agenda grouping/state fold.
+  @visibleForTesting
+  List<AgendaItem> debugAgendaFor(List<TimeBlock> blocks) => _agendaFor(blocks);
+
   List<AgendaItem> _agendaFor(List<TimeBlock> blocks) {
     final taskGroups = <String, List<TimeBlock>>{};
     final standalone = <TimeBlock>[];
