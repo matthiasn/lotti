@@ -4,14 +4,14 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
-/// Sidebar sub-entry under the Insights destination.
+/// Sidebar sub-entry under the Daily OS destination, beneath the month
+/// calendar.
 ///
-/// Rendered beneath the Insights row in the expanded desktop sidebar while
-/// the tab is active — the same slot Tasks uses for its saved-filters tree
-/// and Daily OS for its month calendar. Highlights via
-/// [NavService.desktopShowTimeAnalysis] (written by the dashboards Beamer
-/// location, so the URL stays the single source of truth) and navigates to
-/// `/dashboards/time` on tap.
+/// Rendered in the expanded desktop sidebar while the tab is active — the
+/// same slot Tasks uses for its saved-filters tree. Highlights via
+/// [NavService.desktopShowTimeAnalysis] (written by `CalendarLocation`, so
+/// the URL stays the single source of truth) and opens the full-screen
+/// analytics surface at `/calendar/time`.
 class InsightsSidebarEntry extends StatelessWidget {
   const InsightsSidebarEntry({super.key});
 
@@ -28,7 +28,7 @@ class InsightsSidebarEntry extends StatelessWidget {
             color: active ? tokens.colors.surface.selected : Colors.transparent,
             borderRadius: BorderRadius.circular(tokens.radii.s),
             child: InkWell(
-              onTap: () => beamToNamed('/dashboards/time'),
+              onTap: () => beamToNamed('/calendar/time'),
               borderRadius: BorderRadius.circular(tokens.radii.s),
               hoverColor: tokens.colors.surface.hover,
               child: Padding(

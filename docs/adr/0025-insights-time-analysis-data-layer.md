@@ -64,10 +64,14 @@ adopted design.
    hand-rolled immutables with deep equality (no codegen); an unchanged
    refetch produces an equal `InsightsDayBuckets`, Riverpod never
    re-notifies, the UI never rebuilds.
-8. **URL as the single selection writer.** `/dashboards/time` is
-   special-cased before the UUID check in `DashboardsLocation`, which is
-   the sole writer of `desktopShowTimeAnalysis` and
-   `desktopSelectedDashboardId` — mutually exclusive by construction.
+8. **URL as the single selection writer, full-screen surface.** The
+   dashboard lives at `/calendar/time` under the Daily OS tab, pushed as
+   a full-screen page by `CalendarLocation` (the set-time-blocks
+   pattern) — deliberately not a split pane. `CalendarLocation` is the
+   sole writer of `desktopShowTimeAnalysis`; the sidebar sub-entry
+   beneath the Daily OS month calendar only reads it. (Originally
+   embedded in the Insights/dashboards detail pane; moved per product
+   feedback — the analytics surface gets the entire content area.)
 9. **Visualization contract** (Stephen Few): stacked bars / pre-stacked
    cumulative area via fl_chart; hourly buckets for 1-day ranges, weekly
    above 120 days; max 6 series + slate "Other (+N)" distinct from the

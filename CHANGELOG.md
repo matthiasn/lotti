@@ -6,8 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1016]
 ### Added
-- New desktop "Time Analysis" dashboard under the Insights tab (also
-  reachable as a sidebar sub-entry while Insights is active): see where
+- New desktop "Time Analysis" dashboard under Daily OS, opened from a
+  sidebar entry beneath the month calendar onto the full screen: see where
   your time went per category and per day, with quick range presets
   (1d, 7d, 30d, MTD, YTD, last month) plus a custom date range, a
   daily/cumulative chart toggle, headline totals, and a precise

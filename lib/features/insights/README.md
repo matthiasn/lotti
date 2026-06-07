@@ -1,7 +1,8 @@
 # Insights — Time Analysis
 
-A desktop-only time-analysis dashboard living as a pinned sub-entry under the
-Insights tab (route `/dashboards/time`). It answers three questions —
+A desktop-only, full-screen time-analysis dashboard under the Daily OS tab
+(route `/calendar/time`), opened from a sidebar sub-entry beneath the Daily
+OS month calendar. It answers three questions —
 *Where did my time go this week? How much time did I spend per category per
 day? What is the cumulative vs. non-cumulative time spent?* — over 10k+ time
 entries with instantaneous (sub-200ms, measured ~5ms) range switching.
@@ -123,13 +124,14 @@ stateDiagram-v2
 
 ## Navigation
 
-`/dashboards/time` is special-cased in `DashboardsLocation` **before** the
-UUID check (`time` can never collide with dashboard ids). The location is
-the single writer of the desktop pane selection: it maps the URL onto
-`NavService.desktopShowTimeAnalysis` and `desktopSelectedDashboardId`,
-keeping them mutually exclusive. The pinned list entry renders only in
-desktop layout; a deep link on a narrow window still pushes the page rather
-than dead-ending.
+`/calendar/time` is a dedicated pattern in `CalendarLocation`, pushed as a
+full-screen `BeamPage` on top of the Daily OS root (the same pattern as
+`/calendar/set-time-blocks`) — the analytics surface gets the entire
+content area, never a split pane. The location is the single writer of
+`NavService.desktopShowTimeAnalysis`; the `InsightsSidebarEntry` rendered
+beneath the Daily OS month calendar (via the destination's
+`expandedChildBuilder`) reads it for its highlight and beams to the route
+on tap.
 
 ## Testing
 

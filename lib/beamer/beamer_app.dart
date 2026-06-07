@@ -573,8 +573,16 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             Icon(active ? Icons.today_rounded : Icons.today_outlined),
         // Month calendar (design handoff sidebar spec) renders beneath
         // the row only while Daily OS is the active tab — same slot the
-        // Tasks destination uses for its saved-filters tree.
-        expandedChildBuilder: () => const DailyOsSidebarCalendar(),
+        // Tasks destination uses for its saved-filters tree. The Time
+        // Analysis sub-entry sits under the calendar and opens the
+        // full-screen analytics surface at /calendar/time.
+        expandedChildBuilder: () => const Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DailyOsSidebarCalendar(),
+            InsightsSidebarEntry(),
+          ],
+        ),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.habits,
@@ -589,9 +597,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         iconBuilder: ({required active}) => Icon(
           active ? Icons.insert_chart_rounded : Icons.insert_chart_outlined,
         ),
-        // Time Analysis sub-entry beneath the Insights row while the tab
-        // is active — same slot Tasks/Daily OS use for their sub-trees.
-        expandedChildBuilder: () => const InsightsSidebarEntry(),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.journal,

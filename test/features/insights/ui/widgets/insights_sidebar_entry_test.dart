@@ -35,7 +35,7 @@ void main() {
     ),
   );
 
-  testWidgets('renders the label and beams to /dashboards/time on tap', (
+  testWidgets('renders the label and beams to /calendar/time on tap', (
     tester,
   ) async {
     final beamed = <String>[];
@@ -49,7 +49,7 @@ void main() {
 
     await tester.tap(find.text('Time Analysis'));
     await tester.pump();
-    expect(beamed, ['/dashboards/time']);
+    expect(beamed, ['/calendar/time']);
   });
 
   testWidgets('reflects the active route with the filled icon', (

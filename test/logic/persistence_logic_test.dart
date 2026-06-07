@@ -3152,7 +3152,13 @@ void main() {
         expect(notifications.last, scenario.expectedCreateNotificationIds);
 
         if (scenario.hasLinkedEntity) {
-          expect(notifications.first, {scenario.linkedId, scenario.entityId});
+          // Link creation also fires linkNotification so link-topology
+          // listeners (e.g. the Time Analysis attribution) refresh.
+          expect(notifications.first, {
+            scenario.linkedId,
+            scenario.entityId,
+            linkNotification,
+          });
           verify(() => journalDb.upsertEntryLink(any<EntryLink>())).called(1);
         } else {
           verifyNever(() => journalDb.upsertEntryLink(any<EntryLink>()));

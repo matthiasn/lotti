@@ -81,11 +81,10 @@ class NavService {
   final ValueNotifier<String?> desktopSelectedDashboardId =
       ValueNotifier<String?>(null);
 
-  /// Whether the desktop Insights detail pane shows the Time Analysis
-  /// dashboard. Written exclusively by `DashboardsLocation` from the URL
-  /// (`/dashboards/time`), mutually exclusive with
-  /// [desktopSelectedDashboardId] by construction — the URL is the single
-  /// source of truth for the pane selection.
+  /// Whether the full-screen Time Analysis surface is active. Written
+  /// exclusively by `CalendarLocation` from the URL (`/calendar/time`) —
+  /// the URL is the single source of truth; the Daily OS sidebar
+  /// sub-entry only reads it for its highlight.
   final ValueNotifier<bool> desktopShowTimeAnalysis = ValueNotifier<bool>(
     false,
   );

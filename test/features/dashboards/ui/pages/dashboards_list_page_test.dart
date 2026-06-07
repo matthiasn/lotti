@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
-import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboard_page.dart';
 import 'package:lotti/features/dashboards/ui/pages/dashboards_list_page.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_detail_empty_state.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
-import 'package:lotti/features/insights/state/insights_providers.dart';
-import 'package:lotti/features/insights/ui/time_analysis_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -44,9 +40,6 @@ void main() {
       when(
         () => mockNavService.desktopSelectedDashboardId,
       ).thenReturn(ValueNotifier<String?>(null));
-      when(
-        () => mockNavService.desktopShowTimeAnalysis,
-      ).thenReturn(ValueNotifier<bool>(false));
 
       await setUpTestGetIt(
         additionalSetup: () {
@@ -366,106 +359,6 @@ void main() {
         await tester.pumpAndSettle();
       },
     );
-
-    testWidgets(
-      'desktop pinned Time Analysis entry renders and beams to '
-      '/dashboards/time on tap',
-      (tester) async {
-        when(
-          mockJournalDb.getAllDashboards,
-        ).thenAnswer((_) async => [testDashboardConfig]);
-
-        final beamed = <String>[];
-        beamToNamedOverride = beamed.add;
-        addTearDown(() => beamToNamedOverride = null);
-
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            const DashboardsListPage(),
-            mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        expect(find.text('Time Analysis'), findsOneWidget);
-        expect(find.byIcon(Icons.bar_chart_outlined), findsOneWidget);
-
-        await tester.tap(find.text('Time Analysis'));
-        await tester.pump();
-
-        expect(beamed, ['/dashboards/time']);
-      },
-    );
-
-    testWidgets(
-      'desktop detail pane renders TimeAnalysisPage when '
-      'desktopShowTimeAnalysis is set',
-      (tester) async {
-        when(
-          mockJournalDb.getAllDashboards,
-        ).thenAnswer((_) async => [testDashboardConfig]);
-
-        final navService = getIt<NavService>() as MockNavService;
-        when(
-          () => navService.desktopShowTimeAnalysis,
-        ).thenReturn(ValueNotifier<bool>(true));
-
-        final insightsRepository = MockInsightsRepository();
-        when(
-          () => insightsRepository.fetchTimeRows(
-            start: any(named: 'start'),
-            end: any(named: 'end'),
-          ),
-        ).thenAnswer((_) async => []);
-
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            const DashboardsListPage(),
-            mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
-            overrides: [
-              insightsRepositoryProvider.overrideWithValue(
-                insightsRepository,
-              ),
-              maybeUpdateNotificationsProvider.overrideWith((ref) => null),
-              categoriesStreamProvider.overrideWith(
-                (ref) => Stream.value(const []),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 100));
-
-        // The merged-listenable switch resolves to the Time Analysis pane,
-        // not a dashboard or the empty state.
-        expect(find.byType(TimeAnalysisPage), findsOneWidget);
-        expect(find.byType(DashboardPage), findsNothing);
-        expect(find.byType(DesktopDetailEmptyState), findsNothing);
-
-        // The pinned entry reflects the active state with the filled icon.
-        expect(find.byIcon(Icons.bar_chart_rounded), findsOneWidget);
-      },
-    );
-
-    testWidgets('mobile layout has no pinned Time Analysis entry', (
-      tester,
-    ) async {
-      when(
-        mockJournalDb.getAllDashboards,
-      ).thenAnswer((_) async => [testDashboardConfig]);
-
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const DashboardsListPage(),
-          mediaQueryData: const MediaQueryData(size: Size(390, 844)),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      expect(find.text('Time Analysis'), findsNothing);
-    });
 
     testWidgets('dragging divider updates list pane width', (tester) async {
       when(mockJournalDb.getAllDashboards).thenAnswer(

@@ -10,6 +10,7 @@ import 'package:lotti/database/journal_update_result.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -100,7 +101,7 @@ void main() {
         // Verify notifications sent for all affected IDs from both links
         verify(
           () => updateNotifications.notify(
-            {link1.fromId, link1.toId, link2.toId},
+            {link1.fromId, link1.toId, link2.toId, linkNotification},
             fromSync: true,
           ),
         ).called(1);
@@ -190,7 +191,7 @@ void main() {
       // Verify notification sent for affected IDs from link
       verify(
         () => updateNotifications.notify(
-          {link.fromId, link.toId},
+          {link.fromId, link.toId, linkNotification},
           fromSync: true,
         ),
       ).called(1);
@@ -342,7 +343,7 @@ void main() {
       // Verify notifications were still sent for affected IDs
       verify(
         () => updateNotifications.notify(
-          {link.fromId, link.toId},
+          {link.fromId, link.toId, linkNotification},
           fromSync: true,
         ),
       ).called(1);

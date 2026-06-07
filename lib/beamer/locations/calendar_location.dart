@@ -13,8 +13,10 @@ import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/refine_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/shutdown_page.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/insights/ui/time_analysis_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 
 class CalendarLocation extends BeamLocation<BeamState> {
@@ -23,6 +25,7 @@ class CalendarLocation extends BeamLocation<BeamState> {
   @override
   List<String> get pathPatterns => [
     '/calendar',
+    '/calendar/time',
     '/calendar/set-time-blocks',
     '/calendar/refine/:date',
     '/calendar/commit/:date',
@@ -32,12 +35,31 @@ class CalendarLocation extends BeamLocation<BeamState> {
   @override
   List<BeamPage> buildPages(BuildContext context, BeamState state) {
     final dailyOsNextRoute = _dailyOsNextRouteFrom(state.uri);
+    final isTimeAnalysis = state.uri.path == '/calendar/time';
+    // Single writer for the sidebar sub-entry highlight: the URL.
+    // Registration-guarded for location-level tests that build pages
+    // without the service locator.
+    if (getIt.isRegistered<NavService>()) {
+      getIt<NavService>().desktopShowTimeAnalysis.value = isTimeAnalysis;
+    }
+
     final pages = [
       const BeamPage(
         key: ValueKey('calendar_page'),
         child: CalendarRoot(),
       ),
     ];
+
+    if (isTimeAnalysis) {
+      // Full-screen analytics surface — same push pattern as
+      // set-time-blocks, deliberately NOT a split pane.
+      pages.add(
+        const BeamPage(
+          key: ValueKey('calendar_time_analysis'),
+          child: TimeAnalysisPage(),
+        ),
+      );
+    }
 
     if (state.uri.path == '/calendar/set-time-blocks') {
       pages.add(
