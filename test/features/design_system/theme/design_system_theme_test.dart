@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
+import '../../../widget_test_utils.dart';
+
 void main() {
   group('DesignSystemTheme', () {
     // Both factories share _build, so every wiring assertion runs against
@@ -151,15 +153,19 @@ void main() {
     ) async {
       late DsTokens resolvedTokens;
 
+      // Use the shared helper and feed it the real DesignSystemTheme.light().
+      // resolveTestTheme() passes a theme through untouched when it already
+      // carries a DsTokens extension, so this exercises the production wiring
+      // rather than the helper's default-injected tokens.
       await tester.pumpWidget(
-        MaterialApp(
-          theme: DesignSystemTheme.light(),
-          home: Builder(
+        makeTestableWidgetWithScaffold(
+          Builder(
             builder: (context) {
               resolvedTokens = context.designTokens;
               return const SizedBox.shrink();
             },
           ),
+          theme: DesignSystemTheme.light(),
         ),
       );
 
@@ -169,6 +175,9 @@ void main() {
     testWidgets('designTokens getter throws a StateError when missing', (
       tester,
     ) async {
+      // Intentionally NOT using a shared helper here: resolveTestTheme() always
+      // injects a DsTokens extension, which would defeat the "missing"
+      // assertion. A bare MaterialApp with no extension is required.
       await tester.pumpWidget(
         MaterialApp(
           home: Builder(
