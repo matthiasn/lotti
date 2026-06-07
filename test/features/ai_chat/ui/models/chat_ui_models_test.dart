@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
@@ -199,13 +200,17 @@ void main() {
       });
 
       test('handles empty messages list', () {
+        final pinned = DateTime(2026, 3, 1, 9, 30);
         final uiModel = ChatSessionUiModel.empty();
-        final domainSession = uiModel.toDomain();
+        final domainSession = withClock(
+          Clock.fixed(pinned),
+          uiModel.toDomain,
+        );
 
         expect(domainSession.messages, isEmpty);
-        // Should use current time for both created and last message timestamps
-        expect(domainSession.createdAt, isNotNull);
-        expect(domainSession.lastMessageAt, isNotNull);
+        // Both timestamps come from the (pinned) wall clock.
+        expect(domainSession.createdAt, pinned);
+        expect(domainSession.lastMessageAt, pinned);
       });
     });
 
@@ -284,36 +289,34 @@ void main() {
         expect(modelWithMessages.hasMessages, isTrue);
       });
 
-      test('canSendMessage returns correct boolean', () {
-        // Model without selectedModelId cannot send messages
-        final noModelSelected = ChatSessionUiModel.empty();
-        expect(noModelSelected.canSendMessage, isFalse);
+      test('canSendMessage covers the full flag matrix', () {
+        // (hasModel, isLoading, isStreaming) → canSend. Only the fully idle
+        // configured state may send.
+        const cases = <(bool, bool, bool, bool)>[
+          (false, false, false, false),
+          (true, false, false, true),
+          (true, true, false, false),
+          (true, false, true, false),
+          (true, true, true, false),
+        ];
 
-        // Model with selectedModelId can send messages
-        const readyModel = ChatSessionUiModel(
-          id: 'test-id',
-          title: 'Test',
-          messages: [],
-          isLoading: false,
-          isStreaming: false,
-          selectedModelId: 'test-model',
-        );
-        expect(readyModel.canSendMessage, isTrue);
-
-        // Model with selectedModelId but loading cannot send messages
-        final loadingModel = readyModel.copyWith(isLoading: true);
-        expect(loadingModel.canSendMessage, isFalse);
-
-        // Model with selectedModelId but streaming cannot send messages
-        final streamingModel = readyModel.copyWith(isStreaming: true);
-        expect(streamingModel.canSendMessage, isFalse);
-
-        // Model with selectedModelId but both loading and streaming cannot send messages
-        final busyModel = readyModel.copyWith(
-          isLoading: true,
-          isStreaming: true,
-        );
-        expect(busyModel.canSendMessage, isFalse);
+        for (final (hasModel, isLoading, isStreaming, canSend) in cases) {
+          final model = ChatSessionUiModel(
+            id: 'test-id',
+            title: 'Test',
+            messages: const [],
+            isLoading: isLoading,
+            isStreaming: isStreaming,
+            selectedModelId: hasModel ? 'test-model' : null,
+          );
+          expect(
+            model.canSendMessage,
+            canSend,
+            reason:
+                'hasModel=$hasModel loading=$isLoading '
+                'streaming=$isStreaming',
+          );
+        }
       });
 
       test('displayTitle returns title or fallback', () {
@@ -486,6 +489,78 @@ void main() {
         );
         expect(model.clearError().error, isNull, reason: '$scenario');
       }, tags: 'glados');
+    });
+    group('copyWith sentinel properties', () {
+      test('no-argument copyWith preserves every field, incl. nullables', () {
+        // The Object() sentinel must pass nullable fields through untouched
+        // for any combination of set/unset nullable values.
+        for (final modelId in <String?>[null, 'model-x']) {
+          for (final error in <String?>[null, 'boom']) {
+            for (final streamingId in <String?>[null, 'msg-1']) {
+              final original = ChatSessionUiModel(
+                id: 'id-1',
+                title: 'Title',
+                messages: [ChatMessage.user('hello')],
+                isLoading: true,
+                isStreaming: true,
+                selectedModelId: modelId,
+                error: error,
+                streamingMessageId: streamingId,
+              );
+              final copy = original.copyWith();
+              final reason =
+                  'modelId=$modelId error=$error streamingId=$streamingId';
+
+              expect(copy.id, original.id, reason: reason);
+              expect(copy.title, original.title, reason: reason);
+              expect(copy.messages, original.messages, reason: reason);
+              expect(copy.isLoading, original.isLoading, reason: reason);
+              expect(copy.isStreaming, original.isStreaming, reason: reason);
+              expect(
+                copy.selectedModelId,
+                original.selectedModelId,
+                reason: reason,
+              );
+              expect(copy.error, original.error, reason: reason);
+              expect(
+                copy.streamingMessageId,
+                original.streamingMessageId,
+                reason: reason,
+              );
+            }
+          }
+        }
+      });
+
+      test('ChatStateUiModel.copyWith(error: null) clears the error', () {
+        const withError = ChatStateUiModel(
+          recentSessions: [],
+          error: 'something failed',
+        );
+
+        final cleared = withError.copyWith(error: null);
+
+        // Explicit null beats the sentinel: the error is gone.
+        expect(cleared.error, isNull);
+        expect(cleared.recentSessions, withError.recentSessions);
+      });
+
+      test('fromDomain ignores a non-String selectedModelId in metadata', () {
+        final session = ChatSession(
+          id: 's-1',
+          title: 'Session',
+          createdAt: DateTime(2026),
+          lastMessageAt: DateTime(2026),
+          messages: const [],
+          metadata: const {'selectedModelId': 42},
+        );
+
+        final uiModel = ChatSessionUiModel.fromDomain(session);
+
+        // The type guard coerces the malformed value to null rather than
+        // crashing on the cast.
+        expect(uiModel.selectedModelId, isNull);
+      });
     });
   });
 }

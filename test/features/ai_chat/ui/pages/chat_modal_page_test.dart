@@ -175,6 +175,15 @@ void main() {
         await tester.pump();
 
         expect(find.byType(ChatInterface), findsOneWidget);
+        // The interface actually rendered usable content: the message
+        // input is present (not just an empty shell).
+        expect(
+          find.descendant(
+            of: find.byType(ChatInterface),
+            matching: find.byType(TextField),
+          ),
+          findsWidgets,
+        );
         expect(find.byIcon(Icons.category_outlined), findsNothing);
         expect(find.text('Please select a single category'), findsNothing);
       },
@@ -212,7 +221,10 @@ void main() {
         selectedCategoryIds: {'single-category-id'},
         chatRepository: mockChatRepository,
       );
-      await tester.pumpAndSettle();
+      // Bounded pumps: the ambient pulse border repeats forever, so a
+      // settle would always run into the timeout.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       final sizedBox = tester.widget<SizedBox>(
         find.byType(SizedBox).first,
@@ -230,7 +242,10 @@ void main() {
         selectedCategoryIds: {},
         chatRepository: mockChatRepository,
       );
-      await tester.pumpAndSettle();
+      // Bounded pumps: the ambient pulse border repeats forever, so a
+      // settle would always run into the timeout.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.text('Please select a single category'), findsOneWidget);
       expect(find.byType(ChatInterface), findsNothing);
@@ -246,7 +261,10 @@ void main() {
         selectedCategoryIds: {'test-category'},
         chatRepository: mockChatRepository,
       );
-      await tester.pumpAndSettle();
+      // Bounded pumps: the ambient pulse border repeats forever, so a
+      // settle would always run into the timeout.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.text('Please select a single category'), findsNothing);
       expect(find.byType(ChatInterface), findsOneWidget);
@@ -271,6 +289,21 @@ void main() {
       // While streaming, the ambient border container renders an active glow
       // (non-empty boxShadow) and an overlay border.
       expect(_activeGlowContainerFinder, findsWidgets);
+
+      // initState started the repeat animation: the glow's shadow alpha
+      // changes between frames (a stopped controller would render the same
+      // decoration on every pump).
+      double glowAlpha() {
+        final container = tester
+            .widgetList<Container>(_activeGlowContainerFinder)
+            .first;
+        final decoration = container.decoration! as BoxDecoration;
+        return decoration.boxShadow!.first.color.a;
+      }
+
+      final alphaAtStart = glowAlpha();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(glowAlpha(), isNot(alphaAtStart));
     });
 
     testWidgets(
