@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
+import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/drafting_controller.dart';
@@ -128,7 +129,7 @@ SliverWoltModalSheetPage _captureStepPage(
       SliverToBoxAdapter(
         child: SizedBox(
           height: _stepViewportHeight(context),
-          child: CaptureModalContent(forDate: day),
+          child: _CaptureStepBody(day: day),
         ),
       ),
     ],
@@ -136,30 +137,72 @@ SliverWoltModalSheetPage _captureStepPage(
   );
 }
 
-class _CaptureStepBar extends ConsumerWidget {
+/// Capture step body: feeds [CaptureModalContent] the day's already-tracked
+/// time so the "Today so far" card (handoff v2 item 1) appears in the modal,
+/// matching the standalone capture surface. A loading/error projection falls
+/// through as "no tracked time" rather than blocking the ritual.
+class _CaptureStepBody extends ConsumerWidget {
+  const _CaptureStepBody({required this.day});
+
+  final DateTime day;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final actualBlocks =
+        ref.watch(dailyOsActualTimeBlocksProvider(day)).value ?? const [];
+    return CaptureModalContent(forDate: day, actualBlocks: actualBlocks);
+  }
+}
+
+class _CaptureStepBar extends ConsumerStatefulWidget {
   const _CaptureStepBar({required this.day});
 
   final DateTime day;
 
-  Future<void> _continue(BuildContext context, WidgetRef ref) async {
+  @override
+  ConsumerState<_CaptureStepBar> createState() => _CaptureStepBarState();
+}
+
+class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
+  /// True while `submitCapture` is in flight — guards against a double tap
+  /// creating two captures and pushing two Reconcile pages, and disables the
+  /// bar's pills for the duration.
+  bool _submitting = false;
+
+  Future<void> _continue() async {
+    if (_submitting) return;
     final state = ref.read(captureControllerProvider);
     final transcript = state.transcript.trim();
     if (transcript.isEmpty) return;
+    setState(() => _submitting = true);
     final agent = ref.read(dayAgentProvider);
-    final captureId = await agent.submitCapture(
-      transcript: transcript,
-      capturedAt: _capturedAtForDay(day),
-      audioId: state.audioId,
-    );
-    if (!context.mounted) return;
-    WoltModalSheet.of(context).pushPage(
-      _reconcileStepPage(context, day, captureId),
-    );
-    ref.read(captureControllerProvider.notifier).reset();
+    try {
+      final captureId = await agent.submitCapture(
+        transcript: transcript,
+        capturedAt: _capturedAtForDay(widget.day),
+        audioId: state.audioId,
+      );
+      if (!mounted) return;
+      // Capture the sheet state here (a live context): the pushed page's
+      // back action must not close over this bar's context, which is defunct
+      // once the Reconcile page replaces it.
+      final sheet = WoltModalSheet.of(context);
+      sheet.pushPage(
+        _reconcileStepPage(
+          context,
+          widget.day,
+          captureId,
+          onBack: sheet.popPage,
+        ),
+      );
+      ref.read(captureControllerProvider.notifier).reset();
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
     final state = ref.watch(captureControllerProvider);
@@ -167,13 +210,14 @@ class _CaptureStepBar extends ConsumerWidget {
     final Widget actions;
     switch (state.phase) {
       case CapturePhase.captured:
-        final canContinue = state.transcript.trim().isNotEmpty;
+        final canContinue = state.transcript.trim().isNotEmpty && !_submitting;
         actions = Row(
           children: [
             Expanded(
               child: DsGlassPill(
                 icon: Icons.mic_rounded,
                 label: messages.dailyOsNextReconcileReRecord,
+                enabled: !_submitting,
                 onTap: () =>
                     ref.read(captureControllerProvider.notifier).reset(),
               ),
@@ -185,7 +229,8 @@ class _CaptureStepBar extends ConsumerWidget {
                 label: messages.dailyOsNextCaptureReconcileCta,
                 fillColor: tokens.colors.interactive.enabled,
                 foregroundColor: tokens.colors.text.onInteractiveAlert,
-                onTap: canContinue ? () => _continue(context, ref) : () {},
+                enabled: canContinue,
+                onTap: _continue,
               ),
             ),
           ],
@@ -218,12 +263,13 @@ class _CaptureStepBar extends ConsumerWidget {
 SliverWoltModalSheetPage _reconcileStepPage(
   BuildContext context,
   DateTime day,
-  CaptureId captureId,
-) {
+  CaptureId captureId, {
+  required VoidCallback onBack,
+}) {
   final params = ReconcileParams(captureId: captureId, dayDate: day);
   return ModalUtils.sliverModalSheetPage(
     context: context,
-    onTapBack: () => WoltModalSheet.of(context).popPage(),
+    onTapBack: onBack,
     slivers: [
       SliverToBoxAdapter(child: _ReconcileStepContent(params: params)),
       const SliverToBoxAdapter(child: SizedBox(height: _barClearance)),
@@ -276,12 +322,14 @@ class _ReconcileStepBar extends ConsumerWidget {
     final data = ref.read(reconcileControllerProvider(params)).value;
     if (data == null) return;
     final selections = reconcileDraftingSelections(data);
-    WoltModalSheet.of(context).pushPage(
+    final sheet = WoltModalSheet.of(context);
+    sheet.pushPage(
       _draftingStepPage(
         context,
         day: day,
         captureId: params.captureId,
         selections: selections,
+        onBack: sheet.popPage,
       ),
     );
   }
@@ -328,6 +376,7 @@ SliverWoltModalSheetPage _draftingStepPage(
   required DateTime day,
   required CaptureId captureId,
   required ({List<String> taskIds, List<String> captureItemIds}) selections,
+  required VoidCallback onBack,
 }) {
   final params = DraftingParams(
     captureId: captureId,
@@ -337,7 +386,7 @@ SliverWoltModalSheetPage _draftingStepPage(
   );
   return ModalUtils.sliverModalSheetPage(
     context: context,
-    onTapBack: () => WoltModalSheet.of(context).popPage(),
+    onTapBack: onBack,
     showCloseButton: false,
     slivers: [
       SliverToBoxAdapter(
@@ -379,7 +428,14 @@ class _DraftingStepContentState extends ConsumerState<_DraftingStepContent> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
             ref.invalidate(currentDraftPlanProvider(widget.day));
-            Navigator.of(context).pop();
+            // Only auto-close if the modal is still the current route — a
+            // competing dismissal (close button / barrier tap) within the
+            // same frame can already be popping it, and a second pop would
+            // target the surface beneath.
+            final route = ModalRoute.of(context);
+            if (route?.isCurrent ?? false) {
+              Navigator.of(context).pop();
+            }
           });
         }
       },

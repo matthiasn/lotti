@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Shared "glass chip" building blocks for sticky bottom action bars that
-/// float over backdrop-blurred glass (see [DesignSystemGlassStrip]).
+/// float over backdrop-blurred glass (see `DesignSystemGlassStrip`).
 ///
 /// These were originally private to the task details action bar
 /// (`task_action_bar.dart`). They live here so every sticky glass bar —
@@ -122,6 +122,12 @@ class DsGlassRoundButton extends StatelessWidget {
 /// action): a filled pill with no outline. [expand] stretches the pill to
 /// fill its parent's width (centred content) for full-width primary
 /// actions; otherwise the pill hugs its content.
+///
+/// When [enabled] is false the pill renders as a non-actionable affordance:
+/// the solid [fillColor] is dropped for the translucent glass treatment, the
+/// foreground dims to `text.lowEmphasis`, [onTap] is not wired, and the
+/// `Semantics` node reports `enabled: false` so assistive tech doesn't
+/// announce it as a live button.
 class DsGlassPill extends StatelessWidget {
   const DsGlassPill({
     required this.label,
@@ -131,6 +137,7 @@ class DsGlassPill extends StatelessWidget {
     this.foregroundColor,
     this.semanticLabel,
     this.expand = false,
+    this.enabled = true,
     this.height = defaultHeight,
     this.iconSize = DsGlassRoundButton.defaultIconSize,
     super.key,
@@ -147,6 +154,7 @@ class DsGlassPill extends StatelessWidget {
   final Color? foregroundColor;
   final String? semanticLabel;
   final bool expand;
+  final bool enabled;
   final double height;
   final double iconSize;
 
@@ -154,8 +162,13 @@ class DsGlassPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
-    final isTranslucent = fillColor == null;
-    final foreground = foregroundColor ?? tokens.colors.text.highEmphasis;
+    // Disabled pills drop any solid fill for the translucent glass treatment
+    // and dim the foreground, so they read as non-actionable.
+    final effectiveFill = enabled ? fillColor : null;
+    final isTranslucent = effectiveFill == null;
+    final foreground = enabled
+        ? (foregroundColor ?? tokens.colors.text.highEmphasis)
+        : tokens.colors.text.lowEmphasis;
     final pillRadius = BorderRadius.circular(tokens.radii.badgesPills);
     final textStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
       color: foreground,
@@ -183,19 +196,20 @@ class DsGlassPill extends StatelessWidget {
 
     return Semantics(
       button: true,
+      enabled: enabled,
       label: semanticLabel ?? label,
       excludeSemantics: true,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: pillRadius,
-          onTap: onTap,
+          onTap: enabled ? onTap : null,
           child: Container(
             height: height,
             width: expand ? double.infinity : null,
             padding: EdgeInsets.symmetric(horizontal: spacing.step5),
             decoration: BoxDecoration(
-              color: fillColor ?? dsGlassChipFill(tokens),
+              color: effectiveFill ?? dsGlassChipFill(tokens),
               borderRadius: pillRadius,
             ),
             // foregroundDecoration keeps the hairline a hairline without

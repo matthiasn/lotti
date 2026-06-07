@@ -44,5 +44,36 @@ void main() {
       final actionsY = tester.getCenter(find.text('actions-row')).dy;
       expect(shaderY, lessThan(actionsY));
     });
+
+    testWidgets('extends its bottom padding by the safe-area inset', (
+      tester,
+    ) async {
+      const inset = 34.0;
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const DayPlanningGlassActionBar(actions: Text('actions-row')),
+          theme: DesignSystemTheme.light(),
+          mediaQueryData: const MediaQueryData(
+            size: Size(420, 900),
+            padding: EdgeInsets.only(bottom: inset),
+          ),
+        ),
+      );
+
+      // The bar's content padding: equal horizontal (step5), equal top
+      // (step4), and a bottom of step4 + the system home-indicator inset.
+      final padding = tester
+          .widgetList<Padding>(
+            find.descendant(
+              of: find.byType(DayPlanningGlassActionBar),
+              matching: find.byType(Padding),
+            ),
+          )
+          .map((p) => p.padding)
+          .whereType<EdgeInsets>()
+          .firstWhere((e) => e.left == e.right && e.left > 0 && e.top > 0);
+
+      expect(padding.bottom - padding.top, inset);
+    });
   });
 }

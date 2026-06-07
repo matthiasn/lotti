@@ -3,7 +3,7 @@ import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Sticky glass action bar for the day-planning modal — the planner's
-/// counterpart to the task details [TaskActionBar].
+/// counterpart to the task details `TaskActionBar`.
 ///
 /// Built on the shared [DesignSystemGlassStrip] (top hairline + backdrop
 /// blur + scrim gradient), it stacks an optional [topSlot] (the AI thinking
@@ -35,7 +35,7 @@ class DayPlanningGlassActionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final DsTokens tokens = context.designTokens;
+    final tokens = context.designTokens;
     final spacing = tokens.spacing;
 
     // The glass surface extends edge-to-edge into the system home-indicator

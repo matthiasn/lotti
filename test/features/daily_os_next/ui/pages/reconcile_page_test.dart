@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
@@ -109,6 +110,47 @@ class _RefreshBlockingAgent extends MockDayAgent {
     }
     return Future.value(const <PendingItem>[]);
   }
+}
+
+/// Shared category for hand-built fixtures — the colour is irrelevant to
+/// the selection logic and layout under test.
+const _category = DayAgentCategory(
+  id: 'work',
+  name: 'Work',
+  colorHex: '5ED4B7',
+);
+
+/// Builds a [ParsedItem] with just the fields the selection logic reads.
+ParsedItem _parsed(
+  String id, {
+  required ParsedItemKind kind,
+  String? matchedTaskId,
+  String title = 'Parsed item',
+}) {
+  return ParsedItem(
+    id: id,
+    kind: kind,
+    title: title,
+    category: _category,
+    confidence: ParsedItemConfidence.high,
+    matchedTaskId: matchedTaskId,
+  );
+}
+
+/// Builds a [TriageResult] for the given action.
+TriageResult _triage(String taskId, TriageAction action) =>
+    TriageResult(taskId: taskId, action: action);
+
+ReconcileData _reconcileData({
+  List<ParsedItem> parsed = const [],
+  List<PendingItem> pending = const [],
+  Map<String, TriageResult> triageDecisions = const {},
+}) {
+  return ReconcileData(
+    parsed: parsed,
+    pending: pending,
+    triageDecisions: triageDecisions,
+  );
 }
 
 void main() {
@@ -506,6 +548,322 @@ void main() {
       expect(find.byType(PendingCard), findsNWidgets(3));
     });
   });
+
+  group('reconcileDraftingSelections', () {
+    test('matched item with a task id contributes its task id', () {
+      final result = reconcileDraftingSelections(
+        _reconcileData(
+          parsed: [
+            _parsed('p1', kind: ParsedItemKind.matched, matchedTaskId: 't1'),
+          ],
+        ),
+      );
+
+      expect(result.taskIds, equals(['t1']));
+      expect(result.captureItemIds, isEmpty);
+    });
+
+    test('update item with a task id contributes its task id', () {
+      final result = reconcileDraftingSelections(
+        _reconcileData(
+          parsed: [
+            _parsed('p1', kind: ParsedItemKind.update, matchedTaskId: 't1'),
+          ],
+        ),
+      );
+
+      expect(result.taskIds, equals(['t1']));
+      expect(result.captureItemIds, isEmpty);
+    });
+
+    test(
+      'matched item with a null task id falls back to its capture item id',
+      () {
+        final result = reconcileDraftingSelections(
+          _reconcileData(
+            parsed: [_parsed('p1', kind: ParsedItemKind.matched)],
+          ),
+        );
+
+        expect(result.taskIds, isEmpty);
+        expect(result.captureItemIds, equals(['p1']));
+      },
+    );
+
+    test(
+      'update item with a null task id falls back to its capture item id',
+      () {
+        final result = reconcileDraftingSelections(
+          _reconcileData(
+            parsed: [_parsed('p1', kind: ParsedItemKind.update)],
+          ),
+        );
+
+        expect(result.taskIds, isEmpty);
+        expect(result.captureItemIds, equals(['p1']));
+      },
+    );
+
+    test('newTask item always contributes its capture item id', () {
+      final result = reconcileDraftingSelections(
+        _reconcileData(
+          parsed: [
+            // A matchedTaskId is present but irrelevant for a newTask kind,
+            // which is never task-bound.
+            _parsed('p1', kind: ParsedItemKind.newTask, matchedTaskId: 't1'),
+          ],
+        ),
+      );
+
+      expect(result.taskIds, isEmpty);
+      expect(result.captureItemIds, equals(['p1']));
+    });
+
+    test(
+      'triage decision with action today contributes its key as a task id',
+      () {
+        final result = reconcileDraftingSelections(
+          _reconcileData(
+            triageDecisions: {'t1': _triage('t1', TriageAction.today)},
+          ),
+        );
+
+        expect(result.taskIds, equals(['t1']));
+        expect(result.captureItemIds, isEmpty);
+      },
+    );
+
+    test(
+      'triage decision with action doNow contributes its key as a task id',
+      () {
+        final result = reconcileDraftingSelections(
+          _reconcileData(
+            triageDecisions: {'t1': _triage('t1', TriageAction.doNow)},
+          ),
+        );
+
+        expect(result.taskIds, equals(['t1']));
+        expect(result.captureItemIds, isEmpty);
+      },
+    );
+
+    test('triage decisions with non-selecting actions are excluded', () {
+      final result = reconcileDraftingSelections(
+        _reconcileData(
+          triageDecisions: {
+            't_defer': _triage('t_defer', TriageAction.defer),
+            't_done': _triage('t_done', TriageAction.done),
+            't_drop': _triage('t_drop', TriageAction.drop),
+          },
+        ),
+      );
+
+      expect(result.taskIds, isEmpty);
+      expect(result.captureItemIds, isEmpty);
+    });
+
+    test(
+      'a task id from both a matched item and a today triage appears once',
+      () {
+        final result = reconcileDraftingSelections(
+          _reconcileData(
+            parsed: [
+              _parsed('p1', kind: ParsedItemKind.matched, matchedTaskId: 't1'),
+            ],
+            triageDecisions: {'t1': _triage('t1', TriageAction.today)},
+          ),
+        );
+
+        expect(result.taskIds, equals(['t1']));
+        expect(result.captureItemIds, isEmpty);
+      },
+    );
+
+    test('combines parsed and triage contributions across branches', () {
+      final result = reconcileDraftingSelections(
+        _reconcileData(
+          parsed: [
+            _parsed('p1', kind: ParsedItemKind.matched, matchedTaskId: 't1'),
+            _parsed('p2', kind: ParsedItemKind.update, matchedTaskId: 't2'),
+            _parsed('p3', kind: ParsedItemKind.matched), // null → capture
+            _parsed('p4', kind: ParsedItemKind.newTask), // new → capture
+          ],
+          triageDecisions: {
+            't_today': _triage('t_today', TriageAction.today),
+            't_now': _triage('t_now', TriageAction.doNow),
+            't_defer': _triage('t_defer', TriageAction.defer),
+          },
+        ),
+      );
+
+      expect(
+        result.taskIds,
+        unorderedEquals(['t1', 't2', 't_today', 't_now']),
+      );
+      expect(result.captureItemIds, unorderedEquals(['p3', 'p4']));
+    });
+  });
+
+  group('reconcileDraftingSelections (Glados)', () {
+    // The strongest single invariant is the partition property: it pins down
+    // exactly where each parsed item lands AND that the two output lists never
+    // overlap on parsed-derived ids, which subsumes the weaker
+    // "every id is unique" and "each parsed item contributes once" properties.
+    // Triage today/doNow keys are then checked to be a subset of taskIds.
+    glados.Glados<List<_SelectionSpec>>(
+      glados.any.selectionSpecs,
+    ).test('partitions parsed items and folds in triage selections', (specs) {
+      // Real parsed-item ids are unique per capture, so assign each generated
+      // item a position-unique id. Matched-task ids and triage keys still draw
+      // from a tiny seed space so they collide across the list and exercise the
+      // Set-based de-duplication.
+      final parsed = [
+        for (var i = 0; i < specs.length; i++) specs[i].parsedItemAt(i),
+      ];
+      final triageDecisions = {
+        for (final s in specs)
+          if (s.triageTaskId != null) s.triageTaskId!: s.triageResult!,
+      };
+      final data = _reconcileData(
+        parsed: parsed,
+        triageDecisions: triageDecisions,
+      );
+
+      final result = reconcileDraftingSelections(data);
+      final taskIds = result.taskIds;
+      final captureItemIds = result.captureItemIds;
+
+      // (a) No duplicates within either list.
+      expect(taskIds.toSet().length, taskIds.length);
+      expect(captureItemIds.toSet().length, captureItemIds.length);
+
+      // (b) Every parsed item lands in exactly one bucket, on the expected
+      //     side, with the expected id.
+      for (final item in parsed) {
+        final boundTaskId =
+            (item.kind == ParsedItemKind.matched ||
+                item.kind == ParsedItemKind.update)
+            ? item.matchedTaskId
+            : null;
+        if (boundTaskId != null) {
+          expect(taskIds, contains(boundTaskId));
+          expect(captureItemIds, isNot(contains(item.id)));
+        } else {
+          expect(captureItemIds, contains(item.id));
+        }
+      }
+
+      // (c) Every today/doNow triage key ends up in taskIds; other actions
+      //     never add their key on their own.
+      for (final entry in triageDecisions.entries) {
+        final action = entry.value.action;
+        if (action == TriageAction.today || action == TriageAction.doNow) {
+          expect(taskIds, contains(entry.key));
+        }
+      }
+    }, tags: 'glados');
+  });
+
+  group('ReconcileModalContent', () {
+    testWidgets('narrow surface stacks the decide column below heard', (
+      tester,
+    ) async {
+      await _pumpModal(tester, width: 500, height: 1200);
+
+      final context = tester.element(find.byType(ReconcileModalContent));
+      final messages = context.messages;
+
+      // Column content rendered.
+      expect(find.text(_kHeardTitle), findsOneWidget);
+      expect(find.text(_kPendingTitle), findsOneWidget);
+
+      final heard = tester.getTopLeft(
+        find.text(messages.dailyOsNextReconcileHeardOverline),
+      );
+      final decide = tester.getTopLeft(
+        find.text(messages.dailyOsNextReconcileDecideOverline),
+      );
+
+      // Stacked: decide overline sits below the heard overline, roughly
+      // sharing the same left edge.
+      expect(decide.dy, greaterThan(heard.dy));
+      expect((decide.dx - heard.dx).abs(), lessThan(1));
+    });
+
+    testWidgets('wide surface lays heard and decide columns side by side', (
+      tester,
+    ) async {
+      await _pumpModal(tester, width: 1200, height: 900);
+
+      final context = tester.element(find.byType(ReconcileModalContent));
+      final messages = context.messages;
+
+      expect(find.text(_kHeardTitle), findsOneWidget);
+      expect(find.text(_kPendingTitle), findsOneWidget);
+
+      final heard = tester.getTopLeft(
+        find.text(messages.dailyOsNextReconcileHeardOverline),
+      );
+      final decide = tester.getTopLeft(
+        find.text(messages.dailyOsNextReconcileDecideOverline),
+      );
+
+      // Side by side: the decide column starts to the right of the heard
+      // column and the two overlines share roughly the same vertical line.
+      expect(decide.dx, greaterThan(heard.dx));
+      expect((decide.dy - heard.dy).abs(), lessThan(1));
+    });
+  });
+}
+
+const _kHeardTitle = 'Review the deck';
+const _kPendingTitle = 'Pay invoices';
+
+/// Pumps a [ReconcileModalContent] at the given surface size with one parsed
+/// and one pending item so both columns carry visible content. The decide
+/// column is a [ConsumerWidget] that reads the reconcile controller for triage
+/// decisions, so a [ProviderScope] with a fast in-memory agent is supplied.
+Future<void> _pumpModal(
+  WidgetTester tester, {
+  required double width,
+  required double height,
+}) async {
+  tester.view
+    ..physicalSize = Size(width, height)
+    ..devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+
+  final params = ReconcileParams(
+    captureId: const CaptureId('cap_modal'),
+    dayDate: DateTime(2026, 5, 25),
+  );
+  final data = _reconcileData(
+    parsed: [
+      _parsed(
+        'p_heard',
+        kind: ParsedItemKind.newTask,
+        title: _kHeardTitle,
+      ),
+    ],
+    pending: const [
+      PendingItem(
+        taskId: 't_pending',
+        title: _kPendingTitle,
+        category: _category,
+        reason: PendingItemReason.overdue,
+        overdueByDays: 2,
+      ),
+    ],
+  );
+
+  await tester.pumpWidget(
+    _wrap(
+      ReconcileModalContent(params: params, data: data),
+      overrides: [dayAgentProvider.overrideWithValue(_fastAgent())],
+      mediaQueryData: MediaQueryData(size: Size(width, height)),
+    ),
+  );
+  await tester.pump(const Duration(milliseconds: 200));
 }
 
 /// Agent whose parse step surfaces a matched item that has no resolved
@@ -560,4 +918,86 @@ class _BreakLinkRecordingAgent extends MockDayAgent {
       confidence: ParsedItemConfidence.high,
     );
   }
+}
+
+/// A single generated reconcile entry: one parsed item plus an optional triage
+/// decision keyed on a generated task id. The parsed item's own id is assigned
+/// from its list position ([parsedItemAt]) so parsed ids stay unique (as they
+/// are in real captures), while matched-task ids and triage keys draw from a
+/// tiny seed space so they collide across the list and exercise the de-dup path.
+class _SelectionSpec {
+  const _SelectionSpec({
+    required this.kind,
+    required this.hasMatchedTaskId,
+    required this.matchedTaskSeed,
+    required this.hasTriage,
+    required this.triageSeed,
+    required this.triageAction,
+  });
+
+  final ParsedItemKind kind;
+  final bool hasMatchedTaskId;
+  final int matchedTaskSeed;
+  final bool hasTriage;
+  final int triageSeed;
+  final TriageAction triageAction;
+
+  String? get matchedTaskId => hasMatchedTaskId ? 't_$matchedTaskSeed' : null;
+
+  ParsedItem parsedItemAt(int index) => ParsedItem(
+    id: 'p_$index',
+    kind: kind,
+    title: 'Parsed $index',
+    category: _category,
+    confidence: ParsedItemConfidence.high,
+    matchedTaskId: matchedTaskId,
+  );
+
+  String? get triageTaskId => hasTriage ? 't_$triageSeed' : null;
+
+  TriageResult? get triageResult => hasTriage
+      ? TriageResult(taskId: triageTaskId!, action: triageAction)
+      : null;
+
+  @override
+  String toString() =>
+      '_SelectionSpec(kind: $kind, '
+      'matched: $matchedTaskId, triage: $triageTaskId/$triageAction)';
+}
+
+extension _AnySelectionSpecs on glados.Any {
+  glados.Generator<ParsedItemKind> get parsedItemKind =>
+      choose(ParsedItemKind.values);
+
+  glados.Generator<TriageAction> get triageAction =>
+      choose(TriageAction.values);
+
+  glados.Generator<_SelectionSpec> get selectionSpec => combine6(
+    parsedItemKind,
+    this.bool,
+    // Small seed ranges so matched-task ids and triage task ids collide across
+    // the list, exercising the Set-based de-duplication.
+    intInRange(0, 4),
+    this.bool,
+    intInRange(0, 4),
+    triageAction,
+    (
+      ParsedItemKind kind,
+      bool hasMatchedTaskId,
+      int matchedTaskSeed,
+      bool hasTriage,
+      int triageSeed,
+      TriageAction triageAction,
+    ) => _SelectionSpec(
+      kind: kind,
+      hasMatchedTaskId: hasMatchedTaskId,
+      matchedTaskSeed: matchedTaskSeed,
+      hasTriage: hasTriage,
+      triageSeed: triageSeed,
+      triageAction: triageAction,
+    ),
+  );
+
+  glados.Generator<List<_SelectionSpec>> get selectionSpecs =>
+      list(selectionSpec);
 }

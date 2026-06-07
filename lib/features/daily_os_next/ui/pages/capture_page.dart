@@ -21,6 +21,11 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 part 'capture_layout_metrics.dart';
 
+/// Max width for the centred capture column and the "Today so far" card so
+/// the calm single column reads comfortably on wide layouts. Defined once so
+/// the standalone page and the modal content can't drift apart.
+const double _captureContentMaxWidth = 560;
+
 /// Entry surface of the agentic Daily OS — voice-first check-in.
 ///
 /// Layout: vertically centred greeting → headline → voice button →
@@ -93,7 +98,9 @@ class CapturePage extends ConsumerWidget {
                   ),
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 560),
+                      constraints: const BoxConstraints(
+                        maxWidth: _captureContentMaxWidth,
+                      ),
                       child: TimeSpentCard(
                         blocks: actualBlocks,
                         title: _timeSpentTitle(context),
@@ -117,7 +124,9 @@ class CapturePage extends ConsumerWidget {
                         ),
                         child: Center(
                           child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 560),
+                            constraints: const BoxConstraints(
+                              maxWidth: _captureContentMaxWidth,
+                            ),
                             child: Padding(
                               padding: EdgeInsets.symmetric(
                                 horizontal: tokens.spacing.step5,
@@ -209,21 +218,16 @@ class CapturePage extends ConsumerWidget {
 /// standalone capture surface, but without the page chrome (AppBar /
 /// bottom-nav padding / inline advance CTA) — the modal supplies a top bar
 /// and a sticky glass action bar instead. The voice orb stays the in-body
-/// hero recording control; advance/secondary actions live in the action
-/// bar. [trailingBuilder], when provided, appends a widget below the state
-/// row using the live [CaptureState] (used to keep the standalone page's
-/// inline CTA while it still exists).
+/// hero recording control; advance/secondary actions live in the action bar.
 class CaptureModalContent extends ConsumerWidget {
   const CaptureModalContent({
     this.forDate,
     this.actualBlocks = const [],
-    this.trailingBuilder,
     super.key,
   });
 
   final DateTime? forDate;
   final List<TimeBlock> actualBlocks;
-  final Widget Function(BuildContext, CaptureState)? trailingBuilder;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -244,7 +248,9 @@ class CaptureModalContent extends ConsumerWidget {
             ),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 560),
+                constraints: const BoxConstraints(
+                  maxWidth: _captureContentMaxWidth,
+                ),
                 child: TimeSpentCard(
                   blocks: actualBlocks,
                   title: _timeSpentTitle(context),
@@ -266,7 +272,9 @@ class CaptureModalContent extends ConsumerWidget {
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Center(
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 560),
+                      constraints: const BoxConstraints(
+                        maxWidth: _captureContentMaxWidth,
+                      ),
                       child: Padding(
                         padding: EdgeInsets.symmetric(
                           horizontal: tokens.spacing.step5,
@@ -299,9 +307,11 @@ class CaptureModalContent extends ConsumerWidget {
                                   layout.liveTranscriptLineCount,
                               reviewTranscriptLineCount:
                                   layout.reviewTranscriptLineCount,
+                              // The modal's sticky glass bar already offers a
+                              // "Type instead" pill, so drop the redundant
+                              // inline link from the idle hint.
+                              showInlineTypeInstead: false,
                             ),
-                            if (trailingBuilder != null)
-                              trailingBuilder!(context, state),
                           ],
                         ),
                       ),
@@ -461,12 +471,18 @@ class _StateSlot extends StatelessWidget {
     required this.height,
     required this.liveTranscriptLineCount,
     required this.reviewTranscriptLineCount,
+    this.showInlineTypeInstead = true,
   });
 
   final CaptureState state;
   final double height;
   final int liveTranscriptLineCount;
   final int reviewTranscriptLineCount;
+
+  /// Whether the idle hint includes the inline "Type instead" link. The
+  /// modal host sets this false because its sticky glass bar carries the
+  /// same action.
+  final bool showInlineTypeInstead;
 
   @override
   Widget build(BuildContext context) {
@@ -477,6 +493,7 @@ class _StateSlot extends StatelessWidget {
         height: height,
         liveTranscriptLineCount: liveTranscriptLineCount,
         reviewTranscriptLineCount: reviewTranscriptLineCount,
+        showInlineTypeInstead: showInlineTypeInstead,
       ),
     );
 
@@ -502,12 +519,14 @@ class _StateRow extends ConsumerWidget {
     required this.height,
     required this.liveTranscriptLineCount,
     required this.reviewTranscriptLineCount,
+    this.showInlineTypeInstead = true,
   });
 
   final CaptureState state;
   final double height;
   final int liveTranscriptLineCount;
   final int reviewTranscriptLineCount;
+  final bool showInlineTypeInstead;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -517,6 +536,7 @@ class _StateRow extends ConsumerWidget {
     switch (state.phase) {
       case CapturePhase.idle:
         return _IdleCaptureActions(
+          showTypeInstead: showInlineTypeInstead,
           onTypeInstead: () =>
               ref.read(captureControllerProvider.notifier).startTyping(),
         );
@@ -632,9 +652,17 @@ String? _captureErrorMessage(BuildContext context, CaptureError? error) {
 }
 
 class _IdleCaptureActions extends StatelessWidget {
-  const _IdleCaptureActions({required this.onTypeInstead});
+  const _IdleCaptureActions({
+    required this.onTypeInstead,
+    this.showTypeInstead = true,
+  });
 
   final VoidCallback onTypeInstead;
+
+  /// When false, only the "Tap to talk" hint renders — the inline
+  /// "Type instead" link is dropped (the modal host carries it on its
+  /// sticky glass bar instead).
+  final bool showTypeInstead;
 
   @override
   Widget build(BuildContext context) {
@@ -642,15 +670,19 @@ class _IdleCaptureActions extends StatelessWidget {
     final dotStyle = tokens.typography.styles.body.bodySmall.copyWith(
       color: tokens.colors.text.lowEmphasis,
     );
+    final talkHint = Text(
+      context.messages.dailyOsNextCaptureIdleTalk,
+      style: dotStyle,
+    );
+    if (!showTypeInstead) {
+      return talkHint;
+    }
     return Wrap(
       alignment: WrapAlignment.center,
       crossAxisAlignment: WrapCrossAlignment.center,
       spacing: tokens.spacing.step2,
       children: [
-        Text(
-          context.messages.dailyOsNextCaptureIdleTalk,
-          style: dotStyle,
-        ),
+        talkHint,
         Container(
           width: tokens.spacing.step1,
           height: tokens.spacing.step1,

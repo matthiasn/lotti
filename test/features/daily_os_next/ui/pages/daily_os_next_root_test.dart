@@ -163,6 +163,10 @@ void main() {
 
           expect(find.byType(CaptureModalContent), findsOneWidget);
           expect(find.byType(DayPage), findsOneWidget);
+          // The tracked-time the user saw on the Day surface now also rides
+          // the top of the modal's capture step (handoff v2 item 1): the
+          // session title appears both on the timeline and in the card.
+          expect(find.text('Client follow-up'), findsNWidgets(2));
         });
       },
     );

@@ -35,8 +35,10 @@ part 'task_action_bar_buttons.dart';
 ///   items like Event / Text / Paste image / link to event / capture
 ///   screenshot — the latter is desktop-only inside that menu)
 ///
-/// The action row is a [Wrap], so on narrow viewports — typically
-/// phones — the trailing icons reflow onto a second run instead of
+/// The action row is a single [Row] with width-based priority drop: on
+/// narrow viewports the lower-priority trailing icons (image, then
+/// checklist) are hidden once the inner width falls below
+/// [minWidthForImageButton] / [minWidthForChecklistButton] instead of
 /// overflowing the right edge.
 class TaskActionBar extends ConsumerStatefulWidget {
   const TaskActionBar({

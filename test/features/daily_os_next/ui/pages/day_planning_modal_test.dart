@@ -1,10 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
+import 'package:lotti/features/daily_os_next/state/actual_time_blocks_provider.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
@@ -100,6 +100,26 @@ class _PendingDraftAgent extends MockDayAgent {
   }) => _draft.future;
 }
 
+/// Capture-submit agent whose [submitCapture] never completes and counts
+/// calls — exercises the in-flight double-submit guard on the Capture bar.
+class _PendingSubmitAgent extends MockDayAgent {
+  _PendingSubmitAgent()
+    : super(parseLatency: Duration.zero, pendingLatency: Duration.zero);
+
+  int submitCalls = 0;
+  final Completer<CaptureId> _capture = Completer<CaptureId>();
+
+  @override
+  Future<CaptureId> submitCapture({
+    required String transcript,
+    required DateTime capturedAt,
+    String? audioId,
+  }) {
+    submitCalls++;
+    return _capture.future;
+  }
+}
+
 MockDayAgent _fastAgent() => MockDayAgent(
   parseLatency: Duration.zero,
   pendingLatency: Duration.zero,
@@ -125,6 +145,7 @@ Future<void> _openCreate(
   WidgetTester tester, {
   CaptureState capture = const CaptureState.idle(),
   MockDayAgent? agent,
+  List<TimeBlock> actualBlocks = const [],
   Size size = const Size(420, 900),
 }) async {
   await tester.pumpWidget(
@@ -146,6 +167,11 @@ Future<void> _openCreate(
         captureControllerProvider.overrideWith(
           () => _FakeCaptureController(capture),
         ),
+        // Pin the tracked-time projection so the capture step's "Today so
+        // far" card is deterministic and never reaches GetIt-backed services.
+        dailyOsActualTimeBlocksProvider.overrideWith(
+          (ref, date) async => actualBlocks,
+        ),
         if (agent != null) dayAgentProvider.overrideWithValue(agent),
       ],
     ),
@@ -161,6 +187,21 @@ AppLocalizations _l10n(WidgetTester tester) => AppLocalizations.of(
 
 Future<void> _tapPill(WidgetTester tester, String label) async {
   await tester.tap(find.widgetWithText(DsGlassPill, label));
+  await _settle(tester);
+}
+
+/// Invokes the Wolt top-bar back affordance — the leading [IconButton]
+/// carrying [Icons.arrow_back_rounded], wired to the page's `onTapBack` →
+/// `popPage`. Its `onPressed` is invoked directly rather than via a pointer
+/// tap: the Wolt top-bar layer intercepts synthetic hit-tests at that
+/// position, but the callback is the behavior under test and the resulting
+/// navigation is asserted by the caller.
+Future<void> _tapBack(WidgetTester tester) async {
+  final backButton = find.ancestor(
+    of: find.byIcon(Icons.arrow_back_rounded),
+    matching: find.byType(IconButton),
+  );
+  tester.widget<IconButton>(backButton.first).onPressed!();
   await _settle(tester);
 }
 
@@ -243,6 +284,70 @@ void main() {
       await tester.pump();
       expect(find.byType(DsGlassPill), findsNWidgets(2));
     });
+
+    testWidgets('captured re-record resets back to the idle prompt', (
+      tester,
+    ) async {
+      await _openCreate(tester, capture: _captured);
+      expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
+      await tester.tap(find.widgetWithIcon(DsGlassPill, Icons.mic_rounded));
+      await tester.pump();
+      // Reset → the idle bar offers only the type-instead pill.
+      expect(find.byIcon(Icons.keyboard_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.arrow_forward_rounded), findsNothing);
+    });
+
+    testWidgets(
+      'captured with an empty transcript disables the continue pill',
+      (
+        tester,
+      ) async {
+        await _openCreate(
+          tester,
+          capture: const CaptureState(
+            phase: CapturePhase.captured,
+            transcript: '   ',
+            amplitudes: [],
+          ),
+          agent: _fastAgent(),
+        );
+        final continuePill = find.widgetWithIcon(
+          DsGlassPill,
+          Icons.arrow_forward_rounded,
+        );
+        expect(continuePill, findsOneWidget);
+        expect(tester.widget<DsGlassPill>(continuePill).enabled, isFalse);
+        // Tapping the disabled pill must not advance to Reconcile.
+        await tester.tap(continuePill, warnIfMissed: false);
+        await _settle(tester);
+        expect(find.byType(ReconcileModalContent), findsNothing);
+        expect(find.byType(CaptureModalContent), findsOneWidget);
+      },
+    );
+
+    testWidgets('shows the Today so far card when the day has tracked time', (
+      tester,
+    ) async {
+      await _openCreate(
+        tester,
+        actualBlocks: [
+          TimeBlock(
+            id: 'actual:entry-1',
+            title: 'Client follow-up',
+            start: DateTime(2024, 3, 15, 9),
+            end: DateTime(2024, 3, 15, 10),
+            type: TimeBlockType.manual,
+            state: TimeBlockState.completed,
+            category: const DayAgentCategory(
+              id: 'c',
+              name: 'Work',
+              colorHex: '5ED4B7',
+            ),
+          ),
+        ],
+      );
+      expect(find.text('Client follow-up'), findsOneWidget);
+    });
   });
 
   group('showDayPlanningModal — create chain', () {
@@ -290,6 +395,49 @@ void main() {
       expect(find.byType(ReconcileModalContent), findsOneWidget);
       await _tapPill(tester, messages.dailyOsNextReconcileReRecord);
       expect(find.byType(CaptureModalContent), findsOneWidget);
+    });
+
+    testWidgets('reconcile back button pops back to capture', (tester) async {
+      await _openCreate(tester, capture: _captured, agent: _fastAgent());
+      final messages = _l10n(tester);
+      await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
+      expect(find.byType(ReconcileModalContent), findsOneWidget);
+      await _tapBack(tester);
+      expect(find.byType(CaptureModalContent), findsOneWidget);
+    });
+
+    testWidgets('drafting back button pops back to reconcile', (tester) async {
+      await _openCreate(
+        tester,
+        capture: _captured,
+        agent: _PendingDraftAgent(),
+      );
+      final messages = _l10n(tester);
+      await _tapPill(tester, messages.dailyOsNextCaptureReconcileCta);
+      await _tapPill(tester, messages.dailyOsNextReconcileBuildDayCta);
+      expect(find.byType(DraftingModalContent), findsOneWidget);
+      await _tapBack(tester);
+      expect(find.byType(ReconcileModalContent), findsOneWidget);
+    });
+
+    testWidgets('continue ignores a second tap while submit is in flight', (
+      tester,
+    ) async {
+      final agent = _PendingSubmitAgent();
+      await _openCreate(tester, capture: _captured, agent: agent);
+      final messages = _l10n(tester);
+      final cta = find.widgetWithText(
+        DsGlassPill,
+        messages.dailyOsNextCaptureReconcileCta,
+      );
+      await tester.tap(cta);
+      await tester.pump();
+      // While the first submit hangs, the pill is disabled, so a second tap
+      // is a no-op — exactly one capture is submitted.
+      expect(tester.widget<DsGlassPill>(cta).enabled, isFalse);
+      await tester.tap(cta, warnIfMissed: false);
+      await tester.pump();
+      expect(agent.submitCalls, 1);
     });
 
     testWidgets('reconcile surfaces an error when parsing fails', (
@@ -360,10 +508,37 @@ void main() {
   });
 
   group('showDayPlanningModal — responsive', () {
-    testWidgets('renders as a dialog on wide viewports', (tester) async {
+    testWidgets('phone viewport fills the width as a bottom sheet', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(420, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await _openCreate(tester);
+      expect(find.byType(CaptureModalContent), findsOneWidget);
+      // The full-height bottom sheet spans the whole 420-wide phone.
+      final width = tester.getSize(find.byType(CaptureModalContent)).width;
+      expect(width, closeTo(420, 2));
+    });
+
+    testWidgets('wide viewport renders a width-bounded centered dialog', (
+      tester,
+    ) async {
+      tester.view
+        ..physicalSize = const Size(1280, 900)
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       await _openCreate(tester, size: const Size(1280, 900));
       expect(find.byType(CaptureModalContent), findsOneWidget);
-      expect(find.byType(DayPlanningGlassActionBar), findsOneWidget);
+      // The dialog branch constrains the content far below the 1280 width,
+      // unlike the full-width phone bottom sheet above.
+      final width = tester.getSize(find.byType(CaptureModalContent)).width;
+      expect(width, lessThan(900));
     });
   });
 }

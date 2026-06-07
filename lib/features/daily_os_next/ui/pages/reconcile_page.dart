@@ -13,6 +13,16 @@ import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
+/// Width at/above which the reconcile surface lays the Heard / Decide
+/// columns side by side; below it they stack. Shared by the page, the modal
+/// content, and the footer so the breakpoint can't drift between them.
+const double _reconcileTwoColumnBreakpoint = 720;
+
+/// Flex weights for the side-by-side Heard / Decide columns — the Heard
+/// column (parsed items) gets slightly more room than the Decide column.
+const int _heardColumnFlex = 6;
+const int _decideColumnFlex = 5;
+
 /// Second screen of the agentic loop — turn the spoken check-in into
 /// editable structure and fold in the existing corpus.
 ///
@@ -93,7 +103,8 @@ class _ReconcileBody extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final isWide = MediaQuery.sizeOf(context).width >= 720;
+    final isWide =
+        MediaQuery.sizeOf(context).width >= _reconcileTwoColumnBreakpoint;
 
     final heardColumn = _HeardColumn(params: params, items: data.parsed);
     final decideColumn = _DecideColumn(
@@ -113,9 +124,9 @@ class _ReconcileBody extends ConsumerWidget {
                 ? Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(flex: 6, child: heardColumn),
+                      Expanded(flex: _heardColumnFlex, child: heardColumn),
                       SizedBox(width: tokens.spacing.step6),
-                      Expanded(flex: 5, child: decideColumn),
+                      Expanded(flex: _decideColumnFlex, child: decideColumn),
                     ],
                   )
                 : Column(
@@ -333,7 +344,8 @@ class ReconcileModalContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final isWide = MediaQuery.sizeOf(context).width >= 720;
+    final isWide =
+        MediaQuery.sizeOf(context).width >= _reconcileTwoColumnBreakpoint;
     final heardColumn = _HeardColumn(params: params, items: data.parsed);
     final decideColumn = _DecideColumn(params: params, items: data.pending);
 
@@ -346,9 +358,9 @@ class ReconcileModalContent extends StatelessWidget {
           ? Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(flex: 6, child: heardColumn),
+                Expanded(flex: _heardColumnFlex, child: heardColumn),
                 SizedBox(width: tokens.spacing.step6),
-                Expanded(flex: 5, child: decideColumn),
+                Expanded(flex: _decideColumnFlex, child: decideColumn),
               ],
             )
           : Column(
@@ -373,7 +385,8 @@ class _ReconcileFooter extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final isWide = MediaQuery.sizeOf(context).width >= 720;
+    final isWide =
+        MediaQuery.sizeOf(context).width >= _reconcileTwoColumnBreakpoint;
     final buttonShape = RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
     );
