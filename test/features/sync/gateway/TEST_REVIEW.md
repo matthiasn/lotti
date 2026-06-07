@@ -28,15 +28,18 @@
 
 - [x] **[HIGH]** `matrix_sdk_gateway_test.dart` lines 400 and 419: uses `await Future<void>.delayed(Duration.zero)` to let stream events propagate before asserting. This is a fake-time violation (AGENTS.md / test/README.md). Replace with `await pumpEventQueue()` or, within a `testWidgets`/`fakeAsync` context, `async.flushMicrotasks()`. For plain `test()` bodies, `await pumpEventQueue()` is the idiomatic replacement.
 
-- [ ] **[MED]** `matrix_sync_gateway_test.dart` (16 lines) contains exactly one test that only checks two field values on `RoomInviteEvent` after construction. Per AGENTS.md "no constructor smoke tests" — this is existence-only. The abstract interface itself has no behavior to test, but `RoomInviteEvent` is a concrete value class; the single test covers equality at best. Either expand to test the equality/hashCode contract, or delete the file if it adds no value beyond the compile check.
+- [x] **[MED]** `matrix_sync_gateway_test.dart` (16 lines) contains exactly one test that only checks two field values on `RoomInviteEvent` after construction. Per AGENTS.md "no constructor smoke tests" — this is existence-only. The abstract interface itself has no behavior to test, but `RoomInviteEvent` is a concrete value class; the single test covers equality at best. Either expand to test the equality/hashCode contract, or delete the file if it adds no value beyond the compile check.
+  - **RESOLVED:** (stale) — `matrix_sync_gateway_test.dart` was deleted in the HIGH-items pass (#3281); the constructor smoke test is gone.
 
-- [ ] **[MED]** `matrix_sdk_gateway_test.dart` has no shared `_pumpGateway` or `_bench`-style helper. The `setUp` is already doing the right thing, but the repeated `when(() => client.getRoomById(...)).thenReturn(room)` stub and `final room = MockRoom()` pattern appear in 8+ individual tests. Extract a `MockRoom _stubRoom(String id)` helper at file scope to reduce duplication.
+- [x] **[MED]** `matrix_sdk_gateway_test.dart` has no shared `_pumpGateway` or `_bench`-style helper. The `setUp` is already doing the right thing, but the repeated `when(() => client.getRoomById(...)).thenReturn(room)` stub and `final room = MockRoom()` pattern appear in 8+ individual tests. Extract a `MockRoom _stubRoom(String id)` helper at file scope to reduce duplication.
+  - **RESOLVED:** done — extracted `_stubRoom(client, roomId)` and collapsed all 7 repeated MockRoom + `getRoomById` stub pairs.
 
 ---
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[MED]** `MatrixSdkGateway.sendText` / `sendFile`: the event-registration path in `SentEventRegistry` (`sentEventRegistry.consume(id)`, `debugSource(id)`) is pure and deterministic. A small Glados property could verify that: for any generated event ID string, `consume` returns `true` exactly once and `false` on a second call, across both `SentEventSource.text` and `SentEventSource.file`. This is a genuine round-trip property that example-based tests cannot exhaustively cover.
+- [x] **[MED]** `MatrixSdkGateway.sendText` / `sendFile`: the event-registration path in `SentEventRegistry` (`sentEventRegistry.consume(id)`, `debugSource(id)`) is pure and deterministic. A small Glados property could verify that: for any generated event ID string, `consume` returns `true` exactly once and `false` on a second call, across both `SentEventSource.text` and `SentEventSource.file`. This is a genuine round-trip property that example-based tests cannot exhaustively cover.
+  - **RESOLVED:** (stale, premise corrected) — `consume` is intentionally repeatable within the TTL (suppressed IDs stay registered so retries short-circuit), so a consume-once property would pin the wrong contract. The registry already has a Glados model property in `sent_event_registry_test.dart` ('generated operation sequences preserve TTL, FIFO cap, and sources') covering register/consume/expiry round-trips.
 
 - [ ] **[LOW]** `RoomInviteEvent` value equality: a Glados round-trip over generated `(roomId, senderId)` string pairs would replace the smoke test with a real property.
 
@@ -46,9 +49,11 @@
 
 - [x] **[HIGH]** `matrix_sync_gateway_test.dart` only tests `RoomInviteEvent` construction. The abstract interface surface (`connect`, `login`, `logout`, `createRoom`, `joinRoom`, `leaveRoom`, `getRoomById`, `loginStateChanges`, `invites`, `sendText`, `sendFile`, `changePassword`, `dispose`) is tested exclusively through the concrete `MatrixSdkGateway` impl. That is fine, but it means any regression in the interface contract (e.g., a new required method added without implementation) won't be caught at the abstract level. At minimum the `matrix_sync_gateway_test.dart` file should be extended or removed. **RESOLVED:** the file is removed (the "or removed" arm of this item) — `MatrixSyncGateway` is a pure abstract interface and `RoomInviteEvent` a const two-field data holder with no behavior, so the only possible test was the forbidden constructor smoke test; missing implementations are caught at compile time and the concrete surface is covered by `matrix_sdk_gateway_test.dart`.
 
-- [ ] **[MED]** `matrix_sdk_gateway_test.dart`: the `dispose()` path is partially tested (the `disposed` flag is set in `tearDown`), but there is no test that calls `gateway.dispose()` and then asserts that subsequent operations (e.g. `sendText`, `loginStateChanges`) behave safely (throw, no-op, or return a closed stream). This is an important lifecycle edge case.
+- [x] **[MED]** `matrix_sdk_gateway_test.dart`: the `dispose()` path is partially tested (the `disposed` flag is set in `tearDown`), but there is no test that calls `gateway.dispose()` and then asserts that subsequent operations (e.g. `sendText`, `loginStateChanges`) behave safely (throw, no-op, or return a closed stream). This is an important lifecycle edge case.
+  - **RESOLVED:** done — added a dispose lifecycle test: `dispose()` completes the `invites` stream for listeners, disposes the SDK client exactly once, and room-state events arriving afterwards are ignored.
 
-- [ ] **[MED]** `keyVerificationRequests` stream: the `keyVerificationController` is wired in `setUp` but no test actually emits on it or asserts the `keyVerificationRequests` stream is forwarded. Add a test mirroring the `loginStateChanges` stream test.
+- [x] **[MED]** `keyVerificationRequests` stream: the `keyVerificationController` is wired in `setUp` but no test actually emits on it or asserts the `keyVerificationRequests` stream is forwarded. Add a test mirroring the `loginStateChanges` stream test.
+  - **RESOLVED:** done — added `'keyVerificationRequests forwards the injected stream'` mirroring the loginStateChanges pattern (emit on the controller, assert delivery).
 
 - [ ] **[LOW]** `sendFile` with `extraContent: null` (no extra payload) is not tested. The overload that omits the named parameter is the common path.
 
@@ -56,7 +61,8 @@
 
 ## Test execution speed opportunities
 
-- [ ] **[MED]** Lines 400, 419: `await Future<void>.delayed(Duration.zero)` introduces a real microtask-queue flush delay. Replacing with `await pumpEventQueue()` removes the real-time dependency entirely and eliminates any CI flakiness window.
+- [x] **[MED]** Lines 400, 419: `await Future<void>.delayed(Duration.zero)` introduces a real microtask-queue flush delay. Replacing with `await pumpEventQueue()` removes the real-time dependency entirely and eliminates any CI flakiness window.
+  - **RESOLVED:** (stale) — the file contains no `Future<void>.delayed(Duration.zero)` calls; the flush sites already use `pumpEventQueue()`.
 
 - [ ] **[LOW]** `setUp` constructs three `StreamController.broadcast()` instances per test. These are cheap, but the stream-based tests are scattered; grouping stream-related tests together and sharing a single controller-close `tearDown` could halve controller allocations for the stream-only subset.
 
