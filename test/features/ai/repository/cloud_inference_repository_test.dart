@@ -2334,6 +2334,65 @@ void main() {
       },
     );
 
+    test(
+      'generateWithMessages forwards forced tool choice to Gemini',
+      () async {
+        final provider = createGeminiProvider();
+        const model = 'gemini-2.5-pro';
+        const toolChoice = ChatCompletionToolChoiceOption.tool(
+          ChatCompletionNamedToolChoice(
+            type: ChatCompletionNamedToolChoiceType.function,
+            function: ChatCompletionFunctionCallOption(name: 'draft_day_plan'),
+          ),
+        );
+        ChatCompletionToolChoiceOption? capturedToolChoice;
+
+        when(
+          () => mockGeminiRepo.generateTextWithMessages(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            thinkingConfig: any(named: 'thinkingConfig'),
+            provider: any(named: 'provider'),
+            thoughtSignatures: any(named: 'thoughtSignatures'),
+            systemMessage: any(named: 'systemMessage'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
+            signatureCollector: any(named: 'signatureCollector'),
+            turnIndex: any(named: 'turnIndex'),
+          ),
+        ).thenAnswer((invocation) {
+          capturedToolChoice =
+              invocation.namedArguments[#toolChoice]
+                  as ChatCompletionToolChoiceOption?;
+          return const Stream.empty();
+        });
+
+        await repository
+            .generateWithMessages(
+              messages: const [
+                ChatCompletionMessage.user(
+                  content: ChatCompletionUserMessageContent.string('Plan'),
+                ),
+              ],
+              model: model,
+              temperature: 0.5,
+              provider: provider,
+              tools: const [
+                ChatCompletionTool(
+                  type: ChatCompletionToolType.function,
+                  function: FunctionObject(name: 'draft_day_plan'),
+                ),
+              ],
+              toolChoice: toolChoice,
+            )
+            .toList();
+
+        expect(capturedToolChoice, toolChoice);
+      },
+    );
+
     test('generateWithMessages passes thought signatures to Gemini', () async {
       final provider = createGeminiProvider();
       const model = 'gemini-3-pro';
@@ -3951,6 +4010,51 @@ void main() {
           'https://api.mistral.ai/v1/chat/completions',
         );
         expect(request.headers['Authorization'], 'Bearer mistral-key');
+      },
+    );
+
+    test(
+      'generateWithMessages forwards forced tool choice to Mistral',
+      () async {
+        stubSseSend('Planned');
+
+        const tools = [
+          ChatCompletionTool(
+            type: ChatCompletionToolType.function,
+            function: FunctionObject(name: 'draft_day_plan'),
+          ),
+        ];
+        const toolChoice = ChatCompletionToolChoiceOption.tool(
+          ChatCompletionNamedToolChoice(
+            type: ChatCompletionNamedToolChoiceType.function,
+            function: ChatCompletionFunctionCallOption(name: 'draft_day_plan'),
+          ),
+        );
+
+        await repository
+            .generateWithMessages(
+              messages: const [
+                ChatCompletionMessage.user(
+                  content: ChatCompletionUserMessageContent.string('Plan'),
+                ),
+              ],
+              model: 'mistral-large',
+              temperature: 0.5,
+              provider: mistralProvider(),
+              tools: tools,
+              toolChoice: toolChoice,
+            )
+            .toList();
+
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
+        final request = captured.first as http.Request;
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(requestBody['tool_choice'], {
+          'type': 'function',
+          'function': {'name': 'draft_day_plan'},
+        });
       },
     );
 

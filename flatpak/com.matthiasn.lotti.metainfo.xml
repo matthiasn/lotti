@@ -41,6 +41,7 @@
           <p>Daily OS Next: a bounded "Today so far" card shows the day's recorded sessions on the Capture screen and on the empty Agenda tab, collapsing older sessions behind an expander.</p>
           <p>Daily OS Next: agenda items and day blocks now show whether they are backed by a task (blue link badge that opens the task) or are standalone time blocks, and standalone titles can be renamed inline.</p>
           <p>Daily OS Next visuals now follow the latest design handoff: a capacity donut replaces the linear meter, recorded sessions render in a neutral tracked treatment, drafted blocks carry a dashed outline, the commit sign-off composition was reworked, and typography across the feature is calmer.</p>
+          <p>Daily OS Next day planning now forces required draft tool calls through Gemini and Mistral providers and keeps fast completed drafts from being dropped while learning cards load.</p>
       </description>
     </release>
     <release version="0.9.1015" date="2026-06-04">

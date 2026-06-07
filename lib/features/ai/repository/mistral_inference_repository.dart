@@ -51,6 +51,8 @@ class MistralInferenceRepository {
   ///   temperature: Sampling temperature
   ///   maxCompletionTokens: Maximum tokens for completion
   ///   tools: Optional list of tools for function calling
+  ///   toolChoice: Optional tool-selection override (`auto`, required, none,
+  ///     or a specific function).
   ///
   /// Returns:
   ///   Stream of chat completion responses
@@ -63,6 +65,7 @@ class MistralInferenceRepository {
     double? temperature,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
   }) async* {
     yield* _generate(
       messages: [
@@ -75,12 +78,14 @@ class MistralInferenceRepository {
       temperature: temperature,
       maxCompletionTokens: maxCompletionTokens,
       tools: tools,
+      toolChoice: toolChoice,
     );
   }
 
   /// Generate text with full conversation history.
   ///
-  /// This method supports multi-turn conversations with Mistral's API.
+  /// This method supports multi-turn conversations with Mistral's API and
+  /// the same tool-selection override as [generateText].
   Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
     required List<ChatCompletionMessage> messages,
     required String model,
@@ -89,6 +94,7 @@ class MistralInferenceRepository {
     double? temperature,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
   }) async* {
     yield* _generate(
       messages: convertMessages(messages),
@@ -98,6 +104,7 @@ class MistralInferenceRepository {
       temperature: temperature,
       maxCompletionTokens: maxCompletionTokens,
       tools: tools,
+      toolChoice: toolChoice,
     );
   }
 
@@ -212,6 +219,7 @@ class MistralInferenceRepository {
     double? temperature,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
   }) async* {
     final requestBody = <String, dynamic>{
       'model': model,
@@ -234,7 +242,7 @@ class MistralInferenceRepository {
           },
         };
       }).toList();
-      requestBody['tool_choice'] = 'auto';
+      requestBody['tool_choice'] = _serializeToolChoice(toolChoice) ?? 'auto';
     }
 
     developer.log(
@@ -351,6 +359,24 @@ class MistralInferenceRepository {
         originalError: e,
       );
     }
+  }
+
+  Object? _serializeToolChoice(ChatCompletionToolChoiceOption? toolChoice) {
+    if (toolChoice == null) return null;
+
+    return toolChoice.map(
+      mode: (choice) => switch (choice.value) {
+        ChatCompletionToolChoiceMode.none => 'none',
+        ChatCompletionToolChoiceMode.auto => 'auto',
+        // Mistral forces a tool call with `any`; `required` (the OpenAI
+        // spelling) is rejected with a 400 Bad Request.
+        ChatCompletionToolChoiceMode.required => 'any',
+      },
+      tool: (choice) => {
+        'type': 'function',
+        'function': {'name': choice.value.function.name},
+      },
+    );
   }
 
   /// Parse a streaming response chunk from Mistral's API.

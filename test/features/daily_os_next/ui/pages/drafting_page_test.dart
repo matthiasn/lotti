@@ -465,6 +465,26 @@ void main() {
     );
 
     testWidgets(
+      'draft that resolves before learnings still advances to DayPage',
+      (tester) async {
+        _setSurface(tester);
+        final draft = Completer<DraftPlan>()..complete(_readyPlan());
+        final agent = _FakeAgent(draft: draft);
+        await tester.pumpWidget(_wrap(_page(), agent: agent));
+        await tester.pump();
+
+        agent.learnings.complete([_card()]);
+        await tester.pump();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.byType(DayPage), findsOneWidget);
+        expect(find.byType(DraftingPage), findsNothing);
+      },
+    );
+
+    testWidgets(
       'draft failure after the first body keeps stale drafting content mounted',
       (tester) async {
         _setSurface(tester);

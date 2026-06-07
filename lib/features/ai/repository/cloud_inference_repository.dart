@@ -176,6 +176,7 @@ class CloudInferenceRepository {
         maxCompletionTokens: maxCompletionTokens,
         provider: provider,
         tools: tools,
+        toolChoice: toolChoice,
         thinkingConfig: finalThinking,
       );
     }
@@ -192,6 +193,7 @@ class CloudInferenceRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
+        toolChoice: toolChoice,
       );
     }
 
@@ -514,8 +516,8 @@ class CloudInferenceRepository {
   /// - [toolChoice]: Optional override of the tool-selection policy. When
   ///   provided, it replaces the default `auto` behavior — useful for forcing
   ///   a terminal tool call (e.g. `update_report`) when a weaker model failed
-  ///   to emit it on its own. Currently honored only on the OpenAI-compatible
-  ///   branch; the Gemini/Ollama/Mistral sub-repositories ignore it.
+  ///   to emit it on its own. Honored by Gemini and the OpenAI-compatible
+  ///   branch; Ollama ignores it.
   /// - [thoughtSignatures]: Optional signatures from previous turns (Gemini only)
   /// - [signatureCollector]: Optional collector for new signatures (Gemini only)
   /// - [turnIndex]: Current turn number for unique tool call ID generation
@@ -563,6 +565,7 @@ class CloudInferenceRepository {
         systemMessage: systemMessage,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
+        toolChoice: toolChoice,
         signatureCollector: signatureCollector,
         turnIndex: turnIndex,
       );
@@ -590,6 +593,7 @@ class CloudInferenceRepository {
         temperature: temperature,
         maxCompletionTokens: maxCompletionTokens,
         tools: tools,
+        toolChoice: toolChoice,
       );
     }
 

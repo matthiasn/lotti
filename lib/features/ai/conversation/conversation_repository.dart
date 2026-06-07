@@ -203,8 +203,9 @@ class ConversationRepository extends _$ConversationRepository {
   /// for every inference call this `sendMessage` makes. This is the hook the
   /// Task Agent uses to force a terminal `update_report` call when a weaker
   /// model stopped early without publishing its report. Currently honored
-  /// only on the OpenAI-compatible inference path — Gemini/Ollama/Mistral
-  /// sub-repositories silently ignore it.
+  /// on provider adapters that support forced tools. Adapters that do not
+  /// support it should make that limitation explicit instead of silently
+  /// dropping the constraint.
   ///
   /// Returns the accumulated [InferenceUsage] across all turns, or `null`
   /// if no usage data was reported by the inference provider.

@@ -273,6 +273,50 @@ void main() {
         expect(requestBody['tool_choice'], equals('auto'));
       });
 
+      test('should serialize forced named tool choice when provided', () async {
+        final events = [
+          createSseChunkEvent(content: 'Planned'),
+          createSseFinalEvent(),
+        ];
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
+
+        const tools = [
+          ChatCompletionTool(
+            type: ChatCompletionToolType.function,
+            function: FunctionObject(name: 'draft_day_plan'),
+          ),
+        ];
+        const toolChoice = ChatCompletionToolChoiceOption.tool(
+          ChatCompletionNamedToolChoice(
+            type: ChatCompletionNamedToolChoiceType.function,
+            function: ChatCompletionFunctionCallOption(name: 'draft_day_plan'),
+          ),
+        );
+
+        final stream = repository.generateText(
+          prompt: prompt,
+          model: model,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          tools: tools,
+          toolChoice: toolChoice,
+        );
+
+        await stream.toList();
+
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
+        final request = captured.first as http.Request;
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(requestBody['tool_choice'], {
+          'type': 'function',
+          'function': {'name': 'draft_day_plan'},
+        });
+      });
+
       test('should handle HTTP error responses', () async {
         // Arrange
         final stream = Stream.fromIterable([
