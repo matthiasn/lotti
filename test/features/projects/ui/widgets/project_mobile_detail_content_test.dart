@@ -316,26 +316,7 @@ void main() {
       'category but the page wires up onCategoryTap',
       (tester) async {
         var categoryTapCount = 0;
-        final record = ProjectRecord(
-          project: makeTestProject(
-            id: 'project-1',
-            title: 'Uncategorised project',
-          ),
-          category: null,
-          healthScore: 78,
-          healthMetrics: null,
-          reportNextWakeAt: null,
-          completedTaskCount: 0,
-          totalTaskCount: 0,
-          blockedTaskCount: 0,
-          aiSummary: 'Test AI summary.',
-          reportContent: 'Test AI summary.',
-          recommendations: const [],
-          reportUpdatedAt: DateTime(2026, 4, 2, 7, 30),
-          highlightedTaskSummaries: const [],
-          reviewSessions: const [],
-          highlightedTasksTotalDuration: Duration.zero,
-        );
+        final record = _makeRecordWithNoCategory();
 
         await tester.pumpWidget(
           wrap(
@@ -366,26 +347,7 @@ void main() {
       'omits the category placeholder when the project has no category and '
       'onCategoryTap is not wired up',
       (tester) async {
-        final record = ProjectRecord(
-          project: makeTestProject(
-            id: 'project-1',
-            title: 'Uncategorised project',
-          ),
-          category: null,
-          healthScore: 78,
-          healthMetrics: null,
-          reportNextWakeAt: null,
-          completedTaskCount: 0,
-          totalTaskCount: 0,
-          blockedTaskCount: 0,
-          aiSummary: 'Test AI summary.',
-          reportContent: 'Test AI summary.',
-          recommendations: const [],
-          reportUpdatedAt: DateTime(2026, 4, 2, 7, 30),
-          highlightedTaskSummaries: const [],
-          reviewSessions: const [],
-          highlightedTasksTotalDuration: Duration.zero,
-        );
+        final record = _makeRecordWithNoCategory();
 
         await tester.pumpWidget(
           wrap(
@@ -402,4 +364,28 @@ void main() {
       },
     );
   });
+}
+
+/// A record without a category, shared by the category-placeholder tests.
+ProjectRecord _makeRecordWithNoCategory() {
+  return ProjectRecord(
+    project: makeTestProject(
+      id: 'project-1',
+      title: 'Uncategorised project',
+    ),
+    category: null,
+    healthScore: 78,
+    healthMetrics: null,
+    reportNextWakeAt: null,
+    completedTaskCount: 0,
+    totalTaskCount: 0,
+    blockedTaskCount: 0,
+    aiSummary: 'Test AI summary.',
+    reportContent: 'Test AI summary.',
+    recommendations: const [],
+    reportUpdatedAt: DateTime(2026, 4, 2, 7, 30),
+    highlightedTaskSummaries: const [],
+    reviewSessions: const [],
+    highlightedTasksTotalDuration: Duration.zero,
+  );
 }

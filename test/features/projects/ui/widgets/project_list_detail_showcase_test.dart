@@ -188,7 +188,7 @@ void main() {
         );
         await tester.ensureVisible(studyOption);
         await tester.tap(studyOption);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
         await tester.tap(
           find.byKey(

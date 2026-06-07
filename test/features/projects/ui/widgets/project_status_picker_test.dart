@@ -54,7 +54,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Bottom sheet title
       expect(find.text('Change Status'), findsOneWidget);
@@ -81,7 +82,8 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.check), findsOneWidget);
     });
@@ -102,10 +104,12 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Active'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(selectedStatus, isA<ProjectActive>());
     });
@@ -126,12 +130,14 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap the "Open" option in the sheet (second occurrence)
       final openOptions = find.text('Open');
       await tester.tap(openOptions.last);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(callCount, 0);
     });
@@ -148,12 +154,14 @@ void main() {
       await tester.pump();
 
       await tester.tap(find.text('Open'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Change Status'), findsOneWidget);
 
       await tester.tap(find.text('Completed'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Sheet should be dismissed
       expect(find.text('Change Status'), findsNothing);

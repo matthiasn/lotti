@@ -48,11 +48,12 @@
 
 - [x] **[MED]** `test/features/projects/ui/widgets/shared_widgets_test.dart` (1647 lines) — largest test file; should be split alongside the impl. Each split file will be <500 lines. **RESOLVED (assessed, no change):** the impl split used `part` files (one library), so the single mirror test remains correct under the one-test-file-per-source rule.
 
-- [ ] **[MED]** `lib/features/projects/ui/widgets/project_list_shared.dart` (462 lines) — three distinct concerns:
+- [x] **[MED]** `lib/features/projects/ui/widgets/project_list_shared.dart` (462 lines) — three distinct concerns:
   - Group header/section widgets (`ProjectGroupHeader`, `ProjectGroupSection`) 
   - Row widget (`ProjectRow`, `_metaSpans`)
   - Ring painter (`_TinyProgressRing`, `_TinyProgressRingPainter`, `_progressRingColor`, `_interactionPriority`)
   Splitting is not urgent (under 500) but the painter logic belongs in a focused file.
+  **RESOLVED:** split via `part` files — `project_list_row.dart` (ProjectRow + `_metaSpans`) and `project_list_progress_ring.dart` (`_progressRingColor` + ring widget/painter); host keeps group header/section + interaction priority. Importers untouched; the mirror test stays single per the one-test-file-per-source rule.
 
 - [ ] **[LOW]** `lib/features/projects/ui/widgets/project_tasks_panel.dart` (356 lines) — could extract `TaskSummaryRow` to its own file once `ProjectTasksSliverPanel` gets tests.
 
@@ -69,11 +70,14 @@
 
 - [x] **[HIGH]** `test/.../projects_filter_modal_test.dart` — **27 `pumpAndSettle` calls** across 5 tests. Every `pumpAndSettle` after an `ensureVisible` is unnecessary (ensureVisible is synchronous). The deep-interaction tests (lines 136–285) chain up to six `pumpAndSettle` calls where `tester.pump()` would suffice for each non-animation step. Opening a modal requires settling, but subsequent `ensureVisible`→`tap` sequences do not need to settle animations. **RESOLVED (assessed, no change):** empirically replacing these settles breaks 6 of the tests — they drain genuine Wolt modal route open/close transitions, not idle waits.
 
-- [ ] **[MED]** `test/.../project_agent_report_card_test.dart` — 21 `pumpAndSettle` calls. The `create agent shows snackbar when provisioning fails` test (line ~451) calls `pumpAndSettle` after tapping the profile selection, which triggers an exception-throwing service call. A `tester.pump()` is sufficient here and is less likely to time out if a future error triggers animation. Prefer `pump()` for error-path assertions.
+- [x] **[MED]** `test/.../project_agent_report_card_test.dart` — 21 `pumpAndSettle` calls. The `create agent shows snackbar when provisioning fails` test (line ~451) calls `pumpAndSettle` after tapping the profile selection, which triggers an exception-throwing service call. A `tester.pump()` is sufficient here and is less likely to time out if a future error triggers animation. Prefer `pump()` for error-path assertions.
+  **RESOLVED:** the error-path settle after tapping the profile is now `pump()` + bounded `pump(300ms)`; test green. (Blanket replacement of the other settles was already assessed as breaking — they drain genuine snackbar/modal animations.)
 
-- [ ] **[MED]** `test/.../project_mobile_detail_content_test.dart:316–403` — two consecutive tests each construct a full `ProjectRecord(...)` inline with ~15 positional fields. The two tests differ only in whether `category` is null and whether `onCategoryTap` is provided. Extract a local helper `_makeRecordWithNoCategory()` to avoid the duplication.
+- [x] **[MED]** `test/.../project_mobile_detail_content_test.dart:316–403` — two consecutive tests each construct a full `ProjectRecord(...)` inline with ~15 positional fields. The two tests differ only in whether `category` is null and whether `onCategoryTap` is provided. Extract a local helper `_makeRecordWithNoCategory()` to avoid the duplication.
+  **RESOLVED:** extracted `_makeRecordWithNoCategory()`; both tests now share it.
 
-- [ ] **[MED]** `test/.../health_panel_test.dart:44,59` — uses `findsAtLeastNWidgets(1)` to check for a count value (e.g., `'3'`). Because `'3'` might match unrelated text widgets, use `find.widgetWithText(Text, '3')` scoped to the metric area, or assert the exact text widget's content.
+- [x] **[MED]** `test/.../health_panel_test.dart:44,59` — uses `findsAtLeastNWidgets(1)` to check for a count value (e.g., `'3'`). Because `'3'` might match unrelated text widgets, use `find.widgetWithText(Text, '3')` scoped to the metric area, or assert the exact text widget's content.
+  **RESOLVED:** assertions now match the exact localized strings ('3 tasks blocked', '3 Blocked', '4/8 tasks completed', '4 Completed') so stray digits elsewhere can't satisfy them.
 
 - [ ] **[LOW]** `test/.../project_mobile_list_detail_showcase_test.dart` — several test names contain source-code line references like `(lines 53-54)`, `(lines 87-88)`, `(line 167)`. These references rot with every refactor. Rename tests to describe the behaviour, not the implementation location.
 
@@ -83,14 +87,16 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[MED]** `lib/features/projects/ui/widgets/showcase/showcase_status_helpers.dart:36` — `showcaseFormatDuration(Duration duration)` is a pure function with structured numeric input and an algebraic invariant: the output string must round-trip to the same total seconds within the displayed granularity. Glados property:
+- [x] **[MED]** `lib/features/projects/ui/widgets/showcase/showcase_status_helpers.dart:36` — `showcaseFormatDuration(Duration duration)` is a pure function with structured numeric input and an algebraic invariant: the output string must round-trip to the same total seconds within the displayed granularity. Glados property:
   - For any `Duration(seconds: s)` where `s >= 0`, `showcaseFormatDuration` must not throw and must produce a non-empty string.
   - Round-trip property: parsed unit-suffixed output matches input's coarsest displayed unit.
   This function has no dedicated test at all (only `formatCountdown` in `shared_widgets_test.dart` is tested).
+  **RESOLVED:** added a Glados round-trip property — an independent token parser reconstructs total seconds from the output and must equal the input truncated at the displayed granularity (minute-truncated at hour scale, exact below). Non-empty/suffix properties already existed.
 
-- [ ] **[MED]** `lib/features/projects/ui/widgets/shared_widgets.dart:924` — `formatCountdown(int totalSeconds)` already has thorough static tests (lines 874–902 in `shared_widgets_test.dart`). A Glados property over all non-negative integers would catch boundary cases the hand-rolled examples may miss:
+- [x] **[MED]** `lib/features/projects/ui/widgets/shared_widgets.dart:924` — `formatCountdown(int totalSeconds)` already has thorough static tests (lines 874–902 in `shared_widgets_test.dart`). A Glados property over all non-negative integers would catch boundary cases the hand-rolled examples may miss:
   - `formatCountdown(n) == formatCountdown(n)` (idempotence / no mutation)
   - `formatCountdown(0) == '0:00'` invariant holds for the clamp boundary
+  **RESOLVED (mostly stale):** never-empty, negative-clamp, shape, and two-digit-seconds properties already existed; added the missing strong one — a round-trip property parsing `h:mm:ss`/`m:ss` back to the clamped input seconds. (Pure-function idempotence was skipped as assertion theater.)
 
 - [ ] **[LOW]** `lib/features/projects/ui/widgets/project_list_shared.dart:299` — `_interactionPriority(...)` is a pure 3-case comparator. Any combination of `{projectId, selectedProjectId, hoveredProjectId}` should return exactly one of `{0, 1, 2}`. A Glados property over arbitrary string triples would exhaustively verify the exclusive-priority invariant. Currently not tested at all.
 
@@ -108,14 +114,17 @@
 
 - [x] **[HIGH]** `lib/features/projects/ui/widgets/project_tasks_panel.dart` — `ProjectTasksSliverPanel` has **zero test coverage**. The sliver variant uses `SliverMainAxisGroup` and `SliverList.builder` with the same divider logic as `ProjectTasksPanel`, but its empty-state, single-item, and multi-item paths are completely absent from `project_tasks_panel_test.dart`.
 
-- [ ] **[MED]** `lib/features/projects/ui/widgets/shared_widgets.dart:240` — `OutlinedMetaTag` has only incidental coverage through `project_mobile_detail_content_test.dart` (where it appears as a category placeholder). The `isPlaceholder = true` / `isPlaceholder = false` style distinction, and the `onTap` → InkWell branch, are not tested in `shared_widgets_test.dart` directly.
+- [x] **[MED]** `lib/features/projects/ui/widgets/shared_widgets.dart:240` — `OutlinedMetaTag` has only incidental coverage through `project_mobile_detail_content_test.dart` (where it appears as a category placeholder). The `isPlaceholder = true` / `isPlaceholder = false` style distinction, and the `onTap` → InkWell branch, are not tested in `shared_widgets_test.dart` directly.
+  **RESOLVED:** added an `OutlinedMetaTag` group to `shared_widgets_test.dart`: placeholder-vs-regular palette color matrix (text + icon), no-`onTap` → no InkWell, with-`onTap` → InkWell present and tap forwarded.
 
-- [ ] **[MED]** `lib/features/projects/ui/widgets/showcase/showcase_status_helpers.dart` — `showcaseFormatDuration` has no tests at all. The hour path (`hours > 0`), minute-only path, combined minutes+seconds path, and seconds-only path are uncovered.
+- [x] **[MED]** `lib/features/projects/ui/widgets/showcase/showcase_status_helpers.dart` — `showcaseFormatDuration` has no tests at all. The hour path (`hours > 0`), minute-only path, combined minutes+seconds path, and seconds-only path are uncovered.
+  **RESOLVED (stale):** `showcase/showcase_status_helpers_test.dart` already covers all four paths with worked examples (zero/seconds-only, exact-minute, minutes+seconds, hour) plus Glados properties.
 
-- [ ] **[MED]** `test/.../projects_overview_content_test.dart` (45 lines for a 129-line impl) — only one structural invariant (header outside scroll) is tested. Missing:
+- [x] **[MED]** `test/.../projects_overview_content_test.dart` (45 lines for a 129-line impl) — only one structural invariant (header outside scroll) is tested. Missing:
   - Renders project groups when groups list is non-empty.
   - `onProjectTap` callback is forwarded to child rows.
   - Empty groups list shows `NoResultsPane` (if that is the widget's responsibility).
+  **RESOLVED:** added a shared `_pumpContent` helper and three tests — empty groups → `NoResultsPane` (and no sliver list), non-empty groups render project titles (and no empty pane), and `onProjectTap` forwards the tapped item through the content widget.
 
 - [ ] **[LOW]** `lib/features/projects/ui/widgets/project_list_shared.dart:372` — `_progressRingColor` three-threshold color logic (≥80 → green, ≥50 → amber, <50 → error) is only exercised indirectly through `ProjectRow` widget tests. An isolated unit test would document and protect each threshold boundary.
 
@@ -127,9 +136,11 @@
 
 - [x] **[HIGH]** `test/.../project_agent_report_card_test.dart` — **21 `pumpAndSettle` calls**, many following service-mock interactions that involve no animations (e.g., snackbar after provisioning error at line ~492: `pumpAndSettle` after `tap('Assign Agent')` then again after `tap(testProfile.name)`). Replacing with `pump()` where animation is not required saves up to ~210 s of timeout ceiling. **RESOLVED (assessed, no change):** a blanket replacement fails 14 of the tests — the settles drain snackbar entrance/dismiss animations and modal transitions that the assertions depend on.
 
-- [ ] **[MED]** `test/.../project_status_picker_test.dart` — **8 `pumpAndSettle` calls** for bottom-sheet open/dismiss. Bottom sheets do animate, so some are legitimate. However the dismiss assertions (lines 153–159) settle twice per test. A single `pumpAndSettle` after the final interaction is sufficient.
+- [x] **[MED]** `test/.../project_status_picker_test.dart` — **8 `pumpAndSettle` calls** for bottom-sheet open/dismiss. Bottom sheets do animate, so some are legitimate. However the dismiss assertions (lines 153–159) settle twice per test. A single `pumpAndSettle` after the final interaction is sufficient.
+  **RESOLVED:** all 8 settles replaced with bounded `pump()` + `pump(300ms)` pairs; all 6 tests green.
 
-- [ ] **[MED]** `test/.../project_list_detail_showcase_test.dart` — **6 `pumpAndSettle` calls** in filter-modal interaction tests. The modal open needs one settle; each sub-field `tap` does not. Could reduce to 2 per test.
+- [x] **[MED]** `test/.../project_list_detail_showcase_test.dart` — **6 `pumpAndSettle` calls** in filter-modal interaction tests. The modal open needs one settle; each sub-field `tap` does not. Could reduce to 2 per test.
+  **RESOLVED (adapted):** the in-modal option-toggle settle is now a plain `pump()`. The remaining 5 settles each sit on a genuine Wolt modal route transition (sheet open ×2, nested selection open, nested apply/close, main apply/close) — the same class of transition that empirically broke when bounded in `projects_filter_modal_test.dart`.
 
 - [ ] **[LOW]** `test/.../project_mobile_list_detail_showcase_test.dart` — **2 `pumpAndSettle` calls**, both for filter-modal opens. These are legitimate (bottom-sheet animation). No change needed.
 

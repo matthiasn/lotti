@@ -146,6 +146,37 @@ void main() {
     );
 
     glados.Glados<int>(
+      glados.any.durationSeconds,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'output round-trips to the input seconds truncated at the displayed '
+      'granularity',
+      (seconds) {
+        final result = showcaseFormatDuration(Duration(seconds: seconds));
+
+        // Independent parser: sum up each `<number><unit>` token.
+        var parsedSeconds = 0;
+        for (final token in result.split(' ')) {
+          final value = int.parse(token.substring(0, token.length - 1));
+          parsedSeconds += switch (token[token.length - 1]) {
+            'h' => value * 3600,
+            'm' => value * 60,
+            _ => value,
+          };
+        }
+
+        // Hour-granularity output drops seconds; everything else is exact.
+        final granularity = seconds >= 3600 ? 60 : 1;
+        expect(
+          parsedSeconds,
+          seconds - seconds % granularity,
+          reason: '"$result" should round-trip from $seconds s',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
       glados.any.durationMinutes,
       glados.ExploreConfig(numRuns: 120),
     ).test(

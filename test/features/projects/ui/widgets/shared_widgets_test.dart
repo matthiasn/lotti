@@ -131,6 +131,78 @@ void main() {
     });
   });
 
+  group('OutlinedMetaTag', () {
+    testWidgets(
+      'placeholder vs regular style: placeholder uses the medium-text '
+      'palette color, regular uses low-text',
+      (tester) async {
+        for (final isPlaceholder in [true, false]) {
+          await tester.pumpWidget(
+            wrap(
+              OutlinedMetaTag(
+                icon: Icons.folder_outlined,
+                label: 'No category',
+                isPlaceholder: isPlaceholder,
+              ),
+            ),
+          );
+          await tester.pump();
+
+          final context = tester.element(find.byType(OutlinedMetaTag));
+          final expectedColor = isPlaceholder
+              ? ShowcasePalette.mediumText(context)
+              : ShowcasePalette.lowText(context);
+          final label = tester.widget<Text>(find.text('No category'));
+          expect(
+            label.style?.color,
+            expectedColor,
+            reason: 'isPlaceholder=$isPlaceholder',
+          );
+          final icon = tester.widget<Icon>(find.byIcon(Icons.folder_outlined));
+          expect(
+            icon.color,
+            expectedColor,
+            reason: 'isPlaceholder=$isPlaceholder',
+          );
+        }
+      },
+    );
+
+    testWidgets('without onTap renders no InkWell', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          const OutlinedMetaTag(
+            icon: Icons.folder_outlined,
+            label: 'Static tag',
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(InkWell), findsNothing);
+    });
+
+    testWidgets('with onTap renders an InkWell and forwards the tap', (
+      tester,
+    ) async {
+      var taps = 0;
+      await tester.pumpWidget(
+        wrap(
+          OutlinedMetaTag(
+            icon: Icons.folder_outlined,
+            label: 'Tappable tag',
+            onTap: () => taps++,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(InkWell), findsOneWidget);
+      await tester.tap(find.byType(OutlinedMetaTag));
+      expect(taps, 1);
+    });
+  });
+
   group('ProjectHealthBandTag', () {
     testWidgets('renders the health band label', (tester) async {
       await tester.pumpWidget(
@@ -971,6 +1043,29 @@ Longer report content.
           result.split(':').length,
           3,
           reason: '"$result" should be h:mm:ss for $seconds seconds',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<int>(
+      glados.any.countdownSeconds,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'output round-trips to the clamped input seconds',
+      (totalSeconds) {
+        final result = formatCountdown(totalSeconds);
+
+        // Independent parser: h:mm:ss or m:ss back to total seconds.
+        final segments = result.split(':').map(int.parse).toList();
+        final parsed = segments.length == 3
+            ? segments[0] * 3600 + segments[1] * 60 + segments[2]
+            : segments[0] * 60 + segments[1];
+
+        expect(
+          parsed,
+          totalSeconds < 0 ? 0 : totalSeconds,
+          reason: '"$result" should round-trip from $totalSeconds',
         );
       },
       tags: 'glados',
