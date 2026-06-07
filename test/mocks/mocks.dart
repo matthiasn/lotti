@@ -97,6 +97,7 @@ import 'package:lotti/features/notifications/scheduler/notification_scheduler.da
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
+import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/speech/services/speech_dictionary_service.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
@@ -618,6 +619,8 @@ class MockSyncNodeProfileRepository extends Mock
     implements SyncNodeProfileRepository {}
 
 class MockAudioPlayerController extends Mock implements AudioPlayerController {}
+
+class MockAudioWaveformService extends Mock implements AudioWaveformService {}
 
 class MockAudioRecorderRepository extends Mock
     implements AudioRecorderRepository {}

@@ -20,6 +20,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:meta/meta.dart';
 import 'package:record/record.dart' as rec;
 import 'package:record/record.dart' show Amplitude;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -148,6 +149,11 @@ class AudioRecorderController extends _$AudioRecorderController {
     }
     // No state updates needed - we start in stopped state
   }
+
+  /// Test-only seam for the VU math — operates on this instance's sliding
+  /// RMS buffer, so consecutive calls model consecutive amplitude samples.
+  @visibleForTesting
+  double debugCalculateVu(double dBFS) => _calculateVu(dBFS);
 
   /// Calculates VU value from dBFS using RMS over a sliding window
   double _calculateVu(double dBFS) {

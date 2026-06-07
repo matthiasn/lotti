@@ -25,7 +25,8 @@
 
 - [x] **[HIGH]** `test/…/state/audio_player_controller_test.dart:1213` — The "Error Handling" group (lines 1213–1573) repeats an identical 40-line isolated container + mock setup block for every method (play, pause, seek, setSpeed, setAudioNote). This inflates the file by ≈320 lines. Extract a `_errorContainer({required Exception error, required void Function(MockPlayer) configureThrow})` helper and collapse the 5 tests to ~20 lines each. **RESOLVED (stale):** the file already has `makeErrorContainer({configureThrow})` + `verifyLoggedError(logger, subDomain)` helpers, and the five error-path tests are each collapsed to ~8 lines.
 
-- [ ] **[MED]** `test/…/state/audio_waveform_provider_test.dart:11` — Defines `_MockAudioWaveformService` locally; `MockAudioWaveformService` (or equivalent) does not yet exist in `test/mocks/mocks.dart`. If this service is used in other test files, promote it.
+- [x] **[MED]** `test/…/state/audio_waveform_provider_test.dart:11` — Defines `_MockAudioWaveformService` locally; `MockAudioWaveformService` (or equivalent) does not yet exist in `test/mocks/mocks.dart`. If this service is used in other test files, promote it.
+  **RESOLVED:** done — `MockAudioWaveformService` promoted to `test/mocks/mocks.dart` per the central-mocks rule; the test file imports it from there.
 
 - [ ] **[LOW]** `lib/…/state/recorder_controller.dart:1` — At 734 lines the impl file is approaching threshold; consider extracting `_RealtimeRecordingMixin` or a `RealtimeRecorderController` subclass once tests are stable.
 
@@ -39,17 +40,21 @@
 
 - [x] **[HIGH]** `test/…/state/audio_player_controller_test.dart:1213–1573` — Error Handling group: each test creates a fully independent `localContainer`, tears it down manually, and duplicates 40-line mock setup. None of the teardowns call `await getIt.reset()`, meaning GetIt contamination between tests is possible. Extract a shared `_makeErrorContainer({required thrower})` helper and use `addTearDown`.
 
-- [ ] **[MED]** `test/…/state/recorder_controller_test.dart:558–564` — `stop() should log exceptions` group: verifies `verifyNever` on error logging, but the test setup is identical to the adjacent "return null when no audio note" test. These two tests can be merged into one.
+- [x] **[MED]** `test/…/state/recorder_controller_test.dart:558–564` — `stop() should log exceptions` group: verifies `verifyNever` on error logging, but the test setup is identical to the adjacent "return null when no audio note" test. These two tests can be merged into one.
+  **RESOLVED:** done — merged into one test: 'stop() without an audio note returns null and logs no error' asserts both the null result and `verifyNever(error)`, with the setup written once.
 
-- [ ] **[MED]** `test/…/state/recorder_controller_test.dart:948–975` — `setCategoryId edge cases`: both tests do nothing but `returnsNormally` on private-field mutations. They carry zero behavioral coverage; remove or replace with observable assertions.
+- [x] **[MED]** `test/…/state/recorder_controller_test.dart:948–975` — `setCategoryId edge cases`: both tests do nothing but `returnsNormally` on private-field mutations. They carry zero behavioral coverage; remove or replace with observable assertions.
+  **RESOLVED:** stale — the `returnsNormally` edge-case tests were already replaced by the 'setCategoryId / linkedId round-trip through stop()' group, which asserts the persisted categoryId (the in-file comment documents the swap).
 
-- [ ] **[MED]** `test/…/state/audio_checkbox_settings_test.dart:18–28` — Defines `MockAudioRecorderRepository`, `MockPlayer`, `MockPlayerState`, `MockPlayerStream`, `FakePlayable` inline — all of these already exist in `test/mocks/mocks.dart` (lines 501, 832, 836). Use the centralized copies.
+- [x] **[MED]** `test/…/state/audio_checkbox_settings_test.dart:18–28` — Defines `MockAudioRecorderRepository`, `MockPlayer`, `MockPlayerState`, `MockPlayerStream`, `FakePlayable` inline — all of these already exist in `test/mocks/mocks.dart` (lines 501, 832, 836). Use the centralized copies.
+  **RESOLVED:** done (mostly stale) — the file already imported the central `MockAudioRecorderRepository`/`MockPlayer`/`MockPlayerStream`/`FakePlayable`; the one remaining inline `MockPlayerState` was removed in favor of the central copy.
 
 - [ ] **[LOW]** `test/…/state/recorder_controller_test.dart:979–989` — Integration test "can be instantiated" asserts only `returnsNormally` on provider creation. This is pure smoke; the provider initialization state is already verified in the "should initialize with correct initial state" test.
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[MED]** `_calculateVu(double dBFS)` in `lib/…/state/recorder_controller.dart:153–187` is a pure math function (converts dBFS through linear RMS, then back to dB, clamps to [-20, 3]). The invariants are testable: output ∈ [-20.0, 3.0] for any finite input; output(-∞) == -20; output(0) == 18 - 18 == 0 (modulo the reference level). A Glados test over `any.double` (filtered to finite values) would exercise the clamp and formula.
+- [x] **[MED]** `_calculateVu(double dBFS)` in `lib/…/state/recorder_controller.dart:153–187` is a pure math function (converts dBFS through linear RMS, then back to dB, clamps to [-20, 3]). The invariants are testable: output ∈ [-20.0, 3.0] for any finite input; output(-∞) == -20; output(0) == 18 - 18 == 0 (modulo the reference level). A Glados test over `any.double` (filtered to finite values) would exercise the clamp and formula.
+  **RESOLVED:** done — `_calculateVu` got a `@visibleForTesting debugCalculateVu` seam; a Glados property (numRuns 120) feeds random dBFS sequences and asserts every output stays in [-20, 3], plus two boundary tests: a silence-only buffer clamps to the -20 floor and a 0 dBFS buffer clamps to the +3 ceiling.
 
 - [ ] **[LOW]** `formatAudioDuration` in `lib/…/ui/widgets/progress/audio_progress_bar.dart` (see UI review) — a round-trip property (`parse(format(d)) == clamp(d)`) is a Glados candidate; flagged there.
 
@@ -59,9 +64,11 @@ No other non-trivial pure-logic functions are present in the state layer that ar
 
 - [x] **[HIGH]** `lib/…/state/checkbox_visibility_provider.dart` — Has **no dedicated test file**. The `hasProfileTranscription` provider (async, watches `inferenceProfileControllerProvider`) and `checkboxVisibility` (handles null linkedId, loading, error, and data branches) need a `checkbox_visibility_provider_test.dart` that mirrors the source file. The `audio_checkbox_settings_test.dart` file tests recorder state, not this provider.
 
-- [ ] **[MED]** `test/…/state/recorder_controller_test.dart:1103–1173` — The `_triggerAutomaticPrompts` comment block (lines 1144–1173) acknowledges that automatic prompt triggering is not unit-tested; it is only covered by a single integration test (lines 1739–1853). The integration test covers the happy path with a linked ID, but not: (a) the path where `_categoryId == null`; (b) exception thrown inside `triggerAutomaticPrompts` being logged but not re-thrown.
+- [x] **[MED]** `test/…/state/recorder_controller_test.dart:1103–1173` — The `_triggerAutomaticPrompts` comment block (lines 1144–1173) acknowledges that automatic prompt triggering is not unit-tested; it is only covered by a single integration test (lines 1739–1853). The integration test covers the happy path with a linked ID, but not: (a) the path where `_categoryId == null`; (b) exception thrown inside `triggerAutomaticPrompts` being logged but not re-thrown.
+  **RESOLVED:** done (adapted) — added 'stop() without a linked task does NOT trigger automatic prompts' (gap a; the call-site gate is `linkedTaskId != null`). Gap (b) lives at the right seam already: `AutomaticPromptTrigger` catches internally and its own mirror test stubs a throwing service and verifies the logged error — re-testing it through the recorder would require an unhandled-async-error setup that fails the harness.
 
-- [ ] **[MED]** `test/…/state/audio_player_controller_test.dart:796–816` — Completion-handling group: the test "handles completion event with delay" (line 797) only asserts `completedSubscription isNotNull` — no behavioral assertion about what the subscription does. The actual timer/progress-update behavior is covered by the "completion timer fires" test at line 1011, but the two groups are separate and the first adds no new information.
+- [x] **[MED]** `test/…/state/audio_player_controller_test.dart:796–816` — Completion-handling group: the test "handles completion event with delay" (line 797) only asserts `completedSubscription isNotNull` — no behavioral assertion about what the subscription does. The actual timer/progress-update behavior is covered by the "completion timer fires" test at line 1011, but the two groups are separate and the first adds no new information.
+  **RESOLVED:** done — the vacuous 'handles completion event with delay' test (isNotNull-only, duplicating the lazy-ensure test) was removed; a comment points to the behavioral 'completion timer fires and updates progress to duration' coverage.
 
 - [ ] **[LOW]** `lib/…/state/audio_waveform_provider.dart` — The `debounce` / `keepAlive` family parameter code-paths (provider family key equality, stale-while-revalidate) are not explicitly exercised in `audio_waveform_provider_test.dart`. The existing 323-line test file covers happy-path and service-failure paths well but misses the "same audio, second call returns cached value from provider cache" case.
 
@@ -69,7 +76,8 @@ No other non-trivial pure-logic functions are present in the state layer that ar
 
 - [x] **[HIGH]** `test/…/state/audio_player_controller_test.dart:1213–1573` — Five isolated `localContainer` tests each create fresh mock hierarchies, re-register GetIt singletons, and make real async calls. No fakeAsync wrapping. If any of the underlying providers schedule microtasks or timers, these tests incur real-clock overhead. Collapsing them via a shared helper reduces setup time by ≈80 %.
 
-- [ ] **[MED]** `test/…/state/recorder_controller_test.dart:858–944` — "build() amplitude subscription" group: uses `fakeAsync` correctly but the inner `for (var i = 0; i < 20; i++)` loop (line 890) manually replays 20 mock amplitude events inline — this is fine with fakeAsync but the comment ("fill the RMS buffer") suggests a helper like `_fillVuBuffer(amplitudeController, mockAmplitude, count: 20, async: async)` would make the intent clearer and enable reuse in any future VU meter tests.
+- [x] **[MED]** `test/…/state/recorder_controller_test.dart:858–944` — "build() amplitude subscription" group: uses `fakeAsync` correctly but the inner `for (var i = 0; i < 20; i++)` loop (line 890) manually replays 20 mock amplitude events inline — this is fine with fakeAsync but the comment ("fill the RMS buffer") suggests a helper like `_fillVuBuffer(amplitudeController, mockAmplitude, count: 20, async: async)` would make the intent clearer and enable reuse in any future VU meter tests.
+  **RESOLVED:** done — the inline 20-iteration loop is now a documented file-level `fillVuBuffer(amplitudeController, amplitude, async, {count})` helper, reusable by future VU tests.
 
 - [ ] **[LOW]** `test/…/state/recorder_controller_test.dart:1540–1683` — `stopRealtime happy path` test creates a real temp directory via `Directory.systemTemp.createTemp` and spawns file I/O. These are unavoidable given the current architecture, but consider an injectable `AudioDirectoryFactory` to allow deterministic injection in tests.
 

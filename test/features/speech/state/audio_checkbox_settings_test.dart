@@ -9,13 +9,10 @@ import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
-
-class MockPlayerState extends Mock implements PlayerState {}
 
 void main() {
   late ProviderContainer container;
