@@ -18,6 +18,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:meta/meta.dart';
 
 typedef SyncProgressCallback = void Function(double progress);
 typedef SyncDetailedProgressCallback = void Function(int processed, int total);
@@ -513,59 +514,46 @@ class SyncMaintenanceRepository {
     );
   }
 
+  /// Logging subDomain per step. Backfill steps keep their bare method
+  /// names; definition syncs use the `syncXxx` convention.
+  static const _syncDomainByStep = <SyncStep, String>{
+    SyncStep.measurables: 'syncMeasurables',
+    SyncStep.labels: 'syncLabels',
+    SyncStep.categories: 'syncCategories',
+    SyncStep.dashboards: 'syncDashboards',
+    SyncStep.habits: 'syncHabits',
+    SyncStep.aiSettings: 'syncAiSettings',
+    SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
+    SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
+    SyncStep.agentEntities: 'syncAgentEntities',
+    SyncStep.agentLinks: 'syncAgentLinks',
+  };
+
   String _syncDomainFor(SyncStep step) {
-    switch (step) {
-      case SyncStep.measurables:
-        return 'syncMeasurables';
-      case SyncStep.labels:
-        return 'syncLabels';
-      case SyncStep.categories:
-        return 'syncCategories';
-      case SyncStep.dashboards:
-        return 'syncDashboards';
-      case SyncStep.habits:
-        return 'syncHabits';
-      case SyncStep.aiSettings:
-        return 'syncAiSettings';
-      case SyncStep.backfillAgentEntityClocks:
-        return 'backfillAgentEntityClocks';
-      case SyncStep.backfillAgentLinkClocks:
-        return 'backfillAgentLinkClocks';
-      case SyncStep.agentEntities:
-        return 'syncAgentEntities';
-      case SyncStep.agentLinks:
-        return 'syncAgentLinks';
-      case SyncStep.complete:
-        throw UnsupportedError('SyncStep.complete has no sync domain.');
+    final domain = _syncDomainByStep[step];
+    if (domain == null) {
+      throw UnsupportedError('SyncStep.complete has no sync domain.');
     }
+    return domain;
   }
 
   String _totalsDomainFor(SyncStep step) {
-    switch (step) {
-      case SyncStep.measurables:
-        return 'fetchTotals_measurables';
-      case SyncStep.labels:
-        return 'fetchTotals_labels';
-      case SyncStep.categories:
-        return 'fetchTotals_categories';
-      case SyncStep.dashboards:
-        return 'fetchTotals_dashboards';
-      case SyncStep.habits:
-        return 'fetchTotals_habits';
-      case SyncStep.aiSettings:
-        return 'fetchTotals_aiSettings';
-      case SyncStep.backfillAgentEntityClocks:
-        return 'fetchTotals_backfillAgentEntityClocks';
-      case SyncStep.backfillAgentLinkClocks:
-        return 'fetchTotals_backfillAgentLinkClocks';
-      case SyncStep.agentEntities:
-        return 'fetchTotals_agentEntities';
-      case SyncStep.agentLinks:
-        return 'fetchTotals_agentLinks';
-      case SyncStep.complete:
-        throw UnsupportedError('SyncStep.complete has no totals domain.');
+    if (step == SyncStep.complete) {
+      throw UnsupportedError('SyncStep.complete has no totals domain.');
     }
+    // Every totals subDomain is the step name with a fixed prefix.
+    return 'fetchTotals_${step.name}';
   }
+
+  /// Test seam for [_syncDomainFor]. The mapping is only reached internally
+  /// via [_createOperation] (which never receives [SyncStep.complete]), so the
+  /// guard branch is otherwise unreachable.
+  @visibleForTesting
+  String debugSyncDomainFor(SyncStep step) => _syncDomainFor(step);
+
+  /// Test seam for [_totalsDomainFor]. See [debugSyncDomainFor].
+  @visibleForTesting
+  String debugTotalsDomainFor(SyncStep step) => _totalsDomainFor(step);
 }
 
 final syncMaintenanceRepositoryProvider = Provider<SyncMaintenanceRepository>((

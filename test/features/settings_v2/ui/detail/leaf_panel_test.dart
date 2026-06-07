@@ -378,6 +378,57 @@ void main() {
       },
     );
   });
+
+  group('LeafPanel — scrollable wrap contract (executable spec)', () {
+    // The registry's `scrollable` flag exists because of this exact
+    // failure mode (see _buildBody in leaf_panel.dart): a body that owns
+    // its scrolling (ListView/Expanded) crashes with unbounded height
+    // when wrapped, and renders fine unwrapped. kSettingsPanels is const,
+    // so the scenario is pinned here directly instead of via injection;
+    // the per-panel flag values are pinned in panel_registry_test.dart.
+    Widget listBody() => ListView(
+      children: const [SizedBox(height: 40, child: Text('row'))],
+    );
+
+    testWidgets('a list-owning body renders cleanly UNwrapped '
+        '(scrollable: false path)', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Material(
+            child: SizedBox(width: 600, height: 400, child: listBody()),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('row'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the same body inside the scrollable wrap blows up with '
+        'unbounded height — why misclassifying the flag is fatal', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Material(
+            child: SizedBox(
+              width: 600,
+              height: 400,
+              // Mirrors _buildBody's `scrollable: true` branch.
+              child: SingleChildScrollView(child: listBody()),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // The unbounded-height failure cascades across layout passes, so the
+      // harness reports a merged multi-exception object — non-null is the
+      // contract (contrast with the clean unwrapped run above).
+      expect(tester.takeException(), isNotNull);
+    });
+  });
 }
 
 /// Stateful host that lets a single [LeafPanel] survive ancestors

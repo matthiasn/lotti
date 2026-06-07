@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -472,4 +473,55 @@ void main() {
       expect(borderRadius.bottomRight, Radius.zero);
     });
   });
+
+  testWidgets('AudioRecordingIndicator text width is stable', (tester) async {
+    Override overrideWithProgress(Duration d) {
+      return audioRecorderControllerProvider.overrideWith(
+        () => _FakeRecorderController(
+          AudioRecorderState(
+            status: AudioRecorderStatus.recording,
+            progress: d,
+            vu: -10,
+            dBFS: -20,
+            showIndicator: true,
+            modalVisible: false,
+          ),
+        ),
+      );
+    }
+
+    Future<double> pumpAndMeasure(Duration d) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const Center(child: AudioRecordingIndicator()),
+          overrides: [overrideWithProgress(d)],
+        ),
+      );
+      await tester.pump();
+      final byKey = find.byKey(const Key('audio_recording_indicator'));
+      expect(byKey, findsOneWidget);
+      final textFinder = find.descendant(
+        of: byKey,
+        matching: find.byType(Text),
+      );
+      expect(textFinder, findsOneWidget);
+      return tester.getSize(textFinder).width;
+    }
+
+    // Tabular figures: 41 and 48 minutes must render at identical width so
+    // the indicator doesn't jitter as digits change.
+    final w1 = await pumpAndMeasure(const Duration(minutes: 41));
+    final w2 = await pumpAndMeasure(const Duration(minutes: 48));
+    // Tolerant compare: tabular figures share a width, but subpixel layout
+    // rounding can differ slightly across renderers/platforms.
+    expect(w1, closeTo(w2, 0.01));
+  });
+}
+
+/// Minimal fixed-state controller for the timer-text width test below.
+class _FakeRecorderController extends AudioRecorderController {
+  _FakeRecorderController(this._initial);
+  final AudioRecorderState _initial;
+  @override
+  AudioRecorderState build() => _initial;
 }

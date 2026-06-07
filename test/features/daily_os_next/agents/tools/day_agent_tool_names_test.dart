@@ -147,5 +147,55 @@ void main() {
         isFalse,
       );
     });
+
+    test('routing membership is explicit for every tool name', () {
+      // One row per tool: (name, capture/reconcile?, plan?, setNextWake?).
+      // An adversarial move of a name between sets fails here by name.
+      const routing = <String, (bool, bool, bool)>{
+        DayAgentToolNames.recordObservations: (false, false, false),
+        DayAgentToolNames.setNextWake: (false, false, true),
+        DayAgentToolNames.submitCapture: (true, false, false),
+        DayAgentToolNames.parseCaptureToItems: (true, false, false),
+        DayAgentToolNames.matchToCorpus: (true, false, false),
+        DayAgentToolNames.linkCapturePhraseToTask: (true, false, false),
+        DayAgentToolNames.breakCaptureLink: (true, false, false),
+        DayAgentToolNames.surfacePendingDecisions: (true, false, false),
+        DayAgentToolNames.applyTriage: (true, false, false),
+        DayAgentToolNames.createTaskFromPhrase: (true, false, false),
+        DayAgentToolNames.draftDayPlan: (false, true, false),
+        DayAgentToolNames.summarizeRecentPatterns: (false, true, false),
+        DayAgentToolNames.proposePlanDiff: (false, true, false),
+        DayAgentToolNames.acceptDiff: (false, true, false),
+        DayAgentToolNames.revertDiff: (false, true, false),
+        DayAgentToolNames.commitDay: (false, true, false),
+        DayAgentToolNames.uncommitDay: (false, true, false),
+      };
+
+      for (final MapEntry(key: name, value: (capture, plan, wake))
+          in routing.entries) {
+        expect(
+          DayAgentToolNames.isCaptureReconcileTool(name),
+          capture,
+          reason: '$name capture/reconcile',
+        );
+        expect(
+          DayAgentToolNames.isPlanTool(name),
+          plan,
+          reason: '$name plan',
+        );
+        expect(
+          DayAgentToolNames.isSetNextWakeTool(name),
+          wake,
+          reason: '$name setNextWake',
+        );
+        // The workflow handler covers all routed sets but not
+        // strategy-local tools like recordObservations.
+        expect(
+          DayAgentToolNames.isWorkflowHandlerTool(name),
+          capture || plan || wake,
+          reason: '$name workflowHandler',
+        );
+      }
+    });
   });
 }

@@ -82,6 +82,10 @@ void main() {
 
     expect(find.byType(TasksTabPage), findsOneWidget);
     expect(find.byType(InfiniteJournalPage), findsNothing);
+    // Content, not just the type: the mobile layout shows the tab page
+    // full-bleed — no desktop split chrome.
+    expect(find.byType(ResizableDivider), findsNothing);
+    expect(find.byType(DesktopDetailEmptyState), findsNothing);
   });
 
   testWidgets('renders desktop split layout with empty detail pane', (
@@ -177,7 +181,6 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(AnimatedSwitcher), findsOneWidget);
       expect(find.byType(TaskDetailsPage), findsOneWidget);
       expect(
         tester.widget<TaskDetailsPage>(find.byType(TaskDetailsPage)).taskId,
@@ -337,5 +340,47 @@ void main() {
       ),
     );
     expect(sizedBox.width, defaultListPaneWidth + 50);
+  });
+
+  testWidgets('dragging the ResizableDivider widens the list pane', (
+    tester,
+  ) async {
+    fakeController = FakeJournalPageController(state());
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const TasksRootPage(),
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        overrides: [
+          journalPageScopeProvider.overrideWithValue(true),
+          journalPageControllerProvider(
+            true,
+          ).overrideWith(() => fakeController),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    double listPaneWidth() => tester
+        .widget<SizedBox>(
+          find.ancestor(
+            of: find.byType(TasksTabPage),
+            matching: find.byType(SizedBox),
+          ),
+        )
+        .width!;
+
+    final before = listPaneWidth();
+
+    await tester.drag(
+      find.byType(ResizableDivider),
+      const Offset(80, 0),
+    );
+    await tester.pump();
+
+    expect(listPaneWidth(), greaterThan(before));
+    // The width delta is forwarded to the pane controller, not just local
+    // layout: the divider's onDrag updates paneWidthControllerProvider.
+    expect(listPaneWidth(), before + 80);
   });
 }

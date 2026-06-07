@@ -10,6 +10,7 @@ import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/filtering/task_category_filter.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/widgets/search/filter_choice_chip.dart';
 import 'package:mocktail/mocktail.dart';
@@ -132,12 +133,26 @@ void main() {
       // Verify the widget is rendered
       expect(find.byType(TaskCategoryFilter), findsOneWidget);
 
-      // Verify the title is displayed
-      expect(find.byType(Text), findsWidgets);
-
-      // By default, it should show only favorites and selected categories
-      // So we should see 2 favorite categories + unassigned + all + "..." button = 5 chips
-      expect(find.byType(FilterChoiceChip), findsNWidgets(5));
+      // By default only favorites and selected categories show. Pin the
+      // exact chip set by label: the two favorites, the unassigned chip,
+      // the "All" chip, and the "..." expander — and nothing else.
+      final messages = tester.element(find.byType(TaskCategoryFilter)).messages;
+      final chipLabels = tester
+          .widgetList<FilterChoiceChip>(find.byType(FilterChoiceChip))
+          .map((chip) => chip.label)
+          .toList();
+      expect(
+        chipLabels,
+        containsAll(<String>[
+          'Work',
+          'Health',
+          messages.taskCategoryUnassignedLabel,
+          '...',
+        ]),
+      );
+      // Non-favorite 'Personal' must not appear by default.
+      expect(chipLabels, isNot(contains('Personal')));
+      expect(chipLabels, hasLength(5));
 
       // Verify the "All" chip is rendered
       expect(
@@ -203,32 +218,24 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Find the unassigned chip by looking for an empty string ID
-        // Find the unassigned chip - it will be labeled "Unassigned" or similar
-        // Since we don't know the exact translation, we'll find it by checking all chips
-        final chips = tester.widgetList<FilterChoiceChip>(
-          find.byType(FilterChoiceChip),
+        // The unassigned chip carries the localized label and maps to the
+        // empty-string sentinel id.
+        final messages = tester
+            .element(find.byType(TaskCategoryFilter))
+            .messages;
+        final unassignedChip = find.byWidgetPredicate(
+          (widget) =>
+              widget is FilterChoiceChip &&
+              widget.label == messages.taskCategoryUnassignedLabel,
         );
+        expect(unassignedChip, findsOneWidget);
 
-        // Find the unassigned chip (not "all" or "...")
-        FilterChoiceChip? unassignedChip;
-        for (final chip in chips) {
-          if (chip.label != '...' &&
-              !chip.label.toLowerCase().contains('all') &&
-              !mockCategories.any((c) => c.name == chip.label)) {
-            unassignedChip = chip;
-            break;
-          }
-        }
-
-        expect(unassignedChip, isNotNull);
-
-        // Tap the unassigned chip
-        await tester.tap(find.byWidget(unassignedChip!));
+        await tester.tap(unassignedChip);
         await tester.pump();
 
-        // Verify that toggleSelectedCategoryIds was called with empty string
-        expect(fakeController.toggledCategoryIds, contains(''));
+        // The sentinel: unassigned toggles the empty-string category id —
+        // exactly once, with no other ids touched.
+        expect(fakeController.toggledCategoryIds, ['']);
       },
     );
 

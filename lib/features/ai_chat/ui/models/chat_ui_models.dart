@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 
@@ -97,10 +98,10 @@ class ChatSessionUiModel {
     return ChatSession(
       id: id,
       title: title,
-      createdAt: messages.isEmpty ? DateTime.now() : messages.first.timestamp,
-      lastMessageAt: messages.isEmpty
-          ? DateTime.now()
-          : messages.last.timestamp,
+      // clock.now() (package:clock) so tests can pin the empty-session
+      // timestamps with withClock.
+      createdAt: messages.isEmpty ? clock.now() : messages.first.timestamp,
+      lastMessageAt: messages.isEmpty ? clock.now() : messages.last.timestamp,
       messages: messages,
       metadata: updatedMetadata,
     );

@@ -64,7 +64,8 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.textContaining('Sent messages: 2'), findsOneWidget);
     expect(find.text('Sent (m.image)'), findsOneWidget);
@@ -112,7 +113,8 @@ void main() {
         ],
       ),
     );
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(state.subscriptionClosed, isTrue);
   });

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -245,6 +246,7 @@ void main() {
         ).thenAnswer((_) async => null);
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
+        // flutter_animate drives the scaffold entrance — needs a settle.
         await tester.pumpAndSettle();
         expect(
           find.text(l10n.conflictDetailEntryNotFoundTitle),
@@ -791,6 +793,7 @@ void main() {
 
         await _pump(tester, size: _desktopSize, conflictId: conflict.id);
         bench.unresolvedController.add([conflict]);
+        // flutter_animate drives the scaffold entrance — needs a settle.
         await tester.pumpAndSettle();
         expect(find.text(l10n.conflictDetailLoadErrorTitle), findsOneWidget);
         expect(find.textContaining('db gone'), findsOneWidget);
@@ -866,6 +869,50 @@ void main() {
           capturedPath,
           '/settings/advanced/conflicts/${conflict.id}/edit',
         );
+      },
+    );
+
+    testWidgets(
+      'Edit & merge drops the cached local-entry future so the next '
+      'stream tick re-fetches',
+      (tester) async {
+        final local = _entry(title: 'A', clock: const {'a': 1});
+        final remote = _entry(title: 'B', clock: const {'a': 2});
+        final conflict = _conflict(remote: remote);
+        final bench = await _Bench.create(
+          localEntry: local,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+
+        beamToNamedOverride = (_) {};
+        addTearDown(() => beamToNamedOverride = null);
+
+        await _pump(tester, size: _desktopSize, conflictId: conflict.id);
+        bench.unresolvedController.add([conflict]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The cached future means exactly one DB read so far, and further
+        // stream ticks reuse it.
+        verify(() => bench.db.journalEntityById(conflict.id)).called(1);
+        bench.unresolvedController.add([conflict]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        verifyNever(() => bench.db.journalEntityById(conflict.id));
+
+        // Navigating to Edit & merge invalidates the cache...
+        final editMergePill = find.text(l10n.conflictPickerEditMerge);
+        await tester.ensureVisible(editMergePill);
+        await tester.tap(editMergePill);
+        await tester.pump();
+
+        // ...so the next tick (as on return from the edit route) re-issues
+        // the DB read instead of serving a stale snapshot.
+        bench.unresolvedController.add([conflict]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        verify(() => bench.db.journalEntityById(conflict.id)).called(1);
       },
     );
   });
@@ -1360,6 +1407,54 @@ void main() {
         // The local card "title" line shows the runtime type string
         // (e.g. "JournalAudio"), which is a non-empty text in the widget tree.
         expect(find.textContaining('JournalAudio'), findsAtLeastNWidgets(1));
+      },
+    );
+  });
+
+  group('ConflictDetailRoute · stacked breakpoint sweep', () {
+    testWidgets(
+      'widths >= 768 always render the fields-differ suffix, '
+      'narrower widths never do (seeded sweep, adapted Glados)',
+      (tester) async {
+        final local = _entry(title: 'A', clock: const {'a': 1});
+        final remote = _entry(title: 'B', clock: const {'a': 2});
+        final conflict = _conflict(remote: remote);
+        final bench = await _Bench.create(
+          localEntry: local,
+          conflict: conflict,
+        );
+        addTearDown(bench.dispose);
+
+        // Glados cannot drive WidgetTester, so sweep seeded random widths
+        // plus the exact boundary pair. Fixed seed keeps CI deterministic.
+        // 390 (the supported mobile fixture width) is the lower bound —
+        // narrower surfaces overflow the card header Row independently of
+        // the breakpoint under test.
+        final random = Random(42);
+        final widths = <double>[
+          767,
+          768,
+          for (var i = 0; i < 8; i++) 390 + random.nextInt(1010).toDouble(),
+        ];
+
+        for (final width in widths) {
+          final size = Size(width, 900);
+          await _pump(tester, size: size, conflictId: conflict.id);
+          bench.unresolvedController.add([conflict]);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          final suffix = find.textContaining('differ');
+          if (width >= 768) {
+            expect(suffix, findsOneWidget, reason: 'width=$width');
+          } else {
+            expect(suffix, findsNothing, reason: 'width=$width');
+          }
+
+          // Tear the tree down between sizes so each pump starts fresh.
+          await tester.pumpWidget(const SizedBox.shrink());
+          await tester.pump();
+        }
       },
     );
   });

@@ -284,8 +284,15 @@ void main() {
   });
 
   group('shouldAutoShowWhatsNew', () {
-    /// Creates a fresh container with the config flag overridden.
-    ProviderContainer createContainerWithFlag({required bool enabled}) {
+    /// Creates a fresh container with the config flag overridden, seeding
+    /// SharedPreferences first (the controller reads prefs during build).
+    /// Uses the per-test `mockService` from `setUp`, so stubs registered
+    /// before this call stay in effect.
+    ProviderContainer createContainerWithFlag({
+      required bool enabled,
+      Map<String, Object> prefs = const {},
+    }) {
+      SharedPreferences.setMockInitialValues(prefs);
       final mockDb = MockJournalDb();
       when(
         () => mockDb.getConfigFlag(enableWhatsNewFlag),
@@ -341,11 +348,12 @@ void main() {
     });
 
     test('returns false when version has not changed', () async {
-      SharedPreferences.setMockInitialValues({
-        'whats_new_last_launched_version': '99.99.99', // Same as mock version
-      });
-
-      mockService = MockWhatsNewService();
+      final c = createContainerWithFlag(
+        enabled: true,
+        prefs: {
+          'whats_new_last_launched_version': '99.99.99', // Same as mock version
+        },
+      );
       when(
         () => mockService.fetchIndex(),
       ).thenAnswer((_) async => [testRelease1]);
@@ -353,7 +361,6 @@ void main() {
         () => mockService.fetchContent(testRelease1),
       ).thenAnswer((_) async => testContent1);
 
-      final c = createContainerWithFlag(enabled: true);
       addTearDown(c.dispose);
 
       final shouldShow = await c.read(
@@ -364,11 +371,12 @@ void main() {
     });
 
     test('returns true when version changed and has unseen releases', () async {
-      SharedPreferences.setMockInitialValues({
-        'whats_new_last_launched_version': '98.98.98', // Different from mock
-      });
-
-      mockService = MockWhatsNewService();
+      final c = createContainerWithFlag(
+        enabled: true,
+        prefs: {
+          'whats_new_last_launched_version': '98.98.98', // Different from mock
+        },
+      );
       when(
         () => mockService.fetchIndex(),
       ).thenAnswer((_) async => [testRelease1]);
@@ -376,7 +384,6 @@ void main() {
         () => mockService.fetchContent(testRelease1),
       ).thenAnswer((_) async => testContent1);
 
-      final c = createContainerWithFlag(enabled: true);
       addTearDown(c.dispose);
 
       final shouldShow = await c.read(
@@ -394,17 +401,17 @@ void main() {
     });
 
     test('returns false when version changed but no unseen releases', () async {
-      SharedPreferences.setMockInitialValues({
-        'whats_new_last_launched_version': '98.98.98', // Different from mock
-        'whats_new_seen_0.9.980': true, // Already seen
-      });
-
-      mockService = MockWhatsNewService();
       when(
         () => mockService.fetchIndex(),
       ).thenAnswer((_) async => [testRelease1]);
 
-      final c = createContainerWithFlag(enabled: true);
+      final c = createContainerWithFlag(
+        enabled: true,
+        prefs: {
+          'whats_new_last_launched_version': '98.98.98', // != mock version
+          'whats_new_seen_0.9.980': true, // Already seen
+        },
+      );
       addTearDown(c.dispose);
 
       final shouldShow = await c.read(
@@ -417,14 +424,14 @@ void main() {
     test(
       'returns false when version changed but no releases available',
       () async {
-        SharedPreferences.setMockInitialValues({
-          'whats_new_last_launched_version': '98.98.98',
-        });
-
-        mockService = MockWhatsNewService();
+        final c = createContainerWithFlag(
+          enabled: true,
+          prefs: {
+            'whats_new_last_launched_version': '98.98.98',
+          },
+        );
         when(() => mockService.fetchIndex()).thenAnswer((_) async => null);
 
-        final c = createContainerWithFlag(enabled: true);
         addTearDown(c.dispose);
 
         final shouldShow = await c.read(

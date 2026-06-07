@@ -120,6 +120,15 @@ TimeBlock _timeBlock({
   );
 }
 
+/// Sizes the physical test surface and registers the reset teardown —
+/// shared by every test in this file.
+void _setView(WidgetTester tester, Size size) {
+  tester.view
+    ..physicalSize = size
+    ..devicePixelRatio = 1.0;
+  addTearDown(tester.view.reset);
+}
+
 Widget _wrap(
   Widget child, {
   Size size = const Size(1280, 1200),
@@ -137,10 +146,7 @@ void main() {
     testWidgets('renders each block from the draft without band label text', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1200)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 1200));
 
       await tester.pumpWidget(
         _wrap(
@@ -162,10 +168,7 @@ void main() {
     testWidgets('opens task-backed timeline blocks through app navigation', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1200)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 1200));
 
       String? openedPath;
       beamToNamedOverride = (path) => openedPath = path;
@@ -205,10 +208,7 @@ void main() {
     testWidgets('leaves timeline blocks without task ids inert', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1200)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 1200));
 
       String? openedPath;
       beamToNamedOverride = (path) => openedPath = path;
@@ -252,10 +252,7 @@ void main() {
     testWidgets('AI blocks render a WhyChip; cal and buffer blocks do not', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1200)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 1200));
 
       await tester.pumpWidget(
         _wrap(
@@ -272,10 +269,7 @@ void main() {
     });
 
     testWidgets('now-line renders inside the visible window', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1200)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 1200));
 
       await tester.pumpWidget(
         _wrap(
@@ -294,10 +288,7 @@ void main() {
     testWidgets('renders plan and actual pane labels', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1200)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 1200));
 
       await tester.pumpWidget(
         _wrap(
@@ -317,10 +308,7 @@ void main() {
     testWidgets('wide layouts show plan and actual together by default', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 900)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 900));
 
       await tester.pumpWidget(
         _wrap(
@@ -346,10 +334,7 @@ void main() {
     testWidgets('compact layouts keep the swipeable plan-first view', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(430, 900)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(430, 900));
 
       await tester.pumpWidget(
         _wrap(
@@ -371,10 +356,7 @@ void main() {
     });
 
     testWidgets('folds a long gap caused by planned blocks', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1280, 900)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 900));
 
       await tester.pumpWidget(
         _wrap(
@@ -419,10 +401,7 @@ void main() {
     testWidgets('uses one sticky time rail for plan and actual', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 900)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 900));
 
       await tester.pumpWidget(
         _wrap(
@@ -455,10 +434,7 @@ void main() {
     testWidgets('folded timelines still span midnight to midnight', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 900)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 900));
 
       await tester.pumpWidget(
         _wrap(
@@ -493,10 +469,7 @@ void main() {
     });
 
     testWidgets('folds a long gap caused by actual blocks', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1280, 900)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 900));
 
       await tester.pumpWidget(
         _wrap(
@@ -537,10 +510,7 @@ void main() {
     testWidgets('two-finger vertical pinch zooms into the timeline', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1200)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 1200));
 
       await tester.pumpWidget(
         _wrap(
@@ -574,10 +544,7 @@ void main() {
     });
 
     testWidgets('trackpad pinch zooms into the timeline', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1280, 1200)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 1200));
 
       await tester.pumpWidget(
         _wrap(
@@ -610,10 +577,7 @@ void main() {
     testWidgets('plan and actual share one vertical scroll view', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 720)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 720));
 
       await tester.pumpWidget(
         _wrap(
@@ -659,10 +623,7 @@ void main() {
     });
 
     testWidgets('pinch zoom scales the shared scroll offset', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1280, 420)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 420));
 
       await tester.pumpWidget(
         _wrap(
@@ -701,10 +662,7 @@ void main() {
     testWidgets('toolbar toggle button switches comparison mode paged→both', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(430, 900)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(430, 900));
 
       await tester.pumpWidget(
         _wrap(
@@ -750,10 +708,7 @@ void main() {
     testWidgets(
       'horizontal pinch gesture on compact layout switches comparison mode',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(430, 900)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester, const Size(430, 900));
 
         await tester.pumpWidget(
           _wrap(
@@ -798,10 +753,7 @@ void main() {
     testWidgets('didUpdateWidget propagates new pxPerMinute to state', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 900)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 900));
 
       // Start with default pxPerMinute = 1.0.
       await tester.pumpWidget(
@@ -838,10 +790,7 @@ void main() {
       'tracked blocks render the neutral treatment: category dot, green '
       'check when done, mono time range with a tracked suffix, no WhyChip',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 900)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester, const Size(1280, 900));
 
         final day = DateTime(2026, 5, 25);
         await tester.pumpWidget(
@@ -889,10 +838,7 @@ void main() {
       'drafted plan blocks read provisional via a dashed outline; '
       'committed blocks render solid',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 900)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester, const Size(1280, 900));
 
         await tester.pumpWidget(
           _wrap(
@@ -946,10 +892,7 @@ void main() {
       'task-linked plan blocks show a link icon; standalone blocks are '
       'inline-renamable when the timeline provides a rename callback',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 900)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester, const Size(1280, 900));
 
         final renames = <(String, String)>[];
         await tester.pumpWidget(
@@ -1006,10 +949,7 @@ void main() {
     );
 
     testWidgets('EnergyBand low and secondWind levels render', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1280, 900)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.reset);
+      _setView(tester, const Size(1280, 900));
 
       final day = DateTime(2026, 5, 25);
       DateTime at(int h, int m) => day.add(Duration(hours: h, minutes: m));
@@ -1061,10 +1001,7 @@ void main() {
     testWidgets(
       'block subtitle shows session index and location when present',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 900)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester, const Size(1280, 900));
 
         final day = DateTime(2026, 5, 25);
         final block = TimeBlock(
@@ -1103,13 +1040,61 @@ void main() {
     );
 
     testWidgets(
+      'block subtitle covers the bare-range and session-only branches',
+      (tester) async {
+        _setView(tester, const Size(1280, 900));
+
+        final day = DateTime(2026, 5, 25);
+        final bare = TimeBlock(
+          id: 'bare-block',
+          title: 'Bare work',
+          start: day.add(const Duration(hours: 9)),
+          end: day.add(const Duration(hours: 10, minutes: 30)),
+          type: TimeBlockType.ai,
+          state: TimeBlockState.drafted,
+          category: _work,
+        );
+        final sessionOnly = TimeBlock(
+          id: 'session-only-block',
+          title: 'Session-only work',
+          start: day.add(const Duration(hours: 12)),
+          end: day.add(const Duration(hours: 13)),
+          type: TimeBlockType.ai,
+          state: TimeBlockState.drafted,
+          category: _work,
+          sessionIndex: 1,
+          sessionTotal: 2,
+        );
+
+        await tester.pumpWidget(
+          _wrap(
+            DayTimeline(
+              draft: _draftWithBlocks(blocks: [bare, sessionOnly]),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+            size: const Size(1280, 900),
+          ),
+        );
+        await tester.pump();
+
+        final messages = tester.element(find.byType(DayTimeline)).messages;
+        final sessionLabel = messages.dailyOsNextTimelineSessionOf(1, 2);
+
+        // No session, no location: the subtitle is exactly the time range.
+        expect(find.text('09:00\u201310:30'), findsOneWidget);
+        // Session but no location: range + session label, nothing more.
+        expect(
+          find.text('12:00\u201313:00 \u00b7 $sessionLabel'),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
       'clusters near the start/end of the day are merged into visible regions '
       'to avoid tiny gaps',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 900)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester, const Size(1280, 900));
 
         // A block starting at hour 1 (< gapThreshold=4 from hour 0) means the
         // leading cluster should be extended back to hour 0.
@@ -1153,10 +1138,7 @@ void main() {
       'without an injected clock the now-line tracks the real clock and the '
       'per-minute timer keeps it mounted across a tick',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 1200)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester, const Size(1280, 1200));
 
         // Deliberate exception to the deterministic-dates rule: this test
         // covers the no-injected-clock FALLBACK branch, so touching the real
@@ -1224,10 +1206,7 @@ void main() {
     testWidgets(
       'wide layout horizontal pinch-out switches both → paged comparison mode',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 900)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        _setView(tester, const Size(1280, 900));
 
         await tester.pumpWidget(
           _wrap(

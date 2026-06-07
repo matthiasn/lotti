@@ -2,12 +2,14 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -106,6 +108,18 @@ void main() {
       await tester.tap(saveButtonFinder);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
+
+      // The save actually persisted a SUCCESS completion (mirrors the
+      // Fail/Skip tests instead of stopping at the tap).
+      final captured = verify(
+        () => mockPersistenceLogic.createHabitCompletionEntry(
+          data: captureAny(named: 'data'),
+          comment: any(named: 'comment'),
+          habitDefinition: habitFlossing,
+        ),
+      ).captured;
+      final completion = captured.single as HabitCompletionData;
+      expect(completion.completionType, HabitCompletionType.success);
     });
 
     testWidgets('Fail button records a failed completion', (tester) async {
@@ -187,6 +201,36 @@ void main() {
 
       expect(find.byType(SingleChildScrollView).evaluate().length, 2);
     });
+
+    testWidgets(
+      'desktop registers the Cmd+S hotkey on init and unregisters on '
+      'dispose',
+      (tester) async {
+        // Platform globals are mutable for tests; restore afterwards.
+        final wasDesktop = isDesktop;
+        isDesktop = true;
+        addTearDown(() => isDesktop = wasDesktop);
+
+        when(
+          () => mockPersistenceLogic.createHabitCompletionEntry(
+            data: any(named: 'data'),
+            comment: any(named: 'comment'),
+            habitDefinition: habitFlossing,
+          ),
+        ).thenAnswer((_) async => null);
+
+        await pumpHabitDialog(tester);
+
+        // In-app scoped hotkeys register into the manager's in-memory list
+        // (no platform channel involved for HotKeyScope.inapp).
+        expect(hotKeyManager.registeredHotKeyList, isNotEmpty);
+
+        // Tear the dialog down — dispose must unregister the hotkey.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+        expect(hotKeyManager.registeredHotKeyList, isEmpty);
+      },
+    );
 
     testWidgets('Close button dismisses the dialog', (tester) async {
       await pumpHabitDialog(tester);

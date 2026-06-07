@@ -271,6 +271,31 @@ void main() {
       expect(derived.activeTaskId, isNull);
     });
 
+    test('slot is null when every matching link is soft-deleted', () {
+      // _primaryActiveLinkTarget must return null (not throw on .first)
+      // when the active-link filter leaves nothing to order.
+      final derived = deriveAgentState(
+        agentId: kTestAgentId,
+        messages: const [],
+        links: [
+          makeTestAgentTaskLink(
+            id: 'link-a',
+            toId: 'task-a',
+            createdAt: _day(1),
+            deletedAt: _day(9),
+          ),
+          makeTestAgentTaskLink(
+            id: 'link-b',
+            toId: 'task-b',
+            createdAt: _day(2),
+            deletedAt: _day(9),
+          ),
+        ],
+      );
+
+      expect(derived.activeTaskId, isNull);
+    });
+
     test('a slot is null when the agent has no link of that type', () {
       final derived = deriveAgentState(
         agentId: kTestAgentId,
@@ -400,6 +425,24 @@ void main() {
   });
 
   group('reconcileAgentState', () {
+    test('null watermarks on both sides stay null (the _laterOf(null, null) '
+        'path)', () {
+      final cache = makeTestState();
+
+      final reconciled = reconcileAgentState(
+        cache: cache,
+        messages: const [],
+        links: const [],
+      );
+
+      expect(reconciled.lastWakeAt, isNull);
+      expect(reconciled.slots.lastOneOnOneAt, isNull);
+      expect(reconciled.slots.lastDailyWakeAt, isNull);
+      expect(reconciled.slots.lastWeeklyReviewAt, isNull);
+      // Nothing diverged → value-equal row, caller skips the persist.
+      expect(reconciled, cache);
+    });
+
     test('keeps a cached watermark the log does not yet have '
         '(migration-safe)', () {
       // A pre-marker agent: the cache holds lastWakeAt but the log has no

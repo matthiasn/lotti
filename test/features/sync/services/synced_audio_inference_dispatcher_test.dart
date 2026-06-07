@@ -29,6 +29,25 @@ const _kAgentId = 'agent-1';
 const _kSkillId = 'skill-1';
 final _kCreatedAt = DateTime.utc(2026, 3, 15, 12);
 
+/// A [_Bench] wired with a [MockDomainLogger] whose `log`/`error` methods
+/// are pre-stubbed — shared by the structured-error tests.
+({_Bench bench, MockDomainLogger logger}) _makeBenchWithLogger() {
+  final logger = MockDomainLogger();
+  when(
+    () => logger.log(any(), any(), subDomain: any(named: 'subDomain')),
+  ).thenAnswer((_) {});
+  when(
+    () => logger.error(
+      any(),
+      any(),
+      message: any(named: 'message'),
+      stackTrace: any(named: 'stackTrace'),
+      subDomain: any(named: 'subDomain'),
+    ),
+  ).thenAnswer((_) {});
+  return (bench: _Bench(domainLogger: logger), logger: logger);
+}
+
 class _Bench {
   _Bench({this.domainLogger});
 
@@ -651,23 +670,13 @@ void main() {
       'loop must keep draining even when the dispatcher hits an unexpected '
       'error path',
       () async {
-        final logger = MockDomainLogger();
-        final bench2 = _Bench(domainLogger: logger);
+        final (bench: bench2, :logger) = _makeBenchWithLogger();
         // Force the very first DB read to throw — this lands outside any of
         // the dispatcher's per-step catches and exercises the outer try in
         // maybeDispatch.
         when(
           () => bench2.journalDb.journalEntityById(any()),
         ).thenThrow(StateError('db unavailable'));
-        when(
-          () => logger.error(
-            any(),
-            any(),
-            message: any(named: 'message'),
-            stackTrace: any(named: 'stackTrace'),
-            subDomain: any(named: 'subDomain'),
-          ),
-        ).thenAnswer((_) {});
 
         await expectLater(
           bench2.dispatcher.maybeDispatch(_kAudioId),
@@ -773,9 +782,8 @@ void main() {
       'when a DomainLogger is wired, runner throws emit a structured error '
       'and the dispatcher still completes without rethrowing',
       () async {
-        final logger = MockDomainLogger();
-        final bench2 = _Bench(domainLogger: logger)
-          ..stubHappyPath(postTranscriptCount: 0);
+        final (bench: bench2, :logger) = _makeBenchWithLogger();
+        bench2.stubHappyPath(postTranscriptCount: 0);
         when(
           () => bench2.skillInferenceRunner.runTranscription(
             audioEntryId: any(named: 'audioEntryId'),
@@ -783,18 +791,6 @@ void main() {
             linkedTaskId: any(named: 'linkedTaskId'),
           ),
         ).thenThrow(StateError('runner exploded'));
-        when(
-          () => logger.log(any(), any(), subDomain: any(named: 'subDomain')),
-        ).thenAnswer((_) {});
-        when(
-          () => logger.error(
-            any(),
-            any(),
-            message: any(named: 'message'),
-            stackTrace: any(named: 'stackTrace'),
-            subDomain: any(named: 'subDomain'),
-          ),
-        ).thenAnswer((_) {});
 
         await bench2.dispatcher.maybeDispatch(_kAudioId);
 

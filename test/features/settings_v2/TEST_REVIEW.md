@@ -44,9 +44,11 @@
 
   Concrete split: extract `detail_id_dispatch.dart` (concern 4) and `ai_panel_dispatch.dart` (concern 5). Each is an independently testable widget; `panel_registry.dart` would drop to ~200 lines holding only the registry constant and spec type. The corresponding test at 1 252 lines would naturally mirror-split to three files.
 
-- [ ] **[MED]** `panel_registry_test.dart:1` (1 252 lines) — when `panel_registry.dart` is split, move `DetailIdDispatch` tests to `detail_id_dispatch_test.dart` and `AiPanelDispatch` / `aiPanelSelectionFor` tests to `ai_panel_dispatch_test.dart`. The "registered ids" and "scrollable flag" groups stay in `panel_registry_test.dart`.
+- [x] **[MED]** `panel_registry_test.dart:1` (1 252 lines) — when `panel_registry.dart` is split, move `DetailIdDispatch` tests to `detail_id_dispatch_test.dart` and `AiPanelDispatch` / `aiPanelSelectionFor` tests to `ai_panel_dispatch_test.dart`. The "registered ids" and "scrollable flag" groups stay in `panel_registry_test.dart`.
+  **RESOLVED:** assessed, no change — `detail_id_dispatch.dart` and `ai_panel_dispatch.dart` are `part of panel_registry.dart` (one library), so the one-test-file-per-source rule keeps a single mirror; a split was attempted and fails outright (`part of` files cannot be imported). The move applies only if the parts ever become standalone libraries.
 
-- [ ] **[MED]** `ui/widgets/settings_v2_top_crumbs.dart` (184 lines) — test at 422 lines; ratio is 2.3×. Currently solid but worth monitoring; if the crumbs widget grows, extract a `_CrumbsTestBench` to avoid duplicating setup.
+- [x] **[MED]** `ui/widgets/settings_v2_top_crumbs.dart` (184 lines) — test at 422 lines; ratio is 2.3×. Currently solid but worth monitoring; if the crumbs widget grows, extract a `_CrumbsTestBench` to avoid duplicating setup.
+  **RESOLVED:** assessed, no change — the item itself rates the file solid and asks only for monitoring; ratio unchanged.
 
 - [ ] **[LOW]** `ui/widgets/settings_tree_resize_handle_test.dart` (424 lines) vs impl (156 lines) — the test coverage is excellent but the 2.7× ratio signals that helper extraction (`_drag`, `_drainTimers`, `_pumpHandle`) is already doing good work. Keep as-is.
 
@@ -54,7 +56,8 @@
 
 ## Test quality improvements
 
-- [ ] **[MED]** `panel_registry_test.dart:535` — the `setUp` in "panel registry — list/create/detail closures" manually checks `getIt.isRegistered<JournalDb>()` and conditionally registers, violating the "use `setUpTestGetIt()` / `tearDownTestGetIt()`" rule. If `getIt` already has a `JournalDb` registered from a previous test in the suite, this guard silently reuses it, creating cross-test contamination risk. Replace with `setUpTestGetIt()` / `tearDownTestGetIt()` per-test or use `addTearDown(getIt.reset)` unconditionally.
+- [x] **[MED]** `panel_registry_test.dart:535` — the `setUp` in "panel registry — list/create/detail closures" manually checks `getIt.isRegistered<JournalDb>()` and conditionally registers, violating the "use `setUpTestGetIt()` / `tearDownTestGetIt()`" rule. If `getIt` already has a `JournalDb` registered from a previous test in the suite, this guard silently reuses it, creating cross-test contamination risk. Replace with `setUpTestGetIt()` / `tearDownTestGetIt()` per-test or use `addTearDown(getIt.reset)` unconditionally.
+  **RESOLVED:** done — the conditional `isRegistered` guard is gone; the group now uses `setUpTestGetIt()` / `tearDownTestGetIt` so the closures always see fresh central mocks instead of silently reusing leftovers.
 
   ```dart
   // Current (fragile):
@@ -72,11 +75,12 @@
   tearDown(() async => tearDownTestGetIt());
   ```
 
-- [ ] **[MED]** `panel_registry_test.dart:176–299` (SettingsPanelSpec — builders group) — `build('sync-node-profile')` returns a `SyncNodeProfilePage` (a full `Scaffold`-owning page) and `build('sync')` returns a `Consumer`. These two builders are not asserted in the "every registered builder returns the expected Body widget" `testWidgets`. Only step-7 through step-9 bodies are checked; `sync-node-profile` and the `sync` consumer go un-type-checked. Add:
+- [x] **[MED]** `panel_registry_test.dart:176–299` (SettingsPanelSpec — builders group) — `build('sync-node-profile')` returns a `SyncNodeProfilePage` (a full `Scaffold`-owning page) and `build('sync')` returns a `Consumer`. These two builders are not asserted in the "every registered builder returns the expected Body widget" `testWidgets`. Only step-7 through step-9 bodies are checked; `sync-node-profile` and the `sync` consumer go un-type-checked. Add:
   ```dart
   expect(build('sync-node-profile'), isA<SyncNodeProfilePage>());
   expect(build('sync'), isA<Consumer>());
   ```
+  **RESOLVED:** done — added the two missing assertions: `build('sync-node-profile')` is a `SyncNodeProfilePage` and `build('sync')` is a `Consumer`; every registered builder is now type-checked.
 
 - [ ] **[LOW]** `settings_tree_scope_test.dart` — uses `pumpAndSettle` once (line ~190) after a route-change notification that triggers only a `setState` rebuild. A `pump()` is sufficient and deterministic.
 
@@ -101,8 +105,10 @@ The `settings_tree_index_test.dart` already carries two well-crafted Glados test
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[MED]** `panel_registry_test.dart` — the `AiPanelDispatch` widget group (lines 700+) is well-tested for `aiPanelSelectionFor`, but the `AiPanelDispatch` widget's **`StackFit.expand` layoutBuilder** branch is only indirectly asserted (via the cross-fade test). A test that verifies the `AnimatedSwitcher`'s `layoutBuilder` produces a `Stack` with `StackFit.expand` would pin the regression-prone layout policy. This matters because a `StackFit.loose` regression silently collapses Scaffold-based children.
-- [ ] **[MED]** `ui/detail/leaf_panel.dart` — the `scrollable: true` / `scrollable: false` dispatch wraps (or does not wrap) the panel body in a `SingleChildScrollView`. The test at 417 lines exercises both paths, but the "unbounded-height panic" scenario (a `ListView` inside a `scrollable: true` panel) is commented-out in the registry comment but not asserted. A test that passes a `ListView`-returning builder with `scrollable: false` and verifies no overflow would catch future misclassification.
+- [x] **[MED]** `panel_registry_test.dart` — the `AiPanelDispatch` widget group (lines 700+) is well-tested for `aiPanelSelectionFor`, but the `AiPanelDispatch` widget's **`StackFit.expand` layoutBuilder** branch is only indirectly asserted (via the cross-fade test). A test that verifies the `AnimatedSwitcher`'s `layoutBuilder` produces a `Stack` with `StackFit.expand` would pin the regression-prone layout policy. This matters because a `StackFit.loose` regression silently collapses Scaffold-based children.
+  **RESOLVED:** done — added a test invoking the `AnimatedSwitcher.layoutBuilder` directly and asserting it produces a `Stack` with `StackFit.expand` (a `StackFit.loose` regression would silently collapse Scaffold-based children).
+- [x] **[MED]** `ui/detail/leaf_panel.dart` — the `scrollable: true` / `scrollable: false` dispatch wraps (or does not wrap) the panel body in a `SingleChildScrollView`. The test at 417 lines exercises both paths, but the "unbounded-height panic" scenario (a `ListView` inside a `scrollable: true` panel) is commented-out in the registry comment but not asserted. A test that passes a `ListView`-returning builder with `scrollable: false` and verifies no overflow would catch future misclassification.
+  **RESOLVED:** done (adapted) — `kSettingsPanels` is const, so a synthetic ListView spec can't be injected through LeafPanel; the failure mode is pinned as an executable spec instead: the same list-owning body renders cleanly unwrapped (scrollable:false path) and throws with unbounded height inside the scrollable wrap, with the per-panel flag values pinned in panel_registry_test.
 - [ ] **[LOW]** `ui/url_sync/settings_tree_url_sync.dart` — the `SchedulerBinding.instance.scheduleTask` path for the initial-load URL-to-path sync on first frame is exercised in the test via `tester.pump()`, but the "initial route is a deep-link that includes a panel-local UUID" scenario is not tested (e.g. `/settings/categories/abc-123` on first load should collapse to the `categories` tree node).
 - [ ] **[LOW]** `settings_tree_controller_test.dart` — the `isValidPath`-guard behavior when a stale URL (from a previous session with Matrix enabled) is installed after Matrix is disabled is not tested end-to-end. The lower-level `SettingsTreeIndex.isValidPath` test covers the pure logic; the controller test does not verify the controller falls back to `[]` when the persisted path becomes invalid after a flag change.
 
@@ -110,7 +116,8 @@ The `settings_tree_index_test.dart` already carries two well-crafted Glados test
 
 ## Test execution speed opportunities
 
-- [ ] **[MED]** `panel_registry_test.dart` — the "every registered builder returns the expected Body widget" `testWidgets` (lines 176–299) pumps a `MaterialApp` and captures a `BuildContext` to invoke 28 builders. This is a single widget test body that is ~120 lines long. Because none of the builder results are pumped (only type-checked), this could be a plain `test()` with a synthetic `BuildContext` stub. Moving it out of `testWidgets` would eliminate the Flutter test-binding overhead for a non-widget test. **Estimated impact: minor per-test (< 1 s) but avoids a 120-line critical-path widget test.**
+- [x] **[MED]** `panel_registry_test.dart` — the "every registered builder returns the expected Body widget" `testWidgets` (lines 176–299) pumps a `MaterialApp` and captures a `BuildContext` to invoke 28 builders. This is a single widget test body that is ~120 lines long. Because none of the builder results are pumped (only type-checked), this could be a plain `test()` with a synthetic `BuildContext` stub. Moving it out of `testWidgets` would eliminate the Flutter test-binding overhead for a non-widget test. **Estimated impact: minor per-test (< 1 s) but avoids a 120-line critical-path widget test.**
+  **RESOLVED:** assessed, no change — the builders receive the captured `BuildContext` and several constructed pages may legitimately read it; replacing the pumped context with a synthetic stub trades a <1 s saving for a brittle fake that breaks the moment any constructor touches the context. The single pump stays.
 - [ ] **[LOW]** `settings_v2_top_crumbs_test.dart` — 2 `pumpAndSettle` calls; both follow `setState`-style mutations where `pump()` is sufficient.
 - [ ] **[LOW]** `settings_tree_node_widget_test.dart` — 2 `pumpAndSettle` calls; same as above.
 - [ ] **[LOW]** `settings_tree_scope_test.dart` — 1 `pumpAndSettle` after a `ValueNotifier` update; `pump()` is enough.

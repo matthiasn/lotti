@@ -28,9 +28,11 @@
 
 - [x] **[HIGH]** `test/…/speech_modal/transcripts_list_item_test.dart:52–60` — `setUp` uses `await getIt.reset()` followed by direct `getIt.registerSingleton` calls. Per AGENTS.md, use `setUpTestGetIt()` from `test/widget_test_utils.dart` instead of inline GetIt manipulation. This applies to all tests in this file (600 lines of setUp boilerplate risk contamination if tests run in parallel in CI). **RESOLVED:** converted to `setUpTestGetIt(additionalSetup: ...)` + `tearDown(tearDownTestGetIt)`.
 
-- [ ] **[MED]** `test/…/speech_modal/transcripts_list_item_test.dart` — Approximately 28 `pumpAndSettle()` calls across 25+ tests. For a widget that handles text editing and icon buttons (no heavy animation), most of these can be replaced with `tester.pump()`. The `pumpAndSettle()` calls are a timeout risk if any async provider stalls.
+- [x] **[MED]** `test/…/speech_modal/transcripts_list_item_test.dart` — Approximately 28 `pumpAndSettle()` calls across 25+ tests. For a widget that handles text editing and icon buttons (no heavy animation), most of these can be replaced with `tester.pump()`. The `pumpAndSettle()` calls are a timeout risk if any async provider stalls.
+  - **RESOLVED:** (stale) — the file contains zero `pumpAndSettle` calls; the conversion happened in an earlier pass.
 
-- [ ] **[MED]** `test/…/speech_modal/language_dropdown_test.dart:21–48` — `_FakeEntryController` is defined locally. The same fake pattern appears in `transcripts_list_test.dart` (also local `_FakeEntryController`). These are identical implementations in two files; consolidate into `test/features/speech/ui/widgets/speech_modal/test_utils.dart` or a shared fake in a speech-feature-level test helper.
+- [x] **[MED]** `test/…/speech_modal/language_dropdown_test.dart:21–48` — `_FakeEntryController` is defined locally. The same fake pattern appears in `transcripts_list_test.dart` (also local `_FakeEntryController`). These are identical implementations in two files; consolidate into `test/features/speech/ui/widgets/speech_modal/test_utils.dart` or a shared fake in a speech-feature-level test helper.
+  - **RESOLVED:** done — the duplicate `_FakeEntryController` classes consolidated into `FakeEntryController` in a new feature-level `test_utils.dart` (with the setLanguage call tracking both files can use); both tests import it.
 
 - [ ] **[LOW]** `test/…/speech_modal/transcripts_list_test.dart:21–42` — Another local `_FakeEntryController`. Third definition of the same class. See above.
 
@@ -42,7 +44,8 @@
 
 - [x] **[HIGH]** `lib/…/speech_modal/speech_modal.dart` (22 lines) — The `speech_modal_test.dart` only tests the fixture; no test exercises the `SpeechModal` widget itself. At minimum, add a `testWidgets` test that pumps `SpeechModal` with a valid `JournalAudio` and verifies the player/transcript list is visible. **RESOLVED:** covered by the new `SpeechModalContent` widget tests (see the speech_modal_test item above) — render, language-selection interaction, and the non-audio collapse path.
 
-- [ ] **[MED]** `test/…/speech_modal/language_dropdown_test.dart` — Verify that selecting a language from the dropdown calls `entryController.setLanguage(language)`. The `_FakeEntryController` already tracks `setLanguageCalls` — confirm at least one test asserts `setLanguageCalls` is populated after a dropdown selection.
+- [x] **[MED]** `test/…/speech_modal/language_dropdown_test.dart` — Verify that selecting a language from the dropdown calls `entryController.setLanguage(language)`. The `_FakeEntryController` already tracks `setLanguageCalls` — confirm at least one test asserts `setLanguageCalls` is populated after a dropdown selection.
+  - **RESOLVED:** (stale) — the dropdown test already asserts `ctrl.setLanguageCalls` contains the selected language after a dropdown selection.
 
 - [ ] **[LOW]** `test/…/speech_modal/transcripts_list_test.dart` — Verify the case where `audio.transcripts` is empty — the list should render an appropriate empty state rather than crash.
 
@@ -50,7 +53,8 @@
 
 - [x] **[HIGH]** `test/…/speech_modal/transcripts_list_item_test.dart` — 28 `pumpAndSettle()` calls across ~25 tests. Each has a 10-second default timeout. In the worst case (provider stall), this is 280 seconds of CI time. Replace with `tester.pump()` + `tester.pump()` pairs, adding `tester.pump(const Duration(milliseconds: 100))` only where animations are genuinely needed. **RESOLVED:** all 20 unbounded settles replaced with bounded `pump()` + `pump(100ms)` pairs; full file passes.
 
-- [ ] **[MED]** Same file: `await getIt.reset()` in every `setUp`. This is the correct approach but heavier than `setUpTestGetIt()` which does targeted registration. Migrating to `setUpTestGetIt()` would reduce setup time slightly per test.
+- [x] **[MED]** Same file: `await getIt.reset()` in every `setUp`. This is the correct approach but heavier than `setUpTestGetIt()` which does targeted registration. Migrating to `setUpTestGetIt()` would reduce setup time slightly per test.
+  - **RESOLVED:** (stale) — every file in the directory uses `setUpTestGetIt(...)`; no raw `getIt.reset()` setups remain.
 
 ---
 

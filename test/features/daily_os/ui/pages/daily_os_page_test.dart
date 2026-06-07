@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
@@ -153,66 +154,30 @@ void main() {
     setUp(setUpEntitiesCacheService);
     tearDown(tearDownEntitiesCacheService);
 
-    testWidgets('renders main structure', (tester) async {
+    testWidgets('renders all primary structural sections', (tester) async {
       await tester.pumpWidget(createTestWidget());
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
+      // One pump, every structural element of the page contract: the
+      // header, timeline, budget list, summary, pull-to-refresh, FAB, and
+      // the scroll/safe-area shell.
       expect(find.byType(DailyOsPage), findsOneWidget);
       expect(find.byType(Scaffold), findsAtLeastNWidgets(1));
-    });
-
-    testWidgets('contains TimeHistoryHeader', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
       expect(find.byType(TimeHistoryHeader), findsOneWidget);
-    });
-
-    testWidgets('contains DailyTimeline', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
       expect(find.byType(DailyTimeline), findsOneWidget);
-    });
-
-    testWidgets('contains TimeBudgetList', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
       expect(find.byType(TimeBudgetList), findsOneWidget);
-    });
-
-    testWidgets('contains DaySummary', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
       expect(find.byType(DaySummary), findsOneWidget);
-    });
-
-    testWidgets('has FloatingActionButton', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
+      expect(find.byType(RefreshIndicator), findsOneWidget);
       expect(find.byType(FloatingActionButton), findsOneWidget);
       expect(find.byIcon(Icons.add), findsOneWidget);
       expect(
         find.byType(DesignSystemBottomNavigationFabPadding),
         findsOneWidget,
       );
-    });
-
-    testWidgets('has RefreshIndicator for pull-to-refresh', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.byType(RefreshIndicator), findsOneWidget);
+      expect(find.byType(SingleChildScrollView), findsOneWidget);
+      expect(find.byType(SafeArea), findsOneWidget);
+      expect(find.byType(Expanded), findsAtLeastNWidgets(1));
     });
 
     testWidgets('shows draft banner when plan is draft', (tester) async {
@@ -262,35 +227,6 @@ void main() {
       expect(find.text('Re-agree'), findsNothing);
     });
 
-    testWidgets('is scrollable', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.byType(SingleChildScrollView), findsOneWidget);
-    });
-
-    testWidgets('has SafeArea', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      expect(find.byType(SafeArea), findsOneWidget);
-    });
-
-    testWidgets('FAB is tappable', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      final fab = find.byType(FloatingActionButton);
-      expect(fab, findsOneWidget);
-
-      // Verify the FAB has an onPressed callback
-      final fabWidget = tester.widget<FloatingActionButton>(fab);
-      expect(fabWidget.onPressed, isNotNull);
-    });
-
     testWidgets('agree button is tappable', (tester) async {
       await tester.pumpWidget(
         createTestWidget(
@@ -307,17 +243,6 @@ void main() {
       expect(buttonWidget.onPressed, isNotNull);
     });
 
-    testWidgets('shows correct layout structure', (tester) async {
-      await tester.pumpWidget(createTestWidget());
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      // Main column for header + content
-      expect(find.byType(Column), findsWidgets);
-      // Expanded widget for scrollable content
-      expect(find.byType(Expanded), findsAtLeastNWidgets(1));
-    });
-
     // --- Banner message content ---
 
     testWidgets('draft banner shows draft message text', (tester) async {
@@ -332,6 +257,13 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Agree to Plan'), findsOneWidget);
+
+      // Non-warning banner: clipboard icon tinted with the theme primary,
+      // not the orange warning treatment.
+      final icon = tester.widget<Icon>(find.byIcon(MdiIcons.clipboardCheck));
+      final context = tester.element(find.byType(DailyOsPage));
+      expect(icon.color, Theme.of(context).colorScheme.primary);
+      expect(icon.color, isNot(Colors.orange));
     });
 
     testWidgets('review banner shows review message text', (tester) async {
@@ -353,6 +285,10 @@ void main() {
         findsOneWidget,
       );
       expect(find.text('Re-agree'), findsOneWidget);
+
+      // Warning banner: alert icon with the orange warning treatment.
+      final icon = tester.widget<Icon>(find.byIcon(MdiIcons.alertCircle));
+      expect(icon.color, Colors.orange);
     });
 
     // --- Agree button invokes agreeToPlan on draft banner ---

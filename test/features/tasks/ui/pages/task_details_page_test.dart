@@ -24,9 +24,11 @@ import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
+import 'package:lotti/logic/media_import.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/link_service.dart';
@@ -1007,6 +1009,69 @@ void main() {
         );
 
         await tester.pump();
+      },
+    );
+
+    testWidgets(
+      'an image drop whose file cannot be read is logged and swallowed',
+      (tester) async {
+        // The per-file try/catch in importDroppedImages must log the read
+        // failure (lastModified/length on a nonexistent path) and continue
+        // instead of letting the exception escape the drop handler.
+        final mockLogger = MockDomainLogger();
+        when(
+          () => mockLogger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+        if (getIt.isRegistered<DomainLogger>()) {
+          getIt.unregister<DomainLogger>();
+        }
+        getIt.registerSingleton<DomainLogger>(mockLogger);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: _taskDetailsPageOverrides(),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The DropTarget wiring itself is pinned by the adjacent tests;
+        // here we drive handleDroppedMedia (the drop handler's body)
+        // directly so the real-IO failure path is reachable via runAsync.
+        expect(find.byType(DropTarget), findsOneWidget);
+
+        final unreadableImage = _FakeDropItem(
+          XFile('/nonexistent/missing.jpg'),
+        );
+        // The import loop does real file I/O (lastModified/length), which
+        // never completes inside the fake-async test zone — run it for real.
+        await tester.runAsync(() async {
+          await handleDroppedMedia(
+            data: DropDoneDetails(
+              files: [unreadableImage],
+              localPosition: Offset.zero,
+              globalPosition: Offset.zero,
+            ),
+            linkedId: testTask.id,
+            categoryId: testTask.meta.categoryId,
+          );
+        });
+
+        verify(
+          () => mockLogger.error(
+            LogDomain.ai,
+            any<Object>(),
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'importDroppedImages',
+          ),
+        ).called(1);
+        expect(tester.takeException(), isNull);
       },
     );
   });

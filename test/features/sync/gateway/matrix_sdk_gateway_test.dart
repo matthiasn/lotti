@@ -31,6 +31,13 @@ MatrixEvent _stateEvent({
   );
 }
 
+/// Registers a [MockRoom] for [roomId] on the shared [client] and returns it.
+MockRoom _stubRoom(MockMatrixClient client, String roomId) {
+  final room = MockRoom();
+  when(() => client.getRoomById(roomId)).thenReturn(room);
+  return room;
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(
@@ -255,9 +262,58 @@ void main() {
     verify(() => client.leaveRoom('!room:server')).called(1);
   });
 
+  test('keyVerificationRequests forwards the injected stream', () async {
+    final requests = <KeyVerification>[];
+    final sub = gateway.keyVerificationRequests.listen(requests.add);
+
+    final verification = MockKeyVerification();
+    keyVerificationController.add(verification);
+    await pumpEventQueue();
+
+    expect(requests, [verification]);
+    await sub.cancel();
+  });
+
+  test(
+    'dispose cancels the invite subscription and closes the invites stream',
+    () async {
+      // Stub userID so the late room-state event would pass the
+      // `state_key == userID` filter in _handleRoomState pre-dispose.
+      // Without this the event is dropped regardless of disposal, and the
+      // empty-invites assertion below would pass even on a live subscription.
+      when(() => client.userID).thenReturn('@me:server');
+      final invites = <RoomInviteEvent>[];
+      final done = Completer<void>();
+      gateway.invites.listen(invites.add, onDone: done.complete);
+
+      await gateway.dispose();
+      disposed = true;
+
+      // The invites stream completes for listeners...
+      await done.future;
+      // ...the SDK client is disposed...
+      verify(() => client.dispose()).called(1);
+      // ...and room-state events arriving after dispose are ignored.
+      roomStateController.add(
+        (
+          roomId: '!late:server',
+          state: StrippedStateEvent.fromJson(
+            {
+              'type': 'm.room.member',
+              'sender': '@admin:server',
+              'state_key': '@me:server',
+              'content': {'membership': 'invite'},
+            },
+          ),
+        ),
+      );
+      await pumpEventQueue();
+      expect(invites, isEmpty);
+    },
+  );
+
   test('getRoomById proxies to client', () {
-    final room = MockRoom();
-    when(() => client.getRoomById('!room:server')).thenReturn(room);
+    final room = _stubRoom(client, '!room:server');
 
     expect(gateway.getRoomById('!room:server'), room);
   });
@@ -523,8 +579,7 @@ void main() {
   });
 
   test('sendText throws when room.sendEvent returns null', () async {
-    final room = MockRoom();
-    when(() => client.getRoomById('!room:server')).thenReturn(room);
+    final room = _stubRoom(client, '!room:server');
     when(() => room.sendEvent(any())).thenAnswer((_) async => null);
 
     expect(
@@ -534,8 +589,7 @@ void main() {
   });
 
   test('sendText returns event id when successful', () async {
-    final room = MockRoom();
-    when(() => client.getRoomById('!room:server')).thenReturn(room);
+    final room = _stubRoom(client, '!room:server');
     when(() => room.sendEvent(any())).thenAnswer((_) async => 'event');
 
     final eventId = await gateway.sendText(
@@ -547,8 +601,7 @@ void main() {
   });
 
   test('sendText registers event ID in sent registry', () async {
-    final room = MockRoom();
-    when(() => client.getRoomById('!room:server')).thenReturn(room);
+    final room = _stubRoom(client, '!room:server');
     when(() => room.sendEvent(any())).thenAnswer((_) async => r'$text-evt');
 
     await gateway.sendText(roomId: '!room:server', message: 'hi');
@@ -561,8 +614,7 @@ void main() {
   });
 
   test('sendFile throws when matrix SDK returns null id', () async {
-    final room = MockRoom();
-    when(() => client.getRoomById('!room:server')).thenReturn(room);
+    final room = _stubRoom(client, '!room:server');
     when(() => room.sendFileEvent(any())).thenAnswer((_) async => null);
 
     expect(
@@ -575,8 +627,7 @@ void main() {
   });
 
   test('sendFile supports extra content payloads', () async {
-    final room = MockRoom();
-    when(() => client.getRoomById('!room:server')).thenReturn(room);
+    final room = _stubRoom(client, '!room:server');
     when(
       () => room.sendFileEvent(any(), extraContent: any(named: 'extraContent')),
     ).thenAnswer((_) async => 'file');
@@ -591,8 +642,7 @@ void main() {
   });
 
   test('sendFile registers event ID in sent registry', () async {
-    final room = MockRoom();
-    when(() => client.getRoomById('!room:server')).thenReturn(room);
+    final room = _stubRoom(client, '!room:server');
     when(
       () => room.sendFileEvent(any(), extraContent: any(named: 'extraContent')),
     ).thenAnswer((_) async => r'$file-evt');

@@ -7,6 +7,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -215,28 +216,61 @@ void main() {
       );
     });
 
-    test('connects WebSocket and sets isActive', () async {
-      final bench = await RealtimeTranscriptionTestBench.create();
-      addTearDown(bench.dispose);
+    test(
+      'connects WebSocket, sets isActive, and forwards PCM as base64',
+      () async {
+        final bench = await RealtimeTranscriptionTestBench.create();
+        addTearDown(bench.dispose);
 
-      final pcm = await bench.startTranscription();
-      expect(bench.service.isActive, isTrue);
-      await pcm.close();
-    });
+        await bench.startTranscription();
+        expect(bench.service.isActive, isTrue);
 
-    test('forwards PCM chunks to repository as base64', () async {
-      final bench = await RealtimeTranscriptionTestBench.create();
-      addTearDown(bench.dispose);
+        // State alone proves little — the appended audio on the wire shows
+        // the session is actually live.
+        await bench.sendPcm(pcmSilence(64));
 
-      await bench.startTranscription();
-      await bench.sendPcm(pcmSilence(64));
+        expect(bench.channel.sentMessages, isNotEmpty);
+        final msg =
+            jsonDecode(bench.channel.sentMessages.last) as Map<String, dynamic>;
+        expect(msg['type'], 'input_audio.append');
+        expect(msg['audio'], isNotEmpty);
+      },
+    );
 
-      expect(bench.channel.sentMessages, isNotEmpty);
-      final msg =
-          jsonDecode(bench.channel.sentMessages.last) as Map<String, dynamic>;
-      expect(msg['type'], 'input_audio.append');
-      expect(msg['audio'], isNotEmpty);
-    });
+    test(
+      'second startRealtimeTranscription while active throws Already '
+      'connected',
+      () async {
+        final bench = await RealtimeTranscriptionTestBench.create();
+        addTearDown(bench.dispose);
+
+        final pcm1 = await bench.startTranscription();
+        expect(bench.service.isActive, isTrue);
+
+        // The repository guards reconnection: a second start while a
+        // session is live surfaces TranscriptionException('Already
+        // connected') instead of silently replacing the session.
+        await expectLater(
+          bench.startTranscription,
+          throwsA(
+            isA<Exception>().having(
+              (e) => e.toString(),
+              'message',
+              contains('Already connected'),
+            ),
+          ),
+        );
+
+        // The original session survives the failed restart: its PCM stream
+        // still reaches the wire and the service stays active.
+        expect(bench.service.isActive, isTrue);
+        pcm1.add(pcmSilence(64));
+        await Future<void>.delayed(Duration.zero);
+        final msg =
+            jsonDecode(bench.channel.sentMessages.last) as Map<String, dynamic>;
+        expect(msg['type'], 'input_audio.append');
+      },
+    );
 
     test('emits amplitude values from PCM chunks', () async {
       final bench = await RealtimeTranscriptionTestBench.create();
@@ -1211,6 +1245,59 @@ void main() {
         // The audio file should still be present (WAV fallback on test env)
         expect(result.audioFilePath, isNotNull);
       },
+    );
+  });
+  group('confirmedTextDelta properties', () {
+    late ProviderContainer container;
+    late RealtimeTranscriptionService service;
+
+    setUpAll(() {
+      container = ProviderContainer();
+      service = container.read(realtimeTranscriptionServiceProvider);
+    });
+
+    tearDownAll(() => container.dispose());
+
+    glados.Glados2(
+      glados.any.stringOf('ab '),
+      glados.any.stringOf('ab '),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'delta extraction: append remainder, prefix truncation, suffix law',
+      (a, b) {
+        String delta({required String previous, required String next}) =>
+            service.debugConfirmedTextDelta(previous: previous, next: next);
+
+        // Empty previous: the whole confirmed text is the delta.
+        expect(
+          delta(previous: '', next: a),
+          a,
+          reason: 'a="$a"',
+        );
+
+        // Growth: when next extends previous, the delta is the remainder.
+        expect(
+          delta(previous: a, next: '$a$b'),
+          b,
+          reason: 'a="$a" b="$b"',
+        );
+
+        // Truncation/rewind: when next is a prefix of previous, nothing new
+        // was confirmed.
+        if (a.isNotEmpty) {
+          expect(
+            delta(previous: '$a$b', next: a),
+            isEmpty,
+            reason: 'a="$a" b="$b"',
+          );
+        }
+
+        // Universal law: whatever the relationship, the delta is always a
+        // suffix of next — appending it never duplicates confirmed text.
+        final d = delta(previous: a, next: b);
+        expect(b.endsWith(d), isTrue, reason: 'a="$a" b="$b" d="$d"');
+      },
+      tags: 'glados',
     );
   });
 }

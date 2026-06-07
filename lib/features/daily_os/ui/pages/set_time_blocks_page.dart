@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -95,7 +96,8 @@ class _SetTimeBlocksPageState extends ConsumerState<SetTimeBlocksPage> {
     final others = categories.where((c) => !(c.favorite ?? false)).toList();
 
     final dateFormat = DateFormat.yMMMd();
-    final isToday = _date.dayAtMidnight == DateTime.now().dayAtMidnight;
+    // clock.now() (package:clock) so tests can fix "today" via withClock.
+    final isToday = _date.dayAtMidnight == clock.now().dayAtMidnight;
 
     return Scaffold(
       backgroundColor: tokens.colors.background.level01,

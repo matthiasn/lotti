@@ -8,12 +8,13 @@ import 'package:lotti/features/ai/model/skill_assignment.dart';
 AiConfigInferenceProvider testInferenceProvider({
   String id = 'provider-1',
   String apiKey = 'test-key',
+  InferenceProviderType inferenceProviderType = InferenceProviderType.gemini,
 }) {
   return AiConfig.inferenceProvider(
         id: id,
         baseUrl: 'https://generativelanguage.googleapis.com',
         name: 'Gemini',
-        inferenceProviderType: InferenceProviderType.gemini,
+        inferenceProviderType: inferenceProviderType,
         apiKey: apiKey,
         createdAt: DateTime(2024),
       )

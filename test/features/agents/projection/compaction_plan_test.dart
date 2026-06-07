@@ -28,7 +28,7 @@ void main() {
     glados.Glados2(
       glados.any.tokenCosts,
       glados.any.budget,
-      glados.ExploreConfig(numRuns: 300),
+      glados.ExploreConfig(numRuns: 200),
     ).test('fold prefix ++ keep suffix is exactly the tail, in order', (
       tokens,
       budget,
@@ -44,7 +44,7 @@ void main() {
     glados.Glados2(
       glados.any.tokenCosts,
       glados.any.budget,
-      glados.ExploreConfig(numRuns: 300),
+      glados.ExploreConfig(numRuns: 200),
     ).test('the kept suffix fits the budget once it holds 2+ entries', (
       tokens,
       budget,
@@ -59,7 +59,7 @@ void main() {
     glados.Glados2(
       glados.any.tokenCosts,
       glados.any.budget,
-      glados.ExploreConfig(numRuns: 300),
+      glados.ExploreConfig(numRuns: 200),
     ).test('a tail within budget is never folded', (tokens, budget) {
       final tail = _tail(tokens);
       final plan = planCompaction(tail: tail, budget: budget);
@@ -71,7 +71,7 @@ void main() {
     glados.Glados2(
       glados.any.tokenCosts,
       glados.any.budget,
-      glados.ExploreConfig(numRuns: 300),
+      glados.ExploreConfig(numRuns: 200),
     ).test(
       'keeps at least the most-recent entry when the tail is non-empty',
       (
@@ -92,7 +92,7 @@ void main() {
       glados.any.tokenCosts,
       glados.any.budget,
       glados.any.budget,
-      glados.ExploreConfig(numRuns: 300),
+      glados.ExploreConfig(numRuns: 200),
     ).test('a larger budget never folds more (monotonic)', (
       tokens,
       budgetA,

@@ -111,5 +111,23 @@ void main() {
 
       expect(profile.displayName, 'My Studio Mac');
     });
+
+    test('forwards a supplied appVersion onto the profile', () async {
+      final probe = makeDefaultSyncNodeCapabilityProbe(
+        ollamaProbe: ({Duration timeout = const Duration(seconds: 1)}) async =>
+            false,
+      );
+
+      final withVersion = await probe(
+        hostId: 'h1',
+        now: now,
+        appVersion: '1.2.3+45',
+      );
+      expect(withVersion.appVersion, '1.2.3+45');
+
+      // Omitting it keeps the field null rather than inventing a default.
+      final withoutVersion = await probe(hostId: 'h1', now: now);
+      expect(withoutVersion.appVersion, isNull);
+    });
   });
 }

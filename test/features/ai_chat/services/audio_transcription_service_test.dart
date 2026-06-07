@@ -38,203 +38,214 @@ class _FakeMlxAudioChannel extends MlxAudioChannel {
 const _pMistral = 'p-mistral-guard';
 const _pGemini = 'p-gemini-guard';
 
+final _createdAt = DateTime(2024, 3, 15, 10, 30);
+
+AiConfig _provider({
+  required String id,
+  InferenceProviderType type = InferenceProviderType.gemini,
+  String name = 'Gemini',
+  String baseUrl = 'http://localhost:1234',
+  String apiKey = 'k',
+}) {
+  return AiConfig.inferenceProvider(
+    id: id,
+    baseUrl: baseUrl,
+    apiKey: apiKey,
+    name: name,
+    createdAt: _createdAt,
+    inferenceProviderType: type,
+  );
+}
+
+AiConfig _audioModel({
+  required String id,
+  required String providerId,
+  String name = 'gemini-2.5-flash',
+  String providerModelId = 'gemini-2.5-flash',
+  bool isReasoningModel = false,
+  GeminiThinkingMode? geminiThinkingMode,
+}) {
+  return AiConfig.model(
+    id: id,
+    name: name,
+    providerModelId: providerModelId,
+    inferenceProviderId: providerId,
+    createdAt: _createdAt,
+    inputModalities: const [Modality.audio],
+    outputModalities: const [Modality.text],
+    isReasoningModel: isReasoningModel,
+    geminiThinkingMode: geminiThinkingMode ?? GeminiThinkingMode.low,
+  );
+}
+
+CreateChatCompletionStreamResponse _contentChunk(String content) {
+  return CreateChatCompletionStreamResponse(
+    id: '0',
+    object: 'chat.completion.chunk',
+    created: 0,
+    choices: [
+      ChatCompletionStreamResponseChoice(
+        index: 0,
+        delta: ChatCompletionStreamResponseDelta(content: content),
+      ),
+    ],
+  );
+}
+
+/// Stubs `generateWithAudio` with a freshly built stream per invocation.
+void _stubGenerateWithAudioStream(
+  MockCloudInferenceRepository mock,
+  Stream<CreateChatCompletionStreamResponse> Function() stream,
+) {
+  when(
+    () => mock.generateWithAudio(
+      any(),
+      model: any(named: 'model'),
+      audioBase64: any(named: 'audioBase64'),
+      baseUrl: any(named: 'baseUrl'),
+      apiKey: any(named: 'apiKey'),
+      provider: any(named: 'provider'),
+      maxCompletionTokens: any(named: 'maxCompletionTokens'),
+      overrideClient: any(named: 'overrideClient'),
+      tools: any(named: 'tools'),
+      speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
+      geminiThinkingMode: any(named: 'geminiThinkingMode'),
+    ),
+  ).thenAnswer((_) => stream());
+}
+
+/// Stubs `generateWithAudio` to emit one content chunk per string.
+void _stubGenerateWithAudio(
+  MockCloudInferenceRepository mock,
+  List<String> contents,
+) {
+  _stubGenerateWithAudioStream(
+    mock,
+    () => Stream.fromIterable(contents.map(_contentChunk)),
+  );
+}
+
+/// Verifies a single `generateWithAudio` call and returns the captured
+/// `model` and `speechDictionaryTerms` arguments.
+({Object? model, Object? speechDictionaryTerms}) _verifyGenerateWithAudio(
+  MockCloudInferenceRepository mock,
+) {
+  final captured = verify(
+    () => mock.generateWithAudio(
+      any(),
+      model: captureAny(named: 'model'),
+      audioBase64: any(named: 'audioBase64'),
+      baseUrl: any(named: 'baseUrl'),
+      apiKey: any(named: 'apiKey'),
+      provider: any(named: 'provider'),
+      maxCompletionTokens: any(named: 'maxCompletionTokens'),
+      overrideClient: any(named: 'overrideClient'),
+      tools: any(named: 'tools'),
+      speechDictionaryTerms: captureAny(named: 'speechDictionaryTerms'),
+      geminiThinkingMode: any(named: 'geminiThinkingMode'),
+    ),
+  ).captured;
+  return (model: captured[0], speechDictionaryTerms: captured[1]);
+}
+
 void main() {
   late AiConfigDb sharedDb;
+  late AiConfigRepository sharedRepo;
+  late Directory sharedTempDir;
+  var audioFileIndex = 0;
 
-  setUpAll(() {
-    // Create a single shared database instance for all tests
+  /// Writes a small audio fixture into the shared temp dir.
+  Future<File> audioFile() async {
+    final file = File('${sharedTempDir.path}/audio_${audioFileIndex++}.m4a');
+    await file.writeAsBytes([1, 2, 3, 4]);
+    return file;
+  }
+
+  /// A fresh in-memory config repository for tests whose model selection
+  /// depends on the *absence* of other rows (the shared DB accumulates).
+  AiConfigRepository isolatedRepo() {
+    final db = AiConfigDb(inMemoryDatabase: true);
+    addTearDown(db.close);
+    return AiConfigRepository(db);
+  }
+
+  /// Builds the service with the standard repo/cloud/MLX overrides.
+  AudioTranscriptionService buildService({
+    required AiConfigRepository repo,
+    MockCloudInferenceRepository? cloud,
+    MlxAudioChannel? mlxChannel,
+  }) {
+    final container = ProviderContainer(
+      overrides: [
+        aiConfigRepositoryProvider.overrideWith((_) => repo),
+        if (cloud != null)
+          cloudInferenceRepositoryProvider.overrideWith((_) => cloud),
+        if (mlxChannel != null)
+          mlxAudioChannelProvider.overrideWithValue(mlxChannel),
+      ],
+    );
+    addTearDown(container.dispose);
+    return container.read(audioTranscriptionServiceProvider);
+  }
+
+  setUpAll(() async {
+    // One shared in-memory DB pre-populated with the standard Gemini
+    // provider + flash model pair, and one shared temp dir for fixtures.
     sharedDb = AiConfigDb(inMemoryDatabase: true);
+    sharedRepo = AiConfigRepository(sharedDb);
+    await sharedRepo.saveConfig(_provider(id: 'p1'), fromSync: true);
+    await sharedRepo.saveConfig(
+      _audioModel(id: 'm1', providerId: 'p1'),
+      fromSync: true,
+    );
+    sharedTempDir = await Directory.systemTemp.createTemp('svc_test_');
 
     registerFallbackValue(
-      AiConfig.inferenceProvider(
-            id: 'p-fallback',
-            baseUrl: 'http://localhost',
-            apiKey: 'k',
-            name: 'fallback',
-            createdAt: DateTime(2024, 3, 15, 10, 30),
-            inferenceProviderType: InferenceProviderType.gemini,
-          )
+      _provider(id: 'p-fallback', baseUrl: 'http://localhost')
           as AiConfigInferenceProvider,
     );
   });
 
   tearDownAll(() async {
     await sharedDb.close();
+    await sharedTempDir.delete(recursive: true);
   });
 
   test('aggregates stream chunks into a single transcript', () async {
-    // Arrange config
-    final aiRepo = AiConfigRepository(sharedDb);
-    await aiRepo.saveConfig(
-      AiConfig.inferenceProvider(
-        id: 'p1',
-        baseUrl: 'http://localhost:1234',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inferenceProviderType: InferenceProviderType.gemini,
-      ),
-      fromSync: true,
-    );
-    await aiRepo.saveConfig(
-      AiConfig.model(
-        id: 'm1',
-        name: 'gemini-2.5-flash',
-        providerModelId: 'gemini-2.5-flash',
-        inferenceProviderId: 'p1',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: const [Modality.audio],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-      ),
-      fromSync: true,
-    );
-
-    // Create a temp audio file
-    final dir = await Directory.systemTemp.createTemp('svc_test_');
-    final file = File('${dir.path}/a.m4a');
-    await file.writeAsBytes([1, 2, 3, 4]);
-
-    // Mock cloud stream returning two chunks
+    final file = await audioFile();
     final mockCloud = MockCloudInferenceRepository();
-    when(
-      () => mockCloud.generateWithAudio(
-        any(),
-        model: any(named: 'model'),
-        audioBase64: any(named: 'audioBase64'),
-        baseUrl: any(named: 'baseUrl'),
-        apiKey: any(named: 'apiKey'),
-        provider: any(named: 'provider'),
-        maxCompletionTokens: any(named: 'maxCompletionTokens'),
-        overrideClient: any(named: 'overrideClient'),
-        tools: any(named: 'tools'),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-      ),
-    ).thenAnswer(
-      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
-        const CreateChatCompletionStreamResponse(
-          id: '1',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'foo'),
-            ),
-          ],
-        ),
-        const CreateChatCompletionStreamResponse(
-          id: '2',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'bar'),
-            ),
-          ],
-        ),
-      ]),
-    );
+    _stubGenerateWithAudio(mockCloud, ['foo', 'bar']);
 
-    // Build service with overrides
-    final container = ProviderContainer(
-      overrides: [
-        aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-        cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-      ],
-    );
-    addTearDown(container.dispose);
+    final svc = buildService(repo: sharedRepo, cloud: mockCloud);
 
-    final svc = container.read(audioTranscriptionServiceProvider);
-
-    // Act
-    final result = await svc.transcribe(file.path);
-
-    // Assert
-    expect(result, 'foobar');
-    await dir.delete(recursive: true);
+    expect(await svc.transcribe(file.path), 'foobar');
   });
 
   test(
     'forwards the model row thinking mode for Gemini 3 audio models',
     () async {
-      // Isolated DB: the shared instance already carries a
-      // 'gemini-2.5-flash' row from earlier tests, which would win the
-      // batch-model selection over the Gemini 3 row under test.
-      final isolatedDb = AiConfigDb(inMemoryDatabase: true);
-      addTearDown(isolatedDb.close);
-      final aiRepo = AiConfigRepository(isolatedDb);
+      // Isolated DB: the shared instance carries a 'gemini-2.5-flash' row,
+      // which would win the batch-model selection over the Gemini 3 row
+      // under test.
+      final aiRepo = isolatedRepo();
+      await aiRepo.saveConfig(_provider(id: 'p-g3'), fromSync: true);
       await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
-          id: 'p-g3',
-          baseUrl: 'http://localhost:1234',
-          apiKey: 'k',
-          name: 'Gemini',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inferenceProviderType: InferenceProviderType.gemini,
-        ),
-        fromSync: true,
-      );
-      await aiRepo.saveConfig(
-        AiConfig.model(
+        _audioModel(
           id: 'm-g3',
+          providerId: 'p-g3',
           name: 'gemini-3-flash',
           providerModelId: 'gemini-3-flash-preview',
-          inferenceProviderId: 'p-g3',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inputModalities: const [Modality.audio],
-          outputModalities: const [Modality.text],
           isReasoningModel: true,
           geminiThinkingMode: GeminiThinkingMode.medium,
         ),
         fromSync: true,
       );
 
-      final dir = await Directory.systemTemp.createTemp('svc_test_');
-      final file = File('${dir.path}/a.m4a');
-      await file.writeAsBytes([1, 2, 3, 4]);
-
+      final file = await audioFile();
       final mockCloud = MockCloudInferenceRepository();
-      when(
-        () => mockCloud.generateWithAudio(
-          any(),
-          model: any(named: 'model'),
-          audioBase64: any(named: 'audioBase64'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          provider: any(named: 'provider'),
-          maxCompletionTokens: any(named: 'maxCompletionTokens'),
-          overrideClient: any(named: 'overrideClient'),
-          tools: any(named: 'tools'),
-          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-          geminiThinkingMode: any(named: 'geminiThinkingMode'),
-        ),
-      ).thenAnswer(
-        (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
-          const CreateChatCompletionStreamResponse(
-            id: '1',
-            object: 'chat.completion.chunk',
-            created: 0,
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: 'hi'),
-              ),
-            ],
-          ),
-        ]),
-      );
+      _stubGenerateWithAudio(mockCloud, ['hi']);
 
-      final container = ProviderContainer(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-          cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final svc = container.read(audioTranscriptionServiceProvider);
+      final svc = buildService(repo: aiRepo, cloud: mockCloud);
       final result = await svc.transcribe(file.path);
 
       expect(result, 'hi');
@@ -252,104 +263,41 @@ void main() {
           geminiThinkingMode: GeminiThinkingMode.medium,
         ),
       ).called(1);
-      await dir.delete(recursive: true);
     },
   );
 
   test('fallbacks to first audio-capable model when flash not found', () async {
-    final aiRepo = AiConfigRepository(sharedDb);
+    // Isolated DB: the fallback only triggers when no flash row exists.
+    final aiRepo = isolatedRepo();
+    await aiRepo.saveConfig(_provider(id: 'p1'), fromSync: true);
     await aiRepo.saveConfig(
-      AiConfig.inferenceProvider(
-        id: 'p1',
-        baseUrl: 'http://localhost:1234',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inferenceProviderType: InferenceProviderType.gemini,
-      ),
-      fromSync: true,
-    );
-    await aiRepo.saveConfig(
-      AiConfig.model(
+      _audioModel(
         id: 'm2',
+        providerId: 'p1',
         name: 'gemini-other',
         providerModelId: 'gemini-audio',
-        inferenceProviderId: 'p1',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: const [Modality.audio],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
       ),
       fromSync: true,
     );
 
-    final dir = await Directory.systemTemp.createTemp('svc_test_');
-    final file = File('${dir.path}/b.m4a');
-    await file.writeAsBytes([5, 6]);
-
+    final file = await audioFile();
     final mockCloud = MockCloudInferenceRepository();
-    when(
-      () => mockCloud.generateWithAudio(
-        any(),
-        model: any(named: 'model'),
-        audioBase64: any(named: 'audioBase64'),
-        baseUrl: any(named: 'baseUrl'),
-        apiKey: any(named: 'apiKey'),
-        provider: any(named: 'provider'),
-        maxCompletionTokens: any(named: 'maxCompletionTokens'),
-        overrideClient: any(named: 'overrideClient'),
-        tools: any(named: 'tools'),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-      ),
-    ).thenAnswer(
-      (_) => Stream.value(
-        const CreateChatCompletionStreamResponse(
-          id: '1',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'ok'),
-            ),
-          ],
-        ),
-      ),
-    );
+    _stubGenerateWithAudio(mockCloud, ['ok']);
 
-    final container = ProviderContainer(
-      overrides: [
-        aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-        cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-      ],
-    );
-    addTearDown(container.dispose);
+    final svc = buildService(repo: aiRepo, cloud: mockCloud);
 
-    final svc = container.read(audioTranscriptionServiceProvider);
-    final result = await svc.transcribe(file.path);
-    expect(result, 'ok');
-    await dir.delete(recursive: true);
+    expect(await svc.transcribe(file.path), 'ok');
+    // The fallback model — not a flash model — was actually used.
+    expect(_verifyGenerateWithAudio(mockCloud).model, 'gemini-audio');
   });
 
   test('throws when no audio-capable model is configured', () async {
-    final aiRepo = AiConfigRepository(sharedDb);
-    await aiRepo.saveConfig(
-      AiConfig.inferenceProvider(
-        id: 'p1',
-        baseUrl: 'http://localhost:1234',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inferenceProviderType: InferenceProviderType.gemini,
-      ),
-      fromSync: true,
-    );
+    // Isolated DB: must contain no audio-capable model at all.
+    final aiRepo = isolatedRepo();
+    await aiRepo.saveConfig(_provider(id: 'p1'), fromSync: true);
 
-    final container = ProviderContainer(
-      overrides: [aiConfigRepositoryProvider.overrideWith((_) => aiRepo)],
-    );
+    final svc = buildService(repo: aiRepo);
 
-    final svc = container.read(audioTranscriptionServiceProvider);
     expect(
       () => svc.transcribe('/tmp/does-not-matter.m4a'),
       throwsA(isA<Exception>()),
@@ -357,28 +305,15 @@ void main() {
   });
 
   test('throws when provider for selected audio model is missing', () async {
-    final aiRepo = AiConfigRepository(sharedDb);
-    // Only a model without its provider
+    // Isolated DB: only a model whose provider row does not exist.
+    final aiRepo = isolatedRepo();
     await aiRepo.saveConfig(
-      AiConfig.model(
-        id: 'm1',
-        name: 'gemini-2.5-flash',
-        providerModelId: 'gemini-2.5-flash',
-        inferenceProviderId: 'prov-missing',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: const [Modality.audio],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-      ),
+      _audioModel(id: 'm1', providerId: 'prov-missing'),
       fromSync: true,
     );
 
-    final container = ProviderContainer(
-      overrides: [aiConfigRepositoryProvider.overrideWith((_) => aiRepo)],
-    );
-    addTearDown(container.dispose);
+    final svc = buildService(repo: aiRepo);
 
-    final svc = container.read(audioTranscriptionServiceProvider);
     await expectLater(
       () => svc.transcribe('/tmp/file.m4a'),
       throwsA(predicate((e) => e.toString().contains('Provider not found'))),
@@ -386,365 +321,120 @@ void main() {
   });
 
   test('ignores empty content chunks from cloud stream', () async {
-    final aiRepo = AiConfigRepository(sharedDb);
-    await aiRepo.saveConfig(
-      AiConfig.inferenceProvider(
-        id: 'p1',
-        baseUrl: 'http://localhost:1234',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inferenceProviderType: InferenceProviderType.gemini,
-      ),
-      fromSync: true,
-    );
-    await aiRepo.saveConfig(
-      AiConfig.model(
-        id: 'm1',
-        name: 'gemini-2.5-flash',
-        providerModelId: 'gemini-2.5-flash',
-        inferenceProviderId: 'p1',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: const [Modality.audio],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-      ),
-      fromSync: true,
-    );
-
-    final dir = await Directory.systemTemp.createTemp('svc_more_');
-    final file = File('${dir.path}/c.m4a');
-    await file.writeAsBytes([7, 8, 9]);
-
+    final file = await audioFile();
     final mockCloud = MockCloudInferenceRepository();
-    when(
-      () => mockCloud.generateWithAudio(
-        any(),
-        model: any(named: 'model'),
-        audioBase64: any(named: 'audioBase64'),
-        baseUrl: any(named: 'baseUrl'),
-        apiKey: any(named: 'apiKey'),
-        provider: any(named: 'provider'),
-        maxCompletionTokens: any(named: 'maxCompletionTokens'),
-        overrideClient: any(named: 'overrideClient'),
-        tools: any(named: 'tools'),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-      ),
-    ).thenAnswer(
-      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
-        const CreateChatCompletionStreamResponse(
-          id: '1',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: ''),
-            ),
-          ],
-        ),
-        const CreateChatCompletionStreamResponse(
-          id: '2',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'ok'),
-            ),
-          ],
-        ),
-      ]),
-    );
+    _stubGenerateWithAudio(mockCloud, ['', 'ok']);
 
-    final container = ProviderContainer(
-      overrides: [
-        aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-        cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-      ],
-    );
-    addTearDown(container.dispose);
+    final svc = buildService(repo: sharedRepo, cloud: mockCloud);
 
-    final svc = container.read(audioTranscriptionServiceProvider);
-    final result = await svc.transcribe(file.path);
-    expect(result, 'ok');
-    await dir.delete(recursive: true);
+    expect(await svc.transcribe(file.path), 'ok');
   });
 
   test('transcribeStream yields chunks progressively', () async {
-    final aiRepo = AiConfigRepository(sharedDb);
-    await aiRepo.saveConfig(
-      AiConfig.inferenceProvider(
-        id: 'p1',
-        baseUrl: 'http://localhost:1234',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inferenceProviderType: InferenceProviderType.gemini,
-      ),
-      fromSync: true,
-    );
-    await aiRepo.saveConfig(
-      AiConfig.model(
-        id: 'm1',
-        name: 'gemini-2.5-flash',
-        providerModelId: 'gemini-2.5-flash',
-        inferenceProviderId: 'p1',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: const [Modality.audio],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-      ),
-      fromSync: true,
-    );
-
-    final dir = await Directory.systemTemp.createTemp('svc_stream_');
-    final file = File('${dir.path}/d.m4a');
-    await file.writeAsBytes([10, 11, 12]);
-
+    final file = await audioFile();
     final mockCloud = MockCloudInferenceRepository();
-    when(
-      () => mockCloud.generateWithAudio(
-        any(),
-        model: any(named: 'model'),
-        audioBase64: any(named: 'audioBase64'),
-        baseUrl: any(named: 'baseUrl'),
-        apiKey: any(named: 'apiKey'),
-        provider: any(named: 'provider'),
-        maxCompletionTokens: any(named: 'maxCompletionTokens'),
-        overrideClient: any(named: 'overrideClient'),
-        tools: any(named: 'tools'),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-      ),
-    ).thenAnswer(
-      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
-        const CreateChatCompletionStreamResponse(
-          id: '1',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'First '),
-            ),
-          ],
-        ),
-        const CreateChatCompletionStreamResponse(
-          id: '2',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'Second '),
-            ),
-          ],
-        ),
-        const CreateChatCompletionStreamResponse(
-          id: '3',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'Third'),
-            ),
-          ],
-        ),
-      ]),
-    );
+    _stubGenerateWithAudio(mockCloud, ['First ', 'Second ', 'Third']);
 
-    final container = ProviderContainer(
-      overrides: [
-        aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-        cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-      ],
-    );
-    addTearDown(container.dispose);
+    final svc = buildService(repo: sharedRepo, cloud: mockCloud);
 
-    final svc = container.read(audioTranscriptionServiceProvider);
-
-    // Collect chunks as they're yielded
     final chunks = <String>[];
     await svc.transcribeStream(file.path).forEach(chunks.add);
 
-    // Verify chunks were yielded progressively (not all at once)
-    expect(chunks, hasLength(3));
-    expect(chunks[0], 'First ');
-    expect(chunks[1], 'Second ');
-    expect(chunks[2], 'Third');
-
-    // Verify concatenation matches full transcription
+    // Chunks arrive progressively and concatenate to the full transcript.
+    expect(chunks, ['First ', 'Second ', 'Third']);
     expect(chunks.join(), 'First Second Third');
-
-    await dir.delete(recursive: true);
   });
+
+  test(
+    'transcribeStream propagates a mid-stream cloud error after partial '
+    'chunks',
+    () async {
+      final file = await audioFile();
+      final mockCloud = MockCloudInferenceRepository();
+      _stubGenerateWithAudioStream(mockCloud, () async* {
+        yield _contentChunk('partial ');
+        throw StateError('stream interrupted');
+      });
+
+      final svc = buildService(repo: sharedRepo, cloud: mockCloud);
+
+      final chunks = <String>[];
+      await expectLater(
+        svc.transcribeStream(file.path).forEach(chunks.add),
+        throwsStateError,
+      );
+      // The chunks yielded before the failure made it out.
+      expect(chunks, ['partial ']);
+    },
+  );
 
   group('batch guard: excludes realtime models', () {
     test('excludes Mistral realtime model from batch selection', () async {
-      final aiRepo = AiConfigRepository(sharedDb);
-
-      // Mistral provider
+      final aiRepo = isolatedRepo();
       await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
+        _provider(
           id: _pMistral,
-          baseUrl: 'https://api.mistral.ai/v1',
-          apiKey: 'k',
+          type: InferenceProviderType.mistral,
           name: 'Mistral',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inferenceProviderType: InferenceProviderType.mistral,
+          baseUrl: 'https://api.mistral.ai/v1',
         ),
         fromSync: true,
       );
-      // Gemini provider
       await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
-          id: _pGemini,
-          baseUrl: 'https://api.gemini.test',
-          apiKey: 'k',
-          name: 'Gemini',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inferenceProviderType: InferenceProviderType.gemini,
-        ),
+        _provider(id: _pGemini, baseUrl: 'https://api.gemini.test'),
         fromSync: true,
       );
-
       // Realtime-only model (should be excluded)
       await aiRepo.saveConfig(
-        AiConfig.model(
+        _audioModel(
           id: 'm-realtime',
+          providerId: _pMistral,
           name: 'Voxtral Realtime',
           providerModelId: 'voxtral-mini-transcribe-realtime-2602',
-          inferenceProviderId: _pMistral,
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inputModalities: const [Modality.audio],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
         ),
         fromSync: true,
       );
       // Gemini batch model (should be included)
       await aiRepo.saveConfig(
-        AiConfig.model(
-          id: 'm-batch',
-          name: 'gemini-2.5-flash',
-          providerModelId: 'gemini-2.5-flash',
-          inferenceProviderId: _pGemini,
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inputModalities: const [Modality.audio],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        ),
+        _audioModel(id: 'm-batch', providerId: _pGemini),
         fromSync: true,
       );
 
-      final dir = await Directory.systemTemp.createTemp('guard_test_');
-      final file = File('${dir.path}/test.m4a');
-      await file.writeAsBytes([1, 2, 3]);
-
+      final file = await audioFile();
       final mockCloud = MockCloudInferenceRepository();
-      when(
-        () => mockCloud.generateWithAudio(
-          any(),
-          model: any(named: 'model'),
-          audioBase64: any(named: 'audioBase64'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          provider: any(named: 'provider'),
-          maxCompletionTokens: any(named: 'maxCompletionTokens'),
-          overrideClient: any(named: 'overrideClient'),
-          tools: any(named: 'tools'),
-          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-        ),
-      ).thenAnswer(
-        (_) => Stream.value(
-          const CreateChatCompletionStreamResponse(
-            id: '1',
-            object: 'chat.completion.chunk',
-            created: 0,
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: 'batch ok'),
-              ),
-            ],
-          ),
-        ),
-      );
+      _stubGenerateWithAudio(mockCloud, ['batch ok']);
 
-      final container = ProviderContainer(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-          cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final svc = container.read(audioTranscriptionServiceProvider);
+      final svc = buildService(repo: aiRepo, cloud: mockCloud);
       final result = await svc.transcribe(file.path);
 
       // Should use the Gemini batch model, not the realtime one
       expect(result, 'batch ok');
-
-      // Verify the model used was gemini, not voxtral
-      final captured = verify(
-        () => mockCloud.generateWithAudio(
-          any(),
-          model: captureAny(named: 'model'),
-          audioBase64: any(named: 'audioBase64'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          provider: any(named: 'provider'),
-          maxCompletionTokens: any(named: 'maxCompletionTokens'),
-          overrideClient: any(named: 'overrideClient'),
-          tools: any(named: 'tools'),
-          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-        ),
-      ).captured;
-      expect(captured.first, 'gemini-2.5-flash');
-
-      await dir.delete(recursive: true);
+      expect(_verifyGenerateWithAudio(mockCloud).model, 'gemini-2.5-flash');
     });
 
     test('throws when only realtime models exist (all excluded)', () async {
-      // Use a fresh DB to avoid interference from configs saved by other tests.
-      final freshDb = AiConfigDb(inMemoryDatabase: true);
-      addTearDown(freshDb.close);
-      final aiRepo = AiConfigRepository(freshDb);
-
+      final aiRepo = isolatedRepo();
       await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
+        _provider(
           id: _pMistral,
-          baseUrl: 'https://api.mistral.ai/v1',
-          apiKey: 'k',
+          type: InferenceProviderType.mistral,
           name: 'Mistral',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inferenceProviderType: InferenceProviderType.mistral,
+          baseUrl: 'https://api.mistral.ai/v1',
         ),
         fromSync: true,
       );
       await aiRepo.saveConfig(
-        AiConfig.model(
+        _audioModel(
           id: 'm-rt-only',
+          providerId: _pMistral,
           name: 'Voxtral Realtime',
           providerModelId: 'voxtral-mini-transcribe-realtime-2602',
-          inferenceProviderId: _pMistral,
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inputModalities: const [Modality.audio],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
         ),
         fromSync: true,
       );
 
-      final container = ProviderContainer(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-        ],
-      );
-      addTearDown(container.dispose);
+      final svc = buildService(repo: aiRepo);
 
-      final svc = container.read(audioTranscriptionServiceProvider);
       expect(
         () => svc.transcribe('/tmp/test.m4a'),
         throwsA(isA<Exception>()),
@@ -752,133 +442,46 @@ void main() {
     });
 
     test('keeps non-realtime Mistral models for batch', () async {
-      final aiRepo = AiConfigRepository(sharedDb);
-
+      // Isolated DB: only the Mistral batch model exists, so the selection
+      // proves it was kept (the shared flash row would otherwise win).
+      final aiRepo = isolatedRepo();
       await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
+        _provider(
           id: _pMistral,
-          baseUrl: 'https://api.mistral.ai/v1',
-          apiKey: 'k',
+          type: InferenceProviderType.mistral,
           name: 'Mistral',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inferenceProviderType: InferenceProviderType.mistral,
+          baseUrl: 'https://api.mistral.ai/v1',
         ),
         fromSync: true,
       );
       // Batch Mistral model (not realtime) — should be kept
       await aiRepo.saveConfig(
-        AiConfig.model(
+        _audioModel(
           id: 'm-mistral-batch',
+          providerId: _pMistral,
           name: 'Mistral Batch Audio',
           providerModelId: 'mistral-large-audio',
-          inferenceProviderId: _pMistral,
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inputModalities: const [Modality.audio],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
         ),
         fromSync: true,
       );
 
-      final dir = await Directory.systemTemp.createTemp('guard_keep_');
-      final file = File('${dir.path}/test.m4a');
-      await file.writeAsBytes([1, 2, 3]);
-
+      final file = await audioFile();
       final mockCloud = MockCloudInferenceRepository();
-      when(
-        () => mockCloud.generateWithAudio(
-          any(),
-          model: any(named: 'model'),
-          audioBase64: any(named: 'audioBase64'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          provider: any(named: 'provider'),
-          maxCompletionTokens: any(named: 'maxCompletionTokens'),
-          overrideClient: any(named: 'overrideClient'),
-          tools: any(named: 'tools'),
-          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-        ),
-      ).thenAnswer(
-        (_) => Stream.value(
-          const CreateChatCompletionStreamResponse(
-            id: '1',
-            object: 'chat.completion.chunk',
-            created: 0,
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'mistral batch',
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      _stubGenerateWithAudio(mockCloud, ['mistral batch']);
 
-      final container = ProviderContainer(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-          cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-        ],
-      );
-      addTearDown(container.dispose);
+      final svc = buildService(repo: aiRepo, cloud: mockCloud);
 
-      final svc = container.read(audioTranscriptionServiceProvider);
-      final result = await svc.transcribe(file.path);
-      expect(result, 'mistral batch');
-
-      await dir.delete(recursive: true);
+      expect(await svc.transcribe(file.path), 'mistral batch');
+      expect(_verifyGenerateWithAudio(mockCloud).model, 'mistral-large-audio');
     });
   });
 
   test('transcribeStream handles null choices in response chunk', () async {
-    final aiRepo = AiConfigRepository(sharedDb);
-    await aiRepo.saveConfig(
-      AiConfig.inferenceProvider(
-        id: 'p1',
-        baseUrl: 'http://localhost:1234',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inferenceProviderType: InferenceProviderType.gemini,
-      ),
-      fromSync: true,
-    );
-    await aiRepo.saveConfig(
-      AiConfig.model(
-        id: 'm1',
-        name: 'gemini-2.5-flash',
-        providerModelId: 'gemini-2.5-flash',
-        inferenceProviderId: 'p1',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: const [Modality.audio],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-      ),
-      fromSync: true,
-    );
-
-    final dir = await Directory.systemTemp.createTemp('svc_null_');
-    final file = File('${dir.path}/null_choices.m4a');
-    await file.writeAsBytes([1, 2, 3]);
-
+    final file = await audioFile();
     final mockCloud = MockCloudInferenceRepository();
-    when(
-      () => mockCloud.generateWithAudio(
-        any(),
-        model: any(named: 'model'),
-        audioBase64: any(named: 'audioBase64'),
-        baseUrl: any(named: 'baseUrl'),
-        apiKey: any(named: 'apiKey'),
-        provider: any(named: 'provider'),
-        maxCompletionTokens: any(named: 'maxCompletionTokens'),
-        overrideClient: any(named: 'overrideClient'),
-        tools: any(named: 'tools'),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-      ),
-    ).thenAnswer(
-      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
+    _stubGenerateWithAudioStream(
+      mockCloud,
+      () => Stream.fromIterable([
         // Chunk with null choices
         const CreateChatCompletionStreamResponse(
           id: '1',
@@ -905,337 +508,132 @@ void main() {
           ],
         ),
         // Normal chunk with content
-        const CreateChatCompletionStreamResponse(
-          id: '4',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'hello'),
-            ),
-          ],
-        ),
+        _contentChunk('hello'),
       ]),
     );
 
-    final container = ProviderContainer(
-      overrides: [
-        aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-        cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-      ],
-    );
-    addTearDown(container.dispose);
+    final svc = buildService(repo: sharedRepo, cloud: mockCloud);
 
-    final svc = container.read(audioTranscriptionServiceProvider);
     final chunks = <String>[];
     await svc.transcribeStream(file.path).forEach(chunks.add);
 
     // Only the valid chunk should be yielded
-    expect(chunks, hasLength(1));
-    expect(chunks[0], 'hello');
-
-    await dir.delete(recursive: true);
+    expect(chunks, ['hello']);
   });
 
   test('transcribeStream skips empty chunks', () async {
-    final aiRepo = AiConfigRepository(sharedDb);
-    await aiRepo.saveConfig(
-      AiConfig.inferenceProvider(
-        id: 'p1',
-        baseUrl: 'http://localhost:1234',
-        apiKey: 'k',
-        name: 'Gemini',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inferenceProviderType: InferenceProviderType.gemini,
-      ),
-      fromSync: true,
-    );
-    await aiRepo.saveConfig(
-      AiConfig.model(
-        id: 'm1',
-        name: 'gemini-2.5-flash',
-        providerModelId: 'gemini-2.5-flash',
-        inferenceProviderId: 'p1',
-        createdAt: DateTime(2024, 3, 15, 10, 30),
-        inputModalities: const [Modality.audio],
-        outputModalities: const [Modality.text],
-        isReasoningModel: false,
-      ),
-      fromSync: true,
-    );
-
-    final dir = await Directory.systemTemp.createTemp('svc_empty_');
-    final file = File('${dir.path}/e.m4a');
-    await file.writeAsBytes([13, 14, 15]);
-
+    final file = await audioFile();
     final mockCloud = MockCloudInferenceRepository();
-    when(
-      () => mockCloud.generateWithAudio(
-        any(),
-        model: any(named: 'model'),
-        audioBase64: any(named: 'audioBase64'),
-        baseUrl: any(named: 'baseUrl'),
-        apiKey: any(named: 'apiKey'),
-        provider: any(named: 'provider'),
-        maxCompletionTokens: any(named: 'maxCompletionTokens'),
-        overrideClient: any(named: 'overrideClient'),
-        tools: any(named: 'tools'),
-        speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-      ),
-    ).thenAnswer(
-      (_) => Stream<CreateChatCompletionStreamResponse>.fromIterable([
-        const CreateChatCompletionStreamResponse(
-          id: '1',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: ''),
-            ),
-          ],
-        ),
-        const CreateChatCompletionStreamResponse(
-          id: '2',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: 'content'),
-            ),
-          ],
-        ),
-        const CreateChatCompletionStreamResponse(
-          id: '3',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [
-            ChatCompletionStreamResponseChoice(
-              index: 0,
-              delta: ChatCompletionStreamResponseDelta(content: ''),
-            ),
-          ],
-        ),
-      ]),
-    );
+    _stubGenerateWithAudio(mockCloud, ['', 'content', '']);
 
-    final container = ProviderContainer(
-      overrides: [
-        aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-        cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-      ],
-    );
-    addTearDown(container.dispose);
-
-    final svc = container.read(audioTranscriptionServiceProvider);
+    final svc = buildService(repo: sharedRepo, cloud: mockCloud);
 
     final chunks = <String>[];
     await svc.transcribeStream(file.path).forEach(chunks.add);
 
     // Should only yield non-empty chunks
-    expect(chunks, hasLength(1));
-    expect(chunks[0], 'content');
-
-    await dir.delete(recursive: true);
+    expect(chunks, ['content']);
   });
 
   group('offline bias-capable model selection', () {
     test('prefers Mistral offline over MLX Qwen when both exist', () async {
-      final freshDb = AiConfigDb(inMemoryDatabase: true);
-      addTearDown(freshDb.close);
-      final aiRepo = AiConfigRepository(freshDb);
-
+      final aiRepo = isolatedRepo();
       await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
+        _provider(
           id: 'p-mistral-default-choice',
+          type: InferenceProviderType.mistral,
+          name: 'Mistral',
           baseUrl: 'https://api.mistral.ai/v1',
           apiKey: 'mistral-key',
-          name: 'Mistral',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inferenceProviderType: InferenceProviderType.mistral,
         ),
         fromSync: true,
       );
       await aiRepo.saveConfig(
-        AiConfig.model(
+        _audioModel(
           id: 'm-mistral-default-choice',
+          providerId: 'p-mistral-default-choice',
           name: 'Voxtral Mini Transcribe',
           providerModelId: 'voxtral-mini-latest',
-          inferenceProviderId: 'p-mistral-default-choice',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inputModalities: const [Modality.audio],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
         ),
         fromSync: true,
       );
       await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
+        _provider(
           id: 'p-mlx-default-choice',
+          type: InferenceProviderType.mlxAudio,
+          name: 'MLX Audio',
           baseUrl: '',
           apiKey: '',
-          name: 'MLX Audio',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inferenceProviderType: InferenceProviderType.mlxAudio,
         ),
         fromSync: true,
       );
       await aiRepo.saveConfig(
-        AiConfig.model(
+        _audioModel(
           id: 'm-mlx-default-choice',
+          providerId: 'p-mlx-default-choice',
           name: 'Qwen3 ASR',
           providerModelId: mlxAudioQwenAsrModelId,
-          inferenceProviderId: 'p-mlx-default-choice',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inputModalities: const [Modality.audio],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
         ),
         fromSync: true,
       );
 
-      final dir = await Directory.systemTemp.createTemp(
-        'svc_mistral_default_',
-      );
-      addTearDown(() => dir.delete(recursive: true));
-      final file = File('${dir.path}/mistral-default.m4a');
-      await file.writeAsBytes([1, 2, 3]);
+      final file = await audioFile();
       final mlxAudioChannel = _FakeMlxAudioChannel();
-
       final mockCloud = MockCloudInferenceRepository();
-      when(
-        () => mockCloud.generateWithAudio(
-          any(),
-          model: any(named: 'model'),
-          audioBase64: any(named: 'audioBase64'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          provider: any(named: 'provider'),
-          maxCompletionTokens: any(named: 'maxCompletionTokens'),
-          overrideClient: any(named: 'overrideClient'),
-          tools: any(named: 'tools'),
-          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-        ),
-      ).thenAnswer(
-        (_) => Stream.value(
-          const CreateChatCompletionStreamResponse(
-            id: '1',
-            object: 'chat.completion.chunk',
-            created: 0,
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'mistral default',
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
+      _stubGenerateWithAudio(mockCloud, ['mistral default']);
 
-      final container = ProviderContainer(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-          cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-          mlxAudioChannelProvider.overrideWithValue(mlxAudioChannel),
-        ],
+      final svc = buildService(
+        repo: aiRepo,
+        cloud: mockCloud,
+        mlxChannel: mlxAudioChannel,
       );
-      addTearDown(container.dispose);
-
-      final svc = container.read(audioTranscriptionServiceProvider);
       final result = await svc.transcribe(file.path);
 
       expect(result, 'mistral default');
       expect(mlxAudioChannel.transcribedFilePath, isNull);
-      final captured = verify(
-        () => mockCloud.generateWithAudio(
-          any(),
-          model: captureAny(named: 'model'),
-          audioBase64: any(named: 'audioBase64'),
-          baseUrl: any(named: 'baseUrl'),
-          apiKey: any(named: 'apiKey'),
-          provider: any(named: 'provider'),
-          maxCompletionTokens: any(named: 'maxCompletionTokens'),
-          overrideClient: any(named: 'overrideClient'),
-          tools: any(named: 'tools'),
-          speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-        ),
-      ).captured;
-      expect(captured.single, 'voxtral-mini-latest');
+      expect(_verifyGenerateWithAudio(mockCloud).model, 'voxtral-mini-latest');
     });
 
     test('prefers MLX Qwen and forwards speech dictionary terms', () async {
-      final freshDb = AiConfigDb(inMemoryDatabase: true);
-      addTearDown(freshDb.close);
-      final aiRepo = AiConfigRepository(freshDb);
-
+      final aiRepo = isolatedRepo();
       await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
+        _provider(
           id: 'p-gemini-qwen-choice',
           baseUrl: 'https://api.gemini.test',
-          apiKey: 'k',
-          name: 'Gemini',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inferenceProviderType: InferenceProviderType.gemini,
         ),
         fromSync: true,
       );
       await aiRepo.saveConfig(
-        AiConfig.model(
+        _audioModel(
           id: 'm-gemini-qwen-choice',
-          name: 'gemini-2.5-flash',
-          providerModelId: 'gemini-2.5-flash',
-          inferenceProviderId: 'p-gemini-qwen-choice',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inputModalities: const [Modality.audio],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
+          providerId: 'p-gemini-qwen-choice',
         ),
         fromSync: true,
       );
       await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
+        _provider(
           id: 'p-mlx-qwen-choice',
+          type: InferenceProviderType.mlxAudio,
+          name: 'MLX Audio',
           baseUrl: '',
           apiKey: '',
-          name: 'MLX Audio',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inferenceProviderType: InferenceProviderType.mlxAudio,
         ),
         fromSync: true,
       );
       await aiRepo.saveConfig(
-        AiConfig.model(
+        _audioModel(
           id: 'm-mlx-qwen-choice',
+          providerId: 'p-mlx-qwen-choice',
           name: 'Qwen3 ASR',
           providerModelId: mlxAudioQwenAsrModelId,
-          inferenceProviderId: 'p-mlx-qwen-choice',
-          createdAt: DateTime(2024, 3, 15, 10, 30),
-          inputModalities: const [Modality.audio],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
         ),
         fromSync: true,
       );
 
-      final dir = await Directory.systemTemp.createTemp('svc_qwen_bias_');
-      addTearDown(() => dir.delete(recursive: true));
-      final file = File('${dir.path}/qwen.m4a');
-      await file.writeAsBytes([1, 2, 3]);
+      final file = await audioFile();
       final mlxAudioChannel = _FakeMlxAudioChannel();
 
-      final container = ProviderContainer(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-          mlxAudioChannelProvider.overrideWithValue(mlxAudioChannel),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final svc = container.read(audioTranscriptionServiceProvider);
+      final svc = buildService(repo: aiRepo, mlxChannel: mlxAudioChannel);
       final result = await svc.transcribe(
         file.path,
         speechDictionaryTerms: const ['Claude Code', 'macOS'],
@@ -1253,50 +651,31 @@ void main() {
     test(
       'uses configured MLX Qwen 1.7B with speech dictionary terms',
       () async {
-        final freshDb = AiConfigDb(inMemoryDatabase: true);
-        addTearDown(freshDb.close);
-        final aiRepo = AiConfigRepository(freshDb);
-
+        final aiRepo = isolatedRepo();
         await aiRepo.saveConfig(
-          AiConfig.inferenceProvider(
+          _provider(
             id: 'p-mlx-qwen17-choice',
+            type: InferenceProviderType.mlxAudio,
+            name: 'MLX Audio',
             baseUrl: '',
             apiKey: '',
-            name: 'MLX Audio',
-            createdAt: DateTime(2024, 3, 15, 10, 30),
-            inferenceProviderType: InferenceProviderType.mlxAudio,
           ),
           fromSync: true,
         );
         await aiRepo.saveConfig(
-          AiConfig.model(
+          _audioModel(
             id: 'm-mlx-qwen17-choice',
+            providerId: 'p-mlx-qwen17-choice',
             name: 'Qwen3 ASR 1.7B',
             providerModelId: mlxAudioQwenAsr17B8BitModelId,
-            inferenceProviderId: 'p-mlx-qwen17-choice',
-            createdAt: DateTime(2024, 3, 15, 10, 30),
-            inputModalities: const [Modality.audio],
-            outputModalities: const [Modality.text],
-            isReasoningModel: false,
           ),
           fromSync: true,
         );
 
-        final dir = await Directory.systemTemp.createTemp('svc_qwen17_bias_');
-        addTearDown(() => dir.delete(recursive: true));
-        final file = File('${dir.path}/qwen17.m4a');
-        await file.writeAsBytes([1, 2, 3]);
+        final file = await audioFile();
         final mlxAudioChannel = _FakeMlxAudioChannel();
 
-        final container = ProviderContainer(
-          overrides: [
-            aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-            mlxAudioChannelProvider.overrideWithValue(mlxAudioChannel),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        final svc = container.read(audioTranscriptionServiceProvider);
+        final svc = buildService(repo: aiRepo, mlxChannel: mlxAudioChannel);
         final result = await svc.transcribe(
           file.path,
           speechDictionaryTerms: const ['Brunsberg', 'Seembinderstrasse'],
@@ -1318,127 +697,55 @@ void main() {
     test(
       'uses Mistral offline context bias when Qwen is unavailable',
       () async {
-        final freshDb = AiConfigDb(inMemoryDatabase: true);
-        addTearDown(freshDb.close);
-        final aiRepo = AiConfigRepository(freshDb);
-
+        final aiRepo = isolatedRepo();
         await aiRepo.saveConfig(
-          AiConfig.inferenceProvider(
+          _provider(
             id: 'p-gemini-mistral-choice',
             baseUrl: 'https://api.gemini.test',
-            apiKey: 'k',
-            name: 'Gemini',
-            createdAt: DateTime(2024, 3, 15, 10, 30),
-            inferenceProviderType: InferenceProviderType.gemini,
           ),
           fromSync: true,
         );
         await aiRepo.saveConfig(
-          AiConfig.model(
+          _audioModel(
             id: 'm-gemini-mistral-choice',
-            name: 'gemini-2.5-flash',
-            providerModelId: 'gemini-2.5-flash',
-            inferenceProviderId: 'p-gemini-mistral-choice',
-            createdAt: DateTime(2024, 3, 15, 10, 30),
-            inputModalities: const [Modality.audio],
-            outputModalities: const [Modality.text],
-            isReasoningModel: false,
+            providerId: 'p-gemini-mistral-choice',
           ),
           fromSync: true,
         );
         await aiRepo.saveConfig(
-          AiConfig.inferenceProvider(
+          _provider(
             id: 'p-mistral-offline-choice',
+            type: InferenceProviderType.mistral,
+            name: 'Mistral',
             baseUrl: 'https://api.mistral.ai/v1',
             apiKey: 'mistral-key',
-            name: 'Mistral',
-            createdAt: DateTime(2024, 3, 15, 10, 30),
-            inferenceProviderType: InferenceProviderType.mistral,
           ),
           fromSync: true,
         );
         await aiRepo.saveConfig(
-          AiConfig.model(
+          _audioModel(
             id: 'm-mistral-offline-choice',
+            providerId: 'p-mistral-offline-choice',
             name: 'Voxtral Mini Transcribe',
             providerModelId: 'voxtral-mini-latest',
-            inferenceProviderId: 'p-mistral-offline-choice',
-            createdAt: DateTime(2024, 3, 15, 10, 30),
-            inputModalities: const [Modality.audio],
-            outputModalities: const [Modality.text],
-            isReasoningModel: false,
           ),
           fromSync: true,
         );
 
-        final dir = await Directory.systemTemp.createTemp('svc_mistral_bias_');
-        addTearDown(() => dir.delete(recursive: true));
-        final file = File('${dir.path}/mistral.m4a');
-        await file.writeAsBytes([1, 2, 3]);
-
+        final file = await audioFile();
         final mockCloud = MockCloudInferenceRepository();
-        when(
-          () => mockCloud.generateWithAudio(
-            any(),
-            model: any(named: 'model'),
-            audioBase64: any(named: 'audioBase64'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
-            maxCompletionTokens: any(named: 'maxCompletionTokens'),
-            overrideClient: any(named: 'overrideClient'),
-            tools: any(named: 'tools'),
-            speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
-          ),
-        ).thenAnswer(
-          (_) => Stream.value(
-            const CreateChatCompletionStreamResponse(
-              id: '1',
-              object: 'chat.completion.chunk',
-              created: 0,
-              choices: [
-                ChatCompletionStreamResponseChoice(
-                  index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'mistral biased',
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
+        _stubGenerateWithAudio(mockCloud, ['mistral biased']);
 
-        final container = ProviderContainer(
-          overrides: [
-            aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-            cloudInferenceRepositoryProvider.overrideWith((_) => mockCloud),
-          ],
-        );
-        addTearDown(container.dispose);
-
-        final svc = container.read(audioTranscriptionServiceProvider);
+        final svc = buildService(repo: aiRepo, cloud: mockCloud);
         final result = await svc.transcribe(
           file.path,
           speechDictionaryTerms: const ['Claude Code', 'macOS'],
         );
 
         expect(result, 'mistral biased');
-        final captured = verify(
-          () => mockCloud.generateWithAudio(
-            any(),
-            model: captureAny(named: 'model'),
-            audioBase64: any(named: 'audioBase64'),
-            baseUrl: any(named: 'baseUrl'),
-            apiKey: any(named: 'apiKey'),
-            provider: any(named: 'provider'),
-            maxCompletionTokens: any(named: 'maxCompletionTokens'),
-            overrideClient: any(named: 'overrideClient'),
-            tools: any(named: 'tools'),
-            speechDictionaryTerms: captureAny(named: 'speechDictionaryTerms'),
-          ),
-        ).captured;
-        expect(captured[0], 'voxtral-mini-latest');
-        expect(captured[1], ['Claude Code', 'macOS']);
+        final args = _verifyGenerateWithAudio(mockCloud);
+        expect(args.model, 'voxtral-mini-latest');
+        expect(args.speechDictionaryTerms, ['Claude Code', 'macOS']);
       },
     );
   });

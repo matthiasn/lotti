@@ -307,10 +307,8 @@ void main() {
                   mockChecklistRepository,
                 ),
               ],
-              child: MaterialApp(
-                localizationsDelegates: AppLocalizations.localizationsDelegates,
-                supportedLocales: AppLocalizations.supportedLocales,
-                home: Builder(
+              child: makeTestableWidget2(
+                Builder(
                   builder: (ctx) => Scaffold(
                     body: ElevatedButton(
                       onPressed: () {
@@ -404,10 +402,8 @@ void main() {
                 ),
               ),
             ],
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Builder(
+            child: makeTestableWidget2(
+              Builder(
                 builder: (ctx) => Scaffold(
                   body: ElevatedButton(
                     onPressed: () {
@@ -787,10 +783,8 @@ void main() {
                 mockTrigger,
               ),
             ],
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Builder(
+            child: makeTestableWidget2(
+              Builder(
                 builder: (ctx) => Scaffold(
                   body: ElevatedButton(
                     onPressed: () {
@@ -980,10 +974,8 @@ void main() {
                 () => _FakeLinkedEntriesController([timerLink]),
               ),
             ],
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Builder(
+            child: makeTestableWidget2(
+              Builder(
                 builder: (ctx) {
                   capturedContainer = ProviderScope.containerOf(
                     ctx,
@@ -1111,10 +1103,8 @@ void main() {
                 () => _FakeLinkedEntriesController([timerLink]),
               ),
             ],
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Builder(
+            child: makeTestableWidget2(
+              Builder(
                 builder: (ctx) {
                   capturedContainer = ProviderScope.containerOf(
                     ctx,
@@ -2705,11 +2695,9 @@ void main() {
         const categoryId = 'category-id';
 
         await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
+          ProviderScope(
+            child: makeTestableWidget2(
+              const Scaffold(
                 body: ImportImageItem(
                   linkedId,
                   categoryId: categoryId,
@@ -2737,11 +2725,9 @@ void main() {
         const categoryId = 'category-id';
 
         await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
+          ProviderScope(
+            child: makeTestableWidget2(
+              const Scaffold(
                 body: CreateScreenshotItem(
                   linkedId,
                   categoryId: categoryId,
@@ -2771,11 +2757,9 @@ void main() {
         const categoryId = 'category-id';
 
         await tester.pumpWidget(
-          const ProviderScope(
-            child: MaterialApp(
-              localizationsDelegates: AppLocalizations.localizationsDelegates,
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
+          ProviderScope(
+            child: makeTestableWidget2(
+              const Scaffold(
                 body: PasteImageItem(
                   linkedId,
                   categoryId: categoryId,

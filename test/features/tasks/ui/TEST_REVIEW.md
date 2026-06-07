@@ -32,7 +32,8 @@
 
 - [ ] **[LOW]** `lib/features/tasks/ui/title_text_field.dart` (224 ln) is moderate but its tests are illegally split across three files: `title_text_field_test.dart`, `title_text_field_shortcuts_test.dart` (48 ln), and `title_text_field_tap_outside_test.dart` (42 ln). These should be consolidated into a single `title_text_field_test.dart` per AGENTS rule "One test file per source file." Lines: `test/features/tasks/ui/title_text_field_shortcuts_test.dart:1` and `test/features/tasks/ui/title_text_field_tap_outside_test.dart:1`.
 
-- [ ] **[LOW]** `test/features/tasks/ui/compact_task_progress_timer_text_test.dart` (81 ln) and `test/features/tasks/ui/linked_duration_timer_text_test.dart` (83 ln) are orphan test files with no matching impl files. Both test behaviour of `compact_task_progress.dart` / `linked_duration.dart` respectively and should be merged into the primary test file for each. Lines: `compact_task_progress_timer_text_test.dart:1`, `linked_duration_timer_text_test.dart:1`.
+- [x] **[LOW]** `test/features/tasks/ui/compact_task_progress_timer_text_test.dart` (81 ln) and `test/features/tasks/ui/linked_duration_timer_text_test.dart` (83 ln) are orphan test files with no matching impl files. Both test behaviour of `compact_task_progress.dart` / `linked_duration.dart` respectively and should be merged into the primary test file for each. Lines: `compact_task_progress_timer_text_test.dart:1`, `linked_duration_timer_text_test.dart:1`.
+  - **RESOLVED:** done — both orphan timer-text files merged into `compact_task_progress_test.dart` / `linked_duration_test.dart` (helper controller renamed where it collided) and deleted.
 
 ---
 

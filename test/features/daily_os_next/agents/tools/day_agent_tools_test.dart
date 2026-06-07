@@ -261,5 +261,95 @@ void main() {
         );
       }
     });
+    test(
+      'recordObservations pins the oneOf item shape and its enum contracts',
+      () {
+        final params = parametersFor(DayAgentToolNames.recordObservations);
+        expect(params['required'], ['observations']);
+
+        final items =
+            ((params['properties']! as Map<String, dynamic>)['observations']!
+                    as Map<String, dynamic>)['items']!
+                as Map<String, dynamic>;
+        final oneOf = items['oneOf']! as List<dynamic>;
+        expect(oneOf, hasLength(2));
+        expect((oneOf[0] as Map<String, dynamic>)['type'], 'string');
+
+        final objectShape = oneOf[1] as Map<String, dynamic>;
+        expect(objectShape['type'], 'object');
+        expect(objectShape['required'], ['text']);
+        expect(objectShape['additionalProperties'], isFalse);
+
+        final props = objectShape['properties']! as Map<String, dynamic>;
+        expect(
+          (props['priority']! as Map<String, dynamic>)['enum'],
+          ['routine', 'notable', 'critical'],
+        );
+        expect(
+          (props['category']! as Map<String, dynamic>)['enum'],
+          ['grievance', 'excellence', 'templateImprovement', 'operational'],
+        );
+      },
+    );
+
+    test('applyTriage pins the action enum and the conditional deferTo', () {
+      final params = parametersFor(DayAgentToolNames.applyTriage);
+      expect(params['required'], ['taskId', 'action']);
+
+      final props = params['properties']! as Map<String, dynamic>;
+      expect(
+        (props['action']! as Map<String, dynamic>)['enum'],
+        ['today', 'doNow', 'defer', 'done', 'drop'],
+      );
+      // deferTo exists as an optional field — required only by the defer
+      // action per the tool description, so it must NOT be in required.
+      expect(props.containsKey('deferTo'), isTrue);
+      expect(params['required'], isNot(contains('deferTo')));
+    });
+    test('nested item schemas keep their own strict contracts', () {
+      // setNextWake: both fields required.
+      expect(
+        requiredFor(DayAgentToolNames.setNextWake),
+        containsAll(['at', 'reason']),
+      );
+
+      // matchToCorpus: phrase required, categoryHint optional.
+      final matchParams = parametersFor(DayAgentToolNames.matchToCorpus);
+      expect(matchParams['required'], ['phrase']);
+      expect(
+        (matchParams['properties']! as Map<String, dynamic>).containsKey(
+          'categoryHint',
+        ),
+        isTrue,
+      );
+
+      // parseCaptureToItems: the nested item object is itself strict.
+      final parseParams = parametersFor(DayAgentToolNames.parseCaptureToItems);
+      final parseItem =
+          ((parseParams['properties']! as Map<String, dynamic>)['items']!
+                  as Map<String, dynamic>)['items']!
+              as Map<String, dynamic>;
+      expect(parseItem['additionalProperties'], isFalse);
+      expect(
+        parseItem['required'],
+        ['kind', 'title', 'categoryId', 'confidenceScore'],
+      );
+
+      // proposePlanDiff: the from/to sub-objects are strict too.
+      final diffParams = parametersFor(DayAgentToolNames.proposePlanDiff);
+      final changeProps =
+          (((diffParams['properties']! as Map<String, dynamic>)['changes']!
+                      as Map<String, dynamic>)['items']!
+                  as Map<String, dynamic>)['properties']!
+              as Map<String, dynamic>;
+      expect(
+        (changeProps['from']! as Map<String, dynamic>)['additionalProperties'],
+        isFalse,
+      );
+      expect(
+        (changeProps['to']! as Map<String, dynamic>)['additionalProperties'],
+        isFalse,
+      );
+    });
   });
 }

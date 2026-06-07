@@ -132,11 +132,25 @@ void main() {
       expect(find.byIcon(Icons.arrow_forward_rounded), findsOneWidget);
     });
 
-    testWidgets('empty list renders no card-shaped containers', (tester) async {
+    testWidgets('empty list renders no card content', (tester) async {
       await tester.pumpWidget(_wrap(const LearningCardsColumn(cards: [])));
 
-      // No overline/summary text → no cards rendered.
-      expect(find.byType(Container), findsNothing);
+      // Semantic emptiness: the column itself renders no text or icons —
+      // host scaffolding (which may legitimately use Container) is ignored.
+      expect(
+        find.descendant(
+          of: find.byType(LearningCardsColumn),
+          matching: find.byType(Text),
+        ),
+        findsNothing,
+      );
+      expect(
+        find.descendant(
+          of: find.byType(LearningCardsColumn),
+          matching: find.byType(Icon),
+        ),
+        findsNothing,
+      );
     });
 
     testWidgets('Accept / Decline buttons are tappable without throwing', (

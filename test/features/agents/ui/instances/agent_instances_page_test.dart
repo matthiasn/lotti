@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/ui/instances/agent_instances_page.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
+import 'package:lotti/features/agents/ui/listing/agent_list_data.dart';
+import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -232,6 +234,63 @@ void main() {
         await tester.tap(find.text('Evolution #7'));
         await tester.pumpAndSettle();
         expect(navigated, '/settings/agents/instances/evo-7');
+      },
+    );
+  });
+  group('AgentInstancesPage — lifecycle pill tones', () {
+    testWidgets(
+      'each lifecycle renders a status pill with its mapped tone',
+      (tester) async {
+        await pumpPage(
+          tester,
+          vms: [
+            _soulVm(
+              id: 'act',
+              name: 'ActiveRow',
+              updatedAt: DateTime(2026, 5, 4),
+            ),
+            _soulVm(
+              id: 'dor',
+              name: 'DormantRow',
+              updatedAt: DateTime(2026, 5, 3),
+              status: AgentLifecycle.dormant,
+            ),
+            _soulVm(
+              id: 'des',
+              name: 'DestroyedRow',
+              updatedAt: DateTime(2026, 5, 2),
+              status: AgentLifecycle.destroyed,
+            ),
+          ],
+        );
+
+        final ctx = tester.element(find.byType(AgentInstancesPage));
+        final messages = ctx.messages;
+
+        AgentListPill statusPill(String label) {
+          final row = tester
+              .widgetList<AgentListRow>(find.byType(AgentListRow))
+              .firstWhere((r) => r.data.title == label);
+          // Status is the second pill (after the type pill).
+          return row.data.pills[1];
+        }
+
+        // Distinct, mapped tones per lifecycle — a visual regression where
+        // dormant/destroyed render like active fails here.
+        expect(
+          statusPill('ActiveRow').tone,
+          AgentListPillTone.interactive,
+        );
+        expect(statusPill('DormantRow').tone, AgentListPillTone.muted);
+        expect(statusPill('DestroyedRow').tone, AgentListPillTone.error);
+        expect(
+          statusPill('DormantRow').label,
+          agentLifecycleLabel(messages, AgentLifecycle.dormant),
+        );
+        expect(
+          statusPill('DestroyedRow').label,
+          agentLifecycleLabel(messages, AgentLifecycle.destroyed),
+        );
       },
     );
   });

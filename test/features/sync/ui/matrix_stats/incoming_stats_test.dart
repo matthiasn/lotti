@@ -10,9 +10,8 @@ import 'package:lotti/features/sync/ui/matrix_stats/incoming_stats.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
-
-class _MockMatrixService extends Mock implements MatrixService {}
 
 class _FakeMatrixStatsController extends MatrixStatsController {
   _FakeMatrixStatsController(this.stats);
@@ -41,7 +40,7 @@ void main() {
     tester,
   ) async {
     final completer = Completer<MatrixStats>();
-    final mockSvc = _MockMatrixService();
+    final mockSvc = MockMatrixService();
     when(() => mockSvc.getSyncMetrics()).thenAnswer((_) async => null);
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -62,7 +61,7 @@ void main() {
   testWidgets('IncomingStats builds even when controller throws', (
     tester,
   ) async {
-    final mockSvc = _MockMatrixService();
+    final mockSvc = MockMatrixService();
     when(() => mockSvc.getSyncMetrics()).thenAnswer((_) async => null);
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -83,7 +82,7 @@ void main() {
   testWidgets('IncomingStats refresh triggers service when metrics empty', (
     tester,
   ) async {
-    final mockSvc = _MockMatrixService();
+    final mockSvc = MockMatrixService();
     when(() => mockSvc.sentCount).thenReturn(0);
     when(() => mockSvc.messageCounts).thenReturn(const {});
     when(() => mockSvc.getSyncMetrics()).thenAnswer((_) async => null);
@@ -102,17 +101,19 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     expect(find.textContaining('Sync Metrics'), findsOneWidget);
     await tester.tap(find.byKey(const Key('matrixStats.refresh.metrics')));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
     verify(() => mockSvc.getSyncMetrics()).called(greaterThan(0));
   });
 
   testWidgets(
     'IncomingStats copy diagnostics invokes service and shows snack',
     (tester) async {
-      final mockSvc = _MockMatrixService();
+      final mockSvc = MockMatrixService();
       when(() => mockSvc.sentCount).thenReturn(1);
       when(() => mockSvc.messageCounts).thenReturn(const {'m.text': 1});
       when(() => mockSvc.getSyncMetrics()).thenAnswer(
@@ -136,7 +137,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.byKey(const Key('matrixStats.copyDiagnostics')));
       await tester.pump();
       verify(() => mockSvc.getSyncDiagnosticsText()).called(greaterThan(0));

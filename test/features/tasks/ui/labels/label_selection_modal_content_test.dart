@@ -82,8 +82,9 @@ void main() {
     String? categoryId,
     List<LabelDefinition>? availableLabels,
     ValueNotifier<String>? searchQuery,
+    ValueNotifier<Future<bool> Function()?>? applyController,
   }) {
-    final applyController = ValueNotifier<Future<bool> Function()?>(null);
+    applyController ??= ValueNotifier<Future<bool> Function()?>(null);
     final query = searchQuery ?? ValueNotifier<String>('');
 
     return ProviderScope(
@@ -112,11 +113,19 @@ void main() {
     );
   }
 
+  /// Pumps the sliver host and settles the synchronous provider overrides
+  /// with two bounded pumps (stream value delivery + rebuild) instead of
+  /// pumpAndSettle.
+  Future<void> pumpSliver(WidgetTester tester, Widget widget) async {
+    await tester.pumpWidget(widget);
+    await tester.pump();
+    await tester.pump();
+  }
+
   group('LabelSelectionSliverContent', () {
     group('Label rendering', () {
       testWidgets('renders all available labels', (tester) async {
-        await tester.pumpWidget(buildWidget(initialLabelIds: const []));
-        await tester.pumpAndSettle();
+        await pumpSliver(tester, buildWidget(initialLabelIds: const []));
 
         expect(find.text('Urgent'), findsOneWidget);
         expect(find.text('Backend'), findsOneWidget);
@@ -127,10 +136,10 @@ void main() {
       testWidgets('shows checked state for initially selected labels', (
         tester,
       ) async {
-        await tester.pumpWidget(
+        await pumpSliver(
+          tester,
           buildWidget(initialLabelIds: const ['label-1']),
         );
-        await tester.pumpAndSettle();
 
         final checkbox = tester.widget<CheckboxListTile>(
           find.ancestor(
@@ -142,8 +151,7 @@ void main() {
       });
 
       testWidgets('toggles selection when checkbox is tapped', (tester) async {
-        await tester.pumpWidget(buildWidget(initialLabelIds: const []));
-        await tester.pumpAndSettle();
+        await pumpSliver(tester, buildWidget(initialLabelIds: const []));
 
         // Initially unchecked
         var checkbox = tester.widget<CheckboxListTile>(
@@ -182,16 +190,14 @@ void main() {
       testWidgets('shows label description as subtitle when present', (
         tester,
       ) async {
-        await tester.pumpWidget(buildWidget(initialLabelIds: const []));
-        await tester.pumpAndSettle();
+        await pumpSliver(tester, buildWidget(initialLabelIds: const []));
 
         expect(find.text('Requires immediate attention'), findsOneWidget);
         expect(find.text('Backend development task'), findsOneWidget);
       });
 
       testWidgets('shows colored circle avatar for each label', (tester) async {
-        await tester.pumpWidget(buildWidget(initialLabelIds: const []));
-        await tester.pumpAndSettle();
+        await pumpSliver(tester, buildWidget(initialLabelIds: const []));
 
         final circleAvatars = tester.widgetList<CircleAvatar>(
           find.byType(CircleAvatar),
@@ -203,13 +209,13 @@ void main() {
     group('Search functionality', () {
       testWidgets('filters labels by name', (tester) async {
         final searchQuery = ValueNotifier<String>('');
-        await tester.pumpWidget(
+        await pumpSliver(
+          tester,
           buildWidget(
             initialLabelIds: const [],
             searchQuery: searchQuery,
           ),
         );
-        await tester.pumpAndSettle();
 
         expect(find.text('Urgent'), findsOneWidget);
         expect(find.text('Backend'), findsOneWidget);
@@ -223,13 +229,13 @@ void main() {
 
       testWidgets('filters labels by description', (tester) async {
         final searchQuery = ValueNotifier<String>('');
-        await tester.pumpWidget(
+        await pumpSliver(
+          tester,
           buildWidget(
             initialLabelIds: const [],
             searchQuery: searchQuery,
           ),
         );
-        await tester.pumpAndSettle();
 
         searchQuery.value = 'immediate';
         await tester.pump();
@@ -240,13 +246,13 @@ void main() {
 
       testWidgets('search is case insensitive', (tester) async {
         final searchQuery = ValueNotifier<String>('');
-        await tester.pumpWidget(
+        await pumpSliver(
+          tester,
           buildWidget(
             initialLabelIds: const [],
             searchQuery: searchQuery,
           ),
         );
-        await tester.pumpAndSettle();
 
         searchQuery.value = 'URGENT';
         await tester.pump();
@@ -257,13 +263,13 @@ void main() {
 
     group('Empty states', () {
       testWidgets('shows empty state when no labels available', (tester) async {
-        await tester.pumpWidget(
+        await pumpSliver(
+          tester,
           buildWidget(
             initialLabelIds: const [],
             availableLabels: const [],
           ),
         );
-        await tester.pumpAndSettle();
 
         expect(find.text('No labels available yet.'), findsOneWidget);
         expect(find.byIcon(Icons.label_outline), findsOneWidget);
@@ -273,13 +279,13 @@ void main() {
         tester,
       ) async {
         final searchQuery = ValueNotifier<String>('');
-        await tester.pumpWidget(
+        await pumpSliver(
+          tester,
           buildWidget(
             initialLabelIds: const [],
             searchQuery: searchQuery,
           ),
         );
-        await tester.pumpAndSettle();
 
         searchQuery.value = 'nonexistent';
         await tester.pump();
@@ -292,13 +298,13 @@ void main() {
       testWidgets('opens label editor when create button is tapped', (
         tester,
       ) async {
-        await tester.pumpWidget(
+        await pumpSliver(
+          tester,
           buildWidget(
             initialLabelIds: const [],
             availableLabels: const [],
           ),
         );
-        await tester.pumpAndSettle();
 
         // Find the FilledButton.icon in the empty state by finding the add icon
         final createButton = find.byIcon(Icons.add);
@@ -314,13 +320,13 @@ void main() {
         tester,
       ) async {
         final searchQuery = ValueNotifier<String>('');
-        await tester.pumpWidget(
+        await pumpSliver(
+          tester,
           buildWidget(
             initialLabelIds: const [],
             searchQuery: searchQuery,
           ),
         );
-        await tester.pumpAndSettle();
 
         searchQuery.value = 'Urg';
         await tester.pump();
@@ -333,13 +339,13 @@ void main() {
         tester,
       ) async {
         final searchQuery = ValueNotifier<String>('');
-        await tester.pumpWidget(
+        await pumpSliver(
+          tester,
           buildWidget(
             initialLabelIds: const [],
             searchQuery: searchQuery,
           ),
         );
-        await tester.pumpAndSettle();
 
         searchQuery.value = 'Urgent';
         await tester.pump();
@@ -353,34 +359,13 @@ void main() {
       testWidgets('initializes applyController on init', (tester) async {
         final applyController = ValueNotifier<Future<bool> Function()?>(null);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              availableLabelsForCategoryProvider(null).overrideWith(
-                (ref) => testLabels,
-              ),
-              labelsRepositoryProvider.overrideWithValue(repository),
-              labelsStreamProvider.overrideWith(
-                (ref) => Stream.value(testLabels),
-              ),
-            ],
-            child: WidgetTestBench(
-              child: Material(
-                child: CustomScrollView(
-                  slivers: [
-                    LabelSelectionSliverContent(
-                      entryId: 'task-123',
-                      initialLabelIds: const [],
-                      applyController: applyController,
-                      searchQuery: ValueNotifier<String>(''),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+        await pumpSliver(
+          tester,
+          buildWidget(
+            initialLabelIds: const [],
+            applyController: applyController,
           ),
         );
-        await tester.pumpAndSettle();
 
         expect(applyController.value, isNotNull);
       });
@@ -397,34 +382,13 @@ void main() {
           ),
         ).thenAnswer((_) async => true);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              availableLabelsForCategoryProvider(null).overrideWith(
-                (ref) => testLabels,
-              ),
-              labelsRepositoryProvider.overrideWithValue(repository),
-              labelsStreamProvider.overrideWith(
-                (ref) => Stream.value(testLabels),
-              ),
-            ],
-            child: WidgetTestBench(
-              child: Material(
-                child: CustomScrollView(
-                  slivers: [
-                    LabelSelectionSliverContent(
-                      entryId: 'task-123',
-                      initialLabelIds: const ['label-1'],
-                      applyController: applyController,
-                      searchQuery: ValueNotifier<String>(''),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+        await pumpSliver(
+          tester,
+          buildWidget(
+            initialLabelIds: const ['label-1'],
+            applyController: applyController,
           ),
         );
-        await tester.pumpAndSettle();
 
         final result = await applyController.value!();
         expect(result, isTrue);
@@ -449,35 +413,39 @@ void main() {
           ),
         ).thenAnswer((_) async => false);
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              availableLabelsForCategoryProvider(null).overrideWith(
-                (ref) => testLabels,
-              ),
-              labelsRepositoryProvider.overrideWithValue(repository),
-              labelsStreamProvider.overrideWith(
-                (ref) => Stream.value(testLabels),
-              ),
-            ],
-            child: WidgetTestBench(
-              child: Material(
-                child: CustomScrollView(
-                  slivers: [
-                    LabelSelectionSliverContent(
-                      entryId: 'task-123',
-                      initialLabelIds: const [],
-                      applyController: applyController,
-                      searchQuery: ValueNotifier<String>(''),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+        await pumpSliver(
+          tester,
+          buildWidget(
+            initialLabelIds: const [],
+            applyController: applyController,
           ),
         );
-        await tester.pumpAndSettle();
 
+        final result = await applyController.value!();
+        expect(result, isFalse);
+      });
+
+      testWidgets('returns false when repository.setLabels throws', (
+        tester,
+      ) async {
+        final applyController = ValueNotifier<Future<bool> Function()?>(null);
+
+        when(
+          () => repository.setLabels(
+            journalEntityId: any(named: 'journalEntityId'),
+            labelIds: any(named: 'labelIds'),
+          ),
+        ).thenThrow(Exception('persistence exploded'));
+
+        await pumpSliver(
+          tester,
+          buildWidget(
+            initialLabelIds: const [],
+            applyController: applyController,
+          ),
+        );
+
+        // apply() catches and reports failure instead of propagating.
         final result = await applyController.value!();
         expect(result, isFalse);
       });
@@ -487,39 +455,14 @@ void main() {
       testWidgets('uses availableLabelsForCategoryProvider with category', (
         tester,
       ) async {
-        final categoryLabels = [testLabels.first];
-
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              availableLabelsForCategoryProvider('work').overrideWith(
-                (ref) => categoryLabels,
-              ),
-              labelsRepositoryProvider.overrideWithValue(repository),
-              labelsStreamProvider.overrideWith(
-                (ref) => Stream.value(testLabels),
-              ),
-            ],
-            child: WidgetTestBench(
-              child: Material(
-                child: CustomScrollView(
-                  slivers: [
-                    LabelSelectionSliverContent(
-                      entryId: 'task-123',
-                      initialLabelIds: const [],
-                      categoryId: 'work',
-                      applyController: ValueNotifier<Future<bool> Function()?>(
-                        null,
-                      ),
-                      searchQuery: ValueNotifier<String>(''),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+        await pumpSliver(
+          tester,
+          buildWidget(
+            initialLabelIds: const [],
+            categoryId: 'work',
+            availableLabels: [testLabels.first],
           ),
         );
-        await tester.pumpAndSettle();
 
         expect(find.text('Urgent'), findsOneWidget);
         expect(find.text('Backend'), findsNothing);

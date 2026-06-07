@@ -16,9 +16,5 @@ void main() {
         ],
       );
     });
-
-    test('has six values', () {
-      expect(SyncSequencePayloadType.values, hasLength(6));
-    });
   });
 }

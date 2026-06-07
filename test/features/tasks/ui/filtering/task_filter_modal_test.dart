@@ -33,6 +33,7 @@ void main() {
   late MockPagingController mockPagingController;
   late MockEntitiesCacheService mockEntitiesCacheService;
   late MockJournalDb mockJournalDb;
+  late MockDomainLogger mockDomainLogger;
 
   final testCategories = [
     CategoryDefinition(
@@ -118,6 +119,7 @@ void main() {
     when(
       () => mockSettingsDb.saveSettingsItem(any(), any()),
     ).thenAnswer((_) async => 1);
+    mockDomainLogger = MockDomainLogger();
     await setUpTestGetIt(
       additionalSetup: () {
         getIt
@@ -125,7 +127,11 @@ void main() {
           ..unregister<JournalDb>()
           ..registerSingleton<JournalDb>(mockJournalDb)
           ..unregister<SettingsDb>()
-          ..registerSingleton<SettingsDb>(mockSettingsDb);
+          ..registerSingleton<SettingsDb>(mockSettingsDb)
+          // Registered here (not inside individual tests) so registration
+          // and teardown stay symmetric across the whole file.
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockDomainLogger);
       },
     );
   });
@@ -335,6 +341,60 @@ void main() {
       expect(find.text('Personal'), findsOneWidget);
     });
 
+    testWidgets('opens label selection modal and applies the selection', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byKey(const ValueKey('open-filter-modal')));
+      await tester.pumpAndSettle();
+
+      // Tap the label field to open the multi-select modal.
+      final labelField = find.byKey(
+        const ValueKey('design-system-task-filter-field-label'),
+      );
+      await tester.ensureVisible(labelField);
+      await tester.pumpAndSettle();
+      await tester.tap(labelField);
+      await tester.pumpAndSettle();
+
+      // Toggle the cached label on inside the selection modal.
+      await tester.tap(
+        find.byKey(
+          const ValueKey('design-system-filter-selection-option-label-1'),
+        ),
+      );
+      await tester.pump();
+
+      // Apply the field selection.
+      await tester.tap(
+        find.byKey(
+          const ValueKey('design-system-filter-selection-apply'),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The draft now shows the selected label as a removable chip.
+      expect(
+        find.byKey(
+          const ValueKey('design-system-task-filter-remove-label-label-1'),
+        ),
+        findsOneWidget,
+      );
+
+      // Apply the whole sheet: the batch update must carry the label id
+      // through to the controller.
+      await tester.tap(find.text('Apply'));
+      await tester.pumpAndSettle();
+
+      expect(fakeController.applyBatchFilterUpdateCalled, 1);
+      expect(
+        fakeController.setSelectedLabelIdsCalls.single,
+        contains('label-1'),
+      );
+    });
+
     testWidgets('applies filter with selected sort and priority changes', (
       tester,
     ) async {
@@ -484,11 +544,6 @@ void main() {
     testWidgets(
       'save error logs via DomainLogger and keeps modal open',
       (tester) async {
-        final mockDomainLogger = MockDomainLogger();
-        getIt
-          ..unregister<DomainLogger>()
-          ..registerSingleton<DomainLogger>(mockDomainLogger);
-
         await tester.pumpWidget(
           buildWithSaveEnabled(
             hasUnsavedClauses: true,

@@ -42,9 +42,43 @@ void main() {
 
     test('findBuiltInSkill returns the matching skill', () {
       for (final s in builtInSkills) {
-        final found = findBuiltInSkill(s.id);
-        expect(found, isNotNull);
-        expect(found!.id, s.id);
+        // same() checks non-null and identity in one assertion.
+        expect(findBuiltInSkill(s.id), same(s));
+      }
+    });
+
+    test('the registry contains exactly the expected skills', () {
+      // One row per built-in skill: a silent deletion or a type/modality
+      // drift fails here by id.
+      const registry = <String, (SkillType, List<Modality>)>{
+        skillTranscribeId: (SkillType.transcription, [Modality.audio]),
+        skillTranscribeContextId: (
+          SkillType.transcription,
+          [Modality.audio],
+        ),
+        skillImageAnalysisId: (SkillType.imageAnalysis, [Modality.image]),
+        skillImageAnalysisContextId: (
+          SkillType.imageAnalysis,
+          [Modality.image],
+        ),
+        skillImageGenId: (SkillType.imageGeneration, [Modality.text]),
+        skillPromptGenId: (SkillType.promptGeneration, [Modality.text]),
+        skillImagePromptGenId: (
+          SkillType.imagePromptGeneration,
+          [Modality.text],
+        ),
+        skillDesignPromptId: (SkillType.promptGeneration, [Modality.text]),
+        skillResearchPromptId: (SkillType.promptGeneration, [Modality.text]),
+      };
+
+      expect(
+        builtInSkills.map((s) => s.id).toSet(),
+        registry.keys.toSet(),
+      );
+      for (final skill in builtInSkills) {
+        final (type, modalities) = registry[skill.id]!;
+        expect(skill.skillType, type, reason: skill.id);
+        expect(skill.requiredInputModalities, modalities, reason: skill.id);
       }
     });
 
@@ -71,6 +105,11 @@ void main() {
         expect(skill.useReasoning, isTrue);
       });
 
+      // The substring checks below are intentional content contracts: these
+      // two skills ship curated prompt text, and the pinned phrases are the
+      // load-bearing parts of that contract (scope, output structure,
+      // clarifying-question behavior). Rewording them is a product decision
+      // that SHOULD touch these tests.
       test('instructions reference the default 5-prototype scope', () {
         expect(skill.systemInstructions, contains('5 functional prototypes'));
         expect(skill.systemInstructions, contains('Override only if'));

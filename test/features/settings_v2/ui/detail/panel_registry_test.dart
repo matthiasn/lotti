@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
@@ -34,13 +33,13 @@ import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
+import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/nav_service.dart';
 
-import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   group('kSettingsPanels — registered ids', () {
@@ -295,6 +294,11 @@ void main() {
         expect(build('agents-templates'), isA<DetailIdDispatch>());
         expect(build('agents-souls'), isA<DetailIdDispatch>());
         expect(build('agents-instances'), isA<DetailIdDispatch>());
+
+        // The remaining two registered builders: the node-profile page and
+        // the sync consumer wrapper.
+        expect(build('sync-node-profile'), isA<SyncNodeProfilePage>());
+        expect(build('sync'), isA<Consumer>());
       },
     );
   });
@@ -540,21 +544,16 @@ void main() {
     // is the only place every closure body is on the line-coverage
     // hook for the registry's list-detail panels.
 
-    setUp(() {
+    setUp(() async {
       // EditDashboardPage / CreateDashboardPage read these singletons
       // during their constructor, so the closures can't even build a
-      // widget without them registered.
-      if (!getIt.isRegistered<JournalDb>()) {
-        getIt.registerSingleton<JournalDb>(MockJournalDb());
-      }
-      if (!getIt.isRegistered<UpdateNotifications>()) {
-        getIt.registerSingleton<UpdateNotifications>(MockUpdateNotifications());
-      }
+      // widget without them registered. setUpTestGetIt owns the reset and
+      // base registrations (incl. JournalDb/UpdateNotifications mocks), so
+      // no conditional reuse of leftover singletons is possible.
+      await setUpTestGetIt();
     });
 
-    tearDown(() async {
-      await getIt.reset();
-    });
+    tearDown(tearDownTestGetIt);
 
     Future<({DetailIdDispatch dispatch, BuildContext context})> dispatchFor(
       String panelId,
@@ -1101,6 +1100,42 @@ void main() {
   /// the actual `AiPanelDispatch` so the ValueListenableBuilder + the
   /// AnimatedSwitcher (layoutBuilder + transitionBuilder) execute.
   group('AiPanelDispatch widget body', () {
+    testWidgets(
+      'AnimatedSwitcher layoutBuilder stacks children with StackFit.expand',
+      (tester) async {
+        final notifier = ValueNotifier<DesktopSettingsRoute?>(null);
+        addTearDown(notifier.dispose);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            child: MaterialApp(
+              theme: ThemeData(
+                useMaterial3: true,
+                extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
+              ),
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: AiPanelDispatch(listenable: notifier),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // A StackFit.loose regression silently collapses Scaffold-based
+        // children, so the layout policy itself is pinned here.
+        final switcher = tester.widget<AnimatedSwitcher>(
+          find.byType(AnimatedSwitcher).first,
+        );
+        final layout = switcher.layoutBuilder(
+          const SizedBox(key: ValueKey('current')),
+          const <Widget>[SizedBox(key: ValueKey('previous'))],
+        );
+        expect(layout, isA<Stack>());
+        expect((layout as Stack).fit, StackFit.expand);
+      },
+    );
+
     testWidgets(
       'mounts the resolver-selected child for the seeded route — the '
       'list arm renders when no detail id is bound',

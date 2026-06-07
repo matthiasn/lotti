@@ -1,11 +1,33 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/ui/model/task_browse_models.dart';
 
 import '../../../../helpers/entity_factories.dart';
+
+/// Task fixture with a due date — the repeated build/copyWith chain the
+/// browse tests share.
+JournalEntity _taskWithDue({
+  required String id,
+  required String title,
+  required DateTime dateFrom,
+  required DateTime due,
+}) {
+  return TestTaskFactory.create(
+    id: id,
+    title: title,
+    dateFrom: dateFrom,
+  ).copyWith(
+    data: TestTaskDataFactory.create(
+      title: title,
+      dateFrom: dateFrom,
+      dateTo: dateFrom.add(const Duration(hours: 1)),
+    ).copyWith(due: due),
+  );
+}
 
 void main() {
   group('buildTaskBrowseEntries', () {
@@ -14,38 +36,23 @@ void main() {
       () {
         final now = DateTime(2026, 4, 8, 9);
         final items = <JournalEntity>[
-          TestTaskFactory.create(
+          _taskWithDue(
             id: 'today-1',
             title: 'Today 1',
             dateFrom: DateTime(2026, 4, 8, 9),
-          ).copyWith(
-            data: TestTaskDataFactory.create(
-              title: 'Today 1',
-              dateFrom: DateTime(2026, 4, 8, 9),
-              dateTo: DateTime(2026, 4, 8, 10),
-            ).copyWith(due: DateTime(2026, 4, 8, 18)),
+            due: DateTime(2026, 4, 8, 18),
           ),
-          TestTaskFactory.create(
+          _taskWithDue(
             id: 'today-2',
             title: 'Today 2',
             dateFrom: DateTime(2026, 4, 8, 11),
-          ).copyWith(
-            data: TestTaskDataFactory.create(
-              title: 'Today 2',
-              dateFrom: DateTime(2026, 4, 8, 11),
-              dateTo: DateTime(2026, 4, 8, 12),
-            ).copyWith(due: DateTime(2026, 4, 8, 20)),
+            due: DateTime(2026, 4, 8, 20),
           ),
-          TestTaskFactory.create(
+          _taskWithDue(
             id: 'tomorrow-1',
             title: 'Tomorrow 1',
             dateFrom: DateTime(2026, 4, 7, 11),
-          ).copyWith(
-            data: TestTaskDataFactory.create(
-              title: 'Tomorrow 1',
-              dateFrom: DateTime(2026, 4, 7, 11),
-              dateTo: DateTime(2026, 4, 7, 12),
-            ).copyWith(due: DateTime(2026, 4, 9, 9)),
+            due: DateTime(2026, 4, 9, 9),
           ),
         ];
 
@@ -201,5 +208,74 @@ void main() {
       expect(entries, hasLength(1));
       expect(entries[0].sectionKey.kind, TaskBrowseSectionKind.dueYesterday);
     });
+    test(
+      'due dates beyond the yesterday/tomorrow window fall into per-day '
+      'dueDate sections (the overdue/later catch-all)',
+      () {
+        final now = DateTime(2026, 4, 8, 9);
+        final entries = buildTaskBrowseEntries(
+          items: [
+            _taskWithDue(
+              id: 'overdue-3d',
+              title: 'Overdue 3d',
+              dateFrom: DateTime(2026, 4, 1, 9),
+              due: DateTime(2026, 4, 5, 18),
+            ),
+            _taskWithDue(
+              id: 'later-5d',
+              title: 'Later 5d',
+              dateFrom: DateTime(2026, 4, 1, 9),
+              due: DateTime(2026, 4, 13, 18),
+            ),
+          ],
+          sortOption: TaskSortOption.byDueDate,
+          now: now,
+          hasNextPage: false,
+        );
+
+        // Both rows land in generic per-day dueDate sections — not the
+        // today/tomorrow/yesterday specials.
+        final keys = entries.map((e) => e.sectionKey.stableKey).toList();
+        expect(keys, hasLength(2));
+        expect(keys, everyElement(startsWith('due:2026-')));
+        expect(keys.toSet(), hasLength(2));
+      },
+    );
+
+    glados.Glados(
+      glados.IntAnys(glados.any).intInRange(-10, 10),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'every due offset maps to exactly one section with the right kind',
+      (offset) {
+        final now = DateTime(2026, 4, 8, 9);
+        final due = DateTime(2026, 4, 8 + offset, 15);
+        final entries = buildTaskBrowseEntries(
+          items: [
+            _taskWithDue(
+              id: 'gen-$offset',
+              title: 'Gen $offset',
+              dateFrom: DateTime(2026, 4, 1, 9),
+              due: due,
+            ),
+          ],
+          sortOption: TaskSortOption.byDueDate,
+          now: now,
+          hasNextPage: false,
+        );
+
+        // Partition property: one input task → exactly one entry.
+        expect(entries, hasLength(1), reason: 'offset=$offset');
+        final kind = entries.single.sectionKey.kind;
+        final expected = switch (offset) {
+          0 => TaskBrowseSectionKind.dueToday,
+          1 => TaskBrowseSectionKind.dueTomorrow,
+          -1 => TaskBrowseSectionKind.dueYesterday,
+          _ => TaskBrowseSectionKind.dueDate,
+        };
+        expect(kind, expected, reason: 'offset=$offset');
+      },
+      tags: 'glados',
+    );
   });
 }

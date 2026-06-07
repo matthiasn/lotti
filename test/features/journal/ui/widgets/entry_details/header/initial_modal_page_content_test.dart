@@ -14,6 +14,7 @@ import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_details/header/initial_modal_page_content.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -25,6 +26,10 @@ import '../../../../../../mocks/mocks.dart';
 import '../../../../../../test_data/test_data.dart';
 import '../../../../../../widget_test_utils.dart';
 
+// File-local on purpose: riverpod controller doubles override `build` with
+// test-specific state and cannot be expressed as centralized mocktail mocks
+// (the provider instantiates the notifier itself, and mocked notifiers are
+// rejected by riverpod's lifecycle assertions).
 class _TestEntryController extends EntryController {
   _TestEntryController(this._entry);
 
@@ -100,13 +105,18 @@ void main() {
     linkService = MockLinkService();
     pageIndexNotifier = ValueNotifier<int>(0);
 
-    await getIt.reset();
-    getIt
-      ..registerSingleton<EntitiesCacheService>(cacheService)
-      ..registerSingleton<EditorStateService>(editorStateService)
-      ..registerSingleton<JournalDb>(journalDb)
-      ..registerSingleton<UpdateNotifications>(updateNotifications)
-      ..registerSingleton<LinkService>(linkService);
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<EntitiesCacheService>(cacheService)
+          ..registerSingleton<EditorStateService>(editorStateService)
+          ..unregister<JournalDb>()
+          ..registerSingleton<JournalDb>(journalDb)
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(updateNotifications)
+          ..registerSingleton<LinkService>(linkService);
+      },
+    );
 
     when(() => cacheService.showPrivateEntries).thenReturn(true);
     when(() => cacheService.getLabelById(any())).thenReturn(null);
@@ -114,7 +124,7 @@ void main() {
 
   tearDown(() async {
     pageIndexNotifier.dispose();
-    await getIt.reset();
+    await tearDownTestGetIt();
   });
 
   ProviderScope buildWrapper(JournalEntity? entry) {
@@ -212,6 +222,60 @@ void main() {
 
       expect(find.text('Link from'), findsOneWidget);
       expect(find.text('Link to'), findsOneWidget);
+    });
+
+    testWidgets(
+      'a non-null link surfaces the toggle-hidden item; null hides it',
+      (tester) async {
+        final entry = textEntry();
+        final link = EntryLink.basic(
+          id: 'link-1',
+          fromId: 'parent-1',
+          toId: entry.id,
+          createdAt: DateTime(2023),
+          updatedAt: DateTime(2023),
+          vectorClock: null,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              entryControllerProvider(id: entry.id).overrideWith(
+                () => _TestEntryController(entry),
+              ),
+              labelsStreamProvider.overrideWith(
+                (ref) => Stream<List<LabelDefinition>>.value([]),
+              ),
+            ],
+            child: makeTestableWidgetWithScaffold(
+              InitialModalPageContent(
+                entryId: entry.id,
+                linkedFromId: null,
+                inLinkedEntries: false,
+                link: link,
+                pageIndexNotifier: pageIndexNotifier,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final context = tester.element(find.byType(InitialModalPageContent));
+        // A visible (non-hidden) link offers the hide action.
+        expect(
+          find.text(context.messages.journalHideLinkHint),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets('no toggle-hidden item without a link', (tester) async {
+      await tester.pumpWidget(buildWrapper(textEntry()));
+      await tester.pump();
+
+      final context = tester.element(find.byType(InitialModalPageContent));
+      expect(find.text(context.messages.journalHideLinkHint), findsNothing);
+      expect(find.text(context.messages.journalShowLinkHint), findsNothing);
     });
   });
 

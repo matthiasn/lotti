@@ -289,16 +289,15 @@ void main() {
 
       await tester.pump(const Duration(milliseconds: 300));
 
-      // Find the Row widget inside CreateMenuListItem
-      final rowFinder = find.descendant(
-        of: find.byType(CreateMenuListItem),
-        matching: find.byType(Row),
-      );
-      expect(rowFinder, findsOneWidget);
+      // Behavioral layout contract instead of a child count: the leading
+      // icon sits left of the title, the trailing plus sits right of it,
+      // and all three are visible.
+      final iconCenter = tester.getCenter(find.byIcon(Icons.notes_rounded));
+      final titleCenter = tester.getCenter(find.text('Text Entry'));
+      final plusCenter = tester.getCenter(find.byIcon(Icons.add));
 
-      final row = tester.widget<Row>(rowFinder);
-      // Should have: Icon, SizedBox (spacer), Expanded (title), Icon (plus)
-      expect(row.children.length, 4);
+      expect(iconCenter.dx, lessThan(titleCenter.dx));
+      expect(titleCenter.dx, lessThan(plusCenter.dx));
     });
 
     testWidgets('title uses Expanded widget to fill available space', (

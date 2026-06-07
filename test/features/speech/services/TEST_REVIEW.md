@@ -16,18 +16,21 @@
 
 ## File size / split opportunities
 
-- [ ] **[MED]** `test/…/services/audio_waveform_service_test.dart:1` — 1572 lines. Natural split seams:
+- [x] **[MED]** `test/…/services/audio_waveform_service_test.dart:1` — 1572 lines. Natural split seams:
   - `audio_waveform_cache_test.dart`: groups "cache invalidation" (lines 351–545), "cache read failures" (927–1047), "cache write failures" (1081–1182), "cache pruning" (1320–1523), "path sanitization" (1184–1318) — ~1000 lines total.
   - `audio_waveform_extraction_test.dart`: groups "normalization edge cases" (547–776), "extraction failures" (778–925), "default waveform extractor path" (1526–1571), and the top-level extraction tests (220–349) — ~600 lines.
   - Both would share the `createAudio` / `cacheFileFor` / `buildPayload` / `writeCache` / `populateCacheEntries` helpers, which should be lifted into a `_TestBench` class or a `audio_waveform_test_utils.dart` companion file.
+  **RESOLVED:** assessed, no change — a test-only split would violate the one-test-file-per-source rule (the impl is a single 500-line service the review itself rates as fine), and the shared helpers are closure-bound to the per-test temp dir, so a companion file would need a bench-object rewrite for marginal gain. The size is carried by legitimately branch-heavy real-I/O coverage.
 
 - [ ] **[LOW]** `lib/…/services/audio_waveform_service.dart` — 497 lines is within guidelines; no split needed.
 
 ## Test quality improvements
 
-- [ ] **[MED]** `test/…/services/audio_waveform_service_test.dart:206–218` — `populateCacheEntries` helper creates JSON files with content `'{}'`, which is not valid cache payload. Tests that rely on the count of surviving files after pruning (line 1357–1365) work fine, but any test that tries to parse the entries would fail. Add a comment or assert that these files are intentionally invalid stubs so future maintainers don't try to reuse them for read-path tests.
+- [x] **[MED]** `test/…/services/audio_waveform_service_test.dart:206–218` — `populateCacheEntries` helper creates JSON files with content `'{}'`, which is not valid cache payload. Tests that rely on the count of surviving files after pruning (line 1357–1365) work fine, but any test that tries to parse the entries would fail. Add a comment or assert that these files are intentionally invalid stubs so future maintainers don't try to reuse them for read-path tests.
+  **RESOLVED:** done — `populateCacheEntries` now documents that its `'{}'` files are intentionally INVALID stubs for pruning/count tests only, pointing read-path tests at `writeCache`/`buildPayload` instead.
 
-- [ ] **[MED]** `test/…/services/audio_waveform_service_test.dart:1258–1277` — `handles very long audio ids` test has a conditional `if (cacheFile.existsSync())` that branches between two different assertions. A test should not have branching logic — it will silently pass in either branch. The behavior under the OS 255-char filename limit should be deterministic; explicitly test the truncation or skip the test on platforms where it applies.
+- [x] **[MED]** `test/…/services/audio_waveform_service_test.dart:1258–1277` — `handles very long audio ids` test has a conditional `if (cacheFile.existsSync())` that branches between two different assertions. A test should not have branching logic — it will silently pass in either branch. The behavior under the OS 255-char filename limit should be deterministic; explicitly test the truncation or skip the test on platforms where it applies.
+  **RESOLVED:** done — the branch is gone: on this platform the ~300-char sanitized name deterministically exceeds the 255-byte filename limit, so the test now asserts the cache file does NOT exist and the `cache_write` error is logged exactly once.
 
 - [ ] **[LOW]** `test/…/services/audio_waveform_service_test.dart:158–186` — `buildPayload` helper is a 28-line method with many optional parameters, all providing defaults. This is fine, but `sampleCount` has a confusing semantics: it defaults to `bucketCount` but the actual field in cache is `sampleCount`. A short comment clarifying the field-name mapping would prevent future breakage.
 
@@ -35,21 +38,25 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[MED]** `AudioWaveformService._normalizeWaveform` (private, but exercised via `loadWaveform`) contains a reduction + RMS + blend formula. The properties:
+- [x] **[MED]** `AudioWaveformService._normalizeWaveform` (private, but exercised via `loadWaveform`) contains a reduction + RMS + blend formula. The properties:
   - `result.amplitudes.every((v) => v >= 0.0 && v <= 1.0)` for any valid `Waveform`.
   - `result.amplitudes.length == min(waveform.length, targetBuckets)` (when length > 0).
   - `result with targetBuckets >= waveform.length` → amplitudes == normalized pixel values (no downsampling).
   A Glados test could generate `(waveformLength: 1..200, targetBuckets: 1..300, flags: 0|1)` and verify the clamp invariant. This is pure math with no I/O.
+  **RESOLVED:** done — `_normalizeWaveform` got a `@visibleForTesting debugNormalizeWaveform` seam; a Glados property (numRuns 150) over generated 16-bit waveforms × bucket targets asserts every amplitude ∈ [0, 1], `length == min(pixelCount, targetBuckets)`, and the no-downsampling identity when buckets ≥ pixels.
 
 - [ ] **[LOW]** `formatAudioDuration` in `lib/…/ui/widgets/progress/audio_progress_bar.dart` — a pure formatter. A Glados property `parse(format(Duration(seconds: n))) == clamp(n, 0, 359999)` would complement the existing hand-rolled fixtures. (Cross-reference with UI review.)
 
-No Glados tests exist in the services subdir currently.
+Glados coverage now exists in `audio_waveform_service_test.dart` for the waveform
+normalization invariants (clamp + length + no-downsampling) via `debugNormalizeWaveform`.
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[MED]** `test/…/services/audio_waveform_service_test.dart:220–238` — Test "extracts waveform for long audio (no gating)" verifies only `isNotNull` and a `verifyNever`. No amplitude values are asserted. After extraction, assert `result.amplitudes.isNotEmpty` and `result.audioDuration > Duration.zero` for a 5-minute audio to confirm the core path returns sensible data.
+- [x] **[MED]** `test/…/services/audio_waveform_service_test.dart:220–238` — Test "extracts waveform for long audio (no gating)" verifies only `isNotNull` and a `verifyNever`. No amplitude values are asserted. After extraction, assert `result.amplitudes.isNotEmpty` and `result.audioDuration > Duration.zero` for a 5-minute audio to confirm the core path returns sensible data.
+  **RESOLVED:** done — the long-audio test now asserts `amplitudes` is non-empty with every value in [0, 1] and `audioDuration > Duration.zero`, instead of `isNotNull` + verifyNever alone.
 
-- [ ] **[MED]** `test/…/services/speech_dictionary_service_test.dart` — The service's handling of a `linkedId` that resolves to a non-`Task` entity type (e.g., a `JournalAudio`) is not tested. The `getForEntry` method likely returns an empty/null dictionary in that case; verify the contract.
+- [x] **[MED]** `test/…/services/speech_dictionary_service_test.dart` — The service's handling of a `linkedId` that resolves to a non-`Task` entity type (e.g., a `JournalAudio`) is not tested. The `getForEntry` method likely returns an empty/null dictionary in that case; verify the contract.
+  **RESOLVED:** stale — the non-Task contract is fully covered: text entry → `noCategory`, audio with no linked task → `noCategory`, and linked task without category → `noCategory` (method is `addTermForEntry`).
 
 - [ ] **[LOW]** `test/…/services/audio_waveform_service_test.dart` — The `_defaultWaveformExtractor` path test (lines 1535–1570) confirms logging happens when the platform channel fails, but does not assert the returned `result` state (currently `isNull` is implicitly confirmed by the surrounding code but not by an explicit `expect(result, isNull)`). Add the assertion for completeness.
 
@@ -57,7 +64,8 @@ No Glados tests exist in the services subdir currently.
 
 - [x] **[HIGH]** `test/…/services/audio_waveform_service_test.dart:1321–1374` — `prunes oldest files when exceeding 1000 entries`: calls `populateCacheEntries(1009)`, which creates 1009 files in the temp directory. On constrained CI runners this is the single most expensive test in the services suite. Consider: (a) using 110 entries instead (10 % of the limit still exercises pruning) or (b) parameterizing `_maxCacheEntries` via the constructor so tests can use a small limit (e.g. 10) and `populateCacheEntries(11)`. **RESOLVED:** option (b) implemented — `AudioWaveformService` gained an injectable `maxCacheEntries` constructor parameter (default unchanged at 1000), and the pruning test now uses a limit of 10 with 19 seeded files (same path: 10 oldest pruned, threshold log asserted) instead of 1009 file creations.
 
-- [ ] **[MED]** `test/…/services/audio_waveform_service_test.dart:1424–1460` and 1462–1523 — Two tests that use `chmod 000` / `chmod -w` system calls (via `Process.run`). These involve real OS calls and file system I/O, which is appropriate for testing permission-error branches. However, they both include inner `try/finally` blocks with a second `Process.run` for cleanup. Since these use real time, keep them but add a note that they are intentionally real-I/O tests and should not be moved to `fakeAsync`.
+- [x] **[MED]** `test/…/services/audio_waveform_service_test.dart:1424–1460` and 1462–1523 — Two tests that use `chmod 000` / `chmod -w` system calls (via `Process.run`). These involve real OS calls and file system I/O, which is appropriate for testing permission-error branches. However, they both include inner `try/finally` blocks with a second `Process.run` for cleanup. Since these use real time, keep them but add a note that they are intentionally real-I/O tests and should not be moved to `fakeAsync`.
+  **RESOLVED:** done — every chmod-based test now carries the note that it is intentionally real-I/O (Process.run mutates actual permissions, unmodellable in fakeAsync) and must not be migrated.
 
 - [ ] **[LOW]** `test/…/services/audio_waveform_service_test.dart:72–94` — `setUp` creates a `_FakeWaveformExtractor` with a default `Waveform` and then most tests immediately replace `extractor.waveform`. The double allocation is negligible but the pattern could be simplified by having the extractor accept a factory lambda rather than a concrete value.
 
@@ -65,8 +73,8 @@ No Glados tests exist in the services subdir currently.
 
 ## Summary
 
-- `audio_waveform_service_test.dart` at 1572 lines should be split into extraction-focused and cache-focused files sharing a `_TestBench` helper; primary split seam is cache vs. extraction.
-- The "prune 1000 entries" test creates 1009 real files and is the main speed bottleneck — parameterize `_maxCacheEntries` to reduce this to ~10.
-- One conditional-branching test (`handles very long audio ids`) needs to be made deterministic.
-- A Glados test on the waveform normalization formula (clamp + amplitude invariant) would add meaningful property coverage.
+- `audio_waveform_service_test.dart` remains large but intentionally branch-heavy; the test-only split was assessed and deferred by design (one-test-file-per-source rule; helpers are closure-bound to the per-test temp dir).
+- The pruning-path speed bottleneck is RESOLVED via an injectable `maxCacheEntries` constructor parameter and smaller seeded-file counts (limit 10, 19 seeded files) instead of 1009 file creations.
+- The `handles very long audio ids` test is now deterministic — the conditional assertion branch is gone.
+- Glados property coverage for the waveform normalization invariants is implemented via `debugNormalizeWaveform`.
 - No fake-time policy violations — the services are I/O-bound and use real files appropriately.

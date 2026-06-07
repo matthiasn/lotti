@@ -91,6 +91,8 @@ void main() {
     AgentListAxisMatcher matcher = _alwaysMatch,
     bool settle = true,
   }) async {
+    // setSurfaceSize asserts `inTest`, so it must run per test — a
+    // setUpAll hoist is not possible with the test binding.
     await tester.binding.setSurfaceSize(const Size(1200, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
     await tester.pumpWidget(
@@ -118,6 +120,46 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
     }
   }
+
+  group('AgentListingShell — filter axes', () {
+    AgentListFilterAxis statusAxis() => const AgentListFilterAxis(
+      id: 'status',
+      sectionLabel: 'Status',
+      options: [
+        AgentListFilterOption(id: 'active', label: 'Active', count: 1),
+        AgentListFilterOption(id: 'dormant', label: 'Dormant', count: 0),
+      ],
+    );
+
+    testWidgets('a configured axis surfaces the Filters button', (
+      tester,
+    ) async {
+      await pumpShell(
+        tester,
+        rowsAsync: AsyncData([_row(id: 'a', title: 'Alpha')]),
+        filterAxes: [statusAxis()],
+      );
+
+      final context = tester.element(find.byType(AgentListingShell));
+      expect(
+        find.text(context.messages.agentInstancesToolbarFilters),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('no axes — no Filters button', (tester) async {
+      await pumpShell(
+        tester,
+        rowsAsync: AsyncData([_row(id: 'a', title: 'Alpha')]),
+      );
+
+      final context = tester.element(find.byType(AgentListingShell));
+      expect(
+        find.text(context.messages.agentInstancesToolbarFilters),
+        findsNothing,
+      );
+    });
+  });
 
   group('AgentListingShell — async branches', () {
     testWidgets('loading shows a spinner', (tester) async {

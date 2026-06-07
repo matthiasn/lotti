@@ -22,8 +22,10 @@
 
 ## Test quality improvements
 
-- [ ] **[MED]** `chat_ui_models.dart` line 100: `toDomain()` calls `DateTime.now()` when `messages` is empty. The test at line 184–192 ("handles empty messages list") checks `isNotNull` only — this is a weak assertion. Per the "every test must assert something meaningful" rule, `findsOneWidget` / `isNotNull`-only assertions have zero value. The test should instead verify that `createdAt` and `lastMessageAt` are _close_ to `DateTime.now()` (within a tolerance), or better, refactor `toDomain()` to accept an injectable clock so the date can be fixed in tests.
-- [ ] **[MED]** `chat_ui_models_test.dart` lines 256–300 ("canSendMessage returns correct boolean"): this test has five sequential `expect` calls covering `!isLoading`, `!isStreaming`, no-model, both-flags combinations. It reads like a parameterised test written as a single body. Per AGENTS.md: "If you need to test the same widget with different flag combinations, use a loop or parameterized helper, not N nearly-identical test bodies." A `for` loop over a list of `(isLoading, isStreaming, selectedModelId, expected)` tuples would reduce duplication and make it trivially extensible.
+- [x] **[MED]** `chat_ui_models.dart` line 100: `toDomain()` calls `DateTime.now()` when `messages` is empty. The test at line 184–192 ("handles empty messages list") checks `isNotNull` only — this is a weak assertion. Per the "every test must assert something meaningful" rule, `findsOneWidget` / `isNotNull`-only assertions have zero value. The test should instead verify that `createdAt` and `lastMessageAt` are _close_ to `DateTime.now()` (within a tolerance), or better, refactor `toDomain()` to accept an injectable clock so the date can be fixed in tests.
+  - **RESOLVED:** done — root-cause fix: `toDomain()` reads `clock.now()` for empty sessions and the test pins both timestamps exactly under `withClock(Clock.fixed(...))`.
+- [x] **[MED]** `chat_ui_models_test.dart` lines 256–300 ("canSendMessage returns correct boolean"): this test has five sequential `expect` calls covering `!isLoading`, `!isStreaming`, no-model, both-flags combinations. It reads like a parameterised test written as a single body. Per AGENTS.md: "If you need to test the same widget with different flag combinations, use a loop or parameterized helper, not N nearly-identical test bodies." A `for` loop over a list of `(isLoading, isStreaming, selectedModelId, expected)` tuples would reduce duplication and make it trivially extensible.
+  - **RESOLVED:** done — the five sequential expects became a `(hasModel, isLoading, isStreaming) → canSend` table loop with per-case reasons.
 - [ ] **[LOW]** `chat_ui_models_test.dart` line 164: `toDomain` test at line 165 asserts `domainSession.metadata, equals({})`. This relies on the `selectedModelId == null` path of `toDomain`. The Glados test does cover `toDomain` more broadly, but the static test is fragile: if any extra key is added to `updatedMetadata` in production, this assertion breaks. Consider using `containsKey` / `doesNotContain` or matching only `selectedModelId`.
 - [ ] **[LOW]** `_GeneratedChatSessionUiModel` and `_GeneratedChatStateUiModel` Glados value classes define `toString()` correctly — good. No issues.
 
@@ -31,7 +33,8 @@
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[MED]** `copyWith` for both `ChatSessionUiModel` and `ChatStateUiModel` is not covered by Glados. The `Object()` sentinel pattern for nullable fields (`selectedModelId`, `error`, `streamingMessageId`) is a non-trivial null-pass-through mechanism. A Glados property — for any model, `copyWith()` with no arguments returns a model equal to the original in all fields — would verify the sentinel logic. The existing static tests cover only specific fields.
+- [x] **[MED]** `copyWith` for both `ChatSessionUiModel` and `ChatStateUiModel` is not covered by Glados. The `Object()` sentinel pattern for nullable fields (`selectedModelId`, `error`, `streamingMessageId`) is a non-trivial null-pass-through mechanism. A Glados property — for any model, `copyWith()` with no arguments returns a model equal to the original in all fields — would verify the sentinel logic. The existing static tests cover only specific fields.
+  - **RESOLVED:** done — added a no-argument `copyWith` preservation test sweeping all 8 set/unset combinations of the three sentinel-guarded nullable fields plus every non-nullable field.
 - [ ] **[LOW]** `ChatStateUiModel.isAnySessionLoading` is covered by Glados (`generatedChatStateUiModel`), which includes it in the aggregate model test. No gap.
 - [ ] **[LOW]** `displayTitle` fallback (`title.isEmpty ? 'New Chat' : title`) — a two-value Glados property (empty string → 'New Chat', non-empty string → identity) would make this invariant explicit. Currently only two static tests cover it.
 
@@ -40,8 +43,10 @@
 ## Coverage / missing-behavior gaps
 
 - [x] **[HIGH]** `toDomain()` when `messages` is non-empty: the test at line 143–165 checks `createdAt == messages.first.timestamp` and `lastMessageAt == messages.last.timestamp`, but only with two messages where first ≠ last. A single-message case (where first == last) is not tested. **RESOLVED:** new test 'a single message anchors both createdAt and lastMessageAt' covers the first == last case.
-- [ ] **[MED]** `ChatSessionUiModel.fromDomain` with `metadata` containing a non-String `selectedModelId` (e.g., `{'selectedModelId': 42}`): the type-guard at line 44 (`is String ? ... : null`) should return null. No test covers this coercion/fallback path.
-- [ ] **[MED]** `ChatStateUiModel.copyWith` with `error: null` explicitly passed: because `error` uses the `Object()` sentinel, passing `null` explicitly should clear the error. The static test at line 395–403 only tests updating `recentSessions` and adding an error, not clearing it. The `clearError()` test covers clearing via the method, but not via `copyWith(error: null)`.
+- [x] **[MED]** `ChatSessionUiModel.fromDomain` with `metadata` containing a non-String `selectedModelId` (e.g., `{'selectedModelId': 42}`): the type-guard at line 44 (`is String ? ... : null`) should return null. No test covers this coercion/fallback path.
+  - **RESOLVED:** done — added `'fromDomain ignores a non-String selectedModelId in metadata'`: the int 42 coerces to null through the type guard instead of crashing.
+- [x] **[MED]** `ChatStateUiModel.copyWith` with `error: null` explicitly passed: because `error` uses the `Object()` sentinel, passing `null` explicitly should clear the error. The static test at line 395–403 only tests updating `recentSessions` and adding an error, not clearing it. The `clearError()` test covers clearing via the method, but not via `copyWith(error: null)`.
+  - **RESOLVED:** done — added `'ChatStateUiModel.copyWith(error: null) clears the error'`: explicit null beats the sentinel and the other fields survive.
 - [ ] **[LOW]** `ChatSessionUiModel.streamingMessage` when multiple messages are streaming simultaneously: `firstOrNull` returns only the first. The behaviour for multi-streaming is implicitly defined but never tested.
 
 ---

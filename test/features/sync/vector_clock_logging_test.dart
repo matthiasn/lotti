@@ -2,14 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/sync/vector_clock_logging.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:mocktail/mocktail.dart';
+
 import '../../mocks/mocks.dart';
 
 void main() {
-  // DomainLogger disables logging in test environments, so we use the real
-  // instance and verify the function completes without errors. The function's
-  // purpose is purely side-effectful (logging), so exercising its code paths
-  // is the main value.
-  late DomainLogger loggingService;
+  late MockDomainLogger loggingService;
 
   setUp(() {
     loggingService = MockDomainLogger();
@@ -22,12 +20,25 @@ void main() {
   });
 
   group('logVectorClockAssignment', () {
-    test('logs action with minimal parameters without error', () {
+    test('logs action with minimal parameters', () {
       logVectorClockAssignment(
         loggingService,
         subDomain: 'test',
         action: 'ASSIGN',
       );
+
+      // The contract: exactly one structured log line on the sync domain,
+      // carrying the action plus the always-present clock fields.
+      final message =
+          verify(
+                () => loggingService.log(
+                  LogDomain.sync,
+                  captureAny(),
+                  subDomain: 'test',
+                ),
+              ).captured.single
+              as String;
+      expect(message, 'ASSIGN previous=null assigned=null');
     });
 
     test('logs action with all parameters without error', () {
@@ -46,6 +57,23 @@ void main() {
         ],
         extras: {'extra_key': 'extra_value'},
       );
+
+      final message =
+          verify(
+                () => loggingService.log(
+                  LogDomain.sync,
+                  captureAny(),
+                  subDomain: 'apply',
+                ),
+              ).captured.single
+              as String;
+      expect(message, contains('ASSIGN'));
+      expect(message, contains('type=JournalEntry'));
+      expect(message, contains('entryId=entry-123'));
+      expect(message, contains('previous={node1: 1}'));
+      expect(message, contains('assigned={node1: 2}'));
+      expect(message, contains('covered=[{node1: 1}]'));
+      expect(message, contains('extra_key=extra_value'));
     });
 
     test('handles null extras without error', () {

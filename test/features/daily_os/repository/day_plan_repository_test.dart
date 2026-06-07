@@ -2,6 +2,7 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
@@ -271,6 +272,99 @@ void main() {
         expect(result.meta.updatedAt, updatedMeta.updatedAt);
       },
     );
+
+    test('propagates a createDbEntity throw on the new-plan branch', () async {
+      final plan = makePlan(DateTime(2024, 3, 18));
+
+      when(
+        () => journalDb.getDayPlanById(plan.meta.id),
+      ).thenAnswer((_) async => null);
+      when(
+        () => persistenceLogic.createDbEntity(plan),
+      ).thenThrow(StateError('create failed'));
+
+      await expectLater(() => repository.save(plan), throwsStateError);
+    });
+
+    test('propagates an updateDbEntity throw on the update branch', () async {
+      final original = makePlan(DateTime(2024, 3, 19));
+      final updatedMeta = original.meta.copyWith(
+        updatedAt: DateTime(2024, 3, 19, 12),
+      );
+
+      when(
+        () => journalDb.getDayPlanById(original.meta.id),
+      ).thenAnswer((_) async => original);
+      when(
+        () => persistenceLogic.updateMetadata(original.meta),
+      ).thenAnswer((_) async => updatedMeta);
+      when(
+        () => persistenceLogic.updateDbEntity(any()),
+      ).thenThrow(StateError('update failed'));
+
+      await expectLater(() => repository.save(original), throwsStateError);
+    });
+  });
+
+  group('getDayPlan batching properties', () {
+    glados.Glados(
+      glados.IntAnys(glados.any).intInRange(1, 16),
+      glados.ExploreConfig(numRuns: 80),
+    ).test(
+      'any same-sweep request set coalesces into one batched fetch that '
+      'covers every id and routes each date to its own plan',
+      (count) async {
+        // Fresh doubles per generated case — the repository keeps batch
+        // state between calls.
+        final db = MockJournalDb();
+        final repo = DayPlanRepositoryImpl(
+          journalDb: db,
+          persistenceLogic: MockPersistenceLogic(),
+          updateNotifications: MockUpdateNotifications(),
+        );
+
+        final dates = [
+          for (var i = 0; i < count; i++) DateTime(2026, 4, 1 + i),
+        ];
+        // Every other date has a stored plan; the rest resolve to null.
+        final plans = {
+          for (var i = 0; i < count; i += 2)
+            dayPlanId(dates[i]): makePlan(dates[i]),
+        };
+
+        final captured = <Set<String>>[];
+        when(() => db.getDayPlansByIds(any())).thenAnswer((invocation) async {
+          final ids = invocation.positionalArguments.single as Set<String>;
+          captured.add(Set.of(ids));
+          return [
+            for (final id in ids)
+              if (plans[id] != null) plans[id]!,
+          ];
+        });
+
+        // Same synchronous sweep: fire every request before awaiting.
+        final futures = [for (final date in dates) repo.getDayPlan(date)];
+        final results = await Future.wait(futures);
+
+        // (a) exactly one batched DB call...
+        expect(captured, hasLength(1), reason: 'count=$count');
+        // (b) ...covering every requested id...
+        expect(
+          captured.single,
+          {for (final date in dates) dayPlanId(date)},
+          reason: 'count=$count',
+        );
+        // (c) ...and each date resolves to its own plan (or null).
+        for (var i = 0; i < count; i++) {
+          expect(
+            results[i],
+            plans[dayPlanId(dates[i])],
+            reason: 'count=$count i=$i',
+          );
+        }
+      },
+      tags: 'glados',
+    );
   });
 
   group('getDayPlansInRange', () {
@@ -340,8 +434,9 @@ void main() {
         final emitted = <Set<String>>[];
         final sub = repository.updateStream.listen(emitted.add);
         controller.add(ids);
-        // Drain microtasks and event-loop turns so the stream listener fires.
-        await Future<void>.delayed(Duration.zero);
+        // Drain the pending event-queue turns deterministically — no
+        // real-time yield involved.
+        await pumpEventQueue();
 
         expect(emitted, [ids]);
         await sub.cancel();

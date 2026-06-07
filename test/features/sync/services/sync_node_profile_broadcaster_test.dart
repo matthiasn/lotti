@@ -131,6 +131,25 @@ void main() {
     expect(captured, hasLength(1));
   });
 
+  test(
+    'enqueueMessage throw propagates after the self profile was persisted',
+    () async {
+      when(
+        () => outboxService.enqueueMessage(any()),
+      ).thenThrow(StateError('outbox unavailable'));
+
+      // The broadcaster does not swallow outbox failures — the caller owns
+      // retry policy. The local self profile is already persisted by then,
+      // so the next broadcastIfChanged sees unchanged content.
+      await expectLater(
+        broadcaster.broadcastIfChanged,
+        throwsStateError,
+      );
+      final self = await repo.getSelf();
+      expect(self?.hostId, 'self-h');
+    },
+  );
+
   test('second invocation with identical probe output is a no-op', () async {
     await broadcaster.broadcastIfChanged();
     reset(outboxService);

@@ -8,7 +8,6 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/create_measurement_dialog.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -22,6 +21,63 @@ void main() {
   var mockJournalDb = MockJournalDb();
   var mockPersistenceLogic = MockPersistenceLogic();
   final mockEntitiesCacheService = MockEntitiesCacheService();
+
+  /// Two measurements sharing [value] on the test day — the fixture the
+  /// suggestion chips aggregate over.
+  List<MeasurementEntry> buildMockMeasurements({required num value}) {
+    MeasurementEntry entry(String id, DateTime at) => MeasurementEntry(
+      meta: Metadata(
+        id: id,
+        createdAt: at,
+        dateFrom: at,
+        dateTo: at,
+        updatedAt: at,
+        starred: false,
+        private: false,
+      ),
+      data: MeasurementData(
+        value: value,
+        dataTypeId: measurableWater.id,
+        dateTo: at,
+        dateFrom: at,
+      ),
+    );
+    return [
+      entry('test-1', DateTime(2024, 3, 15, 10, 30)),
+      entry('test-2', DateTime(2024, 3, 15, 14, 45)),
+    ];
+  }
+
+  /// Pumps the dialog inside the shared Beamer + scaffold harness.
+  Future<void> pumpMeasurementDialog(
+    WidgetTester tester, {
+    required String measurableId,
+  }) async {
+    final delegate = BeamerDelegate(
+      locationBuilder: RoutesLocationBuilder(
+        routes: {
+          '/': (context, state, data) => Container(),
+        },
+      ).call,
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetWithScaffold(
+        BeamerProvider(
+          routerDelegate: delegate,
+          child: Material(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(
+                maxHeight: 800,
+                maxWidth: 800,
+              ),
+              child: MeasurementDialog(measurableId: measurableId),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   group('MeasurementDialog Widget Tests - ', () {
     setUpAll(() {
@@ -79,32 +135,7 @@ void main() {
 
         when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
-        final delegate = BeamerDelegate(
-          locationBuilder: RoutesLocationBuilder(
-            routes: {
-              '/': (context, state, data) => Container(),
-            },
-          ).call,
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            BeamerProvider(
-              routerDelegate: delegate,
-              child: Material(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxHeight: 800,
-                    maxWidth: 800,
-                  ),
-                  child: MeasurementDialog(
-                    measurableId: measurableWater.id,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
+        await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
 
         await tester.pump();
 
@@ -185,19 +216,7 @@ void main() {
 
       when(mockCreateMeasurementEntry).thenAnswer((_) async => null);
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 800,
-              maxWidth: 800,
-            ),
-            child: MeasurementDialog(
-              measurableId: measurableWater.id,
-            ),
-          ),
-        ),
-      );
+      await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
 
       await tester.pump();
 
@@ -223,19 +242,7 @@ void main() {
     testWidgets('dialog uses Column layout instead of AlertDialog', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 800,
-              maxWidth: 800,
-            ),
-            child: MeasurementDialog(
-              measurableId: measurableWater.id,
-            ),
-          ),
-        ),
-      );
+      await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
 
       await tester.pump();
 
@@ -249,19 +256,7 @@ void main() {
     });
 
     testWidgets('value field has autofocus enabled', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 800,
-              maxWidth: 800,
-            ),
-            child: MeasurementDialog(
-              measurableId: measurableWater.id,
-            ),
-          ),
-        ),
-      );
+      await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
 
       await tester.pump();
 
@@ -286,19 +281,7 @@ void main() {
     testWidgets('displays unit badge when unitName is not empty', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 800,
-              maxWidth: 800,
-            ),
-            child: MeasurementDialog(
-              measurableId: measurableWater.id,
-            ),
-          ),
-        ),
-      );
+      await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
 
       await tester.pump();
 
@@ -312,19 +295,7 @@ void main() {
     testWidgets('description is not displayed in dialog body', (tester) async {
       // Description is now shown in the modal title (provided by the caller),
       // not in the dialog body itself
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 800,
-              maxWidth: 800,
-            ),
-            child: MeasurementDialog(
-              measurableId: measurableWater.id,
-            ),
-          ),
-        ),
-      );
+      await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
 
       await tester.pump();
 
@@ -338,19 +309,7 @@ void main() {
     });
 
     testWidgets('comment field renders correctly', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 800,
-              maxWidth: 800,
-            ),
-            child: MeasurementDialog(
-              measurableId: measurableWater.id,
-            ),
-          ),
-        ),
-      );
+      await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
 
       await tester.pump();
 
@@ -371,19 +330,7 @@ void main() {
     testWidgets('shows suggestions initially when form is not dirty', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 800,
-              maxWidth: 800,
-            ),
-            child: MeasurementDialog(
-              measurableId: measurableWater.id,
-            ),
-          ),
-        ),
-      );
+      await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
 
       await tester.pump();
 
@@ -398,54 +345,9 @@ void main() {
     testWidgets(
       'tapping suggestion chip saves measurement without validation error',
       (tester) async {
-        // Register UpdateNotifications mock needed by the suggestions provider
-        final mockUpdateNotifications = MockUpdateNotifications();
-        when(
-          () => mockUpdateNotifications.updateStream,
-        ).thenAnswer((_) => const Stream.empty());
-        getIt
-          ..unregister<UpdateNotifications>()
-          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
-
-        // Create mock measurements with popular values
-        final testDate1 = DateTime(2024, 3, 15, 10, 30);
-        final testDate2 = DateTime(2024, 3, 15, 14, 45);
-        final mockMeasurements = [
-          MeasurementEntry(
-            meta: Metadata(
-              id: 'test-1',
-              createdAt: testDate1,
-              dateFrom: testDate1,
-              dateTo: testDate1,
-              updatedAt: testDate1,
-              starred: false,
-              private: false,
-            ),
-            data: MeasurementData(
-              value: 500,
-              dataTypeId: measurableWater.id,
-              dateTo: testDate1,
-              dateFrom: testDate1,
-            ),
-          ),
-          MeasurementEntry(
-            meta: Metadata(
-              id: 'test-2',
-              createdAt: testDate2,
-              dateFrom: testDate2,
-              dateTo: testDate2,
-              updatedAt: testDate2,
-              starred: false,
-              private: false,
-            ),
-            data: MeasurementData(
-              value: 500,
-              dataTypeId: measurableWater.id,
-              dateTo: testDate2,
-              dateFrom: testDate2,
-            ),
-          ),
-        ];
+        // setUpTestGetIt already registers a MockUpdateNotifications with
+        // empty streams — the suggestions provider needs nothing more.
+        final mockMeasurements = buildMockMeasurements(value: 500);
 
         // Override the mock to return measurements for suggestions
         when(
@@ -470,32 +372,7 @@ void main() {
           return null;
         });
 
-        final delegate = BeamerDelegate(
-          locationBuilder: RoutesLocationBuilder(
-            routes: {
-              '/': (context, state, data) => Container(),
-            },
-          ).call,
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            BeamerProvider(
-              routerDelegate: delegate,
-              child: Material(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(
-                    maxHeight: 800,
-                    maxWidth: 800,
-                  ),
-                  child: MeasurementDialog(
-                    measurableId: measurableWater.id,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        );
+        await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
 
         // Wait for async providers to load
         await tester.pump();
@@ -555,19 +432,7 @@ void main() {
     testWidgets('shows validation error for invalid numeric input like 1..2', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 800,
-              maxWidth: 800,
-            ),
-            child: MeasurementDialog(
-              measurableId: measurableWater.id,
-            ),
-          ),
-        ),
-      );
+      await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
 
       await tester.pump();
 
@@ -587,19 +452,7 @@ void main() {
     });
 
     testWidgets('date time field can be interacted with', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          ConstrainedBox(
-            constraints: const BoxConstraints(
-              maxHeight: 800,
-              maxWidth: 800,
-            ),
-            child: MeasurementDialog(
-              measurableId: measurableWater.id,
-            ),
-          ),
-        ),
-      );
+      await pumpMeasurementDialog(tester, measurableId: measurableWater.id);
 
       await tester.pump();
 

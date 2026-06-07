@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/inference_error.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -79,14 +80,37 @@ void main() {
           makeTestableWidget(
             Builder(
               builder: (context) {
-                // Test all error types
+                // Pin each switch arm to its exact localized message —
+                // a miswired arm cannot hide behind an isNotEmpty check.
+                final expected = <InferenceErrorType, String>{
+                  InferenceErrorType.networkConnection:
+                      context.messages.aiInferenceErrorConnectionFailedTitle,
+                  InferenceErrorType.timeout:
+                      context.messages.aiInferenceErrorTimeoutTitle,
+                  InferenceErrorType.authentication:
+                      context.messages.aiInferenceErrorAuthenticationTitle,
+                  InferenceErrorType.rateLimit:
+                      context.messages.aiInferenceErrorRateLimitTitle,
+                  InferenceErrorType.invalidRequest:
+                      context.messages.aiInferenceErrorInvalidRequestTitle,
+                  InferenceErrorType.serverError:
+                      context.messages.aiInferenceErrorServerTitle,
+                  InferenceErrorType.unknown:
+                      context.messages.aiInferenceErrorUnknownTitle,
+                };
+                expect(expected.keys, InferenceErrorType.values);
                 for (final errorType in InferenceErrorType.values) {
-                  final title = errorType.getTitle(context);
-                  expect(title, isNotEmpty);
-
-                  // Just verify it returns a non-empty string
-                  // The actual content depends on localization
+                  expect(
+                    errorType.getTitle(context),
+                    expected[errorType],
+                    reason: '$errorType',
+                  );
                 }
+                // All titles are distinct — no two arms share a message.
+                expect(
+                  expected.values.toSet(),
+                  hasLength(InferenceErrorType.values.length),
+                );
                 return const SizedBox();
               },
             ),

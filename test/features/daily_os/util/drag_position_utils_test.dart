@@ -100,32 +100,22 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Constants', () {
-    test('kHourHeight has expected value', () {
-      expect(kHourHeight, equals(40.0));
-    });
-
-    test('kResizeHandleHeightDesktop has expected value', () {
-      expect(kResizeHandleHeightDesktop, equals(12.0));
-    });
-
-    test('kResizeHandleHeightTouch has expected value', () {
-      expect(kResizeHandleHeightTouch, equals(20.0));
-    });
-
-    test('kMinimumBlockMinutes has expected value', () {
-      expect(kMinimumBlockMinutes, equals(15));
-    });
-
-    test('kMinimumBlockHeightForResize has expected value', () {
-      expect(kMinimumBlockHeightForResize, equals(48.0));
-    });
-
-    test('kSnapToMinutes has expected value', () {
-      expect(kSnapToMinutes, equals(5));
-    });
-
-    test('kMaxMinutesInDay has expected value', () {
-      expect(kMaxMinutesInDay, equals(24 * 60));
+    test('drag/resize constants keep their documented values', () {
+      // Table-driven pin of the geometry contract: a deliberate change to
+      // any of these must touch this single test.
+      final documented = <String, (num, num)>{
+        'kHourHeight': (kHourHeight, 40.0),
+        'kResizeHandleHeightDesktop': (kResizeHandleHeightDesktop, 12.0),
+        'kResizeHandleHeightTouch': (kResizeHandleHeightTouch, 20.0),
+        'kMinimumBlockMinutes': (kMinimumBlockMinutes, 15),
+        'kMinimumBlockHeightForResize': (kMinimumBlockHeightForResize, 48.0),
+        'kSnapToMinutes': (kSnapToMinutes, 5),
+        'kMaxMinutesInDay': (kMaxMinutesInDay, 24 * 60),
+      };
+      for (final MapEntry(key: name, value: (actual, expected))
+          in documented.entries) {
+        expect(actual, expected, reason: name);
+      }
     });
   });
 
