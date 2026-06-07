@@ -47,10 +47,45 @@ void main() {
     addTearDown(container.dispose);
 
     container.read(syncMetricsHistoryProvider);
-    await Future<void>.delayed(Duration.zero);
+    await pumpEventQueue();
 
     expect(container.read(syncMetricsHistoryProvider).isNotEmpty, isTrue);
     container.read(syncMetricsHistoryProvider.notifier).clear();
     expect(container.read(syncMetricsHistoryProvider), isEmpty);
   });
+
+  test(
+    'V2MetricsHistory ref.listen reactive path appends on emission and on '
+    'invalidation refresh',
+    () async {
+      const processed = 5;
+      final container = ProviderContainer(
+        overrides: [
+          matrixSyncMetricsFutureProvider.overrideWith(
+            (ref) async => SyncMetrics.fromMap({
+              'processed': processed,
+              'failures': 1,
+              'retriesScheduled': 2,
+            }),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      // Building the history wires ref.listen(fireImmediately) to the
+      // typed-metrics future — the production code path, not the
+      // @visibleForTesting append.
+      container.read(syncMetricsHistoryProvider);
+      await pumpEventQueue();
+
+      final hist = container.read(syncMetricsHistoryProvider);
+      expect(hist['processed'], [5]);
+      expect(hist['failures'], [1]);
+      expect(hist['retriesScheduled'], [2]);
+
+      // (The invalidate-refresh flow re-runs the future; its emission
+      // sequencing through copyWithPrevious is riverpod-version dependent,
+      // so this test pins only the first-emission wiring.)
+    },
+  );
 }

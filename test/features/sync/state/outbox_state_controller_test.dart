@@ -416,7 +416,7 @@ void main() {
       signaler
         ..pulseTx()
         ..pulseTx();
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(received, hasLength(2));
       sub.close();
@@ -435,7 +435,7 @@ void main() {
       );
 
       signaler.pulseRx();
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       expect(received, hasLength(1));
       sub.close();
@@ -532,7 +532,11 @@ void main() {
         await Future<void>.value();
         await queue.pruneStrandedEntries(roomB);
 
-        await matched.timeout(const Duration(seconds: 2));
+        await matched.timeout(
+          // In-memory SQLite resolves in <5 ms; 200 ms is hang-failure
+          // headroom, not a wait — it costs nothing on the happy path.
+          const Duration(milliseconds: 200),
+        );
       },
     );
 
@@ -582,7 +586,11 @@ void main() {
         // `stats()` await.
         unawaited(queue.pruneStrandedEntries(roomB));
 
-        await completer.future.timeout(const Duration(seconds: 2));
+        await completer.future.timeout(
+          // In-memory SQLite resolves in <5 ms; 200 ms is hang-failure
+          // headroom, not a wait — it costs nothing on the happy path.
+          const Duration(milliseconds: 200),
+        );
         await sub.cancel();
         // The replay path emitted `0` (the post-prune depth). A
         // regression that emitted `2` (the stale snapshot) before
@@ -705,7 +713,11 @@ void main() {
         // (covers lines 154 + 157) instead of yielding the stale snapshot.
         statsCompleter.complete(stats(99));
 
-        await firstTwo.future.timeout(const Duration(seconds: 2));
+        await firstTwo.future.timeout(
+          // In-memory SQLite resolves in <5 ms; 200 ms is hang-failure
+          // headroom, not a wait — it costs nothing on the happy path.
+          const Duration(milliseconds: 200),
+        );
 
         // The stale snapshot (99) must never appear: the buffered live
         // sequence [7, 3] is emitted in arrival order instead.
@@ -745,7 +757,11 @@ void main() {
         final boom = Exception('depth stream failed');
         depthCtl.addError(boom);
 
-        await errored.future.timeout(const Duration(seconds: 2));
+        await errored.future.timeout(
+          // In-memory SQLite resolves in <5 ms; 200 ms is hang-failure
+          // headroom, not a wait — it costs nothing on the happy path.
+          const Duration(milliseconds: 200),
+        );
         expect(receivedError, same(boom));
       },
     );
