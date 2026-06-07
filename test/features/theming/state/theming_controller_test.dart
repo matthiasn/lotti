@@ -277,6 +277,35 @@ void main() {
         });
       });
 
+      test('onThemeSelectionChanged with empty set throws and persists '
+          'nothing', () {
+        fakeAsync((async) {
+          final controller = container.read(themingControllerProvider.notifier);
+
+          waitForInit(async);
+          clearInteractions(settingsDb);
+          clearInteractions(outboxService);
+
+          // The impl reads `modes.first`, so an empty selection set surfaces
+          // a StateError rather than silently mutating state. This documents
+          // the current (uncovered) crash path: a SegmentedButton must never
+          // emit an empty set. If a defensive guard is added to the impl,
+          // this expectation should change to a no-op.
+          expect(
+            () => controller.onThemeSelectionChanged(<ThemeMode>{}),
+            throwsStateError,
+          );
+
+          // Nothing was persisted or enqueued on the failed call.
+          verifyNever(
+            () => settingsDb.saveSettingsItem(themeModeKey, any<String>()),
+          );
+          async.elapse(const Duration(milliseconds: 400));
+          async.flushMicrotasks();
+          verifyNever(() => outboxService.enqueueMessage(any<SyncMessage>()));
+        });
+      });
+
       test('debouncing - rapid changes send only final state', () {
         fakeAsync((async) {
           final controller = container.read(themingControllerProvider.notifier);
@@ -753,6 +782,20 @@ void main() {
         expect(copy.lightTheme, equals(newLightTheme));
         expect(copy.darkThemeName, equals('Grey Law'));
         expect(copy.lightThemeName, equals('Grey Law'));
+      });
+
+      test('copyWith updates only themeMode and leaves null fields null', () {
+        // Original carries no themes/names — verifies the null-coalescing
+        // path keeps nulls null while a single non-null override applies.
+        const original = ThemingState();
+
+        final copy = original.copyWith(themeMode: ThemeMode.light);
+
+        expect(copy.themeMode, equals(ThemeMode.light));
+        expect(copy.darkTheme, isNull);
+        expect(copy.lightTheme, isNull);
+        expect(copy.darkThemeName, isNull);
+        expect(copy.lightThemeName, isNull);
       });
     });
   });

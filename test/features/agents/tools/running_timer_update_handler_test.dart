@@ -287,7 +287,7 @@ void main() {
       final result = await handler.handle(sourceTaskId, {'timerId': timerId});
 
       expect(result.success, isFalse);
-      expect(result.errorMessage, 'Missing, empty, or too-long summary');
+      expect(result.errorMessage, RunningTimerUpdateFailure.invalidSummary);
     });
 
     test('returns failure when summary is empty', () async {
@@ -297,7 +297,7 @@ void main() {
       );
 
       expect(result.success, isFalse);
-      expect(result.errorMessage, 'Missing, empty, or too-long summary');
+      expect(result.errorMessage, RunningTimerUpdateFailure.invalidSummary);
     });
 
     test('returns failure when summary exceeds 500 characters', () async {
@@ -307,7 +307,7 @@ void main() {
       );
 
       expect(result.success, isFalse);
-      expect(result.errorMessage, 'Missing, empty, or too-long summary');
+      expect(result.errorMessage, RunningTimerUpdateFailure.invalidSummary);
     });
 
     test('returns failure when timerId is missing', () async {
@@ -317,7 +317,7 @@ void main() {
       );
 
       expect(result.success, isFalse);
-      expect(result.errorMessage, 'Missing or invalid timerId');
+      expect(result.errorMessage, RunningTimerUpdateFailure.invalidTimerId);
     });
 
     test('returns failure when no timer is active', () async {
@@ -329,7 +329,7 @@ void main() {
       );
 
       expect(result.success, isFalse);
-      expect(result.errorMessage, 'No active timer');
+      expect(result.errorMessage, RunningTimerUpdateFailure.noActiveTimer);
       verifyNever(
         () => mockPersistenceLogic.updateJournalEntityText(any(), any(), any()),
       );
@@ -344,7 +344,7 @@ void main() {
       );
 
       expect(result.success, isFalse);
-      expect(result.errorMessage, 'Timer id mismatch');
+      expect(result.errorMessage, RunningTimerUpdateFailure.timerIdMismatch);
       verifyNever(
         () => mockPersistenceLogic.updateJournalEntityText(any(), any(), any()),
       );
@@ -361,7 +361,10 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.errorMessage, 'Timer source task mismatch');
+        expect(
+          result.errorMessage,
+          RunningTimerUpdateFailure.sourceTaskMismatch,
+        );
         verifyNever(
           () =>
               mockPersistenceLogic.updateJournalEntityText(any(), any(), any()),
@@ -386,7 +389,10 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.errorMessage, 'Timer source task mismatch');
+        expect(
+          result.errorMessage,
+          RunningTimerUpdateFailure.sourceTaskMismatch,
+        );
         // Real timer id must not appear anywhere in the user-visible output.
         expect(result.output, isNot(contains(timerId)));
         verifyNever(
@@ -426,7 +432,10 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.errorMessage, 'Unsupported timer entity type');
+        expect(
+          result.errorMessage,
+          RunningTimerUpdateFailure.unsupportedEntityType,
+        );
         verifyNever(
           () =>
               mockPersistenceLogic.updateJournalEntityText(any(), any(), any()),
