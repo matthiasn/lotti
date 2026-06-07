@@ -161,6 +161,34 @@ class AiTestDataFactory {
     );
   }
 
+  static AiConfigSkill createTestSkill({
+    String id = 'test-skill',
+    String name = 'Test Skill',
+    String? description = 'Test skill description',
+    SkillType skillType = SkillType.transcription,
+    List<Modality> requiredInputModalities = const [Modality.audio],
+    String systemInstructions = 'Test system instructions',
+    String userInstructions = 'Test user instructions',
+    ContextPolicy contextPolicy = ContextPolicy.none,
+    bool isPreconfigured = false,
+    bool useReasoning = false,
+  }) {
+    return AiConfig.skill(
+          id: id,
+          name: name,
+          description: description,
+          createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+          skillType: skillType,
+          requiredInputModalities: requiredInputModalities,
+          systemInstructions: systemInstructions,
+          userInstructions: userInstructions,
+          contextPolicy: contextPolicy,
+          isPreconfigured: isPreconfigured,
+          useReasoning: useReasoning,
+        )
+        as AiConfigSkill;
+  }
+
   static List<AiConfig> createMixedTestConfigs() {
     return [
       createTestProvider(
