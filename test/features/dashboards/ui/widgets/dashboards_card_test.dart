@@ -46,7 +46,7 @@ void main() {
           DashboardCard(dashboard: dashboard, showDivider: false),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Health Overview'), findsOneWidget);
     });
@@ -57,7 +57,7 @@ void main() {
           DashboardCard(dashboard: dashboard, showDivider: false),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Track your health metrics'), findsOneWidget);
     });
@@ -84,7 +84,7 @@ void main() {
           DashboardCard(dashboard: emptyDesc, showDivider: false),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.text('Empty'), findsOneWidget);
       // The subtitle Text widget should not be created
@@ -104,7 +104,7 @@ void main() {
           DashboardCard(dashboard: dashboard, showDivider: false),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(DesignSystemListItem), findsOneWidget);
       expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
@@ -116,7 +116,7 @@ void main() {
           DashboardCard(dashboard: dashboard, showDivider: true),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(Divider), findsOneWidget);
     });
@@ -129,7 +129,7 @@ void main() {
           DashboardCard(dashboard: dashboard, showDivider: false),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(find.byType(Divider), findsNothing);
     });

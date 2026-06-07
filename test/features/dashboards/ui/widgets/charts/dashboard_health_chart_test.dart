@@ -228,6 +228,13 @@ void main() {
       expect(find.byType(TimeSeriesBarChart), findsNothing);
       expect(find.byType(DashboardHealthBpChart), findsNothing);
       expect(find.byType(DashboardHealthBmiChart), findsNothing);
+
+      // The observations must flow through to the embedded LineChart.
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(
+        lineChart.data.lineBarsData.first.spots.map((s) => s.y),
+        [60.0, 62.0, 58.0],
+      );
     });
 
     testWidgets('shows the health type display name in the header', (
@@ -392,6 +399,13 @@ void main() {
 
       expect(find.byType(TimeSeriesBarChart), findsOneWidget);
       expect(find.byType(TimeSeriesLineChart), findsNothing);
+
+      // The observations and step-count unit must be forwarded verbatim.
+      final barChart = tester.widget<TimeSeriesBarChart>(
+        find.byType(TimeSeriesBarChart),
+      );
+      expect(barChart.data.map((o) => o.value), [8000.0, 12000.0, 6500.0]);
+      expect(barChart.valueInHours, isFalse);
     });
 
     testWidgets(
@@ -516,6 +530,14 @@ void main() {
 
       expect(find.byType(TimeSeriesBarChart), findsOneWidget);
       expect(find.byType(TimeSeriesLineChart), findsNothing);
+
+      // SLEEP_ASLEEP is an hour-unit type: the chart must receive the data
+      // with the valueInHours flag set so labels render as hours.
+      final barChart = tester.widget<TimeSeriesBarChart>(
+        find.byType(TimeSeriesBarChart),
+      );
+      expect(barChart.data.map((o) => o.value), [420.0, 480.0]);
+      expect(barChart.valueInHours, isTrue);
     });
 
     testWidgets('shows "Asleep" display name in header', (tester) async {

@@ -295,6 +295,28 @@ void main() {
       final result = aggregateByType([], 'UNKNOWN_TYPE');
       expect(result, isEmpty);
     });
+
+    test('returns empty for unknown type even with non-empty entities', () {
+      // No HealthTypeConfig resolves for the type, so the entities must be
+      // ignored entirely rather than routed through a default aggregation.
+      final entities = [
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 15),
+          value: 10,
+          dataType: 'UNKNOWN_TYPE',
+          id: 'u0',
+        ),
+        makeQuantitativeEntry(
+          dateFrom: DateTime(2024, 3, 16),
+          value: 20,
+          dataType: 'UNKNOWN_TYPE',
+          id: 'u1',
+        ),
+      ];
+
+      final result = aggregateByType(entities, 'UNKNOWN_TYPE');
+      expect(result, isEmpty);
+    });
   });
 
   group('colorByValueAndType', () {
