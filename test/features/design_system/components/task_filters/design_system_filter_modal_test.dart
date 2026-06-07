@@ -81,7 +81,8 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('trigger')));
 
     // Pump long enough to complete the Wolt modal entry animation.
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
   }
 
   group('showDesignSystemFilterModal', () {
@@ -129,7 +130,8 @@ void main() {
           expect(appliedState!.statusField!.selectedIds, {'open'});
 
           // The modal should be closed after apply
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
           expect(find.byType(DesignSystemTaskFilterSheet), findsNothing);
         },
       );

@@ -326,4 +326,110 @@ void main() {
     },
     tags: 'glados',
   );
+
+  glados.Glados<_FilterStateScenario>(
+    glados.any.filterStateScenario,
+    glados.ExploreConfig(numRuns: 160),
+  ).test(
+    'agent/search/toggle mutations: no-op guards, applied-count boundary, '
+    'and double-toggle identity',
+    (scenario) {
+      final state = scenario.build();
+      final reason = '$scenario';
+
+      // selectAgentFilter -----------------------------------------------
+      if (!state.hasAgentFilter) {
+        expect(
+          identical(state.selectAgentFilter('agent-1'), state),
+          isTrue,
+          reason: reason,
+        );
+      } else {
+        expect(
+          identical(
+            state.selectAgentFilter(state.selectedAgentFilterId),
+            state,
+          ),
+          isTrue,
+          reason: reason,
+        );
+        final other = state.selectedAgentFilterId == 'agent-1'
+            ? 'agent-2'
+            : 'agent-1';
+        expect(
+          state.selectAgentFilter(other).selectedAgentFilterId,
+          other,
+          reason: reason,
+        );
+
+        // appliedCount boundary: the FIRST agent option is the neutral
+        // default and never counts; any non-first option adds exactly 1.
+        final atFirst = state.selectAgentFilter(
+          state.agentFilterOptions.first.id,
+        );
+        final atNonFirst = state.selectAgentFilter(
+          state.agentFilterOptions.last.id,
+        );
+        expect(
+          atNonFirst.appliedCount - atFirst.appliedCount,
+          1,
+          reason: reason,
+        );
+      }
+
+      // selectSearchMode ------------------------------------------------
+      if (!state.hasSearchMode) {
+        expect(
+          identical(state.selectSearchMode('mode-1'), state),
+          isTrue,
+          reason: reason,
+        );
+      } else {
+        expect(
+          identical(
+            state.selectSearchMode(state.selectedSearchModeId),
+            state,
+          ),
+          isTrue,
+          reason: reason,
+        );
+        final other = state.selectedSearchModeId == 'mode-0'
+            ? 'mode-1'
+            : 'mode-0';
+        final switched = state.selectSearchMode(other);
+        expect(switched.selectedSearchModeId, other, reason: reason);
+        // Search mode is not a filter: it never affects appliedCount.
+        expect(switched.appliedCount, state.appliedCount, reason: reason);
+      }
+
+      // toggleValue -----------------------------------------------------
+      expect(
+        identical(state.toggleValue('nonexistent-toggle'), state),
+        isTrue,
+        reason: reason,
+      );
+      for (final toggle in state.toggles) {
+        final flipped = state.toggleValue(toggle.id);
+        expect(
+          flipped.toggles.singleWhere((t) => t.id == toggle.id).value,
+          !toggle.value,
+          reason: '$reason toggle=${toggle.id}',
+        );
+        for (final other in state.toggles.where((t) => t.id != toggle.id)) {
+          expect(
+            flipped.toggles.singleWhere((t) => t.id == other.id).value,
+            other.value,
+            reason: '$reason untouched=${other.id}',
+          );
+        }
+        final back = flipped.toggleValue(toggle.id);
+        expect(
+          back.toggles.singleWhere((t) => t.id == toggle.id).value,
+          toggle.value,
+          reason: '$reason double-toggle=${toggle.id}',
+        );
+      }
+    },
+    tags: 'glados',
+  );
 }

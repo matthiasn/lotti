@@ -474,17 +474,20 @@ void main() {
         );
 
         await tester.ensureVisible(statusField);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(
           statusField,
         );
         await tester.ensureVisible(categoryField);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(
           categoryField,
         );
         await tester.ensureVisible(labelField);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
         await tester.tap(
           labelField,
         );
@@ -635,31 +638,26 @@ void main() {
     testWidgets('renders toggle rows with correct state', (tester) async {
       DesignSystemTaskFilterState? lastChanged;
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: DesignSystemTaskFilterSheet(
-              state: DesignSystemTaskFilterState(
-                title: 'Filters',
-                clearAllLabel: 'Clear',
-                applyLabel: 'Apply',
-                toggles: const [
-                  DesignSystemTaskFilterToggle(
-                    id: 'showDate',
-                    label: 'Show date',
-                    value: false,
-                  ),
-                  DesignSystemTaskFilterToggle(
-                    id: 'showDue',
-                    label: 'Show due date',
-                    value: true,
-                  ),
-                ],
-              ),
-              onChanged: (s) => lastChanged = s,
+      await _pumpSheetWithState(
+        tester,
+        DesignSystemTaskFilterState(
+          title: 'Filters',
+          clearAllLabel: 'Clear',
+          applyLabel: 'Apply',
+          toggles: const [
+            DesignSystemTaskFilterToggle(
+              id: 'showDate',
+              label: 'Show date',
+              value: false,
             ),
-          ),
+            DesignSystemTaskFilterToggle(
+              id: 'showDue',
+              label: 'Show due date',
+              value: true,
+            ),
+          ],
         ),
+        onChanged: (s) => lastChanged = s,
       );
 
       expect(find.text('Show date'), findsOneWidget);
@@ -676,28 +674,23 @@ void main() {
     testWidgets('renders agent filter pills', (tester) async {
       DesignSystemTaskFilterState? lastChanged;
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: DesignSystemTaskFilterSheet(
-              state: DesignSystemTaskFilterState(
-                title: 'Filters',
-                clearAllLabel: 'Clear',
-                applyLabel: 'Apply',
-                agentFilterLabel: 'Agent',
-                agentFilterOptions: const [
-                  DesignSystemTaskFilterOption(id: 'all', label: 'All'),
-                  DesignSystemTaskFilterOption(
-                    id: 'hasAgent',
-                    label: 'Has agent',
-                  ),
-                ],
-                selectedAgentFilterId: 'all',
-              ),
-              onChanged: (s) => lastChanged = s,
+      await _pumpSheetWithState(
+        tester,
+        DesignSystemTaskFilterState(
+          title: 'Filters',
+          clearAllLabel: 'Clear',
+          applyLabel: 'Apply',
+          agentFilterLabel: 'Agent',
+          agentFilterOptions: const [
+            DesignSystemTaskFilterOption(id: 'all', label: 'All'),
+            DesignSystemTaskFilterOption(
+              id: 'hasAgent',
+              label: 'Has agent',
             ),
-          ),
+          ],
+          selectedAgentFilterId: 'all',
         ),
+        onChanged: (s) => lastChanged = s,
       );
 
       expect(find.text('Agent'), findsOneWidget);
@@ -713,31 +706,26 @@ void main() {
     testWidgets('renders search mode pills', (tester) async {
       DesignSystemTaskFilterState? lastChanged;
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: DesignSystemTaskFilterSheet(
-              state: DesignSystemTaskFilterState(
-                title: 'Filters',
-                clearAllLabel: 'Clear',
-                applyLabel: 'Apply',
-                searchModeLabel: 'Search mode',
-                searchModeOptions: const [
-                  DesignSystemTaskFilterOption(
-                    id: 'fullText',
-                    label: 'Full text',
-                  ),
-                  DesignSystemTaskFilterOption(
-                    id: 'vector',
-                    label: 'Vector',
-                  ),
-                ],
-                selectedSearchModeId: 'fullText',
-              ),
-              onChanged: (s) => lastChanged = s,
+      await _pumpSheetWithState(
+        tester,
+        DesignSystemTaskFilterState(
+          title: 'Filters',
+          clearAllLabel: 'Clear',
+          applyLabel: 'Apply',
+          searchModeLabel: 'Search mode',
+          searchModeOptions: const [
+            DesignSystemTaskFilterOption(
+              id: 'fullText',
+              label: 'Full text',
             ),
-          ),
+            DesignSystemTaskFilterOption(
+              id: 'vector',
+              label: 'Vector',
+            ),
+          ],
+          selectedSearchModeId: 'fullText',
         ),
+        onChanged: (s) => lastChanged = s,
       );
 
       expect(find.text('Search mode'), findsOneWidget);
@@ -749,25 +737,19 @@ void main() {
     });
 
     testWidgets('renders project field section', (tester) async {
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: DesignSystemTaskFilterSheet(
-              state: DesignSystemTaskFilterState(
-                title: 'Filters',
-                clearAllLabel: 'Clear',
-                applyLabel: 'Apply',
-                projectField: const DesignSystemTaskFilterFieldState(
-                  label: 'Project',
-                  options: [
-                    DesignSystemTaskFilterOption(id: 'p1', label: 'Alpha'),
-                    DesignSystemTaskFilterOption(id: 'p2', label: 'Beta'),
-                  ],
-                  selectedIds: {'p1'},
-                ),
-              ),
-              onChanged: (_) {},
-            ),
+      await _pumpSheetWithState(
+        tester,
+        DesignSystemTaskFilterState(
+          title: 'Filters',
+          clearAllLabel: 'Clear',
+          applyLabel: 'Apply',
+          projectField: const DesignSystemTaskFilterFieldState(
+            label: 'Project',
+            options: [
+              DesignSystemTaskFilterOption(id: 'p1', label: 'Alpha'),
+              DesignSystemTaskFilterOption(id: 'p2', label: 'Beta'),
+            ],
+            selectedIds: {'p1'},
           ),
         ),
       );
@@ -782,28 +764,23 @@ void main() {
       DesignSystemTaskFilterState? lastChanged;
       final tappedSections = <DesignSystemTaskFilterSection>[];
 
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          SingleChildScrollView(
-            child: DesignSystemTaskFilterSheet(
-              state: DesignSystemTaskFilterState(
-                title: 'Filters',
-                clearAllLabel: 'Clear',
-                applyLabel: 'Apply',
-                projectField: const DesignSystemTaskFilterFieldState(
-                  label: 'Project',
-                  options: [
-                    DesignSystemTaskFilterOption(id: 'p1', label: 'Alpha'),
-                    DesignSystemTaskFilterOption(id: 'p2', label: 'Beta'),
-                  ],
-                  selectedIds: {'p1', 'p2'},
-                ),
-              ),
-              onChanged: (s) => lastChanged = s,
-              onFieldPressed: tappedSections.add,
-            ),
+      await _pumpSheetWithState(
+        tester,
+        DesignSystemTaskFilterState(
+          title: 'Filters',
+          clearAllLabel: 'Clear',
+          applyLabel: 'Apply',
+          projectField: const DesignSystemTaskFilterFieldState(
+            label: 'Project',
+            options: [
+              DesignSystemTaskFilterOption(id: 'p1', label: 'Alpha'),
+              DesignSystemTaskFilterOption(id: 'p2', label: 'Beta'),
+            ],
+            selectedIds: {'p1', 'p2'},
           ),
         ),
+        onChanged: (s) => lastChanged = s,
+        onFieldPressed: tappedSections.add,
       );
 
       // Tap the project field to trigger onFieldPressed
@@ -860,7 +837,8 @@ void main() {
       await tester.tap(
         find.byKey(DesignSystemTaskFilterActionBar.saveButtonKey),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
       expect(
         find.byKey(DesignSystemTaskFilterActionBar.saveNamePopupFieldKey),
         findsOneWidget,
@@ -874,7 +852,8 @@ void main() {
       final committed = await openSavePopup(tester);
 
       await tester.sendKeyEvent(LogicalKeyboardKey.escape);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Escape routes through the Focus.onKeyEvent handler -> onCancel,
       // which closes the menu without committing a name.
@@ -915,7 +894,8 @@ void main() {
       await tester.pump();
       // testTextInput.receiveAction drives onSubmitted -> _commit().
       await tester.testTextInput.receiveAction(TextInputAction.done);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(committed, ['Blocked work']);
       expect(
@@ -1129,6 +1109,28 @@ void main() {
       },
     );
   });
+}
+
+/// Pumps a [DesignSystemTaskFilterSheet] with a fixed [state] inside the
+/// standard scaffold + scroll wrapper. Complements [_pumpTaskFilterSheet],
+/// which drives a ValueNotifier through the sheet+action-bar pair.
+Future<void> _pumpSheetWithState(
+  WidgetTester tester,
+  DesignSystemTaskFilterState state, {
+  ValueChanged<DesignSystemTaskFilterState>? onChanged,
+  ValueChanged<DesignSystemTaskFilterSection>? onFieldPressed,
+}) async {
+  await tester.pumpWidget(
+    makeTestableWidgetWithScaffold(
+      SingleChildScrollView(
+        child: DesignSystemTaskFilterSheet(
+          state: state,
+          onChanged: onChanged ?? (_) {},
+          onFieldPressed: onFieldPressed,
+        ),
+      ),
+    ),
+  );
 }
 
 Future<ValueNotifier<DesignSystemTaskFilterState>> _pumpTaskFilterSheet(
