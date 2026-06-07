@@ -18,6 +18,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:meta/meta.dart';
 
 typedef SyncProgressCallback = void Function(double progress);
 typedef SyncDetailedProgressCallback = void Function(int processed, int total);
@@ -543,6 +544,16 @@ class SyncMaintenanceRepository {
     // Every totals subDomain is the step name with a fixed prefix.
     return 'fetchTotals_${step.name}';
   }
+
+  /// Test seam for [_syncDomainFor]. The mapping is only reached internally
+  /// via [_createOperation] (which never receives [SyncStep.complete]), so the
+  /// guard branch is otherwise unreachable.
+  @visibleForTesting
+  String debugSyncDomainFor(SyncStep step) => _syncDomainFor(step);
+
+  /// Test seam for [_totalsDomainFor]. See [debugSyncDomainFor].
+  @visibleForTesting
+  String debugTotalsDomainFor(SyncStep step) => _totalsDomainFor(step);
 }
 
 final syncMaintenanceRepositoryProvider = Provider<SyncMaintenanceRepository>((

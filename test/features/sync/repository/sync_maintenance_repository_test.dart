@@ -1230,4 +1230,61 @@ void main() {
       tags: 'glados',
     );
   });
+
+  group('domain helpers', () {
+    // Hard-coded expectations (not derived from the impl) so a typo or
+    // convention drift in the production mapping is caught, and the exact
+    // logging subDomain strings other tooling greps for stay pinned.
+    const expectedSyncDomains = <SyncStep, String>{
+      SyncStep.measurables: 'syncMeasurables',
+      SyncStep.labels: 'syncLabels',
+      SyncStep.categories: 'syncCategories',
+      SyncStep.dashboards: 'syncDashboards',
+      SyncStep.habits: 'syncHabits',
+      SyncStep.aiSettings: 'syncAiSettings',
+      SyncStep.backfillAgentEntityClocks: 'backfillAgentEntityClocks',
+      SyncStep.backfillAgentLinkClocks: 'backfillAgentLinkClocks',
+      SyncStep.agentEntities: 'syncAgentEntities',
+      SyncStep.agentLinks: 'syncAgentLinks',
+    };
+    const expectedTotalsDomains = <SyncStep, String>{
+      SyncStep.measurables: 'fetchTotals_measurables',
+      SyncStep.labels: 'fetchTotals_labels',
+      SyncStep.categories: 'fetchTotals_categories',
+      SyncStep.dashboards: 'fetchTotals_dashboards',
+      SyncStep.habits: 'fetchTotals_habits',
+      SyncStep.aiSettings: 'fetchTotals_aiSettings',
+      SyncStep.backfillAgentEntityClocks: 'fetchTotals_backfillAgentEntityClocks',
+      SyncStep.backfillAgentLinkClocks: 'fetchTotals_backfillAgentLinkClocks',
+      SyncStep.agentEntities: 'fetchTotals_agentEntities',
+      SyncStep.agentLinks: 'fetchTotals_agentLinks',
+    };
+
+    test('maps every non-complete step to its sync and totals subDomain', () {
+      for (final step
+          in SyncStep.values.where((step) => step != SyncStep.complete)) {
+        expect(
+          syncMaintenanceRepository.debugSyncDomainFor(step),
+          expectedSyncDomains[step],
+          reason: 'sync domain for $step',
+        );
+        expect(
+          syncMaintenanceRepository.debugTotalsDomainFor(step),
+          expectedTotalsDomains[step],
+          reason: 'totals domain for $step',
+        );
+      }
+    });
+
+    test('SyncStep.complete has neither a sync nor a totals domain', () {
+      expect(
+        () => syncMaintenanceRepository.debugSyncDomainFor(SyncStep.complete),
+        throwsUnsupportedError,
+      );
+      expect(
+        () => syncMaintenanceRepository.debugTotalsDomainFor(SyncStep.complete),
+        throwsUnsupportedError,
+      );
+    });
+  });
 }
