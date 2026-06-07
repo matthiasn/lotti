@@ -27,6 +27,32 @@ extension _AnyJsonValue on glados.Any {
   /// Generates a non-empty string of lower-case letter/digit chars.
   glados.Generator<String> get shortAlphanumString =>
       glados.any.stringOf('abcdefghijklmnopqrstuvwxyz0123456789');
+
+  /// Generates an arbitrary JSON-ish value across seven kinds: int, double,
+  /// bool, String, null, List (with a nested map), and Map.
+  glados.Generator<Object?> get mixedJsonValue =>
+      glados.IntAnys(this).intInRange(0, 1 << 16).map((seed) {
+        switch (seed % 7) {
+          case 0:
+            return seed - 5000;
+          case 1:
+            return seed / 7;
+          case 2:
+            return seed.isEven;
+          case 3:
+            return 'str$seed';
+          case 4:
+            return null;
+          case 5:
+            return <Object?>[
+              seed,
+              'x',
+              <String, Object?>{'nested': seed},
+            ];
+          default:
+            return <String, Object?>{'k': seed};
+        }
+      });
 }
 
 void main() {
@@ -351,5 +377,53 @@ void main() {
       final result = readMapList(data, 'list');
       expect(result, hasLength(3));
     });
+  });
+
+  group('type-confusion property (all readers)', () {
+    glados.Glados2(
+      glados.any.mixedJsonValue,
+      glados.any.jsonKey,
+      glados.ExploreConfig(numRuns: 200),
+    ).test(
+      'every reader applies exactly its own type gate over arbitrary values',
+      (value, key) {
+        final json = <String, Object?>{key: value};
+        final reason = 'key=$key value=$value (${value.runtimeType})';
+
+        expect(
+          readInt(json, key, -7),
+          value is num ? value.toInt() : -7,
+          reason: reason,
+        );
+        expect(
+          readDouble(json, key, -7.5),
+          value is num ? value.toDouble() : -7.5,
+          reason: reason,
+        );
+        expect(
+          readNumOrNull(json, key),
+          value is num ? value : isNull,
+          reason: reason,
+        );
+        expect(
+          readString(json, key, 'fb'),
+          value is String ? value : 'fb',
+          reason: reason,
+        );
+        expect(
+          readStringOrNull(json, key),
+          value is String ? value : isNull,
+          reason: reason,
+        );
+        expect(
+          readMapList(json, key),
+          value is List
+              ? value.whereType<Map<String, Object?>>().toList()
+              : isEmpty,
+          reason: reason,
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

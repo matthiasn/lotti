@@ -27,14 +27,14 @@ void main() {
     handler.dispose();
   });
 
-  /// Helper to dispatch a UserActionEvent through the processor's handleUiEvent,
-  /// which converts it to a ChatMessage with UiInteractionPart on the
-  /// onSubmit stream.
-  void dispatchAction({
+  /// Dispatches a UserActionEvent through the processor's handleUiEvent
+  /// (which converts it to a ChatMessage with UiInteractionPart on the
+  /// onSubmit stream) and waits for the async broadcast delivery.
+  Future<void> dispatchAndWait({
     required String name,
     required String surfaceId,
     String sourceComponentId = 'root',
-  }) {
+  }) async {
     processor.handleUiEvent(
       UserActionEvent(
         name: name,
@@ -42,6 +42,7 @@ void main() {
         surfaceId: surfaceId,
       ),
     );
+    await pumpEventQueue();
   }
 
   group('GenUiEventHandler', () {
@@ -51,13 +52,10 @@ void main() {
         events.add((surfaceId, action));
       };
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'proposal_approved',
         surfaceId: 'proposal-surface',
       );
-
-      // Allow the async broadcast stream to deliver the event.
-      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'proposal-surface');
@@ -70,12 +68,10 @@ void main() {
         events.add((surfaceId, action));
       };
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'proposal_rejected',
         surfaceId: 'proposal-surface-2',
       );
-
-      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$2, 'proposal_rejected');
@@ -84,24 +80,20 @@ void main() {
     test('keeps listening after a proposal callback throws', () async {
       handler.onProposalAction = (_, _) => throw StateError('callback failed');
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'proposal_approved',
         surfaceId: 'proposal-surface',
       );
-
-      await pumpEventQueue();
 
       final events = <(String, String)>[];
       handler.onProposalAction = (surfaceId, action) {
         events.add((surfaceId, action));
       };
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'proposal_rejected',
         surfaceId: 'proposal-surface',
       );
-
-      await pumpEventQueue();
 
       expect(events, [('proposal-surface', 'proposal_rejected')]);
     });
@@ -165,12 +157,10 @@ void main() {
         events.add((surfaceId, action));
       };
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'some_other_event',
         surfaceId: 'any-surface',
       );
-
-      await pumpEventQueue();
 
       expect(events, isEmpty);
     });
@@ -186,12 +176,10 @@ void main() {
         },
       });
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'proposal_approved',
         surfaceId: 'proposal-surface-3',
       );
-
-      await pumpEventQueue();
       // No exception = pass.
     });
 
@@ -203,12 +191,10 @@ void main() {
         }
         ..dispose();
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'proposal_approved',
         surfaceId: 'some-surface',
       );
-
-      await pumpEventQueue();
 
       expect(events, isEmpty);
     });
@@ -219,13 +205,11 @@ void main() {
         events.add((surfaceId, ratings));
       };
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'ratings_submitted',
         surfaceId: 'ratings-surface',
         sourceComponentId: '{"accuracy":5,"tooling":"bad","timeliness":2.2}',
       );
-
-      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'ratings-surface');
@@ -242,13 +226,11 @@ void main() {
         events.add((surfaceId, ratings));
       };
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'ratings_submitted',
         surfaceId: 'ratings-surface',
         sourceComponentId: '{invalid-json',
       );
-
-      await pumpEventQueue();
 
       expect(events, isEmpty);
     });
@@ -259,13 +241,11 @@ void main() {
         events.add((surfaceId, value));
       };
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'binary_choice_submitted',
         surfaceId: 'binary-choice-surface',
         sourceComponentId: '{"value":"Yes, show the rating form."}',
       );
-
-      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'binary-choice-surface');
@@ -278,16 +258,34 @@ void main() {
         events.add((surfaceId, value));
       };
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'binary_choice_submitted',
         surfaceId: 'binary-choice-surface',
         sourceComponentId: '{bad-json',
       );
 
-      await pumpEventQueue();
-
       expect(events, isEmpty);
     });
+
+    test(
+      'ignores binary_choice_submitted when the payload value is not a '
+      'String',
+      () async {
+        final events = <(String, String)>[];
+        handler.onBinaryChoiceSubmitted = (surfaceId, value) {
+          events.add((surfaceId, value));
+        };
+
+        await dispatchAndWait(
+          name: 'binary_choice_submitted',
+          surfaceId: 'binary-surface',
+          sourceComponentId: '{"value": 42}',
+        );
+
+        // The non-String value falls through silently — no callback.
+        expect(events, isEmpty);
+      },
+    );
   });
 
   group('soul proposal events', () {
@@ -303,12 +301,10 @@ void main() {
         'data': {'rationale': 'Test.'},
       });
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'soul_proposal_approved',
         surfaceId: 'soul-surface-1',
       );
-
-      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'soul-surface-1');
@@ -327,12 +323,10 @@ void main() {
         'data': {'rationale': 'Test.'},
       });
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'soul_proposal_rejected',
         surfaceId: 'soul-surface-2',
       );
-
-      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$2, 'soul_proposal_rejected');
@@ -352,12 +346,10 @@ void main() {
         'data': {'rationale': 'Test.'},
       });
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'soul_proposal_approved',
         surfaceId: 'soul-surface-3',
       );
-
-      await pumpEventQueue();
       expect(events, isEmpty);
     });
   });
@@ -369,13 +361,11 @@ void main() {
         events.add((surfaceId, value));
       };
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'ab_comparison_submitted',
         surfaceId: 'ab-surface-1',
         sourceComponentId: '{"value":"I prefer Option A — Warmer"}',
       );
-
-      await pumpEventQueue();
 
       expect(events, hasLength(1));
       expect(events.first.$1, 'ab-surface-1');
@@ -388,13 +378,11 @@ void main() {
         events.add((surfaceId, value));
       };
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'ab_comparison_submitted',
         surfaceId: 'ab-surface-2',
         sourceComponentId: '{bad-json',
       );
-
-      await pumpEventQueue();
 
       expect(events, isEmpty);
     });
@@ -405,13 +393,11 @@ void main() {
         events.add((surfaceId, value));
       };
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'ab_comparison_submitted',
         surfaceId: 'ab-surface-3',
         sourceComponentId: '{"value":"  "}',
       );
-
-      await pumpEventQueue();
 
       expect(events, isEmpty);
     });
@@ -425,13 +411,11 @@ void main() {
         }
         ..onABComparisonSubmitted = null;
 
-      dispatchAction(
+      await dispatchAndWait(
         name: 'ab_comparison_submitted',
         surfaceId: 'ab-surface-4',
         sourceComponentId: '{"value":"I prefer Option B"}',
       );
-
-      await pumpEventQueue();
 
       expect(recordedEvents, isEmpty);
     });

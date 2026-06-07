@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
+import 'package:lotti/features/agents/ui/agent_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../widget_test_utils.dart';
@@ -239,55 +240,35 @@ void main() {
       },
     );
 
-    testWidgets('dispatches proposal_approved on approve tap', (tester) async {
-      final events = <UiEvent>[];
+    for (final (label, expectedEvent) in [
+      ('Approve & Save', 'proposal_approved'),
+      ('Reject', 'proposal_rejected'),
+    ]) {
+      testWidgets('dispatches $expectedEvent on $label tap', (tester) async {
+        final events = <UiEvent>[];
 
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _buildCatalogWidgetWithEvents(
-            evolutionProposalItem,
-            <String, Object?>{
-              'generalDirective': 'Test general directive',
-              'reportDirective': 'Test report directive',
-              'rationale': 'Test rationale',
-            },
-            events: events,
+        await tester.pumpWidget(
+          makeTestableWidget(
+            _buildCatalogWidgetWithEvents(
+              evolutionProposalItem,
+              <String, Object?>{
+                'generalDirective': 'Test general directive',
+                'reportDirective': 'Test report directive',
+                'rationale': 'Test rationale',
+              },
+              events: events,
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.tap(find.text('Approve & Save'));
-      await tester.pump();
+        await tester.tap(find.text(label));
+        await tester.pump();
 
-      expect(events, hasLength(1));
-      final event = events.first as UserActionEvent;
-      expect(event.name, 'proposal_approved');
-    });
-
-    testWidgets('dispatches proposal_rejected on reject tap', (tester) async {
-      final events = <UiEvent>[];
-
-      await tester.pumpWidget(
-        makeTestableWidget(
-          _buildCatalogWidgetWithEvents(
-            evolutionProposalItem,
-            <String, Object?>{
-              'generalDirective': 'Test general directive',
-              'reportDirective': 'Test report directive',
-              'rationale': 'Test rationale',
-            },
-            events: events,
-          ),
-        ),
-      );
-
-      await tester.tap(find.text('Reject'));
-      await tester.pump();
-
-      expect(events, hasLength(1));
-      final event = events.first as UserActionEvent;
-      expect(event.name, 'proposal_rejected');
-    });
+        expect(events, hasLength(1));
+        final event = events.first as UserActionEvent;
+        expect(event.name, expectedEvent);
+      });
+    }
   });
 
   group('EvolutionNoteConfirmation', () {
@@ -603,6 +584,46 @@ void main() {
         expect(find.text('Feedback detail $i'), findsOneWidget);
       }
     });
+
+    testWidgets(
+      'colors the sentiment bar per item: red negative, green positive, '
+      'orange neutral/default',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidget(
+            _buildCatalogWidget(feedbackClassificationItem, {
+              'items': <Map<String, Object?>>[
+                {'sentiment': 'negative', 'detail': 'Bad thing'},
+                {'sentiment': 'positive', 'detail': 'Good thing'},
+                {'sentiment': 'whatever', 'detail': 'Other thing'},
+              ],
+              'positiveCount': 1,
+              'negativeCount': 1,
+              'neutralCount': 1,
+            }),
+          ),
+        );
+
+        // Each feedback line renders a 4px-wide bar tinted by sentiment.
+        Color barColorBeside(String detail) {
+          final row = find.ancestor(
+            of: find.text(detail),
+            matching: find.byType(Row),
+          );
+          final bar = tester.widget<Container>(
+            find
+                .descendant(of: row.first, matching: find.byType(Container))
+                .first,
+          );
+          return (bar.decoration! as BoxDecoration).color!;
+        }
+
+        expect(barColorBeside('Bad thing'), AgentPalette.red);
+        expect(barColorBeside('Good thing'), AgentPalette.green);
+        // Unknown sentiment falls into the default (neutral) branch.
+        expect(barColorBeside('Other thing'), AgentPalette.orange);
+      },
+    );
 
     testWidgets('shows more text when items exceed 5', (tester) async {
       final items = List.generate(
