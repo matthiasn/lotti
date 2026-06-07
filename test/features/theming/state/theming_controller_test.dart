@@ -8,8 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/settings/constants/theming_settings_keys.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -20,6 +18,15 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+
+/// Elapses past the controller's initial `_loadSelectedSchemes` load and
+/// settles microtasks — the shared init-wait for every fakeAsync test here.
+void waitForInit(FakeAsync async) {
+  async
+    ..elapse(const Duration(milliseconds: 100))
+    ..flushMicrotasks();
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -51,13 +58,8 @@ void main() {
     });
 
     setUp(() async {
-      GetIt.I.allowReassignment = true;
-
       outboxService = MockOutboxService();
-      settingsDb = MockSettingsDb();
-      journalDb = MockJournalDb();
       mockDomainLogger = MockDomainLogger();
-      mockUpdateNotifications = MockUpdateNotifications();
 
       tooltipController = StreamController<bool>.broadcast();
       notificationsController = StreamController<Set<String>>.broadcast();
@@ -70,20 +72,30 @@ void main() {
         for (final key in keys) key: storedThemeSettings[key],
       };
 
+      final mocks = await setUpTestGetIt(
+        additionalSetup: () {
+          GetIt.I.allowReassignment = true;
+          GetIt.I
+            ..registerSingleton<OutboxService>(outboxService)
+            // The helper registers a real DomainLogger; these tests verify
+            // error() calls, so reassign it with a mock.
+            ..registerSingleton<DomainLogger>(mockDomainLogger);
+        },
+      );
+      settingsDb = mocks.settingsDb;
+      journalDb = mocks.journalDb;
+      mockUpdateNotifications = mocks.updateNotifications;
+
+      // Override the helper's defaults with this file's behaviors.
       when(
         () => mockUpdateNotifications.updateStream,
       ).thenAnswer((_) => notificationsController.stream);
-
-      // Setup default mock behaviors
       when(
         () => settingsDb.itemsByKeys(any()),
       ).thenAnswer((invocation) async {
         final keys = invocation.positionalArguments.first as Iterable<String>;
         return settingsBatchLoader(keys);
       });
-      when(
-        () => settingsDb.saveSettingsItem(any<String>(), any<String>()),
-      ).thenAnswer((_) async => 1);
       when(
         () => journalDb.watchConfigFlag(enableTooltipFlag),
       ).thenAnswer((_) => tooltipController.stream);
@@ -99,13 +111,6 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      GetIt.I
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<OutboxService>(outboxService)
-        ..registerSingleton<SettingsDb>(settingsDb)
-        ..registerSingleton<JournalDb>(journalDb)
-        ..registerSingleton<DomainLogger>(mockDomainLogger);
-
       container = ProviderContainer();
     });
 
@@ -114,7 +119,7 @@ void main() {
       await tooltipController.close();
       await notificationsController.close();
       container.dispose();
-      await GetIt.I.reset();
+      await tearDownTestGetIt();
     });
 
     group('themingControllerProvider', () {
@@ -123,9 +128,42 @@ void main() {
         expect(state.darkThemeName, equals('Grey Law'));
         expect(state.lightThemeName, equals('Grey Law'));
         expect(state.themeMode, equals(ThemeMode.system));
-        expect(state.darkTheme, isNotNull);
-        expect(state.lightTheme, isNotNull);
+        expect(state.darkTheme!.brightness, Brightness.dark);
+        expect(state.lightTheme!.brightness, Brightness.light);
       });
+
+      test(
+        'setLightTheme and setDarkTheme rebuild each slot with the right '
+        'brightness',
+        () {
+          fakeAsync((async) {
+            final controller = container.read(
+              themingControllerProvider.notifier,
+            );
+            waitForInit(async);
+
+            controller
+              ..setLightTheme('Indigo')
+              ..setDarkTheme('Shark');
+            async.elapse(const Duration(milliseconds: 400));
+            async.flushMicrotasks();
+
+            final state = container.read(themingControllerProvider);
+            expect(state.lightThemeName, 'Indigo');
+            expect(state.darkThemeName, 'Shark');
+            // _buildTheme must route the light slot through
+            // FlexThemeData.light and the dark slot through
+            // FlexThemeData.dark.
+            expect(state.lightTheme!.brightness, Brightness.light);
+            expect(state.darkTheme!.brightness, Brightness.dark);
+            // The selected schemes actually drive the palettes.
+            expect(
+              state.lightTheme!.colorScheme.primary,
+              isNot(state.darkTheme!.colorScheme.primary),
+            );
+          });
+        },
+      );
 
       test('loads saved theme preferences on init', () {
         fakeAsync((async) {
@@ -140,8 +178,7 @@ void main() {
             fireImmediately: true,
           );
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           expect(states.last.lightThemeName, equals('Indigo'));
           expect(states.last.darkThemeName, equals('Shark'));
@@ -153,8 +190,7 @@ void main() {
         fakeAsync((async) {
           final controller = container.read(themingControllerProvider.notifier);
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
           clearInteractions(outboxService);
 
           controller.setLightTheme('Indigo');
@@ -185,8 +221,7 @@ void main() {
         fakeAsync((async) {
           final controller = container.read(themingControllerProvider.notifier);
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
           clearInteractions(outboxService);
 
           controller.setDarkTheme('Shark');
@@ -216,8 +251,7 @@ void main() {
         fakeAsync((async) {
           final controller = container.read(themingControllerProvider.notifier);
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
           clearInteractions(outboxService);
 
           controller.onThemeSelectionChanged({ThemeMode.dark});
@@ -247,8 +281,7 @@ void main() {
         fakeAsync((async) {
           final controller = container.read(themingControllerProvider.notifier);
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
           clearInteractions(outboxService);
 
           controller
@@ -298,8 +331,7 @@ void main() {
             fireImmediately: true,
           );
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           clearInteractions(settingsDb);
           clearInteractions(outboxService);
@@ -322,8 +354,7 @@ void main() {
         fakeAsync((async) {
           final controller = container.read(themingControllerProvider.notifier);
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           final originalState = container.read(themingControllerProvider);
 
@@ -444,16 +475,20 @@ void main() {
 
           final controller = container.read(themingControllerProvider.notifier);
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           controller.setLightTheme('Indigo');
 
           async.elapse(const Duration(milliseconds: 400));
           async.flushMicrotasks();
 
-          // Should not throw exception
-          // Test passes if no exception is thrown
+          // The missing OutboxService only skips sync enqueueing — the
+          // local state change and persistence still happen.
+          final state = container.read(themingControllerProvider);
+          expect(state.lightThemeName, 'Indigo');
+          verify(
+            () => settingsDb.saveSettingsItem(lightSchemeNameKey, 'Indigo'),
+          ).called(1);
         });
       });
 
@@ -466,16 +501,14 @@ void main() {
             fireImmediately: true,
           );
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           clearInteractions(settingsDb);
 
           // Emit unrelated notification
           notificationsController.add({'unrelated_notification'});
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           // Verify settings were NOT reloaded
           verifyNever(() => settingsDb.itemsByKeys(any()));
@@ -510,8 +543,7 @@ void main() {
             fireImmediately: true,
           );
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           // Trigger reload via settings notification
           notificationsController.add({settingsNotification});
@@ -543,8 +575,7 @@ void main() {
 
           final controller = container.read(themingControllerProvider.notifier);
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           controller.setLightTheme('Indigo');
 
@@ -573,8 +604,7 @@ void main() {
             fireImmediately: true,
           );
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           clearInteractions(outboxService);
 
@@ -600,8 +630,7 @@ void main() {
             fireImmediately: true,
           );
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           // Should default to system theme mode
           expect(states.last.themeMode, equals(ThemeMode.system));
@@ -619,8 +648,7 @@ void main() {
             fireImmediately: true,
           );
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           // Should default to system theme mode
           expect(states.last.themeMode, equals(ThemeMode.system));
@@ -639,8 +667,7 @@ void main() {
             fireImmediately: true,
           );
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           // Should default to Grey Law
           expect(states.last.lightThemeName, equals('Grey Law'));
@@ -652,8 +679,7 @@ void main() {
         fakeAsync((async) {
           final controller = container.read(themingControllerProvider.notifier);
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           final originalState = container.read(themingControllerProvider);
 
@@ -673,8 +699,7 @@ void main() {
             fireImmediately: true,
           );
 
-          async.elapse(const Duration(milliseconds: 100));
-          async.flushMicrotasks();
+          waitForInit(async);
 
           // Initial load completed
           verify(() => settingsDb.itemsByKeys(any())).called(1);

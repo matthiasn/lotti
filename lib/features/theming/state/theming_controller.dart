@@ -35,6 +35,8 @@ const List<String> _emojiFontFallback = <String>[
 ];
 
 List<String>? _getEmojiFontFallback() {
+  // kIsWeb is a compile-time constant, so the web branch cannot be exercised
+  // from VM-run unit tests; it is a known untested (trivial) branch.
   if (kIsWeb) return null;
   return _emojiFontFallback;
 }
