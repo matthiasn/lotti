@@ -63,6 +63,7 @@ import '../helpers/stub_audio_recorder_controller.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
 import '../widget_test_utils.dart';
+import '_beamer_test_utils.dart';
 
 bool _isFlatpakTestHost() {
   return Platform.isLinux &&
@@ -106,11 +107,6 @@ int calculateClampedIndex({
   return clampNavigationIndex(rawIndex: rawIndex, itemCount: itemCount);
 }
 
-class _MockAiSetupPromptService extends AiSetupPromptService {
-  @override
-  Future<bool> build() async => false;
-}
-
 /// An [AiSetupPromptService] that invokes [onBuild] every time its `build`
 /// runs, so tests can count rebuilds (including those caused by
 /// `ref.invalidate`, which re-runs `build`).
@@ -123,23 +119,6 @@ class _CountingAiSetupPromptService extends AiSetupPromptService {
     onBuild();
     return false;
   }
-}
-
-class _EmptyLocation extends BeamLocation<BeamState> {
-  _EmptyLocation(super.routeInformation);
-
-  @override
-  List<BeamPage> buildPages(BuildContext context, BeamState state) {
-    return const [
-      BeamPage(
-        key: ValueKey('empty'),
-        child: SizedBox.shrink(),
-      ),
-    ];
-  }
-
-  @override
-  List<Pattern> get pathPatterns => ['*'];
 }
 
 class _AppScreenLocation extends BeamLocation<BeamState> {
@@ -163,7 +142,8 @@ Future<BeamerDelegate> _createEmptyDelegate(String initialPath) async {
   final delegate = BeamerDelegate(
     setBrowserTabTitle: false,
     initialPath: initialPath,
-    locationBuilder: (routeInformation, _) => _EmptyLocation(routeInformation),
+    locationBuilder: (routeInformation, _) =>
+        EmptyTestLocation(routeInformation),
   );
   await delegate.setNewRoutePath(
     RouteInformation(uri: Uri.parse(initialPath)),
@@ -273,7 +253,7 @@ Future<void> _pumpAppScreen(
         ),
         outboxServiceProvider.overrideWithValue(mockOutboxService),
         aiSetupPromptServiceProvider.overrideWith(
-          _MockAiSetupPromptService.new,
+          MockAiSetupPromptService.new,
         ),
         journalDbProvider.overrideWithValue(effectiveJournalDb),
         audioRecorderControllerProvider.overrideWith(
@@ -365,7 +345,7 @@ Future<void> _pumpAppScreenCustomProviders(
         ),
         outboxServiceProvider.overrideWithValue(mockOutboxService),
         aiSetupPromptServiceProvider.overrideWith(
-          aiSetupPromptOverride ?? _MockAiSetupPromptService.new,
+          aiSetupPromptOverride ?? MockAiSetupPromptService.new,
         ),
         journalDbProvider.overrideWithValue(mockJournalDb),
         audioRecorderControllerProvider.overrideWith(
@@ -813,12 +793,6 @@ void main() {
     testWidgets('shows sidebar and hides bottom nav at desktop width', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 800)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
       final mockNavService = MockNavService();
       await _stubNavService(
         mockNavService,
@@ -848,12 +822,6 @@ void main() {
       'Daily OS month calendar renders under its sidebar row only while '
       'the Daily OS tab is active',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 800)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
         Future<void> pumpWithActiveIndex(int index) async {
           final mockNavService = MockNavService();
           await _stubNavService(
@@ -911,12 +879,6 @@ void main() {
     testWidgets('Tasks sidebar item has no trailing count badge', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 800)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
       final mockNavService = MockNavService();
       await _stubNavService(
         mockNavService,
@@ -954,12 +916,6 @@ void main() {
     });
 
     testWidgets('sidebar shows Settings at the bottom', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1280, 800)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
       final mockNavService = MockNavService();
       await _stubNavService(
         mockNavService,
@@ -987,12 +943,6 @@ void main() {
     });
 
     testWidgets('tapping sidebar destination calls tapIndex', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1280, 800)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
       final mockNavService = MockNavService();
       await _stubNavService(
         mockNavService,
@@ -1025,12 +975,6 @@ void main() {
     testWidgets('tapping Settings in sidebar calls tapIndex for settings', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 800)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
       final mockNavService = MockNavService();
       await _stubNavService(
         mockNavService,
@@ -1063,12 +1007,6 @@ void main() {
       'desktop layout has no floating TimeRecordingIndicator — '
       'the running timer lives in the sidebar instead',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 800)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
         final mockNavService = MockNavService();
         await _stubNavService(
           mockNavService,
@@ -1109,12 +1047,6 @@ void main() {
     );
 
     testWidgets('disables tickers for inactive desktop tabs', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1280, 800)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
       final mockNavService = MockNavService();
       await _stubNavService(
         mockNavService,
@@ -1146,12 +1078,6 @@ void main() {
     });
 
     testWidgets('respects feature flags in sidebar', (tester) async {
-      tester.view
-        ..physicalSize = const Size(1280, 800)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
       final mockNavService = MockNavService();
       await _stubNavService(
         mockNavService,
@@ -1288,12 +1214,6 @@ void main() {
     testWidgets(
       'tapping toggle-collapsed button calls toggleSidebarCollapsed',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 800)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
         final mockNavService = MockNavService();
         await _stubNavService(
           mockNavService,
@@ -1336,12 +1256,6 @@ void main() {
     testWidgets('dragging the divider calls updateSidebarWidth', (
       tester,
     ) async {
-      tester.view
-        ..physicalSize = const Size(1280, 800)
-        ..devicePixelRatio = 1.0;
-      addTearDown(tester.view.resetPhysicalSize);
-      addTearDown(tester.view.resetDevicePixelRatio);
-
       final mockNavService = MockNavService();
       await _stubNavService(
         mockNavService,
@@ -1453,7 +1367,7 @@ void main() {
                 ),
               ),
               aiSetupPromptServiceProvider.overrideWith(
-                _MockAiSetupPromptService.new,
+                MockAiSetupPromptService.new,
               ),
               journalDbProvider.overrideWithValue(mockJournalDb),
               audioRecorderControllerProvider.overrideWith(
@@ -1814,12 +1728,6 @@ void main() {
     testWidgets(
       'inserts wake→below gap when wakes visible and a timer is running',
       (tester) async {
-        tester.view
-          ..physicalSize = const Size(1280, 800)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
         final mockNavService = MockNavService();
         await _stubNavService(
           mockNavService,
@@ -1888,12 +1796,6 @@ void main() {
           return;
         }
 
-        tester.view
-          ..physicalSize = const Size(1280, 800)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-
         final mockNavService = MockNavService();
         await _stubNavService(
           mockNavService,
@@ -1948,12 +1850,6 @@ void main() {
         if (_isFlatpakTestHost()) {
           return;
         }
-
-        tester.view
-          ..physicalSize = const Size(1280, 800)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
 
         final mockNavService = MockNavService();
         await _stubNavService(
@@ -2021,12 +1917,6 @@ void main() {
         if (_isFlatpakTestHost()) {
           return;
         }
-
-        tester.view
-          ..physicalSize = const Size(1280, 800)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
 
         final mockNavService = MockNavService();
         await _stubNavService(
@@ -2115,10 +2005,10 @@ void main() {
           ProviderScope(
             overrides: [
               themingControllerProvider.overrideWith(
-                _ReadyThemingController.new,
+                ReadyThemingController.new,
               ),
               enableTooltipsProvider.overrideWith((ref) => Stream.value(true)),
-              zoomControllerProvider.overrideWith(_TestZoomController.new),
+              zoomControllerProvider.overrideWith(TestZoomController.new),
               agentInitializationProvider.overrideWith((ref) async {}),
               matrixServiceProvider.overrideWithValue(mockMatrix),
               loginStateStreamProvider.overrideWith(
@@ -2126,7 +2016,7 @@ void main() {
               ),
               outboxServiceProvider.overrideWithValue(mockOutboxService),
               aiSetupPromptServiceProvider.overrideWith(
-                _MockAiSetupPromptService.new,
+                MockAiSetupPromptService.new,
               ),
               audioRecorderControllerProvider.overrideWith(
                 () => StubAudioRecorderController(
@@ -2322,21 +2212,6 @@ class _DismissCountingAiSetupPromptService extends AiSetupPromptService {
 class _EmptyWhatsNewController extends WhatsNewController {
   @override
   Future<WhatsNewState> build() async => const WhatsNewState();
-}
-
-/// Ready theming state so [MyBeamerApp] renders the full app tree instead of
-/// the "Loading..." shell.
-class _ReadyThemingController extends ThemingController {
-  @override
-  ThemingState build() => ThemingState(
-    darkTheme: resolveTestTheme(ThemeData.dark()),
-    lightTheme: resolveTestTheme(ThemeData.light()),
-  );
-}
-
-class _TestZoomController extends ZoomController {
-  @override
-  double build() => defaultZoomScale;
 }
 
 /// Counts [updateActivity] calls so the [MyBeamerApp] pointer listeners can be
