@@ -56,10 +56,20 @@ void main() {
       expect(result.usedTranscriptFallback, isFalse);
     });
 
-    test('audioFilePath defaults to null', () {
+    test('audioFilePath and detectedLanguage default to null', () {
       const result = RealtimeStopResult(transcript: 'text');
       expect(result.audioFilePath, isNull);
+      expect(result.detectedLanguage, isNull);
       expect(result.usedTranscriptFallback, isFalse);
+    });
+
+    test('stores detectedLanguage when reported by the server', () {
+      const result = RealtimeStopResult(
+        transcript: 'Hallo Welt',
+        detectedLanguage: 'de',
+      );
+      expect(result.transcript, 'Hallo Welt');
+      expect(result.detectedLanguage, 'de');
     });
 
     test('usedTranscriptFallback reflects timeout fallback', () {
