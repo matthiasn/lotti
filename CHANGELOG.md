@@ -43,6 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Slow-query logging now starts from persisted logging settings during startup,
   so enabled `slow_queries` and `super_slow_queries` files capture boot-time
   database work instead of waiting for the next settings toggle.
+- Daily OS Next day planning now forces required draft tool calls through
+  Gemini and Mistral providers and keeps fast completed drafts from being
+  dropped while learning cards load.
 
 ## [0.9.1015]
 ### Added

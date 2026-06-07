@@ -115,6 +115,29 @@ class DraftingController extends AsyncNotifier<DraftingState> {
       isCancelled: () => disposed,
     );
 
+    DraftPlan? completedDraft;
+    Object? completedDraftError;
+    StackTrace? completedDraftStack;
+    unawaited(
+      draftFuture
+          .then((value) {
+            completedDraft = value;
+            if (!ref.mounted) return;
+            final current = state.value;
+            if (current == null) return;
+            state = AsyncData(
+              current.copyWith(draft: value, phase: DraftingPhase.ready),
+            );
+          })
+          .catchError((Object error, StackTrace stack) {
+            completedDraftError = error;
+            completedDraftStack = stack;
+            if (!ref.mounted) return;
+            if (state.value == null) return;
+            state = AsyncError<DraftingState>(error, stack);
+          }),
+    );
+
     // Learning-card failures shouldn't block the draft — render an
     // empty card list and keep going. The real adapter already returns
     // `[]` for the "no day agent" case; this guard covers transient
@@ -126,28 +149,16 @@ class DraftingController extends AsyncNotifier<DraftingState> {
       learnings = const [];
     }
 
-    // The draft resolves lazily — fire-and-forget the listener that
-    // flips the phase to ready once it lands.
-    unawaited(
-      draftFuture
-          .then((value) {
-            if (!ref.mounted) return;
-            final current = state.value;
-            if (current == null) return;
-            state = AsyncData(
-              current.copyWith(draft: value, phase: DraftingPhase.ready),
-            );
-          })
-          .catchError((Object error, StackTrace stack) {
-            if (!ref.mounted) return;
-            state = AsyncError<DraftingState>(error, stack);
-          }),
-    );
+    final draftError = completedDraftError;
+    if (draftError != null) {
+      Error.throwWithStackTrace(draftError, completedDraftStack!);
+    }
 
+    final draft = completedDraft;
     return DraftingState(
-      phase: DraftingPhase.drafting,
+      phase: draft == null ? DraftingPhase.drafting : DraftingPhase.ready,
       learningCards: learnings,
-      draft: null,
+      draft: draft,
     );
   }
 }

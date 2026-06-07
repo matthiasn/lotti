@@ -210,6 +210,76 @@ void main() {
       // parameters omitted when null
       expect(fn0.containsKey('parameters'), isFalse);
     });
+
+    test('serializes forced named tool choice', () {
+      const tools = [
+        ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(name: 'draft_day_plan'),
+        ),
+      ];
+      const toolChoice = ChatCompletionToolChoiceOption.tool(
+        ChatCompletionNamedToolChoice(
+          type: ChatCompletionNamedToolChoiceType.function,
+          function: ChatCompletionFunctionCallOption(name: 'draft_day_plan'),
+        ),
+      );
+
+      final body = GeminiUtils.buildRequestBody(
+        prompt: 'Draft the day',
+        temperature: 0.2,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),
+        tools: tools,
+        toolChoice: toolChoice,
+      );
+
+      final toolConfig = body['toolConfig'] as Map<String, dynamic>;
+      final functionCallingConfig =
+          toolConfig['functionCallingConfig'] as Map<String, dynamic>;
+      expect(functionCallingConfig['mode'], 'ANY');
+      expect(
+        functionCallingConfig['allowedFunctionNames'],
+        ['draft_day_plan'],
+      );
+    });
+
+    test('maps each tool-choice mode to a Gemini functionCallingConfig', () {
+      const expected = {
+        ChatCompletionToolChoiceMode.none: 'NONE',
+        ChatCompletionToolChoiceMode.auto: 'AUTO',
+        ChatCompletionToolChoiceMode.required: 'ANY',
+      };
+
+      for (final entry in expected.entries) {
+        final body = GeminiUtils.buildRequestBody(
+          prompt: 'Draft the day',
+          temperature: 0.2,
+          thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),
+          toolChoice: ChatCompletionToolChoiceOption.mode(entry.key),
+        );
+
+        final functionCallingConfig =
+            (body['toolConfig']
+                    as Map<String, dynamic>)['functionCallingConfig']
+                as Map<String, dynamic>;
+        expect(functionCallingConfig['mode'], entry.value);
+        // Mode-only choices never pin specific function names.
+        expect(
+          functionCallingConfig.containsKey('allowedFunctionNames'),
+          isFalse,
+        );
+      }
+    });
+
+    test('omits toolConfig entirely when no tool choice is given', () {
+      final body = GeminiUtils.buildRequestBody(
+        prompt: 'Draft the day',
+        temperature: 0.2,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),
+      );
+
+      expect(body.containsKey('toolConfig'), isFalse);
+    });
   });
 
   group('GeminiUtils.buildMultiTurnRequestBody', () {
@@ -249,6 +319,41 @@ void main() {
       expect(functionCall['name'], 'test_function');
       // Should have empty object as fallback for malformed JSON
       expect(functionCall['args'], <String, dynamic>{});
+    });
+
+    test('serializes forced named tool choice', () {
+      const toolChoice = ChatCompletionToolChoiceOption.tool(
+        ChatCompletionNamedToolChoice(
+          type: ChatCompletionNamedToolChoiceType.function,
+          function: ChatCompletionFunctionCallOption(name: 'draft_day_plan'),
+        ),
+      );
+
+      final body = GeminiUtils.buildMultiTurnRequestBody(
+        messages: const [
+          ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string('Draft the day'),
+          ),
+        ],
+        temperature: 0.2,
+        thinkingConfig: const GeminiThinkingConfig(thinkingBudget: 64),
+        tools: const [
+          ChatCompletionTool(
+            type: ChatCompletionToolType.function,
+            function: FunctionObject(name: 'draft_day_plan'),
+          ),
+        ],
+        toolChoice: toolChoice,
+      );
+
+      final toolConfig = body['toolConfig'] as Map<String, dynamic>;
+      final functionCallingConfig =
+          toolConfig['functionCallingConfig'] as Map<String, dynamic>;
+      expect(functionCallingConfig['mode'], 'ANY');
+      expect(
+        functionCallingConfig['allowedFunctionNames'],
+        ['draft_day_plan'],
+      );
     });
 
     test('includes thought signatures in function calls', () {

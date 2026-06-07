@@ -75,6 +75,8 @@ class GeminiUtils {
   /// - Adds `systemInstruction` when provided.
   /// - Serializes [GeminiThinkingConfig] into `generationConfig.thinkingConfig`.
   /// - Maps OpenAI-style [ChatCompletionTool] to Gemini `functionDeclarations`.
+  /// - Maps OpenAI-style forced [ChatCompletionToolChoiceOption] values to
+  ///   Gemini's native `toolConfig.functionCallingConfig`.
   static Map<String, dynamic> buildRequestBody({
     required String prompt,
     required double temperature,
@@ -83,6 +85,7 @@ class GeminiUtils {
     String? modelId,
     int? maxTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
   }) {
     final contents = <Map<String, dynamic>>[
       {
@@ -108,6 +111,7 @@ class GeminiUtils {
             'functionDeclarations': _buildFunctionDeclarations(tools),
           },
         ],
+      'toolConfig': ?_buildToolConfig(toolChoice),
     };
 
     if (systemMessage != null && systemMessage.trim().isNotEmpty) {
@@ -139,6 +143,7 @@ class GeminiUtils {
   /// - [systemMessage]: Optional system instruction
   /// - [maxTokens]: Optional output token limit
   /// - [tools]: Optional function declarations
+  /// - [toolChoice]: Optional forced/disabled/automatic function-calling mode
   static Map<String, dynamic> buildMultiTurnRequestBody({
     required List<ChatCompletionMessage> messages,
     required double temperature,
@@ -148,6 +153,7 @@ class GeminiUtils {
     String? modelId,
     int? maxTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
   }) {
     // Build mapping of toolCallId -> functionName from assistant messages
     // This is needed because tool responses only have the ID, not the name
@@ -185,6 +191,7 @@ class GeminiUtils {
             'functionDeclarations': _buildFunctionDeclarations(tools),
           },
         ],
+      'toolConfig': ?_buildToolConfig(toolChoice),
     };
 
     if (systemMessage != null && systemMessage.trim().isNotEmpty) {
@@ -415,6 +422,33 @@ class GeminiUtils {
           },
         )
         .toList();
+  }
+
+  static Map<String, dynamic>? _buildToolConfig(
+    ChatCompletionToolChoiceOption? toolChoice,
+  ) {
+    if (toolChoice == null) return null;
+
+    return toolChoice.map(
+      mode: (choice) {
+        final mode = switch (choice.value) {
+          ChatCompletionToolChoiceMode.none => 'NONE',
+          ChatCompletionToolChoiceMode.auto => 'AUTO',
+          ChatCompletionToolChoiceMode.required => 'ANY',
+        };
+        return {
+          'functionCallingConfig': {'mode': mode},
+        };
+      },
+      tool: (choice) {
+        return {
+          'functionCallingConfig': {
+            'mode': 'ANY',
+            'allowedFunctionNames': [choice.value.function.name],
+          },
+        };
+      },
+    );
   }
 
   /// Recursively strips `additionalProperties` from a JSON Schema map.

@@ -91,6 +91,8 @@ class GeminiInferenceRepository {
   /// - `systemMessage`: optional system instruction.
   /// - `maxCompletionTokens`: model-specific token cap.
   /// - `tools`: OpenAI-style function tools mapped to Gemini function declarations.
+  /// - `toolChoice`: Optional OpenAI-style tool-selection override mapped to
+  ///   Gemini's native function-calling config.
   /// - `signatureCollector`: optional collector for capturing thought signatures
   ///   from Gemini 3 function calls (for multi-turn conversations).
   ///
@@ -111,6 +113,7 @@ class GeminiInferenceRepository {
     String? systemMessage,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     ThoughtSignatureCollector? signatureCollector,
   }) async* {
     final uri = GeminiUtils.buildStreamGenerateContentUri(
@@ -127,6 +130,7 @@ class GeminiInferenceRepository {
       modelId: model,
       maxTokens: maxCompletionTokens,
       tools: tools,
+      toolChoice: toolChoice,
     );
 
     developer.log(
@@ -572,6 +576,7 @@ class GeminiInferenceRepository {
     String? systemMessage,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
   }) => generateTextWithMessagesImpl(
@@ -584,6 +589,7 @@ class GeminiInferenceRepository {
     systemMessage: systemMessage,
     maxCompletionTokens: maxCompletionTokens,
     tools: tools,
+    toolChoice: toolChoice,
     signatureCollector: signatureCollector,
     turnIndex: turnIndex,
   );

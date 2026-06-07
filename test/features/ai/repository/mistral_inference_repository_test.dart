@@ -273,6 +273,96 @@ void main() {
         expect(requestBody['tool_choice'], equals('auto'));
       });
 
+      test('should serialize forced named tool choice when provided', () async {
+        final events = [
+          createSseChunkEvent(content: 'Planned'),
+          createSseFinalEvent(),
+        ];
+        when(() => mockHttpClient.send(any())).thenAnswer(
+          (_) async => createSseStreamedResponse(events: events),
+        );
+
+        const tools = [
+          ChatCompletionTool(
+            type: ChatCompletionToolType.function,
+            function: FunctionObject(name: 'draft_day_plan'),
+          ),
+        ];
+        const toolChoice = ChatCompletionToolChoiceOption.tool(
+          ChatCompletionNamedToolChoice(
+            type: ChatCompletionNamedToolChoiceType.function,
+            function: ChatCompletionFunctionCallOption(name: 'draft_day_plan'),
+          ),
+        );
+
+        final stream = repository.generateText(
+          prompt: prompt,
+          model: model,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          tools: tools,
+          toolChoice: toolChoice,
+        );
+
+        await stream.toList();
+
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
+        final request = captured.first as http.Request;
+        final requestBody = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(requestBody['tool_choice'], {
+          'type': 'function',
+          'function': {'name': 'draft_day_plan'},
+        });
+      });
+
+      test('serializes each tool-choice mode to its Mistral spelling', () async {
+        const expected = {
+          ChatCompletionToolChoiceMode.none: 'none',
+          ChatCompletionToolChoiceMode.auto: 'auto',
+          // Mistral forces a tool call with `any`, not OpenAI's `required`.
+          ChatCompletionToolChoiceMode.required: 'any',
+        };
+
+        for (final mode in expected.keys) {
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => createSseStreamedResponse(
+              events: [
+                createSseChunkEvent(content: 'ok'),
+                createSseFinalEvent(),
+              ],
+            ),
+          );
+
+          await repository
+              .generateText(
+                prompt: prompt,
+                model: model,
+                baseUrl: baseUrl,
+                apiKey: apiKey,
+                tools: const [
+                  ChatCompletionTool(
+                    type: ChatCompletionToolType.function,
+                    function: FunctionObject(name: 'draft_day_plan'),
+                  ),
+                ],
+                toolChoice: ChatCompletionToolChoiceOption.mode(mode),
+              )
+              .toList();
+        }
+
+        final sent = verify(() => mockHttpClient.send(captureAny()))
+            .captured
+            .cast<http.Request>()
+            .map(
+              (r) =>
+                  (jsonDecode(r.body) as Map<String, dynamic>)['tool_choice'],
+            )
+            .toList();
+        expect(sent, expected.values.toList());
+      });
+
       test('should handle HTTP error responses', () async {
         // Arrange
         final stream = Stream.fromIterable([

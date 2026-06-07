@@ -23,6 +23,7 @@ extension GeminiMultiTurnInference on GeminiInferenceRepository {
   /// - [systemMessage]: Optional system instruction
   /// - [maxCompletionTokens]: Optional output token limit
   /// - [tools]: Optional function declarations
+  /// - [toolChoice]: Optional tool-selection override
   /// - [signatureCollector]: Optional collector for capturing new signatures
   /// Multi-turn variant that accepts full conversation history.
   ///
@@ -39,6 +40,7 @@ extension GeminiMultiTurnInference on GeminiInferenceRepository {
     String? systemMessage,
     int? maxCompletionTokens,
     List<ChatCompletionTool>? tools,
+    ChatCompletionToolChoiceOption? toolChoice,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
   }) async* {
@@ -57,6 +59,7 @@ extension GeminiMultiTurnInference on GeminiInferenceRepository {
       modelId: model,
       maxTokens: maxCompletionTokens,
       tools: tools,
+      toolChoice: toolChoice,
     );
 
     developer.log(
