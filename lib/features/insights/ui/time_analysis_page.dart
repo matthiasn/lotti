@@ -20,7 +20,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 ///
 /// The page is the single provider consumer: it watches the bucket window,
 /// range, preferences, and categories, derives chart/table/KPI values via
-/// the pure logic functions (sub-millisecond at 10k entries — measured),
+/// the pure logic functions (~1-3ms per build at 10k-50k entries, measured
+/// — well within a frame),
 /// and passes plain values to dumb child widgets.
 class TimeAnalysisPage extends ConsumerWidget {
   const TimeAnalysisPage({super.key});
@@ -110,14 +111,22 @@ class _DashboardContent extends StatelessWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
 
-    // Pure, microsecond-cheap derivations — recomputed per build, cached
-    // implicitly by the deep value equality of the inputs upstream.
-    final chartData = buildChartData(buckets, range);
-    final tableRows = buildTableRows(buckets, range);
+    // Pure derivations, recomputed per build (~1-3ms at 10k-50k entries,
+    // measured — well within a frame). The daily/ranked aggregation is
+    // shared across the three builders; it dominates the cost.
+    final daily = dailyTotals(buckets, range);
+    final ranked = rankedCategoryTotals(daily);
+    final chartData = buildChartData(buckets, range, precomputedDaily: daily);
+    final tableRows = buildTableRows(
+      buckets,
+      range,
+      precomputedRanked: ranked,
+    );
     final kpis = buildKpis(
       buckets,
       range,
       focusCategoryIds: focusCategoryIds,
+      precomputedRanked: ranked,
     );
     final isEmpty = kpis.totalSeconds == 0;
 

@@ -1011,7 +1011,13 @@ void main() {
         // Assert
         expect(result, equals(1));
         verify(() => mockJournalDb.deleteLink(fromId, toId)).called(1);
-        verify(() => mockUpdateNotifications.notify({fromId, toId})).called(1);
+        verify(
+          () => mockUpdateNotifications.notify({
+            fromId,
+            toId,
+            linkNotification,
+          }),
+        ).called(1);
       });
     });
 

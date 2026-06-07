@@ -38,6 +38,7 @@ void main() {
     required DateTime dateTo,
     String? categoryId,
     bool deleted = false,
+    bool private = false,
   }) {
     return JournalEntity.journalEntry(
       meta: Metadata(
@@ -48,8 +49,18 @@ void main() {
         dateTo: dateTo,
         categoryId: categoryId,
         deletedAt: deleted ? dateTo : null,
+        private: private,
       ),
       entryText: const EntryText(plainText: 'work'),
+    );
+  }
+
+  Future<void> setPrivateFlag({required bool status}) {
+    return db.customStatement(
+      'INSERT INTO config_flags (name, description, status) '
+      "VALUES ('private', 'show private entries', ?) "
+      'ON CONFLICT(name) DO UPDATE SET status = excluded.status',
+      [if (status) 1 else 0],
     );
   }
 
@@ -340,6 +351,107 @@ void main() {
       );
       expect(rows, hasLength(1));
     });
+
+    test('private entries are hidden unless the private flag is on', () async {
+      await db.updateJournalEntity(
+        buildTimeEntry(
+          id: 'entry-private',
+          dateFrom: DateTime(2024, 3, 1, 9),
+          dateTo: DateTime(2024, 3, 1, 10),
+          categoryId: 'cat-secret',
+          private: true,
+        ),
+      );
+      await db.updateJournalEntity(
+        buildTimeEntry(
+          id: 'entry-public',
+          dateFrom: DateTime(2024, 3, 1, 11),
+          dateTo: DateTime(2024, 3, 1, 12),
+          categoryId: 'cat-public',
+        ),
+      );
+
+      // No flag row at all → private hidden by default.
+      var rows = await db.insightsTimeRows(
+        start: DateTime(2024, 3),
+        end: DateTime(2024, 4),
+      );
+      expect(rows.map((r) => r.categoryId), ['cat-public']);
+
+      // Flag explicitly off → still hidden.
+      await setPrivateFlag(status: false);
+      rows = await db.insightsTimeRows(
+        start: DateTime(2024, 3),
+        end: DateTime(2024, 4),
+      );
+      expect(rows.map((r) => r.categoryId), ['cat-public']);
+
+      // Flag on → private durations included.
+      await setPrivateFlag(status: true);
+      rows = await db.insightsTimeRows(
+        start: DateTime(2024, 3),
+        end: DateTime(2024, 4),
+      );
+      expect(rows.map((r) => r.categoryId), [
+        'cat-secret',
+        'cat-public',
+      ]);
+    });
+
+    test(
+      'a hidden private task cannot leak its category into attribution',
+      () async {
+        await db.updateJournalEntity(
+          JournalEntity.task(
+            meta: Metadata(
+              id: 'task-private',
+              createdAt: DateTime(2024, 3),
+              updatedAt: DateTime(2024, 3),
+              dateFrom: DateTime(2024, 3),
+              dateTo: DateTime(2024, 3),
+              categoryId: 'cat-secret-task',
+              private: true,
+            ),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status-task-private',
+                createdAt: DateTime(2024, 3),
+                utcOffset: 0,
+              ),
+              dateFrom: DateTime(2024, 3),
+              dateTo: DateTime(2024, 3),
+              statusHistory: const [],
+              title: 'Private task',
+            ),
+          ),
+        );
+        await db.updateJournalEntity(
+          buildTimeEntry(
+            id: 'entry-1',
+            dateFrom: DateTime(2024, 3, 1, 9),
+            dateTo: DateTime(2024, 3, 1, 10),
+            categoryId: 'cat-own',
+          ),
+        );
+        await link(fromId: 'task-private', toId: 'entry-1');
+
+        // Private hidden: the public entry still counts, but attribution
+        // falls back to its own category instead of the private task's.
+        final rows = await db.insightsTimeRows(
+          start: DateTime(2024, 3),
+          end: DateTime(2024, 4),
+        );
+        expect(rows.single.categoryId, 'cat-own');
+
+        // Private visible: the task's category wins again.
+        await setPrivateFlag(status: true);
+        final visibleRows = await db.insightsTimeRows(
+          start: DateTime(2024, 3),
+          end: DateTime(2024, 4),
+        );
+        expect(visibleRows.single.categoryId, 'cat-secret-task');
+      },
+    );
 
     test('rows are ordered by date_from ascending', () async {
       await db.updateJournalEntity(

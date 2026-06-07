@@ -53,7 +53,10 @@ extension _JournalHandlers on SyncEventProcessor {
       }
     }
     if (affectedIds.isNotEmpty) {
-      _updateNotifications.notify(affectedIds, fromSync: true);
+      _updateNotifications.notify(
+        {...affectedIds, linkNotification},
+        fromSync: true,
+      );
     }
     return processedLinksCount;
   }

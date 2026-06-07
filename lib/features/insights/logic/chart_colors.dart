@@ -39,8 +39,8 @@ Color neutralChartColor(Brightness brightness) => brightness == Brightness.dark
 /// warm-neutral uncategorized gray, so the two never read as the same
 /// series.
 Color otherChartColor(Brightness brightness) => brightness == Brightness.dark
-    ? const HSLColor.fromAHSL(1, 220, 0.14, 0.52).toColor()
-    : const HSLColor.fromAHSL(1, 220, 0.14, 0.66).toColor();
+    ? const HSLColor.fromAHSL(1, 220, 0.22, 0.52).toColor()
+    : const HSLColor.fromAHSL(1, 220, 0.22, 0.66).toColor();
 
 /// Edge stroke for stacked-area bands: a lightened (dark theme) or
 /// darkened (light theme) variant of the fill so adjacent muted bands stay

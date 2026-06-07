@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:lotti/services/db_notification.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Generic helper that creates a broadcast stream which fetches data on first
 /// listen and re-fetches whenever a matching notification arrives.
@@ -8,10 +9,17 @@ import 'package:lotti/services/db_notification.dart';
 /// Fetches are serialized: if a notification arrives while a fetch is in
 /// progress, one additional fetch is queued and executed after the current one
 /// completes.
+///
+/// [refetchThrottle] caps notification-driven refetch frequency
+/// (trailing-edge, so the last change in a burst always lands). Use it for
+/// expensive fetchers that don't need sub-second freshness — e.g. active
+/// typing emits a notification batch every ~100ms, which would otherwise
+/// re-run the fetch on every batch.
 Stream<R> _notificationDrivenStream<R>({
   required UpdateNotifications notifications,
   required Set<String> notificationKeys,
   required Future<R> Function() fetcher,
+  Duration? refetchThrottle,
 }) {
   late StreamController<R> controller;
   StreamSubscription<Set<String>>? sub;
@@ -41,9 +49,19 @@ Stream<R> _notificationDrivenStream<R>({
   controller = StreamController<R>.broadcast(
     onListen: () {
       doFetch();
-      sub = notifications.updateStream.listen((ids) {
-        if (ids.any(notificationKeys.contains)) doFetch();
-      });
+      // Filter BEFORE throttling so unrelated tokens neither trigger nor
+      // extend the throttle window.
+      var updates = notifications.updateStream.where(
+        (ids) => ids.any(notificationKeys.contains),
+      );
+      if (refetchThrottle != null) {
+        updates = updates.throttleTime(
+          refetchThrottle,
+          leading: false,
+          trailing: true,
+        );
+      }
+      sub = updates.listen((_) => doFetch());
     },
     onCancel: () {
       sub?.cancel();
@@ -74,10 +92,12 @@ Stream<T?> notificationDrivenItemStream<T>({
   required UpdateNotifications notifications,
   required Set<String> notificationKeys,
   required Future<T?> Function() fetcher,
+  Duration? refetchThrottle,
 }) => _notificationDrivenStream<T?>(
   notifications: notifications,
   notificationKeys: notificationKeys,
   fetcher: fetcher,
+  refetchThrottle: refetchThrottle,
 );
 
 /// Map variant for non-list data (e.g., label usage counts).

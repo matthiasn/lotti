@@ -576,4 +576,57 @@ void main() {
       });
     });
   });
+
+  group('refetchThrottle', () {
+    test(
+      'a notification burst collapses to one trailing refetch and '
+      'unrelated tokens never extend the window',
+      () {
+        fakeAsync((async) {
+          var fetchCount = 0;
+          final stream = notificationDrivenItemStream<String>(
+            notifications: notifications,
+            notificationKeys: {'TEST_KEY'},
+            refetchThrottle: const Duration(seconds: 5),
+            fetcher: () async {
+              fetchCount++;
+              return 'fetch-$fetchCount';
+            },
+          );
+
+          final results = <String?>[];
+          final sub = stream.listen(results.add);
+          async.flushMicrotasks();
+          expect(results, ['fetch-1']); // initial fetch is not throttled
+
+          // A typing-style burst: many matching batches inside the window.
+          for (var i = 0; i < 10; i++) {
+            notifications.emit({'TEST_KEY'});
+            async.elapse(const Duration(milliseconds: 100));
+          }
+          // Still inside the 5s window: no refetch yet (trailing edge).
+          expect(results, hasLength(1));
+
+          // Unrelated tokens are filtered BEFORE the throttle, so they
+          // neither trigger nor extend the window.
+          notifications.emit({'UNRELATED'});
+          async
+            ..elapse(const Duration(seconds: 5))
+            ..flushMicrotasks();
+
+          // Exactly one trailing refetch for the whole burst.
+          expect(results, ['fetch-1', 'fetch-2']);
+
+          // A lone notification after a quiet period refetches once more.
+          notifications.emit({'TEST_KEY'});
+          async
+            ..elapse(const Duration(seconds: 5))
+            ..flushMicrotasks();
+          expect(results, ['fetch-1', 'fetch-2', 'fetch-3']);
+
+          sub.cancel();
+        });
+      },
+    );
+  });
 }

@@ -41,6 +41,9 @@ void main() {
         maybeUpdateNotificationsProvider.overrideWith(
           (ref) => withNotifications,
         ),
+        // Immediate refetches in tests; the 5s production throttle has its
+        // own fakeAsync coverage in notification_stream_test.dart.
+        insightsRefetchThrottleProvider.overrideWithValue(null),
       ],
     );
     addTearDown(container.dispose);
@@ -143,6 +146,36 @@ void main() {
       final day = latest.days[epochDay(DateTime(2026, 6, 7))]!;
       expect(day['work']!.seconds, 2 * 3600);
     });
+
+    test(
+      'linking a time entry to a task refetches so attribution updates',
+      () async {
+        stubRows([row(hour: 9, categoryId: null)]);
+        final container = makeContainer(withNotifications: notifications);
+
+        final states = <AsyncValue<InsightsDayBuckets>>[];
+        await listenAndAwait(container, windowStartDay, into: states);
+
+        // The link lands and the entry is now attributed to the task's
+        // category — standalone link creation fires only linkNotification.
+        stubRows([row(hour: 9, categoryId: 'task-category')]);
+        await withClock(Clock.fixed(fixedNow), () async {
+          notificationController.add({linkNotification});
+          await Future<void>.delayed(Duration.zero);
+          await Future<void>.delayed(Duration.zero);
+        });
+
+        verify(
+          () => repository.fetchTimeRows(
+            start: any(named: 'start'),
+            end: any(named: 'end'),
+          ),
+        ).called(2);
+        final day = states.last.value!.days[epochDay(DateTime(2026, 6, 7))]!;
+        expect(day['task-category']!.seconds, 3600);
+        expect(day.containsKey(null), isFalse);
+      },
+    );
 
     test('ignores unrelated notification tokens', () async {
       stubRows([row(hour: 9)]);

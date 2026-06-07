@@ -130,6 +130,22 @@ WHERE type = 'Task'
   AND task = 1
   AND deleted = FALSE;
 
+-- Partial covering index for the Insights time-analysis query (v43 in
+-- migrations). Only `date_from < :end` can be a seek bound — the
+-- `date_to > :start` overlap check is inherently residual — so the scan
+-- walks every JournalEntry before :end. Covering (date_from, date_to,
+-- category, private, id) turns that walk into an index-only scan with no
+-- row fetches, keeping cold-fetch cost flat as lifetime history grows.
+CREATE INDEX idx_journal_insights_time ON journal(
+  date_from COLLATE BINARY ASC,
+  date_to COLLATE BINARY ASC,
+  category COLLATE BINARY ASC,
+  private COLLATE BINARY ASC,
+  id COLLATE BINARY ASC
+)
+WHERE type = 'JournalEntry'
+  AND deleted = FALSE;
+
 CREATE TABLE conflicts (
   id TEXT NOT NULL,
   created_at DATETIME NOT NULL,

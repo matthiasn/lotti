@@ -39,7 +39,11 @@ class InsightsTable extends StatelessWidget {
     if (rows.isEmpty) return const SizedBox.shrink();
 
     final maxShare = rows.first.share;
-    final headerStyle = calmEyebrowStyle(tokens);
+    // mediumEmphasis: lowEmphasis column headers wash out on light theme.
+    final headerStyle = calmEyebrowStyle(
+      tokens,
+      color: tokens.colors.text.mediumEmphasis,
+    );
     final numberStyle = monoMetaStyle(
       tokens,
       tokens.colors,
@@ -73,8 +77,9 @@ class InsightsTable extends StatelessWidget {
   }) {
     // The detail pane is user-resizable down to ~90px; degrade columns
     // gracefully (bar → avg/day → share → total) instead of overflowing.
-    // Below ~180px only the flexible category column survives.
-    final showBar = maxWidth >= 520;
+    // Below ~180px only the flexible category column survives. A single
+    // row also drops the data bar: a maxed 100% bar encodes nothing.
+    final showBar = maxWidth >= 520 && rows.length > 1;
     final showAvg = showAvgPerDay && maxWidth >= 400;
     final showShare = maxWidth >= 280;
     final showTotal = maxWidth >= 180;

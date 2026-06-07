@@ -23,6 +23,7 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_sidebar_entry.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.dart';
@@ -588,6 +589,9 @@ class _AppScreenState extends ConsumerState<AppScreen> {
         iconBuilder: ({required active}) => Icon(
           active ? Icons.insert_chart_rounded : Icons.insert_chart_outlined,
         ),
+        // Time Analysis sub-entry beneath the Insights row while the tab
+        // is active — same slot Tasks/Daily OS use for their sub-trees.
+        expandedChildBuilder: () => const InsightsSidebarEntry(),
       ),
       _AppNavigationDestination(
         kind: _AppNavigationDestinationKind.journal,

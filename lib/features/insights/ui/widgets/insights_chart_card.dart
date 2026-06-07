@@ -9,6 +9,8 @@ import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Chart mode: per-bucket values or running cumulative totals.
@@ -41,6 +43,15 @@ class InsightsChartCard extends StatefulWidget {
 class _InsightsChartCardState extends State<InsightsChartCard> {
   InsightsChartMode _mode = InsightsChartMode.daily;
 
+  String _captionText(AppLocalizations messages) {
+    final base = _mode == InsightsChartMode.daily
+        ? messages.insightsChartDailyCaption
+        : messages.insightsChartCumulativeCaption;
+    final keys = widget.chartData.seriesKeys;
+    if (keys.length != 1) return base;
+    return '$base · ${widget.resolver.labelFor(keys.single)}';
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -64,58 +75,41 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Card title sits a full type tier above the in-tile
+                      // eyebrow labels so the hierarchy reads correctly.
                       Text(
                         messages.insightsChartTitle,
-                        style: calmEyebrowStyle(tokens),
+                        style: tokens.typography.styles.subtitle.subtitle1
+                            .copyWith(color: tokens.colors.text.highEmphasis),
                       ),
                       SizedBox(height: tokens.spacing.step1),
                       // The mode caption spells out what the chart shows so
-                      // "Cumulative" never needs guessing.
+                      // "Cumulative" never needs guessing. With a single
+                      // series (legend suppressed) it also names the sole
+                      // category so the mono-color bars read as intended.
                       Text(
-                        _mode == InsightsChartMode.daily
-                            ? messages.insightsChartDailyCaption
-                            : messages.insightsChartCumulativeCaption,
+                        _captionText(messages),
                         style: tokens.typography.styles.others.caption.copyWith(
                           color: tokens.colors.text.lowEmphasis,
                         ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
                 ),
-                SegmentedButton<InsightsChartMode>(
-                  segments: [
-                    ButtonSegment(
-                      value: InsightsChartMode.daily,
-                      label: Text(messages.insightsChartDaily),
-                    ),
-                    ButtonSegment(
-                      value: InsightsChartMode.cumulative,
-                      label: Text(messages.insightsChartCumulative),
-                    ),
-                  ],
-                  selected: {_mode},
-                  showSelectedIcon: false,
-                  style: ButtonStyle(
-                    visualDensity: VisualDensity.compact,
-                    textStyle: WidgetStatePropertyAll(
-                      tokens.typography.styles.body.bodySmall,
-                    ),
-                    // The selected segment must be the high-contrast one;
-                    // the Material default inverts that on this theme.
-                    foregroundColor: WidgetStateProperty.resolveWith(
-                      (states) => states.contains(WidgetState.selected)
-                          ? tokens.colors.text.highEmphasis
-                          : tokens.colors.text.lowEmphasis,
-                    ),
-                    backgroundColor: WidgetStateProperty.resolveWith(
-                      (states) => states.contains(WidgetState.selected)
-                          ? tokens.colors.surface.selected
-                          : Colors.transparent,
-                    ),
-                  ),
-                  onSelectionChanged: (selection) {
-                    setState(() => _mode = selection.first);
-                  },
+                // Same pill idiom as the range selector — one "pick one of
+                // N" language across the dashboard.
+                InsightsPillButton(
+                  label: messages.insightsChartDaily,
+                  active: _mode == InsightsChartMode.daily,
+                  onTap: () => setState(() => _mode = InsightsChartMode.daily),
+                ),
+                SizedBox(width: tokens.spacing.step2),
+                InsightsPillButton(
+                  label: messages.insightsChartCumulative,
+                  active: _mode == InsightsChartMode.cumulative,
+                  onTap: () =>
+                      setState(() => _mode = InsightsChartMode.cumulative),
                 ),
               ],
             ),
@@ -634,7 +628,8 @@ class _ChartLegend extends StatelessWidget {
                   ),
                 ),
               ),
-              SizedBox(width: tokens.spacing.step2),
+              // step3 matches the table's swatch gap — one reading rhythm.
+              SizedBox(width: tokens.spacing.step3),
               Text(
                 legendLabel(key),
                 style: tokens.typography.styles.others.caption.copyWith(

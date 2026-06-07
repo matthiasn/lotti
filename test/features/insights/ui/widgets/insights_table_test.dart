@@ -213,4 +213,20 @@ void main() {
     ]);
     expect(find.text('<0:01'), findsOneWidget);
   });
+
+  testWidgets('a single row drops the redundant maxed data bar', (
+    tester,
+  ) async {
+    await pumpTable(tester, const [
+      InsightsTableRow(
+        categoryId: 'cat-client',
+        seconds: 3600,
+        share: 1,
+        avgSecondsPerDay: 514,
+      ),
+    ]);
+    // 100% of one category encodes nothing — the bar column collapses.
+    expect(find.byType(DesignSystemProgressBar), findsNothing);
+    expect(find.text('100%'), findsOneWidget);
+  });
 }

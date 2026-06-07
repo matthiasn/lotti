@@ -244,10 +244,15 @@ int weekStartDay(int day) {
 ///
 /// Series are ordered largest-total-first so the biggest category sits on
 /// the stack baseline where it stays comparable across buckets.
+/// [precomputedDaily] lets the caller share one `dailyTotals` pass across
+/// [buildChartData], [buildTableRows], and [buildKpis] — the aggregation
+/// is the dominant cost of a page build (measured ~3× redundancy without
+/// sharing). Must equal `dailyTotals(buckets, range)` when provided.
 InsightsChartData buildChartData(
   InsightsDayBuckets buckets,
-  InsightsRange range,
-) {
+  InsightsRange range, {
+  List<Map<String?, int>>? precomputedDaily,
+}) {
   final granularity = granularityFor(range);
 
   List<Map<String?, int>> perBucket;
@@ -264,13 +269,13 @@ InsightsChartData buildChartData(
         (h) => DateTime(start.year, start.month, start.day, h),
       );
     case InsightsGranularity.day:
-      perBucket = dailyTotals(buckets, range);
+      perBucket = precomputedDaily ?? dailyTotals(buckets, range);
       bucketStarts = List.generate(
         range.dayCount,
         (i) => dayStart(range.startDay + i),
       );
     case InsightsGranularity.week:
-      final daily = dailyTotals(buckets, range);
+      final daily = precomputedDaily ?? dailyTotals(buckets, range);
       final firstWeek = weekStartDay(range.startDay);
       final lastWeek = weekStartDay(range.endDayExclusive - 1);
       final weekCount = (lastWeek - firstWeek) ~/ 7 + 1;
@@ -344,11 +349,16 @@ List<List<int>> accumulate(List<List<int>> values) {
 
 /// Per-category table rows for [range]: union-merged seconds, share of the
 /// range total, and average over days **in the range**.
+///
+/// [precomputedRanked] shares one ranking pass with [buildKpis] (see
+/// [buildChartData] for the rationale).
 List<InsightsTableRow> buildTableRows(
   InsightsDayBuckets buckets,
-  InsightsRange range,
-) {
-  final ranked = rankedCategoryTotals(dailyTotals(buckets, range));
+  InsightsRange range, {
+  List<MapEntry<String?, int>>? precomputedRanked,
+}) {
+  final ranked =
+      precomputedRanked ?? rankedCategoryTotals(dailyTotals(buckets, range));
   final total = ranked.fold<int>(0, (sum, e) => sum + e.value);
   if (total == 0) return const [];
   return [
@@ -369,8 +379,10 @@ InsightsKpis buildKpis(
   InsightsDayBuckets buckets,
   InsightsRange range, {
   required Set<String> focusCategoryIds,
+  List<MapEntry<String?, int>>? precomputedRanked,
 }) {
-  final ranked = rankedCategoryTotals(dailyTotals(buckets, range));
+  final ranked =
+      precomputedRanked ?? rankedCategoryTotals(dailyTotals(buckets, range));
   final total = ranked.fold<int>(0, (sum, e) => sum + e.value);
   if (focusCategoryIds.isEmpty) {
     return InsightsKpis(

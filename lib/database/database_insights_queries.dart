@@ -37,6 +37,11 @@ mixin _JournalDbInsightsQueries on _$JournalDb {
   /// - **Type scope.** Only `JournalEntry` carries tracked time, mirroring
   ///   the shipped Daily OS time history (audio is excluded there to avoid
   ///   double-counting recordings made during a running timer).
+  /// - **Private visibility.** Entries gate on the global `private` config
+  ///   flag with the same idiom as `workEntriesInDateRange`: when private
+  ///   mode is hidden, private entries' durations never reach the
+  ///   dashboard. The linked-task subquery applies the same gate so a
+  ///   hidden private task can't leak its category into attribution.
   Future<List<InsightsTimeRowRecord>> insightsTimeRows({
     required DateTime start,
     required DateTime end,
@@ -56,6 +61,9 @@ mixin _JournalDbInsightsQueries on _$JournalDb {
                 AND t.type = 'Task'
                 AND t.deleted = FALSE
                 AND t.category != ''
+                AND COALESCE(t.private, FALSE) IN
+                  (FALSE, (SELECT status FROM config_flags
+                           WHERE name = 'private'))
               ORDER BY t.date_from DESC, t.id
               LIMIT 1
             ),
@@ -67,10 +75,12 @@ mixin _JournalDbInsightsQueries on _$JournalDb {
           AND j.date_to > ?
           AND j.date_from < ?
           AND j.date_to > j.date_from
+          AND COALESCE(j.private, FALSE) IN
+            (FALSE, (SELECT status FROM config_flags WHERE name = 'private'))
         ORDER BY j.date_from
       ''',
       variables: [Variable<DateTime>(start), Variable<DateTime>(end)],
-      readsFrom: {journal, linkedEntries},
+      readsFrom: {journal, linkedEntries, configFlags},
     ).get();
 
     return [

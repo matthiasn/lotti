@@ -123,8 +123,10 @@ void main() {
     await pumpCard(tester, data: data);
 
     expect(find.byType(BarChart), findsOneWidget);
-    // No one-item legend row restating the only category.
+    // No one-item legend row restating the only category — instead the
+    // caption names the sole series so mono-color bars read as intended.
     expect(find.text('Client Work'), findsNothing);
+    expect(find.text('Time per day · Client Work'), findsOneWidget);
   });
 
   testWidgets('empty data renders the no-data message instead of axes', (

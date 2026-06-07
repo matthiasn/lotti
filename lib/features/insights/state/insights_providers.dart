@@ -37,12 +37,25 @@ final insightsRepositoryProvider = Provider<InsightsRepository>(
 /// - **Deep value equality** on [InsightsDayBuckets] means a refetch with
 ///   unchanged data emits an equal value and dependents don't rebuild —
 ///   background refreshes never flash the UI.
+/// Throttle for notification-driven window refetches.
+///
+/// Active typing fires a notification batch every ~100ms; without a
+/// throttle every batch re-runs the full window query (~35-130ms at
+/// 10k-50k entries — measured). Trailing-edge, mirroring the Daily OS
+/// time-history throttle, so the last change in a burst always lands.
+/// Overridable in tests (set to `null` for immediate refetches).
+final insightsRefetchThrottleProvider = Provider<Duration?>(
+  (ref) => const Duration(seconds: 5),
+  name: 'insightsRefetchThrottleProvider',
+);
+
 final insightsBucketsProvider = StreamProvider.autoDispose
     .family<InsightsDayBuckets, int>(
       (ref, windowStartDay) {
         ref.cacheFor(dashboardCacheDuration);
         final repository = ref.watch(insightsRepositoryProvider);
         final notifications = ref.watch(maybeUpdateNotificationsProvider);
+        final refetchThrottle = ref.watch(insightsRefetchThrottleProvider);
 
         Future<InsightsDayBuckets> fetch() async {
           final rows = await repository.fetchTimeRows(
@@ -59,12 +72,21 @@ final insightsBucketsProvider = StreamProvider.autoDispose
           return Stream.fromFuture(fetch());
         }
         // Tasks are subscribed because category attribution follows task
-        // links; audio is irrelevant (JournalAudio carries no tracked
-        // time in this dashboard).
+        // links — and standalone link create/unlink fires only
+        // linkNotification, so re-linking a time entry to another task
+        // refreshes attribution too. Audio is irrelevant (JournalAudio
+        // carries no tracked time here). The private toggle changes which
+        // rows the query may return, so it refetches as well.
         return notificationDrivenItemStream<InsightsDayBuckets>(
           notifications: notifications,
-          notificationKeys: const {textEntryNotification, taskNotification},
+          notificationKeys: const {
+            textEntryNotification,
+            taskNotification,
+            linkNotification,
+            privateToggleNotification,
+          },
           fetcher: fetch,
+          refetchThrottle: refetchThrottle,
         ).map((buckets) => buckets ?? InsightsDayBuckets.empty);
       },
       name: 'insightsBucketsProvider',

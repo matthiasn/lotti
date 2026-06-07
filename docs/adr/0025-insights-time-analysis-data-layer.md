@@ -58,8 +58,8 @@ adopted design.
    A different year is a different provider instance — no mutable shared
    window, no stale-write races. Refetches ride
    `notificationDrivenItemStream` (serialized, coalesced) on the
-   `TEXT_ENTRY`/`TASK` tokens, with `cacheFor` keeping recent windows
-   alive across tab switches.
+   `TEXT_ENTRY`/`TASK`/`LINK_CHANGED`/`PRIVATE_FLAG_TOGGLED` tokens, with
+   `cacheFor` keeping recent windows alive across tab switches.
 7. **Deep value equality as the no-flash mechanism.** Models are
    hand-rolled immutables with deep equality (no codegen); an unchanged
    refetch produces an equal `InsightsDayBuckets`, Riverpod never
@@ -74,6 +74,48 @@ adopted design.
    neutral-gray Uncategorized; chart fills are muted derivations of
    user-picked category colors (saturated originals only in swatches);
    no pies or donuts.
+
+10. **Private visibility.** The query gates both the entry and the
+    linked-task subquery on the global `private` config flag using the
+    `COALESCE(private, FALSE) IN (FALSE, (SELECT status FROM config_flags
+    WHERE name = 'private'))` idiom from `workEntriesInDateRange`; the
+    buckets provider additionally subscribes to
+    `privateToggleNotification`. (Found by post-release adversarial
+    review: the first cut leaked private durations.)
+11. **v43 category backfill.** The v21 migration added the denormalized
+    `journal.category` column without backfilling, so pre-2024-07 rows
+    could carry `''` while their JSON `meta.categoryId` held the real id —
+    silently bucketed as "Uncategorized" by column readers. v43 backfills
+    the column once from `json_extract(serialized, '$.meta.categoryId')`,
+    which also corrects the Daily OS time-history header.
+12. **Refetch throttling.** Notification-driven window refetches are
+    throttled (5s trailing edge via `notificationDrivenItemStream`'s
+    `refetchThrottle`, mirroring the time-history throttle): typing fires
+    a batch every ~100ms, and each refetch costs a full window query
+    (~35-130ms measured at 10k-50k entries).
+13. **Link mutations notify.** Standalone link create/update/remove (and
+    the sync apply path) now emit `linkNotification` alongside the
+    affected ids; the buckets provider subscribes, so linking a time
+    entry to a task refreshes attribution immediately. Previously only
+    UUID tokens fired and the dashboard stayed stale until the next
+    entity edit.
+14. **Covering index.** `idx_journal_insights_time` (partial, on
+    `type = 'JournalEntry' AND deleted = FALSE`, covering `date_from,
+    date_to, category, private, id`) turns the inherently residual
+    overlap scan into an index-only scan, keeping cold-fetch cost flat as
+    lifetime history grows.
+
+## Measured performance (50k entries / 36 months / 40 categories)
+
+YTD cold fetch 56ms + bucketize 37ms; full 36-month custom range 131ms +
+111ms (the only path over the 200ms budget, one-time per window); preset
+switches ~10ms; page-build derivations 2.7ms (shared
+`dailyTotals`/`rankedCategoryTotals` pass); deep equality ~16ms per
+refetch emission (cheaper than the rebuild it prevents); retained window
+≈6-10MB. Scaling note: only `date_from < end` can be index-bounded —
+`date_to > start` is a residual filter, so the scan length grows with
+lifetime entry count (~110ms extrapolated at 100k before the covering
+index; decision 14 removes the per-row table fetches from that walk).
 
 ## Consequences
 

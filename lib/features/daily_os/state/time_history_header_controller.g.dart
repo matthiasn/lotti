@@ -48,7 +48,7 @@ final class TimeHistoryHeaderControllerProvider
 }
 
 String _$timeHistoryHeaderControllerHash() =>
-    r'a7cc49709af53f6abf8f1c714e0536ef9b963ba2';
+    r'0bf43bb91a38f5b434394c0c5be55ab6e3bab088';
 
 /// Controller for the time history header data layer.
 ///

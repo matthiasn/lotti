@@ -4907,7 +4907,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get insightsChartDailyCaption => 'Timp pe zi';
 
   @override
-  String get insightsChartTitle => 'TIMP PE CATEGORIE';
+  String get insightsChartTitle => 'Timp pe categorie';
 
   @override
   String get insightsChooseFocusCategories =>

@@ -62,6 +62,13 @@ Layering:
   across 23h/25h DST days. Property tests assert duration conservation.
 - **Day keys** are epoch-day ints derived through a UTC anchor — pure
   calendar indices, immune to DST offsets.
+- **Private visibility:** the query gates entries AND linked-task
+  attribution on the global `private` config flag (same idiom as
+  `workEntriesInDateRange`); the provider refetches on
+  `privateToggleNotification` and `linkNotification` (link create/unlink
+  re-attributes time immediately). The v43 migration backfills the
+  denormalized `journal.category` column from serialized JSON so
+  pre-2024-07 history attributes correctly.
 
 ## Window caching & refresh
 
@@ -84,8 +91,10 @@ stateDiagram-v2
   `test/database/insights_performance_test.dart`).
 - A different year is a different provider instance — there is no mutable
   shared window, hence no stale-write races. `notificationDrivenItemStream`
-  serializes refetches; `cacheFor(dashboardCacheDuration)` keeps recently
-  used windows alive across tab switches.
+  serializes refetches and throttles them (5s trailing edge — typing fires
+  a notification batch every ~100ms, each refetch costs a full window
+  query); `cacheFor(dashboardCacheDuration)` keeps recently used windows
+  alive across tab switches.
 
 ## Visualization (Stephen Few rules)
 

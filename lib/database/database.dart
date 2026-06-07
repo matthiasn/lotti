@@ -121,7 +121,7 @@ class JournalDb extends _$JournalDb
   final Directory? _documentsDirectory;
 
   @override
-  int get schemaVersion => 42;
+  int get schemaVersion => 43;
 
   @override
   MigrationStrategy get migration {
@@ -675,6 +675,53 @@ class JournalDb extends _$JournalDb
             // a single longer-than-usual launch when the user pulls
             // the update, then steady-state from then on.
             await customStatement('ANALYZE');
+          }();
+        }
+        if (from < 43) {
+          await () async {
+            DevLogger.log(
+              name: 'JournalDb',
+              message:
+                  'Backfilling journal.category from serialized JSON for '
+                  'rows predating the v21 column add',
+            );
+            // The v21 migration added the denormalized `category` column
+            // with DEFAULT '' but never backfilled it, so entries created
+            // before 2024-07 (and never re-saved) carry '' in the column
+            // while their JSON meta.categoryId holds the real id. Column
+            // readers (Insights time analysis, time-history header) would
+            // silently attribute that history to "Uncategorized".
+            //
+            // Encoding note: plain json_extract, NOT datetime functions —
+            // the column is TEXT and the JSON value is the raw UUID.
+            // Guarded on `journal` because minimal migration-test schemas
+            // omit it.
+            if (await _tableExists('journal')) {
+              await customStatement(
+                'UPDATE journal '
+                r"SET category = json_extract(serialized, '$.meta.categoryId') "
+                "WHERE category = '' "
+                r"AND json_extract(serialized, '$.meta.categoryId') IS NOT NULL",
+              );
+              // Partial covering index for the Insights time-analysis
+              // query: only `date_from < :end` can be a seek bound (the
+              // `date_to > :start` overlap check is inherently residual),
+              // so the scan walks every JournalEntry before :end. Covering
+              // (date_from, date_to, category, private, id) turns that
+              // walk into an index-only scan — no row fetches — keeping
+              // cold-fetch cost flat as lifetime history grows.
+              await customStatement(
+                'CREATE INDEX IF NOT EXISTS idx_journal_insights_time '
+                'ON journal('
+                '  date_from COLLATE BINARY ASC, '
+                '  date_to COLLATE BINARY ASC, '
+                '  category COLLATE BINARY ASC, '
+                '  private COLLATE BINARY ASC, '
+                '  id COLLATE BINARY ASC) '
+                "WHERE type = 'JournalEntry' AND deleted = FALSE",
+              );
+              await customStatement('ANALYZE');
+            }
           }();
         }
       },

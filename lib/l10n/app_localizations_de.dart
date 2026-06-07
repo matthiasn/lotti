@@ -4868,7 +4868,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get insightsChartDailyCaption => 'Zeit pro Tag';
 
   @override
-  String get insightsChartTitle => 'ZEIT NACH KATEGORIE';
+  String get insightsChartTitle => 'Zeit nach Kategorie';
 
   @override
   String get insightsChooseFocusCategories => 'Fokus-Kategorien wählen';

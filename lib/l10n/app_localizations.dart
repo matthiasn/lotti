@@ -8409,7 +8409,7 @@ abstract class AppLocalizations {
   /// No description provided for @insightsChartTitle.
   ///
   /// In en, this message translates to:
-  /// **'TIME BY CATEGORY'**
+  /// **'Time by category'**
   String get insightsChartTitle;
 
   /// No description provided for @insightsChooseFocusCategories.

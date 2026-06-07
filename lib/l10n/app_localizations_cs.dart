@@ -4866,7 +4866,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsChartDailyCaption => 'Čas za den';
 
   @override
-  String get insightsChartTitle => 'ČAS PODLE KATEGORIE';
+  String get insightsChartTitle => 'Čas podle kategorie';
 
   @override
   String get insightsChooseFocusCategories => 'Vybrat fokusové kategorie';

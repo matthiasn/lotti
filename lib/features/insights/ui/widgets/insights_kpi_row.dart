@@ -81,9 +81,14 @@ class InsightsKpiRow extends StatelessWidget {
             ),
           ] else ...[
             SizedBox(width: tokens.spacing.cardItemSpacing),
-            // Compact affordance — content-sized, no stretched dead space.
-            _ChooseFocusTile(onTap: () => _editFocusCategories(context)),
-            const Spacer(flex: 2),
+            // The affordance occupies the focus+other footprint so the row
+            // reads as a deliberate 2-up, not a truncated 3-up.
+            Expanded(
+              flex: 2,
+              child: _ChooseFocusTile(
+                onTap: () => _editFocusCategories(context),
+              ),
+            ),
           ],
         ],
       ),
@@ -127,7 +132,12 @@ class _KpiTile extends StatelessWidget {
                 Expanded(
                   child: Text(
                     label,
-                    style: calmEyebrowStyle(tokens),
+                    // mediumEmphasis: the default lowEmphasis eyebrow is
+                    // near-illegible on the light theme (32% black).
+                    style: calmEyebrowStyle(
+                      tokens,
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
                     overflow: TextOverflow.ellipsis,
                   ),
                 ),
@@ -187,7 +197,6 @@ class _ChooseFocusTile extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.all(tokens.spacing.cardPadding),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.center_focus_strong_outlined,
@@ -195,10 +204,13 @@ class _ChooseFocusTile extends StatelessWidget {
                   color: tokens.colors.text.lowEmphasis,
                 ),
                 SizedBox(width: tokens.spacing.step4),
-                Text(
-                  context.messages.insightsChooseFocusCategories,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
+                Flexible(
+                  child: Text(
+                    context.messages.insightsChooseFocusCategories,
+                    overflow: TextOverflow.ellipsis,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
                   ),
                 ),
               ],

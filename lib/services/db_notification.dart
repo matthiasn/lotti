@@ -121,6 +121,13 @@ const labelsNotification = 'LABELS_CHANGED';
 const settingsNotification = 'SETTINGS_CHANGED';
 const privateToggleNotification = 'PRIVATE_FLAG_TOGGLED';
 const labelUsageNotification = 'LABEL_USAGE_CHANGED';
+
+/// Fired alongside the affected entry ids whenever an entry link is
+/// created, updated, or removed (locally or via sync). Listeners that
+/// derive data from link topology (e.g. time attribution following task
+/// links) subscribe to this instead of guessing from entity tokens —
+/// standalone link mutations carry no TEXT_ENTRY/TASK token.
+const linkNotification = 'LINK_CHANGED';
 const agentNotification = 'AGENT_CHANGED';
 const inboxNotification = 'INBOX_CHANGED';
 
