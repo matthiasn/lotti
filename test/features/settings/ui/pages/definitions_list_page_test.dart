@@ -56,7 +56,8 @@ void main() {
         tester,
       ) async {
         await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should have SettingsPageHeader
         expect(find.byType(SettingsPageHeader), findsOneWidget);
@@ -67,7 +68,8 @@ void main() {
 
       testWidgets('shows back button in SettingsPageHeader', (tester) async {
         await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should have back button (chevron_left icon)
         expect(find.byIcon(Icons.chevron_left), findsOneWidget);
@@ -75,7 +77,8 @@ void main() {
 
       testWidgets('uses CustomScrollView with slivers', (tester) async {
         await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should use CustomScrollView for sliver structure
         expect(find.byType(CustomScrollView), findsOneWidget);
@@ -89,7 +92,8 @@ void main() {
 
       testWidgets('displays search widget', (tester) async {
         await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should have search field
         expect(find.byType(TextField), findsOneWidget);
@@ -97,7 +101,8 @@ void main() {
 
       testWidgets('displays floating action button', (tester) async {
         await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should have FAB
         expect(find.byType(FloatingActionButton), findsOneWidget);
@@ -114,7 +119,8 @@ void main() {
         ];
 
         await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should display all items
         expect(find.text('Alpha'), findsOneWidget);
@@ -131,7 +137,8 @@ void main() {
         ];
 
         await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Find all list tiles
         final tileFinder = find.byType(ListTile);
@@ -146,7 +153,8 @@ void main() {
 
       testWidgets('displays empty list when no items', (tester) async {
         await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should not display any items
         expect(find.byKey(const ValueKey('item_0')), findsNothing);
@@ -163,7 +171,8 @@ void main() {
         ];
 
         await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // All items visible initially
         expect(find.text('Apple'), findsOneWidget);
@@ -173,7 +182,8 @@ void main() {
 
         // Search for "ap"
         await tester.enterText(find.byType(TextField), 'ap');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should only show items containing "ap"
         expect(find.text('Apple'), findsOneWidget);
@@ -190,18 +200,21 @@ void main() {
         ];
 
         await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Search with lowercase
         await tester.enterText(find.byType(TextField), 'apple');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Apple'), findsOneWidget);
         expect(find.text('banana'), findsNothing);
 
         // Search with uppercase
         await tester.enterText(find.byType(TextField), 'BANANA');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('banana'), findsOneWidget);
         expect(find.text('Apple'), findsNothing);
@@ -220,11 +233,13 @@ void main() {
             },
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Enter search query
         await tester.enterText(find.byType(TextField), 'test query');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Callback should be called with query
         expect(capturedQuery, 'test query');
@@ -243,7 +258,8 @@ void main() {
             initialSearchTerm: 'ap',
           ),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should start with filtered results
         expect(find.text('Apple'), findsOneWidget);
@@ -258,18 +274,21 @@ void main() {
         ];
 
         await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Enter search query
         await tester.enterText(find.byType(TextField), 'apple');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Apple'), findsOneWidget);
         expect(find.text('Banana'), findsNothing);
 
         // Clear search
         await tester.enterText(find.byType(TextField), '');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should show all items again
         expect(find.text('Apple'), findsOneWidget);
@@ -280,14 +299,16 @@ void main() {
     group('Dynamic Updates', () {
       testWidgets('updates when stream emits new data', (tester) async {
         await tester.pumpWidget(createTestWidget(items: []));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Initially no items
         expect(find.byKey(const ValueKey('item_0')), findsNothing);
 
         // Add items to stream
         streamController.add([TestItem('New Item')]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should display new item
         expect(find.text('New Item'), findsOneWidget);
@@ -299,11 +320,13 @@ void main() {
         await tester.pumpWidget(
           createTestWidget(items: [TestItem('Apple'), TestItem('Banana')]),
         );
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Set search filter
         await tester.enterText(find.byType(TextField), 'ap');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Apple'), findsOneWidget);
         expect(find.text('Banana'), findsNothing);
@@ -314,7 +337,8 @@ void main() {
           TestItem('Banana'),
           TestItem('Apricot'),
         ]);
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Filter should still be applied
         expect(find.text('Apple'), findsOneWidget);
@@ -331,7 +355,8 @@ void main() {
         ];
 
         await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should display both items (even with empty name)
         expect(find.text('Valid'), findsOneWidget);
@@ -343,7 +368,8 @@ void main() {
         final items = [TestItem(longName)];
 
         await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Should display item (text might be ellipsized)
         expect(find.textContaining('AAA'), findsOneWidget);
@@ -357,11 +383,13 @@ void main() {
         ];
 
         await tester.pumpWidget(createTestWidget(items: items));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Search with special characters
         await tester.enterText(find.byType(TextField), 'test-');
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         expect(find.text('Test-Item'), findsOneWidget);
         expect(find.text('Test_Item'), findsNothing);
