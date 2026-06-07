@@ -169,5 +169,47 @@ void main() {
       },
       tags: 'glados',
     );
+
+    glados.Glados<List<bool>>(
+      // true → publish, false → dispose: a random interleaving of the two
+      // operations the service's tiny state machine accepts.
+      glados.ListAnys(glados.any).listWithLengthInRange(1, 12, glados.any.bool),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'any publish/dispose interleaving never throws, and publishes after '
+      'the first dispose are silently dropped',
+      (operations) async {
+        final service = LabelAssignmentEventService();
+        final received = <LabelAssignmentEvent>[];
+        final sub = service.stream.listen(received.add);
+
+        var publishedBeforeDispose = 0;
+        var disposed = false;
+        for (final isPublish in operations) {
+          if (isPublish) {
+            // Must not throw even when the controller is already closed.
+            service.publish(
+              const LabelAssignmentEvent(taskId: 't', assignedIds: ['a']),
+            );
+            if (!disposed) publishedBeforeDispose++;
+          } else {
+            await service.dispose();
+            disposed = true;
+          }
+        }
+        await pumpEventQueue();
+        await sub.cancel();
+        if (!disposed) await service.dispose();
+
+        // Exactly the pre-dispose publishes arrive; post-dispose ones are
+        // ignored rather than added to a closed controller.
+        expect(
+          received,
+          hasLength(publishedBeforeDispose),
+          reason: 'operations=$operations',
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

@@ -14,7 +14,8 @@ void main() {
           LabelSelectionStickyActionBar(applyController: applyController),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Cancel'), findsOneWidget);
       expect(find.text('Apply'), findsOneWidget);
@@ -32,7 +33,8 @@ void main() {
           LabelSelectionStickyActionBar(applyController: applyController),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final filledButton = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'Apply'),
@@ -54,7 +56,8 @@ void main() {
           LabelSelectionStickyActionBar(applyController: applyController),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final filledButton = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, 'Apply'),
@@ -72,7 +75,8 @@ void main() {
           LabelSelectionStickyActionBar(applyController: applyController),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Cancel button should be an OutlinedButton
       expect(find.widgetWithText(OutlinedButton, 'Cancel'), findsOneWidget);
@@ -88,7 +92,8 @@ void main() {
           LabelSelectionStickyActionBar(applyController: applyController),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Apply button should be a FilledButton
       expect(find.widgetWithText(FilledButton, 'Apply'), findsOneWidget);
@@ -106,11 +111,13 @@ void main() {
           LabelSelectionStickyActionBar(applyController: applyController),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap apply
       await tester.tap(find.text('Apply'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Snackbar should show error message
       expect(find.text('Failed to update labels'), findsOneWidget);
@@ -128,7 +135,8 @@ void main() {
           LabelSelectionStickyActionBar(applyController: applyController),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Initially disabled
       var filledButton = tester.widget<FilledButton>(
@@ -163,11 +171,13 @@ void main() {
           LabelSelectionStickyActionBar(applyController: applyController),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap apply
       await tester.tap(find.text('Apply'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(applyCalled, isTrue);
 
@@ -182,7 +192,8 @@ void main() {
           LabelSelectionStickyActionBar(applyController: applyController),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Cancel button should be tappable (won't crash)
       final cancelButton = find.widgetWithText(OutlinedButton, 'Cancel');
@@ -212,7 +223,8 @@ void main() {
           LabelSelectionStickyActionBar(applyController: applyController),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap apply but don't wait
       await tester.tap(find.text('Apply'));
@@ -220,7 +232,8 @@ void main() {
       await tester.pump();
 
       // No crash means mounted check works
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       applyController.dispose();
     });
@@ -235,7 +248,8 @@ void main() {
           LabelSelectionStickyActionBar(applyController: applyController),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Find container with decoration
       final container = tester.widget<Container>(
@@ -258,7 +272,8 @@ void main() {
           LabelSelectionStickyActionBar(applyController: applyController),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Both buttons should be wrapped in Expanded
       final expandedWidgets = find.descendant(
