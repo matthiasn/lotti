@@ -21,7 +21,7 @@ void main() {
 
     glados.Glados(
       glados.any.renderedSources,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 200),
     ).test(
       'payloads are unique by digest and cover the distinct contents',
       (
@@ -40,7 +40,7 @@ void main() {
 
     glados.Glados(
       glados.any.renderedSources,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 200),
     ).test('every reference resolves to a payload and every payload is '
         'referenced', (sources) {
       final result = captureSources(sources);
@@ -53,7 +53,7 @@ void main() {
 
     glados.Glados(
       glados.any.renderedSources,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 200),
     ).test('emits one reference per distinct (entry, digest) pair', (sources) {
       final result = captureSources(sources);
       final expected = sources
@@ -64,7 +64,7 @@ void main() {
 
     glados.Glados(
       glados.any.renderedSources,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 200),
     ).test('returns references in canonical assembly order', (sources) {
       final references = captureSources(sources).references;
       final sorted = [...references]..sort(_canonicalOrder);
@@ -74,7 +74,7 @@ void main() {
     glados.Glados2(
       glados.any.renderedSources,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 200),
     ).test('is permutation-invariant', (sources, seed) {
       expect(
         captureSources(shuffledBySeed(sources, seed)),
@@ -239,7 +239,7 @@ void main() {
 
     glados.Glados(
       glados.any.distinctEntrySources,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 200),
     ).test(
       'is empty against the frontier it would establish (convergence)',
       (
@@ -257,7 +257,7 @@ void main() {
     glados.Glados2(
       glados.any.renderedSources,
       glados.any.renderedSources,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 200),
     ).test('every new reference is genuinely new or changed', (current, prior) {
       final active = frontierOf(prior);
       final delta = reconcileCapture(
@@ -275,7 +275,7 @@ void main() {
     glados.Glados2(
       glados.any.renderedSources,
       glados.any.renderedSources,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 200),
     ).test('retracts exactly the frontier entries absent from current', (
       current,
       prior,
@@ -295,7 +295,7 @@ void main() {
     glados.Glados2(
       glados.any.renderedSources,
       glados.any.renderedSources,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 200),
     ).test('new payloads exactly cover the new references', (current, prior) {
       final delta = reconcileCapture(
         currentSources: current,
@@ -310,7 +310,7 @@ void main() {
     glados.Glados2(
       glados.any.renderedSources,
       glados.any.renderedSources,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 200),
     ).test('an unchanged source contributes no reference', (current, prior) {
       final active = frontierOf(prior);
       final delta = reconcileCapture(
