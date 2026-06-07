@@ -471,33 +471,27 @@ void main() {
     });
 
     group('Image Generation Model (Nano Banana Pro)', () {
-      test('should have image generation model in geminiModels', () {
-        final imageGenModel = geminiModels.where(
-          (m) => m.outputModalities.contains(Modality.image),
-        );
+      test(
+        'geminiModels contains a fully-configured image generation model',
+        () {
+          final imageGenModels = geminiModels.where(
+            (m) => m.outputModalities.contains(Modality.image),
+          );
+          expect(
+            imageGenModels,
+            isNotEmpty,
+            reason: 'Should have at least one image generation model',
+          );
 
-        expect(
-          imageGenModel,
-          isNotEmpty,
-          reason: 'Should have at least one image generation model',
-        );
-
-        final model = imageGenModel.first;
-        expect(model.providerModelId, contains('image'));
-        expect(model.inputModalities, contains(Modality.text));
-        expect(model.outputModalities, contains(Modality.image));
-        expect(model.isReasoningModel, isFalse);
-      });
-
-      test('image generation model should have valid configuration', () {
-        final imageGenModel = geminiModels.firstWhere(
-          (m) => m.outputModalities.contains(Modality.image),
-        );
-
-        expect(imageGenModel.name, isNotEmpty);
-        expect(imageGenModel.description, isNotEmpty);
-        expect(imageGenModel.providerModelId, isNotEmpty);
-      });
+          final model = imageGenModels.first;
+          expect(model.providerModelId, contains('image'));
+          expect(model.inputModalities, contains(Modality.text));
+          expect(model.outputModalities, contains(Modality.image));
+          expect(model.isReasoningModel, isFalse);
+          expect(model.name, isNotEmpty);
+          expect(model.description, isNotEmpty);
+        },
+      );
     });
 
     group('OpenAI FTUE functions', () {

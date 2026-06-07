@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/skill_assignment.dart';
 import 'package:lotti/features/ai/skills/built_in_skills.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -355,6 +356,88 @@ void main() {
       expect(
         localProfile.skillAssignments.first.skillId,
         skillImageAnalysisContextId,
+      );
+    });
+  });
+
+  group('hasSlotForSkillType (slot matrix)', () {
+    // Model rows backing every slot value used below, so the matrix tests
+    // slot *presence* while the resolution-specific cases live in the
+    // 'ProfileSeedingService.hasSlotForSkillType' group.
+    final slotModels = [
+      for (final id in ['thinking-model', 'tm', 'irm', 'igm'])
+        AiTestDataFactory.createTestModel(id: id, providerModelId: 'w-$id'),
+    ];
+
+    AiConfigInferenceProfile buildProfile({
+      String? transcriptionModelId,
+      String? imageRecognitionModelId,
+      String? imageGenerationModelId,
+    }) =>
+        AiConfig.inferenceProfile(
+              id: 'profile-slots',
+              name: 'Slots',
+              thinkingModelId: 'thinking-model',
+              transcriptionModelId: transcriptionModelId,
+              imageRecognitionModelId: imageRecognitionModelId,
+              imageGenerationModelId: imageGenerationModelId,
+              createdAt: DateTime(2026),
+            )
+            as AiConfigInferenceProfile;
+
+    test('every skill type maps to exactly its required model slot', () {
+      final empty = buildProfile();
+      final full = buildProfile(
+        transcriptionModelId: 'tm',
+        imageRecognitionModelId: 'irm',
+        imageGenerationModelId: 'igm',
+      );
+
+      const expectedWithEmpty = {
+        SkillType.transcription: false,
+        SkillType.imageAnalysis: false,
+        SkillType.imageGeneration: false,
+        // Thinking-model-backed skills are always available.
+        SkillType.promptGeneration: true,
+        SkillType.imagePromptGeneration: true,
+      };
+      for (final skillType in SkillType.values) {
+        expect(
+          ProfileSeedingService.hasSlotForSkillType(
+            empty,
+            skillType,
+            slotModels,
+          ),
+          expectedWithEmpty[skillType],
+          reason: 'empty profile, $skillType',
+        );
+        expect(
+          ProfileSeedingService.hasSlotForSkillType(
+            full,
+            skillType,
+            slotModels,
+          ),
+          isTrue,
+          reason: 'fully-slotted profile, $skillType',
+        );
+      }
+
+      // Each slot gates only its own skill type.
+      expect(
+        ProfileSeedingService.hasSlotForSkillType(
+          buildProfile(imageGenerationModelId: 'igm'),
+          SkillType.imageGeneration,
+          slotModels,
+        ),
+        isTrue,
+      );
+      expect(
+        ProfileSeedingService.hasSlotForSkillType(
+          buildProfile(imageGenerationModelId: 'igm'),
+          SkillType.transcription,
+          slotModels,
+        ),
+        isFalse,
       );
     });
   });
