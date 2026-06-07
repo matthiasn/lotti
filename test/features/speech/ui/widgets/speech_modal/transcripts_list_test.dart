@@ -1,8 +1,5 @@
-import 'package:flutter/foundation.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list.dart';
 import 'package:lotti/features/speech/ui/widgets/speech_modal/transcripts_list_item.dart';
@@ -13,33 +10,11 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
+import 'test_utils.dart';
 
 // ---------------------------------------------------------------------------
 // Fake controller
 // ---------------------------------------------------------------------------
-
-class _FakeEntryController extends EntryController {
-  _FakeEntryController(this._entry);
-
-  final JournalEntity? _entry;
-
-  @override
-  Future<EntryState?> build({required String id}) {
-    final value = _entry == null
-        ? null
-        : EntryState.saved(
-            entryId: id,
-            entry: _entry,
-            showMap: false,
-            isFocused: false,
-            shouldShowEditorToolBar: false,
-          );
-    if (value != null) {
-      state = AsyncData(value);
-    }
-    return SynchronousFuture(value);
-  }
-}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -94,7 +69,7 @@ Future<void> _pump(
   JournalEntity? entry,
   String entryId = 'audio-99',
 }) async {
-  final ctrl = _FakeEntryController(entry);
+  final ctrl = FakeEntryController(entry);
 
   await tester.pumpWidget(
     makeTestableWidgetWithScaffold(
