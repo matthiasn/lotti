@@ -16,6 +16,7 @@ import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:meta/meta.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -445,6 +446,11 @@ class TaskAgentStrategy extends ConversationStrategy {
       List.unmodifiable(_stagedRetractions);
 
   // ── Internal handlers ──────────────────────────────────────────────────
+
+  /// Test seam for the JSON-recovery parser — pure, no I/O.
+  @visibleForTesting
+  static Map<String, dynamic> debugParseToolArguments(String raw) =>
+      _parseToolArguments(raw);
 
   /// Parses tool call arguments from raw JSON, with resilience for common
   /// local model quirks (markdown fencing, trailing text, etc.).

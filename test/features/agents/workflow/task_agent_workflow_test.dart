@@ -358,6 +358,25 @@ void main() {
         expect(result.error, 'No agent state found');
       });
 
+      test('propagates when state reconciliation itself throws', () async {
+        // Unlike a null state (graceful WakeResult), a throwing
+        // reconciledAgentState has no catch envelope at the call site —
+        // the exception escapes execute() to the wake scheduler.
+        when(
+          () => mockSyncService.reconciledAgentState(agentId),
+        ).thenThrow(StateError('reconcile boom'));
+
+        await expectLater(
+          workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {'entity-a'},
+            threadId: threadId,
+          ),
+          throwsA(isA<StateError>()),
+        );
+      });
+
       test('when no active task ID', () async {
         final stateNoTask =
             AgentDomainEntity.agentState(
