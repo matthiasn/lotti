@@ -63,7 +63,11 @@ class WhatsNewModal {
   }
 
   /// Extracts all image URLs from markdown content.
-  static Iterable<String> _extractImageUrls(String markdown) {
+  ///
+  /// Visible for testing so the regex edge cases (no images, empty
+  /// markdown, data URIs) can be unit-tested without driving precaching.
+  @visibleForTesting
+  static Iterable<String> extractImageUrls(String markdown) {
     return _imageUrlPattern.allMatches(markdown).map((m) => m.group(1)!);
   }
 
@@ -98,7 +102,7 @@ class WhatsNewModal {
           release.headerMarkdown,
           ...release.sections,
         ].join();
-        for (final imageUrl in _extractImageUrls(allMarkdown)) {
+        for (final imageUrl in extractImageUrls(allMarkdown)) {
           unawaited(
             precacheImage(
               NetworkImage(imageUrl),

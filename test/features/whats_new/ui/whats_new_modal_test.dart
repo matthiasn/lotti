@@ -61,12 +61,14 @@ void main() {
   /// Creates a test widget with localization and provider scope configured.
   Widget createTestWidget({
     required WhatsNewController Function() controllerBuilder,
+    ThemeData? theme,
   }) {
     return ProviderScope(
       overrides: [
         whatsNewControllerProvider.overrideWith(controllerBuilder),
       ],
       child: MaterialApp(
+        theme: theme,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
         home: Scaffold(
@@ -340,6 +342,33 @@ void main() {
       expect(seenVersions, contains('0.9.980'));
     });
 
+    testWidgets(
+      'closing without navigating marks only the first of multiple releases',
+      (tester) async {
+        final seenVersions = <String>[];
+
+        await tester.pumpWidget(
+          createTestWidget(
+            controllerBuilder: () => _TrackingWhatsNewController(
+              WhatsNewState(unseenContent: [testContent1, testContent2]),
+              onMarkAsSeen: seenVersions.add,
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show Modal'));
+        await tester.pumpAndSettle();
+
+        // Close on page 0 — maxViewedIndex never advanced.
+        await tester.tapAt(const Offset(5, 5));
+        await tester.pumpAndSettle();
+
+        // Only the first release is marked seen; the unviewed second one
+        // must surface again next time.
+        expect(seenVersions, ['0.9.980']);
+      },
+    );
+
     testWidgets('navigating to second release and closing normally marks both '
         'viewed releases', (tester) async {
       final seenVersions = <String>[];
@@ -430,27 +459,11 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            whatsNewControllerProvider.overrideWith(
-              () => _TestWhatsNewController(
-                WhatsNewState(unseenContent: [contentWithoutBanner]),
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            theme: ThemeData.dark(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) => ElevatedButton(
-                  onPressed: () => WhatsNewModal.show(context, ref),
-                  child: const Text('Show Modal'),
-                ),
-              ),
-            ),
+        createTestWidget(
+          controllerBuilder: () => _TestWhatsNewController(
+            WhatsNewState(unseenContent: [contentWithoutBanner]),
           ),
+          theme: ThemeData.dark(),
         ),
       );
 
@@ -467,27 +480,11 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            whatsNewControllerProvider.overrideWith(
-              () => _TestWhatsNewController(
-                WhatsNewState(unseenContent: [testContent1]),
-              ),
-            ),
-          ],
-          child: MaterialApp(
-            theme: ThemeData.dark(),
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Scaffold(
-              body: Consumer(
-                builder: (context, ref, _) => ElevatedButton(
-                  onPressed: () => WhatsNewModal.show(context, ref),
-                  child: const Text('Show Modal'),
-                ),
-              ),
-            ),
+        createTestWidget(
+          controllerBuilder: () => _TestWhatsNewController(
+            WhatsNewState(unseenContent: [testContent1]),
           ),
+          theme: ThemeData.dark(),
         ),
       );
 
@@ -499,6 +496,10 @@ void main() {
       expect(find.text('NEW'), findsOneWidget);
     });
 
+    // Intentionally a crash-absence test: precaching fires NetworkImage
+    // fetches we cannot intercept here, so the assertion is only that the
+    // modal opens cleanly with image-bearing markdown. The URL-extraction
+    // logic itself is unit-tested in the extractImageUrls group.
     testWidgets('markdown content with embedded image URLs triggers precaching '
         'without crashing', (tester) async {
       // Markdown sections contain image URLs — exercises the _extractImageUrls
@@ -608,6 +609,33 @@ void main() {
       await tester.pumpAndSettle();
 
       verify(() => mockNavService.beamToNamed('/tasks/abc')).called(1);
+    });
+  });
+
+  group('WhatsNewModal.extractImageUrls', () {
+    test('returns every http(s) image URL in order', () {
+      const markdown = '''
+# Release
+![one](https://example.com/a.png)
+text ![two](http://example.com/b.jpg) more
+''';
+      expect(
+        WhatsNewModal.extractImageUrls(markdown).toList(),
+        ['https://example.com/a.png', 'http://example.com/b.jpg'],
+      );
+    });
+
+    test('returns nothing for empty or image-free markdown', () {
+      expect(WhatsNewModal.extractImageUrls(''), isEmpty);
+      expect(
+        WhatsNewModal.extractImageUrls('# Title\nplain text only'),
+        isEmpty,
+      );
+    });
+
+    test('ignores data-URI images (must not be precached as network)', () {
+      const markdown = '![inline](data:image/png;base64,AAAA)';
+      expect(WhatsNewModal.extractImageUrls(markdown), isEmpty);
     });
   });
 }
