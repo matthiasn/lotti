@@ -164,6 +164,12 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   }) = ScheduledWakeEntity;
 
   /// Submitted Daily OS capture transcript.
+  ///
+  /// [dayId] is the planning day workspace this capture belongs to
+  /// (`dayplan-YYYY-MM-DD`, ADR 0022). It is **defaulted, never required**: a
+  /// capture synced from an older peer carries no `dayId`, and a required,
+  /// non-defaulted field would throw on `fromJson`. Read it through
+  /// `captureDayId`, which falls back to the capture date for legacy rows.
   const factory AgentDomainEntity.capture({
     required String id,
     required String agentId,
@@ -171,6 +177,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required DateTime capturedAt,
     required DateTime createdAt,
     required VectorClock? vectorClock,
+    @Default('') String dayId,
     String? audioRef,
     DateTime? deletedAt,
   }) = CaptureEntity;

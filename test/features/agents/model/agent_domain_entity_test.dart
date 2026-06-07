@@ -524,7 +524,7 @@ void main() {
     });
 
     group('Daily OS capture variants', () {
-      test('CaptureEntity roundtrips all fields', () {
+      test('CaptureEntity roundtrips all fields incl. dayId', () {
         final original = AgentDomainEntity.capture(
           id: 'capture-001',
           agentId: 'day-agent-001',
@@ -532,6 +532,7 @@ void main() {
           capturedAt: DateTime(2026, 5, 25, 8, 30),
           createdAt: createdAt,
           vectorClock: vectorClock,
+          dayId: 'dayplan-2026-05-25',
           audioRef: 'audio-001',
         );
 
@@ -539,7 +540,27 @@ void main() {
 
         expect(roundtripped, equals(original));
         expect(roundtripped, isA<CaptureEntity>());
+        expect((roundtripped as CaptureEntity).dayId, 'dayplan-2026-05-25');
         expect(roundtripped.toJson()['runtimeType'], equals('capture'));
+      });
+
+      test('CaptureEntity from an older peer (no dayId) deserializes', () {
+        // A capture synced from a build predating ADR 0022 carries no dayId;
+        // the defaulted field must not throw on fromJson.
+        final legacyJson = {
+          'runtimeType': 'capture',
+          'id': 'capture-legacy',
+          'agentId': 'day-agent-001',
+          'transcript': 'old capture',
+          'capturedAt': DateTime(2026, 5, 25, 8, 30).toIso8601String(),
+          'createdAt': createdAt.toIso8601String(),
+          'vectorClock': null,
+        };
+
+        final decoded = AgentDomainEntity.fromJson(legacyJson) as CaptureEntity;
+
+        expect(decoded.dayId, isEmpty);
+        expect(decoded.transcript, 'old capture');
       });
 
       test('ParsedItemEntity roundtrips optional reconcile fields', () {

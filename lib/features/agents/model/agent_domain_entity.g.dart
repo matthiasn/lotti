@@ -349,6 +349,7 @@ CaptureEntity _$CaptureEntityFromJson(Map<String, dynamic> json) =>
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      dayId: json['dayId'] as String? ?? '',
       audioRef: json['audioRef'] as String?,
       deletedAt: json['deletedAt'] == null
           ? null
@@ -364,6 +365,7 @@ Map<String, dynamic> _$CaptureEntityToJson(CaptureEntity instance) =>
       'capturedAt': instance.capturedAt.toIso8601String(),
       'createdAt': instance.createdAt.toIso8601String(),
       'vectorClock': instance.vectorClock,
+      'dayId': instance.dayId,
       'audioRef': instance.audioRef,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,

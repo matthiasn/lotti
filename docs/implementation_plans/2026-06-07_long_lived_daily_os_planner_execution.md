@@ -70,16 +70,30 @@ were run against the parent plan before implementation. Findings:
 | A15 | `pending_wake_view_model.dart` uses `activeDayId` as the wake-card subject label | Phase 4 |
 | A16 | `TemplateEvolutionWorkflow` has no participating-kind list — wiring the planner in is a real integration through the improver/ritual machinery | Phase 5 |
 
-### A6 design rule (compaction convergence)
+### A6 design rule (compaction convergence) — RESOLVED to global dayLog
 
 The compaction **fold substrate stays agent-global**: all days' captures and
 observations fold into episodic memory. That is the deliberate cross-day
 summarization ADR 0022 Decision 6 allows, and it keeps checkpoints append-only
-and convergent. Day filtering applies to **per-wake rendering only**: the
-raw/unfolded tail and verbatim capture context rendered into the prompt are
-filtered to the active `dayId`. If tail rendering and checkpoint coverage turn
-out to be inseparable in `agent_log_compactor.dart` / `agent_wake_memory.dart`,
-stop and escalate before proceeding.
+and convergent.
+
+**Resolution (user-confirmed during Phase 3).** Reading
+`agent_log_compactor.dart`, the compacted `dayLog` is `summary + tail`, where
+the tail interleaves **dayless observations** with day-scoped capture
+transcripts. Day-filtering the tail would drop observations from episodic
+memory — tail rendering and checkpoint coverage are inseparable. We therefore
+keep the **entire `dayLog` (summary AND tail) agent-global**: it is the
+planner's cross-day episodic memory. The active day's authoritative working
+data is rendered by the already day/capture-scoped context blocks (`capture`,
+`drafting`, `refine`), not by the episodic log. `CaptureEntity.dayId` exists
+for **queries** (UI capture lists, parse-wake day resolution), not for
+filtering the fold.
+
+This is the **prefix-cache-optimal** choice: the `dayLog` is byte-identical
+across a planner's day wakes, so the large stable prefix maximizes KV-cache /
+prompt-prefix reuse. Volatile per-wake fields (working blocks, wall-clock)
+stay last so the prefix is stable. Deviation from A6's literal "day-filter the
+tail" is intentional and approved.
 
 ## Phase sequence
 

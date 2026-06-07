@@ -183,6 +183,7 @@ CaptureEntity makeTestCapture({
   DateTime? capturedAt,
   DateTime? createdAt,
   VectorClock? vectorClock,
+  String dayId = '',
   String? audioRef,
 }) {
   return AgentDomainEntity.capture(
@@ -192,6 +193,7 @@ CaptureEntity makeTestCapture({
         capturedAt: capturedAt ?? kAgentTestDate,
         createdAt: createdAt ?? kAgentTestDate,
         vectorClock: vectorClock,
+        dayId: dayId,
         audioRef: audioRef,
       )
       as CaptureEntity;

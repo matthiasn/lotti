@@ -144,14 +144,19 @@ class DayAgentCaptureService {
     }
 
     final now = clock.now();
+    final effectiveCapturedAt = capturedAt ?? now;
     final capture =
         AgentDomainEntity.capture(
               id: 'capture_${_uuid.v4()}',
               agentId: agentId,
               transcript: trimmed,
-              capturedAt: capturedAt ?? now,
+              capturedAt: effectiveCapturedAt,
               createdAt: now,
               vectorClock: null,
+              // Stamp the day workspace explicitly (ADR 0022) so the capture
+              // is queryable by day and a parse wake can resolve its day from
+              // the capture even when one planner owns many days.
+              dayId: dayAgentIdForDate(effectiveCapturedAt),
               audioRef: _blankToNull(audioRef),
             )
             as CaptureEntity;
@@ -168,13 +173,10 @@ class DayAgentCaptureService {
       agentId: agentId,
       reason: dayAgentCaptureSubmittedReason,
       triggerTokens: {dayAgentCaptureSubmittedToken(capture.id)},
-      // Partition the parse wake by the capture's day workspace so it never
-      // supersedes or merges with another day's queued work under one planner
-      // (ADR 0022). PR3 makes the capture carry an explicit dayId; until then
-      // the day derives from when it was captured.
-      workspaceKey: dayAgentWorkspaceKey(
-        dayAgentIdForDate(capturedAt ?? now),
-      ),
+      // Partition the parse wake by the capture's day workspace (ADR 0022) so
+      // it never supersedes or merges with another day's queued work under one
+      // planner.
+      workspaceKey: dayAgentWorkspaceKey(captureDayId(capture)),
     );
 
     return capture;

@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 
 void main() {
@@ -34,6 +35,35 @@ void main() {
         reason: '$generated',
       );
     }, tags: 'glados');
+  });
+
+  group('captureDayId', () {
+    CaptureEntity capture({String dayId = '', DateTime? capturedAt}) {
+      return AgentDomainEntity.capture(
+            id: 'c1',
+            agentId: 'a1',
+            transcript: 't',
+            capturedAt: capturedAt ?? DateTime(2026, 5, 25, 8, 30),
+            createdAt: DateTime(2026, 5, 25, 8, 30),
+            vectorClock: null,
+            dayId: dayId,
+          )
+          as CaptureEntity;
+    }
+
+    test('returns the explicit dayId when present', () {
+      expect(
+        captureDayId(capture(dayId: 'dayplan-2026-05-25')),
+        'dayplan-2026-05-25',
+      );
+    });
+
+    test('derives the day from capturedAt for a legacy capture', () {
+      expect(
+        captureDayId(capture(capturedAt: DateTime(2026, 5, 25, 23, 59))),
+        'dayplan-2026-05-25',
+      );
+    });
   });
 }
 

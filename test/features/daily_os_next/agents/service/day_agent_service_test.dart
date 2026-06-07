@@ -717,6 +717,7 @@ void main() {
           expect(capture.id, startsWith('refine_capture:'));
           expect(capture.transcript, 'move lunch to 1pm');
           expect(capture.capturedAt, now);
+          expect(capture.dayId, dayId);
           expect(changedTokens, [capture.id]);
 
           final tokens =
@@ -734,6 +735,48 @@ void main() {
             dayAgentRefineToken(dayId),
             dayAgentCaptureSubmittedToken(capture.id),
           });
+        },
+      );
+
+      test(
+        'a near-midnight refine stamps the PLAN day, not the capture-time day',
+        () async {
+          // Refining tomorrow's plan at 23:30 today: the capture must be
+          // bucketed to the plan day (ADR 0022), not the calendar day the user
+          // happened to speak on, so capturesForDateProvider surfaces it on the
+          // right day.
+          const planDayId = 'dayplan-2026-05-26';
+          final planDate = DateTime(2026, 5, 26, 9);
+          final lateNight = DateTime(2026, 5, 25, 23, 30);
+          when(
+            () => repository.getActiveAgentByKindAndActiveDayId(
+              kind: AgentKinds.dayAgent,
+              activeDayId: planDayId,
+            ),
+          ).thenAnswer((_) async => identity());
+          when(
+            () => repository.getEntity(dayAgentPlanEntityId(planDayId)),
+          ).thenAnswer(
+            (_) async =>
+                seedPlan().copyWith(id: dayAgentPlanEntityId(planDayId)),
+          );
+
+          await withClock(
+            Clock.fixed(lateNight),
+            () => service.enqueueRefineWake(
+              dayDate: planDate,
+              transcript: 'shift standup earlier',
+            ),
+          );
+
+          final capture =
+              verify(
+                    () => syncService.upsertEntity(captureAny()),
+                  ).captured.single
+                  as CaptureEntity;
+          expect(capture.capturedAt, lateNight);
+          // Stamped with the plan day, not dayplan-2026-05-25.
+          expect(capture.dayId, planDayId);
         },
       );
 

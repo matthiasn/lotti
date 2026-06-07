@@ -384,6 +384,120 @@ void main() {
     );
 
     test(
+      'a capture-only wake resolves its day from the capture, not the slot',
+      () async {
+        // Empty slot + only a capture token: the day must come from the
+        // capture's own dayId scope (ADR 0022), not state.slots.activeDayId.
+        currentState = state(activeDayId: '');
+        final captureService = MockDayAgentCaptureService();
+        when(() => captureService.getCapture('capture-1')).thenAnswer(
+          (_) async => makeTestCapture(
+            id: 'capture-1',
+            agentId: agentId,
+            transcript: 'buy milk',
+            capturedAt: DateTime(2026, 5, 25, 7),
+            createdAt: DateTime(2026, 5, 25, 7),
+            dayId: dayId,
+          ),
+        );
+        when(
+          () => captureService.buildTaskCorpusSnapshot(
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+            day: any(named: 'day'),
+          ),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => captureService.parsedItemsForCapture('capture-1'),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => captureService.executeTool(
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            toolName: DayAgentToolNames.parseCaptureToItems,
+            args: any(named: 'args'),
+          ),
+        ).thenAnswer(
+          (_) async => DayAgentDirectToolResult.success(const {
+            'captureId': 'capture-1',
+            'items': [
+              {
+                'kind': 'newTask',
+                'title': 'buy milk',
+                'categoryId': 'home',
+                'confidenceScore': 0.4,
+              },
+            ],
+          }),
+        );
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.parseCaptureToItems,
+            args: const {
+              'captureId': 'capture-1',
+              'items': [
+                {
+                  'kind': 'newTask',
+                  'title': 'buy milk',
+                  'categoryId': 'home',
+                  'confidenceScore': 0.4,
+                },
+              ],
+            },
+          ),
+        ];
+
+        final result = await execute(
+          workflow(captureService: captureService),
+          triggerTokens: {dayAgentCaptureSubmittedToken('capture-1')},
+        );
+
+        expect(result.success, isTrue);
+        final sent =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, Object?>;
+        expect(sent['dayId'], dayId);
+      },
+    );
+
+    test(
+      'a capture-only wake is ambiguous when its captures span two days',
+      () async {
+        currentState = state(activeDayId: '');
+        final captureService = MockDayAgentCaptureService();
+        when(() => captureService.getCapture('cap-a')).thenAnswer(
+          (_) async => makeTestCapture(
+            id: 'cap-a',
+            agentId: agentId,
+            dayId: 'dayplan-2026-05-25',
+          ),
+        );
+        when(() => captureService.getCapture('cap-b')).thenAnswer(
+          (_) async => makeTestCapture(
+            id: 'cap-b',
+            agentId: agentId,
+            dayId: 'dayplan-2026-05-26',
+          ),
+        );
+
+        final result = await execute(
+          workflow(captureService: captureService),
+          triggerTokens: {
+            dayAgentCaptureSubmittedToken('cap-a'),
+            dayAgentCaptureSubmittedToken('cap-b'),
+          },
+        );
+
+        expect(result.success, isFalse);
+        expect(
+          result.error,
+          contains('Ambiguous day workspace across captures'),
+        );
+        expect(conversationRepository.lastUserMessage, isNull);
+      },
+    );
+
+    test(
       'record_observations is handled by the strategy and never routed to '
       'the capture or plan services',
       () async {

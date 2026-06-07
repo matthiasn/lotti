@@ -382,6 +382,7 @@ class DayAgentService {
                 capturedAt: now,
                 createdAt: now,
                 vectorClock: null,
+                dayId: dayId,
               )
               as CaptureEntity;
       await syncService.upsertEntity(capture);

@@ -25,6 +25,7 @@ import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/daily_os_planner_wake_context.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
@@ -141,9 +142,10 @@ class DayAgentWorkflow {
     }
 
     // Day workspace resolution (ADR 0022 Decisions 3–4): the wake's trigger
-    // tokens are authoritative. The per-day `activeDayId` slot remains a
-    // fallback for token-less wakes (creation-era jobs, capture parses)
-    // until the identity cutover removes per-day identities.
+    // tokens are authoritative. A capture-submitted wake carries no day token,
+    // so its day resolves from the capture's own `dayId` scope; the per-day
+    // `activeDayId` slot remains a last-resort fallback until the identity
+    // cutover removes per-day identities.
     final dayResolution = resolvePlannerWakeDay(triggerTokens);
     if (dayResolution.isAmbiguous) {
       final candidates = dayResolution.candidates.toList()..sort();
@@ -152,19 +154,41 @@ class DayAgentWorkflow {
         error: 'Ambiguous day workspace in trigger tokens: $candidates',
       );
     }
-    final dayId = dayResolution.dayId ?? state.slots.activeDayId;
+    // Token day first, then the legacy per-day slot. Only when neither yields a
+    // day (a capture-only wake under one planner, where the slot is gone) do we
+    // load the capture to resolve its own `dayId` scope — avoiding a redundant
+    // capture read in the common per-day path.
+    var dayId = dayResolution.dayId ?? state.slots.activeDayId;
     if (dayId == null || dayId.isEmpty) {
+      final captureResolution = await _dayIdFromCaptureTokens(
+        agentId: agentId,
+        triggerTokens: triggerTokens,
+      );
+      if (captureResolution.isAmbiguous) {
+        final candidates = captureResolution.candidates.toList()..sort();
+        return WakeResult(
+          success: false,
+          error: 'Ambiguous day workspace across captures: $candidates',
+        );
+      }
+      dayId = captureResolution.dayId;
+    }
+    final resolvedDayId = dayId;
+    if (resolvedDayId == null || resolvedDayId.isEmpty) {
       return const WakeResult(success: false, error: 'No active day ID');
     }
 
-    final dayDate = _dateFromDayId(dayId);
+    final dayDate = _dateFromDayId(resolvedDayId);
     if (dayDate == null) {
-      return WakeResult(success: false, error: 'Invalid active day ID $dayId');
+      return WakeResult(
+        success: false,
+        error: 'Invalid active day ID $resolvedDayId',
+      );
     }
 
     final wakeContext = DailyOsPlannerWakeContext.fromTokens(
       plannerAgentId: agentId,
-      dayId: dayId,
+      dayId: resolvedDayId,
       runKey: runKey,
       threadId: threadId,
       triggerTokens: triggerTokens,
@@ -254,7 +278,7 @@ class DayAgentWorkflow {
     final attentionPlanning = await _attentionPlanningContext(dayDate);
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
-      dayId: dayId,
+      dayId: resolvedDayId,
       planDate: dayDate,
       now: now,
       triggerTokens: triggerTokens,
@@ -292,7 +316,7 @@ class DayAgentWorkflow {
           agentId: agentId,
           threadId: threadId,
           runKey: runKey,
-          dayId: dayId,
+          dayId: resolvedDayId,
           toolName: toolName,
           args: args,
         ),
@@ -426,7 +450,7 @@ class DayAgentWorkflow {
       });
       onPersistedStateChanged
         ?..call(agentId)
-        ..call(dayId);
+        ..call(resolvedDayId);
 
       _log('day-agent wake completed', subDomain: 'execute');
       return const WakeResult(success: true);
@@ -957,6 +981,32 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     const prefix = 'dayplan-';
     if (!dayId.startsWith(prefix)) return null;
     return DateTime.tryParse(dayId.substring(prefix.length));
+  }
+
+  /// Resolves the day workspace from a capture-submitted wake's captures.
+  ///
+  /// A capture wake carries no `planning_day:`/`drafting:`/`refine:` token, so
+  /// its day comes from the capture's own `dayId` scope (ADR 0022). Loads each
+  /// `capture_submitted:` capture owned by [agentId] and collects the distinct
+  /// days; more than one distinct day is reported as ambiguous so the wake can
+  /// fail fast rather than pick arbitrarily.
+  Future<PlannerWakeDayResolution> _dayIdFromCaptureTokens({
+    required String agentId,
+    required Set<String> triggerTokens,
+  }) async {
+    final service = captureService;
+    if (service == null) return const PlannerWakeDayResolution(candidates: {});
+    final captureIds = captureIdsFromTriggerTokens(triggerTokens);
+    if (captureIds.isEmpty) {
+      return const PlannerWakeDayResolution(candidates: {});
+    }
+    final days = <String>{};
+    for (final captureId in captureIds) {
+      final capture = await service.getCapture(captureId);
+      if (capture == null || capture.agentId != agentId) continue;
+      days.add(captureDayId(capture));
+    }
+    return PlannerWakeDayResolution(candidates: days);
   }
 
   static String _extractPayloadText(AgentMessagePayloadEntity? payload) {
