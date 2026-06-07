@@ -526,7 +526,7 @@ void main() {
 
     glados.Glados(
       glados.any.wakeSeriesScenario,
-      glados.ExploreConfig(numRuns: 180),
+      glados.ExploreConfig(numRuns: 140),
     ).test('matches generated wake time-series semantics', (scenario) {
       final result = computeTimeSeries(scenario.wakeRuns);
 

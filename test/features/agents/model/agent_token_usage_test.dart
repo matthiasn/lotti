@@ -182,7 +182,7 @@ void main() {
       expect(a, isNot(c));
     });
 
-    test('toString includes all fields', () {
+    test('toString renders the exact labelled format', () {
       const summary = AgentTokenUsageSummary(
         modelId: 'gemini-2.5-pro',
         inputTokens: 100,
@@ -192,13 +192,13 @@ void main() {
         wakeCount: 3,
       );
 
-      final str = summary.toString();
-      expect(str, contains('gemini-2.5-pro'));
-      expect(str, contains('100'));
-      expect(str, contains('50'));
-      expect(str, contains('25'));
-      expect(str, contains('10'));
-      expect(str, contains('3'));
+      // Pin the full format string: this is the line shown in debug/diagnostic
+      // output, so order, labels, and field selection are part of the contract.
+      expect(
+        summary.toString(),
+        'AgentTokenUsageSummary(model: gemini-2.5-pro, in: 100, '
+        'out: 50, thoughts: 25, cached: 10, wakes: 3)',
+      );
     });
 
     glados.Glados(

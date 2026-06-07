@@ -122,6 +122,96 @@ void main() {
       );
     });
 
+    group('fingerprint', () {
+      test('ignores humanSummary and status (only toolName + args matter)', () {
+        const a = ChangeItem(
+          toolName: 'add_checklist_item',
+          args: {'taskId': 't-1', 'title': 'Write tests'},
+          humanSummary: 'Add a checklist item',
+        );
+        const b = ChangeItem(
+          toolName: 'add_checklist_item',
+          args: {'taskId': 't-1', 'title': 'Write tests'},
+          // Different presentation and a resolved status — neither feeds the
+          // structural fingerprint, so the fingerprint must still match.
+          humanSummary: 'Completely different wording for the same change',
+          status: ChangeItemStatus.confirmed,
+        );
+
+        expect(ChangeItem.fingerprint(a), ChangeItem.fingerprint(b));
+      });
+
+      test('differs when args differ', () {
+        const a = ChangeItem(
+          toolName: 'add_checklist_item',
+          args: {'taskId': 't-1', 'title': 'Write tests'},
+          humanSummary: 'Add a checklist item',
+        );
+        const b = ChangeItem(
+          toolName: 'add_checklist_item',
+          args: {'taskId': 't-1', 'title': 'Write docs'},
+          humanSummary: 'Add a checklist item',
+        );
+
+        expect(
+          ChangeItem.fingerprint(a),
+          isNot(ChangeItem.fingerprint(b)),
+        );
+      });
+
+      test('differs when toolName differs', () {
+        const a = ChangeItem(
+          toolName: 'add_checklist_item',
+          args: {'taskId': 't-1'},
+          humanSummary: 'summary',
+        );
+        const b = ChangeItem(
+          toolName: 'remove_checklist_item',
+          args: {'taskId': 't-1'},
+          humanSummary: 'summary',
+        );
+
+        expect(
+          ChangeItem.fingerprint(a),
+          isNot(ChangeItem.fingerprint(b)),
+        );
+      });
+
+      test('is insensitive to arg key ordering (structural hash)', () {
+        // Two maps with the same entries in different insertion order must
+        // produce the same fingerprint, since dedup keys off semantics, not
+        // literal map layout.
+        const a = ChangeItem(
+          toolName: 'update_estimate',
+          args: {'taskId': 't-1', 'minutes': 30},
+          humanSummary: 'a',
+        );
+        const b = ChangeItem(
+          toolName: 'update_estimate',
+          args: {'minutes': 30, 'taskId': 't-1'},
+          humanSummary: 'b',
+        );
+
+        expect(ChangeItem.fingerprint(a), ChangeItem.fingerprint(b));
+      });
+
+      test(
+        'fingerprintFromParts matches fingerprint of an equivalent item',
+        () {
+          const item = ChangeItem(
+            toolName: 'add_checklist_item',
+            args: {'taskId': 't-1', 'title': 'Write tests'},
+            humanSummary: 'Add a checklist item',
+          );
+
+          expect(
+            ChangeItem.fingerprintFromParts(item.toolName, item.args),
+            ChangeItem.fingerprint(item),
+          );
+        },
+      );
+    });
+
     glados.Glados(
       glados.any.changeItemStatuses,
       glados.ExploreConfig(numRuns: 160),
