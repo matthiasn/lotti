@@ -33,6 +33,21 @@ void main() {
     mockHttpClient.close();
   });
 
+  /// Stubs the next POST (any URI/headers/body) with the given response —
+  /// the shape previously repeated verbatim in a dozen tests.
+  void stubPost({required String body, int statusCode = 200}) {
+    when(
+      () => mockHttpClient.post(
+        any(),
+        headers: any(named: 'headers'),
+        body: any(named: 'body'),
+      ),
+    ).thenAnswer((_) async => http.Response(body, statusCode));
+  }
+
+  /// [stubPost] for the standard `{"text": ...}` success payload.
+  void stubPostText(String text) => stubPost(body: jsonEncode({'text': text}));
+
   group('WhisperInferenceRepository', () {
     const baseUrl = 'http://localhost:8084';
     const model = 'whisper-1';
@@ -96,18 +111,7 @@ void main() {
         const emptyAudioBase64 = '';
         const transcribedText = ''; // Empty transcription for empty audio
 
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            jsonEncode({'text': transcribedText}),
-            200,
-          ),
-        );
+        stubPostText(transcribedText);
 
         // Act
         final stream = repository.transcribeAudio(
@@ -125,18 +129,7 @@ void main() {
 
       test('throws TranscriptionException on HTTP error', () async {
         // Arrange
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            'Internal Server Error',
-            500,
-          ),
-        );
+        stubPost(body: 'Internal Server Error', statusCode: 500);
 
         // Act
         final stream = repository.transcribeAudio(
@@ -163,18 +156,7 @@ void main() {
 
       test('throws TranscriptionException on invalid JSON response', () async {
         // Arrange
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            'Not valid JSON',
-            200,
-          ),
-        );
+        stubPost(body: 'Not valid JSON');
 
         // Act
         final stream = repository.transcribeAudio(
@@ -207,18 +189,8 @@ void main() {
         'throws TranscriptionException when text field is missing',
         () async {
           // Arrange
-          when(
-            () => mockHttpClient.post(
-              any(),
-              headers: any(named: 'headers'),
-              body: any(named: 'body'),
-            ),
-          ).thenAnswer(
-            (_) async => http.Response(
-              jsonEncode({'result': 'some value'}), // Missing 'text' field
-              200,
-            ),
-          );
+          // Missing 'text' field in the response payload.
+          stubPost(body: jsonEncode({'result': 'some value'}));
 
           // Act
           final stream = repository.transcribeAudio(
@@ -280,39 +252,47 @@ void main() {
         );
       });
 
-      test('accepts maxCompletionTokens parameter', () async {
-        // Arrange
-        const transcribedText = 'Transcribed text';
-        const maxCompletionTokens = 1000;
+      test(
+        'maxCompletionTokens is an interface-compat no-op — accepted but '
+        'deliberately ABSENT from the request body',
+        () async {
+          // Arrange
+          const transcribedText = 'Transcribed text';
+          const maxCompletionTokens = 1000;
 
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            jsonEncode({'text': transcribedText}),
-            200,
-          ),
-        );
+          stubPostText(transcribedText);
 
-        // Act
-        final stream = repository.transcribeAudio(
-          model: model,
-          audioBase64: audioBase64,
-          baseUrl: baseUrl,
-          prompt: prompt,
-          maxCompletionTokens: maxCompletionTokens,
-        );
+          // Act
+          final stream = repository.transcribeAudio(
+            model: model,
+            audioBase64: audioBase64,
+            baseUrl: baseUrl,
+            prompt: prompt,
+            maxCompletionTokens: maxCompletionTokens,
+          );
 
-        final response = await stream.first;
+          final response = await stream.first;
 
-        // Assert
-        expect(response.choices?[0].delta?.content, equals(transcribedText));
-        // maxCompletionTokens is accepted but not used by Whisper
-      });
+          // Assert
+          expect(response.choices?[0].delta?.content, equals(transcribedText));
+
+          // Negative guard: the whisper.cpp server endpoint takes no token
+          // cap, so the parameter must not leak into the JSON body.
+          final captured =
+              verify(
+                    () => mockHttpClient.post(
+                      any(),
+                      headers: any(named: 'headers'),
+                      body: captureAny(named: 'body'),
+                    ),
+                  ).captured.single
+                  as String;
+          final decoded = jsonDecode(captured) as Map<String, dynamic>;
+          expect(decoded.keys, isNot(contains('max_completion_tokens')));
+          expect(decoded.keys, isNot(contains('max_tokens')));
+          expect(decoded, {'model': model, 'audio': audioBase64});
+        },
+      );
 
       test('handles network errors gracefully', () async {
         // Arrange
@@ -355,18 +335,7 @@ void main() {
         // Arrange
         const transcribedText = 'Test transcription';
 
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            jsonEncode({'text': transcribedText}),
-            200,
-          ),
-        );
+        stubPostText(transcribedText);
 
         // Act — response IDs are UUID v4, so uniqueness holds even for
         // back-to-back requests; no wall-clock waits (fake-time policy).
@@ -398,18 +367,7 @@ void main() {
         const transcribedText =
             'Special chars: @#\$%^&*()_+ "quotes" \'apostrophe\' \n newline';
 
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            jsonEncode({'text': transcribedText}),
-            200,
-          ),
-        );
+        stubPostText(transcribedText);
 
         // Act
         final stream = repository.transcribeAudio(
@@ -429,18 +387,7 @@ void main() {
         // Arrange
         final longText = 'A' * 10000; // 10,000 character transcription
 
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            jsonEncode({'text': longText}),
-            200,
-          ),
-        );
+        stubPostText(longText);
 
         // Act
         final stream = repository.transcribeAudio(
@@ -461,18 +408,7 @@ void main() {
         // Arrange
         const transcribedText = 'Test';
 
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            jsonEncode({'text': transcribedText}),
-            200,
-          ),
-        );
+        stubPostText(transcribedText);
 
         // Act
         await repository
@@ -501,18 +437,7 @@ void main() {
 
       test('handles HTTP 400 Bad Request', () async {
         // Arrange
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            'Bad Request: Invalid audio format',
-            400,
-          ),
-        );
+        stubPost(body: 'Bad Request: Invalid audio format', statusCode: 400);
 
         // Act
         final stream = repository.transcribeAudio(
@@ -537,18 +462,7 @@ void main() {
 
       test('handles HTTP 401 Unauthorized', () async {
         // Arrange
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            'Unauthorized',
-            401,
-          ),
-        );
+        stubPost(body: 'Unauthorized', statusCode: 401);
 
         // Act
         final stream = repository.transcribeAudio(
@@ -573,18 +487,7 @@ void main() {
 
       test('handles HTTP 429 Too Many Requests', () async {
         // Arrange
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            'Too Many Requests',
-            429,
-          ),
-        );
+        stubPost(body: 'Too Many Requests', statusCode: 429);
 
         // Act
         final stream = repository.transcribeAudio(
@@ -702,18 +605,7 @@ void main() {
 
       test('uses default timeout when no custom timeout provided', () async {
         // Arrange
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer(
-          (_) async => http.Response(
-            jsonEncode({'text': 'Test transcription'}),
-            200,
-          ),
-        );
+        stubPost(body: jsonEncode({'text': 'Test transcription'}));
 
         // Act
         final stream = repository.transcribeAudio(

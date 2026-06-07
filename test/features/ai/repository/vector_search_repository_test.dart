@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
@@ -753,5 +754,42 @@ void main() {
         ),
       ).called(1);
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Glados property for the pure best-distance reducer — the integration
+  // tests above only exercise the two-hit case.
+  // ---------------------------------------------------------------------------
+  group('debugRecordBestDistance — properties', () {
+    glados.Glados(
+      glados.any.list(
+        glados.any.combine2(
+          glados.IntAnys(glados.any).intInRange(0, 4),
+          glados.IntAnys(glados.any).intInRange(0, 1000),
+          (int id, int millis) => (id: 'task-$id', distance: millis / 1000),
+        ),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('stores the global minimum per id for any hit sequence', (hits) {
+      final distances = <String, double>{};
+      for (final hit in hits) {
+        VectorSearchRepository.debugRecordBestDistance(
+          distances,
+          hit.id,
+          hit.distance,
+        );
+      }
+
+      // Oracle: fold the minimum per id independently of arrival order.
+      final expected = <String, double>{};
+      for (final hit in hits) {
+        final prior = expected[hit.id];
+        expected[hit.id] = prior == null || hit.distance < prior
+            ? hit.distance
+            : prior;
+      }
+
+      expect(distances, expected, reason: '$hits');
+    }, tags: 'glados');
   });
 }

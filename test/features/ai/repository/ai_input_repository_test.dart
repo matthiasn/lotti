@@ -3704,6 +3704,22 @@ void main() {
         expect(result[0].timeSpent, equals('12:30'));
       });
 
+      test('filters out deleted parent tasks', () async {
+        final deletedParent = createTestTask(
+          id: 'deleted-parent',
+          title: 'Deleted Parent',
+          deletedAt: testDate, // Marked as deleted
+        );
+
+        when(
+          () => mockDbLinked.getLinkedEntities(taskId),
+        ).thenAnswer((_) async => [deletedParent]);
+
+        final result = await repositoryLinked.buildLinkedToContext(taskId);
+
+        expect(result, isEmpty);
+      });
+
       test(
         'buildLinkedTasksJson combines both directions in one JSON document',
         () async {

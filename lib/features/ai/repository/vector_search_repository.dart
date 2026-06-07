@@ -7,6 +7,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
 import 'package:lotti/features/ai/service/embedding_content_extractor.dart';
 import 'package:lotti/services/dev_logger.dart';
+import 'package:meta/meta.dart';
 
 /// Result of a vector search, including timing information.
 class VectorSearchResult {
@@ -320,6 +321,14 @@ class VectorSearchRepository {
 
     return (tasks, distances);
   }
+
+  /// Test seam for the best-distance reducer.
+  @visibleForTesting
+  static void debugRecordBestDistance(
+    Map<String, double> distances,
+    String entityId,
+    double distance,
+  ) => _recordBestDistance(distances, entityId, distance);
 
   /// Records the best (lowest) distance for a given entity ID.
   static void _recordBestDistance(
