@@ -17,6 +17,15 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
   Duration get highlightDuration => const Duration(milliseconds: 4800);
   Duration get scrollDuration => const Duration(milliseconds: 300);
 
+  /// Pure retry predicate: attempt counting starts at 0, so a budget of
+  /// [maxRetries] attempts allows retries while `attempt < maxRetries - 1`
+  /// (the final attempt is the one that gives up and logs).
+  @visibleForTesting
+  static bool shouldRetryScroll({
+    required int attempt,
+    required int maxRetries,
+  }) => attempt < maxRetries - 1;
+
   // Check if we're in a test environment
   static bool get _isTestMode {
     // In tests, Platform.environment is usually minimal
@@ -156,7 +165,10 @@ mixin HighlightScrollMixin<T extends StatefulWidget> on State<T> {
           // Treat exception as terminal and clear intent if requested
           onScrolled?.call();
         }
-      } else if (attempt < maxScrollRetries - 1) {
+      } else if (shouldRetryScroll(
+        attempt: attempt,
+        maxRetries: maxScrollRetries,
+      )) {
         // Entry not found, schedule retry
         _retryTimer?.cancel();
         _retryTimer = Timer(scrollRetryDelay, () {
