@@ -42,17 +42,24 @@ every day.
 2. A day is represented by `dayId`, not by `agentId`.
 3. Day-scoped wakes always carry `planning_day:<dayId>` or resolve `dayId`
    through a workspace-bound capture.
-4. The workflow never uses `AgentSlots.activeDayId` as authoritative day
-   context.
+4. The workflow never reads `AgentSlots.activeDayId`, and the projection stops
+   deriving/persisting it for the planner (no per-day `AgentDayLink`).
 5. Day-scoped tool calls are rejected when their `dayId` differs from the wake
    workspace.
 6. Raw captures and parsed items are day-scoped. Cross-day learning enters the
    prompt only through deliberate summaries, observations, reports, recent-plan
    cards, or planner memory.
 7. Wake queue and scheduling semantics distinguish day workspaces under the
-   shared planner identity.
+   shared planner identity — across supersede, dedupe, token merge, and token
+   extraction.
 8. Provider-specific inference details stay behind provider-neutral tool-choice
    contracts.
+9. User-stated knowledge persists in a durable, compaction-exempt store and is
+   revisable by recency; agent-inferred observations reach durable knowledge only
+   through the weekly gate or explicit user confirmation.
+10. Nothing in the planner depends on a domain agent existing, but the planner
+    remains the durable counterparty domain agents (ADR 0023) will negotiate
+    with via attention claims.
 
 ## Target Data Model
 
@@ -84,28 +91,34 @@ ChangeSetEntity
   agentId = plannerAgentId
   taskId or target id = day_agent_plan:<dayId>
 
-AnalysisBriefEntity (or equivalent report artifact)
+PlannerKnowledgeEntity        // new AgentDomainEntity variant; durable, compaction-exempt
   id
-  plannerAgentId
-  workspaceKey = day:<dayId> | week:<isoWeek> | project:<id> | category:<id>
-  horizonStart / horizonEnd
-  sourceRefs[]
-  findings[]
-  recommendations[]
-  confidence
-  validUntil
+  agentId = plannerAgentId
+  key                         // stable slug, e.g. "deep-work-earliest-start"
+  value                       // structured or text, e.g. "10:00 local"
+  statementText               // verbatim "never schedule deep work before 10am"
+  source = userStated | agentInferred
+  status = proposed | confirmed | retracted
+  supersedesId?               // the prior entry this replaces (recency-wins)
+  scope = global | category:<id> | project:<id>
+  createdAt, confirmedAt?, retractedAt?
+  vectorClock
 ```
 
-If adding `dayId` directly to `CaptureEntity` creates too much generated-code
-churn in one PR, an equivalent deterministic `captureDay` link is acceptable
-only as a short step inside the same rollout. The final model should make day
-scope cheap and explicit to query.
+`CaptureEntity.dayId` must be **sync-safe**: it has to be a defaulted or
+derived-on-read field, not a `required` freezed field. A peer on an older build
+emits captures with no `dayId`, and a required, non-defaulted field throws on
+`fromJson`. Follow the existing forward-compatible pattern (e.g. the defaulted
+`milestone` field). If adding `dayId` directly to `CaptureEntity` still creates
+too much generated-code churn in one PR, an equivalent deterministic
+`captureDay` link is acceptable only as a short step inside the same rollout.
+The final model should make day scope cheap and explicit to query.
 
-Analysis briefs do not have to be a new entity in the first planner refactor if
-an existing report/message shape can carry the artifact cleanly. The important
-contract is that disposable analyst runs write a compact, evidence-linked
-artifact and then close; the planner never imports their raw transcript as main
-context.
+`PlannerKnowledgeEntity` is the durable, compaction-exempt store for
+"memorize what I tell you" (ADR 0022 Decisions 9–10). It is detailed in the
+"Durable Planner Knowledge" section below. Deep disposable analysis runs are
+**out of scope** for this refactor (ADR 0022 Decision 13); if reintroduced
+later they reuse the existing `AgentReportEntity` scope, not a new entity.
 
 ## Wake Contract
 
@@ -150,36 +163,80 @@ Token rules:
 - Plan and capture tools validate `args.dayId == context.dayId` when a tool
   accepts `dayId`.
 
-## Disposable Analyst Runs
+## Durable Planner Knowledge (memorize what the user tells you)
 
-The long-lived planner may need deeper investigations than a normal day wake
-should carry in context. Examples:
+A long-lived planner is only useful if it durably remembers what the user tells
+it. The current substrate cannot guarantee this: user instructions enter through
+agent-inferred `record_observations`, land in the shared compaction fold
+(ADR 0017), and are re-summarized lossily on every fold for the life of the
+planner — so "never schedule deep work before 10am" slowly dissolves. The old
+plan's `propose_preference` / `confirm_preference` / `retract_preference` tools
+were specified but never built. This section closes that gap.
 
-- Analyze why planned work spilled over during the last seven days.
-- Compare planned capacity with actual tracked time by category.
-- Inspect a project and explain why it repeatedly displaces health blocks.
-- Summarize unresolved capture phrases across a week.
+### Two memory loops
 
-These should be modeled as one-off analyst conversations:
+- **Fast loop (daily, unsupervised):** raw day-scoped inputs and agent-inferred
+  observations accrue as episodic memory on the planner's log, compacted per
+  ADR 0017. High volume, low trust, automatically aged.
+- **Slow loop (weekly, supervised — the one-on-one):** the existing
+  `TemplateEvolutionWorkflow` ritual, now bound to the single planner identity,
+  consolidates recurring observations into durable knowledge and template
+  directives, gated by the user. Wiring `day_agent` as a participating kind
+  completes the old plan's unfinished step.
 
-1. The planner or UI starts an analyst run with a bounded question, workspace
-   key, horizon, and source set.
-2. The analyst run may call read tools and inspect a larger local corpus than a
-   normal planner wake.
-3. The analyst run writes one compact artifact: findings, evidence refs,
-   confidence, recommendations, and optional proposed follow-up questions.
-4. The analyst run is closed. It is not a durable agent identity.
-5. The planner reads the artifact and decides whether it becomes an
-   observation, attention claim, plan diff, or just background context.
+Promotion is the relationship between them: a day-scoped observation becomes
+durable knowledge only when (a) the user confirms it directly, or (b) it recurs
+across distinct days and passes the weekly gate. Episodic memory can be aged
+aggressively *because* anything worth keeping is promoted.
 
-This keeps the planner long-running without turning every planning wake into a
-large analysis context.
+### `PlannerKnowledgeEntity`
+
+A new `AgentDomainEntity` variant persisted on the existing `agent_entities`
+table (no new Drift table), modeled on the durable `Version` / `Head` snapshot
+pattern already used by `AgentTemplateVersionEntity` and the soul document.
+Fields are listed in Target Data Model above. Key properties:
+
+1. **Keyed and supersedable.** A `Head` selects the active entry per `key` among
+   non-retracted entries by recency. Monday's "X" is cleanly superseded by
+   Friday's "not-X" via `supersedesId`; retraction is explicit, not LLM-guessed.
+2. **Direct user-to-durable path.** Reintroduce the tool trio as real handlers:
+   `propose_knowledge {key, value, statement, scope, source}` (writes
+   `status = proposed`), and user-gated `confirm_knowledge` / `retract_knowledge`
+   surfaced in the "What I've learned" panel. A `source = userStated` instruction
+   may skip straight to `confirmed`. This is the path user instructions take
+   instead of `record_observations`.
+3. **Compaction-exempt.** `PlannerKnowledgeEntity` is its own kind, **excluded
+   from `projectInputEvents`' fold substrate** and from the compaction tail. The
+   active `Head` set of confirmed knowledge is injected into the prompt as a
+   dedicated, byte-stable "Standing knowledge" block (cf. ADR 0014), so it is
+   never re-summarized and stays prefix-cache friendly. The summarizer's soft
+   "preserve preferences" instruction becomes a backstop, not the only defense.
+4. **Reconciled with the weekly ritual.** The weekly `TemplateEvolutionWorkflow`
+   folds confirmed knowledge into the next user-approved template version. Daily
+   = fast capture into the durable store; weekly = consolidation into directives.
+   The knowledge store is the single source of truth both read, eliminating
+   drift between "the template says X" and "an observation says not-X".
+
+Deep disposable analysis runs are deferred (ADR 0022 Decision 13); most
+questions they would answer ("why does this project keep displacing workouts?")
+belong to a durable domain agent (ADR 0023) instead.
 
 ## PR Sequence
 
-### PR 1 - Planner identity and day workspace contract
+**Ordering principle — make the system workspace-safe before flipping identity.**
+The earlier draft of this plan collapsed identity in PR1 but only fixed capture
+day-scope (PR2) and the wake queue (PR3) afterward, leaving a window where every
+day's Capture panel and drafting prompt leaked other days' captures and one day's
+manual wake could cancel another day's queued work. The corrected sequence lands
+all the workspace plumbing **additively under the existing per-day identity**
+(PR1–PR3), then flips to one planner once the flip is provably safe (PR4). The
+identity cutover (PR4) **must not ship to users without PR2 and PR3**.
 
-Goal: introduce the new contract without changing every persistence path.
+### PR 1 - Day workspace contract (additive, identity unchanged)
+
+Goal: introduce the workspace vocabulary and wake context without changing
+identity creation. Per-day identities still exist, so existing behavior is
+preserved and nothing leaks yet.
 
 Touches:
 
@@ -191,27 +248,73 @@ Touches:
 
 Work:
 
-1. Add `planning_day:<dayId>` token helpers.
+1. Add `planning_day:<dayId>` token helpers alongside the existing `drafting:` /
+   `refine:` tokens.
 2. Add `DailyOsPlannerWakeContext` and pure parsing/validation helpers.
-3. Add `getOrCreatePlannerAgent()` to `DayAgentService`.
-4. Keep `AgentIdentityEntity.kind == day_agent` for now.
-5. Stop creating one agent per date in new day-agent service paths.
-6. Make enqueue methods target the planner and include `planning_day:<dayId>`.
-7. Update workflow prompt wording from "one agent for exactly one local
-   calendar day" to "one planner operating on the current day workspace".
-8. Keep old methods only as thin compatibility wrappers if still needed by UI
-   call sites, and delete them once callers are moved.
+3. **Make the token extraction helpers workspace-filtered.** Today
+   `draftingDayIdFromTriggerTokens` / `refineDayIdFromTriggerTokens` return the
+   *first* matching token from a `Set` (non-deterministic). They must instead
+   return the token whose `dayId` matches the resolved workspace, so they are
+   correct once one identity owns many days and a merged token set holds
+   `drafting:dayA` + `drafting:dayB`.
+4. Add `getOrCreatePlannerAgent()` to `DayAgentService` (no cutover path uses it
+   yet).
+5. Have the workflow resolve target day from wake context + trigger tokens, while
+   still tolerating the current per-day slot as a fallback so behavior is
+   unchanged this PR.
 
 Done when:
 
-- Creating/using two dates yields one planner identity.
-- Draft/refine enqueue tokens include the correct `planning_day:<dayId>`.
-- Workflow can resolve day context without `AgentSlots.activeDayId`.
-- Workflow rejects a mismatched model `dayId` in plan tools.
+- Wake context resolves day from tokens; extraction helpers are deterministic
+  under a merged day-A + day-B token set (unit-tested).
+- Existing per-day behavior is unchanged.
 
-### PR 2 - Day-scoped captures and providers
+### PR 2 - Workspace-aware wake queue and scheduled wakes (additive)
 
-Goal: prevent cross-day capture leaks under one planner.
+Goal: make the queue safe for one planner with multiple outstanding day jobs,
+before any identity flip. Still per-day identity, so this is a safe refactor of
+the existing queue with its existing tests as a regression guard.
+
+Touches:
+
+- `wake_queue.dart`
+- `wake_orchestrator.dart`
+- `scheduled_wake_manager.dart`
+- day-agent service enqueue paths
+- wake queue/orchestrator/scheduled-wake tests
+
+Work:
+
+1. Add an optional workspace key to wake jobs. For Daily OS day-scoped wakes,
+   use `day:<dayId>`.
+2. Make superseding (`removeByAgent`), dedupe (`hasQueuedJobFor`), **and token
+   merge (`mergeTokens`)** partition by `(agentId, workspaceKey, reason class)`.
+   `mergeTokens` and `removeByAgent` are agentId-only today, so they must be
+   taught the workspace/reason taxonomy or they will collide cross-day under one
+   planner. Define the reason-class taxonomy (capture / draft / refine /
+   creation) so same-day-different-reason work is not wrongly dropped.
+3. Preserve the existing single-flight runner by `agentId`. Document that one
+   planner therefore serializes day work across days (acceptable for planner
+   judgment; revisit only with evidence).
+4. Resolve `set_next_wake` semantics: either global-only planner wakes, or
+   persisted scheduled-wake records carrying trigger tokens and a workspace key.
+5. **Preserve the day-scoped morning pre-warm.** A single `scheduledWakeAt`
+   cannot hold several day wakes, and a context-less scheduled wake cannot drive
+   a day-scoped pre-warm. If `set_next_wake` stays global-only, the pre-warm must
+   carry its day through a persisted record, not an empty-token wake.
+
+Done when:
+
+- A day-B capture wake cannot drop or merge into a day-A draft/refine wake
+  (tested with two day workspaces under one agentId).
+- Restored scheduled wakes either carry workspace context or are explicitly
+  global; the morning pre-warm still resolves a concrete day.
+
+### PR 3 - Day-scoped captures and providers (additive, sync-safe)
+
+Goal: make day scope explicit on captures and queries before the identity flip
+removes implicit per-day isolation. Still per-day identity, so `dayId` equals the
+agent's only day and the new filters are correct no-ops until PR4.
 
 Touches:
 
@@ -224,83 +327,106 @@ Touches:
 
 Work:
 
-1. Add required `dayId` to `CaptureEntity`.
+1. Add `dayId` to `CaptureEntity` as a **defaulted / derived-on-read** field, not
+   `required` — a required freezed field throws on `fromJson` for captures synced
+   from older peers. Thread it through `submitCapture`, `RealDayAgent`, and the
+   `refine_capture:` build path.
 2. Stamp `dayId` when submitting typed, voice, and refine captures.
-3. Resolve parse wakes from `capture.dayId` when needed.
-4. Filter capture lists, parse context, and day capture events by `dayId`.
-5. Update `capturesForDateProvider` to query planner captures for one
-   workspace, not all captures by date-agent id.
+3. Resolve parse wakes from `capture.dayId` when the token set lacks
+   `planning_day:<dayId>` (e.g. only `capture_submitted:<captureId>` is present).
+4. Filter capture lists, parse context, day capture events, and the workflow
+   memory load by `dayId`.
+5. Update `capturesForDateProvider` to query the day workspace, not all captures
+   by agent id.
 
 Done when:
 
-- Captures created for two dates under one planner do not appear in each
-  other's Capture panel.
-- Capture parse wake with only `capture_submitted:<captureId>` resolves the
-  correct day workspace.
-- Compacted day log excludes raw captures from unrelated days.
+- Captures synced from an older peer (no `dayId`) still deserialize and resolve a
+  day on read.
+- Capture lists and drafting context are day-filtered even when one agentId owns
+  multiple days (tested under a shared agentId).
+- The compacted day log excludes raw captures from unrelated days.
 
-### PR 3 - Workspace-aware wake queue and scheduled wakes
+### PR 4 - Planner identity cutover (the flip)
 
-Goal: make one planner safe with multiple outstanding day jobs.
+Goal: collapse per-day identities into one long-lived planner. Safe **only
+because** PR2 (workspace-aware queue) and PR3 (day-scoped captures) have landed.
+
+Precondition: PR2 and PR3 merged. This PR must not ship to users without them.
 
 Touches:
 
-- `wake_queue.dart`
-- `wake_orchestrator.dart`
-- `scheduled_wake_manager.dart`
-- day-agent service enqueue paths
-- wake queue/orchestrator tests
+- `day_agent_service.dart`
+- `derived_agent_state.dart` / `agent_sync_service.dart` (`activeDayId`
+  projection)
+- `day_agent_workflow.dart`
+- day-agent service/workflow/state tests
 
 Work:
 
-1. Add an optional workspace key to wake jobs. For Daily OS day-scoped wakes,
-   use `day:<dayId>`.
-2. Change manual wake superseding so it removes/merges only matching
-   `(agentId, workspaceKey, reason class)` work where appropriate.
-3. Preserve the existing single-flight runner by `agentId` unless there is a
-   demonstrated need for concurrent planner runs. Serialization is acceptable
-   for planner judgment.
-4. Decide `set_next_wake` semantics:
-   - global-only planner wake, or
-   - persisted scheduled wake records with trigger tokens and workspace key.
-5. Do not restore day-specific scheduled wakes with empty trigger tokens.
+1. Route creation/use through `getOrCreatePlannerAgent`; stop creating one
+   identity per date. Enqueue paths target the planner and include
+   `planning_day:<dayId>`.
+2. **Fix the `activeDayId` projection, not just the read.** Stop creating one
+   `AgentDayLink` per day for the planner (or exclude `activeDayId` from
+   derivation, reconcile write-back, and the derived-field-mismatch
+   diagnostics), so reconcile does not reconcile the slot to a single
+   most-recent day and persist it on every wake.
+3. Make the workflow derive day strictly from wake context; remove the per-day
+   slot fallback added in PR1. The workflow MUST NOT read `AgentSlots.activeDayId`.
+4. Reject day-scoped tool calls whose `args.dayId` differs from the wake
+   workspace.
+5. Keep `AgentIdentityEntity.kind == day_agent` (persisted-name churn deferred to
+   PR7).
 
 Done when:
 
-- A draft wake for one day cannot drop a parse/refine wake for another day.
-- Restored scheduled wakes either have workspace context or are explicitly
-  global planner wakes.
+- Two dates yield one planner identity (`getOrCreatePlannerAgent` idempotent).
+- Reconcile no longer writes or derives a stale `activeDayId`; no permanent
+  `activeDayId` derived-field mismatch.
+- Interleaved day-A / day-B wakes neither cancel nor cross-contaminate
+  (end-to-end test).
 
-### PR 4 - Planner memory split
+### PR 5 - Two-loop memory and durable knowledge
 
-Goal: use the long-lived planner memory intentionally without polluting day
-workspace prompts.
+Goal: deliver durable cross-day learning and "memorize what I tell you" (see the
+"Durable Planner Knowledge" section).
 
 Touches:
 
 - `day_agent_workflow.dart`
-- `day_capture_events.dart`
-- `AgentWakeMemory` call sites
+- `agent_domain_entity.dart` (new `PlannerKnowledgeEntity` variant, generated)
+- `day_agent_tool_names.dart` + knowledge handlers
+- compaction / projection (exempt knowledge from the fold; inject standing block)
+- `template_evolution_workflow.dart` (register `day_agent` as a participating kind)
 - observation persistence/extraction if scope fields are added
-- workflow/memory tests
+- workflow / memory / knowledge tests
 
 Work:
 
-1. Treat planner observations as global unless explicitly day-scoped.
-2. Add observation scope if needed: `global`, `day`, plus optional `dayId`.
-3. Feed compacted planner memory as global context.
-4. Feed raw captures, parsed items, baseline plan, refine transcript, and
-   decided items only for the active `dayId`.
-5. Keep `summarize_recent_patterns` cross-day, because that is intentional
-   learning.
+1. Add `PlannerKnowledgeEntity` + `Head` selection by `key` (recency,
+   non-retracted).
+2. Add `propose_knowledge` / `confirm_knowledge` / `retract_knowledge` handlers;
+   surface them in the "What I've learned" panel. `source = userStated` may go
+   straight to `confirmed`.
+3. Exempt knowledge from compaction; inject the confirmed `Head` set as a stable
+   "Standing knowledge" prompt block (cf. ADR 0014).
+4. Split memory: feed compacted episodic memory as cross-day context; feed raw
+   captures, parsed items, baseline plan, refine transcript, and decided items
+   only for the active `dayId`; keep `summarize_recent_patterns` cross-day.
+5. Wire `day_agent` into `TemplateEvolutionWorkflow` as the weekly promotion
+   gate; confirmed knowledge feeds the next template version.
+6. Add observation scope (`global` | `day` + optional `dayId`) if needed.
 
 Done when:
 
-- Recent-pattern cards can see multiple days owned by one planner.
-- Raw captures from unrelated days are absent from the prompt.
-- Global observations remain available across days.
+- A user instruction persists as confirmed knowledge, survives a compaction fold,
+  and appears in the next wake's prompt.
+- Contradicting knowledge supersedes by recency rather than both persisting.
+- Recent-pattern cards see multiple days under one planner; raw captures from
+  unrelated days are absent from the prompt.
 
-### PR 5 - Plan, refine, commit, and UI adapter cleanup
+### PR 6 - Plan, refine, commit, and UI adapter cleanup
 
 Goal: remove remaining "agent for date" assumptions from user-facing flows.
 
@@ -331,7 +457,7 @@ Done when:
 - The same flow works interleaved across two selected days under one planner.
 - UI updates for one day do not show another day's captures or pending diffs.
 
-### PR 6 - Documentation and old-model removal
+### PR 7 - Documentation and old-model removal
 
 Goal: make the codebase describe the implemented model.
 
@@ -339,7 +465,7 @@ Touches:
 
 - `lib/features/daily_os_next/README.md`
 - stale implementation plans that mention one agent per day
-- code comments and names where practical
+- code comments and names
 - tests that still assert old identity behavior
 
 Work:
@@ -347,51 +473,29 @@ Work:
 1. Update feature README architecture diagrams.
 2. Mark the old per-day identity plan as superseded by ADR 0022.
 3. Remove compatibility wrappers and unused day-agent lookup methods.
-4. Rename helpers where useful:
-   - `dayAgentIdForDate` should not imply agent identity.
-   - prefer `dayIdForDate` or `dayWorkspaceIdForDate`.
-5. Keep persisted kind/name churn for a separate cleanup only if it does not
-   obscure the core refactor.
+4. **Rename the non-persisted Dart symbols and file names off `day_agent_*`
+   within this refactor** (zero sync cost): `dayAgentIdForDate` ->
+   `dayIdForDate` / `dayWorkspaceIdForDate`, and the `day_agent_*` file tree
+   toward planner-shaped names. Half-renaming entrenches the confusion this
+   refactor exists to remove — and it becomes actively wrong once domain agents
+   (ADR 0023) exist.
+5. Keep the **persisted** `kind` string (`day_agent`) and
+   `DayPlanEntity.id = day_agent_plan:<dayId>` deferred — those carry real
+   multi-device migration cost (Open Decision 4).
 
 Done when:
 
 - No production path needs one `AgentIdentityEntity` per day.
-- Docs and comments no longer teach the obsolete model.
+- Docs, comments, and non-persisted symbol names no longer teach the obsolete
+  model.
 
-### PR 7 - Disposable analyst runs and analysis artifacts
+### Out of scope: domain agents and disposable analysis
 
-Goal: let the planner delegate bounded investigations without polluting its main
-context.
-
-Touches:
-
-- planner workflow / service boundary
-- analysis artifact model or report-message convention
-- read-only analyst tools
-- prompt reconstruction / inspectability surfaces
-- analyst-run tests
-
-Work:
-
-1. Define the analysis artifact shape. Prefer a first-class
-   `AnalysisBriefEntity` only if existing report/message entities cannot carry
-   workspace, horizon, evidence refs, and validity cleanly.
-2. Add a `startAnalysisRun` service path that accepts a bounded question,
-   workspace key, horizon, and allowed source refs.
-3. Restrict analyst tools to read-only corpus/context tools at first.
-4. Persist exactly one compact brief per completed analysis run.
-5. Ensure the planner consumes briefs as summarized inputs, not raw analyst
-   transcripts.
-6. Add retention/expiry semantics via `validUntil` or equivalent metadata so
-   stale analysis does not become permanent truth.
-
-Done when:
-
-- A week-analysis run can inspect several day plans and actuals, write a brief,
-  and close.
-- The planner prompt includes the brief summary and evidence refs without the
-  analyst transcript.
-- Failed or abandoned analyst runs do not affect planner memory.
+Durable domain agents (fitness, sleep) that negotiate with this planner for
+calendar time are specified in **ADR 0023** and implemented in a separate plan.
+They are not part of this refactor; this refactor only makes the planner the
+durable, learning counterparty they will negotiate with. Deep disposable analyst
+runs are deferred (ADR 0022 Decision 13).
 
 ## Required Tests
 
@@ -403,11 +507,18 @@ Add or update focused tests before broad suite runs:
   - Draft/refine/capture wake tokens include `planning_day:<dayId>`.
 
 - `day_agent_workflow_test.dart`
-  - workflow ignores stale `AgentSlots.activeDayId`;
+  - workflow never reads `AgentSlots.activeDayId`;
+  - reconcile does not persist a stale `activeDayId` for a multi-day planner;
   - workflow derives day from wake context;
   - workflow rejects mismatched tool `dayId`;
   - forced `parse_capture_to_items` and `draft_day_plan` retries remain
     provider-neutral.
+
+- wake queue / scheduled-wake tests
+  - a day-B manual wake does not `removeByAgent`-drop a queued day-A draft/refine;
+  - `mergeTokens` does not merge day-B tokens into a day-A job;
+  - token extraction is deterministic under a merged day-A + day-B token set;
+  - the day-scoped morning pre-warm resolves a concrete day after restore.
 
 - `day_agent_capture_service_test.dart`
   - submitted captures persist `dayId`;
@@ -433,11 +544,13 @@ Add or update focused tests before broad suite runs:
   - verify day A context and day B context do not leak;
   - refine and commit day A.
 
-- Analyst-run tests:
-  - analysis run writes one compact artifact and then closes;
-  - planner context includes the artifact, not the raw transcript;
-  - analyst tool access is read-only in the first implementation;
-  - stale `validUntil` briefs are excluded or marked stale.
+- durable-knowledge tests (PR5):
+  - `propose_knowledge` then `confirm_knowledge` persists a confirmed entry;
+  - confirmed knowledge survives a compaction fold and appears in the next
+    wake's "Standing knowledge" prompt block;
+  - contradicting knowledge supersedes by recency (`supersedesId`), not both;
+  - `retract_knowledge` removes an entry from the injected `Head` set;
+  - `summarizeRecentPatterns` still sees multiple days under one planner.
 
 ## Verification Strategy
 
@@ -461,14 +574,17 @@ Before merging the full refactor:
 
 | Risk | Mitigation |
 |---|---|
+| Broken intermediate state from flipping identity too early | Land workspace plumbing additively (PR1–PR3) under per-day identity; flip in PR4 only after PR2+PR3 |
 | Day context leak under one planner | Add `dayId` to captures, validate tool `dayId`, filter raw context by workspace |
-| One wake drops another day's wake | Add workspace key to wake queue dedupe/superseding |
-| Scheduled wake restores without day context | Make scheduled wakes global-only or persist trigger tokens/workspace key |
+| `activeDayId` corrupted by projection | Stop creating the per-day `AgentDayLink` for the planner (or exclude `activeDayId` from derivation/reconcile/diagnostics), not just "ignore the read" |
+| One wake drops/merges another day's wake | Make `removeByAgent`, dedupe, **and `mergeTokens`** partition by `(agentId, workspaceKey, reason class)`; make token extractors workspace-filtered |
+| Required `CaptureEntity.dayId` breaks sync deserialization | Make `dayId` defaulted/derived, never `required`; follow the existing forward-compatible default pattern |
+| Scheduled wake restores without day context | Make scheduled wakes global-only or persist trigger tokens/workspace key; preserve the day-scoped morning pre-warm explicitly |
 | Slow draft blocks parse/refine for another day | Keep single-flight initially for planner consistency; revisit only with evidence |
+| Per-wake projection cost grows with planner lifetime | Track as a follow-up: projection snapshot / incremental fold once one identity replaces N tiny per-day logs |
+| Durable memory becomes stale truth | Recency-wins supersession for confirmed knowledge; weekly gate for promotion; recency-weighted episodic memory |
 | Provider-specific forced tool behavior regresses | Keep generic `ChatCompletionToolChoiceOption` tests for Gemini, Mistral, and cloud routing |
 | Old docs/tests reintroduce per-day identity | Mark old plan superseded and remove compatibility wrappers after call sites move |
-| Analyst runs bloat planner context | Persist compact artifacts with evidence refs; exclude raw analyst transcripts from planner prompt |
-| Analyst findings become stale truth | Add horizon and `validUntil`; planner treats briefs as dated evidence |
 
 ## Non-Goals
 
@@ -479,14 +595,17 @@ Before merging the full refactor:
 - Rewriting task agents. Task agents should stay one agent per task.
 - Building a deterministic planner fallback. This refactor is about identity,
   workspace scope, and memory correctness.
-- Making analyst runs durable agents by default. They are one-off scoped
-  conversations unless a future domain proves it needs its own durable identity.
+- Building domain agents (fitness, sleep). They are specified separately in
+  ADR 0023; this refactor only makes the planner the durable counterparty they
+  negotiate with.
+- Disposable analyst runs. Deferred per ADR 0022 Decision 13.
 
 ## Open Decisions
 
-1. Should day-specific scheduled wakes become first-class synced entities, or
-   should `set_next_wake` remain global-only until a concrete per-day need is
-   proven?
+1. **(Resolved — must be decided in PR2, not left open.)** Day-scoped scheduled
+   wakes cannot ride a single `scheduledWakeAt`. PR2 must pick: global-only
+   planner wakes, or persisted scheduled-wake records with workspace key +
+   trigger tokens. Either way the day-scoped morning pre-warm must survive.
 2. Should observation scope be represented directly in `ObservationRecord`, or
    should scoped observations be modeled as message/link metadata?
 3. Should wake queue workspace keys be generic across all agent kinds now, or
@@ -494,11 +613,13 @@ Before merging the full refactor:
 4. When the implementation is complete, should the persisted kind be renamed
    from `day_agent` to `daily_os_planner`, or is that churn not worth the
    migration?
-5. Should analysis briefs be a new `AgentDomainEntity` variant, an
-   `AgentReportEntity` scope, or a structured message payload linked from the
-   planner log?
-6. Which read tools should analyst runs get first: day plans and actuals only,
-   or also task/project/capture corpus search?
+5. Should `PlannerKnowledgeEntity` be its own `AgentDomainEntity` variant
+   (preferred, mirroring `Version`/`Head`), or can confirmed knowledge ride an
+   `AgentReportEntity` scope?
+6. What is the promotion threshold from agent-inferred observation to `proposed`
+   knowledge — N recurrences across distinct days, the weekly gate only, or both?
+7. Do domain agents (ADR 0023) reuse `PlannerKnowledgeEntity` for their own
+   user-stated facts, or hold a per-agent variant? (Cross-ref ADR 0023.)
 
 ## Success Criteria
 
@@ -510,5 +631,8 @@ Before merging the full refactor:
   planner wake is operating on.
 - Gemini, Mistral, and OpenAI-compatible providers can all honor required
   planning tool calls through the generic tool-choice contract.
-- Scoped analyst runs can answer bounded week/day/project questions, persist a
-  compact brief, and close without expanding the planner's raw context.
+- A user instruction ("never schedule deep work before 10am") persists as
+  confirmed knowledge, survives compaction, and shapes later wakes — i.e. the
+  planner memorizes what the user tells it.
+- The weekly one-on-one ritual consolidates recurring daily observations into
+  durable, user-approved knowledge, completing the two-loop learning model.
