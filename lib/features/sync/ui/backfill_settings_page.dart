@@ -350,3 +350,9 @@ String _formatCount(BuildContext context, int value) =>
     NumberFormat.decimalPattern(
       Localizations.localeOf(context).toString(),
     ).format(value);
+
+/// Test-only seam for [_formatCount] — locale plumbing is the part worth
+/// testing; the number formatting itself is intl's.
+@visibleForTesting
+String debugFormatCount(BuildContext context, int value) =>
+    _formatCount(context, value);

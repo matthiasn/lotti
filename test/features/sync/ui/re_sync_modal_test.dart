@@ -46,7 +46,8 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final dateFieldFinder = find.byType(DateTimeField);
     final fields = dateFieldFinder.evaluate().map(
@@ -67,7 +68,8 @@ void main() {
     expect(startButtonFinder, findsOneWidget);
 
     await tester.tap(startButtonFinder);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     verify(
       () => mockMaintenance.reSyncInterval(
@@ -93,7 +95,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Untick the "Agent entities" checkbox.
       await tester.tap(find.byKey(const Key('reSyncAgentEntitiesCheckbox')));
@@ -105,7 +108,8 @@ void main() {
       );
       expect(startButtonFinder, findsOneWidget);
       await tester.tap(startButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockMaintenance.reSyncInterval(
@@ -132,7 +136,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.byKey(const Key('reSyncJournalEntitiesCheckbox')));
       await tester.pump();
@@ -142,7 +147,8 @@ void main() {
         'Start',
       );
       await tester.tap(startButtonFinder);
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockMaintenance.reSyncInterval(
@@ -169,7 +175,8 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Untick both checkboxes.
       await tester.tap(find.byKey(const Key('reSyncJournalEntitiesCheckbox')));
@@ -212,7 +219,8 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final startButtonFinder = find.widgetWithText(
       LottiSecondaryButton,
@@ -235,7 +243,8 @@ void main() {
       ),
     );
 
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final dateFieldFinder = find.byType(DateTimeField);
     final fields = dateFieldFinder

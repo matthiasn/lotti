@@ -78,7 +78,8 @@ void main() {
 
     testWidgets('renders sync maintenance cards', (tester) async {
       await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(MatrixSyncMaintenancePage));
       expect(
@@ -103,11 +104,13 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(MatrixSyncMaintenancePage));
       await tester.tap(find.text(context.messages.maintenanceDeleteSyncDb));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.text(
@@ -125,27 +128,32 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(MatrixSyncMaintenancePage));
       await tester.tap(find.text(context.messages.maintenanceDeleteSyncDb));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(
         find.text(context.messages.maintenanceDeleteDatabaseConfirm),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(() => mockMaintenance.deleteSyncDb()).called(1);
     });
 
     testWidgets('sync definitions card opens sync modal', (tester) async {
       await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(MatrixSyncMaintenancePage));
       await tester.tap(find.text(context.messages.maintenanceSyncDefinitions));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.text(context.messages.syncEntitiesConfirm),
@@ -155,24 +163,28 @@ void main() {
 
     testWidgets('re-sync card opens re-sync modal', (tester) async {
       await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(MatrixSyncMaintenancePage));
       await tester.tap(find.text(context.messages.maintenanceReSync));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Re-sync entries'), findsOneWidget);
     });
 
     testWidgets('populate sequence log card opens modal', (tester) async {
       await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(MatrixSyncMaintenancePage));
       await tester.tap(
         find.text(context.messages.maintenancePopulateSequenceLog),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.text(context.messages.maintenancePopulateSequenceLogConfirm),
@@ -184,13 +196,15 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(MatrixSyncMaintenancePage));
       await tester.tap(
         find.text(context.messages.maintenancePurgeSentOutbox),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(
         find.text(context.messages.maintenancePurgeSentOutboxQuestion),
@@ -216,18 +230,21 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final context = tester.element(find.byType(MatrixSyncMaintenancePage));
       await tester.tap(
         find.text(context.messages.maintenancePurgeSentOutbox),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(
         find.text(context.messages.maintenancePurgeSentOutboxConfirm),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       verify(
         () => mockMaintenance.purgeSentOutboxItems(
@@ -240,7 +257,8 @@ void main() {
 
     testWidgets('uses design system grouped list layout', (tester) async {
       await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
       expect(find.byType(DesignSystemListItem), findsNWidgets(5));
@@ -249,14 +267,16 @@ void main() {
 
     testWidgets('shows chevron trailing icon on each item', (tester) async {
       await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(5));
     });
 
     testWidgets('shows correct settings icons', (tester) async {
       await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.byIcon(Icons.sync_rounded), findsOneWidget);
       expect(find.byIcon(Icons.sync_alt_rounded), findsOneWidget);
@@ -269,7 +289,8 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(buildPage());
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       final items = tester.widgetList<DesignSystemListItem>(
         find.byType(DesignSystemListItem),
