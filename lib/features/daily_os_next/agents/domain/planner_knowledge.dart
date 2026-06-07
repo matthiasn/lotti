@@ -26,10 +26,13 @@ String knowledgeProjectScope(String projectId) =>
 /// non-deleted entry per [PlannerKnowledgeEntity.key].
 ///
 /// Recency wins (ADR 0022 Decision 10): a Friday "not-X" cleanly supersedes a
-/// Monday "X" for the same key. Retracted/proposed/deleted entries are
-/// excluded. This is a pure projection over the full entry set, so it converges
-/// across devices without a separate Head entity. Returned sorted by key for a
-/// stable, prefix-cache-friendly render order.
+/// Monday "X" for the same key, and retracting the Friday head correctly
+/// re-exposes the Monday one (only `confirmed`, non-retracted entries are
+/// considered, so the next-most-recent confirmed entry resurfaces). Selection
+/// is driven purely by status + recency; `PlannerKnowledgeEntity.supersedesId`
+/// is provenance metadata only, not read here. This is a pure projection over
+/// the full entry set, so it converges across devices without a separate Head
+/// entity. Returned sorted by key for a stable, prefix-cache-friendly order.
 List<PlannerKnowledgeEntity> activePlannerKnowledge(
   Iterable<PlannerKnowledgeEntity> entries,
 ) {

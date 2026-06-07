@@ -17,28 +17,32 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     required _KnowledgeContext knowledge,
     String? compactedLog,
   }) {
+    // Key order is deliberately STABLE → VOLATILE for prompt-prefix / KV-cache
+    // reuse: providers cache the longest identical leading prefix, so anything
+    // that varies wake-to-wake must come last. Slow-changing day-stable blocks
+    // (standingKnowledge, dayLog, attentionPlanning) precede the per-wake mode
+    // blocks, and the genuinely volatile fields (triggerTokens, wall-clock)
+    // are trailing so they cannot evict the large stable blocks behind them.
     final payload = <String, Object?>{
       'dayId': dayId,
       'planDate': planDate.toIso8601String(),
       // Durable, compaction-exempt planner knowledge (ADR 0022 Decisions 9–10),
       // two-tier: the always-on `hookIndex` plus the scope-filtered full
-      // `statements` for what this wake touches. Placed early — it is global
-      // and slow-changing, so it belongs in the stable prompt prefix for
-      // KV-cache reuse.
+      // `statements` for what this wake touches. Global and slow-changing, so
+      // it leads the stable prefix.
       if (knowledge.hookIndex.isNotEmpty || knowledge.statements.isNotEmpty)
         'standingKnowledge': knowledge.toJson(),
-      // The compacted day log (ADR 0017): capture transcripts and the
-      // agent's observations as an append-only event tail behind a summary.
-      // Placed before the per-wake volatile fields so the JSON-encoded
-      // prefix stays byte-stable across wakes; when present it supersedes
-      // the separate recentObservations listing below.
+      // The compacted day log (ADR 0017): capture transcripts and the agent's
+      // observations as an append-only event tail behind a summary —
+      // byte-stable at its head between folds.
       'dayLog': ?compactedLog,
-      'triggerTokens': triggerTokens.toList()..sort(),
+      // Day-stable attention claims/agreements precede the per-wake mode blocks.
+      if (!attentionPlanning.isEmpty)
+        'attentionPlanning': _attentionPlanningToJson(attentionPlanning),
+      // Mode blocks: present only for the wake that owns them, stable for it.
       if (captureContext != null) 'capture': captureContext.toJson(),
       if (draftingContext != null) 'drafting': draftingContext.toJson(),
       if (refineContext != null) 'refine': refineContext.toJson(),
-      if (!attentionPlanning.isEmpty)
-        'attentionPlanning': _attentionPlanningToJson(attentionPlanning),
       if (compactedLog == null)
         'recentObservations': [
           for (final observation in observations)
@@ -49,8 +53,10 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
               ),
             },
         ],
-      // Keep the volatile wall-clock last so the rest of the payload stays a
-      // stable prefix across wakes, maximizing prompt prefix / KV-cache reuse.
+      // Volatile per-wake metadata, kept LAST (before the wall-clock) so a
+      // changing trigger set never evicts the large stable blocks above it.
+      'triggerTokens': triggerTokens.toList()..sort(),
+      // The volatile wall-clock is the trailing key.
       'currentLocalTime': now.toIso8601String(),
     };
     return const JsonEncoder.withIndent('  ').convert(payload);
@@ -58,12 +64,13 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
 
   /// Loads the planner's durable knowledge and renders the two-tier prompt
   /// blocks (ADR 0022 Decisions 9–10): the always-on hook index plus the
-  /// scope-filtered full statements for the categories this wake touches
-  /// (`global` always; the planner's allowed categories as `category:` scopes).
-  /// Returns empty blocks (and the caller omits the field) when no knowledge or
-  /// no service is configured.
+  /// scope-filtered full statements for the scopes this wake actually touches
+  /// (`global` always; [touchedScopes] for `category:`/`project:`). Returns
+  /// empty blocks (and the caller omits the field) when no knowledge or no
+  /// service is configured.
   Future<_KnowledgeContext> _knowledgeContext({
     required AgentIdentityEntity agentIdentity,
+    required Set<String> touchedScopes,
     required DateTime now,
   }) async {
     final service = knowledgeService;
@@ -71,13 +78,9 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
     try {
       final active = await service.activeFor(agentIdentity.agentId);
       if (active.isEmpty) return const _KnowledgeContext.empty();
-      final touched = {
-        for (final categoryId in agentIdentity.allowedCategoryIds)
-          knowledgeCategoryScope(categoryId),
-      };
       return _KnowledgeContext(
         hookIndex: renderKnowledgeHookIndex(active),
-        statements: renderKnowledgeStatements(active, touched, now: now),
+        statements: renderKnowledgeStatements(active, touchedScopes, now: now),
       );
     } catch (e, s) {
       _logError(
@@ -87,6 +90,50 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       );
       return const _KnowledgeContext.empty();
     }
+  }
+
+  /// The category/project scopes the current wake actually touches (ADR 0022
+  /// Decision 10): the categories of the day's attention claims/agreements and
+  /// the categories of the baseline plan blocks being drafted/refined. This is
+  /// the wake's real workspace, not the planner identity's static allow-list
+  /// (which is empty = "allow all" and would surface nothing).
+  Set<String> _touchedScopes({
+    required AttentionPlanningInputs attentionPlanning,
+    required _DraftingContext? draftingContext,
+    required _RefineContext? refineContext,
+  }) {
+    final scopes = <String>{};
+    void addCategory(String? categoryId) {
+      if (categoryId != null && categoryId.isNotEmpty) {
+        scopes.add(knowledgeCategoryScope(categoryId));
+      }
+    }
+
+    for (final claim in attentionPlanning.claims) {
+      addCategory(claim.categoryId);
+    }
+    for (final agreement in attentionPlanning.standingAgreements) {
+      addCategory(agreement.categoryId);
+    }
+    final decidedTasks = draftingContext?.decidedTasks;
+    if (decidedTasks != null) {
+      for (final task in decidedTasks) {
+        addCategory(task.categoryId);
+      }
+    }
+    final draftBlocks = draftingContext?.baselinePlan?.data.plannedBlocks;
+    if (draftBlocks != null) {
+      for (final block in draftBlocks) {
+        addCategory(block.categoryId);
+      }
+    }
+    final refineBlocks = refineContext?.baselinePlan?.data.plannedBlocks;
+    if (refineBlocks != null) {
+      for (final block in refineBlocks) {
+        addCategory(block.categoryId);
+      }
+    }
+    return scopes;
   }
 
   Future<AttentionPlanningInputs> _attentionPlanningContext(

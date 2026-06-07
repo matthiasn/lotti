@@ -2302,6 +2302,83 @@ void main() {
       expect(sent.containsKey('standingKnowledge'), isFalse);
     });
 
+    test(
+      'durable knowledge is injected once via standingKnowledge — never folded '
+      'into the day log (ADR 0022 compaction exemption)',
+      () async {
+        final knowledgeService = MockDayAgentKnowledgeService();
+        const statement = 'Never schedule deep work before 10:00.';
+        when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.plannerKnowledge(
+                  id: 'k1',
+                  agentId: agentId,
+                  key: 'deep-work',
+                  hook: 'no deep work before 10',
+                  statementText: statement,
+                  source: KnowledgeSource.userStated,
+                  status: KnowledgeStatus.confirmed,
+                  createdAt: DateTime(2026, 5, 20),
+                  updatedAt: DateTime(2026, 5, 20),
+                  vectorClock: null,
+                )
+                as PlannerKnowledgeEntity,
+          ],
+        );
+
+        final result = await execute(
+          workflow(knowledgeService: knowledgeService),
+        );
+
+        expect(result.success, isTrue);
+        // Exactly one occurrence: the knowledge is a domain entity surfaced
+        // only via standingKnowledge, never pulled into the compaction fold.
+        final raw = conversationRepository.lastUserMessage!;
+        expect(statement.allMatches(raw).length, 1);
+      },
+    );
+
+    test(
+      'a category-scoped statement is withheld when the wake touches no '
+      'matching category',
+      () async {
+        final knowledgeService = MockDayAgentKnowledgeService();
+        when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.plannerKnowledge(
+                  id: 'k-fitness',
+                  agentId: agentId,
+                  key: 'gym',
+                  hook: 'protect gym blocks',
+                  statementText: 'Protect gym 3x/week.',
+                  source: KnowledgeSource.userStated,
+                  status: KnowledgeStatus.confirmed,
+                  createdAt: DateTime(2026, 5, 20),
+                  updatedAt: DateTime(2026, 5, 20),
+                  vectorClock: null,
+                  scope: 'category:fitness',
+                )
+                as PlannerKnowledgeEntity,
+          ],
+        );
+
+        final result = await execute(
+          workflow(knowledgeService: knowledgeService),
+        );
+
+        expect(result.success, isTrue);
+        final sent =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        final knowledge = sent['standingKnowledge'] as Map<String, dynamic>;
+        // Hook index always lists the key (discovery)...
+        expect(knowledge['hookIndex'], contains('[gym]'));
+        // ...but the full statement is withheld since this wake touches no
+        // fitness category.
+        expect(knowledge.containsKey('statements'), isFalse);
+      },
+    );
+
     test('returns a tool error when plan tools are not configured', () async {
       conversationRepository.toolCalls = [
         _toolCall(

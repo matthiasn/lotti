@@ -280,6 +280,11 @@ class DayAgentWorkflow {
     final attentionPlanning = await _attentionPlanningContext(dayDate);
     final knowledge = await _knowledgeContext(
       agentIdentity: agentIdentity,
+      touchedScopes: _touchedScopes(
+        attentionPlanning: attentionPlanning,
+        draftingContext: draftingContext,
+        refineContext: refineContext,
+      ),
       now: now,
     );
     final systemPrompt = _buildSystemPrompt(templateCtx);

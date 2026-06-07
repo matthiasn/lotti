@@ -51,6 +51,7 @@ class DayAgentKnowledgeService {
   final void Function(String id)? onPersistedStateChanged;
 
   static const _uuid = Uuid();
+  static const _maxHookLength = 120;
 
   /// Executes a durable-knowledge tool emitted by the agent.
   Future<DayAgentDirectToolResult> executeTool({
@@ -85,7 +86,15 @@ class DayAgentKnowledgeService {
     final hook = _requireString(args, 'hook');
     final statement = _requireString(args, 'statement');
     final value = _optionalString(args, 'value') ?? '';
-    final scope = _optionalString(args, 'scope') ?? knowledgeGlobalScope;
+    final scope = _validScope(_optionalString(args, 'scope'));
+    // The hook is the always-on, bounded index tier (ADR 0022 Decision 10);
+    // a multi-KB hook would defeat the bounded-prompt premise.
+    if (hook.length > _maxHookLength) {
+      throw const DayAgentKnowledgeException(
+        '"hook" must be at most $_maxHookLength characters '
+        '(it is the always-on index line).',
+      );
+    }
     final sourceArg = _optionalString(args, 'source') ?? 'agentInferred';
     final source = sourceArg == 'userStated'
         ? KnowledgeSource.userStated
@@ -205,6 +214,9 @@ class DayAgentKnowledgeService {
       value: value ?? entry.value,
       status: KnowledgeStatus.confirmed,
       confirmedAt: now,
+      // A fresh edit re-confirms the entry, so clear any pending staleness
+      // review (it is no longer stale).
+      reviewAfter: null,
       updatedAt: now,
     );
     await syncService.upsertEntity(updated);
@@ -246,5 +258,22 @@ class DayAgentKnowledgeService {
     final raw = args[name];
     if (raw is! String || raw.trim().isEmpty) return null;
     return raw.trim();
+  }
+
+  /// Validates a scope string: `global` (default), or
+  /// `category:<nonempty>` / `project:<nonempty>`. A malformed scope (missing
+  /// prefix, empty id) would silently never match any wake's touched scopes,
+  /// hiding the knowledge forever — reject it loudly instead.
+  static String _validScope(String? raw) {
+    if (raw == null || raw == knowledgeGlobalScope) return knowledgeGlobalScope;
+    for (final prefix in const [
+      knowledgeCategoryScopePrefix,
+      knowledgeProjectScopePrefix,
+    ]) {
+      if (raw.startsWith(prefix) && raw.length > prefix.length) return raw;
+    }
+    throw const DayAgentKnowledgeException(
+      '"scope" must be "global", "category:<id>", or "project:<id>".',
+    );
   }
 }

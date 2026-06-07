@@ -197,25 +197,118 @@ void main() {
       expect(updated.retractedAt, isNotNull);
     });
 
-    test('edit updates the statement and re-confirms', () async {
-      final stale = knowledge(id: 'e3', key: 'k');
+    test('edit updates the statement, re-confirms, and clears staleness', () {
+      final stale =
+          AgentDomainEntity.plannerKnowledge(
+                id: 'e3',
+                agentId: agentId,
+                key: 'k',
+                hook: 'h',
+                statementText: 'old',
+                source: KnowledgeSource.userStated,
+                status: KnowledgeStatus.confirmed,
+                createdAt: now,
+                updatedAt: now,
+                vectorClock: null,
+                reviewAfter: DateTime(2026, 5, 2),
+              )
+              as PlannerKnowledgeEntity;
       when(() => repository.getEntity('e3')).thenAnswer((_) async => stale);
 
-      final updated = await service.editStatement(
-        'e3',
-        hook: 'new hook',
-        statement: 'new statement',
-      );
-
-      expect(updated!.hook, 'new hook');
-      expect(updated.statementText, 'new statement');
-      expect(updated.status, KnowledgeStatus.confirmed);
+      return service
+          .editStatement('e3', hook: 'new hook', statement: 'new statement')
+          .then((updated) {
+            expect(updated!.hook, 'new hook');
+            expect(updated.statementText, 'new statement');
+            expect(updated.status, KnowledgeStatus.confirmed);
+            // The stale review flag is cleared by a fresh edit.
+            expect(updated.reviewAfter, isNull);
+          });
     });
 
     test('confirm of a missing entry returns null without writing', () async {
       when(() => repository.getEntity('gone')).thenAnswer((_) async => null);
       expect(await service.confirm('gone'), isNull);
       expect(upserts, isEmpty);
+    });
+  });
+
+  group('end-to-end recency supersession', () {
+    test('propose X then not-X yields not-X as the active head', () async {
+      // Stateful fake: getEntitiesByAgentId reflects what propose upserts, so
+      // the second propose supersedes the first by recency.
+      final store = <PlannerKnowledgeEntity>[];
+      when(() => syncService.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        store.add(
+          invocation.positionalArguments.single as PlannerKnowledgeEntity,
+        );
+      });
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.plannerKnowledge,
+        ),
+      ).thenAnswer((_) async => List.of(store));
+
+      await withClock(
+        Clock.fixed(DateTime(2026, 5, 20)),
+        () => service.propose(
+          agentId: agentId,
+          key: 'deep-work',
+          hook: 'before 9',
+          statement: 'Never before 09:00.',
+          source: KnowledgeSource.userStated,
+        ),
+      );
+      final second = await withClock(
+        Clock.fixed(DateTime(2026, 5, 24)),
+        () => service.propose(
+          agentId: agentId,
+          key: 'deep-work',
+          hook: 'before 10',
+          statement: 'Never before 10:00.',
+          source: KnowledgeSource.userStated,
+        ),
+      );
+
+      // The second entry records the first as superseded provenance.
+      expect(second.supersedesId, isNotNull);
+      final active = await service.activeFor(agentId);
+      expect(active, hasLength(1));
+      expect(active.single.statementText, 'Never before 10:00.');
+    });
+  });
+
+  group('scope validation', () {
+    test('rejects a malformed scope', () async {
+      final result = await service.executeTool(
+        agentId: agentId,
+        toolName: DayAgentToolNames.proposeKnowledge,
+        args: const {
+          'key': 'k',
+          'hook': 'h',
+          'statement': 's',
+          'scope': 'focus', // missing category:/project: prefix
+        },
+      );
+      expect(result.success, isFalse);
+      expect(result.output, contains('scope'));
+    });
+
+    test('rejects an over-long hook', () async {
+      final result = await service.executeTool(
+        agentId: agentId,
+        toolName: DayAgentToolNames.proposeKnowledge,
+        args: {
+          'key': 'k',
+          'hook': 'x' * 200,
+          'statement': 's',
+        },
+      );
+      expect(result.success, isFalse);
+      expect(result.output, contains('hook'));
     });
   });
 

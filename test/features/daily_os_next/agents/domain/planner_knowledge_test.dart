@@ -83,6 +83,29 @@ void main() {
       ]);
       expect(result.map((e) => e.key), ['alpha', 'zeta']);
     });
+
+    test('retracting the head resurfaces the prior confirmed entry', () {
+      // recency-wins supersession (ADR 0022 Decision 10): the older confirmed
+      // entry becomes active again once the newer head is retracted.
+      final result = activePlannerKnowledge([
+        entry(
+          id: 'old',
+          key: 'deep-work',
+          statementText: 'before 9',
+          updatedAt: DateTime(2026, 5, 20),
+        ),
+        entry(
+          id: 'new',
+          key: 'deep-work',
+          statementText: 'before 10',
+          status: KnowledgeStatus.retracted,
+          updatedAt: DateTime(2026, 5, 24),
+        ),
+      ]);
+
+      expect(result, hasLength(1));
+      expect(result.single.statementText, 'before 9');
+    });
   });
 
   group('knowledgeInScope', () {
