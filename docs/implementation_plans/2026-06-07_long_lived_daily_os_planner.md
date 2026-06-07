@@ -1,8 +1,11 @@
 # Long-Lived Daily OS Planner - Implementation Plan
 
-- Status: Plan accepted; implementation pending
+- Status: Plan accepted; implementation in progress
 - Date: 2026-06-07
 - Decision baseline: [ADR 0022](../adr/0022-long-lived-daily-os-planner.md)
+- Execution sequence: [Execution plan](./2026-06-07_long_lived_daily_os_planner_execution.md)
+  — locks the open decisions and corrects the touch lists after adversarial
+  review; where the two disagree on mechanics, the execution plan wins.
 - Scope: refactor Daily OS Next from one day-agent identity per date to one
   long-lived planner identity with explicit day workspaces.
 
