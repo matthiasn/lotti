@@ -316,4 +316,75 @@ void main() {
     final text = tester.widget<Text>(textFinder);
     expect(text.style, isNotNull);
   });
+
+  // Merged from the former *_timer_text_test.dart orphan (one
+  // test file per source file).
+  testWidgets('CompactTaskProgress text width is stable', (tester) async {
+    const taskId = 'task-1';
+
+    TaskProgressController makeController(
+      Duration progress,
+      Duration estimate,
+    ) {
+      return _FixedTimerTextProgressController(
+        progress: progress,
+        estimate: estimate,
+      );
+    }
+
+    Future<void> pumpWith(
+      Duration progress,
+      Duration estimate,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            taskProgressControllerProvider(id: taskId).overrideWith(
+              () => makeController(progress, estimate),
+            ),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: Center(
+                child: CompactTaskProgress(taskId: taskId),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      // Ensure AsyncNotifier completes and rebuilds
+      await tester.pump();
+    }
+
+    const estimate = Duration(hours: 1, minutes: 50);
+    await pumpWith(const Duration(minutes: 41), estimate);
+    expect(find.byType(CompactTaskProgress), findsOneWidget);
+    final textFinder = find.descendant(
+      of: find.byType(CompactTaskProgress),
+      matching: find.byType(Text),
+    );
+    expect(textFinder, findsOneWidget);
+    final width1 = tester.getSize(textFinder).width;
+
+    await pumpWith(const Duration(minutes: 48), estimate);
+    final width2 = tester.getSize(textFinder).width;
+
+    expect(width1, equals(width2));
+  });
+}
+
+class _FixedTimerTextProgressController extends TaskProgressController {
+  _FixedTimerTextProgressController({
+    required this.progress,
+    required this.estimate,
+  });
+
+  final Duration progress;
+  final Duration estimate;
+
+  @override
+  Future<TaskProgressState?> build({required String id}) async {
+    return TaskProgressState(progress: progress, estimate: estimate);
+  }
 }
