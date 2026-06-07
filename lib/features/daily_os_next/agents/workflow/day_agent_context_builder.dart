@@ -135,44 +135,45 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   Future<_CaptureContext?> _captureContext({
     required AgentIdentityEntity agentIdentity,
     required DateTime planDate,
-    required Set<String> triggerTokens,
+    required DailyOsPlannerWakeContext wakeContext,
   }) async {
     final service = captureService;
     if (service == null) return null;
+    if (wakeContext.captureIds.isEmpty) return null;
 
-    final captureId = captureIdFromTriggerTokens(triggerTokens);
-    if (captureId == null) return null;
+    // The IDs are pre-sorted, so under a merged multi-capture token set the
+    // same capture wins deterministically. The first capture that loads and
+    // belongs to this agent becomes the wake's capture context.
+    for (final captureId in wakeContext.captureIds) {
+      final capture = await service.getCapture(captureId);
+      if (capture == null || capture.agentId != agentIdentity.agentId) {
+        continue;
+      }
 
-    final capture = await service.getCapture(captureId);
-    if (capture == null || capture.agentId != agentIdentity.agentId) {
-      return null;
+      final corpus = await service.buildTaskCorpusSnapshot(
+        allowedCategoryIds: agentIdentity.allowedCategoryIds,
+        day: planDate,
+      );
+      return _CaptureContext(capture: capture, taskCorpus: corpus);
     }
-
-    final corpus = await service.buildTaskCorpusSnapshot(
-      allowedCategoryIds: agentIdentity.allowedCategoryIds,
-      day: planDate,
-    );
-    return _CaptureContext(capture: capture, taskCorpus: corpus);
+    return null;
   }
 
   Future<_DraftingContext?> _draftingContext({
     required AgentIdentityEntity agentIdentity,
-    required String dayId,
-    required Set<String> triggerTokens,
+    required DailyOsPlannerWakeContext wakeContext,
     required _CaptureContext? captureContext,
   }) async {
     final service = planService;
     if (service == null) return null;
-    if (draftingDayIdFromTriggerTokens(triggerTokens) != dayId) return null;
+    if (!wakeContext.isDraftingWake) return null;
 
     final baselinePlan = await service.draftPlanForDay(
       agentId: agentIdentity.agentId,
-      dayId: dayId,
+      dayId: wakeContext.dayId,
     );
-    final explicitTaskIds = decidedTaskIdsFromTriggerTokens(triggerTokens);
-    final explicitCaptureItemIds = decidedCaptureItemIdsFromTriggerTokens(
-      triggerTokens,
-    ).toSet();
+    final explicitTaskIds = wakeContext.decidedTaskIds;
+    final explicitCaptureItemIds = wakeContext.decidedCaptureItemIds.toSet();
     final parsedItems = await _parsedItemsForCapture(captureContext);
     final decidedTasks = await service.hydrateDecidedTasks(
       allowedCategoryIds: agentIdentity.allowedCategoryIds,
@@ -202,16 +203,15 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
 
   Future<_RefineContext?> _refineContext({
     required AgentIdentityEntity agentIdentity,
-    required String dayId,
-    required Set<String> triggerTokens,
+    required DailyOsPlannerWakeContext wakeContext,
   }) async {
     final service = planService;
     if (service == null) return null;
-    if (refineDayIdFromTriggerTokens(triggerTokens) != dayId) return null;
+    if (!wakeContext.isRefineWake) return null;
 
     final baselinePlan = await service.draftPlanForDay(
       agentId: agentIdentity.agentId,
-      dayId: dayId,
+      dayId: wakeContext.dayId,
     );
     return _RefineContext(baselinePlan: baselinePlan);
   }

@@ -18,6 +18,7 @@ import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
@@ -342,6 +343,45 @@ void main() {
       expect(conversationRepository.lastUserMessage, isNull);
       expect(upsertedEntities, isEmpty);
     });
+
+    test(
+      'resolves the day from a planning_day token without the legacy slot',
+      () async {
+        // Empty slot proves the wake derives its day from trigger tokens
+        // (ADR 0022), not from state.slots.activeDayId.
+        currentState = state(activeDayId: '');
+
+        final result = await execute(
+          workflow(),
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
+        );
+
+        expect(result.success, isTrue);
+        final sent =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, Object?>;
+        expect(sent['dayId'], dayId);
+      },
+    );
+
+    test(
+      'fails fast when trigger tokens claim conflicting day workspaces',
+      () async {
+        final result = await execute(
+          workflow(),
+          triggerTokens: {
+            dayAgentDraftingToken('dayplan-2026-05-25'),
+            dayAgentRefineToken('dayplan-2026-05-26'),
+          },
+        );
+
+        expect(result.success, isFalse);
+        expect(result.error, contains('Ambiguous day workspace'));
+        // Nothing ran: no conversation, no persisted entities.
+        expect(conversationRepository.lastUserMessage, isNull);
+        expect(upsertedEntities, isEmpty);
+      },
+    );
 
     test(
       'record_observations is handled by the strategy and never routed to '

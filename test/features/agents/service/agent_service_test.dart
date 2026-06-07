@@ -417,6 +417,40 @@ void main() {
           expect(identity.currentStateId, savedState.id);
         },
       );
+
+      test(
+        'derives deterministic ids from an explicit agentId for convergence',
+        () async {
+          final identity = await service.createAgent(
+            agentId: 'daily_os_planner',
+            kind: 'day_agent',
+            displayName: 'Shepherd',
+            config: const AgentConfig(),
+          );
+
+          // Singleton identities pass an explicit id so concurrent creation
+          // on two devices writes byte-identical entity/state/link ids and
+          // converges via LWW instead of forking into duplicates.
+          expect(identity.id, 'daily_os_planner');
+          expect(identity.agentId, 'daily_os_planner');
+
+          final entities = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured.cast<AgentDomainEntity>();
+          final savedState = entities[1] as AgentStateEntity;
+          expect(savedState.id, 'daily_os_planner:state');
+          expect(identity.currentStateId, 'daily_os_planner:state');
+
+          final link =
+              verify(
+                    () => mockSyncService.upsertLink(captureAny()),
+                  ).captured.single
+                  as AgentLink;
+          expect(link.id, 'daily_os_planner:state-link');
+          expect(link.fromId, 'daily_os_planner');
+          expect(link.toId, 'daily_os_planner:state');
+        },
+      );
     });
 
     group('getAgent', () {

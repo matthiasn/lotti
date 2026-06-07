@@ -10,10 +10,17 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
+
+/// Deterministic identity id of the single Daily OS planner (ADR 0022).
+///
+/// Constant across devices on purpose: concurrent `getOrCreatePlannerAgent`
+/// calls on offline peers create entities with identical ids, so sync merges
+/// them via LWW instead of diverging into one planner per device.
+const dailyOsPlannerAgentId = 'daily_os_planner';
 
 /// Daily OS day-agent lifecycle management.
 class DayAgentService {
@@ -151,7 +158,7 @@ class DayAgentService {
     orchestrator.enqueueManualWake(
       agentId: identity.agentId,
       reason: WakeReason.creation.name,
-      triggerTokens: {dayId},
+      triggerTokens: {dayAgentPlanningDayToken(dayId)},
     );
 
     domainLogger.log(
@@ -167,6 +174,84 @@ class DayAgentService {
   /// Find the active day agent for [date], if one exists.
   Future<AgentIdentityEntity?> getDayAgentForDate(DateTime date) {
     return _findDayAgentForDayId(dayAgentIdForDate(date));
+  }
+
+  /// Get or create the single long-lived Daily OS planner identity
+  /// (ADR 0022).
+  ///
+  /// Idempotent: returns the existing identity when one exists. Creation
+  /// uses the deterministic [dailyOsPlannerAgentId], so concurrent creation
+  /// on different devices converges to one identity via LWW instead of
+  /// splitting the planner's memory across duplicates.
+  ///
+  /// Unlike [createDayAgent], the planner gets **no** `activeDayId` slot and
+  /// **no** `AgentDayLink`: a day is an explicit workspace carried by wake
+  /// tokens, not part of the planner's identity or state (ADR 0022
+  /// Decisions 2–3).
+  Future<AgentIdentityEntity> getOrCreatePlannerAgent({
+    Set<String> allowedCategoryIds = const {},
+    String? templateId,
+    String? profileId,
+    String? displayName,
+  }) async {
+    final existing = await agentService.getAgent(dailyOsPlannerAgentId);
+    if (existing != null) return existing;
+
+    final resolvedTemplateId = templateId ?? dayAgentTemplateId;
+
+    var created = false;
+    final identity = await syncService.runInTransaction(() async {
+      final duplicate = await agentService.getAgent(dailyOsPlannerAgentId);
+      if (duplicate != null) return duplicate;
+
+      final templateEntity = await repository.getEntity(resolvedTemplateId);
+      if (templateEntity is! AgentTemplateEntity ||
+          templateEntity.deletedAt != null ||
+          templateEntity.kind != AgentTemplateKind.dayAgent) {
+        throw StateError(
+          'Template $resolvedTemplateId is not an active day-agent template.',
+        );
+      }
+
+      final createdIdentity = await agentService.createAgent(
+        agentId: dailyOsPlannerAgentId,
+        kind: _agentKind,
+        displayName: displayName ?? 'Shepherd',
+        config: AgentConfig(
+          modelId: templateEntity.modelId,
+          profileId: profileId ?? templateEntity.profileId,
+        ),
+        allowedCategoryIds: allowedCategoryIds,
+      );
+
+      await syncService.upsertLink(
+        AgentLink.templateAssignment(
+          // Deterministic link id for the same convergence reason as the
+          // identity id: both devices write the same row, LWW merges.
+          id: '$dailyOsPlannerAgentId:template-assignment',
+          fromId: resolvedTemplateId,
+          toId: createdIdentity.agentId,
+          createdAt: clock.now(),
+          updatedAt: clock.now(),
+          vectorClock: null,
+        ),
+      );
+
+      created = true;
+      return createdIdentity;
+    });
+
+    // Only notify when this call actually created the planner; a concurrent
+    // peer's write found by the in-transaction recheck is not our mutation.
+    if (created) {
+      onPersistedStateChanged?.call(identity.agentId);
+      domainLogger.log(
+        LogDomain.agentRuntime,
+        'created planner agent ${DomainLogger.sanitizeId(identity.agentId)}',
+        subDomain: 'lifecycle',
+      );
+    }
+    return identity;
   }
 
   /// Enqueue a drafting wake for the day agent that owns [dayDate].
@@ -210,6 +295,7 @@ class DayAgentService {
     }
     final dayId = dayAgentIdForDate(dayDate);
     final triggerTokens = <String>{
+      dayAgentPlanningDayToken(dayId),
       dayAgentDraftingToken(dayId),
       if (captureId != null && captureId.trim().isNotEmpty)
         dayAgentCaptureSubmittedToken(captureId.trim()),
@@ -278,7 +364,10 @@ class DayAgentService {
     }
 
     final trimmedTranscript = transcript.trim();
-    final triggerTokens = <String>{dayAgentRefineToken(dayId)};
+    final triggerTokens = <String>{
+      dayAgentPlanningDayToken(dayId),
+      dayAgentRefineToken(dayId),
+    };
     final now = clock.now();
     String? captureId;
     if (trimmedTranscript.isNotEmpty) {
