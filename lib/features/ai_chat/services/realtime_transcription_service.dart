@@ -13,6 +13,7 @@ import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai/util/pcm_amplitude.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:meta/meta.dart';
 
 enum _RealtimeBackendKind { mistral, mlxAudio }
 
@@ -458,6 +459,14 @@ class RealtimeTranscriptionService {
     }
     return finalText;
   }
+
+  /// Test-only access to the MLX confirmed-text delta extraction, so its
+  /// algebra can be property-tested without driving the realtime pipeline.
+  @visibleForTesting
+  String debugConfirmedTextDelta({
+    required String previous,
+    required String next,
+  }) => _confirmedTextDelta(previous: previous, next: next);
 
   String _confirmedTextDelta({
     required String previous,
