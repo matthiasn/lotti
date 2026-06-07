@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/speech/ui/widgets/recording/vu_meter_constants.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/vu_meter_painter.dart';
 
 // ---------------------------------------------------------------------------
@@ -455,5 +456,33 @@ void main() {
         returnsNormally,
       );
     });
+  });
+
+  group('VuMeterConstants', () {
+    test(
+      'animation timings are pinned (painter sweep math depends on them)',
+      () {
+        expect(
+          VuMeterConstants.needleAnimationDuration,
+          const Duration(milliseconds: 100),
+        );
+        expect(
+          VuMeterConstants.peakDecayDuration,
+          const Duration(milliseconds: 1500),
+        );
+        expect(
+          VuMeterConstants.peakHoldDuration,
+          const Duration(milliseconds: 800),
+        );
+        expect(
+          VuMeterConstants.clipAnimationDuration,
+          const Duration(milliseconds: 150),
+        );
+        expect(
+          VuMeterConstants.clipHoldDuration,
+          const Duration(milliseconds: 150),
+        );
+      },
+    );
   });
 }

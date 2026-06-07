@@ -26,7 +26,8 @@
 
 - [x] **[HIGH]** `test/…/recording/audio_recording_modal_test.dart` (1137 lines) and `audio_recording_modal_coverage_test.dart` (913 lines) both test `AudioRecordingModal` from the same source file. Per AGENTS.md: "One test file per source file." Merge them. The `coverage_test.dart` file was clearly created to add more tests without splitting; merge it back into `audio_recording_modal_test.dart`. After merging, if the combined file is too large, split on *subgroups* (e.g. `audio_recording_modal_interaction_test.dart` for tap/button tests) rather than on coverage percentage.
 
-- [ ] **[MED]** `test/…/recording/audio_recording_indicator_timer_text_test.dart` (58 lines) tests a sub-widget of the same source file as `audio_recording_indicator_test.dart`. Fold it into the indicator test; 479 + 58 = 537 lines is acceptable.
+- [x] **[MED]** `test/…/recording/audio_recording_indicator_timer_text_test.dart` (58 lines) tests a sub-widget of the same source file as `audio_recording_indicator_test.dart`. Fold it into the indicator test; 479 + 58 = 537 lines is acceptable.
+  **RESOLVED:** done — the timer-text width test (tabular figures keep 41 vs 48 minutes at identical width) was folded into `audio_recording_indicator_test.dart` with its fixed-state fake controller; the orphan file is deleted.
 
 - [ ] **[LOW]** `lib/…/recording/audio_recording_modal.dart` (453 lines) is near threshold. If post-merge test file is very large, consider extracting `AudioRecordingModalContent` into its own source file `audio_recording_modal_content.dart` as a natural split seam.
 
@@ -38,27 +39,32 @@
 
 - [x] **[HIGH]** `test/…/recording/analog_vu_meter_test.dart:229` and `269` — `pumpAndSettle(const Duration(seconds: 2))` — explicitly passes a 2-second interval to `pumpAndSettle`. Per test README, never pass a duration > 1 second. Both occurrences are in animation-completion tests ("allows all animations to complete fully", "handles rapid decibel changes"). Replace with `tester.pump(const Duration(milliseconds: 500))` in a loop or a single `tester.pump(const Duration(milliseconds: 500))` after the last widget rebuild — the VU meter's `AnimationController` drives at most a few hundred milliseconds. **RESOLVED:** both 2-second settles are single `pump(500ms)` calls and the file's remaining plain settles are bounded pumps.
 
-- [ ] **[MED]** `test/…/recording/audio_recording_indicator_test.dart:25` — Defines `MockAudioRecorderRepository` (also inline, duplicate of mocks.dart line 501) and `MockEntryController`. `MockAudioRecorderRepository` should be imported from `test/mocks/mocks.dart`.
+- [x] **[MED]** `test/…/recording/audio_recording_indicator_test.dart:25` — Defines `MockAudioRecorderRepository` (also inline, duplicate of mocks.dart line 501) and `MockEntryController`. `MockAudioRecorderRepository` should be imported from `test/mocks/mocks.dart`.
+  **RESOLVED:** stale — the file imports `MockAudioRecorderRepository` from `test/mocks/mocks.dart`; the only remaining local class is a fixed-state `EntryController` build-override, which is a riverpod override double, not a centralizable mocktail mock.
 
-- [ ] **[MED]** `test/…/recording/audio_recording_modal_test.dart:352–1137` — 14 tests build ad-hoc `ProviderScope + MaterialApp + Scaffold + localization` wrappers individually via `pumpWidget(createTestWidget(...))`. The file already has a `createTestWidget` helper (line ~300), but it is defined per-test scope rather than as a file-level helper with parametrized overrides. The `_pumpModalContent` helper in `audio_recording_modal_coverage_test.dart` is the right pattern — adopt it in the main test file on merge.
+- [x] **[MED]** `test/…/recording/audio_recording_modal_test.dart:352–1137` — 14 tests build ad-hoc `ProviderScope + MaterialApp + Scaffold + localization` wrappers individually via `pumpWidget(createTestWidget(...))`. The file already has a `createTestWidget` helper (line ~300), but it is defined per-test scope rather than as a file-level helper with parametrized overrides. The `_pumpModalContent` helper in `audio_recording_modal_coverage_test.dart` is the right pattern — adopt it in the main test file on merge.
+  **RESOLVED:** stale — the coverage file was already merged in and the helpers consolidated: one main-scope `createTestWidget({state, category, linkedTaskId, …})`, plus `pumpModalContent` and `createTestWidgetWithEntry`; the 14 ad-hoc wrappers are gone.
 
 - [ ] **[LOW]** `test/…/recording/audio_recording_orb_test.dart:12–36` — The `AudioRecordingSignalLevel.fromDbfs(...)` tests use 8 hand-rolled fixture values. These are good concrete examples, but no test verifies the monotonicity invariant (`dbfs1 < dbfs2 → normalized1 ≤ normalized2`). This is a Glados candidate (see below).
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[MED]** `AudioRecordingSignalLevel.fromDbfs(double dBFS)` in `lib/…/recording/audio_recording_orb.dart` — pure math function mapping dBFS to a normalized `[0, 1]` signal level with an emphasis curve. Invariants for a Glados test:
+- [x] **[MED]** `AudioRecordingSignalLevel.fromDbfs(double dBFS)` in `lib/…/recording/audio_recording_orb.dart` — pure math function mapping dBFS to a normalized `[0, 1]` signal level with an emphasis curve. Invariants for a Glados test:
   - `result.normalized ∈ [0.0, 1.0]` for any finite or non-finite input.
   - Monotonicity: if `a < b` and both finite, then `fromDbfs(a).normalized ≤ fromDbfs(b).normalized`.
   - `isClipping` implies `normalized ≈ 1.0`.
   Generate with `any.double` (including `nan`, `+inf`, `-inf`) filtered to avoid Dart floating-point special cases if needed.
+  **RESOLVED:** done — Glados property (numRuns 200) over deci-dB values in [-200, +20]: normalized stays in [0, 1], clipping triggers strictly above -3 dBFS, and the curve is monotonic (quieter never normalizes higher); plus a static non-finite-input test (NaN/±∞ → silent, non-clipping).
 
 - [ ] **[LOW]** `VuMeterPainter` paint logic in `lib/…/recording/vu_meter_painter.dart` — The `shouldRepaint` logic is already tested. The `paint` method's geometric calculations (tick positions, needle angle from 0.0–1.0 value) are deterministic pure functions of `value` and `size`. A Glados property over `(value: 0..1, size: 50..500)` could verify: no `RangeError`, `drawCircleCount ≥ 0`, tick layout is within bounds. The existing `_CountingCanvas` infrastructure already supports this.
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[MED]** `lib/…/recording/vu_meter_constants.dart` (19 lines) — No test file. Constants (`vuMeterTickCount`, angle constants, etc.) are used by `VuMeterPainter`. While constants themselves need no test, if any formula built from them is tested, test the formula with the actual constant values to catch accidental changes. Consider at minimum a `expect(VuMeterConstants.something, expectedValue)` smoke test in `vu_meter_painter_test.dart`.
+- [x] **[MED]** `lib/…/recording/vu_meter_constants.dart` (19 lines) — No test file. Constants (`vuMeterTickCount`, angle constants, etc.) are used by `VuMeterPainter`. While constants themselves need no test, if any formula built from them is tested, test the formula with the actual constant values to catch accidental changes. Consider at minimum a `expect(VuMeterConstants.something, expectedValue)` smoke test in `vu_meter_painter_test.dart`.
+  **RESOLVED:** done — `vu_meter_painter_test.dart` now pins all five `VuMeterConstants` timing values against accidental change.
 
-- [ ] **[MED]** `test/…/recording/audio_recording_modal_test.dart` and `coverage_test.dart` — The `AudioRecordingModal.show()` static method is tested in the coverage file (via `_pumpShowModalTrigger`) but the dismiss/close path (tapping outside the bottom sheet) is not verified. The test calls `pumpAndSettle()` after showing the modal but does not assert that the modal can be dismissed.
+- [x] **[MED]** `test/…/recording/audio_recording_modal_test.dart` and `coverage_test.dart` — The `AudioRecordingModal.show()` static method is tested in the coverage file (via `_pumpShowModalTrigger`) but the dismiss/close path (tapping outside the bottom sheet) is not verified. The test calls `pumpAndSettle()` after showing the modal but does not assert that the modal can be dismissed.
+  **RESOLVED:** stale — 'should set modal invisible when modal is dismissed' already taps outside the sheet (barrier tap at (10,10)) and asserts `modalVisible` flips back to false.
 
 - [ ] **[LOW]** `test/…/recording/audio_recording_indicator_test.dart` — Confirm that the timer text sub-widget state (elapsed recording time) is tested for the case where recording has been going on for >59 seconds (minute rollover in `formatElapsed`).
 
@@ -68,7 +74,8 @@
 
 - [x] **[HIGH]** `test/…/recording/analog_vu_meter_test.dart:229, 269` — Two `pumpAndSettle(const Duration(seconds: 2))` calls. If the underlying animation controller triggers periodic ticks or the `pumpAndSettle` loop keeps re-rendering, these can add 4+ real seconds per test run. Replace with `tester.pump(const Duration(milliseconds: 500))`. **RESOLVED:** same fix as the vu-meter settle item above.
 
-- [ ] **[MED]** `test/…/recording/audio_recording_modal_test.dart` and `coverage_test.dart` — Both create a fresh `StreamController<Duration>` (position, buffer, completed) in each test's `setUp` and close it in `tearDown`. With ~30 tests combined, this is 90 stream controller lifecycles per suite run. Acceptable but worth noting; consider using `Stream.value(Duration.zero)` stubs in tests that don't exercise stream updates.
+- [x] **[MED]** `test/…/recording/audio_recording_modal_test.dart` and `coverage_test.dart` — Both create a fresh `StreamController<Duration>` (position, buffer, completed) in each test's `setUp` and close it in `tearDown`. With ~30 tests combined, this is 90 stream controller lifecycles per suite run. Acceptable but worth noting; consider using `Stream.value(Duration.zero)` stubs in tests that don't exercise stream updates.
+  **RESOLVED:** assessed, no change — the item itself rates the pattern acceptable; fresh per-test stream controllers are the isolation guarantee that keeps the batched runner deterministic, and `Stream.value` stubs would silently diverge from the broadcast semantics the modal subscribes to.
 
 ---
 
