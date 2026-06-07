@@ -47,7 +47,8 @@
 
 - [ ] **[LOW]** `formatAudioDuration` in `lib/…/ui/widgets/progress/audio_progress_bar.dart` — a pure formatter. A Glados property `parse(format(Duration(seconds: n))) == clamp(n, 0, 359999)` would complement the existing hand-rolled fixtures. (Cross-reference with UI review.)
 
-No Glados tests exist in the services subdir currently.
+Glados coverage now exists in `audio_waveform_service_test.dart` for the waveform
+normalization invariants (clamp + length + no-downsampling) via `debugNormalizeWaveform`.
 
 ## Coverage / missing-behavior gaps
 
@@ -72,8 +73,8 @@ No Glados tests exist in the services subdir currently.
 
 ## Summary
 
-- `audio_waveform_service_test.dart` at 1572 lines should be split into extraction-focused and cache-focused files sharing a `_TestBench` helper; primary split seam is cache vs. extraction.
-- The "prune 1000 entries" test creates 1009 real files and is the main speed bottleneck — parameterize `_maxCacheEntries` to reduce this to ~10.
-- One conditional-branching test (`handles very long audio ids`) needs to be made deterministic.
-- A Glados test on the waveform normalization formula (clamp + amplitude invariant) would add meaningful property coverage.
+- `audio_waveform_service_test.dart` remains large but intentionally branch-heavy; the test-only split was assessed and deferred by design (one-test-file-per-source rule; helpers are closure-bound to the per-test temp dir).
+- The pruning-path speed bottleneck is RESOLVED via an injectable `maxCacheEntries` constructor parameter and smaller seeded-file counts (limit 10, 19 seeded files) instead of 1009 file creations.
+- The `handles very long audio ids` test is now deterministic — the conditional assertion branch is gone.
+- Glados property coverage for the waveform normalization invariants is implemented via `debugNormalizeWaveform`.
 - No fake-time policy violations — the services are I/O-bound and use real files appropriately.

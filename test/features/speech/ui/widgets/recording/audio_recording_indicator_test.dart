@@ -512,7 +512,9 @@ void main() {
     // the indicator doesn't jitter as digits change.
     final w1 = await pumpAndMeasure(const Duration(minutes: 41));
     final w2 = await pumpAndMeasure(const Duration(minutes: 48));
-    expect(w1, equals(w2));
+    // Tolerant compare: tabular figures share a width, but subpixel layout
+    // rounding can differ slightly across renderers/platforms.
+    expect(w1, closeTo(w2, 0.01));
   });
 }
 

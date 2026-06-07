@@ -277,6 +277,11 @@ void main() {
   test(
     'dispose cancels the invite subscription and closes the invites stream',
     () async {
+      // Stub userID so the late room-state event would pass the
+      // `state_key == userID` filter in _handleRoomState pre-dispose.
+      // Without this the event is dropped regardless of disposal, and the
+      // empty-invites assertion below would pass even on a live subscription.
+      when(() => client.userID).thenReturn('@me:server');
       final invites = <RoomInviteEvent>[];
       final done = Completer<void>();
       gateway.invites.listen(invites.add, onDone: done.complete);

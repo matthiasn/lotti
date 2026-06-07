@@ -63,6 +63,7 @@ void main() {
         categoryRepositoryProvider.overrideWithValue(mockCategoryRepository),
       ],
     );
+    addTearDown(container.dispose);
     return container;
   }
 
