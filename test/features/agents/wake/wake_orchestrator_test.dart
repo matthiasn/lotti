@@ -871,22 +871,7 @@ void main() {
 
     // Default stubs so that processNext (called automatically from _onBatch)
     // does not fail on unstubbed mock methods.
-    when(
-      () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
-    ).thenAnswer((_) async {});
-    when(
-      () => mockRepository.updateWakeRunStatus(
-        any(),
-        any(),
-        completedAt: any(named: 'completedAt'),
-        errorMessage: any(named: 'errorMessage'),
-      ),
-    ).thenAnswer((_) async {});
-    // Stub getAgentState for throttle deadline persistence.
-    when(
-      () => mockRepository.getAgentState(any()),
-    ).thenAnswer((_) async => null);
-    when(() => mockRepository.upsertEntity(any())).thenAnswer((_) async {});
+    stubWakeRepositoryDefaults(mockRepository);
 
     orchestrator = WakeOrchestrator(
       repository: mockRepository,
@@ -946,25 +931,7 @@ void main() {
             );
             final controller = StreamController<Set<String>>.broadcast();
 
-            when(
-              () => generatedRepository.insertWakeRun(
-                entry: any(named: 'entry'),
-              ),
-            ).thenAnswer((_) async {});
-            when(
-              () => generatedRepository.updateWakeRunStatus(
-                any(),
-                any(),
-                completedAt: any(named: 'completedAt'),
-                errorMessage: any(named: 'errorMessage'),
-              ),
-            ).thenAnswer((_) async {});
-            when(
-              () => generatedRepository.getAgentState(any()),
-            ).thenAnswer((_) async => null);
-            when(
-              () => generatedRepository.upsertEntity(any()),
-            ).thenAnswer((_) async {});
+            stubWakeRepositoryDefaults(generatedRepository);
 
             for (final spec in scenario.subscriptionSpecs) {
               generatedOrchestrator.addSubscription(spec.toSubscription());
@@ -1501,8 +1468,14 @@ void main() {
         final controller2 = StreamController<Set<String>>.broadcast();
 
         await orchestrator.start(controller1.stream);
+        expect(controller1.hasListener, isTrue);
+
         // Calling start again cancels the first subscription.
         await orchestrator.start(controller2.stream);
+
+        // The old subscription was actually cancelled, not just ignored.
+        expect(controller1.hasListener, isFalse);
+        expect(controller2.hasListener, isTrue);
 
         // Emit on the old stream — should NOT enqueue anything.
         controller1.add({'entity-1'});
@@ -2806,19 +2779,7 @@ void main() {
                 stateByAgent[entity.agentId] = entity;
               }
             });
-            when(
-              () => generatedRepository.insertWakeRun(
-                entry: any(named: 'entry'),
-              ),
-            ).thenAnswer((_) async {});
-            when(
-              () => generatedRepository.updateWakeRunStatus(
-                any(),
-                any(),
-                completedAt: any(named: 'completedAt'),
-                errorMessage: any(named: 'errorMessage'),
-              ),
-            ).thenAnswer((_) async {});
+            restubWakeRunMethods(generatedRepository);
 
             final generatedOrchestrator = WakeOrchestrator(
               repository: generatedRepository,
@@ -2962,19 +2923,7 @@ void main() {
                     invocation.positionalArguments.single as AgentStateEntity;
                 upsertedStates.add(state);
               });
-              when(
-                () => generatedRepository.insertWakeRun(
-                  entry: any(named: 'entry'),
-                ),
-              ).thenAnswer((_) async {});
-              when(
-                () => generatedRepository.updateWakeRunStatus(
-                  any(),
-                  any(),
-                  completedAt: any(named: 'completedAt'),
-                  errorMessage: any(named: 'errorMessage'),
-                ),
-              ).thenAnswer((_) async {});
+              restubWakeRunMethods(generatedRepository);
 
               final generatedOrchestrator = WakeOrchestrator(
                 repository: generatedRepository,
@@ -5670,6 +5619,53 @@ void main() {
               // the post-execution throttle and any later drain pick the
               // immediate path.
               expect(queue.hasDirectQueuedJobFor('agent-1'), isTrue);
+            });
+          });
+        },
+      );
+
+      test(
+        'a direct match during a sooner-armed deferral does not move the '
+        'deadline — escalation only fires when now+120s is earlier than '
+        'the existing deadline',
+        () {
+          final now = DateTime(2026, 5, 10, 21, 30);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              orchestrator
+                ..wakeExecutor = noOpExecutor
+                ..addSubscription(makeSub(matchEntityIds: {'task-keep'}))
+                // Arm a deadline only 30 s out — already sooner than the
+                // 120 s fast-throttle window — together with a queued job,
+                // exactly the restart-hydration shape. The queued job makes
+                // the direct match below take the merge path, where the
+                // escalation guard is evaluated in isolation.
+                ..restorePendingWake(
+                  agentId: 'agent-1',
+                  dueAt: now.add(const Duration(seconds: 30)),
+                );
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+              addTearDown(controller.close);
+
+              // Direct match while throttled: immediate (now+120s) is NOT
+              // before the armed deadline, so the guard must skip the
+              // escalation and keep the sooner deadline.
+              emitTokens(async, controller, {'task-keep'});
+              verifyNever(
+                () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+              );
+
+              // The drain still fires at the original 30 s deadline. Had
+              // the direct match replaced it with now+120s, nothing would
+              // execute here yet.
+              async
+                ..elapse(const Duration(seconds: 31))
+                ..flushMicrotasks();
+              verify(
+                () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+              ).called(1);
             });
           });
         },

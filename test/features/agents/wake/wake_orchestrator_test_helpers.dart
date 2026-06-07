@@ -79,6 +79,19 @@ void restubWakeRunMethods(MockAgentRepository repo) {
   ).thenAnswer((_) async {});
 }
 
+/// Stubs the full default no-op repository surface used by the
+/// orchestrator: the wake-run methods plus `getAgentState` (returns null)
+/// and `upsertEntity` (no-op, for throttle deadline persistence).
+///
+/// Scenario tests that capture state via custom `getAgentState`/
+/// `upsertEntity` stubs should use [restubWakeRunMethods] instead so their
+/// stubs are not overwritten.
+void stubWakeRepositoryDefaults(MockAgentRepository repo) {
+  restubWakeRunMethods(repo);
+  when(() => repo.getAgentState(any())).thenAnswer((_) async => null);
+  when(() => repo.upsertEntity(any())).thenAnswer((_) async {});
+}
+
 /// Stubs `insertWakeRun` on [repo] to capture entries into a list.
 /// Returns the list for convenience.
 List<WakeRunLogData> stubInsertCapture(MockAgentRepository repo) {
