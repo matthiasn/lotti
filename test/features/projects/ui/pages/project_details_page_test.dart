@@ -354,7 +354,8 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           expect(find.byType(ErrorStateWidget), findsOneWidget);
           expect(find.text('Error'), findsOneWidget);
@@ -982,7 +983,8 @@ void main() {
               final okButton = find.text('OK');
               await tester.ensureVisible(okButton);
               await tester.tap(okButton);
-              await tester.pumpAndSettle();
+              await tester.pump();
+              await tester.pump(const Duration(milliseconds: 300));
 
               // The clock is fixed at 2026-03-28T09:30. Since testProject has
               // no targetDate, _pickTargetDate uses clock.now() as initialDate,
@@ -1035,6 +1037,45 @@ void main() {
 
           expect(capturedPaths, hasLength(1));
           expect(capturedPaths.first, '/tasks/task-nav-1');
+        },
+      );
+    });
+
+    group('onTaskTap wiring', () {
+      testWidgets(
+        'stays wired (non-null) even when the record has no task summaries',
+        (tester) async {
+          final capturedPaths = <String>[];
+          beamToNamedOverride = capturedPaths.add;
+          addTearDown(() => beamToNamedOverride = null);
+
+          final emptyRecord = makeTestProjectRecord(project: testProject);
+
+          await pumpPageWithData(
+            tester,
+            controllerState: ProjectDetailState(
+              project: testProject,
+              linkedTasks: const [],
+              isLoading: false,
+              isSaving: false,
+              hasChanges: false,
+            ),
+            record: emptyRecord,
+          );
+
+          final content = tester.widget<ProjectMobileDetailContent>(
+            find.byType(ProjectMobileDetailContent),
+          );
+
+          // The page wires the callback unconditionally — a task arriving
+          // later (e.g. via refresh) must still navigate.
+          expect(content.onTaskTap, isNotNull);
+          content.onTaskTap!(
+            makeTestTaskSummary(
+              task: makeTestTask(id: 'late-task', title: 'Late'),
+            ),
+          );
+          expect(capturedPaths, ['/tasks/late-task']);
         },
       );
     });
@@ -1119,7 +1160,8 @@ void main() {
           final categoryTile = find.text('UniqueTestCategory');
           await tester.ensureVisible(categoryTile);
           await tester.tap(categoryTile);
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // The controller should have received the selected category id.
           expect(trackingController.updatedCategoryIds, hasLength(1));

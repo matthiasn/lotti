@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
@@ -9,11 +10,14 @@ import 'package:lotti/features/design_system/components/navigation/desktop_detai
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/projects/model/projects_overview_models.dart';
+import 'package:lotti/features/projects/state/project_detail_controller.dart';
+import 'package:lotti/features/projects/state/project_detail_record_provider.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/pages/project_details_page.dart';
 import 'package:lotti/features/projects/ui/pages/projects_tab_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -24,6 +28,20 @@ import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 import '../../test_utils.dart';
+
+/// Loading-state detail controller stub for the split-view swap test.
+class _StubProjectDetailController extends ProjectDetailController {
+  _StubProjectDetailController() : super('p1');
+
+  @override
+  ProjectDetailState build() => const ProjectDetailState(
+    project: null,
+    linkedTasks: [],
+    isLoading: true,
+    isSaving: false,
+    hasChanges: false,
+  );
+}
 
 void main() {
   late MockUserActivityService mockUserActivityService;
@@ -108,6 +126,7 @@ void main() {
     MediaQueryData? mediaQueryData,
     ThemeData? theme,
     bool overrideVisibleGroups = true,
+    List<Override> extraOverrides = const [],
   }) async {
     final snapshot = ProjectsOverviewSnapshot(groups: groups);
     final overrides = [
@@ -118,6 +137,7 @@ void main() {
         visibleProjectGroupsProvider.overrideWith(
           (ref) => AsyncValue.data(groups),
         ),
+      ...extraOverrides,
     ];
 
     await tester.pumpWidget(
@@ -161,9 +181,25 @@ void main() {
       groups: [buildWorkGroup(), buildStudyGroup()],
     );
 
-    expect(find.text('Projects'), findsOneWidget);
+    expect(
+      find.text(
+        tester
+            .element(find.byType(ProjectsTabPage))
+            .messages
+            .navTabTitleProjects,
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Work'), findsOneWidget);
-    expect(find.text('2 projects'), findsOneWidget);
+    expect(
+      find.text(
+        tester
+            .element(find.byType(ProjectsTabPage))
+            .messages
+            .projectCountSummary(2),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Device Sync'), findsOneWidget);
     expect(find.text('API Migration'), findsOneWidget);
     expect(find.text('Active'), findsOneWidget);
@@ -188,9 +224,25 @@ void main() {
     );
 
     expect(tester.takeException(), isNull);
-    expect(find.text('Projects'), findsOneWidget);
+    expect(
+      find.text(
+        tester
+            .element(find.byType(ProjectsTabPage))
+            .messages
+            .navTabTitleProjects,
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Work'), findsOneWidget);
-    expect(find.text('2 projects'), findsOneWidget);
+    expect(
+      find.text(
+        tester
+            .element(find.byType(ProjectsTabPage))
+            .messages
+            .projectCountSummary(2),
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Device Sync'), findsOneWidget);
     expect(find.text('Completed'), findsOneWidget);
   });
@@ -766,6 +818,58 @@ void main() {
         final state = container.read(projectsFilterControllerProvider);
         expect(state.selectedStatusIds, isEmpty);
         expect(state.selectedCategoryIds, equals({'work'}));
+      },
+    );
+  });
+
+  group('desktop split-view layout', () {
+    testWidgets(
+      'wide viewport renders list pane + divider + empty detail state',
+      (tester) async {
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+        );
+
+        // Split view: the list scaffold sits beside a drag divider, and
+        // with no selection the detail pane shows the empty state.
+        expect(find.byType(ResizableDivider), findsOneWidget);
+        expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
+        expect(find.text('Device Sync'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'selecting a project id swaps the empty state for ProjectDetailsPage',
+      (tester) async {
+        final nav = getIt<NavService>() as MockNavService;
+        final selected = ValueNotifier<String?>(null);
+        when(() => nav.desktopSelectedProjectId).thenReturn(selected);
+
+        await pumpPage(
+          tester,
+          groups: [buildWorkGroup()],
+          mediaQueryData: const MediaQueryData(size: Size(1400, 900)),
+          extraOverrides: [
+            // The embedded detail page needs its own provider graph;
+            // stub the pieces it watches so the swap itself is testable.
+            projectDetailControllerProvider('p1').overrideWith(
+              _StubProjectDetailController.new,
+            ),
+            projectDetailRecordProvider('p1').overrideWith(
+              (ref) async => null,
+            ),
+          ],
+        );
+        expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
+
+        selected.value = 'p1';
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(DesktopDetailEmptyState), findsNothing);
+        expect(find.byType(ProjectDetailsPage), findsOneWidget);
       },
     );
   });
