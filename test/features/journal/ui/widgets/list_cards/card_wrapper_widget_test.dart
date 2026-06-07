@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
@@ -210,7 +211,8 @@ void main() {
           child: CardWrapperWidget(item: testImage),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
       expect(find.byType(ModernJournalImageCard), findsOneWidget);
@@ -227,7 +229,8 @@ void main() {
           child: CardWrapperWidget(item: testTask),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
       expect(find.byType(AnimatedModernTaskCard), findsOneWidget);
@@ -244,7 +247,8 @@ void main() {
           child: CardWrapperWidget(item: testJournalEntry),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
       expect(find.byType(ModernJournalCard), findsOneWidget);
@@ -261,7 +265,8 @@ void main() {
           child: CardWrapperWidget(item: testEvent),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert
       expect(find.byType(ModernJournalCard), findsOneWidget);
@@ -281,7 +286,8 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert - AnimatedModernTaskCard should receive showCreationDate: true
       final animatedCard = tester.widget<AnimatedModernTaskCard>(
@@ -299,7 +305,8 @@ void main() {
           child: CardWrapperWidget(item: testTask),
         ),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Assert - AnimatedModernTaskCard should have showCreationDate: false
       final animatedCard = tester.widget<AnimatedModernTaskCard>(
@@ -389,5 +396,35 @@ void main() {
         expect(decoration.color, expectedColor, reason: 'd=$distance');
       });
     }
+  });
+
+  group('colorForVectorDistance — properties', () {
+    glados.Glados<int>(
+      glados.any.intInRange(0, 1201),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'every distance maps to exactly the threshold-banded color',
+      (permille) {
+        final d = permille / 1000;
+        final color = colorForVectorDistance(d);
+
+        // Oracle: the four-band threshold spec.
+        final expected = d < 0.3
+            ? Colors.green
+            : d < 0.6
+            ? Colors.orange.shade700
+            : d < 0.8
+            ? Colors.deepOrange
+            : Colors.red;
+        expect(color, expected, reason: 'd=$d');
+
+        // Membership: never anything outside the four badge colors.
+        expect(
+          [Colors.green, Colors.orange.shade700, Colors.deepOrange, Colors.red],
+          contains(color),
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

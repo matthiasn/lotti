@@ -969,6 +969,48 @@ void main() {
       expect(find.byType(LabelChip), findsOneWidget);
     });
 
+    testWidgets(
+      'cover art layout with no labels renders the row without a labels wrap',
+      (tester) async {
+        final now = DateTime(2025, 11, 3, 12);
+        final image = JournalImage(
+          meta: Metadata(
+            id: 'image-123',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: ImageData(
+            imageId: 'img-uuid',
+            imageFile: 'test.jpg',
+            imageDirectory: '/test/dir',
+            capturedAt: now,
+          ),
+        );
+
+        // Cover art set, but the task carries no labelIds — the
+        // _buildLabelsContent branch returns [] and only the status row
+        // renders below the title.
+        final task = buildTask().copyWith(
+          data: buildTask().data.copyWith(coverArtId: 'image-123'),
+        );
+
+        await pumpTaskCard(
+          tester,
+          ModernTaskCard(task: task),
+          overrides: [
+            entryControllerProvider(id: 'image-123').overrideWith(
+              () => _FakeImageController(image),
+            ),
+          ],
+        );
+
+        expect(find.byKey(const Key('task_status_row')), findsOneWidget);
+        expect(find.byType(LabelChip), findsNothing);
+      },
+    );
+
     testWidgets('cover art uses custom cropX value', (tester) async {
       // Create task with custom cropX
       final task = buildTask().copyWith(
