@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,59 +13,12 @@ import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_dashboard_header.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
-
-/// Fake [EvolutionChatState] that returns a pre-configured [EvolutionChatData].
-class _FakeEvolutionChatState extends EvolutionChatState {
-  _FakeEvolutionChatState(this._buildFn);
-
-  final Future<EvolutionChatData> Function(String) _buildFn;
-
-  @override
-  Future<EvolutionChatData> build(String templateId) => _buildFn(templateId);
-}
-
-/// Fake [EvolutionChatState] that captures [sendMessage] calls without
-/// actually invoking the real workflow.
-class _CapturingSendState extends EvolutionChatState {
-  _CapturingSendState(this._initialData);
-
-  final EvolutionChatData _initialData;
-  final List<String> sentMessages = [];
-
-  @override
-  Future<EvolutionChatData> build(String templateId) async => _initialData;
-
-  @override
-  Future<void> sendMessage(
-    String text, {
-    bool skipApprovalCheck = false,
-  }) async {
-    sentMessages.add(text);
-  }
-}
-
-/// Fake [EvolutionChatState] that allows its state to be mutated from
-/// the test after initial build, exercising the didUpdateWidget path
-/// in the private _MessageListState.
-class _MutableFakeState extends EvolutionChatState {
-  _MutableFakeState(this._initialData);
-
-  final EvolutionChatData _initialData;
-
-  @override
-  Future<EvolutionChatData> build(String templateId) async => _initialData;
-
-  // Expose a helper so the test can push a new AsyncData value.
-  void pushData(EvolutionChatData data) {
-    state = AsyncData(data);
-  }
-}
+import 'evolution_chat_test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -106,7 +58,7 @@ void main() {
           (ref, id) async => makeTestMetrics(templateId: templateId),
         ),
         evolutionChatStateProvider.overrideWith(
-          () => _FakeEvolutionChatState(
+          () => FakeEvolutionChatState(
             chatStateBuilder ?? (_) async => defaultChatData,
           ),
         ),
@@ -450,7 +402,7 @@ void main() {
       tester,
     ) async {
       final tpl = makeTestTemplate();
-      _CapturingSendState? capturedNotifier;
+      CapturingSendEvolutionChatState? capturedNotifier;
 
       final widget = makeTestableWidgetNoScroll(
         const EvolutionChatPage(templateId: kTestTemplateId),
@@ -460,7 +412,7 @@ void main() {
             (ref, id) async => makeTestMetrics(),
           ),
           evolutionChatStateProvider.overrideWith(() {
-            capturedNotifier = _CapturingSendState(
+            capturedNotifier = CapturingSendEvolutionChatState(
               EvolutionChatData(
                 sessionId: 'session-1',
                 messages: [
@@ -493,7 +445,7 @@ void main() {
       '_handleSend also triggered via keyboard submit action',
       (tester) async {
         final tpl = makeTestTemplate();
-        _CapturingSendState? capturedNotifier;
+        CapturingSendEvolutionChatState? capturedNotifier;
 
         final widget = makeTestableWidgetNoScroll(
           const EvolutionChatPage(templateId: kTestTemplateId),
@@ -503,7 +455,7 @@ void main() {
               (ref, id) async => makeTestMetrics(),
             ),
             evolutionChatStateProvider.overrideWith(() {
-              capturedNotifier = _CapturingSendState(
+              capturedNotifier = CapturingSendEvolutionChatState(
                 EvolutionChatData(
                   sessionId: 'session-1',
                   messages: [
@@ -537,14 +489,16 @@ void main() {
         final tpl = makeTestTemplate();
 
         final navigatorKey = GlobalKey<NavigatorState>();
-        final widget = ProviderScope(
+        final widget = makeTestableWidgetNoScroll(
+          const SizedBox(),
+          navigatorKey: navigatorKey,
           overrides: [
             agentTemplateProvider.overrideWith((ref, id) async => tpl),
             templatePerformanceMetricsProvider.overrideWith(
               (ref, id) async => makeTestMetrics(),
             ),
             evolutionChatStateProvider.overrideWith(
-              () => _FakeEvolutionChatState(
+              () => FakeEvolutionChatState(
                 (_) async => EvolutionChatData(
                   sessionId: 'session-1',
                   messages: [
@@ -557,18 +511,6 @@ void main() {
               ),
             ),
           ],
-          child: MaterialApp(
-            navigatorKey: navigatorKey,
-            theme: resolveTestTheme(),
-            localizationsDelegates: const [
-              AppLocalizations.delegate,
-              GlobalMaterialLocalizations.delegate,
-              GlobalWidgetsLocalizations.delegate,
-              GlobalCupertinoLocalizations.delegate,
-            ],
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: const SizedBox(),
-          ),
         );
 
         await tester.pumpWidget(widget);
@@ -600,7 +542,7 @@ void main() {
       'didUpdateWidget triggers scroll-to-bottom when messages list grows',
       (tester) async {
         final tpl = makeTestTemplate();
-        _MutableFakeState? capturedNotifier;
+        MutableEvolutionChatState? capturedNotifier;
 
         final initialData = EvolutionChatData(
           sessionId: 'session-1',
@@ -620,7 +562,7 @@ void main() {
               (ref, id) async => makeTestMetrics(),
             ),
             evolutionChatStateProvider.overrideWith(() {
-              capturedNotifier = _MutableFakeState(initialData);
+              capturedNotifier = MutableEvolutionChatState(initialData);
               return capturedNotifier!;
             }),
           ],
@@ -660,7 +602,7 @@ void main() {
       'didUpdateWidget triggers scroll-to-bottom when isWaiting changes',
       (tester) async {
         final tpl = makeTestTemplate();
-        _MutableFakeState? capturedNotifier;
+        MutableEvolutionChatState? capturedNotifier;
 
         final initialData = EvolutionChatData(
           sessionId: 'session-1',
@@ -680,7 +622,7 @@ void main() {
               (ref, id) async => makeTestMetrics(),
             ),
             evolutionChatStateProvider.overrideWith(() {
-              capturedNotifier = _MutableFakeState(initialData);
+              capturedNotifier = MutableEvolutionChatState(initialData);
               return capturedNotifier!;
             }),
           ],

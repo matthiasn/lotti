@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_dashboard_header.dart';
@@ -64,6 +65,30 @@ void main() {
       expect(
         find.text(context.messages.agentRitualSummarySubtitle),
         findsNothing,
+      );
+
+      // The metric VALUES from RitualSummaryMetrics render, not just labels:
+      // 7 wakes since last session and the compact 1234 -> '1.23K' tokens.
+      expect(find.text('7'), findsAtLeastNWidgets(1));
+      expect(
+        find.text(NumberFormat.compact().format(1234)),
+        findsAtLeastNWidgets(1),
+      );
+    });
+
+    testWidgets('expanded view shows the lifetime wake count value', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(EvolutionDashboardHeader));
+      await tester.pumpAndSettle();
+
+      // lifetimeWakeCount: 42 rendered through the decimal formatter.
+      expect(
+        find.text(NumberFormat.decimalPattern().format(42)),
+        findsAtLeastNWidgets(1),
       );
     });
 

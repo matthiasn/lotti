@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:genui/genui.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/genui/genui_event_handler.dart';
@@ -1897,5 +1898,111 @@ void main() {
         ),
       );
     });
+  });
+
+  // ---------------------------------------------------------------------------
+  // Glados properties for the pure helpers (via the debug seams).
+  // ---------------------------------------------------------------------------
+  group('debugIsImplicitApprovalMessage — properties', () {
+    const approvalKeywords = [
+      'ok',
+      'okay',
+      'yes',
+      'yep',
+      'approve',
+      'approved',
+      'lgtm',
+      'sounds good',
+      'looks good',
+      'ship it',
+    ];
+    const decorations = ['', '  ', '!', '!!', '...', '(', ')', ' 👍', '\t'];
+
+    glados.Glados3(
+      glados.AnyUtils(glados.any).choose(approvalKeywords),
+      glados.AnyUtils(glados.any).choose(decorations),
+      glados.AnyUtils(glados.any).choose(decorations),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'every keyword matches regardless of surrounding punctuation/whitespace',
+      (keyword, prefix, suffix) {
+        expect(
+          EvolutionChatState.debugIsImplicitApprovalMessage(
+            '$prefix$keyword$suffix',
+          ),
+          isTrue,
+          reason: '"$prefix$keyword$suffix"',
+        );
+        // Case-insensitivity comes with the keyword match.
+        expect(
+          EvolutionChatState.debugIsImplicitApprovalMessage(
+            '$prefix${keyword.toUpperCase()}$suffix',
+          ),
+          isTrue,
+          reason: 'uppercased "$prefix$keyword$suffix"',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.AnyUtils(glados.any).choose(approvalKeywords),
+      glados.ExploreConfig(numRuns: 60),
+    ).test(
+      'a keyword embedded in a longer sentence never matches — the regex '
+      'is anchored',
+      (keyword) {
+        expect(
+          EvolutionChatState.debugIsImplicitApprovalMessage(
+            'this is not $keyword behavior',
+          ),
+          isFalse,
+          reason: keyword,
+        );
+        expect(
+          EvolutionChatState.debugIsImplicitApprovalMessage(
+            '$keyword but please tweak the tone first',
+          ),
+          isFalse,
+          reason: keyword,
+        );
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('debugProposalKey — properties', () {
+    glados.Glados3(
+      glados.AnyUtils(glados.any).choose(const ['', '  d1  ', 'directive']),
+      glados.AnyUtils(glados.any).choose(const ['', ' r ', 'report\nline2']),
+      glados.AnyUtils(glados.any).choose(const ['', '  why  ', 'rationale!']),
+      glados.ExploreConfig(numRuns: 80),
+    ).test('fingerprint is trim-stable and separator-structured', (
+      general,
+      report,
+      rationale,
+    ) {
+      final proposal = PendingProposal(
+        generalDirective: general,
+        reportDirective: report,
+        rationale: rationale,
+      );
+      final key = EvolutionChatState.debugProposalKey(proposal);
+
+      // Trim-stability: padding any field never changes the fingerprint.
+      final padded = PendingProposal(
+        generalDirective: '  $general\t',
+        reportDirective: '\n$report ',
+        rationale: ' $rationale  ',
+      );
+      expect(EvolutionChatState.debugProposalKey(padded), key);
+
+      // Structure: exactly two separators join the three trimmed fields.
+      expect('\n---\n'.allMatches(key).length, 2, reason: key);
+      expect(
+        key.split('\n---\n'),
+        [general.trim(), report.trim(), rationale.trim()],
+      );
+    }, tags: 'glados');
   });
 }
