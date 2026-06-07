@@ -706,6 +706,25 @@ class JournalPageController extends _$JournalPageController {
   /// Test-only entry point that lets tests drive the visibility edge
   /// without standing up a full NavService stream. Equivalent to a
   /// nav-index emission whose value resolves to `isVisible`.
+  /// Test-only seam for [_getNextPageKey] — the pure page-key computation
+  /// over a [PagingState] (plus the one-shot post-filter offset).
+  @visibleForTesting
+  int? debugGetNextPageKey(
+    PagingState<int, JournalEntity> pagingState, {
+    bool consumePostFilterOffset = true,
+  }) => _getNextPageKey(
+    pagingState,
+    consumePostFilterOffset: consumePostFilterOffset,
+  );
+
+  /// Test-only seam to read/seed the one-shot post-filter raw offset.
+  @visibleForTesting
+  int? get debugPostFilterNextRawOffset => _postFilterNextRawOffset;
+
+  @visibleForTesting
+  set debugPostFilterNextRawOffset(int? value) =>
+      _postFilterNextRawOffset = value;
+
   @visibleForTesting
   void debugSetVisibility({required bool isVisible}) {
     _handleNavIndex(
@@ -795,6 +814,11 @@ class JournalPageController extends _$JournalPageController {
       enableDashboards: _enableDashboards,
     );
   }
+
+  /// Test-only seam for [_requiresSequentialRetainedRefresh].
+  @visibleForTesting
+  bool get debugRequiresSequentialRetainedRefresh =>
+      _requiresSequentialRetainedRefresh;
 
   bool get _requiresSequentialRetainedRefresh =>
       _showTasks &&

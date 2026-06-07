@@ -76,7 +76,7 @@ _Date: 2026-06-02_
   - `Refresh behaviour` (currently in `_refresh_test.dart`) and `Filter management` (currently
     in `_filter_test.dart`) — when merged, they will need internal `group` restructuring.
 
-- [ ] **[MED]** `lib/features/journal/state/journal_page_controller.dart` (818 lines): Approaches
+- [x] **[MED]** `lib/features/journal/state/journal_page_controller.dart` (818 lines): Approaches
   the implementation ceiling. Clear split seams already named with comment banners:
   - Paging controller factory + `_getNextPageKey` (lines 185–221)
   - Subscription callbacks (lines 227–308)
@@ -84,11 +84,11 @@ _Date: 2026-06-02_
   - Filter toggles (lines 348–570)
   - Persistence (lines 576–641)
   - Search / refresh / nav (lines 647–817)
-  The persistence and filter-toggle sections could move to collaborator classes (analogous to
+  The persistence and filter-toggle sections could move to collaborator classes (analogous to **RESOLVED:** Assessed, no change — 818 lines is under the 1 000-line ceiling, the heavy collaborators (`JournalFilterPersistence`, `JournalPageSubscriptions`, `JournalQueryRunner`, `JournalPagingController`) are already extracted, and the remaining sections are the controller-state-writing methods that the extension-split rule says cannot move without breaking mockability. Revisit when the file is next functionally grown.
   `JournalFilterPersistence` and `JournalPageSubscriptions` that already exist).
 
-- [ ] **[MED]** `test/features/journal/state/linked_entries_controller_test.dart` (1 076 lines):
-  Just over the ceiling. The file contains inline mock classes and could be trimmed by factoring
+- [x] **[MED]** `test/features/journal/state/linked_entries_controller_test.dart` (1 076 lines):
+  Just over the ceiling. The file contains inline mock classes and could be trimmed by factoring **RESOLVED:** Assessed, no change — the two classes are documented riverpod notifier FAKES (not mocktail mocks), already living in exactly the 'test's own private scope' the item offers as an acceptable option; both are single-use here, and moving ~25 lines to a helpers file would not change the file size materially.
   the `_StaticLinksController` and `MockIncludeHiddenController` helpers into the test's own
   private scope or a local helpers file.
 
@@ -144,27 +144,27 @@ _Date: 2026-06-02_
   ) { ... }
   ```
 
-- [ ] **[MED]** `test/features/journal/state/journal_page_controller_test.dart` — **Repeated
+- [x] **[MED]** `test/features/journal/state/journal_page_controller_test.dart` — **Repeated
   per-test boilerplate**: Every `fakeAsync` test body starts with:
   ```dart
   async.elapse(const Duration(milliseconds: 50));
   async.flushMicrotasks();
   ```
   This pattern appears 272 times in the three controller test files. The `JournalControllerTestSetup`
-  helper already centralises mock wiring; the elapse-then-flush sequence should be encapsulated
+  helper already centralises mock wiring; the elapse-then-flush sequence should be encapsulated **RESOLVED:** Done — added `settle(FakeAsync)` to `helpers/journal_controller_test_setup.dart` and replaced all 194 elapse(50ms)+flushMicrotasks pairs in `journal_page_controller_test.dart` (the three files have since been merged into one mirror, so the 272 count was across-files).
   in a helper such as `setup.settle(async)` to reduce 500+ boilerplate lines across the three
   files.
 
-- [ ] **[MED]** `test/features/journal/state/journal_page_controller_refresh_test.dart` — **Mock
+- [x] **[MED]** `test/features/journal/state/journal_page_controller_refresh_test.dart` — **Mock
   stub duplication**: The full `mockJournalDb.getJournalEntities(...)` stub (8-param `when` call,
   ~10 lines) is repeated verbatim in every test inside `Visibility Updates` and `Update
-  Notifications` groups (at least 7 copies). This should be extracted to a `setUp` or a
+  Notifications` groups (at least 7 copies). This should be extracted to a `setUp` or a **RESOLVED:** Done — the five verbatim 8-param counting stubs are now one top-level `stubCountingQuery(db, {result})` helper returning a `_QueryCallCounter`; call sites read `queryCalls.count`.
   `_stubQueryCount(db, counter)` helper.
 
-- [ ] **[MED]** `test/features/journal/state/highlight_state_test.dart` — **Zero source
+- [x] **[MED]** `test/features/journal/state/highlight_state_test.dart` — **Zero source
   correspondence and weak assertions in several tests**: Tests at lines 152–190 (`Highlight
   State Management` group) assign and read a local variable and assert it equals what was just
-  assigned. These are constructor-smoke tests on plain Dart variables — they test nothing about
+  assigned. These are constructor-smoke tests on plain Dart variables — they test nothing about **RESOLVED:** Done — the 'Highlight State Management' group (local-variable assignment theater) was deleted; the timer-logic group remains.
   any production class.
 
 - [ ] **[LOW]** `test/features/journal/state/journal_page_controller_test.dart` — **Getter-only
@@ -198,17 +198,17 @@ genuine candidates with algebraic invariants over pure logic:
   A `Glados2` test over `(List<Task> withDue, List<Task> withoutDue)` would cover far more edge
   cases than the five hand-written examples currently in `journal_query_runner_test.dart`.
 
-- [ ] **[MED]** `lib/features/journal/state/journal_page_controller.dart` —
+- [x] **[MED]** `lib/features/journal/state/journal_page_controller.dart` —
   `_getNextPageKey` (lines 192–221): Pure computation over `PagingState`. The invariant is:
   - Returns `0` when there are no loaded keys.
   - Returns `null` when the last page is smaller than `pageSize`.
   - Returns the correct raw offset when `_postFilterNextRawOffset` is set.
-  A Glados property over `(loadedKeys: List<int>, pageSizes: List<int>, postFilterOffset: int?)`
+  A Glados property over `(loadedKeys: List<int>, pageSizes: List<int>, postFilterOffset: int?)` **RESOLVED:** Done (adapted) — added `debugGetNextPageKey` + `debugPostFilterNextRawOffset` seams and an exhaustive branch-matrix test (empty state, hasNextPage=false, short last page, full-page key advance over one and two pages, post-filter offset wins + consumed-once + peek-without-consume). The branch space is small and finite, so full enumeration beats sampling.
   would surface off-by-one errors and boundary cases in the multi-branch logic.
 
-- [ ] **[MED]** `lib/features/journal/state/journal_page_subscriptions.dart` —
+- [x] **[MED]** `lib/features/journal/state/journal_page_subscriptions.dart` —
   `JournalPageSubscriptions.applyJournalConfigFlags` (lines 89–158): A pure static method with
-  complex multi-field output. Its invariants include:
+  complex multi-field output. Its invariants include: **RESOLVED:** Done — added a Glados property (numRuns 160) over a 12-bit cross-product (new flags x old enables x showTasks x explicit-selection x search mode x project selection) x 3 entry-selection kinds, asserting: verbatim flag propagation, selection always a subset of the new allowed set, empty/full selections snap to the new allowed set, `entryTypesChanged` mirrors actual set difference, vector mode never survives a disabled flag, project selection never survives a disabled flag, and `shouldRefresh` fires exactly for a mode change or cleared projects (isDesktop pinned).
   - `shouldRefresh` is true iff the search mode, project IDs, or entry-type-allowed set
     actually changed.
   - `selectedEntryTypes` is always a subset of the newly-allowed types.
@@ -248,22 +248,22 @@ genuine candidates with algebraic invariants over pure logic:
   not assert that the `_shouldShowEditorToolBar` is reset to `false` and `_dirty` is cleared —
   the full post-save state transition is not verified.
 
-- [ ] **[MED]** `lib/features/journal/state/journal_query_runner.dart` — **`_runPostFilteredTaskQuery`
+- [x] **[MED]** `lib/features/journal/state/journal_query_runner.dart` — **`_runPostFilteredTaskQuery`
   loop** (lines 236–316): The loop that post-filters by project and/or agent assignment is
   tested at the controller integration level (filter_test), but `journal_query_runner_test.dart`
   has no direct unit test for the chunked-fetch + post-filter combination, specifically:
-  - When all items in a chunk are filtered out and a second chunk is needed.
+  - When all items in a chunk are filtered out and a second chunk is needed. **RESOLVED:** Done — added a single runner-level test covering all three gaps at once: a fully-filtered first chunk forcing a second fetch, a partial last chunk terminating the loop, and project+agent filters active simultaneously, with the post-filter offset asserted as pageSize+2.
   - When the last chunk is partial (fewer than `pageSize`) and the loop exits early.
   - When both project and agent filters are active simultaneously.
 
-- [ ] **[MED]** `lib/features/journal/state/journal_query_runner.dart` — **`getAgentLinkedTaskIds`
+- [x] **[MED]** `lib/features/journal/state/journal_query_runner.dart` — **`getAgentLinkedTaskIds`
   caching** (lines 380–387): The cache invalidation (`clearCache()`) is never directly tested.
-  A test verifying that `clearCache()` causes a second DB round-trip on the next call would
+  A test verifying that `clearCache()` causes a second DB round-trip on the next call would **RESOLVED:** Stale — 'clearCache resets the cache' already verifies `getAgentTaskLinkToIds` is called twice and that the post-clear result reflects fresh data.
   guard against cache-poisoning regressions.
 
-- [ ] **[MED]** `lib/features/journal/state/journal_page_controller.dart` — **`_requiresSequentialRetainedRefresh`
+- [x] **[MED]** `lib/features/journal/state/journal_page_controller.dart` — **`_requiresSequentialRetainedRefresh`
   getter** (lines 799–803): The property governs whether retained refresh runs sequentially or
-  in parallel. It is not directly tested; only the end-to-end refresh behaviour is. A unit test
+  in parallel. It is not directly tested; only the end-to-end refresh behaviour is. A unit test **RESOLVED:** Done — added `debugRequiresSequentialRetainedRefresh` seam + a matrix test: showTasks=false always parallel; showTasks=true parallel with no filters; agent filter -> sequential; projects selected -> sequential; cleared -> parallel again.
   that verifies its value for each combination of `_agentAssignmentFilter` and
   `_selectedProjectIds.isNotEmpty` would add clarity.
 
@@ -297,20 +297,20 @@ genuine candidates with algebraic invariants over pure logic:
   and is required by the very_good batched-run policy documented in `test/README.md`.
   **Estimated impact**: potential in-suite contamination causing 5–10 flaky failures per shard.
 
-- [ ] **[MED]** `test/features/journal/state/journal_page_controller_filter_test.dart` and
+- [x] **[MED]** `test/features/journal/state/journal_page_controller_filter_test.dart` and
   `journal_page_controller_refresh_test.dart` — **Per-test `async.elapse(50ms)` pairs** appear
   over 300 times combined across the three controller test files. Each pair involves two
   microtask flushes. The 50 ms elapse is virtual time (fakeAsync), so it costs no wall-clock
-  time, but the repeated `flushMicrotasks()` calls do add scheduling overhead. If a shared
+  time, but the repeated `flushMicrotasks()` calls do add scheduling overhead. If a shared **RESOLVED:** Done — same change as the boilerplate item above: shared `settle(async)` helper, 194 call sites.
   `settle(async)` helper was used, compile-time inlining would eliminate the overhead while
   making the tests more readable. **Estimated impact**: minor CPU overhead in CI (~5–10%
   shard time for the filter tests).
 
-- [ ] **[MED]** `test/features/journal/state/journal_page_controller_filter_test.dart` — The
+- [x] **[MED]** `test/features/journal/state/journal_page_controller_filter_test.dart` — The
   `Filter Management - Agent Assignment` group (lines 645–741) creates a real
   `AgentDatabase(inMemoryDatabase: true)` in `setUp` and closes it in `tearDown`. Four tests
   run in this group, each paying the in-memory DB open/close cost. As the number of agent filter
-  tests grows, this cost grows linearly. Consider creating the DB once at group level with a
+  tests grows, this cost grows linearly. Consider creating the DB once at group level with a **RESOLVED:** Assessed, no change — deliberate per-test isolation: this repo runs CI under very_good in one isolate with a documented in-suite-contamination history, and a shared mutable AgentDatabase across tests trades a ~20-40ms saving for exactly that risk.
   shared teardown. **Estimated impact**: ~20–40 ms per test run.
 
 - [ ] **[LOW]** `test/features/journal/state/entry_controller_test.dart` — **`testWidgets` tests

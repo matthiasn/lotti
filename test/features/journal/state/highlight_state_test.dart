@@ -148,44 +148,4 @@ void main() {
       });
     });
   });
-
-  group('Highlight State Management', () {
-    test('highlight state toggles correctly', () {
-      String? highlightedEntryId;
-
-      // Initial state
-      expect(highlightedEntryId, isNull);
-
-      // Set highlight
-      highlightedEntryId = 'test-id';
-      expect(highlightedEntryId, equals('test-id'));
-
-      // Clear highlight
-      highlightedEntryId = null;
-      expect(highlightedEntryId, isNull);
-    });
-
-    test('highlight state can change between different entries', () {
-      String? highlightedEntryId;
-
-      highlightedEntryId = 'entry-1';
-      expect(highlightedEntryId, equals('entry-1'));
-
-      highlightedEntryId = 'entry-2';
-      expect(highlightedEntryId, equals('entry-2'));
-
-      highlightedEntryId = 'entry-3';
-      expect(highlightedEntryId, equals('entry-3'));
-    });
-
-    test('highlight state persists when not modified', () {
-      String? highlightedEntryId;
-
-      highlightedEntryId = 'test';
-      expect(highlightedEntryId, equals('test'));
-
-      // State remains unchanged
-      expect(highlightedEntryId, equals('test'));
-    });
-  });
 }

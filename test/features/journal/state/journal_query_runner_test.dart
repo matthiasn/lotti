@@ -714,6 +714,81 @@ void main() {
       });
     });
 
+    test(
+      'fetches a second chunk when the first is fully filtered out, applies '
+      'both filters simultaneously, and stops on a partial chunk',
+      () {
+        fakeAsync((async) {
+          const chunk = JournalQueryRunner.pageSize;
+          final mockAgentDb = MockAgentDatabase();
+          getIt.registerSingleton<AgentDatabase>(mockAgentDb);
+
+          // Agent links: both-match and agent-only carry an agent link.
+          when(
+            mockAgentDb.getAgentTaskLinkToIds,
+          ).thenReturn(MockSelectable<String>(['both-match', 'agent-only']));
+
+          // Project membership: only both-match belongs to proj-1.
+          when(
+            () => mockJournalDb.getTaskIdsForProjects({'proj-1'}),
+          ).thenAnswer((_) async => {'both-match'});
+
+          // Chunk 1 (offset 0): a full page of tasks, none of which match
+          // the project filter -> the loop must fetch a second chunk.
+          final chunk1 = List.generate(
+            chunk,
+            (i) => _makeTask(id: 'c1-$i', createdAt: _testDate),
+          );
+          // Chunk 2 (offset = chunk): partial (2 < pageSize) -> loop exits
+          // after consuming it. agent-only fails the project filter; only
+          // both-match survives both filters.
+          final chunk2 = [
+            _makeTask(id: 'both-match', createdAt: _testDate),
+            _makeTask(id: 'agent-only', createdAt: _testDate),
+          ];
+          when(
+            () => mockJournalDb.getTasks(
+              ids: any(named: 'ids'),
+              starredStatuses: any(named: 'starredStatuses'),
+              taskStatuses: any(named: 'taskStatuses'),
+              categoryIds: any(named: 'categoryIds'),
+              labelIds: any(named: 'labelIds'),
+              priorities: any(named: 'priorities'),
+              sortByDate: any(named: 'sortByDate'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer((invocation) async {
+            final offset = invocation.namedArguments[#offset] as int?;
+            return offset == 0 ? chunk1 : chunk2;
+          });
+
+          final params = _defaultParams(
+            showTasks: true,
+            selectedProjectIds: {'proj-1'},
+            agentAssignmentFilter: AgentAssignmentFilter.hasAgent,
+          );
+
+          int? capturedOffset;
+          late List<JournalEntity> result;
+          runner
+              .runQuery(
+                params,
+                0,
+                fullTextMatches: {},
+                setPostFilterNextRawOffset: (offset) => capturedOffset = offset,
+              )
+              .then((r) => result = r);
+          async.flushMicrotasks();
+
+          expect(result, hasLength(1));
+          expect(result.single.meta.id, 'both-match');
+          // Both chunks were consumed: full chunk + 2 partial rows.
+          expect(capturedOffset, chunk + 2);
+        });
+      },
+    );
+
     test('calls setPostFilterNextRawOffset with correct offset', () {
       fakeAsync((async) {
         final tasks = List.generate(
