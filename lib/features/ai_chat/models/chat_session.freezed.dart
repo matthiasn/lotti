@@ -212,8 +212,8 @@ return $default(_that.id,_that.title,_that.createdAt,_that.lastMessageAt,_that.m
 }
 
 /// @nodoc
-@JsonSerializable()
 
+@JsonSerializable(explicitToJson: true)
 class _ChatSession implements ChatSession {
   const _ChatSession({required this.id, required this.title, required this.createdAt, required this.lastMessageAt, required final  List<ChatMessage> messages, this.categoryId, final  Map<String, dynamic>? metadata}): _messages = messages,_metadata = metadata;
   factory _ChatSession.fromJson(Map<String, dynamic> json) => _$ChatSessionFromJson(json);

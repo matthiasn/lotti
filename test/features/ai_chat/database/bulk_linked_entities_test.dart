@@ -164,27 +164,15 @@ void main() {
           plainText: 'Task 1 description',
         );
 
-        final task2 = JournalEntity.task(
-          meta: Metadata(
-            id: 'task-2',
+        final task2 = _makeTask(
+          'task-2',
+          title: 'Test Task 2',
+          plainText: 'Task 2 description',
+          status: TaskStatus.done(
+            id: 'status-2',
             createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-            categoryId: 'category-1',
+            utcOffset: 0,
           ),
-          data: TaskData(
-            title: 'Test Task 2',
-            status: TaskStatus.done(
-              id: 'status-2',
-              createdAt: testDate,
-              utcOffset: 0,
-            ),
-            dateFrom: testDate,
-            dateTo: testDate,
-            statusHistory: [],
-          ),
-          entryText: const EntryText(plainText: 'Task 2 description'),
         );
 
         final aiResponse1 = _makeAiResponse(
@@ -469,45 +457,14 @@ void main() {
         // Arrange - Create two tasks and one shared journal entry
         // This tests that when fetching bulk linked entities for multiple parents,
         // if they both link to the same entity, it's not duplicated in individual results
-        final task1 = JournalEntity.task(
-          meta: Metadata(
-            id: 'task-dedup-1',
+        final task1 = _makeTask('task-dedup-1', title: 'Test Task 1');
+        final task2 = _makeTask(
+          'task-dedup-2',
+          title: 'Test Task 2',
+          status: TaskStatus.done(
+            id: 'status-2',
             createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-          ),
-          data: TaskData(
-            title: 'Test Task 1',
-            status: TaskStatus.open(
-              id: 'status-1',
-              createdAt: testDate,
-              utcOffset: 0,
-            ),
-            dateFrom: testDate,
-            dateTo: testDate,
-            statusHistory: [],
-          ),
-        );
-
-        final task2 = JournalEntity.task(
-          meta: Metadata(
-            id: 'task-dedup-2',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-          ),
-          data: TaskData(
-            title: 'Test Task 2',
-            status: TaskStatus.done(
-              id: 'status-2',
-              createdAt: testDate,
-              utcOffset: 0,
-            ),
-            dateFrom: testDate,
-            dateTo: testDate,
-            statusHistory: [],
+            utcOffset: 0,
           ),
         );
 
@@ -563,26 +520,7 @@ void main() {
 
       test('sorts linked entities by dateFrom in descending order', () async {
         // Arrange - Create task and three journal entries with different dates
-        final task = JournalEntity.task(
-          meta: Metadata(
-            id: 'task-sort-test',
-            createdAt: testDate,
-            updatedAt: testDate,
-            dateFrom: testDate,
-            dateTo: testDate,
-          ),
-          data: TaskData(
-            title: 'Test Task',
-            status: TaskStatus.open(
-              id: 'status-1',
-              createdAt: testDate,
-              utcOffset: 0,
-            ),
-            dateFrom: testDate,
-            dateTo: testDate,
-            statusHistory: [],
-          ),
-        );
+        final task = _makeTask('task-sort-test');
 
         // Create entries with different dates (newest to oldest creation order)
         final newestEntry = JournalEntity.journalEntry(

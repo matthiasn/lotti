@@ -24,7 +24,7 @@ Map<String, dynamic> _$ChatSessionToJson(_ChatSession instance) =>
       'title': instance.title,
       'createdAt': instance.createdAt.toIso8601String(),
       'lastMessageAt': instance.lastMessageAt.toIso8601String(),
-      'messages': instance.messages,
+      'messages': instance.messages.map((e) => e.toJson()).toList(),
       'categoryId': instance.categoryId,
       'metadata': instance.metadata,
     };
