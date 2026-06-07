@@ -1798,33 +1798,41 @@ void main() {
       });
 
       test('persisted entry has correct fields from job', () {
-        fakeAsync((async) {
-          final capturedEntries = stubInsertCapture(mockRepository);
+        // Fix the clock so the entry's startedAt (stamped via clock.now() in
+        // _executeJob) is deterministic and can be asserted exactly, rather
+        // than via a presence-only isNotNull check.
+        final startedAt = DateTime(2024, 3, 15, 11);
+        withClock(Clock.fixed(startedAt), () {
+          fakeAsync((async) {
+            final capturedEntries = stubInsertCapture(mockRepository);
 
-          final createdAt = DateTime(2024, 3, 15, 10, 30);
-          queue.enqueue(
-            makeJob(
-              runKey: 'rk-test',
-              agentId: 'agent-42',
-              reason: 'timer',
-              reasonId: 'timer-7',
-              createdAt: createdAt,
-            ),
-          );
+            final createdAt = DateTime(2024, 3, 15, 10, 30);
+            queue.enqueue(
+              makeJob(
+                runKey: 'rk-test',
+                agentId: 'agent-42',
+                reason: 'timer',
+                reasonId: 'timer-7',
+                createdAt: createdAt,
+              ),
+            );
 
-          orchestrator.processNext();
-          async.flushMicrotasks();
+            orchestrator.processNext();
+            async.flushMicrotasks();
 
-          expect(capturedEntries, hasLength(1));
-          final capturedEntry = capturedEntries.first;
-          expect(capturedEntry.runKey, 'rk-test');
-          expect(capturedEntry.agentId, 'agent-42');
-          expect(capturedEntry.reason, 'timer');
-          expect(capturedEntry.reasonId, 'timer-7');
-          expect(capturedEntry.threadId, 'rk-test');
-          expect(capturedEntry.status, 'running');
-          expect(capturedEntry.createdAt, createdAt);
-          expect(capturedEntry.startedAt, isNotNull);
+            expect(capturedEntries, hasLength(1));
+            final capturedEntry = capturedEntries.first;
+            expect(capturedEntry.runKey, 'rk-test');
+            expect(capturedEntry.agentId, 'agent-42');
+            expect(capturedEntry.reason, 'timer');
+            expect(capturedEntry.reasonId, 'timer-7');
+            expect(capturedEntry.threadId, 'rk-test');
+            expect(capturedEntry.status, 'running');
+            expect(capturedEntry.createdAt, createdAt);
+            // startedAt is stamped from the (fixed) execution clock — not just
+            // present, but exactly the wall-clock at job execution.
+            expect(capturedEntry.startedAt, startedAt);
+          });
         });
       });
 
@@ -3465,37 +3473,51 @@ void main() {
       test(
         'subscription wake clears nextWakeAt when no follow-up job remains',
         () {
-          fakeAsync((async) {
-            orchestrator
-              ..addSubscription(makeSub())
-              ..wakeExecutor = noOpExecutor;
+          // Fix the clock so the persisted deadline is deterministic. The
+          // deferred-drain timer still fires under fakeAsync.elapse because the
+          // timer duration is deadline.difference(clock.now()) = throttleWindow,
+          // which emitAndDrain advances by exactly.
+          final now = DateTime(2024, 3, 15, 11);
+          withClock(Clock.fixed(now), () {
+            fakeAsync((async) {
+              orchestrator
+                ..addSubscription(makeSub())
+                ..wakeExecutor = noOpExecutor;
 
-            final writes = <AgentStateEntity>[];
-            var storedState = makeTestState(
-              id: 'state-agent-1',
-              agentId: 'agent-1',
-            );
-            when(
-              () => mockRepository.getAgentState(any()),
-            ).thenAnswer((_) async => storedState);
-            when(() => mockRepository.upsertEntity(any())).thenAnswer((
-              invocation,
-            ) async {
-              storedState =
-                  invocation.positionalArguments.single as AgentStateEntity;
-              writes.add(storedState);
+              final writes = <AgentStateEntity>[];
+              var storedState = makeTestState(
+                id: 'state-agent-1',
+                agentId: 'agent-1',
+              );
+              when(
+                () => mockRepository.getAgentState(any()),
+              ).thenAnswer((_) async => storedState);
+              when(() => mockRepository.upsertEntity(any())).thenAnswer((
+                invocation,
+              ) async {
+                storedState =
+                    invocation.positionalArguments.single as AgentStateEntity;
+                writes.add(storedState);
+              });
+
+              final controller = StreamController<Set<String>>.broadcast();
+              orchestrator.start(controller.stream);
+
+              emitAndDrain(async, controller, {'entity-1'});
+
+              expect(writes, hasLength(2));
+              // The defer-first arm persists a deadline exactly
+              // now + throttleWindow (direct match → fast throttle).
+              expect(
+                writes.first.nextWakeAt,
+                now.add(WakeOrchestrator.throttleWindow),
+              );
+              // With no queued follow-up after execution, the deadline is
+              // cleared back to null.
+              expect(writes.last.nextWakeAt, isNull);
+
+              controller.close();
             });
-
-            final controller = StreamController<Set<String>>.broadcast();
-            orchestrator.start(controller.stream);
-
-            emitAndDrain(async, controller, {'entity-1'});
-
-            expect(writes, hasLength(2));
-            expect(writes.first.nextWakeAt, isNotNull);
-            expect(writes.last.nextWakeAt, isNull);
-
-            controller.close();
           });
         },
       );
@@ -4110,18 +4132,31 @@ void main() {
 
     group('AgentSubscription', () {
       test('stores all fields correctly', () {
-        bool predicateCalled(Set<String> tokens) => true;
+        final seenTokens = <Set<String>>[];
+        bool recordingPredicate(Set<String> tokens) {
+          seenTokens.add(tokens);
+          return tokens.contains('e-1');
+        }
+
         final sub = AgentSubscription(
           id: 'sub-1',
           agentId: 'agent-1',
           matchEntityIds: {'e-1', 'e-2'},
-          predicate: predicateCalled,
+          predicate: recordingPredicate,
         );
 
         expect(sub.id, 'sub-1');
         expect(sub.agentId, 'agent-1');
         expect(sub.matchEntityIds, {'e-1', 'e-2'});
-        expect(sub.predicate, isNotNull);
+        // Drive the stored predicate instead of a presence-only check: it must
+        // be the exact function passed in, receiving the tokens and returning
+        // its result verbatim.
+        expect(sub.predicate!({'e-1'}), isTrue);
+        expect(sub.predicate!({'other'}), isFalse);
+        expect(seenTokens, [
+          {'e-1'},
+          {'other'},
+        ]);
       });
 
       test('predicate is optional and defaults to null', () {
@@ -4213,7 +4248,7 @@ void main() {
       );
     });
 
-    group('enqueueManualWake', () {
+    group('enqueueManualWake deferred-drain cleanup', () {
       test('clears pending subscription jobs for agent', () {
         fakeAsync((async) {
           final controller = StreamController<Set<String>>.broadcast();
