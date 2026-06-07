@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -287,17 +288,14 @@ void main() {
     test('syncAiSettings logs and skips when fetching configs fails', () async {
       final exception = Exception('db failure');
 
+      // The provider fetch throws synchronously while the Future.wait list
+      // literal is still being built, so the model/prompt fetches are never
+      // reached — no stubs for them.
       when(
         () => mockAiConfigRepository.getConfigsByType(
           AiConfigType.inferenceProvider,
         ),
       ).thenThrow(exception);
-      when(
-        () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => const []);
-      when(
-        () => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt),
-      ).thenAnswer((_) async => const []);
 
       await expectLater(
         syncMaintenanceRepository.syncAiSettings(),
@@ -415,6 +413,28 @@ void main() {
             testException,
             stackTrace: any<StackTrace>(named: 'stackTrace'),
             subDomain: 'syncMeasurables',
+          ),
+        ).called(1);
+      });
+    });
+
+    group('syncLabels', () {
+      test('should log and rethrow exception when db fails', () async {
+        when(
+          () => mockJournalDb.getAllLabelDefinitions(),
+        ).thenThrow(testException);
+
+        await expectLater(
+          () => syncMaintenanceRepository.syncLabels(),
+          throwsA(testException),
+        );
+
+        verify(
+          () => mockLoggingService.error(
+            LogDomain.sync,
+            testException,
+            stackTrace: any<StackTrace>(named: 'stackTrace'),
+            subDomain: 'syncLabels',
           ),
         ).called(1);
       });
@@ -552,6 +572,28 @@ void main() {
       expect(totals, isEmpty);
       verifyZeroInteractions(mockAiConfigRepository);
     });
+
+    test(
+      'SyncStep.complete contributes a 0 total without touching any '
+      'repository',
+      () async {
+        final totals = await syncMaintenanceRepository.fetchTotalsForSteps({
+          SyncStep.complete,
+        });
+
+        expect(totals, {SyncStep.complete: 0});
+        verifyNever(() => mockJournalDb.getAllMeasurableDataTypes());
+        verifyNever(() => mockJournalDb.getAllLabelDefinitions());
+        verifyNever(() => mockJournalDb.getAllCategories());
+        verifyNever(() => mockJournalDb.getAllDashboards());
+        verifyNever(() => mockJournalDb.getAllHabitDefinitions());
+        verifyNever(
+          () => mockAiConfigRepository.getConfigsByType(
+            AiConfigType.inferenceProvider,
+          ),
+        );
+      },
+    );
 
     test('returns totals for each requested step', () async {
       when(
@@ -1112,5 +1154,80 @@ void main() {
         () => mockAgentRepository.countLinksWithNullVectorClock(),
       ).called(1);
     });
+  });
+  group('progress callback properties', () {
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(0, 32),
+      glados.IntAnys(glados.any).intInRange(0, 1 << 16),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      '_runOperation progress is monotonic in [0,1], ends at 1.0, and '
+      'detailed counts satisfy 0 <= processed <= total',
+      (count, deletedMask) async {
+        // Generated row set: bit i of deletedMask decides whether row i is
+        // soft-deleted (shouldSync false) — exercising every mix of synced
+        // and skipped entities, including the all-skipped and empty cases.
+        final rows = [
+          for (var i = 0; i < count; i++)
+            FakeMeasurableDataType(
+              id: 'm-$i',
+              deletedAt: (deletedMask >> (i % 16)).isOdd && i.isEven
+                  ? DateTime(2024, 3, 15)
+                  : null,
+            ),
+        ];
+        when(
+          () => mockJournalDb.getAllMeasurableDataTypes(),
+        ).thenAnswer((_) async => rows);
+        when(
+          () => mockOutboxService.enqueueMessage(any()),
+        ).thenAnswer((_) async {});
+
+        final progress = <double>[];
+        final detailed = <({int processed, int total})>[];
+        await syncMaintenanceRepository.syncMeasurables(
+          onProgress: progress.add,
+          onDetailedProgress: (processed, total) =>
+              detailed.add((processed: processed, total: total)),
+        );
+
+        final reason = 'count=$count mask=$deletedMask';
+
+        // Progress: every value in [0,1], non-decreasing, final value 1.0.
+        expect(progress, isNotEmpty, reason: reason);
+        for (final value in progress) {
+          expect(value, inInclusiveRange(0.0, 1.0), reason: reason);
+        }
+        for (var i = 1; i < progress.length; i++) {
+          expect(
+            progress[i],
+            greaterThanOrEqualTo(progress[i - 1]),
+            reason: reason,
+          );
+        }
+        expect(progress.last, 1.0, reason: reason);
+
+        // Detailed: totals constant, processed within [0, total] and
+        // non-decreasing, ending fully processed.
+        expect(detailed, isNotEmpty, reason: reason);
+        for (final entry in detailed) {
+          expect(entry.total, count, reason: reason);
+          expect(
+            entry.processed,
+            inInclusiveRange(0, entry.total),
+            reason: reason,
+          );
+        }
+        for (var i = 1; i < detailed.length; i++) {
+          expect(
+            detailed[i].processed,
+            greaterThanOrEqualTo(detailed[i - 1].processed),
+            reason: reason,
+          );
+        }
+        expect(detailed.last.processed, count, reason: reason);
+      },
+      tags: 'glados',
+    );
   });
 }
