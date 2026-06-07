@@ -80,6 +80,9 @@ class DayPlanRepositoryImpl implements DayPlanRepository {
         final target = _pendingBatch;
         _pendingIds = null;
         _pendingBatch = null;
+        // Defensive only: the single flush microtask is scheduled exactly
+        // once per batch (by the first enqueued id) and nothing else nulls
+        // these fields, so this guard is unreachable in normal usage.
         if (toFetch == null || target == null) return;
         try {
           final rows = await _journalDb.getDayPlansByIds(toFetch);
