@@ -550,23 +550,24 @@ void main() {
           () => mockAiConfigRepository.getConfigById(testModelId),
         ).thenThrow(Exception('Processor integration test'));
 
-        var exceptionCaught = false;
-        try {
-          await repository
+        await expectLater(
+          repository
               .sendMessage(
                 message: testMessage,
                 conversationHistory: [],
                 categoryId: testCategoryId,
                 modelId: testModelId,
               )
-              .first;
-        } catch (e) {
-          exceptionCaught = true;
-          expect(e.toString(), contains('Failed to send message'));
-          expect(e.toString(), contains('Processor integration test'));
-        }
-
-        expect(exceptionCaught, isTrue);
+              .first,
+          throwsA(
+            predicate<Object>(
+              (e) =>
+                  e.toString().contains('Failed to send message') &&
+                  e.toString().contains('Processor integration test'),
+              'wrapped "Failed to send message" carrying the processor error',
+            ),
+          ),
+        );
 
         // Verify the repository logged the start of processing
         verify(

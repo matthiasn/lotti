@@ -3,6 +3,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/task_summary_tool.dart';
@@ -327,19 +328,25 @@ void main() {
         ).called(1);
       });
 
-      test(
-        'handles invalid date format or calendar date in arguments',
-        () async {
-          // Arrange
+      // One parameterized loop over the invalid-date payloads — both cases
+      // drive the identical repository-throws path and assertions.
+      for (final (description, arguments) in [
+        (
+          'invalid format in start_date + invalid calendar end_date',
+          {'start_date': 'invalid-date-format', 'end_date': '2024-02-31'},
+        ),
+        (
+          'invalid calendar date in start_date',
+          {'start_date': '2024-02-31', 'end_date': '2024-03-01'},
+        ),
+      ]) {
+        test('handles $description', () async {
           final toolCall = ChatCompletionMessageToolCall(
             id: 'test-id',
             type: ChatCompletionMessageToolCallType.function,
             function: ChatCompletionMessageFunctionCall(
               name: 'get_task_summaries',
-              arguments: jsonEncode({
-                'start_date': 'invalid-date-format',
-                'end_date': '2024-02-31',
-              }),
+              arguments: jsonEncode(arguments),
             ),
           );
 
@@ -353,13 +360,11 @@ void main() {
             (_) => Future.error(const FormatException('Invalid calendar date')),
           );
 
-          // Act
           final result = await processor.processTaskSummaryTool(
             toolCall: toolCall,
             categoryId: testCategoryId,
           );
 
-          // Assert
           final decoded = jsonDecode(result) as Map<String, dynamic>;
           expect(
             decoded['error'],
@@ -377,61 +382,8 @@ void main() {
               subDomain: 'processTaskSummaryTool',
             ),
           ).called(1);
-        },
-      );
-
-      test(
-        'handles invalid calendar date in start_date specifically',
-        () async {
-          // Arrange
-          final toolCall = ChatCompletionMessageToolCall(
-            id: 'test-id-2',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'get_task_summaries',
-              arguments: jsonEncode({
-                'start_date': '2024-02-31', // invalid start date
-                'end_date': '2024-03-01',
-              }),
-            ),
-          );
-
-          // Simulate repository validation failure
-          when(
-            () => mockTaskSummaryRepository.getTaskSummaries(
-              categoryId: testCategoryId,
-              request: any(named: 'request'),
-            ),
-          ).thenAnswer(
-            (_) => Future.error(const FormatException('Invalid calendar date')),
-          );
-
-          // Act
-          final result = await processor.processTaskSummaryTool(
-            toolCall: toolCall,
-            categoryId: testCategoryId,
-          );
-
-          // Assert
-          final decoded = jsonDecode(result) as Map<String, dynamic>;
-          expect(
-            decoded['error'],
-            contains('Failed to retrieve task summaries'),
-          );
-          expect(
-            decoded['error'].toString().toLowerCase(),
-            contains('invalid'),
-          );
-          verify(
-            () => mockDomainLogger.error(
-              LogDomain.chat,
-              any<Object>(),
-              stackTrace: any<StackTrace>(named: 'stackTrace'),
-              subDomain: 'processTaskSummaryTool',
-            ),
-          ).called(1);
-        },
-      );
+        });
+      }
 
       test('handles missing required fields in JSON', () async {
         // Arrange
@@ -1092,6 +1044,81 @@ void main() {
         expect(chunks, ['Hello', ' world']);
       });
 
+      test(
+        'propagates a mid-stream error after emitting earlier chunks',
+        () async {
+          final config = AiInferenceConfig(
+            provider: AiConfigInferenceProvider(
+              id: 'prov-1',
+              name: 'Provider',
+              baseUrl: 'https://api',
+              apiKey: 'k',
+              createdAt: testDate,
+              inferenceProviderType: InferenceProviderType.openAi,
+            ),
+            model: AiConfigModel(
+              id: 'model-1',
+              name: 'Model',
+              providerModelId: 'm1',
+              inferenceProviderId: 'prov-1',
+              createdAt: testDate,
+              inputModalities: const [Modality.text],
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+              supportsFunctionCalling: true,
+            ),
+          );
+
+          Stream<CreateChatCompletionStreamResponse> failingStream() async* {
+            yield const CreateChatCompletionStreamResponse(
+              id: 'r1',
+              created: 0,
+              model: 'm',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
+                ),
+              ],
+            );
+            throw StateError('provider died mid-stream');
+          }
+
+          when(
+            () => mockCloudInferenceRepository.generate(
+              any<String>(),
+              model: any<String>(named: 'model'),
+              temperature: any<double>(named: 'temperature'),
+              baseUrl: any<String>(named: 'baseUrl'),
+              apiKey: any<String>(named: 'apiKey'),
+              systemMessage: any<String>(named: 'systemMessage'),
+              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+              geminiThinkingMode: any(named: 'geminiThinkingMode'),
+            ),
+          ).thenAnswer((_) => failingStream());
+
+          final stream = processor.generateFinalResponseStream(
+            messages: const [
+              ChatCompletionMessage.user(
+                content: ChatCompletionUserMessageContent.string('hi'),
+              ),
+            ],
+            config: config,
+            systemMessage: 'sys',
+          );
+
+          // The chunk emitted before the failure arrives, then the error
+          // surfaces unchanged to the listener.
+          await expectLater(
+            stream,
+            emitsInOrder([
+              'Hello',
+              emitsError(isA<StateError>()),
+            ]),
+          );
+        },
+      );
+
       test('ignores frames with null/empty choices and continues', () async {
         final config = AiInferenceConfig(
           provider: AiConfigInferenceProvider(
@@ -1343,5 +1370,110 @@ void main() {
         expect(config.model, testModel);
       });
     });
+  });
+
+  group('prompt builders — Glados properties', () {
+    ChatMessageProcessor buildProcessor() => ChatMessageProcessor(
+      aiConfigRepository: MockAiConfigRepository(),
+      cloudInferenceRepository: MockCloudInferenceRepository(),
+      taskSummaryRepository: MockTaskSummaryRepository(),
+      loggingService: MockDomainLogger(),
+    );
+
+    // Seed → role: 0 user, 1 assistant, 2 tool.
+    ChatCompletionMessage messageFor(int role, String content) {
+      switch (role % 3) {
+        case 0:
+          return ChatCompletionMessage.user(
+            content: ChatCompletionUserMessageContent.string(content),
+          );
+        case 1:
+          return ChatCompletionMessage.assistant(content: content);
+        default:
+          return ChatCompletionMessage.tool(
+            toolCallId: 'tc',
+            content: content,
+          );
+      }
+    }
+
+    String prefixFor(int role) => switch (role % 3) {
+      0 => 'User: ',
+      1 => 'Assistant: ',
+      _ => 'Tool response: ',
+    };
+
+    glados.Glados<List<int>>(
+      glados.ListAnys(
+        glados.any,
+      ).listWithLengthInRange(
+        0,
+        8,
+        glados.IntAnys(glados.any).intInRange(0, 1 << 10),
+      ),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'buildPromptFromMessages renders every message once, role-prefixed, '
+      'in order, with the new user message last',
+      (seeds) {
+        final processor = buildProcessor();
+        final messages = [
+          for (final (i, seed) in seeds.indexed)
+            messageFor(seed, 'content-$i-$seed'),
+        ];
+
+        final prompt = processor.buildPromptFromMessages(
+          messages,
+          'the new message',
+        );
+
+        final lines = prompt.split('\n\n');
+        expect(lines.length, seeds.length + 1, reason: prompt);
+        for (final (i, seed) in seeds.indexed) {
+          expect(
+            lines[i],
+            '${prefixFor(seed)}content-$i-$seed',
+            reason: 'line $i of: $prompt',
+          );
+        }
+        expect(lines.last, 'User: the new message');
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<List<int>>(
+      glados.ListAnys(
+        glados.any,
+      ).listWithLengthInRange(
+        0,
+        8,
+        glados.IntAnys(glados.any).intInRange(0, 1 << 10),
+      ),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'buildFinalPromptFromMessages renders the context then the fixed '
+      'closing instruction',
+      (seeds) {
+        final processor = buildProcessor();
+        final messages = [
+          for (final (i, seed) in seeds.indexed)
+            messageFor(seed, 'content-$i-$seed'),
+        ];
+
+        final prompt = processor.buildFinalPromptFromMessages(messages);
+
+        final lines = prompt.split('\n\n');
+        expect(lines.length, seeds.length + 1, reason: prompt);
+        for (final (i, seed) in seeds.indexed) {
+          expect(lines[i], '${prefixFor(seed)}content-$i-$seed');
+        }
+        expect(
+          lines.last,
+          'Based on the conversation and tool results above, provide a '
+          'helpful response to the user.',
+        );
+      },
+      tags: 'glados',
+    );
   });
 }
