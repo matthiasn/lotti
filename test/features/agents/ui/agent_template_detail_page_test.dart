@@ -173,11 +173,14 @@ void main() {
         findsOneWidget,
       );
 
-      // Name field is empty
+      // Name field is present AND actually empty — "empty form" verified
+      // on the controller value, not just the label.
       expect(
         find.text(context.messages.agentTemplateDisplayNameLabel),
         findsOneWidget,
       );
+      final nameField = tester.widget<TextField>(find.byType(TextField).first);
+      expect(nameField.controller?.text, isEmpty);
     });
 
     testWidgets('save is disabled without profile selection', (tester) async {
@@ -894,6 +897,13 @@ void main() {
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byType(Scaffold), findsOneWidget);
+      // While loading, no form content may be visible.
+      expect(find.byType(TextField), findsNothing);
+      final context = tester.element(find.byType(AgentTemplateDetailPage));
+      expect(
+        find.text(context.messages.agentTemplateDisplayNameLabel),
+        findsNothing,
+      );
     });
 
     testWidgets('shows error state when provider errors', (tester) async {
@@ -1190,10 +1200,9 @@ void main() {
 
       // Switch to Stats tab where version history now lives
       await tester.tap(find.text(context.messages.agentTemplateStatsTab));
-      // Pump multiple frames to complete tab switch animation
-      for (var i = 0; i < 10; i++) {
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      // Two pumps: one to start the tab transition, one past its duration.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
 
       // Scroll to version history section using the last vertical Scrollable
       // (the Stats tab's ListView, not the NestedScrollView or TabBarView)

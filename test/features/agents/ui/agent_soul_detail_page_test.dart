@@ -771,6 +771,50 @@ void main() {
       expect(find.text(context.messages.commonError), findsOneWidget);
     });
 
+    testWidgets(
+      'deleting a soul with assigned templates surfaces the error and '
+      'stays on the page',
+      (tester) async {
+        // No dedicated exception type exists: the service throws StateError
+        // when templates still reference the soul. The page must surface it
+        // like any delete failure and must NOT navigate away.
+        when(
+          () => mockSoulService.deleteSoul(any()),
+        ).thenThrow(
+          StateError(
+            'Cannot delete soul soul-in-use: 2 template(s) still assigned',
+          ),
+        );
+
+        await tester.pumpWidget(
+          buildEditSubject(soulId: 'soul-in-use'),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        final context = tester.element(find.byType(AgentSoulDetailPage));
+
+        await tester.tap(find.text(context.messages.agentSoulInfoTab));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump();
+        await tester.pump();
+
+        await tester.tap(find.byIcon(Icons.delete_outline));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        await tester.tap(find.text(context.messages.deleteButton).last);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(find.text(context.messages.commonError), findsOneWidget);
+        // Still on the detail page — the failed delete must not pop it.
+        expect(find.byType(AgentSoulDetailPage), findsOneWidget);
+        verify(() => mockSoulService.deleteSoul('soul-in-use')).called(1);
+      },
+    );
+
     testWidgets('rollback confirmation calls rollbackToVersion', (
       tester,
     ) async {
