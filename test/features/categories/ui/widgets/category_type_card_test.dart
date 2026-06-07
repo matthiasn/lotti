@@ -4,9 +4,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/categories/ui/widgets/category_icon_compact.dart';
 import 'package:lotti/features/categories/ui/widgets/category_type_card.dart';
+import 'package:lotti/features/settings/ui/widgets/settings_card.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
-import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 
@@ -123,37 +123,73 @@ void main() {
     },
   );
 
-  testWidgets('CategoryColorIcon displays correct color from cache service', (
-    WidgetTester tester,
-  ) async {
-    const categoryId = 'test-category-id';
+  testWidgets('forwards taps to onTap', (WidgetTester tester) async {
     final testDate = DateTime(2024, 3, 15);
     final category = CategoryDefinition(
-      id: categoryId,
-      name: 'Test Category',
+      id: 'test-id',
+      name: 'Tappable',
       color: '#FF0000',
+      private: false,
       createdAt: testDate,
       updatedAt: testDate,
       vectorClock: null,
       active: true,
-      private: false,
     );
-
-    when(
-      () => mockEntitiesCacheService.getCategoryById(categoryId),
-    ).thenReturn(category);
+    var taps = 0;
 
     await tester.pumpWidget(
-      const MaterialApp(
+      MaterialApp(
         home: Scaffold(
-          body: CategoryIconCompact('test-category-id'),
+          body: CategoryTypeCard(
+            category,
+            onTap: () => taps++,
+          ),
         ),
       ),
     );
 
-    expect(find.byType(CategoryIconCompact), findsOneWidget);
-    verify(
-      () => mockEntitiesCacheService.getCategoryById(categoryId),
-    ).called(1);
+    await tester.tap(find.text('Tappable'));
+    expect(taps, 1);
   });
+
+  testWidgets(
+    'selected state tints the card background; unselected is transparent',
+    (WidgetTester tester) async {
+      final testDate = DateTime(2024, 3, 15);
+      final category = CategoryDefinition(
+        id: 'test-id',
+        name: 'Selectable',
+        color: '#FF0000',
+        private: false,
+        createdAt: testDate,
+        updatedAt: testDate,
+        vectorClock: null,
+        active: true,
+      );
+
+      for (final selected in [true, false]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: CategoryTypeCard(
+                category,
+                onTap: () {},
+                selected: selected,
+              ),
+            ),
+          ),
+        );
+
+        final card = tester.widget<SettingsCard>(find.byType(SettingsCard));
+        final context = tester.element(find.byType(SettingsCard));
+        expect(
+          card.backgroundColor,
+          selected
+              ? Theme.of(context).colorScheme.outline.withAlpha(55)
+              : Colors.transparent,
+          reason: 'selected=$selected',
+        );
+      }
+    },
+  );
 }

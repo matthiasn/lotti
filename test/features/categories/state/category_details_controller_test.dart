@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/categories/domain/category_icon.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/categories/state/category_details_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -206,6 +207,22 @@ void main() {
             .read(categoryDetailsControllerProvider(testCategoryId))
             .hasChanges,
         isTrue,
+      );
+
+      // Test icon change
+      controller.updateFormField(icon: CategoryIcon.fitness);
+      expect(
+        container
+            .read(categoryDetailsControllerProvider(testCategoryId))
+            .hasChanges,
+        isTrue,
+      );
+      expect(
+        container
+            .read(categoryDetailsControllerProvider(testCategoryId))
+            .category
+            ?.icon,
+        equals(CategoryIcon.fitness),
       );
 
       // Test language code change

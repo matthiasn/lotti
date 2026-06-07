@@ -114,8 +114,7 @@ void main() {
       // Fire the global categories notification
       notificationController.add({categoriesNotification});
 
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       final secondCount = await container.read(
         categoryTaskCountProvider('cat-1').future,
@@ -144,8 +143,7 @@ void main() {
       // Fire a task notification (task created/updated/deleted)
       notificationController.add({taskNotification});
 
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       final secondCount = await container.read(
         categoryTaskCountProvider('cat-1').future,
@@ -168,8 +166,7 @@ void main() {
       // Fire an unrelated notification
       notificationController.add({'some-other-id'});
 
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
+      await pumpEventQueue();
 
       // Should only have been called once (no re-fetch)
       verify(() => mockRepository.getTaskCountsByCategory()).called(1);

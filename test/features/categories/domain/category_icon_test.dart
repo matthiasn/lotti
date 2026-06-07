@@ -638,6 +638,26 @@ void _runCategoryIconGladosTests() {
       tags: 'glados',
     );
 
+    test(
+      '_byName map is complete and collision-free: every enum value '
+      'round-trips through the O(1) lookup (exhaustive)',
+      () {
+        // No duplicate names: a collision would make the map smaller than
+        // the enum, silently shadowing one icon in fromJson.
+        final names = CategoryIcon.values.map((e) => e.name).toSet();
+        expect(names, hasLength(CategoryIcon.values.length));
+
+        // Every value resolves back to itself through the map-backed lookup.
+        for (final icon in CategoryIcon.values) {
+          expect(
+            CategoryIconExtension.fromJson(icon.name),
+            icon,
+            reason: '${icon.name} must round-trip through _byName',
+          );
+        }
+      },
+    );
+
     glados.Glados<CategoryIcon>(
       glados.any.categoryIcon,
       glados.ExploreConfig(numRuns: 120),

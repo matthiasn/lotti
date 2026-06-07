@@ -15,6 +15,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../test_utils.dart';
 
 void main() {
@@ -30,7 +31,7 @@ void main() {
     late StreamController<Set<String>> updateStreamController;
     late CategoryRepository repository;
 
-    setUp(() {
+    setUp(() async {
       mockPersistenceLogic = MockPersistenceLogic();
       mockJournalDb = MockJournalDb();
       mockEntitiesCacheService = MockEntitiesCacheService();
@@ -41,21 +42,19 @@ void main() {
         () => mockUpdateNotifications.updateStream,
       ).thenAnswer((_) => updateStreamController.stream);
 
-      // Reset getIt and register mocks
-      if (getIt.isRegistered<PersistenceLogic>()) {
-        getIt.unregister<PersistenceLogic>();
-      }
-      if (getIt.isRegistered<JournalDb>()) {
-        getIt.unregister<JournalDb>();
-      }
-      if (getIt.isRegistered<EntitiesCacheService>()) {
-        getIt.unregister<EntitiesCacheService>();
-      }
-
-      getIt
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            // The repository's collaborators must resolve to THIS test's
+            // instances, not the helper's stock JournalDb mock.
+            ..unregister<JournalDb>()
+            ..registerSingleton<JournalDb>(mockJournalDb)
+            ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
+            ..registerSingleton<EntitiesCacheService>(
+              mockEntitiesCacheService,
+            );
+        },
+      );
 
       repository = CategoryRepository(
         mockPersistenceLogic,
@@ -67,15 +66,7 @@ void main() {
 
     tearDown(() async {
       await updateStreamController.close();
-      if (getIt.isRegistered<PersistenceLogic>()) {
-        getIt.unregister<PersistenceLogic>();
-      }
-      if (getIt.isRegistered<JournalDb>()) {
-        getIt.unregister<JournalDb>();
-      }
-      if (getIt.isRegistered<EntitiesCacheService>()) {
-        getIt.unregister<EntitiesCacheService>();
-      }
+      await tearDownTestGetIt();
     });
 
     group('watchCategories', () {
@@ -611,15 +602,11 @@ void main() {
 
     group('categoryRepositoryProvider', () {
       test('wires CategoryRepository from getIt dependencies', () async {
-        // setUp already registers PersistenceLogic, JournalDb and
-        // EntitiesCacheService; the provider additionally needs
-        // UpdateNotifications.
-        getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
-        addTearDown(() {
-          if (getIt.isRegistered<UpdateNotifications>()) {
-            getIt.unregister<UpdateNotifications>();
-          }
-        });
+        // setUpTestGetIt registers a stock UpdateNotifications mock; the
+        // provider must resolve THIS test's instance instead.
+        getIt
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
 
         final container = ProviderContainer();
         addTearDown(container.dispose);
