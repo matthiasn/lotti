@@ -444,7 +444,10 @@ void main() {
         expect(service, isNotNull);
 
         await tester.tap(find.text('go'));
-        await tester.pumpAndSettle();
+        // Bounded settle: one frame to start the modal route, then enough
+        // time for the sheet's open transition to finish.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
         // The modal content rendered (its RECORD button carries this key).
         expect(find.byType(AudioRecordingModalContent), findsOneWidget);
@@ -520,7 +523,10 @@ void main() {
         );
 
         await tester.tap(find.text('go'));
-        await tester.pumpAndSettle();
+        // Bounded settle: one frame to start the modal route, then enough
+        // time for the sheet's open transition to finish.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 500));
 
         // The menu modal rendered its items (Event/Task/Audio/Timer/Text).
         expect(find.byType(CreateMenuListItem), findsWidgets);
