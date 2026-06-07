@@ -6,11 +6,11 @@ import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -74,8 +74,8 @@ class _TestConversationRepository extends ConversationRepository {
     required String model,
     required AiConfigInferenceProvider provider,
     required InferenceRepositoryInterface inferenceRepo,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<AiTool>? tools,
+    AiToolChoice? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
   }) async {
@@ -169,14 +169,10 @@ void main() {
       final strategy = EvolutionStrategy();
       final manager = ConversationManager(conversationId: 'conv-soul')
         ..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
+      const toolCall = AiToolCall(
         id: 'call-soul',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_soul_directives',
-          arguments:
-              '{"voice_directive":"Updated voice.","rationale":"Reason"}',
-        ),
+        name: 'propose_soul_directives',
+        arguments: '{"voice_directive":"Updated voice.","rationale":"Reason"}',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(
@@ -254,18 +250,15 @@ void main() {
       );
       final manager = ConversationManager(conversationId: 'conv-refresh')
         ..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
+      const toolCall = AiToolCall(
         id: 'call-refresh',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_soul_directives',
-          arguments:
-              '{"voice_directive":"New voice.",'
-              ' "tone_bounds":"New bounds.",'
-              ' "coaching_style":"New coaching.",'
-              ' "anti_sycophancy_policy":"New policy.",'
-              ' "rationale":"Full update."}',
-        ),
+        name: 'propose_soul_directives',
+        arguments:
+            '{"voice_directive":"New voice.",'
+            ' "tone_bounds":"New bounds.",'
+            ' "coaching_style":"New coaching.",'
+            ' "anti_sycophancy_policy":"New policy.",'
+            ' "rationale":"Full update."}',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(
@@ -331,13 +324,10 @@ void main() {
       final strategy = EvolutionStrategy();
       final manager = ConversationManager(conversationId: 'conv-merge')
         ..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
+      const toolCall = AiToolCall(
         id: 'call-merge',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_soul_directives',
-          arguments: '{"voice_directive":"New voice.","rationale":"Reason"}',
-        ),
+        name: 'propose_soul_directives',
+        arguments: '{"voice_directive":"New voice.","rationale":"Reason"}',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(
@@ -428,14 +418,11 @@ void main() {
         final strategy = EvolutionStrategy();
         final manager = ConversationManager(conversationId: 'conv-empty-voice')
           ..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call-empty-voice',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_soul_directives',
-            arguments:
-                '{"tone_bounds":"Updated bounds.","rationale":"Tone only."}',
-          ),
+          name: 'propose_soul_directives',
+          arguments:
+              '{"tone_bounds":"Updated bounds.","rationale":"Tone only."}',
         );
         manager.addAssistantMessage(toolCalls: [toolCall]);
         await strategy.processToolCalls(
@@ -533,13 +520,10 @@ void main() {
       final strategy = EvolutionStrategy();
       final manager = ConversationManager(conversationId: 'conv-no-soul')
         ..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
+      const toolCall = AiToolCall(
         id: 'call-ns',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_soul_directives',
-          arguments: '{"voice_directive":"V","rationale":"R"}',
-        ),
+        name: 'propose_soul_directives',
+        arguments: '{"voice_directive":"V","rationale":"R"}',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(
@@ -575,13 +559,10 @@ void main() {
       final strategy = EvolutionStrategy();
       final manager = ConversationManager(conversationId: 'conv-1')
         ..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
+      const toolCall = AiToolCall(
         id: 'call-1',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_soul_directives',
-          arguments: '{"voice_directive":"V","rationale":"R"}',
-        ),
+        name: 'propose_soul_directives',
+        arguments: '{"voice_directive":"V","rationale":"R"}',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(
@@ -868,15 +849,12 @@ void main() {
       )..initialize();
       await session.strategy.processToolCalls(
         toolCalls: [
-          const ChatCompletionMessageToolCall(
+          const AiToolCall(
             id: 'call-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'propose_soul_directives',
-              arguments:
-                  '{"voice_directive":"Updated voice.", '
-                  '"rationale":"Warmer tone needed."}',
-            ),
+            name: 'propose_soul_directives',
+            arguments:
+                '{"voice_directive":"Updated voice.", '
+                '"rationale":"Warmer tone needed."}',
           ),
         ],
         manager: manager,
@@ -959,15 +937,12 @@ void main() {
       )..initialize();
       await session.strategy.processToolCalls(
         toolCalls: const [
-          ChatCompletionMessageToolCall(
+          AiToolCall(
             id: 'call-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'propose_soul_directives',
-              arguments:
-                  '{"voice_directive":"Updated voice.",'
-                  ' "rationale":"Warmer tone needed."}',
-            ),
+            name: 'propose_soul_directives',
+            arguments:
+                '{"voice_directive":"Updated voice.",'
+                ' "rationale":"Warmer tone needed."}',
           ),
         ],
         manager: manager,
@@ -1022,25 +997,19 @@ void main() {
       )..initialize();
       await session.strategy.processToolCalls(
         toolCalls: [
-          const ChatCompletionMessageToolCall(
+          const AiToolCall(
             id: 'call-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'propose_soul_directives',
-              arguments:
-                  '{"voice_directive":"Updated voice.",'
-                  ' "rationale":"Warmer tone needed."}',
-            ),
+            name: 'propose_soul_directives',
+            arguments:
+                '{"voice_directive":"Updated voice.",'
+                ' "rationale":"Warmer tone needed."}',
           ),
-          const ChatCompletionMessageToolCall(
+          const AiToolCall(
             id: 'call-2',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'publish_ritual_recap',
-              arguments:
-                  '{"tldr":"Refined voice", '
-                  r'"content":"## Recap\n\nRefined the voice."}',
-            ),
+            name: 'publish_ritual_recap',
+            arguments:
+                '{"tldr":"Refined voice", '
+                r'"content":"## Recap\n\nRefined the voice."}',
           ),
         ],
         manager: manager,
@@ -1118,15 +1087,12 @@ void main() {
         )..initialize();
         await strategy.processToolCalls(
           toolCalls: [
-            const ChatCompletionMessageToolCall(
+            const AiToolCall(
               id: 'call-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'propose_soul_directives',
-                arguments:
-                    '{"voice_directive":"New voice.",'
-                    ' "rationale":"Better."}',
-              ),
+              name: 'propose_soul_directives',
+              arguments:
+                  '{"voice_directive":"New voice.",'
+                  ' "rationale":"Better."}',
             ),
           ],
           manager: manager,
@@ -1189,15 +1155,12 @@ void main() {
       )..initialize();
       await session.strategy.processToolCalls(
         toolCalls: [
-          const ChatCompletionMessageToolCall(
+          const AiToolCall(
             id: 'call-1',
-            type: ChatCompletionMessageToolCallType.function,
-            function: ChatCompletionMessageFunctionCall(
-              name: 'propose_soul_directives',
-              arguments:
-                  '{"voice_directive":"Updated.",'
-                  ' "rationale":"Better."}',
-            ),
+            name: 'propose_soul_directives',
+            arguments:
+                '{"voice_directive":"Updated.",'
+                ' "rationale":"Better."}',
           ),
         ],
         manager: manager,
@@ -1440,13 +1403,10 @@ void main() {
       final strategy = EvolutionStrategy();
       final manager = ConversationManager(conversationId: 'conv-err')
         ..initialize();
-      const toolCall = ChatCompletionMessageToolCall(
+      const toolCall = AiToolCall(
         id: 'call-err',
-        type: ChatCompletionMessageToolCallType.function,
-        function: ChatCompletionMessageFunctionCall(
-          name: 'propose_soul_directives',
-          arguments: '{"voice_directive":"New voice.","rationale":"Reason"}',
-        ),
+        name: 'propose_soul_directives',
+        arguments: '{"voice_directive":"New voice.","rationale":"Reason"}',
       );
       manager.addAssistantMessage(toolCalls: [toolCall]);
       await strategy.processToolCalls(toolCalls: [toolCall], manager: manager);
@@ -1674,18 +1634,15 @@ void main() {
         // so they fall back to the current soul version values.
         final manager = ConversationManager(conversationId: 'conv-fallback')
           ..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call-fallback',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_soul_directives',
-            // voice_directive is provided but tone, coaching, and policy are
-            // absent — the workflow must fall back to current version values
-            // for the three empty fields.
-            arguments:
-                '{"voice_directive":"Current voice.", '
-                '"rationale":"Full fallback test."}',
-          ),
+          name: 'propose_soul_directives',
+          // voice_directive is provided but tone, coaching, and policy are
+          // absent — the workflow must fall back to current version values
+          // for the three empty fields.
+          arguments:
+              '{"voice_directive":"Current voice.", '
+              '"rationale":"Full fallback test."}',
         );
         manager.addAssistantMessage(toolCalls: [toolCall]);
         await strategy.processToolCalls(
@@ -1782,14 +1739,11 @@ void main() {
         final manager = ConversationManager(
           conversationId: 'conv-empty-voice',
         )..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call-empty-voice',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_soul_directives',
-            arguments:
-                '{"tone_bounds":"Updated bounds.","rationale":"Tone only."}',
-          ),
+          name: 'propose_soul_directives',
+          arguments:
+              '{"tone_bounds":"Updated bounds.","rationale":"Tone only."}',
         );
         manager.addAssistantMessage(toolCalls: [toolCall]);
         await strategy.processToolCalls(
@@ -1890,15 +1844,12 @@ void main() {
         final manager = ConversationManager(
           conversationId: 'conv-tldr-fallback',
         )..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call-tldr',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_soul_directives',
-            arguments:
-                '{"voice_directive":"Updated voice.", '
-                '"rationale":"Better engagement"}',
-          ),
+          name: 'propose_soul_directives',
+          arguments:
+              '{"voice_directive":"Updated voice.", '
+              '"rationale":"Better engagement"}',
         );
         manager.addAssistantMessage(toolCalls: [toolCall]);
         await strategy.processToolCalls(
@@ -1976,13 +1927,10 @@ void main() {
         final strategy = EvolutionStrategy();
         final manager = ConversationManager(conversationId: 'conv-cb-soul')
           ..initialize();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call-cb-soul',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'propose_soul_directives',
-            arguments: '{"voice_directive":"Updated voice.", "rationale":"R"}',
-          ),
+          name: 'propose_soul_directives',
+          arguments: '{"voice_directive":"Updated voice.", "rationale":"R"}',
         );
         manager.addAssistantMessage(toolCalls: [toolCall]);
         await strategy.processToolCalls(

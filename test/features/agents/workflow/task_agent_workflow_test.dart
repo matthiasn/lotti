@@ -23,6 +23,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/database/embedding_store.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
@@ -35,7 +36,6 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -548,26 +548,19 @@ void main() {
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      ChatCompletionMessageToolCall(
+                      AiToolCall(
                         id: 'retract-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: TaskAgentToolNames.retractSuggestions,
-                          arguments: jsonEncode({
-                            'proposals': [
-                              {'fingerprint': fingerprint, 'reason': 'done'},
-                            ],
-                          }),
-                        ),
+                        name: TaskAgentToolNames.retractSuggestions,
+                        arguments: jsonEncode({
+                          'proposals': [
+                            {'fingerprint': fingerprint, 'reason': 'done'},
+                          ],
+                        }),
                       ),
-                      const ChatCompletionMessageToolCall(
+                      const AiToolCall(
                         id: 'report-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'update_report',
-                          arguments:
-                              '{"oneLiner":"o","tldr":"t","content":"c"}',
-                        ),
+                        name: 'update_report',
+                        arguments: '{"oneLiner":"o","tldr":"t","content":"c"}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -691,38 +684,28 @@ void main() {
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      ChatCompletionMessageToolCall(
+                      AiToolCall(
                         id: 'repropose-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: TaskAgentToolNames.addMultipleChecklistItems,
-                          arguments: jsonEncode({
-                            'items': [
-                              {'title': 'Draft the spec'},
-                            ],
-                          }),
-                        ),
+                        name: TaskAgentToolNames.addMultipleChecklistItems,
+                        arguments: jsonEncode({
+                          'items': [
+                            {'title': 'Draft the spec'},
+                          ],
+                        }),
                       ),
-                      ChatCompletionMessageToolCall(
+                      AiToolCall(
                         id: 'retract-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: TaskAgentToolNames.retractSuggestions,
-                          arguments: jsonEncode({
-                            'proposals': [
-                              {'fingerprint': fingerprint, 'reason': 'dup'},
-                            ],
-                          }),
-                        ),
+                        name: TaskAgentToolNames.retractSuggestions,
+                        arguments: jsonEncode({
+                          'proposals': [
+                            {'fingerprint': fingerprint, 'reason': 'dup'},
+                          ],
+                        }),
                       ),
-                      const ChatCompletionMessageToolCall(
+                      const AiToolCall(
                         id: 'report-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'update_report',
-                          arguments:
-                              '{"oneLiner":"o","tldr":"t","content":"c"}',
-                        ),
+                        name: 'update_report',
+                        arguments: '{"oneLiner":"o","tldr":"t","content":"c"}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -1489,14 +1472,10 @@ void main() {
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      const ChatCompletionMessageToolCall(
+                      const AiToolCall(
                         id: 'obs-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'record_observations',
-                          arguments:
-                              '{"observations":["Pattern A","Pattern B"]}',
-                        ),
+                        name: 'record_observations',
+                        arguments: '{"observations":["Pattern A","Pattern B"]}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -1543,15 +1522,12 @@ void main() {
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      const ChatCompletionMessageToolCall(
+                      const AiToolCall(
                         id: 'obs-structured',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'record_observations',
-                          arguments:
-                              '{"observations":[{"text":"User is frustrated",'
-                              ' "priority":"critical","category":"grievance"}]}',
-                        ),
+                        name: 'record_observations',
+                        arguments:
+                            '{"observations":[{"text":"User is frustrated",'
+                            ' "priority":"critical","category":"grievance"}]}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -1778,7 +1754,7 @@ void main() {
               <
                 ({
                   String message,
-                  ChatCompletionToolChoiceOption? toolChoice,
+                  AiToolChoice? toolChoice,
                 })
               >[];
 
@@ -1818,14 +1794,12 @@ void main() {
           // Second call: forced update_report.
           final retryToolChoice = calls[1].toolChoice;
           expect(retryToolChoice, isNotNull);
-          retryToolChoice!.map(
-            mode: (_) => fail('Expected named tool choice, got mode.'),
-            tool: (named) {
-              expect(
-                named.value.function.name,
-                TaskAgentStrategy.reportToolName,
-              );
-            },
+          if (retryToolChoice is! AiToolChoiceFunction) {
+            fail('Expected named tool choice, got $retryToolChoice.');
+          }
+          expect(
+            retryToolChoice.name,
+            TaskAgentStrategy.reportToolName,
           );
           expect(
             calls[1].message,
@@ -1858,14 +1832,10 @@ void main() {
                     if (strategy is TaskAgentStrategy) {
                       await strategy.processToolCalls(
                         toolCalls: const [
-                          ChatCompletionMessageToolCall(
+                          AiToolCall(
                             id: 'obs-1',
-                            type: ChatCompletionMessageToolCallType.function,
-                            function: ChatCompletionMessageFunctionCall(
-                              name: 'record_observations',
-                              arguments:
-                                  '{"observations":["important finding"]}',
-                            ),
+                            name: 'record_observations',
+                            arguments: '{"observations":["important finding"]}',
                           ),
                         ],
                         manager: mockConversationManager,
@@ -1973,14 +1943,11 @@ void main() {
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: const [
-                      ChatCompletionMessageToolCall(
+                      AiToolCall(
                         id: 'report-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'update_report',
-                          arguments:
-                              '{"oneLiner":"one","tldr":"tldr","content":"body"}',
-                        ),
+                        name: 'update_report',
+                        arguments:
+                            '{"oneLiner":"one","tldr":"tldr","content":"body"}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -2168,14 +2135,11 @@ void main() {
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      const ChatCompletionMessageToolCall(
+                      const AiToolCall(
                         id: 'rpt-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'update_report',
-                          arguments:
-                              r'{"content":"# Report\nAll good.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
-                        ),
+                        name: 'update_report',
+                        arguments:
+                            r'{"content":"# Report\nAll good.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -2236,17 +2200,14 @@ void main() {
               if (strategy is TaskAgentStrategy) {
                 await strategy.processToolCalls(
                   toolCalls: [
-                    ChatCompletionMessageToolCall(
+                    AiToolCall(
                       id: 'rpt-call',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: 'update_report',
-                        arguments: jsonEncode({
-                          'content': '# Detailed Report\nFull analysis.',
-                          'oneLiner': 'Implementation done, release next',
-                          'tldr': 'Brief summary.',
-                        }),
-                      ),
+                      name: 'update_report',
+                      arguments: jsonEncode({
+                        'content': '# Detailed Report\nFull analysis.',
+                        'oneLiner': 'Implementation done, release next',
+                        'tldr': 'Brief summary.',
+                      }),
                     ),
                   ],
                   manager: mockConversationManager,
@@ -2285,7 +2246,7 @@ void main() {
 
       test('persists thought message when LLM produces final text', () async {
         when(() => mockConversationManager.messages).thenReturn([
-          const ChatCompletionMessage.assistant(
+          const AiAssistantMessage(
             content: 'I analyzed the task and it looks good.',
           ),
         ]);
@@ -2348,14 +2309,11 @@ void main() {
               if (strategy is TaskAgentStrategy) {
                 await strategy.processToolCalls(
                   toolCalls: [
-                    const ChatCompletionMessageToolCall(
+                    const AiToolCall(
                       id: 'rpt-call',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: 'update_report',
-                        arguments:
-                            '{"content":"# Updated","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
-                      ),
+                      name: 'update_report',
+                      arguments:
+                          '{"content":"# Updated","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
                     ),
                   ],
                   manager: mockConversationManager,
@@ -2478,14 +2436,11 @@ void main() {
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      const ChatCompletionMessageToolCall(
+                      const AiToolCall(
                         id: 'rpt-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'update_report',
-                          arguments:
-                              r'{"content":"# Report\nThis report has enough content to embed.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
-                        ),
+                        name: 'update_report',
+                        arguments:
+                            r'{"content":"# Report\nThis report has enough content to embed.","oneLiner":"Implementation done, release next","tldr":"Implementation is done and release is next."}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -2587,14 +2542,11 @@ void main() {
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      const ChatCompletionMessageToolCall(
+                      const AiToolCall(
                         id: 'rpt-call',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'update_report',
-                          arguments:
-                              r'{"content":"# Report\nThis report has enough content to embed.","oneLiner":"done","tldr":"done."}',
-                        ),
+                        name: 'update_report',
+                        arguments:
+                            r'{"content":"# Report\nThis report has enough content to embed.","oneLiner":"done","tldr":"done."}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -2673,13 +2625,10 @@ void main() {
               if (strategy is TaskAgentStrategy) {
                 await strategy.processToolCalls(
                   toolCalls: [
-                    ChatCompletionMessageToolCall(
+                    AiToolCall(
                       id: 'tool-call-1',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: toolName,
-                        arguments: arguments,
-                      ),
+                      name: toolName,
+                      arguments: arguments,
                     ),
                   ],
                   manager: mockConversationManager,
@@ -2767,7 +2716,7 @@ void main() {
           ).thenAnswer((_) async => null);
           when(() => mockConversationManager.messages).thenReturn([]);
 
-          List<ChatCompletionTool>? exposedTools;
+          List<AiTool>? exposedTools;
           mockConversationRepository.sendMessageDelegate =
               ({
                 required conversationId,
@@ -2794,7 +2743,7 @@ void main() {
           expect(result.success, isTrue);
           expect(exposedTools, isNotNull);
           expect(
-            exposedTools!.map((tool) => tool.function.name),
+            exposedTools!.map((tool) => tool.name),
             isNot(contains(TaskAgentToolNames.getRelatedTaskDetails)),
           );
         },
@@ -4826,13 +4775,10 @@ void main() {
               if (strategy is TaskAgentStrategy) {
                 await strategy.processToolCalls(
                   toolCalls: [
-                    ChatCompletionMessageToolCall(
+                    AiToolCall(
                       id: 'tc-1',
-                      type: ChatCompletionMessageToolCallType.function,
-                      function: ChatCompletionMessageFunctionCall(
-                        name: toolName,
-                        arguments: arguments,
-                      ),
+                      name: toolName,
+                      arguments: arguments,
                     ),
                   ],
                   manager: mockConversationManager,
@@ -5628,13 +5574,10 @@ void main() {
                 if (strategy is TaskAgentStrategy) {
                   await strategy.processToolCalls(
                     toolCalls: [
-                      const ChatCompletionMessageToolCall(
+                      const AiToolCall(
                         id: 'tc-2',
-                        type: ChatCompletionMessageToolCallType.function,
-                        function: ChatCompletionMessageFunctionCall(
-                          name: 'set_task_title',
-                          arguments: '{"title":"Test"}',
-                        ),
+                        name: 'set_task_title',
+                        arguments: '{"title":"Test"}',
                       ),
                     ],
                     manager: mockConversationManager,
@@ -5677,15 +5620,9 @@ void main() {
 
       test('picks last assistant message with content', () async {
         when(() => mockConversationManager.messages).thenReturn([
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('hello'),
-          ),
-          const ChatCompletionMessage.assistant(
-            content: 'First response',
-          ),
-          const ChatCompletionMessage.assistant(
-            content: 'Final analysis complete.',
-          ),
+          const AiUserMessage(AiUserTextContent('hello')),
+          const AiAssistantMessage(content: 'First response'),
+          const AiAssistantMessage(content: 'Final analysis complete.'),
         ]);
 
         await workflow.execute(
@@ -5753,9 +5690,7 @@ void main() {
 
       test('no thought persisted when no assistant content', () async {
         when(() => mockConversationManager.messages).thenReturn([
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('hello'),
-          ),
+          const AiUserMessage(AiUserTextContent('hello')),
         ]);
 
         await workflow.execute(
@@ -5781,10 +5716,8 @@ void main() {
 
       test('skips assistant messages with empty content', () async {
         when(() => mockConversationManager.messages).thenReturn([
-          const ChatCompletionMessage.assistant(content: ''),
-          const ChatCompletionMessage.assistant(
-            content: 'Non-empty response',
-          ),
+          const AiAssistantMessage(content: ''),
+          const AiAssistantMessage(content: 'Non-empty response'),
         ]);
 
         await workflow.execute(

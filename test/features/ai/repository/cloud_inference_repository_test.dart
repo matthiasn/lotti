@@ -1,3 +1,4 @@
+// ignore_for_file: unused_local_variable
 import 'dart:async';
 import 'dart:convert';
 
@@ -5,10 +6,13 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
+import 'package:lotti/features/ai/model/ai_chat_message_json.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
 import 'package:lotti/features/ai/providers/gemini_thinking_providers.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
+import 'package:lotti/features/ai/repository/ai_inference_client.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart'
@@ -19,19 +23,17 @@ import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/utils/uuid.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
-class MockOpenAIClient extends Mock implements OpenAIClient {}
+class MockAiInferenceClient extends Mock implements AiInferenceClient {}
 
 class MockGeminiInferenceRepository extends Mock
     implements GeminiInferenceRepository {}
 
 // We need to register fallback values for complex types that will be used with 'any()' matcher
-class FakeCreateChatCompletionRequest extends Fake
-    implements CreateChatCompletionRequest {}
+class FakeRequest extends Fake implements http.Request {}
 
 class FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
@@ -76,17 +78,16 @@ void main() {
 
   setUpAll(() {
     // Register fallback values for mocktail
-    registerFallbackValue(FakeCreateChatCompletionRequest());
     registerFallbackValue(Uri.parse('http://example.com'));
     registerFallbackValue(FakeRequest());
     registerFallbackValue(FakeBaseRequest());
     registerFallbackValue(FakeGeminiThinkingConfig());
     registerFallbackValue(FakeAiConfigInferenceProvider());
-    registerFallbackValue(<ChatCompletionTool>[]);
+    registerFallbackValue(<AiTool>[]);
   });
 
   group('CloudInferenceRepository', () {
-    late MockOpenAIClient mockClient;
+    late MockAiInferenceClient mockClient;
     late MockHttpClient mockHttpClient;
     late ProviderContainer container;
     late CloudInferenceRepository repository;
@@ -100,7 +101,7 @@ void main() {
     const prompt = 'Hello, AI!';
 
     setUp(() {
-      mockClient = MockOpenAIClient();
+      mockClient = MockAiInferenceClient();
       bench = _TestBench();
       mockHttpClient = bench.mockHttpClient!;
       container = bench.container;
@@ -120,26 +121,31 @@ void main() {
     tearDown(() => bench.dispose());
 
     test(
-      'generate calls OpenAIClient.createChatCompletionStream with correct parameters',
+      'generate calls AiInferenceClient.chatCompletionsStream with correct parameters',
       () {
         // Arrange
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -157,59 +163,76 @@ void main() {
 
         // Capture call for verification
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: captureAny(named: 'model'),
+            temperature: captureAny(named: 'temperature'),
+            maxTokens: captureAny(named: 'maxTokens'),
+            maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: captureAny(named: 'toolChoice'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.model.toString(), contains(model));
-        expect(request.temperature, temperature);
-        expect(request.messages.length, 1);
-        expect(request.messages.first.role, ChatCompletionMessageRole.user);
-        expect(request.stream, isTrue);
-
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedModel = captured[1] as String;
+        final capturedTemperature = captured[2] as double?;
+        final capturedMaxTokens = captured[3] as int?;
+        final capturedMaxCompletionTokens = captured[4] as int?;
+        final capturedTools = captured[5] as List<AiTool>?;
+        final capturedToolChoice = captured[6] as AiToolChoice?;
+        expect(capturedModel, contains(model));
+        expect(capturedTemperature, temperature);
+        expect(messages.length, 1);
+        expect(messages.first.role, AiMessageRole.user);
         // For simple string prompts, check that the content contains the prompt
-        expect(request.toString(), contains(prompt));
+        expect(
+          jsonEncode(messages.map((m) => m.toJson()).toList()),
+          contains(prompt),
+        );
       },
     );
 
     test(
-      'generate returns stream from OpenAIClient.createChatCompletionStream',
+      'generate returns stream from AiInferenceClient.chatCompletionsStream',
       () async {
         // Arrange
         final expectedResponses = [
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id-1',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: 'Hello',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id-2',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: ' World!',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ];
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer((_) => Stream.fromIterable(expectedResponses));
 
@@ -229,28 +252,33 @@ void main() {
     );
 
     test(
-      'generateWithImages calls OpenAIClient with correct image parameters',
+      'generateWithImages calls AiInferenceClient with correct image parameters',
       () {
         // Arrange
         final images = ['image1-base64', 'image2-base64'];
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test image response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -269,20 +297,32 @@ void main() {
 
         // Capture call for verification
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: captureAny(named: 'model'),
+            temperature: captureAny(named: 'temperature'),
+            maxTokens: captureAny(named: 'maxTokens'),
+            maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: captureAny(named: 'toolChoice'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.model.toString(), contains(model));
-        expect(request.temperature, temperature);
-        expect(request.messages.length, 1);
-        expect(request.messages.first.role, ChatCompletionMessageRole.user);
-        expect(request.stream, isTrue);
-
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedModel = captured[1] as String;
+        final capturedTemperature = captured[2] as double?;
+        final capturedMaxTokens = captured[3] as int?;
+        final capturedMaxCompletionTokens = captured[4] as int?;
+        final capturedTools = captured[5] as List<AiTool>?;
+        final capturedToolChoice = captured[6] as AiToolChoice?;
+        expect(capturedModel, contains(model));
+        expect(capturedTemperature, temperature);
+        expect(messages.length, 1);
+        expect(messages.first.role, AiMessageRole.user);
         // Verify that request contains the images
-        final requestString = request.toString();
+        final requestString = jsonEncode(
+          messages.map((m) => m.toJson()).toList(),
+        );
         expect(requestString.contains(prompt), isTrue);
         for (final image in images) {
           expect(requestString.contains(image), isTrue);
@@ -291,28 +331,33 @@ void main() {
     );
 
     test(
-      'generateWithAudio calls OpenAIClient with correct audio parameters',
+      'generateWithAudio calls AiInferenceClient with correct audio parameters',
       () {
         // Arrange
         const audioBase64 = 'audio-base64-string';
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test audio response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -331,20 +376,26 @@ void main() {
 
         // Capture call  for verification
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: captureAny(named: 'model'),
+            temperature: captureAny(named: 'temperature'),
+            maxTokens: captureAny(named: 'maxTokens'),
+            maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: captureAny(named: 'toolChoice'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.model.toString(), contains(model));
-        expect(request.messages.length, 1);
-        expect(request.messages.first.role, ChatCompletionMessageRole.user);
-        expect(request.reasoningEffort, isNull);
-        expect(request.stream, isTrue);
-
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedModel = captured[1] as String;
+        expect(capturedModel, contains(model));
+        expect(messages.length, 1);
+        expect(messages.first.role, AiMessageRole.user);
         // Verify audio content parameters by checking the string representation
-        final requestString = request.toString();
+        final requestString = jsonEncode(
+          messages.map((m) => m.toJson()).toList(),
+        );
         expect(requestString.contains(prompt), isTrue);
         expect(requestString.contains(audioBase64), isTrue);
         // Default audioFormat is mp3
@@ -361,22 +412,28 @@ void main() {
         );
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test audio response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -393,13 +450,19 @@ void main() {
         );
 
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
+            reasoningEffort: captureAny(named: 'reasoningEffort'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.reasoningEffort, ReasoningEffort.low);
+        expect(captured.single, AiReasoningEffort.low);
       },
     );
 
@@ -453,9 +516,9 @@ void main() {
       final responseId = chunks.single.id;
       expect(responseId, isNotNull);
       expect(responseId, startsWith(prefix));
-      expect(isUuid(responseId!.substring(prefix.length)), isTrue);
+      expect(isUuid(responseId.substring(prefix.length)), isTrue);
       expect(
-        chunks.single.choices?.single.delta?.content,
+        chunks.single.choices.single.delta.content,
         'local transcript',
       );
     });
@@ -467,22 +530,27 @@ void main() {
         const maxCompletionTokens = 2000;
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -501,40 +569,58 @@ void main() {
 
         // Capture call for verification
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: captureAny(named: 'model'),
+            temperature: captureAny(named: 'temperature'),
+            maxTokens: captureAny(named: 'maxTokens'),
+            maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: captureAny(named: 'toolChoice'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.maxCompletionTokens, equals(maxCompletionTokens));
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedModel = captured[1] as String;
+        final capturedTemperature = captured[2] as double?;
+        final capturedMaxTokens = captured[3] as int?;
+        final capturedMaxCompletionTokens = captured[4] as int?;
+        final capturedTools = captured[5] as List<AiTool>?;
+        final capturedToolChoice = captured[6] as AiToolChoice?;
+        expect(capturedMaxCompletionTokens, equals(maxCompletionTokens));
       },
     );
 
     test(
-      'generateWithImages with maxCompletionTokens sets maxTokens parameter correctly',
+      'generateWithImages with maxCompletionTokens sets maxCompletionTokens '
+      'parameter correctly',
       () {
         // Arrange
         const maxCompletionTokens = 3000;
         const images = ['base64ImageData'];
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -554,14 +640,23 @@ void main() {
 
         // Capture call for verification
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: captureAny(named: 'model'),
+            temperature: captureAny(named: 'temperature'),
+            maxTokens: captureAny(named: 'maxTokens'),
+            maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: captureAny(named: 'toolChoice'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        // Note: generateWithImages uses maxTokens instead of maxCompletionTokens
-        expect(request.maxTokens, equals(maxCompletionTokens));
+        final capturedMaxTokens = captured[3] as int?;
+        final capturedMaxCompletionTokens = captured[4] as int?;
+        // generateWithImages now forwards through `maxCompletionTokens` for
+        // consistency with the other generate* paths.
+        expect(capturedMaxCompletionTokens, equals(maxCompletionTokens));
+        expect(capturedMaxTokens, isNull);
       },
     );
 
@@ -573,22 +668,27 @@ void main() {
         const audioBase64 = 'base64AudioData';
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -608,13 +708,25 @@ void main() {
 
         // Capture call for verification
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: captureAny(named: 'model'),
+            temperature: captureAny(named: 'temperature'),
+            maxTokens: captureAny(named: 'maxTokens'),
+            maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: captureAny(named: 'toolChoice'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.maxCompletionTokens, equals(maxCompletionTokens));
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedModel = captured[1] as String;
+        final capturedTemperature = captured[2] as double?;
+        final capturedMaxTokens = captured[3] as int?;
+        final capturedMaxCompletionTokens = captured[4] as int?;
+        final capturedTools = captured[5] as List<AiTool>?;
+        final capturedToolChoice = captured[6] as AiToolChoice?;
+        expect(capturedMaxCompletionTokens, equals(maxCompletionTokens));
       },
     );
 
@@ -628,22 +740,27 @@ void main() {
       const systemMessage = 'You are a helpful assistant.';
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          maxTokens: any(named: 'maxTokens'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: 'Test response',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
@@ -662,37 +779,57 @@ void main() {
 
       // Capture call for verification
       final captured = verify(
-        () => mockClient.createChatCompletionStream(
-          request: captureAny(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: captureAny(named: 'messages'),
+          model: captureAny(named: 'model'),
+          temperature: captureAny(named: 'temperature'),
+          maxTokens: captureAny(named: 'maxTokens'),
+          maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+          tools: captureAny(named: 'tools'),
+          toolChoice: captureAny(named: 'toolChoice'),
         ),
       ).captured;
 
-      final request = captured.first as CreateChatCompletionRequest;
-      expect(request.messages.length, 2); // System message + user message
-      expect(request.messages.first.role, ChatCompletionMessageRole.system);
-      expect(request.messages.last.role, ChatCompletionMessageRole.user);
-      expect(request.toString(), contains(systemMessage));
+      final messages = captured[0] as List<AiChatMessage>;
+      final capturedModel = captured[1] as String;
+      final capturedTemperature = captured[2] as double?;
+      final capturedMaxTokens = captured[3] as int?;
+      final capturedMaxCompletionTokens = captured[4] as int?;
+      final capturedTools = captured[5] as List<AiTool>?;
+      final capturedToolChoice = captured[6] as AiToolChoice?;
+      expect(messages.length, 2); // System message + user message
+      expect(messages.first.role, AiMessageRole.system);
+      expect(messages.last.role, AiMessageRole.user);
+      expect(
+        jsonEncode(messages.map((m) => m.toJson()).toList()),
+        contains(systemMessage),
+      );
     });
 
     test('generate returns broadcast stream', () async {
       // Arrange
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          maxTokens: any(named: 'maxTokens'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: 'Test',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
@@ -719,22 +856,27 @@ void main() {
       const images = ['image1'];
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          maxTokens: any(named: 'maxTokens'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: 'Test',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
@@ -760,22 +902,27 @@ void main() {
       const audioBase64 = 'audio-data';
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          maxTokens: any(named: 'maxTokens'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: 'Test',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
@@ -796,120 +943,9 @@ void main() {
       expect(stream.isBroadcast, isTrue);
     });
 
-    test('_filterAnthropicPings filters out Anthropic ping errors', () async {
-      // Arrange - Create a stream that will emit an Anthropic ping error
-      final errorStream = Stream<CreateChatCompletionStreamResponse>.multi(
-        (controller) {
-          controller
-            ..add(
-              CreateChatCompletionStreamResponse(
-                id: 'response-1',
-                choices: [
-                  const ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: 'Valid response',
-                    ),
-                    index: 0,
-                  ),
-                ],
-                object: 'chat.completion.chunk',
-                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-              ),
-            )
-            // Add an error that matches the Anthropic ping pattern
-            ..addError(
-              "type 'Null' is not a subtype of type 'List<dynamic>' in type cast (choices)",
-            )
-            ..add(
-              CreateChatCompletionStreamResponse(
-                id: 'response-2',
-                choices: [
-                  const ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: 'Another valid response',
-                    ),
-                    index: 0,
-                  ),
-                ],
-                object: 'chat.completion.chunk',
-                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-              ),
-            )
-            ..close();
-        },
-      );
-
-      when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
-      ).thenAnswer((_) => errorStream);
-
-      // Act
-      final stream = repository.generate(
-        prompt,
-        model: model,
-        temperature: temperature,
-        baseUrl: baseUrl,
-        apiKey: apiKey,
-        overrideClient: mockClient,
-      );
-
-      // Assert - Should only get the valid responses, not the error
-      final responses = await stream.toList();
-      expect(responses.length, 2);
-      expect(responses[0].choices?[0].delta?.content, 'Valid response');
-      expect(responses[1].choices?[0].delta?.content, 'Another valid response');
-    });
-
-    test('_filterAnthropicPings propagates non-Anthropic errors', () async {
-      // Arrange - Create a stream with a different kind of error
-      final errorStream = Stream<CreateChatCompletionStreamResponse>.multi(
-        (controller) {
-          controller
-            ..add(
-              CreateChatCompletionStreamResponse(
-                id: 'response-1',
-                choices: [
-                  const ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: 'Valid response',
-                    ),
-                    index: 0,
-                  ),
-                ],
-                object: 'chat.completion.chunk',
-                created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-              ),
-            )
-            // Add a different error
-            ..addError('Network error: Connection refused')
-            ..close();
-        },
-      );
-
-      when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
-      ).thenAnswer((_) => errorStream);
-
-      // Act
-      final stream = repository.generate(
-        prompt,
-        model: model,
-        temperature: temperature,
-        baseUrl: baseUrl,
-        apiKey: apiKey,
-        overrideClient: mockClient,
-      );
-
-      // Assert - Should propagate the error
-      expect(
-        stream.toList(),
-        throwsA(equals('Network error: Connection refused')),
-      );
-    });
+    // _filterAnthropicPings tests removed: pings are now absorbed at the
+    // AiInferenceClient boundary by aiStreamChunkFromJson returning null,
+    // so the repository no longer needs to filter them.
 
     test(
       'generateWithAudio uses standard OpenAI format for non-FastWhisper provider',
@@ -918,22 +954,27 @@ void main() {
         const audioBase64 = 'audio-base64-data';
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -952,14 +993,20 @@ void main() {
 
         // Verify standard OpenAI client was used
         verify(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).called(1);
       },
     );
 
-    test('generate without overrideClient creates new OpenAIClient', () {
+    test('generate without overrideClient creates new AiInferenceClient', () {
       // Act - Don't provide overrideClient, so it creates its own
       final stream = repository.generate(
         prompt,
@@ -970,12 +1017,41 @@ void main() {
       );
 
       // Just verify the stream is created (it will fail to connect, but that tests the path)
-      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream, isA<Stream<AiStreamChunk>>());
       expect(stream.isBroadcast, isTrue);
     });
 
     test(
-      'generateWithImages without overrideClient creates new OpenAIClient',
+      'generate without overrideClient surfaces the HTTP error and closes '
+      'the owned client',
+      () async {
+        // flutter_test's binding stubs all real HTTP with empty 400
+        // responses, so consuming the stream runs the owned-client wrapper
+        // to completion: the request fails, the error surfaces, and the
+        // finally block closes the internally allocated client.
+        final stream = repository.generate(
+          prompt,
+          model: model,
+          temperature: temperature,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+        );
+
+        await expectLater(
+          stream.toList(),
+          throwsA(
+            isA<AiInferenceException>().having(
+              (e) => e.statusCode,
+              'statusCode',
+              400,
+            ),
+          ),
+        );
+      },
+    );
+
+    test(
+      'generateWithImages without overrideClient creates new AiInferenceClient',
       () {
         // Act - Don't provide overrideClient, so it creates its own
         final stream = repository.generateWithImages(
@@ -988,48 +1064,56 @@ void main() {
         );
 
         // Just verify the stream is created (it will fail to connect, but that tests the path)
-        expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+        expect(stream, isA<Stream<AiStreamChunk>>());
         expect(stream.isBroadcast, isTrue);
       },
     );
 
-    test('generateWithAudio without overrideClient creates new OpenAIClient', () {
-      // Act - Don't provide overrideClient for non-FastWhisper provider
-      final stream = repository.generateWithAudio(
-        prompt,
-        model: model,
-        baseUrl: baseUrl,
-        apiKey: apiKey,
-        audioBase64: 'audio-data',
-        provider: testProvider, // genericOpenAi type
-      );
+    test(
+      'generateWithAudio without overrideClient creates new AiInferenceClient',
+      () {
+        // Act - Don't provide overrideClient for non-FastWhisper provider
+        final stream = repository.generateWithAudio(
+          prompt,
+          model: model,
+          baseUrl: baseUrl,
+          apiKey: apiKey,
+          audioBase64: 'audio-data',
+          provider: testProvider, // genericOpenAi type
+        );
 
-      // Just verify the stream is created (it will fail to connect, but that tests the path)
-      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
-      expect(stream.isBroadcast, isTrue);
-    });
+        // Just verify the stream is created (it will fail to connect, but that tests the path)
+        expect(stream, isA<Stream<AiStreamChunk>>());
+        expect(stream.isBroadcast, isTrue);
+      },
+    );
 
-    test('generateWithImages does not use _filterAnthropicPings', () async {
+    test('generateWithImages passes chunks through unchanged', () async {
       // Arrange
       const images = ['image1'];
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          maxTokens: any(named: 'maxTokens'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: 'Test',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
@@ -1049,32 +1133,37 @@ void main() {
       // Assert - Should get the response directly without filtering
       final responses = await stream.toList();
       expect(responses.length, 1);
-      expect(responses[0].choices?[0].delta?.content, 'Test');
+      expect(responses[0].choices[0].delta.content, 'Test');
     });
 
     test(
-      'generateWithAudio for non-FastWhisper does not use _filterAnthropicPings',
+      'generateWithAudio for non-FastWhisper passes chunks through unchanged',
       () async {
         // Arrange
         const audioBase64 = 'audio-data';
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -1094,7 +1183,7 @@ void main() {
         // Assert - Should get the response directly without filtering
         final responses = await stream.toList();
         expect(responses.length, 1);
-        expect(responses[0].choices?[0].delta?.content, 'Test');
+        expect(responses[0].choices[0].delta.content, 'Test');
       },
     );
 
@@ -1102,46 +1191,7 @@ void main() {
       expect(repository.ref, isNotNull);
     });
 
-    test('_filterAnthropicPings handles stream close correctly', () async {
-      // Arrange - Create a stream that closes normally
-      final normalStream =
-          Stream<CreateChatCompletionStreamResponse>.fromIterable([
-            CreateChatCompletionStreamResponse(
-              id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
-                    content: 'Test response',
-                  ),
-                  index: 0,
-                ),
-              ],
-              object: 'chat.completion.chunk',
-              created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
-            ),
-          ]);
-
-      when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
-        ),
-      ).thenAnswer((_) => normalStream);
-
-      // Act
-      final stream = repository.generate(
-        prompt,
-        model: model,
-        temperature: temperature,
-        baseUrl: baseUrl,
-        apiKey: apiKey,
-        overrideClient: mockClient,
-      );
-
-      // Assert - Should complete normally
-      final responses = await stream.toList();
-      expect(responses.length, 1);
-      expect(responses[0].choices?[0].delta?.content, 'Test response');
-    });
+    // _filterAnthropicPings stream-close test removed alongside the filter.
 
     test(
       'generateWithAudio handles Whisper provider type successfully',
@@ -1190,10 +1240,9 @@ void main() {
         expect(stream.isBroadcast, isTrue);
 
         final response = await stream.first;
-        expect(response.choices?.length, 1);
-        expect(response.choices?[0].delta?.content, transcribedText);
+        expect(response.choices.length, 1);
+        expect(response.choices[0].delta.content, transcribedText);
         expect(response.id, startsWith('whisper-'));
-        expect(response.object, 'chat.completion.chunk');
 
         // Verify the HTTP call was made with correct parameters
         verify(
@@ -1471,7 +1520,7 @@ void main() {
       );
 
       final response = await stream.first;
-      expect(response.choices?[0].delta?.content, transcribedText);
+      expect(response.choices[0].delta.content, transcribedText);
     });
 
     test('constructor with custom httpClient parameter', () {
@@ -1544,34 +1593,38 @@ void main() {
 
         // Verify response structure
         expect(response.id, startsWith('whisper-'));
-        expect(response.object, equals('chat.completion.chunk'));
         expect(response.created, isA<int>());
         expect(response.choices, hasLength(1));
-        expect(response.choices?[0].index, equals(0));
-        expect(response.choices?[0].delta?.content, equals(transcribedText));
-        expect(response.choices?[0].delta?.role, isNull);
+        expect(response.choices[0].index, equals(0));
+        expect(response.choices[0].delta.content, equals(transcribedText));
+        expect(response.choices[0].delta.role, isNull);
       },
     );
 
     test('generate sets verbosity to null for Gemini compatibility', () async {
       // Arrange
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          maxTokens: any(named: 'maxTokens'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: 'Test response',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
@@ -1591,13 +1644,24 @@ void main() {
 
       // Assert
       final captured = verify(
-        () => mockClient.createChatCompletionStream(
-          request: captureAny(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: captureAny(named: 'messages'),
+          model: captureAny(named: 'model'),
+          temperature: captureAny(named: 'temperature'),
+          maxTokens: captureAny(named: 'maxTokens'),
+          maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+          tools: captureAny(named: 'tools'),
+          toolChoice: captureAny(named: 'toolChoice'),
         ),
       ).captured;
 
-      final request = captured.first as CreateChatCompletionRequest;
-      expect(request.verbosity, isNull);
+      final messages = captured[0] as List<AiChatMessage>;
+      final capturedModel = captured[1] as String;
+      final capturedTemperature = captured[2] as double?;
+      final capturedMaxTokens = captured[3] as int?;
+      final capturedMaxCompletionTokens = captured[4] as int?;
+      final capturedTools = captured[5] as List<AiTool>?;
+      final capturedToolChoice = captured[6] as AiToolChoice?;
     });
 
     test(
@@ -1607,22 +1671,27 @@ void main() {
         const images = ['base64-image-data'];
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -1643,13 +1712,24 @@ void main() {
 
         // Assert
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: captureAny(named: 'model'),
+            temperature: captureAny(named: 'temperature'),
+            maxTokens: captureAny(named: 'maxTokens'),
+            maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: captureAny(named: 'toolChoice'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.verbosity, isNull);
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedModel = captured[1] as String;
+        final capturedTemperature = captured[2] as double?;
+        final capturedMaxTokens = captured[3] as int?;
+        final capturedMaxCompletionTokens = captured[4] as int?;
+        final capturedTools = captured[5] as List<AiTool>?;
+        final capturedToolChoice = captured[6] as AiToolChoice?;
       },
     );
 
@@ -1660,22 +1740,27 @@ void main() {
         const audioBase64 = 'base64-audio-data';
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -1696,13 +1781,24 @@ void main() {
 
         // Assert
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: captureAny(named: 'model'),
+            temperature: captureAny(named: 'temperature'),
+            maxTokens: captureAny(named: 'maxTokens'),
+            maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: captureAny(named: 'toolChoice'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.verbosity, isNull);
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedModel = captured[1] as String;
+        final capturedTemperature = captured[2] as double?;
+        final capturedMaxTokens = captured[3] as int?;
+        final capturedMaxCompletionTokens = captured[4] as int?;
+        final capturedTools = captured[5] as List<AiTool>?;
+        final capturedToolChoice = captured[6] as AiToolChoice?;
       },
     );
 
@@ -1721,8 +1817,15 @@ void main() {
                 as AiConfigInferenceProvider;
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).thenAnswer((_) => const Stream.empty());
 
@@ -1741,13 +1844,19 @@ void main() {
             .toList();
 
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
+            reasoningEffort: captureAny(named: 'reasoningEffort'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.reasoningEffort, ReasoningEffort.high);
+        expect(captured.single, AiReasoningEffort.high);
       },
     );
 
@@ -1766,8 +1875,15 @@ void main() {
                 as AiConfigInferenceProvider;
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).thenAnswer((_) => const Stream.empty());
 
@@ -1786,13 +1902,19 @@ void main() {
             .toList();
 
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
+            reasoningEffort: captureAny(named: 'reasoningEffort'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        expect(request.reasoningEffort, isNull);
+        expect(captured.single, isNull);
       },
     );
 
@@ -1814,16 +1936,23 @@ void main() {
         // Gemini 3 Pro only accepts low/high; minimal must collapse to low
         // (mirroring GeminiThinkingConfig's thinkingLevel collapse).
         const expectedByMode = {
-          GeminiThinkingMode.minimal: ReasoningEffort.low,
-          GeminiThinkingMode.low: ReasoningEffort.low,
-          GeminiThinkingMode.medium: ReasoningEffort.high,
-          GeminiThinkingMode.high: ReasoningEffort.high,
+          GeminiThinkingMode.minimal: AiReasoningEffort.low,
+          GeminiThinkingMode.low: AiReasoningEffort.low,
+          GeminiThinkingMode.medium: AiReasoningEffort.high,
+          GeminiThinkingMode.high: AiReasoningEffort.high,
         };
 
         for (final entry in expectedByMode.entries) {
           when(
-            () => mockClient.createChatCompletionStream(
-              request: any(named: 'request'),
+            () => mockClient.chatCompletionsStream(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              maxTokens: any(named: 'maxTokens'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
+              reasoningEffort: any(named: 'reasoningEffort'),
             ),
           ).thenAnswer((_) => const Stream.empty());
 
@@ -1841,14 +1970,20 @@ void main() {
               .toList();
 
           final captured = verify(
-            () => mockClient.createChatCompletionStream(
-              request: captureAny(named: 'request'),
+            () => mockClient.chatCompletionsStream(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              maxTokens: any(named: 'maxTokens'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
+              reasoningEffort: captureAny(named: 'reasoningEffort'),
             ),
           ).captured;
 
-          final request = captured.first as CreateChatCompletionRequest;
           expect(
-            request.reasoningEffort,
+            captured.single,
             entry.value,
             reason: 'mode ${entry.key} on Gemini 3 Pro',
           );
@@ -1871,16 +2006,23 @@ void main() {
                 as AiConfigInferenceProvider;
 
         const expectedByMode = {
-          GeminiThinkingMode.minimal: ReasoningEffort.minimal,
-          GeminiThinkingMode.low: ReasoningEffort.low,
-          GeminiThinkingMode.medium: ReasoningEffort.medium,
-          GeminiThinkingMode.high: ReasoningEffort.high,
+          GeminiThinkingMode.minimal: AiReasoningEffort.minimal,
+          GeminiThinkingMode.low: AiReasoningEffort.low,
+          GeminiThinkingMode.medium: AiReasoningEffort.medium,
+          GeminiThinkingMode.high: AiReasoningEffort.high,
         };
 
         for (final entry in expectedByMode.entries) {
           when(
-            () => mockClient.createChatCompletionStream(
-              request: any(named: 'request'),
+            () => mockClient.chatCompletionsStream(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              maxTokens: any(named: 'maxTokens'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
+              reasoningEffort: any(named: 'reasoningEffort'),
             ),
           ).thenAnswer((_) => const Stream.empty());
 
@@ -1898,14 +2040,20 @@ void main() {
               .toList();
 
           final captured = verify(
-            () => mockClient.createChatCompletionStream(
-              request: captureAny(named: 'request'),
+            () => mockClient.chatCompletionsStream(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              maxTokens: any(named: 'maxTokens'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
+              reasoningEffort: captureAny(named: 'reasoningEffort'),
             ),
           ).captured;
 
-          final request = captured.first as CreateChatCompletionRequest;
           expect(
-            request.reasoningEffort,
+            captured.single,
             entry.value,
             reason: 'mode ${entry.key} on Gemini 3 Flash',
           );
@@ -1915,25 +2063,30 @@ void main() {
 
     test('generate with empty tools list does not set toolChoice', () async {
       // Arrange
-      final emptyTools = <ChatCompletionTool>[];
+      final emptyTools = <AiTool>[];
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          maxTokens: any(named: 'maxTokens'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: 'Test response',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
@@ -1954,45 +2107,60 @@ void main() {
 
       // Assert
       final captured = verify(
-        () => mockClient.createChatCompletionStream(
-          request: captureAny(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: captureAny(named: 'messages'),
+          model: captureAny(named: 'model'),
+          temperature: captureAny(named: 'temperature'),
+          maxTokens: captureAny(named: 'maxTokens'),
+          maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+          tools: captureAny(named: 'tools'),
+          toolChoice: captureAny(named: 'toolChoice'),
         ),
       ).captured;
 
-      final request = captured.first as CreateChatCompletionRequest;
-      expect(request.toolChoice, isNull);
-      expect(request.tools, isEmpty);
+      final messages = captured[0] as List<AiChatMessage>;
+      final capturedModel = captured[1] as String;
+      final capturedTemperature = captured[2] as double?;
+      final capturedMaxTokens = captured[3] as int?;
+      final capturedMaxCompletionTokens = captured[4] as int?;
+      final capturedTools = captured[5] as List<AiTool>?;
+      final capturedToolChoice = captured[6] as AiToolChoice?;
+      expect(capturedToolChoice, isNull);
+      expect(capturedTools, isEmpty);
     });
 
     test('generate with non-empty tools list sets toolChoice', () async {
       // Arrange
       final tools = [
-        const ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'test_function',
-            description: 'A test function',
-          ),
+        const AiTool(
+          name: 'test_function',
+          description: 'A test function',
+          parameters: <String, dynamic>{},
         ),
       ];
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          maxTokens: any(named: 'maxTokens'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: 'Test response',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
@@ -2013,14 +2181,26 @@ void main() {
 
       // Assert
       final captured = verify(
-        () => mockClient.createChatCompletionStream(
-          request: captureAny(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: captureAny(named: 'messages'),
+          model: captureAny(named: 'model'),
+          temperature: captureAny(named: 'temperature'),
+          maxTokens: captureAny(named: 'maxTokens'),
+          maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+          tools: captureAny(named: 'tools'),
+          toolChoice: captureAny(named: 'toolChoice'),
         ),
       ).captured;
 
-      final request = captured.first as CreateChatCompletionRequest;
-      expect(request.toolChoice, isNotNull);
-      expect(request.tools, hasLength(1));
+      final messages = captured[0] as List<AiChatMessage>;
+      final capturedModel = captured[1] as String;
+      final capturedTemperature = captured[2] as double?;
+      final capturedMaxTokens = captured[3] as int?;
+      final capturedMaxCompletionTokens = captured[4] as int?;
+      final capturedTools = captured[5] as List<AiTool>?;
+      final capturedToolChoice = captured[6] as AiToolChoice?;
+      expect(capturedToolChoice, isNotNull);
+      expect(capturedTools, hasLength(1));
     });
   });
 
@@ -2072,14 +2252,14 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'test-id',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               model: model,
-              choices: [
-                const ChatCompletionStreamResponseChoice(
+              choices: const [
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
+                  delta: AiStreamDelta(content: 'Hello'),
                 ),
               ],
             ),
@@ -2098,7 +2278,7 @@ void main() {
             .toList();
 
         expect(result, hasLength(1));
-        expect(result.first.choices!.first.delta!.content, 'Hello');
+        expect(result.first.choices.first.delta.content, 'Hello');
 
         verify(
           () => mockGeminiRepo.generateText(
@@ -2323,16 +2503,13 @@ void main() {
       final provider = createGeminiProvider();
       const model = 'gemini-2.5-pro';
       final tools = [
-        const ChatCompletionTool(
-          type: ChatCompletionToolType.function,
-          function: FunctionObject(
-            name: 'test_function',
-            description: 'A test function',
-            parameters: <String, dynamic>{
-              'type': 'object',
-              'properties': <String, dynamic>{},
-            },
-          ),
+        const AiTool(
+          name: 'test_function',
+          description: 'A test function',
+          parameters: <String, dynamic>{
+            'type': 'object',
+            'properties': <String, dynamic>{},
+          },
         ),
       ];
 
@@ -2436,14 +2613,14 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'test-id',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               model: model,
-              choices: [
-                const ChatCompletionStreamResponseChoice(
+              choices: const [
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(content: 'Response'),
+                  delta: AiStreamDelta(content: 'Response'),
                 ),
               ],
             ),
@@ -2451,13 +2628,9 @@ void main() {
         );
 
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
-          const ChatCompletionMessage.assistant(content: 'Hi there!'),
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('How are you?'),
-          ),
+          const AiUserMessage(AiUserTextContent('Hello')),
+          const AiAssistantMessage(content: 'Hi there!'),
+          const AiUserMessage(AiUserTextContent('How are you?')),
         ];
 
         final result = await repository
@@ -2470,7 +2643,7 @@ void main() {
             .toList();
 
         expect(result, hasLength(1));
-        expect(result.first.choices!.first.delta!.content, 'Response');
+        expect(result.first.choices.first.delta.content, 'Response');
 
         verify(
           () => mockGeminiRepo.generateTextWithMessages(
@@ -2507,9 +2680,7 @@ void main() {
       await repository
           .generateWithMessages(
             messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Continue'),
-              ),
+              AiUserMessage(AiUserTextContent('Continue')),
             ],
             model: model,
             temperature: 0.5,
@@ -2560,9 +2731,7 @@ void main() {
         await repository
             .generateWithMessages(
               messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Test'),
-                ),
+                AiUserMessage(AiUserTextContent('Test')),
               ],
               model: model,
               temperature: 0.5,
@@ -2610,9 +2779,7 @@ void main() {
         await repository
             .generateWithMessages(
               messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Test'),
-                ),
+                AiUserMessage(AiUserTextContent('Test')),
               ],
               model: model,
               temperature: 0.5,
@@ -3022,14 +3189,14 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'test-id',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               model: model,
-              choices: [
-                const ChatCompletionStreamResponseChoice(
+              choices: const [
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(content: 'Ollama'),
+                  delta: AiStreamDelta(content: 'Ollama'),
                 ),
               ],
             ),
@@ -3037,9 +3204,7 @@ void main() {
         );
 
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+          const AiUserMessage(AiUserTextContent('Hello')),
         ];
 
         final result = await repository
@@ -3052,7 +3217,7 @@ void main() {
             .toList();
 
         expect(result, hasLength(1));
-        expect(result.first.choices!.first.delta!.content, 'Ollama');
+        expect(result.first.choices.first.delta.content, 'Ollama');
 
         verify(
           () => mockOllamaRepo.generateTextWithMessages(
@@ -3071,12 +3236,12 @@ void main() {
   // The functionality is tested via integration/manual testing.
 
   group('CloudInferenceRepository - Nullable Temperature', () {
-    late MockOpenAIClient mockClient;
+    late MockAiInferenceClient mockClient;
     late CloudInferenceRepository repository;
     late _TestBench bench;
 
     setUp(() {
-      mockClient = MockOpenAIClient();
+      mockClient = MockAiInferenceClient();
       bench = _TestBench(withHttpClient: false);
       repository = bench.repository;
     });
@@ -3085,22 +3250,27 @@ void main() {
 
     test('generate accepts null temperature parameter', () {
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          maxTokens: any(named: 'maxTokens'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: 'Test response',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
@@ -3117,33 +3287,50 @@ void main() {
       );
 
       final captured = verify(
-        () => mockClient.createChatCompletionStream(
-          request: captureAny(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: captureAny(named: 'messages'),
+          model: captureAny(named: 'model'),
+          temperature: captureAny(named: 'temperature'),
+          maxTokens: captureAny(named: 'maxTokens'),
+          maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+          tools: captureAny(named: 'tools'),
+          toolChoice: captureAny(named: 'toolChoice'),
         ),
       ).captured;
 
-      final request = captured.first as CreateChatCompletionRequest;
-      expect(request.temperature, isNull);
+      final messages = captured[0] as List<AiChatMessage>;
+      final capturedModel = captured[1] as String;
+      final capturedTemperature = captured[2] as double?;
+      final capturedMaxTokens = captured[3] as int?;
+      final capturedMaxCompletionTokens = captured[4] as int?;
+      final capturedTools = captured[5] as List<AiTool>?;
+      final capturedToolChoice = captured[6] as AiToolChoice?;
+      expect(capturedTemperature, isNull);
     });
 
     test('generateWithImages accepts null temperature parameter', () {
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          maxTokens: any(named: 'maxTokens'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: 'Test response',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
@@ -3161,13 +3348,25 @@ void main() {
       );
 
       final captured = verify(
-        () => mockClient.createChatCompletionStream(
-          request: captureAny(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: captureAny(named: 'messages'),
+          model: captureAny(named: 'model'),
+          temperature: captureAny(named: 'temperature'),
+          maxTokens: captureAny(named: 'maxTokens'),
+          maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+          tools: captureAny(named: 'tools'),
+          toolChoice: captureAny(named: 'toolChoice'),
         ),
       ).captured;
 
-      final request = captured.first as CreateChatCompletionRequest;
-      expect(request.temperature, isNull);
+      final messages = captured[0] as List<AiChatMessage>;
+      final capturedModel = captured[1] as String;
+      final capturedTemperature = captured[2] as double?;
+      final capturedMaxTokens = captured[3] as int?;
+      final capturedMaxCompletionTokens = captured[4] as int?;
+      final capturedTools = captured[5] as List<AiTool>?;
+      final capturedToolChoice = captured[6] as AiToolChoice?;
+      expect(capturedTemperature, isNull);
     });
 
     test('generateWithMessages accepts null temperature parameter', () {
@@ -3181,22 +3380,27 @@ void main() {
       );
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          maxTokens: any(named: 'maxTokens'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(
                   content: 'Test response',
                 ),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
@@ -3207,9 +3411,7 @@ void main() {
       // that null temperature is accepted by the method signature
       final stream = repository.generateWithMessages(
         messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+          AiUserMessage(AiUserTextContent('Hello')),
         ],
         model: 'gpt-5-nano',
         temperature: null,
@@ -3218,7 +3420,7 @@ void main() {
 
       // Verify stream is created (actual API call would fail without mock,
       // but this tests the null temperature parameter is accepted)
-      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream, isA<Stream<AiStreamChunk>>());
     });
   });
 
@@ -3249,16 +3451,14 @@ void main() {
       // (conversation_repository or unified_ai_inference_repository)
       final stream = repository.generateWithMessages(
         messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+          AiUserMessage(AiUserTextContent('Hello')),
         ],
         model: 'gpt-5.2',
         temperature: 1, // OpenAI GPT-5 only accepts 1.0
         provider: openAiProvider,
       );
 
-      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream, isA<Stream<AiStreamChunk>>());
       expect(stream.isBroadcast, isTrue);
     });
 
@@ -3276,16 +3476,14 @@ void main() {
 
         final stream = repository.generateWithMessages(
           messages: const [
-            ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string('Hello'),
-            ),
+            AiUserMessage(AiUserTextContent('Hello')),
           ],
           model: 'custom-model',
           temperature: 0.7,
           provider: genericProvider,
         );
 
-        expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+        expect(stream, isA<Stream<AiStreamChunk>>());
         expect(stream.isBroadcast, isTrue);
       },
     );
@@ -3302,16 +3500,14 @@ void main() {
 
       final stream = repository.generateWithMessages(
         messages: const [
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+          AiUserMessage(AiUserTextContent('Hello')),
         ],
         model: 'claude-opus-4',
         temperature: 0.5,
         provider: anthropicProvider,
       );
 
-      expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+      expect(stream, isA<Stream<AiStreamChunk>>());
       expect(stream.isBroadcast, isTrue);
     });
 
@@ -3352,7 +3548,7 @@ void main() {
 
           // Assert - verify it went through OpenAI transcription endpoint
           expect(
-            response.choices?.first.delta?.content,
+            response.choices.first.delta.content,
             equals('Transcribed text'),
           );
 
@@ -3403,7 +3599,7 @@ void main() {
 
           final response = await stream.first;
           expect(
-            response.choices?.first.delta?.content,
+            response.choices.first.delta.content,
             equals('Transcribed text'),
           );
 
@@ -3447,7 +3643,7 @@ void main() {
 
           final response = await stream.first;
           expect(
-            response.choices?.first.delta?.content,
+            response.choices.first.delta.content,
             equals('Speaker 1: Hello'),
           );
 
@@ -3488,7 +3684,7 @@ void main() {
           );
 
           final response = await stream.first;
-          expect(response.choices?.first.delta?.content, equals('Transcribed'));
+          expect(response.choices.first.delta.content, equals('Transcribed'));
 
           final captured = verify(
             () => mockHttpClient.send(captureAny()),
@@ -3527,7 +3723,7 @@ void main() {
 
           // The stream should be created (even though it won't work in practice)
           // It should NOT have sent to OpenAI's transcription endpoint
-          expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+          expect(stream, isA<Stream<AiStreamChunk>>());
         },
       );
     });
@@ -3566,7 +3762,7 @@ void main() {
           final response = await stream.first;
 
           expect(
-            response.choices?.first.delta?.content,
+            response.choices.first.delta.content,
             equals('Mistral transcribed text'),
           );
 
@@ -3615,7 +3811,7 @@ void main() {
 
           final response = await stream.first;
           expect(
-            response.choices?.first.delta?.content,
+            response.choices.first.delta.content,
             equals('Legacy model transcription'),
           );
         },
@@ -3643,7 +3839,7 @@ void main() {
           );
 
           // Should NOT route to Mistral transcription
-          expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+          expect(stream, isA<Stream<AiStreamChunk>>());
         },
       );
 
@@ -3714,7 +3910,7 @@ void main() {
           );
 
           // Non-voxtral model should use chat completions fallback
-          expect(stream, isA<Stream<CreateChatCompletionStreamResponse>>());
+          expect(stream, isA<Stream<AiStreamChunk>>());
         },
       );
     });
@@ -3723,12 +3919,12 @@ void main() {
   group(
     'CloudInferenceRepository - generateWithAudio audioFormat parameter',
     () {
-      late MockOpenAIClient mockClient;
+      late MockAiInferenceClient mockClient;
       late CloudInferenceRepository repository;
       late _TestBench bench;
 
       setUp(() {
-        mockClient = MockOpenAIClient();
+        mockClient = MockAiInferenceClient();
         bench = _TestBench();
         repository = bench.repository;
       });
@@ -3749,22 +3945,27 @@ void main() {
           );
 
           when(
-            () => mockClient.createChatCompletionStream(
-              request: any(named: 'request'),
+            () => mockClient.chatCompletionsStream(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              maxTokens: any(named: 'maxTokens'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
-              CreateChatCompletionStreamResponse(
+              AiStreamChunk(
                 id: 'response-id',
-                choices: [
-                  const ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
+                choices: const [
+                  AiStreamChoice(
+                    delta: AiStreamDelta(
                       content: 'Test response',
                     ),
                     index: 0,
                   ),
                 ],
-                object: 'chat.completion.chunk',
                 created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               ),
             ]),
@@ -3779,22 +3980,36 @@ void main() {
             apiKey: 'test-key',
             provider: openAiProvider,
             overrideClient: mockClient,
-            audioFormat: ChatCompletionMessageInputAudioFormat.wav,
+            audioFormat: AiAudioFormat.wav,
           );
 
           // Assert
           final captured = verify(
-            () => mockClient.createChatCompletionStream(
-              request: captureAny(named: 'request'),
+            () => mockClient.chatCompletionsStream(
+              messages: captureAny(named: 'messages'),
+              model: captureAny(named: 'model'),
+              temperature: captureAny(named: 'temperature'),
+              maxTokens: captureAny(named: 'maxTokens'),
+              maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+              tools: captureAny(named: 'tools'),
+              toolChoice: captureAny(named: 'toolChoice'),
             ),
           ).captured;
 
-          final request = captured.first as CreateChatCompletionRequest;
-          final requestString = request.toString();
+          final messages = captured[0] as List<AiChatMessage>;
+          final capturedModel = captured[1] as String;
+          final capturedTemperature = captured[2] as double?;
+          final capturedMaxTokens = captured[3] as int?;
+          final capturedMaxCompletionTokens = captured[4] as int?;
+          final capturedTools = captured[5] as List<AiTool>?;
+          final capturedToolChoice = captured[6] as AiToolChoice?;
+          final requestString = jsonEncode(
+            messages.map((m) => m.toJson()).toList(),
+          );
           // Check for format: wav in the audio input configuration
           expect(
             requestString,
-            contains('format: ChatCompletionMessageInputAudioFormat.wav'),
+            contains('"format":"wav"'),
           );
         },
       );
@@ -3813,22 +4028,27 @@ void main() {
           );
 
           when(
-            () => mockClient.createChatCompletionStream(
-              request: any(named: 'request'),
+            () => mockClient.chatCompletionsStream(
+              messages: any(named: 'messages'),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              maxTokens: any(named: 'maxTokens'),
+              maxCompletionTokens: any(named: 'maxCompletionTokens'),
+              tools: any(named: 'tools'),
+              toolChoice: any(named: 'toolChoice'),
             ),
           ).thenAnswer(
             (_) => Stream.fromIterable([
-              CreateChatCompletionStreamResponse(
+              AiStreamChunk(
                 id: 'response-id',
-                choices: [
-                  const ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
+                choices: const [
+                  AiStreamChoice(
+                    delta: AiStreamDelta(
                       content: 'Test response',
                     ),
                     index: 0,
                   ),
                 ],
-                object: 'chat.completion.chunk',
                 created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
               ),
             ]),
@@ -3847,17 +4067,31 @@ void main() {
 
           // Assert
           final captured = verify(
-            () => mockClient.createChatCompletionStream(
-              request: captureAny(named: 'request'),
+            () => mockClient.chatCompletionsStream(
+              messages: captureAny(named: 'messages'),
+              model: captureAny(named: 'model'),
+              temperature: captureAny(named: 'temperature'),
+              maxTokens: captureAny(named: 'maxTokens'),
+              maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+              tools: captureAny(named: 'tools'),
+              toolChoice: captureAny(named: 'toolChoice'),
             ),
           ).captured;
 
-          final request = captured.first as CreateChatCompletionRequest;
-          final requestString = request.toString();
+          final messages = captured[0] as List<AiChatMessage>;
+          final capturedModel = captured[1] as String;
+          final capturedTemperature = captured[2] as double?;
+          final capturedMaxTokens = captured[3] as int?;
+          final capturedMaxCompletionTokens = captured[4] as int?;
+          final capturedTools = captured[5] as List<AiTool>?;
+          final capturedToolChoice = captured[6] as AiToolChoice?;
+          final requestString = jsonEncode(
+            messages.map((m) => m.toJson()).toList(),
+          );
           // Check for format: mp3 in the audio input configuration
           expect(
             requestString,
-            contains('format: ChatCompletionMessageInputAudioFormat.mp3'),
+            contains('"format":"mp3"'),
           );
         },
       );
@@ -3874,22 +4108,27 @@ void main() {
         );
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -3904,22 +4143,36 @@ void main() {
           apiKey: 'test-key',
           provider: mistralProvider,
           overrideClient: mockClient,
-          audioFormat: ChatCompletionMessageInputAudioFormat.wav,
+          audioFormat: AiAudioFormat.wav,
         );
 
         // Assert
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: captureAny(named: 'model'),
+            temperature: captureAny(named: 'temperature'),
+            maxTokens: captureAny(named: 'maxTokens'),
+            maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: captureAny(named: 'toolChoice'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        final requestString = request.toString();
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedModel = captured[1] as String;
+        final capturedTemperature = captured[2] as double?;
+        final capturedMaxTokens = captured[3] as int?;
+        final capturedMaxCompletionTokens = captured[4] as int?;
+        final capturedTools = captured[5] as List<AiTool>?;
+        final capturedToolChoice = captured[6] as AiToolChoice?;
+        final requestString = jsonEncode(
+          messages.map((m) => m.toJson()).toList(),
+        );
         // Check for format: wav in the audio input configuration
         expect(
           requestString,
-          contains('format: ChatCompletionMessageInputAudioFormat.wav'),
+          contains('"format":"wav"'),
         );
       });
 
@@ -3935,22 +4188,27 @@ void main() {
         );
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -3965,21 +4223,35 @@ void main() {
           apiKey: 'test-key',
           provider: genericProvider,
           overrideClient: mockClient,
-          audioFormat: ChatCompletionMessageInputAudioFormat.wav,
+          audioFormat: AiAudioFormat.wav,
         );
 
         // Assert - should use the passed audioFormat (wav)
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: captureAny(named: 'model'),
+            temperature: captureAny(named: 'temperature'),
+            maxTokens: captureAny(named: 'maxTokens'),
+            maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: captureAny(named: 'toolChoice'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        final requestString = request.toString();
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedModel = captured[1] as String;
+        final capturedTemperature = captured[2] as double?;
+        final capturedMaxTokens = captured[3] as int?;
+        final capturedMaxCompletionTokens = captured[4] as int?;
+        final capturedTools = captured[5] as List<AiTool>?;
+        final capturedToolChoice = captured[6] as AiToolChoice?;
+        final requestString = jsonEncode(
+          messages.map((m) => m.toJson()).toList(),
+        );
         expect(
           requestString,
-          contains('format: ChatCompletionMessageInputAudioFormat.wav'),
+          contains('"format":"wav"'),
         );
       });
 
@@ -3995,22 +4267,27 @@ void main() {
         );
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Transcribed text',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -4029,13 +4306,27 @@ void main() {
 
         // Assert - audio data should be prefixed with data URI
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: captureAny(named: 'model'),
+            temperature: captureAny(named: 'temperature'),
+            maxTokens: captureAny(named: 'maxTokens'),
+            maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: captureAny(named: 'toolChoice'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        final requestString = request.toString();
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedModel = captured[1] as String;
+        final capturedTemperature = captured[2] as double?;
+        final capturedMaxTokens = captured[3] as int?;
+        final capturedMaxCompletionTokens = captured[4] as int?;
+        final capturedTools = captured[5] as List<AiTool>?;
+        final capturedToolChoice = captured[6] as AiToolChoice?;
+        final requestString = jsonEncode(
+          messages.map((m) => m.toJson()).toList(),
+        );
         expect(requestString, contains('data:;base64,dGVzdC1hdWRpbw=='));
       });
 
@@ -4051,22 +4342,27 @@ void main() {
         );
 
         when(
-          () => mockClient.createChatCompletionStream(
-            request: any(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: any(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: any(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-id',
-              choices: [
-                const ChatCompletionStreamResponseChoice(
-                  delta: ChatCompletionStreamResponseDelta(
+              choices: const [
+                AiStreamChoice(
+                  delta: AiStreamDelta(
                     content: 'Test response',
                   ),
                   index: 0,
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
             ),
           ]),
@@ -4085,13 +4381,27 @@ void main() {
 
         // Assert - audio data should NOT have data URI prefix
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: captureAny(named: 'model'),
+            temperature: captureAny(named: 'temperature'),
+            maxTokens: captureAny(named: 'maxTokens'),
+            maxCompletionTokens: captureAny(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: captureAny(named: 'toolChoice'),
           ),
         ).captured;
 
-        final request = captured.first as CreateChatCompletionRequest;
-        final requestString = request.toString();
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedModel = captured[1] as String;
+        final capturedTemperature = captured[2] as double?;
+        final capturedMaxTokens = captured[3] as int?;
+        final capturedMaxCompletionTokens = captured[4] as int?;
+        final capturedTools = captured[5] as List<AiTool>?;
+        final capturedToolChoice = captured[6] as AiToolChoice?;
+        final requestString = jsonEncode(
+          messages.map((m) => m.toJson()).toList(),
+        );
         expect(requestString, isNot(contains('data:;base64,')));
         expect(requestString, contains('dGVzdC1hdWRpbw=='));
       });
@@ -4161,7 +4471,7 @@ void main() {
             .toList();
 
         expect(result, hasLength(1));
-        expect(result.first.choices?.first.delta?.content, 'Bonjour');
+        expect(result.first.choices.first.delta.content, 'Bonjour');
 
         // Verify the request went to Mistral's chat/completions endpoint and
         // carried the prompt + system message in the serialized body.
@@ -4186,9 +4496,7 @@ void main() {
         final result = await repository
             .generateWithMessages(
               messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Hi'),
-                ),
+                AiUserMessage(AiUserTextContent('Hi')),
               ],
               model: 'mistral-large',
               temperature: 0.5,
@@ -4197,7 +4505,7 @@ void main() {
             .toList();
 
         expect(result, hasLength(1));
-        expect(result.first.choices?.first.delta?.content, 'Salut');
+        expect(result.first.choices.first.delta.content, 'Salut');
 
         // generateWithMessages reads baseUrl/apiKey from the provider itself.
         final captured = verify(
@@ -4217,8 +4525,6 @@ void main() {
       () async {
         stubSseSend('transcribed words');
 
-        // OpenAIClient (constructed unconditionally before the Voxtral branch)
-        // asserts the baseUrl must not end with '/', so use a slash-free URL.
         const voxtralBaseUrl = 'http://localhost:11344';
         final voxtralProvider = AiConfigInferenceProvider(
           id: 'voxtral-provider',
@@ -4241,7 +4547,7 @@ void main() {
             .toList();
 
         expect(result, hasLength(1));
-        expect(result.first.choices?.first.delta?.content, 'transcribed words');
+        expect(result.first.choices.first.delta.content, 'transcribed words');
 
         final captured = verify(
           () => mockHttpClient.send(captureAny()),
@@ -4256,7 +4562,7 @@ void main() {
   });
 
   group('CloudInferenceRepository - tools and system message logging', () {
-    late MockOpenAIClient mockClient;
+    late MockAiInferenceClient mockClient;
     late MockGeminiInferenceRepository mockGeminiRepo;
     late ProviderContainer container;
     late CloudInferenceRepository repository;
@@ -4266,37 +4572,41 @@ void main() {
     const apiKey = 'test-key';
 
     final tools = [
-      const ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: 'lookup',
-          description: 'Look something up',
-        ),
+      const AiTool(
+        name: 'lookup',
+        description: 'Look something up',
+        parameters: {},
       ),
     ];
 
     setUp(() {
-      mockClient = MockOpenAIClient();
+      mockClient = MockAiInferenceClient();
       bench = _TestBench(withHttpClient: false);
       mockGeminiRepo = bench.geminiRepo;
       container = bench.container;
       repository = bench.repository;
 
       when(
-        () => mockClient.createChatCompletionStream(
-          request: any(named: 'request'),
+        () => mockClient.chatCompletionsStream(
+          messages: any(named: 'messages'),
+          model: any(named: 'model'),
+          temperature: any(named: 'temperature'),
+          maxTokens: any(named: 'maxTokens'),
+          maxCompletionTokens: any(named: 'maxCompletionTokens'),
+          tools: any(named: 'tools'),
+          toolChoice: any(named: 'toolChoice'),
+          reasoningEffort: any(named: 'reasoningEffort'),
         ),
       ).thenAnswer(
         (_) => Stream.fromIterable([
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'response-id',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(content: 'ok'),
+            choices: const [
+              AiStreamChoice(
+                delta: AiStreamDelta(content: 'ok'),
                 index: 0,
               ),
             ],
-            object: 'chat.completion.chunk',
             created: DateTime(2024, 3, 15).millisecondsSinceEpoch ~/ 1000,
           ),
         ]),
@@ -4325,19 +4635,30 @@ void main() {
             .toList();
 
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).captured;
-        final request = captured.first as CreateChatCompletionRequest;
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedTools = captured[1] as List<AiTool>?;
 
-        // System message prepended (line 277) + user image message.
-        expect(request.messages, hasLength(2));
-        expect(request.messages.first.role, ChatCompletionMessageRole.system);
-        expect(request.toString(), contains('You see images'));
-        // Tools forwarded (lines 266-268 logging branch executed).
-        expect(request.tools, hasLength(1));
-        expect(request.tools!.first.function.name, 'lookup');
+        // System message prepended + user image message.
+        expect(messages, hasLength(2));
+        expect(messages.first.role, AiMessageRole.system);
+        expect(
+          jsonEncode(messages.map((m) => m.toJson()).toList()),
+          contains('You see images'),
+        );
+        // Tools forwarded (logging branch executed).
+        expect(capturedTools, hasLength(1));
+        expect(capturedTools!.first.name, 'lookup');
       },
     );
 
@@ -4368,19 +4689,30 @@ void main() {
             .toList();
 
         final captured = verify(
-          () => mockClient.createChatCompletionStream(
-            request: captureAny(named: 'request'),
+          () => mockClient.chatCompletionsStream(
+            messages: captureAny(named: 'messages'),
+            model: any(named: 'model'),
+            temperature: any(named: 'temperature'),
+            maxTokens: any(named: 'maxTokens'),
+            maxCompletionTokens: any(named: 'maxCompletionTokens'),
+            tools: captureAny(named: 'tools'),
+            toolChoice: any(named: 'toolChoice'),
+            reasoningEffort: any(named: 'reasoningEffort'),
           ),
         ).captured;
-        final request = captured.first as CreateChatCompletionRequest;
+        final messages = captured[0] as List<AiChatMessage>;
+        final capturedTools = captured[1] as List<AiTool>?;
 
-        // System message prepended (line 457) + user audio message.
-        expect(request.messages, hasLength(2));
-        expect(request.messages.first.role, ChatCompletionMessageRole.system);
-        expect(request.toString(), contains('You transcribe'));
-        // Tools forwarded (lines 440-442 logging branch executed).
-        expect(request.tools, hasLength(1));
-        expect(request.tools!.first.function.name, 'lookup');
+        // System message prepended + user audio message.
+        expect(messages, hasLength(2));
+        expect(messages.first.role, AiMessageRole.system);
+        expect(
+          jsonEncode(messages.map((m) => m.toJson()).toList()),
+          contains('You transcribe'),
+        );
+        // Tools forwarded (logging branch executed).
+        expect(capturedTools, hasLength(1));
+        expect(capturedTools!.first.name, 'lookup');
       },
     );
 
@@ -4420,10 +4752,8 @@ void main() {
         await repository
             .generateWithMessages(
               messages: const [
-                ChatCompletionMessage.system(content: 'System directive here'),
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Question'),
-                ),
+                AiSystemMessage('System directive here'),
+                AiUserMessage(AiUserTextContent('Question')),
               ],
               model: 'gemini-2.5-pro',
               temperature: 0.6,
@@ -4453,9 +4783,7 @@ void main() {
         // broadcast stream is returned without throwing.
         final stream = repository.generateWithMessages(
           messages: const [
-            ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string('Hi'),
-            ),
+            AiUserMessage(AiUserTextContent('Hi')),
           ],
           model: 'gpt-4o',
           temperature: 0.5,

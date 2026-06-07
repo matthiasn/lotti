@@ -71,7 +71,7 @@ void main() {
 
         expect(responses, hasLength(1));
         expect(
-          responses.first.choices?.first.delta?.content,
+          responses.first.choices.first.delta.content,
           'Hello, world!',
         );
         expect(responses.first.id, startsWith('mistral-transcription-'));
@@ -594,7 +594,7 @@ void main() {
             )
             .toList();
 
-        final content = responses.first.choices?.first.delta?.content;
+        final content = responses.first.choices.first.delta.content;
         expect(content, contains('[Speaker 1]'));
         expect(content, contains('[Speaker 2]'));
         expect(content, contains('Hello how are you'));
@@ -648,7 +648,7 @@ void main() {
             )
             .toList();
 
-        final content = responses.first.choices?.first.delta?.content;
+        final content = responses.first.choices.first.delta.content;
         // Speaker 1's consecutive segments should be joined
         expect(
           content,
@@ -685,7 +685,7 @@ void main() {
             .toList();
 
         expect(
-          responses.first.choices?.first.delta?.content,
+          responses.first.choices.first.delta.content,
           equals('Plain transcription without segments'),
         );
       });
@@ -727,7 +727,7 @@ void main() {
 
         // Should use plain text, not formatted with speaker labels
         expect(
-          responses.first.choices?.first.delta?.content,
+          responses.first.choices.first.delta.content,
           equals('Single speaker monologue'),
         );
       });
@@ -758,7 +758,7 @@ void main() {
             .toList();
 
         expect(
-          responses.first.choices?.first.delta?.content,
+          responses.first.choices.first.delta.content,
           equals('Segments without speaker attribution'),
         );
       });
@@ -789,7 +789,7 @@ void main() {
             )
             .toList();
 
-        final content = responses.first.choices?.first.delta?.content;
+        final content = responses.first.choices.first.delta.content;
         // API speaker 0 → [Speaker 1], speaker 2 → [Speaker 3],
         // speaker 1 → [Speaker 2]
         expect(content, contains('[Speaker 1]'));
@@ -824,7 +824,7 @@ void main() {
             )
             .toList();
 
-        final content = responses.first.choices?.first.delta?.content;
+        final content = responses.first.choices.first.delta.content;
         // The empty segment should be skipped, not produce extra whitespace
         expect(
           content,

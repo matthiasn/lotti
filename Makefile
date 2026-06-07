@@ -34,6 +34,10 @@ test_glados:
 	rm -rf coverage
 	$(VERY_GOOD_CMD) test --coverage --tags glados
 
+.PHONY: test_quick
+test_quick:
+	$(VERY_GOOD_CMD) test $(ARGS)
+
 .PHONY: analyze
 analyze:
 	$(FLUTTER_CMD) analyze

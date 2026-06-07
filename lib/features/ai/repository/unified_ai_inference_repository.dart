@@ -20,6 +20,7 @@ import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:lotti/features/ai/helpers/entity_state_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_builder_helper.dart';
 import 'package:lotti/features/ai/helpers/prompt_capability_filter.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
@@ -42,7 +43,6 @@ import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'unified_ai_prompt_context.dart';
@@ -59,7 +59,7 @@ class PreparedAudio {
   });
 
   final String base64;
-  final ChatCompletionMessageInputAudioFormat format;
+  final AiAudioFormat format;
 }
 
 /// Repository for unified AI inference handling
@@ -229,7 +229,7 @@ class UnifiedAiInferenceRepository {
       // Process the stream and accumulate tool calls
       final toolCallAccumulator = ToolCallAccumulator();
       String? pendingProgress;
-      CompletionUsage? usage;
+      AiUsage? usage;
 
       await for (final chunk in stream) {
         // Capture usage metadata from the final chunk
@@ -246,13 +246,13 @@ class UnifiedAiInferenceRepository {
           pendingProgress = latest;
         }
 
-        // Accumulate tool calls from chunks
-        if (chunk.choices?.isNotEmpty ?? false) {
-          final delta = chunk.choices?.first.delta;
+        // Accumulate tool calls from chunks.
+        if (chunk.choices.isNotEmpty) {
+          final delta = chunk.choices.first.delta;
           developer.log(
             'Stream chunk received: hasContent=${text.isNotEmpty}, '
-            'hasToolCalls=${delta?.toolCalls != null}, '
-            'toolCallCount=${delta?.toolCalls?.length ?? 0}',
+            'hasToolCalls=${delta.toolCalls != null}, '
+            'toolCallCount=${delta.toolCalls?.length ?? 0}',
             name: 'UnifiedAiInferenceRepository',
           );
           toolCallAccumulator.processChunk(delta);
@@ -268,7 +268,7 @@ class UnifiedAiInferenceRepository {
       }
 
       // Process accumulated tool calls
-      List<ChatCompletionMessageToolCall>? toolCalls;
+      List<AiToolCall>? toolCalls;
       if (toolCallAccumulator.hasToolCalls) {
         developer.log(
           'Processing ${toolCallAccumulator.count} accumulated tool calls',
@@ -372,12 +372,12 @@ class UnifiedAiInferenceRepository {
     // All providers accept M4A bytes labeled as mp3
     return PreparedAudio(
       base64: base64Encode(bytes),
-      format: ChatCompletionMessageInputAudioFormat.mp3,
+      format: AiAudioFormat.mp3,
     );
   }
 
   /// Run cloud inference
-  Future<Stream<CreateChatCompletionStreamResponse>> _runCloudInference({
+  Future<Stream<AiStreamChunk>> _runCloudInference({
     required String prompt,
     required String systemMessage,
     required AiConfigModel model,
@@ -449,7 +449,7 @@ class UnifiedAiInferenceRepository {
       // No tools attached — checklist updates and task summaries are
       // handled by the agent system. Other response types (image analysis,
       // audio transcription, prompt generation) don't use function calling.
-      const List<ChatCompletionTool>? _ = null;
+      const List<AiTool>? _ = null;
 
       return cloudRepo.generate(
         prompt,
@@ -466,14 +466,10 @@ class UnifiedAiInferenceRepository {
   }
 
   /// Extract text from stream chunk
-  String _extractTextFromChunk(CreateChatCompletionStreamResponse chunk) {
+  String _extractTextFromChunk(AiStreamChunk chunk) {
     try {
-      // Handle potential null values in Anthropic's response
-      final choices = chunk.choices;
-      if (choices?.isEmpty ?? true) {
-        return '';
-      }
-      return choices?.firstOrNull?.delta?.content ?? '';
+      if (chunk.choices.isEmpty) return '';
+      return chunk.choices.first.delta.content ?? '';
     } catch (e) {
       // Log error but continue processing stream
       developer.log(
@@ -497,7 +493,7 @@ class UnifiedAiInferenceRepository {
   /// member). Returns true if a language was detected and set.
   @visibleForTesting
   Future<bool> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<AiToolCall> toolCalls,
     required Task task,
   }) => processToolCallsImpl(toolCalls: toolCalls, task: task);
 }

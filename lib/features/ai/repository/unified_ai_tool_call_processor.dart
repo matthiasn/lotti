@@ -6,7 +6,7 @@ extension UnifiedAiToolCallProcessor on UnifiedAiInferenceRepository {
   /// detection. Returns true if language was detected and set.
   @visibleForTesting
   Future<bool> processToolCallsImpl({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<AiToolCall> toolCalls,
     required Task task,
   }) async {
     var languageWasSet = false;
@@ -20,8 +20,8 @@ extension UnifiedAiToolCallProcessor on UnifiedAiInferenceRepository {
     for (var i = 0; i < toolCalls.length; i++) {
       final tc = toolCalls[i];
       developer.log(
-        'Tool call [$i]: name=${tc.function.name}, '
-        'args=${tc.function.arguments.length > 200 ? '${tc.function.arguments.substring(0, 200)}...' : tc.function.arguments}',
+        'Tool call [$i]: name=${tc.name}, '
+        'args=${tc.arguments.length > 200 ? '${tc.arguments.substring(0, 200)}...' : tc.arguments}',
         name: 'UnifiedAiInferenceRepository',
       );
     }
@@ -30,14 +30,14 @@ extension UnifiedAiToolCallProcessor on UnifiedAiInferenceRepository {
 
     for (final toolCall in toolCalls) {
       developer.log(
-        'Processing tool call: ${toolCall.function.name}',
+        'Processing tool call: ${toolCall.name}',
         name: 'UnifiedAiInferenceRepository',
       );
 
-      if (toolCall.function.name ==
+      if (toolCall.name ==
           ChecklistCompletionFunctions.suggestChecklistCompletion) {
         // Handle case where multiple JSON objects might be concatenated
-        final jsonObjects = extractJsonObjects(toolCall.function.arguments);
+        final jsonObjects = extractJsonObjects(toolCall.arguments);
 
         if (jsonObjects.isEmpty) {
           // Log metadata only — raw arguments can carry user content/PII
@@ -45,7 +45,7 @@ extension UnifiedAiToolCallProcessor on UnifiedAiInferenceRepository {
           developer.log(
             'No valid JSON found in arguments '
             '(toolCallId=${toolCall.id}, '
-            'length=${toolCall.function.arguments.length})',
+            'length=${toolCall.arguments.length})',
             name: 'UnifiedAiInferenceRepository',
           );
           continue;
@@ -86,12 +86,12 @@ extension UnifiedAiToolCallProcessor on UnifiedAiInferenceRepository {
             );
           }
         }
-      } else if (toolCall.function.name ==
+      } else if (toolCall.name ==
           ChecklistCompletionFunctions.addMultipleChecklistItems) {
         // Handle add checklist item(s)
         try {
           final arguments =
-              jsonDecode(toolCall.function.arguments) as Map<String, dynamic>;
+              jsonDecode(toolCall.arguments) as Map<String, dynamic>;
 
           // Array-of-objects only
           final itemsField = arguments['items'];
@@ -216,7 +216,7 @@ extension UnifiedAiToolCallProcessor on UnifiedAiInferenceRepository {
             error: e,
           );
         }
-      } else if (toolCall.function.name ==
+      } else if (toolCall.name ==
           ChecklistCompletionFunctions.updateChecklistItems) {
         try {
           final updateHandler = LottiChecklistUpdateHandler(
@@ -254,11 +254,11 @@ extension UnifiedAiToolCallProcessor on UnifiedAiInferenceRepository {
             stackTrace: stackTrace,
           );
         }
-      } else if (toolCall.function.name == TaskFunctions.setTaskLanguage) {
+      } else if (toolCall.name == TaskFunctions.setTaskLanguage) {
         // Handle set task language
         try {
           final result = SetTaskLanguageResult.fromJson(
-            jsonDecode(toolCall.function.arguments) as Map<String, dynamic>,
+            jsonDecode(toolCall.arguments) as Map<String, dynamic>,
           );
           final languageCode = result.languageCode;
           final confidence = result.confidence.name;
@@ -320,10 +320,10 @@ extension UnifiedAiToolCallProcessor on UnifiedAiInferenceRepository {
             error: e,
           );
         }
-      } else if (toolCall.function.name == LabelFunctions.assignTaskLabels) {
+      } else if (toolCall.name == LabelFunctions.assignTaskLabels) {
         // Handle assign task labels (add-only)
         try {
-          final parsed = parseLabelCallArgs(toolCall.function.arguments);
+          final parsed = parseLabelCallArgs(toolCall.arguments);
           final requested = LinkedHashSet<String>.from(
             parsed.selectedIds,
           ).toList();
@@ -332,7 +332,7 @@ extension UnifiedAiToolCallProcessor on UnifiedAiInferenceRepository {
           if (requested.isEmpty) {
             developer.log(
               'assign_task_labels called without valid labels or labelIds - '
-              'raw args: ${toolCall.function.arguments}',
+              'raw args: ${toolCall.arguments}',
               name: 'UnifiedAiInferenceRepository',
             );
             continue;
@@ -399,7 +399,7 @@ extension UnifiedAiToolCallProcessor on UnifiedAiInferenceRepository {
         }
       } else {
         developer.log(
-          'Skipping unknown tool call: ${toolCall.function.name}',
+          'Skipping unknown tool call: ${toolCall.name}',
           name: 'UnifiedAiInferenceRepository',
         );
       }

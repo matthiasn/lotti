@@ -5,6 +5,7 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -16,14 +17,13 @@ import 'package:lotti/features/ai_chat/repository/task_summary_repository.dart';
 import 'package:lotti/features/ai_chat/services/system_message_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 /// Shared stub for `CloudInferenceRepository.generate`; chain
 /// `.thenAnswer(...)` with the response stream the test needs.
-When<Stream<CreateChatCompletionStreamResponse>> _stubGenerate(
+When<Stream<AiStreamChunk>> _stubGenerate(
   MockCloudInferenceRepository mock,
 ) {
   return when(
@@ -35,7 +35,7 @@ When<Stream<CreateChatCompletionStreamResponse>> _stubGenerate(
       apiKey: any<String>(named: 'apiKey'),
       systemMessage: any<String>(named: 'systemMessage'),
       provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-      tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+      tools: any<List<AiTool>?>(named: 'tools'),
       geminiThinkingMode: any(named: 'geminiThinkingMode'),
     ),
   );
@@ -624,14 +624,14 @@ void main() {
 
           // Setup streaming response
           final responseStream = Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'response-1',
               created: 0,
               model: 'model',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     content: 'Hello, I can help you with your tasks!',
                   ),
                 ),
@@ -674,36 +674,34 @@ void main() {
 
         // Setup streaming response with tool calls
         final initialStream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-1',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   content: 'Let me check your tasks...',
                 ),
               ),
             ],
           ),
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-1',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
+                    AiToolCallChunk(
                       index: 0,
                       id: 'tool_1',
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'get_task_summaries',
-                        arguments:
-                            '{"start_date": "2024-01-01", "end_date": "2024-01-01", "limit": 10}',
-                      ),
+                      name: 'get_task_summaries',
+                      arguments:
+                          '{"start_date": "2024-01-01", "end_date": "2024-01-01", "limit": 10}',
                     ),
                   ],
                 ),
@@ -713,14 +711,14 @@ void main() {
         ]);
 
         final finalStream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-2',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   content: 'You completed 5 tasks today!',
                 ),
               ),
@@ -783,40 +781,40 @@ void main() {
 
         // Setup streaming response with multiple chunks
         final responseStream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-1',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   content: 'Here is ',
                 ),
               ),
             ],
           ),
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-1',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   content: 'your response ',
                 ),
               ),
             ],
           ),
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-1',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   content: 'in chunks.',
                 ),
               ),
@@ -851,23 +849,21 @@ void main() {
 
         // Setup streaming response with tool calls
         final initialStream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-1',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
+                    AiToolCallChunk(
                       index: 0,
                       id: 'tool_1',
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'get_task_summaries',
-                        arguments:
-                            '{"start_date": "2024-01-01", "end_date": "2024-01-01", "limit": 10}',
-                      ),
+                      name: 'get_task_summaries',
+                      arguments:
+                          '{"start_date": "2024-01-01", "end_date": "2024-01-01", "limit": 10}',
                     ),
                   ],
                 ),
@@ -877,14 +873,14 @@ void main() {
         ]);
 
         final finalStream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-2',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   content: 'No tasks found for the specified period.',
                 ),
               ),
@@ -928,23 +924,21 @@ void main() {
 
         // Initial stream: tool call only (no content)
         final initialStream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-1',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
+                    AiToolCallChunk(
                       index: 0,
                       id: 'tool_1',
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'get_task_summaries',
-                        arguments:
-                            '{"start_date": "2024-01-01", "end_date": "2024-01-01", "limit": 5}',
-                      ),
+                      name: 'get_task_summaries',
+                      arguments:
+                          '{"start_date": "2024-01-01", "end_date": "2024-01-01", "limit": 5}',
                     ),
                   ],
                 ),
@@ -955,36 +949,36 @@ void main() {
 
         // Final stream: multiple chunks
         final finalStream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-2',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: 'First '),
+                delta: AiStreamDelta(content: 'First '),
               ),
             ],
           ),
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-2',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: 'second '),
+                delta: AiStreamDelta(content: 'second '),
               ),
             ],
           ),
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-2',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: 'third.'),
+                delta: AiStreamDelta(content: 'third.'),
               ),
             ],
           ),
@@ -1038,14 +1032,14 @@ void main() {
 
         // Setup streaming response
         final responseStream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
+          const AiStreamChunk(
             id: 'response-1',
             created: 0,
             model: 'model',
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   content: 'Based on our conversation, here are your tasks...',
                 ),
               ),
@@ -1084,7 +1078,7 @@ void main() {
                     provider: any<AiConfigInferenceProvider?>(
                       named: 'provider',
                     ),
-                    tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+                    tools: any<List<AiTool>?>(named: 'tools'),
                     geminiThinkingMode: any(named: 'geminiThinkingMode'),
                   ),
                 ).captured.first
@@ -1104,8 +1098,7 @@ void main() {
         setupAiConfigMocks();
 
         String? capturedSystemMessage;
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<AiStreamChunk>.empty();
         when(
           () => mockCloudInferenceRepository.generate(
             any<String>(),
@@ -1115,7 +1108,7 @@ void main() {
             apiKey: any<String>(named: 'apiKey'),
             systemMessage: captureAny<String>(named: 'systemMessage'),
             provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-            tools: any<List<ChatCompletionTool>?>(named: 'tools'),
+            tools: any<List<AiTool>?>(named: 'tools'),
             geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
         ).thenAnswer((invocation) {

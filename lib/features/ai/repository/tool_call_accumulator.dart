@@ -1,130 +1,112 @@
 import 'dart:developer' as developer;
 
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 
-/// Accumulates tool call chunks from streaming responses into complete tool calls.
+/// Accumulates tool-call chunks from streaming responses into complete
+/// [AiToolCall]s.
 ///
-/// This class handles the complexity of assembling tool calls that are streamed
-/// in multiple chunks, tracking them by ID or index, and producing the final
-/// list of complete tool calls.
+/// Streaming providers split a single tool call across many delta chunks —
+/// often only the `arguments` field is sent after the initial chunk that
+/// carries `id` and `name`. This class tracks partial state keyed by tool-call
+/// id (with synthetic ids when the provider doesn't supply one) and stitches
+/// the deltas back into complete calls.
 class ToolCallAccumulator {
   final _toolCalls = <String, _AccumulatedToolCall>{};
   var _counter = 0;
 
-  /// Process a chunk from the streaming response and accumulate any tool calls.
-  void processChunk(ChatCompletionStreamResponseDelta? delta) {
+  /// Process a streaming delta's tool-call chunks and update internal state.
+  void processChunk(AiStreamDelta? delta) {
     if (delta?.toolCalls == null) return;
+    final toolCalls = delta!.toolCalls!;
 
     developer.log(
-      'Tool call details: ${delta!.toolCalls!.map((tc) => 'id=${tc.id}, '
-          'index=${tc.index}, function=${tc.function?.name}, '
-          'hasArgs=${tc.function?.arguments != null}').join('; ')}',
+      'Tool call details: ${toolCalls.map((tc) => 'id=${tc.id}, '
+          'index=${tc.index}, function=${tc.name}, '
+          'hasArgs=${tc.arguments != null}').join('; ')}',
       name: 'ToolCallAccumulator',
     );
 
-    // Special handling: if we receive multiple tool calls in one chunk all with
-    // the same index, they might be complete tool calls rather than chunks
-    if (delta.toolCalls!.length > 1 &&
-        delta.toolCalls!.every(
-          (tc) => tc.index == 0 && tc.function?.arguments != null,
-        )) {
+    // If multiple chunks arrive in one delta all marked index=0 and all with
+    // arguments, treat them as complete tool calls rather than fragments.
+    if (toolCalls.length > 1 &&
+        toolCalls.every((tc) => tc.index == 0 && tc.arguments != null)) {
       developer.log(
-        'Detected ${delta.toolCalls!.length} complete tool calls in single chunk',
+        'Detected ${toolCalls.length} complete tool calls in single chunk',
         name: 'ToolCallAccumulator',
       );
-
-      delta.toolCalls!.forEach(_addCompleteToolCall);
+      toolCalls.forEach(_addCompleteToolCall);
     } else {
-      // Normal streaming chunk processing
-      delta.toolCalls!.forEach(_processToolCallChunk);
+      toolCalls.forEach(_processToolCallChunk);
     }
   }
 
-  /// Add a complete tool call (not chunked).
-  void _addCompleteToolCall(
-    ChatCompletionStreamMessageToolCallChunk toolCallChunk,
-  ) {
-    final explicitId = toolCallChunk.id;
+  void _addCompleteToolCall(AiToolCallChunk chunk) {
+    final explicitId = chunk.id;
     final hasExplicitId = explicitId != null && explicitId.isNotEmpty;
     final toolCallId = hasExplicitId ? explicitId : _nextSyntheticToolCallId();
     _toolCalls[toolCallId] = _AccumulatedToolCall(
-      index: toolCallChunk.index ?? 0,
-      functionName: toolCallChunk.function?.name ?? '',
-      functionArguments: toolCallChunk.function?.arguments ?? '',
+      index: chunk.index ?? 0,
+      functionName: chunk.name ?? '',
+      functionArguments: chunk.arguments ?? '',
     );
     developer.log(
-      'Added complete tool call $toolCallId: ${toolCallChunk.function?.name}',
+      'Added complete tool call $toolCallId: ${chunk.name}',
       name: 'ToolCallAccumulator',
     );
   }
 
-  /// Process a single tool call chunk, either starting a new tool call or
-  /// continuing an existing one.
-  void _processToolCallChunk(
-    ChatCompletionStreamMessageToolCallChunk toolCallChunk,
-  ) {
+  void _processToolCallChunk(AiToolCallChunk chunk) {
     developer.log(
-      'Tool call chunk - id: ${toolCallChunk.id}, index: ${toolCallChunk.index}, '
-      'type: ${toolCallChunk.type}, function: ${toolCallChunk.function?.name}, '
-      'args length: ${toolCallChunk.function?.arguments?.length ?? 0}',
+      'Tool call chunk - id: ${chunk.id}, index: ${chunk.index}, '
+      'function: ${chunk.name}, '
+      'args length: ${chunk.arguments?.length ?? 0}',
       name: 'ToolCallAccumulator',
     );
 
-    final explicitId = toolCallChunk.id;
+    final explicitId = chunk.id;
     final hasExplicitId = explicitId != null && explicitId.isNotEmpty;
 
     if (hasExplicitId && _toolCalls.containsKey(explicitId)) {
-      // Continuation chunk that repeats the same explicit ID — append rather
-      // than overwriting the accumulated state.
-      _appendToToolCall(explicitId, toolCallChunk);
-    } else if (hasExplicitId || toolCallChunk.function?.name != null) {
-      // This is a new tool call
+      _appendToToolCall(explicitId, chunk);
+    } else if (hasExplicitId || chunk.name != null) {
       final toolCallId = hasExplicitId
           ? explicitId
           : _nextSyntheticToolCallId();
-      _startNewToolCall(toolCallId, toolCallChunk);
-    } else if (toolCallChunk.index != null) {
-      // Try to find by index if no ID
-      _continueByIndex(toolCallChunk);
+      _startNewToolCall(toolCallId, chunk);
+    } else if (chunk.index != null) {
+      _continueByIndex(chunk);
     } else {
-      // This is a continuation of an existing tool call
-      _continueLastToolCall(toolCallChunk);
+      _continueLastToolCall(chunk);
     }
   }
 
-  /// Start a new tool call entry.
-  void _startNewToolCall(
-    String toolCallId,
-    ChatCompletionStreamMessageToolCallChunk chunk,
-  ) {
+  void _startNewToolCall(String toolCallId, AiToolCallChunk chunk) {
     _toolCalls[toolCallId] = _AccumulatedToolCall(
       index: chunk.index ?? _toolCalls.length,
-      functionName: chunk.function?.name ?? '',
-      functionArguments: chunk.function?.arguments ?? '',
+      functionName: chunk.name ?? '',
+      functionArguments: chunk.arguments ?? '',
     );
     developer.log(
-      'Started new tool call $toolCallId: ${chunk.function?.name}',
+      'Started new tool call $toolCallId: ${chunk.name}',
       name: 'ToolCallAccumulator',
     );
   }
 
-  /// Continue a tool call by finding it by index.
-  void _continueByIndex(ChatCompletionStreamMessageToolCallChunk chunk) {
+  void _continueByIndex(AiToolCallChunk chunk) {
     final targetEntry = _toolCalls.entries
         .where((e) => e.value.index == chunk.index)
         .firstOrNull;
-
     if (targetEntry != null) {
       _appendToToolCall(targetEntry.key, chunk);
       developer.log(
-        'Continued tool call ${targetEntry.key} (index ${chunk.index}) with arguments chunk',
+        'Continued tool call ${targetEntry.key} '
+        '(index ${chunk.index}) with arguments chunk',
         name: 'ToolCallAccumulator',
       );
     }
   }
 
-  /// Continue the most recent tool call.
-  void _continueLastToolCall(ChatCompletionStreamMessageToolCallChunk chunk) {
+  void _continueLastToolCall(AiToolCallChunk chunk) {
     if (_toolCalls.isNotEmpty) {
       final lastKey = _toolCalls.keys.last;
       _appendToToolCall(lastKey, chunk);
@@ -135,32 +117,22 @@ class ToolCallAccumulator {
     }
   }
 
-  /// Append chunk data to an existing tool call.
-  void _appendToToolCall(
-    String key,
-    ChatCompletionStreamMessageToolCallChunk chunk,
-  ) {
+  void _appendToToolCall(String key, AiToolCallChunk chunk) {
     final existing = _toolCalls[key]!;
-
-    if (chunk.function != null) {
-      _toolCalls[key] = existing.copyWith(
-        functionName: chunk.function!.name ?? existing.functionName,
-        functionArguments: chunk.function!.arguments != null
-            ? existing.functionArguments + chunk.function!.arguments!
-            : null,
-      );
-    }
+    _toolCalls[key] = existing.copyWith(
+      functionName: chunk.name ?? existing.functionName,
+      functionArguments: chunk.arguments != null
+          ? existing.functionArguments + chunk.arguments!
+          : null,
+    );
   }
 
-  /// Convert accumulated tool calls to a list of [ChatCompletionMessageToolCall].
-  ///
-  /// Only includes tool calls with valid (non-empty) arguments.
-  List<ChatCompletionMessageToolCall> toToolCalls() {
-    final validToolCalls = <ChatCompletionMessageToolCall>[];
-
+  /// Convert accumulated chunks to a list of [AiToolCall]. Skips entries that
+  /// never received any arguments (treated as malformed).
+  List<AiToolCall> toToolCalls() {
+    final validToolCalls = <AiToolCall>[];
     for (final entry in _toolCalls.entries) {
       final toolCall = entry.value;
-
       if (toolCall.functionArguments.isEmpty) {
         developer.log(
           'Skipping tool call ${entry.key} - no valid arguments',
@@ -168,36 +140,27 @@ class ToolCallAccumulator {
         );
         continue;
       }
-
       developer.log(
-        'Creating tool call ${entry.key}: ${toolCall.functionName} with args: ${toolCall.functionArguments}',
+        'Creating tool call ${entry.key}: ${toolCall.functionName} '
+        '(argsLength: ${toolCall.functionArguments.length})',
         name: 'ToolCallAccumulator',
       );
-
       validToolCalls.add(
-        ChatCompletionMessageToolCall(
+        AiToolCall(
           id: entry.key,
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: toolCall.functionName,
-            arguments: toolCall.functionArguments,
-          ),
+          name: toolCall.functionName,
+          arguments: toolCall.functionArguments,
         ),
       );
     }
-
     developer.log(
       'Created ${validToolCalls.length} tool calls from accumulator',
       name: 'ToolCallAccumulator',
     );
-
     return validToolCalls;
   }
 
-  /// Check if any tool calls have been accumulated.
   bool get hasToolCalls => _toolCalls.isNotEmpty;
-
-  /// Get the number of accumulated tool calls.
   int get count => _toolCalls.length;
 
   String _nextSyntheticToolCallId() {
@@ -209,7 +172,6 @@ class ToolCallAccumulator {
   }
 }
 
-/// Internal data class representing an accumulated tool call.
 class _AccumulatedToolCall {
   const _AccumulatedToolCall({
     required this.index,

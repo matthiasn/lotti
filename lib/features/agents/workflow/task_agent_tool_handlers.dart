@@ -678,11 +678,10 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
   /// Records an assistant message (with or without tool calls) to the agent
   /// message log.
   Future<void> _recordAssistantMessage({
-    List<ChatCompletionMessageToolCall>? toolCalls,
+    List<AiToolCall>? toolCalls,
   }) async {
     final now = clock.now();
-    final toolNames =
-        toolCalls?.map((tc) => tc.function.name).toList() ?? <String>[];
+    final toolNames = toolCalls?.map((tc) => tc.name).toList() ?? <String>[];
 
     await syncService.upsertEntity(
       AgentDomainEntity.agentMessage(

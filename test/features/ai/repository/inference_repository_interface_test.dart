@@ -1,16 +1,16 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Concrete test subclass that records received arguments and returns a fixed
 /// stream from [generateTextWithMessages].
 class _RecordingInferenceRepository extends InferenceRepositoryInterface {
   /// The messages passed to the last [generateTextWithMessages] call.
-  List<ChatCompletionMessage>? lastMessages;
+  List<AiChatMessage>? lastMessages;
 
   /// The model passed to the last call.
   String? lastModel;
@@ -25,10 +25,10 @@ class _RecordingInferenceRepository extends InferenceRepositoryInterface {
   int? lastMaxCompletionTokens;
 
   /// The tools passed to the last call.
-  List<ChatCompletionTool>? lastTools;
+  List<AiTool>? lastTools;
 
   /// The toolChoice passed to the last call.
-  ChatCompletionToolChoiceOption? lastToolChoice;
+  AiToolChoice? lastToolChoice;
 
   /// The thoughtSignatures passed to the last call.
   Map<String, String>? lastThoughtSignatures;
@@ -40,18 +40,17 @@ class _RecordingInferenceRepository extends InferenceRepositoryInterface {
   int? lastTurnIndex;
 
   /// The stream to return from [generateTextWithMessages].
-  Stream<CreateChatCompletionStreamResponse> streamToReturn =
-      const Stream.empty();
+  Stream<AiStreamChunk> streamToReturn = const Stream.empty();
 
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<AiStreamChunk> generateTextWithMessages({
+    required List<AiChatMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<AiTool>? tools,
+    AiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -100,20 +99,17 @@ void main() {
           );
 
           expect(repository.lastMessages, hasLength(2));
+          final systemMsg = repository.lastMessages![0];
+          expect(systemMsg, isA<AiSystemMessage>());
           expect(
-            repository.lastMessages![0],
-            const ChatCompletionMessage.system(
-              content: 'You are a helpful assistant.',
-            ),
+            (systemMsg as AiSystemMessage).content,
+            'You are a helpful assistant.',
           );
-          expect(
-            repository.lastMessages![1],
-            const ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string(
-                'Hello, world!',
-              ),
-            ),
-          );
+          final userMsg = repository.lastMessages![1];
+          expect(userMsg, isA<AiUserMessage>());
+          final userContent = (userMsg as AiUserMessage).content;
+          expect(userContent, isA<AiUserTextContent>());
+          expect((userContent as AiUserTextContent).text, 'Hello, world!');
         },
       );
 
@@ -129,14 +125,11 @@ void main() {
           );
 
           expect(repository.lastMessages, hasLength(1));
-          expect(
-            repository.lastMessages![0],
-            const ChatCompletionMessage.user(
-              content: ChatCompletionUserMessageContent.string(
-                'Just a prompt',
-              ),
-            ),
-          );
+          final userMsg = repository.lastMessages![0];
+          expect(userMsg, isA<AiUserMessage>());
+          final userContent = (userMsg as AiUserMessage).content;
+          expect(userContent, isA<AiUserTextContent>());
+          expect((userContent as AiUserTextContent).text, 'Just a prompt');
         },
       );
 
@@ -144,12 +137,10 @@ void main() {
         'passes all parameters through to generateTextWithMessages',
         () {
           const tools = [
-            ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'test_function',
-                description: 'A test function',
-              ),
+            AiTool(
+              name: 'test_function',
+              description: 'A test function',
+              parameters: <String, dynamic>{},
             ),
           ];
 
@@ -175,17 +166,16 @@ void main() {
         'returns the stream from generateTextWithMessages',
         () async {
           final responses = [
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     content: 'Hello!',
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           ];
@@ -204,7 +194,7 @@ void main() {
           expect(collected, hasLength(1));
           expect(collected[0].id, 'test-response');
           expect(
-            collected[0].choices?.first.delta?.content,
+            collected[0].choices.first.delta.content,
             'Hello!',
           );
         },

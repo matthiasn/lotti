@@ -6,11 +6,11 @@ import 'dart:convert';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 class _FakeStreamClient extends http.BaseClient {
   _FakeStreamClient(this._statusCode, this._lines);
@@ -192,12 +192,12 @@ void main() {
       final events = await stream.toList();
       expect(events.length, 2);
       // First is thinking block
-      final firstContent = events[0].choices!.first.delta!.content!;
+      final firstContent = events[0].choices.first.delta.content!;
       expect(firstContent.startsWith('<think>'), isTrue);
       expect(firstContent.contains('Consider tasks...'), isTrue);
       expect(firstContent.contains('Check dates.'), isTrue);
       // Second is regular text
-      final secondContent = events[1].choices!.first.delta!.content!;
+      final secondContent = events[1].choices.first.delta.content!;
       expect(secondContent, 'Here are your tasks.');
     });
 
@@ -241,7 +241,7 @@ void main() {
             )
             .toList();
         expect(events.length, 1);
-        expect(events.first.choices!.first.delta!.content, 'OK');
+        expect(events.first.choices.first.delta.content, 'OK');
       },
     );
 
@@ -311,15 +311,15 @@ void main() {
 
       // Expect three events: thinking, text, then aggregated tools
       expect(events.length, 3);
-      final thinkDelta = events[0].choices!.first.delta!;
+      final thinkDelta = events[0].choices.first.delta;
       expect(thinkDelta.content, isNotNull);
       // includes <thinking> wrapper
       expect(thinkDelta.content!.contains('Reason A'), isTrue);
 
-      final textDelta = events[1].choices!.first.delta!;
+      final textDelta = events[1].choices.first.delta;
       expect(textDelta.content, 'Visible');
 
-      final toolsDelta = events[2].choices!.first.delta!;
+      final toolsDelta = events[2].choices.first.delta;
       expect(toolsDelta.toolCalls, isNotNull);
       expect(toolsDelta.toolCalls!.length, 2);
       expect(toolsDelta.toolCalls![0].id, 'tool_turn0_0');
@@ -372,12 +372,12 @@ void main() {
 
       final events = await stream.toList();
       expect(events.length, 1);
-      final delta = events.first.choices!.first.delta!;
+      final delta = events.first.choices.first.delta;
       expect(delta.toolCalls, isNotNull);
       expect(delta.toolCalls!.length, 1);
       final call = delta.toolCalls!.first;
-      expect(call.function!.name, 'get_task_summaries');
-      expect(call.function!.arguments, contains('start_date'));
+      expect(call.name, 'get_task_summaries');
+      expect(call.arguments, contains('start_date'));
     });
 
     test(
@@ -431,8 +431,8 @@ void main() {
 
         // We expect two tool-call events
         expect(events.length, 2);
-        final call0 = events[0].choices!.first.delta!.toolCalls!.first;
-        final call1 = events[1].choices!.first.delta!.toolCalls!.first;
+        final call0 = events[0].choices.first.delta.toolCalls!.first;
+        final call1 = events[1].choices.first.delta.toolCalls!.first;
         expect(call0.id, 'tool_turn0_0');
         expect(call0.index, 0);
         expect(call1.id, 'tool_turn0_1');
@@ -503,9 +503,9 @@ void main() {
 
         // Expect two events: one for content text, one for aggregated tools
         expect(events.length, 2);
-        final textDelta = events[0].choices!.first.delta!;
+        final textDelta = events[0].choices.first.delta;
         expect(textDelta.content, 'hello');
-        final toolsDelta = events[1].choices!.first.delta!;
+        final toolsDelta = events[1].choices.first.delta;
         expect(toolsDelta.toolCalls, isNotNull);
         expect(toolsDelta.toolCalls!.length, 2);
         expect(toolsDelta.toolCalls![0].id, 'tool_turn0_0');
@@ -584,10 +584,10 @@ void main() {
         // Expect thinking block + visible answer
         expect(events.length, 2);
         expect(
-          events[0].choices!.first.delta!.content,
+          events[0].choices.first.delta.content,
           '<think>\ninternal chain\n</think>\n',
         );
-        expect(events[1].choices!.first.delta!.content, 'Visible answer.');
+        expect(events[1].choices.first.delta.content, 'Visible answer.');
       },
     );
 
@@ -631,7 +631,7 @@ void main() {
           .toList();
 
       expect(events.length, 1);
-      final content = events.first.choices!.first.delta!.content!;
+      final content = events.first.choices.first.delta.content!;
       expect(content.startsWith('<think>'), isTrue);
       expect(content, contains('reason...'));
       expect(content, contains('more...'));
@@ -675,7 +675,7 @@ void main() {
           .toList();
 
       expect(events.length, 1);
-      expect(events.first.choices!.first.delta!.content, 'A');
+      expect(events.first.choices.first.delta.content, 'A');
     });
 
     test('parses JSON object across multiple chunks', () async {
@@ -704,7 +704,7 @@ void main() {
           )
           .toList();
       expect(events.length, 1);
-      expect(events.first.choices!.first.delta!.content, 'Hello');
+      expect(events.first.choices.first.delta.content, 'Hello');
     });
 
     test('fallback non-streaming failure yields no events', () async {
@@ -785,7 +785,7 @@ void main() {
             )
             .toList();
         expect(events.length, 1);
-        expect(events.first.choices!.first.delta!.content, 'from stream');
+        expect(events.first.choices.first.delta.content, 'from stream');
         expect(client.streamCalls, 1);
         expect(client.fallbackCalls, 0);
       },
@@ -845,13 +845,13 @@ void main() {
 
       // Should have: text event + usage event
       expect(events.length, 2);
-      expect(events[0].choices!.first.delta!.content, 'Fallback response');
+      expect(events[0].choices.first.delta.content, 'Fallback response');
 
       final usageEvent = events[1];
       expect(usageEvent.usage, isNotNull);
       expect(usageEvent.usage!.promptTokens, 50);
       expect(usageEvent.usage!.completionTokens, 20);
-      expect(usageEvent.usage!.completionTokensDetails?.reasoningTokens, 10);
+      expect(usageEvent.usage!.reasoningTokens, 10);
     });
 
     test('parses usageMetadata and emits in final chunk', () async {
@@ -899,14 +899,14 @@ void main() {
       expect(events.length, 2);
 
       // First event is content
-      expect(events[0].choices!.first.delta!.content, 'Hello world');
+      expect(events[0].choices.first.delta.content, 'Hello world');
 
       // Last event contains usage
       final usageEvent = events.last;
       expect(usageEvent.usage, isNotNull);
       expect(usageEvent.usage!.promptTokens, 100);
       expect(usageEvent.usage!.completionTokens, 50);
-      expect(usageEvent.usage!.completionTokensDetails?.reasoningTokens, 25);
+      expect(usageEvent.usage!.reasoningTokens, 25);
     });
 
     test('accumulates usageMetadata across multiple chunks', () async {
@@ -974,7 +974,7 @@ void main() {
       expect(usageEvent.usage, isNotNull);
       expect(usageEvent.usage!.promptTokens, 100);
       expect(usageEvent.usage!.completionTokens, 50);
-      expect(usageEvent.usage!.completionTokensDetails?.reasoningTokens, 25);
+      expect(usageEvent.usage!.reasoningTokens, 25);
     });
 
     test('emits no usage event when usageMetadata is absent', () async {
@@ -1014,7 +1014,7 @@ void main() {
 
       // Should only have content event, no usage event
       expect(events.length, 1);
-      expect(events.first.choices!.first.delta!.content, 'No usage data');
+      expect(events.first.choices.first.delta.content, 'No usage data');
       expect(events.first.usage, isNull);
     });
 
@@ -1060,11 +1060,11 @@ void main() {
           .toList();
 
       expect(events.length, 1);
-      final toolCalls = events.first.choices!.first.delta!.toolCalls;
+      final toolCalls = events.first.choices.first.delta.toolCalls;
       expect(toolCalls, isNotNull);
       expect(toolCalls!.length, 1);
-      expect(toolCalls.first.function!.name, 'test_function');
-      expect(toolCalls.first.function!.arguments, '{"arg1":"value1"}');
+      expect(toolCalls.first.name, 'test_function');
+      expect(toolCalls.first.arguments, '{"arg1":"value1"}');
       // Note: thoughtSignature is logged but not exposed in OpenAI-compat types
     });
 
@@ -1119,14 +1119,14 @@ void main() {
       expect(events.length, 2);
 
       // First function call
-      final firstToolCalls = events[0].choices!.first.delta!.toolCalls;
+      final firstToolCalls = events[0].choices.first.delta.toolCalls;
       expect(firstToolCalls, isNotNull);
-      expect(firstToolCalls!.first.function!.name, 'function_one');
+      expect(firstToolCalls!.first.name, 'function_one');
 
       // Second function call
-      final secondToolCalls = events[1].choices!.first.delta!.toolCalls;
+      final secondToolCalls = events[1].choices.first.delta.toolCalls;
       expect(secondToolCalls, isNotNull);
-      expect(secondToolCalls!.first.function!.name, 'function_two');
+      expect(secondToolCalls!.first.name, 'function_two');
     });
   });
 
@@ -1164,7 +1164,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.gemini,
         );
 
-        List<CreateChatCompletionStreamResponse>? events;
+        List<AiStreamChunk>? events;
         repo
             .generateText(
               prompt: 'test',
@@ -1186,7 +1186,7 @@ void main() {
         expect(events, isNotNull);
         expect(events!.length, 1);
         expect(
-          events!.first.choices!.first.delta!.content,
+          events!.first.choices.first.delta.content,
           'Success after retry',
         );
       });
@@ -1225,7 +1225,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.gemini,
         );
 
-        List<CreateChatCompletionStreamResponse>? events;
+        List<AiStreamChunk>? events;
         repo
             .generateText(
               prompt: 'test',
@@ -1244,7 +1244,7 @@ void main() {
 
         expect(attemptCount, 2);
         expect(events, isNotNull);
-        expect(events!.first.choices!.first.delta!.content, 'Back online');
+        expect(events!.first.choices.first.delta.content, 'Back online');
       });
     });
 
@@ -1279,7 +1279,7 @@ void main() {
             .toList()
             .catchError((Object e) {
               caughtError = e;
-              return <CreateChatCompletionStreamResponse>[];
+              return <AiStreamChunk>[];
             });
 
         // Attempt 1: gets 429, schedules 500ms backoff
@@ -1562,19 +1562,16 @@ void main() {
             thinkingConfig: GeminiThinkingConfig.disabled,
             provider: provider,
             tools: [
-              const ChatCompletionTool(
-                type: ChatCompletionToolType.function,
-                function: FunctionObject(
-                  name: 'get_weather',
-                  description: 'Get weather for a location',
-                  parameters: {
-                    'type': 'object',
-                    'properties': {
-                      'location': {'type': 'string'},
-                    },
-                    'required': ['location'],
+              const AiTool(
+                name: 'get_weather',
+                description: 'Get weather for a location',
+                parameters: {
+                  'type': 'object',
+                  'properties': {
+                    'location': {'type': 'string'},
                   },
-                ),
+                  'required': ['location'],
+                },
               ),
             ],
           )
@@ -1644,12 +1641,12 @@ void main() {
       expect(events.length, 2);
 
       // Thinking should be captured (may be truncated at very high limits)
-      final thinkingContent = events[0].choices!.first.delta!.content!;
+      final thinkingContent = events[0].choices.first.delta.content!;
       expect(thinkingContent.startsWith('<think>'), isTrue);
       expect(thinkingContent.endsWith('</think>\n'), isTrue);
 
       // Answer should be present
-      expect(events[1].choices!.first.delta!.content, 'Short answer');
+      expect(events[1].choices.first.delta.content, 'Short answer');
     });
   });
 
@@ -1932,13 +1929,9 @@ void main() {
       );
 
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
-        const ChatCompletionMessage.assistant(content: 'Hi there!'),
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('How are you?'),
-        ),
+        const AiUserMessage(AiUserTextContent('Hello')),
+        const AiAssistantMessage(content: 'Hi there!'),
+        const AiUserMessage(AiUserTextContent('How are you?')),
       ];
 
       final events = await repo
@@ -1952,7 +1945,7 @@ void main() {
           .toList();
 
       expect(events.length, 1);
-      expect(events.first.choices!.first.delta!.content, 'Multi-turn response');
+      expect(events.first.choices.first.delta.content, 'Multi-turn response');
 
       // Verify body contains messages array (multi-turn format)
       expect(capturedBody, isNotNull);
@@ -1995,22 +1988,17 @@ void main() {
       );
 
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Add items'),
-        ),
-        const ChatCompletionMessage.assistant(
+        const AiUserMessage(AiUserTextContent('Add items')),
+        const AiAssistantMessage(
           toolCalls: [
-            ChatCompletionMessageToolCall(
+            AiToolCall(
               id: 'call-123',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'add_item',
-                arguments: '{"title":"Buy milk"}',
-              ),
+              name: 'add_item',
+              arguments: '{"title":"Buy milk"}',
             ),
           ],
         ),
-        const ChatCompletionMessage.tool(
+        const AiToolResultMessage(
           toolCallId: 'call-123',
           content: 'Item added successfully',
         ),
@@ -2084,9 +2072,7 @@ void main() {
       await repo
           .generateTextWithMessages(
             messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Add item'),
-              ),
+              AiUserMessage(AiUserTextContent('Add item')),
             ],
             model: 'gemini-3-flash',
             temperature: 0.5,
@@ -2129,9 +2115,7 @@ void main() {
       final events = await repo
           .generateTextWithMessages(
             messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Think hard'),
-              ),
+              AiUserMessage(AiUserTextContent('Think hard')),
             ],
             model: 'gemini-2.5-pro',
             temperature: 0.5,
@@ -2144,12 +2128,12 @@ void main() {
           .toList();
 
       expect(events.length, 2);
-      expect(events[0].choices!.first.delta!.content, contains('<think>'));
+      expect(events[0].choices.first.delta.content, contains('<think>'));
       expect(
-        events[0].choices!.first.delta!.content,
+        events[0].choices.first.delta.content,
         contains('Let me think about this...'),
       );
-      expect(events[1].choices!.first.delta!.content, 'Here is my response');
+      expect(events[1].choices.first.delta.content, 'Here is my response');
     });
 
     test('emits usage in multi-turn response', () async {
@@ -2185,9 +2169,7 @@ void main() {
       final events = await repo
           .generateTextWithMessages(
             messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Hello'),
-              ),
+              AiUserMessage(AiUserTextContent('Hello')),
             ],
             model: 'gemini-2.5-pro',
             temperature: 0.5,
@@ -2201,7 +2183,7 @@ void main() {
       expect(events.last.usage, isNotNull);
       expect(events.last.usage!.promptTokens, 200);
       expect(events.last.usage!.completionTokens, 100);
-      expect(events.last.usage!.completionTokensDetails?.reasoningTokens, 50);
+      expect(events.last.usage!.reasoningTokens, 50);
     });
 
     test('throws on non-2xx status in multi-turn mode', () async {
@@ -2221,9 +2203,7 @@ void main() {
         () => repo
             .generateTextWithMessages(
               messages: const [
-                ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Hello'),
-                ),
+                AiUserMessage(AiUserTextContent('Hello')),
               ],
               model: 'gemini-2.5-pro',
               temperature: 0.5,
@@ -2263,9 +2243,7 @@ void main() {
       final events = await repo
           .generateTextWithMessages(
             messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Think'),
-              ),
+              AiUserMessage(AiUserTextContent('Think')),
             ],
             model: 'gemini-2.5-pro',
             temperature: 0.5,
@@ -2278,9 +2256,9 @@ void main() {
           .toList();
 
       expect(events.length, 1);
-      expect(events.first.choices!.first.delta!.content, contains('<think>'));
+      expect(events.first.choices.first.delta.content, contains('<think>'));
       expect(
-        events.first.choices!.first.delta!.content,
+        events.first.choices.first.delta.content,
         contains('Still thinking...'),
       );
     });
@@ -2309,9 +2287,7 @@ void main() {
       final events = await repo
           .generateTextWithMessages(
             messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Hi'),
-              ),
+              AiUserMessage(AiUserTextContent('Hi')),
             ],
             model: 'gemini-2.5-pro',
             temperature: 0.5,
@@ -2359,8 +2335,8 @@ void main() {
       await repo
           .generateTextWithMessages(
             messages: const [
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string(
+              AiUserMessage(
+                AiUserTextContent(
                   'Do something',
                 ),
               ),
@@ -2420,7 +2396,7 @@ void main() {
           inferenceProviderType: InferenceProviderType.gemini,
         );
 
-        List<CreateChatCompletionStreamResponse>? events;
+        List<AiStreamChunk>? events;
         repo
             .generateText(
               prompt: 'test',
@@ -2439,7 +2415,7 @@ void main() {
 
         expect(attemptCount, 2);
         expect(events, isNotNull);
-        expect(events!.first.choices!.first.delta!.content, 'Success');
+        expect(events!.first.choices.first.delta.content, 'Success');
       });
     });
   });
@@ -2807,7 +2783,7 @@ void main() {
         // Only the large text chunk should be emitted; stream terminates early
         // before "should never appear".
         expect(events.length, 1);
-        expect(events.first.choices!.first.delta!.content, largeText);
+        expect(events.first.choices.first.delta.content, largeText);
       },
     );
   });
@@ -2855,7 +2831,7 @@ void main() {
             inferenceProviderType: InferenceProviderType.gemini,
           );
 
-          List<CreateChatCompletionStreamResponse>? events;
+          List<AiStreamChunk>? events;
           repo
               .generateText(
                 prompt: 'test',
@@ -2876,7 +2852,7 @@ void main() {
           expect(attemptCount, 2);
           expect(events, isNotNull);
           expect(
-            events!.first.choices!.first.delta!.content,
+            events!.first.choices.first.delta.content,
             'Done after fallback backoff',
           );
         });
@@ -2917,7 +2893,7 @@ void main() {
             inferenceProviderType: InferenceProviderType.gemini,
           );
 
-          List<CreateChatCompletionStreamResponse>? events;
+          List<AiStreamChunk>? events;
           repo
               .generateText(
                 prompt: 'test',
@@ -2937,7 +2913,7 @@ void main() {
           expect(attemptCount, 2);
           expect(events, isNotNull);
           expect(
-            events!.first.choices!.first.delta!.content,
+            events!.first.choices.first.delta.content,
             'Response after timeout',
           );
         });
@@ -2972,7 +2948,7 @@ void main() {
             .toList()
             .catchError((Object e) {
               caughtError = e;
-              return <CreateChatCompletionStreamResponse>[];
+              return <AiStreamChunk>[];
             });
 
         // Attempt 1 times out, schedules 500ms delay.

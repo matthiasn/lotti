@@ -94,7 +94,6 @@ dependencies:
   multi_select_flutter: ^4.0.0
   objectbox: ^5.2.0
   objectbox_flutter_libs: ^5.2.0
-  openai_dart: ^0.6.1
   package_info_plus: ^9.0.0
   path: ^1.8.1
   path_provider: ^2.0.12

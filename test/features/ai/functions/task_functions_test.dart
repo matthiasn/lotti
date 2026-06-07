@@ -2,13 +2,12 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 void main() {
   group('TaskFunctions.getTools', () {
     test('returns tool definitions for all four task functions', () {
       final tools = TaskFunctions.getTools();
-      final names = tools.map((t) => t.function.name).toList();
+      final names = tools.map((t) => t.name).toList();
 
       expect(names, contains(TaskFunctions.setTaskLanguage));
       expect(names, contains(TaskFunctions.updateTaskEstimate));
@@ -17,19 +16,12 @@ void main() {
       expect(tools.length, 4);
     });
 
-    test('every tool is of function type', () {
-      final tools = TaskFunctions.getTools();
-      for (final tool in tools) {
-        expect(tool.type, ChatCompletionToolType.function);
-      }
-    });
-
     test('set_task_language enum lists all SupportedLanguage codes', () {
       final tools = TaskFunctions.getTools();
       final tool = tools.firstWhere(
-        (t) => t.function.name == TaskFunctions.setTaskLanguage,
+        (t) => t.name == TaskFunctions.setTaskLanguage,
       );
-      final params = tool.function.parameters!;
+      final params = tool.parameters;
       final props = params['properties']! as Map<String, dynamic>;
       final lang = props['languageCode']! as Map<String, dynamic>;
       final values = (lang['enum']! as List).cast<String>();
@@ -43,9 +35,9 @@ void main() {
     test('update_task_estimate clamps to 1..1440 minutes', () {
       final tools = TaskFunctions.getTools();
       final tool = tools.firstWhere(
-        (t) => t.function.name == TaskFunctions.updateTaskEstimate,
+        (t) => t.name == TaskFunctions.updateTaskEstimate,
       );
-      final params = tool.function.parameters!;
+      final params = tool.parameters;
       final props = params['properties']! as Map<String, dynamic>;
       final minutes = props['minutes']! as Map<String, dynamic>;
 
@@ -60,11 +52,11 @@ void main() {
       withClock(Clock.fixed(fixedNow), () {
         final tools = TaskFunctions.getTools();
         final tool = tools.firstWhere(
-          (t) => t.function.name == TaskFunctions.updateTaskDueDate,
+          (t) => t.name == TaskFunctions.updateTaskDueDate,
         );
-        expect(tool.function.description, contains('2026-04-15'));
+        expect(tool.description, contains('2026-04-15'));
 
-        final params = tool.function.parameters!;
+        final params = tool.parameters;
         final props = params['properties']! as Map<String, dynamic>;
         final dueDate = props['dueDate']! as Map<String, dynamic>;
         expect(dueDate['format'], 'date');
@@ -75,9 +67,9 @@ void main() {
     test('update_task_priority restricts to P0..P3', () {
       final tools = TaskFunctions.getTools();
       final tool = tools.firstWhere(
-        (t) => t.function.name == TaskFunctions.updateTaskPriority,
+        (t) => t.name == TaskFunctions.updateTaskPriority,
       );
-      final params = tool.function.parameters!;
+      final params = tool.parameters;
       final props = params['properties']! as Map<String, dynamic>;
       final priority = props['priority']! as Map<String, dynamic>;
       final values = (priority['enum']! as List).cast<String>();
@@ -90,14 +82,14 @@ void main() {
       final tools = TaskFunctions.getTools();
       const expected = ['high', 'medium', 'low'];
       for (final t in tools) {
-        final params = t.function.parameters!;
+        final params = t.parameters;
         final props = params['properties']! as Map<String, dynamic>;
         final confidence = props['confidence'] as Map<String, dynamic>?;
         if (confidence == null) continue;
         expect(
           (confidence['enum']! as List).cast<String>(),
           expected,
-          reason: 'tool ${t.function.name} confidence enum diverged',
+          reason: 'tool ${t.name} confidence enum diverged',
         );
       }
     });

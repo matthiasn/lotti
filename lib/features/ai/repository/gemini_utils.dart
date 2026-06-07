@@ -1,9 +1,9 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Utilities for building Gemini HTTP requests and decoding stream framing.
 ///
@@ -74,7 +74,7 @@ class GeminiUtils {
   /// - Always includes the `prompt` as a single user message.
   /// - Adds `systemInstruction` when provided.
   /// - Serializes [GeminiThinkingConfig] into `generationConfig.thinkingConfig`.
-  /// - Maps OpenAI-style [ChatCompletionTool] to Gemini `functionDeclarations`.
+  /// - Maps internal [AiTool] objects to Gemini `functionDeclarations`.
   static Map<String, dynamic> buildRequestBody({
     required String prompt,
     required double temperature,
@@ -82,7 +82,7 @@ class GeminiUtils {
     String? systemMessage,
     String? modelId,
     int? maxTokens,
-    List<ChatCompletionTool>? tools,
+    List<AiTool>? tools,
   }) {
     final contents = <Map<String, dynamic>>[
       {
@@ -132,7 +132,7 @@ class GeminiUtils {
   /// - Function tool declarations
   ///
   /// Parameters:
-  /// - [messages]: Full conversation history as OpenAI-style messages
+  /// - [messages]: Full conversation history as internal [AiChatMessage]s
   /// - [temperature]: Sampling temperature
   /// - [thinkingConfig]: Thinking budget and policy
   /// - [thoughtSignatures]: Map of tool call IDs to signatures (for replay)
@@ -140,21 +140,22 @@ class GeminiUtils {
   /// - [maxTokens]: Optional output token limit
   /// - [tools]: Optional function declarations
   static Map<String, dynamic> buildMultiTurnRequestBody({
-    required List<ChatCompletionMessage> messages,
+    required List<AiChatMessage> messages,
     required double temperature,
     required GeminiThinkingConfig thinkingConfig,
     Map<String, String>? thoughtSignatures,
     String? systemMessage,
     String? modelId,
     int? maxTokens,
-    List<ChatCompletionTool>? tools,
+    List<AiTool>? tools,
   }) {
     // Build mapping of toolCallId -> functionName from assistant messages
-    // This is needed because tool responses only have the ID, not the name
+    // so that tool-result messages (which only carry the ID) can supply the
+    // function name Gemini expects.
     final toolCallIdToName = <String, String>{
-      for (final msg in messages.whereType<ChatCompletionAssistantMessage>())
+      for (final msg in messages.whereType<AiAssistantMessage>())
         if (msg.toolCalls != null)
-          for (final tc in msg.toolCalls!) tc.id: tc.function.name,
+          for (final tc in msg.toolCalls!) tc.id: tc.name,
     };
 
     final contents = <Map<String, dynamic>>[];
@@ -269,149 +270,95 @@ class GeminiUtils {
     return request;
   }
 
-  /// Converts an OpenAI-style message to Gemini content format.
+  /// Converts an [AiChatMessage] to Gemini's content format.
   ///
-  /// Returns null for system messages (handled separately as systemInstruction).
-  ///
-  /// [toolCallIdToName] maps tool call IDs to function names, used for
-  /// converting tool response messages (which only have ID, not name).
+  /// Returns null for system messages (handled separately as
+  /// `systemInstruction`) and for empty assistant turns. [toolCallIdToName]
+  /// maps tool call IDs to function names, used for converting tool result
+  /// messages (which only have ID, not name).
   static Map<String, dynamic>? _convertMessageToGeminiContent(
-    ChatCompletionMessage message, {
+    AiChatMessage message, {
     Map<String, String>? thoughtSignatures,
     Map<String, String>? toolCallIdToName,
   }) {
-    return message.map(
-      system: (_) => null, // System messages handled separately
-      user: (user) {
-        final content = user.content;
+    switch (message) {
+      case AiSystemMessage():
+        return null;
+      case AiUserMessage(:final content):
+        final text = switch (content) {
+          AiUserTextContent(:final text) => text,
+          AiUserPartsContent(:final parts) => parts.map((p) {
+            return switch (p) {
+              AiTextPart(:final text) => text,
+              AiImagePart() => '[image]',
+              AiAudioPart() => '[audio]',
+            };
+          }).join(),
+        };
         return {
           'role': 'user',
           'parts': [
-            {
-              'text': content.map(
-                string: (s) => s.value,
-                parts: (p) {
-                  // Extract text from content parts using toJson()
-                  final textParts = <String>[];
-                  for (final part in p.value) {
-                    final partMap = part.toJson();
-                    if (partMap['type'] == 'text') {
-                      final text = partMap['text'];
-                      if (text is String && text.isNotEmpty) {
-                        textParts.add(text);
-                      }
-                    }
-                    // For images, audio, files - add placeholder
-                    else if (partMap['type'] == 'image_url') {
-                      textParts.add('[image]');
-                    } else if (partMap['type'] == 'input_audio') {
-                      textParts.add('[audio]');
-                    } else if (partMap['type'] == 'file') {
-                      textParts.add('[file]');
-                    }
-                  }
-                  return textParts.join();
-                },
-              ),
-            },
+            {'text': text},
           ],
         };
-      },
-      assistant: (assistant) {
+      case AiAssistantMessage(:final content, :final toolCalls):
         final parts = <Map<String, dynamic>>[];
-
-        // Add text content if present
-        if (assistant.content != null && assistant.content!.isNotEmpty) {
-          parts.add({'text': assistant.content});
+        if (content != null && content.isNotEmpty) {
+          parts.add({'text': content});
         }
-
-        // Add function calls with signatures if present
-        if (assistant.toolCalls != null) {
-          for (final toolCall in assistant.toolCalls!) {
-            // Defensive JSON parsing for tool call arguments
+        if (toolCalls != null) {
+          for (final toolCall in toolCalls) {
             dynamic args;
             try {
-              args = jsonDecode(toolCall.function.arguments);
+              args = jsonDecode(toolCall.arguments);
             } on FormatException catch (e) {
               developer.log(
                 'Failed to parse tool call arguments as JSON: ${e.message}. '
-                'Using empty object. Raw: ${toolCall.function.arguments}',
+                'Using empty object. Raw: ${toolCall.arguments}',
                 name: 'GeminiUtils',
               );
               args = <String, dynamic>{};
             }
-
-            // Build function call part - signature is at part level as sibling
             final functionCallPart = <String, dynamic>{
-              'functionCall': {'name': toolCall.function.name, 'args': args},
+              'functionCall': {'name': toolCall.name, 'args': args},
             };
-
-            // Include thought signature at part level (sibling of functionCall)
-            // Per Gemini docs, signature must NOT be nested inside functionCall
             final signature = thoughtSignatures?[toolCall.id];
             if (signature != null) {
               functionCallPart['thoughtSignature'] = signature;
             }
-
             parts.add(functionCallPart);
           }
         }
-
         if (parts.isEmpty) return null;
-
         return {'role': 'model', 'parts': parts};
-      },
-      tool: (tool) {
-        // Look up the function name from the mapping, fall back to toolCallId
-        // if not found (shouldn't happen in well-formed conversations)
-        final functionName =
-            toolCallIdToName?[tool.toolCallId] ?? tool.toolCallId;
+      case AiToolResultMessage(:final toolCallId, :final content):
+        final functionName = toolCallIdToName?[toolCallId] ?? toolCallId;
         return {
           'role': 'function',
           'parts': [
             {
               'functionResponse': {
                 'name': functionName,
-                'response': {'result': tool.content},
+                'response': {'result': content},
               },
             },
           ],
         };
-      },
-      function: (func) {
-        // Legacy function message format - convert to tool format
-        return {
-          'role': 'function',
-          'parts': [
-            {
-              'functionResponse': {
-                'name': func.name,
-                'response': {'result': func.content ?? ''},
-              },
-            },
-          ],
-        };
-      },
-      developer: (_) => null, // Not supported by Gemini
-    );
+    }
   }
 
-  /// Converts OpenAI-style [ChatCompletionTool] objects to Gemini
-  /// `functionDeclarations`, stripping JSON Schema keywords that Gemini's
-  /// native API does not support (e.g. `additionalProperties`).
+  /// Converts internal [AiTool] objects to Gemini `functionDeclarations`,
+  /// stripping JSON Schema keywords that Gemini's native API does not support
+  /// (e.g. `additionalProperties`).
   static List<Map<String, dynamic>> _buildFunctionDeclarations(
-    List<ChatCompletionTool> tools,
+    List<AiTool> tools,
   ) {
     return tools
         .map(
           (t) => {
-            'name': t.function.name,
-            if (t.function.description != null)
-              'description': t.function.description,
-            if (t.function.parameters != null)
-              'parameters': _stripAdditionalProperties(
-                t.function.parameters!,
-              ),
+            'name': t.name,
+            'description': t.description,
+            'parameters': _stripAdditionalProperties(t.parameters),
           },
         )
         .toList();

@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/model/inference_provider_extensions.dart';
 import 'package:lotti/features/ai/providers/gemini_inference_repository_provider.dart';
 import 'package:lotti/features/ai/providers/ollama_inference_repository_provider.dart';
+import 'package:lotti/features/ai/repository/ai_inference_client.dart';
 import 'package:lotti/features/ai/repository/dashscope_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
@@ -19,7 +20,6 @@ import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/features/ai/repository/whisper_inference_repository.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:uuid/uuid.dart';
 
@@ -50,82 +50,33 @@ class CloudInferenceRepository {
   final VoxtralInferenceRepository _voxtralRepository;
   final OpenAiTranscriptionRepository _openAiTranscriptionRepository;
 
-  /// Helper method to create common request parameters
-  CreateChatCompletionRequest _createBaseRequest({
-    required List<ChatCompletionMessage> messages,
-    required String model,
-    double? temperature,
-    int? maxCompletionTokens,
-    int? maxTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
-    ReasoningEffort? reasoningEffort,
-    bool stream = true,
-  }) {
-    final ChatCompletionToolChoiceOption? effectiveToolChoice;
-    if (toolChoice != null) {
-      effectiveToolChoice = toolChoice;
-    } else if (tools != null && tools.isNotEmpty) {
-      effectiveToolChoice = const ChatCompletionToolChoiceOption.mode(
-        ChatCompletionToolChoiceMode.auto,
-      );
-    } else {
-      effectiveToolChoice = null;
-    }
-
-    return CreateChatCompletionRequest(
-      messages: messages,
-      model: ChatCompletionModel.modelId(model),
-      temperature: temperature,
-      maxCompletionTokens: maxCompletionTokens,
-      maxTokens: maxTokens,
-      reasoningEffort: reasoningEffort,
-      stream: stream,
-      tools: tools,
-      toolChoice: effectiveToolChoice,
-    );
-  }
-
-  /// Filters out Anthropic ping messages from the stream
-  Stream<CreateChatCompletionStreamResponse> _filterAnthropicPings(
-    Stream<CreateChatCompletionStreamResponse> stream,
+  /// Resolves the effective tool-choice policy. When [toolChoice] is null we
+  /// default to `auto` if tools are provided, otherwise leave unset.
+  AiToolChoice? _resolveToolChoice(
+    AiToolChoice? toolChoice,
+    List<AiTool>? tools,
   ) {
-    // Use where to filter out errors instead of handleError
-    final controller = StreamController<CreateChatCompletionStreamResponse>();
-
-    stream.listen(
-      controller.add,
-      onError: (Object error, StackTrace stackTrace) {
-        // Check if this is specifically an Anthropic ping message error
-        final errorString = error.toString();
-
-        // Anthropic ping messages cause a specific null subtype error when parsing choices
-        final isAnthropicPingError =
-            errorString.contains(
-              "type 'Null' is not a subtype of type 'List<dynamic>'",
-            ) &&
-            errorString.contains('choices');
-
-        if (isAnthropicPingError) {
-          // Log but don't propagate the error
-          developer.log(
-            'Skipping Anthropic ping message',
-            name: 'CloudInferenceRepository',
-            error: error,
-            stackTrace: stackTrace,
-          );
-          return;
-        }
-        // Propagate other errors
-        controller.addError(error, stackTrace);
-      },
-      onDone: controller.close,
-    );
-
-    return controller.stream;
+    if (toolChoice != null) return toolChoice;
+    if (tools != null && tools.isNotEmpty) return const AiToolChoiceAuto();
+    return null;
   }
 
-  Stream<CreateChatCompletionStreamResponse> generate(
+  /// Forward [source] and close [owned] when the consumer stops listening or
+  /// the source terminates. Used to clean up [AiInferenceClient] instances
+  /// this repository allocates itself — caller-supplied `overrideClient`s
+  /// are never closed here.
+  Stream<AiStreamChunk> _withOwnedClient(
+    AiInferenceClient owned,
+    Stream<AiStreamChunk> source,
+  ) async* {
+    try {
+      yield* source;
+    } finally {
+      owned.close();
+    }
+  }
+
+  Stream<AiStreamChunk> generate(
     String prompt, {
     required String model,
     required double? temperature,
@@ -133,17 +84,17 @@ class CloudInferenceRepository {
     required String apiKey,
     String? systemMessage,
     int? maxCompletionTokens,
-    OpenAIClient? overrideClient,
+    AiInferenceClient? overrideClient,
     AiConfigInferenceProvider? provider,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<AiTool>? tools,
+    AiToolChoice? toolChoice,
     GeminiThinkingMode? geminiThinkingMode,
   }) {
     developer.log(
       'CloudInferenceRepository.generate called with:\n'
       '  model: $model\n'
       '  provider: ${provider?.inferenceProviderType}\n'
-      '  tools: ${tools?.length ?? 0} - ${tools?.map((t) => t.function.name).join(', ') ?? 'none'}\n'
+      '  tools: ${tools?.length ?? 0} - ${tools?.map((t) => t.name).join(', ') ?? 'none'}\n'
       '  systemMessage: ${systemMessage != null && systemMessage.length > 100 ? '${systemMessage.substring(0, 100)}...' : systemMessage}',
       name: 'CloudInferenceRepository',
     );
@@ -196,40 +147,32 @@ class CloudInferenceRepository {
     }
 
     final client =
-        overrideClient ??
-        OpenAIClient(
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
+        overrideClient ?? AiInferenceClient(baseUrl: baseUrl, apiKey: apiKey);
 
     if (tools != null && tools.isNotEmpty) {
       developer.log(
-        'Passing ${tools.length} tools to OpenAI API: ${tools.map((t) => t.function.name).join(', ')}',
+        'Passing ${tools.length} tools to OpenAI API: ${tools.map((t) => t.name).join(', ')}',
         name: 'CloudInferenceRepository',
       );
     }
 
-    final res = client.createChatCompletionStream(
-      request: _createBaseRequest(
-        messages: [
-          if (systemMessage != null)
-            ChatCompletionMessage.system(content: systemMessage),
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string(prompt),
-          ),
-        ],
-        model: model,
-        temperature: temperature,
-        maxCompletionTokens: maxCompletionTokens,
-        tools: tools,
-        toolChoice: toolChoice,
-      ),
+    final source = client.chatCompletionsStream(
+      messages: [
+        if (systemMessage != null) AiSystemMessage(systemMessage),
+        AiUserMessage(AiUserTextContent(prompt)),
+      ],
+      model: model,
+      temperature: temperature,
+      maxCompletionTokens: maxCompletionTokens,
+      tools: tools,
+      toolChoice: _resolveToolChoice(toolChoice, tools),
     );
 
-    return _filterAnthropicPings(res).asBroadcastStream();
+    return (overrideClient == null ? _withOwnedClient(client, source) : source)
+        .asBroadcastStream();
   }
 
-  Stream<CreateChatCompletionStreamResponse> generateWithImages(
+  Stream<AiStreamChunk> generateWithImages(
     String prompt, {
     required String baseUrl,
     required String apiKey,
@@ -237,20 +180,14 @@ class CloudInferenceRepository {
     required double? temperature,
     required List<String> images,
     int? maxCompletionTokens,
-    OpenAIClient? overrideClient,
+    AiInferenceClient? overrideClient,
     AiConfigInferenceProvider? provider,
-    List<ChatCompletionTool>? tools,
+    List<AiTool>? tools,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
   }) {
-    final client =
-        overrideClient ??
-        OpenAIClient(
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
-
-    // For Ollama, use the dedicated repository
+    // For Ollama, use the dedicated repository (don't allocate an
+    // AiInferenceClient we won't end up using).
     if (provider?.inferenceProviderType == InferenceProviderType.ollama) {
       return _ollamaRepository.generateWithImages(
         prompt: prompt,
@@ -262,6 +199,9 @@ class CloudInferenceRepository {
         systemMessage: systemMessage,
       );
     }
+
+    final client =
+        overrideClient ?? AiInferenceClient(baseUrl: baseUrl, apiKey: apiKey);
 
     // For other providers, use the standard OpenAI-compatible format
     final reasoningEffort =
@@ -275,42 +215,33 @@ class CloudInferenceRepository {
 
     if (tools != null && tools.isNotEmpty) {
       developer.log(
-        'Passing ${tools.length} tools to image API: ${tools.map((t) => t.function.name).join(', ')}',
+        'Passing ${tools.length} tools to image API: ${tools.map((t) => t.name).join(', ')}',
         name: 'CloudInferenceRepository',
       );
     }
 
-    final res = client.createChatCompletionStream(
-      request: _createBaseRequest(
-        messages: [
-          if (systemMessage != null)
-            ChatCompletionMessage.system(content: systemMessage),
-          ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.parts(
-              [
-                ChatCompletionMessageContentPart.text(text: prompt),
-                ...images.map(
-                  (image) {
-                    return ChatCompletionMessageContentPart.image(
-                      imageUrl: ChatCompletionMessageImageUrl(
-                        url: 'data:image/jpeg;base64,$image',
-                      ),
-                    );
-                  },
-                ),
-              ],
+    final source = client.chatCompletionsStream(
+      messages: [
+        if (systemMessage != null) AiSystemMessage(systemMessage),
+        AiUserMessage(
+          AiUserPartsContent([
+            AiTextPart(prompt),
+            ...images.map(
+              (image) => AiImagePart('data:image/jpeg;base64,$image'),
             ),
-          ),
-        ],
-        model: model,
-        temperature: temperature,
-        maxTokens: maxCompletionTokens,
-        tools: tools,
-        reasoningEffort: reasoningEffort,
-      ),
+          ]),
+        ),
+      ],
+      model: model,
+      temperature: temperature,
+      maxCompletionTokens: maxCompletionTokens,
+      tools: tools,
+      toolChoice: _resolveToolChoice(null, tools),
+      reasoningEffort: reasoningEffort,
     );
 
-    return res.asBroadcastStream();
+    return (overrideClient == null ? _withOwnedClient(client, source) : source)
+        .asBroadcastStream();
   }
 
   /// Generates AI responses with audio input using different providers
@@ -334,7 +265,7 @@ class CloudInferenceRepository {
   ///
   /// Returns:
   ///   Stream of chat completion responses
-  Stream<CreateChatCompletionStreamResponse> generateWithAudio(
+  Stream<AiStreamChunk> generateWithAudio(
     String prompt, {
     required String model,
     required String audioBase64,
@@ -342,11 +273,10 @@ class CloudInferenceRepository {
     required String apiKey,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    OpenAIClient? overrideClient,
-    List<ChatCompletionTool>? tools,
+    AiInferenceClient? overrideClient,
+    List<AiTool>? tools,
     bool stream = true,
-    ChatCompletionMessageInputAudioFormat audioFormat =
-        ChatCompletionMessageInputAudioFormat.mp3,
+    AiAudioFormat audioFormat = AiAudioFormat.mp3,
     List<String>? speechDictionaryTerms,
     String? systemMessage,
     GeminiThinkingMode? geminiThinkingMode,
@@ -376,29 +306,19 @@ class CloudInferenceRepository {
               enableSpeakerDiarization: true,
             )
             .then(
-              (result) => CreateChatCompletionStreamResponse(
+              (result) => AiStreamChunk(
                 id: 'mlx-audio-${const Uuid().v4()}',
                 choices: [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: result.text,
-                    ),
+                  AiStreamChoice(
                     index: 0,
+                    delta: AiStreamDelta(content: result.text),
                   ),
                 ],
-                object: 'chat.completion.chunk',
                 created: 0,
               ),
             ),
       );
     }
-
-    final client =
-        overrideClient ??
-        OpenAIClient(
-          baseUrl: baseUrl,
-          apiKey: apiKey,
-        );
 
     // For Voxtral, use the dedicated repository
     if (provider.inferenceProviderType == InferenceProviderType.voxtral) {
@@ -447,11 +367,15 @@ class CloudInferenceRepository {
       );
     }
 
-    // For all other providers (OpenAI chat models, Gemini, etc.), use the standard
-    // OpenAI-compatible chat completions format with audio content parts.
+    // For all other providers (OpenAI chat models, Gemini, etc.), use the
+    // standard OpenAI-compatible chat completions format with audio content
+    // parts.
+    final client =
+        overrideClient ?? AiInferenceClient(baseUrl: baseUrl, apiKey: apiKey);
+
     if (tools != null && tools.isNotEmpty) {
       developer.log(
-        'Passing ${tools.length} tools to audio API: ${tools.map((t) => t.function.name).join(', ')}',
+        'Passing ${tools.length} tools to audio API: ${tools.map((t) => t.name).join(', ')}',
         name: 'CloudInferenceRepository',
       );
     }
@@ -469,33 +393,24 @@ class CloudInferenceRepository {
           )
         : null;
 
-    return client
-        .createChatCompletionStream(
-          request: _createBaseRequest(
-            messages: [
-              if (systemMessage != null)
-                ChatCompletionMessage.system(content: systemMessage),
-              ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.parts(
-                  [
-                    ChatCompletionMessageContentPart.text(text: prompt),
-                    ChatCompletionMessageContentPart.audio(
-                      inputAudio: ChatCompletionMessageInputAudio(
-                        data: effectiveAudioBase64,
-                        format: audioFormat,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            model: model,
-            maxCompletionTokens: maxCompletionTokens,
-            tools: tools,
-            reasoningEffort: reasoningEffort,
-            stream: stream,
-          ),
-        )
+    final source = client.chatCompletionsStream(
+      messages: [
+        if (systemMessage != null) AiSystemMessage(systemMessage),
+        AiUserMessage(
+          AiUserPartsContent([
+            AiTextPart(prompt),
+            AiAudioPart(data: effectiveAudioBase64, format: audioFormat),
+          ]),
+        ),
+      ],
+      model: model,
+      maxCompletionTokens: maxCompletionTokens,
+      tools: tools,
+      toolChoice: _resolveToolChoice(null, tools),
+      reasoningEffort: reasoningEffort,
+    );
+
+    return (overrideClient == null ? _withOwnedClient(client, source) : source)
         .asBroadcastStream();
   }
 
@@ -519,14 +434,14 @@ class CloudInferenceRepository {
   /// - [thoughtSignatures]: Optional signatures from previous turns (Gemini only)
   /// - [signatureCollector]: Optional collector for new signatures (Gemini only)
   /// - [turnIndex]: Current turn number for unique tool call ID generation
-  Stream<CreateChatCompletionStreamResponse> generateWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<AiStreamChunk> generateWithMessages({
+    required List<AiChatMessage> messages,
     required String model,
     required double? temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<AiTool>? tools,
+    AiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
@@ -550,8 +465,9 @@ class CloudInferenceRepository {
 
       // Extract system message from messages if present
       final systemMessage = messages
-          .firstWhereOrNull((m) => m.role == ChatCompletionMessageRole.system)
-          ?.mapOrNull(system: (s) => s.content);
+          .whereType<AiSystemMessage>()
+          .firstOrNull
+          ?.content;
 
       return _geminiRepository.generateTextWithMessages(
         messages: messages,
@@ -593,31 +509,31 @@ class CloudInferenceRepository {
       );
     }
 
-    // For other providers (OpenAI, OpenRouter, Anthropic), use full message history
-    final client = OpenAIClient(
+    // For other providers (OpenAI, OpenRouter, Anthropic), use full message
+    // history. This branch always allocates a fresh client, so we always
+    // close it when the stream finishes.
+    final client = AiInferenceClient(
       baseUrl: provider.baseUrl,
       apiKey: provider.apiKey,
     );
 
     if (tools != null && tools.isNotEmpty) {
       developer.log(
-        'Passing ${tools.length} tools to multi-turn API: ${tools.map((t) => t.function.name).join(', ')}',
+        'Passing ${tools.length} tools to multi-turn API: ${tools.map((t) => t.name).join(', ')}',
         name: 'CloudInferenceRepository',
       );
     }
 
-    final res = client.createChatCompletionStream(
-      request: _createBaseRequest(
-        messages: messages,
-        model: model,
-        temperature: temperature,
-        maxCompletionTokens: maxCompletionTokens,
-        tools: tools,
-        toolChoice: toolChoice,
-      ),
+    final source = client.chatCompletionsStream(
+      messages: messages,
+      model: model,
+      temperature: temperature,
+      maxCompletionTokens: maxCompletionTokens,
+      tools: tools,
+      toolChoice: _resolveToolChoice(toolChoice, tools),
     );
 
-    return _filterAnthropicPings(res).asBroadcastStream();
+    return _withOwnedClient(client, source).asBroadcastStream();
   }
 
   GeminiThinkingConfig _resolveGeminiThinkingConfig({
@@ -641,15 +557,15 @@ class CloudInferenceRepository {
   /// value for [model], collapsing modes that the model does not support
   /// (non-Flash Gemini 3 only accepts low/high) via
   /// [GeminiThinkingConfig.effectiveMode].
-  ReasoningEffort _geminiReasoningEffort(
+  AiReasoningEffort _geminiReasoningEffort(
     String model,
     GeminiThinkingMode mode,
   ) {
     return switch (GeminiThinkingConfig.effectiveMode(model, mode)) {
-      GeminiThinkingMode.minimal => ReasoningEffort.minimal,
-      GeminiThinkingMode.low => ReasoningEffort.low,
-      GeminiThinkingMode.medium => ReasoningEffort.medium,
-      GeminiThinkingMode.high => ReasoningEffort.high,
+      GeminiThinkingMode.minimal => AiReasoningEffort.minimal,
+      GeminiThinkingMode.low => AiReasoningEffort.low,
+      GeminiThinkingMode.medium => AiReasoningEffort.medium,
+      GeminiThinkingMode.high => AiReasoningEffort.high,
     };
   }
 

@@ -1,64 +1,59 @@
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
-import 'package:openai_dart/openai_dart.dart';
 
-/// Abstract interface for inference repositories
-/// This allows different providers (Ollama, Cloud) to be used interchangeably
-/// in the conversation system
+/// Abstract interface for inference repositories.
+///
+/// Each provider (Ollama, Gemini, Mistral, generic OpenAI-compatible, etc.)
+/// implements this contract so the conversation system can route requests
+/// without provider-specific branching at the call site.
 abstract class InferenceRepositoryInterface {
-  /// Generate text with full conversation history
-  /// This is the main method used by the conversation system
+  /// Generate text with full conversation history.
   ///
   /// Parameters:
-  /// - [messages]: Full conversation history
-  /// - [model]: Model identifier
-  /// - [temperature]: Sampling temperature
-  /// - [provider]: Provider configuration
-  /// - [maxCompletionTokens]: Optional output token limit
-  /// - [tools]: Optional function declarations
+  /// - [messages]: Full conversation history.
+  /// - [model]: Model identifier.
+  /// - [temperature]: Sampling temperature.
+  /// - [provider]: Provider configuration.
+  /// - [maxCompletionTokens]: Optional output token limit.
+  /// - [tools]: Optional function declarations.
   /// - [toolChoice]: Optional override of tool selection policy. When `null`
   ///   the provider defaults to `auto` (or `none` when no tools are provided).
-  ///   Pass `ChatCompletionToolChoiceOption.tool(...)` to force the model to
-  ///   call a specific function — currently honored only on the
-  ///   OpenAI-compatible path.
-  /// - [thoughtSignatures]: Previous thought signatures for multi-turn (Gemini 3)
-  /// - [signatureCollector]: Collector for capturing new signatures from response
-  /// - [turnIndex]: Current turn number for unique tool call ID generation
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  ///   Pass [AiToolChoiceFunction] to force a specific function — currently
+  ///   honored only on the OpenAI-compatible path.
+  /// - [thoughtSignatures]: Previous thought signatures for multi-turn
+  ///   (Gemini 3).
+  /// - [signatureCollector]: Collector for capturing new signatures from
+  ///   response.
+  /// - [turnIndex]: Current turn number for unique tool call ID generation.
+  Stream<AiStreamChunk> generateTextWithMessages({
+    required List<AiChatMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<AiTool>? tools,
+    AiToolChoice? toolChoice,
     Map<String, String>? thoughtSignatures,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
   });
 
-  /// Optional: Generate text with a simple prompt (for backwards compatibility)
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  /// Generate text with a simple prompt (single-turn).
+  Stream<AiStreamChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
     required String? systemMessage,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice,
+    List<AiTool>? tools,
+    AiToolChoice? toolChoice,
   }) {
-    // Default implementation converts simple prompt to messages format
-    final messages = <ChatCompletionMessage>[];
-    if (systemMessage != null) {
-      messages.add(ChatCompletionMessage.system(content: systemMessage));
-    }
-    messages.add(
-      ChatCompletionMessage.user(
-        content: ChatCompletionUserMessageContent.string(prompt),
-      ),
-    );
-
+    final messages = <AiChatMessage>[
+      if (systemMessage != null) AiSystemMessage(systemMessage),
+      AiUserMessage(AiUserTextContent(prompt)),
+    ];
     return generateTextWithMessages(
       messages: messages,
       model: model,

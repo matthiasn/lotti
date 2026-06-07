@@ -5,7 +5,7 @@ import 'package:lotti/features/agents/genui/genui_bridge.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
-import 'package:openai_dart/openai_dart.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 
 /// Holds a pending directive proposal from the evolution agent.
 class PendingProposal {
@@ -137,12 +137,12 @@ class EvolutionStrategy extends ConversationStrategy {
 
   @override
   Future<ConversationAction> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<AiToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     for (final call in toolCalls) {
-      final name = call.function.name;
-      final args = _parseArgs(call.function.arguments);
+      final name = call.name;
+      final args = _parseArgs(call.arguments);
 
       // Delegate GenUI tool calls to the bridge if available.
       if (genUiBridge != null && genUiBridge!.isGenUiTool(name)) {

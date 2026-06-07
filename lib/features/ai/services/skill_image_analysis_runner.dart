@@ -104,7 +104,7 @@ extension SkillImageAnalysisRunner on SkillInferenceRunner {
         // 6. Collect streaming response.
         final buffer = StringBuffer();
         await for (final chunk in responseStream) {
-          final content = chunk.choices?.firstOrNull?.delta?.content;
+          final content = chunk.choices.firstOrNull?.delta.content;
           if (content != null) {
             buffer.write(content);
           }

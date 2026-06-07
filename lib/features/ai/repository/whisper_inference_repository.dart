@@ -1,8 +1,8 @@
 import 'dart:convert';
 
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Repository for handling Whisper-specific inference operations.
 ///
@@ -16,7 +16,7 @@ class WhisperInferenceRepository extends TranscriptionRepository {
   /// Transcribes audio using a locally running Whisper instance.
   ///
   /// Sends audio data as base64 in a JSON POST body (not multipart).
-  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+  Stream<AiStreamChunk> transcribeAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,

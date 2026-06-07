@@ -14,9 +14,9 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 export 'package:lotti/features/agents/model/observation_record.dart'
@@ -183,20 +183,20 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   @override
   Future<ConversationAction> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<AiToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     // Persist the assistant message (the one that requested tool calls).
     await _recordAssistantMessage(toolCalls: toolCalls);
 
     for (final call in toolCalls) {
-      final toolName = call.function.name;
+      final toolName = call.name;
 
       Map<String, dynamic> args;
       try {
-        args = _parseToolArguments(call.function.arguments);
+        args = _parseToolArguments(call.arguments);
       } catch (e) {
-        final rawBytes = utf8.encode(call.function.arguments).length;
+        final rawBytes = utf8.encode(call.arguments).length;
         developer.log(
           'Failed to parse tool call arguments for $toolName '
           '(rawBytes=$rawBytes, errorType=${e.runtimeType})',

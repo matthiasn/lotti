@@ -1,15 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
-
-class FakeChatCompletionTool extends Fake implements ChatCompletionTool {}
 
 void main() {
   late CloudInferenceWrapper wrapper;
@@ -18,8 +16,14 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(FakeAiConfigInferenceProvider());
-    registerFallbackValue(FakeChatCompletionTool());
-    registerFallbackValue(<ChatCompletionMessage>[]);
+    registerFallbackValue(
+      const AiTool(
+        name: 'fallback',
+        description: '',
+        parameters: <String, dynamic>{},
+      ),
+    );
+    registerFallbackValue(<AiChatMessage>[]);
     registerFallbackValue(<String, String>{});
     registerFallbackValue(ThoughtSignatureCollector());
   });
@@ -41,17 +45,14 @@ void main() {
     group('generateText', () {
       test('delegates to cloud repository with correct parameters', () async {
         final responseStream = Stream.value(
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'test-response',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
+            choices: const [
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: 'Test response',
-                ),
+                delta: AiStreamDelta(content: 'Test response'),
               ),
             ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
@@ -72,12 +73,10 @@ void main() {
         ).thenAnswer((_) => responseStream);
 
         final tools = [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'test_function',
-              description: 'A test function',
-            ),
+          const AiTool(
+            name: 'test_function',
+            description: 'A test function',
+            parameters: <String, dynamic>{},
           ),
         ];
 
@@ -109,8 +108,7 @@ void main() {
       });
 
       test('works without optional parameters', () async {
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<AiStreamChunk>.empty();
 
         when(
           () => mockCloudRepository.generate(
@@ -151,33 +149,22 @@ void main() {
 
     group('generateTextWithMessages', () {
       test('delegates to cloud repository generateWithMessages', () async {
-        final messages = [
-          const ChatCompletionMessage.system(
-            content: 'You are a helpful assistant',
-          ),
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
-          const ChatCompletionMessage.assistant(
-            content: 'Hi there!',
-          ),
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('How are you?'),
-          ),
+        final messages = <AiChatMessage>[
+          const AiSystemMessage('You are a helpful assistant'),
+          const AiUserMessage(AiUserTextContent('Hello')),
+          const AiAssistantMessage(content: 'Hi there!'),
+          const AiUserMessage(AiUserTextContent('How are you?')),
         ];
 
         final responseStream = Stream.value(
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'test-response',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
+            choices: const [
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  content: "I'm doing well, thank you!",
-                ),
+                delta: AiStreamDelta(content: "I'm doing well, thank you!"),
               ),
             ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
@@ -207,7 +194,7 @@ void main() {
 
         expect(result.length, 1);
         expect(
-          result.first.choices?.first.delta?.content,
+          result.first.choices.first.delta.content,
           "I'm doing well, thank you!",
         );
 
@@ -221,23 +208,16 @@ void main() {
         ).called(1);
       });
 
-      test('handles messages with tool and function responses', () async {
-        final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Use a tool'),
-          ),
-          const ChatCompletionMessage.tool(
+      test('handles messages with tool responses', () async {
+        final messages = <AiChatMessage>[
+          const AiUserMessage(AiUserTextContent('Use a tool')),
+          const AiToolResultMessage(
             toolCallId: 'tool-1',
             content: 'Tool result: 42',
           ),
-          const ChatCompletionMessage.function(
-            name: 'test_function',
-            content: 'Function result: success',
-          ),
         ];
 
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<AiStreamChunk>.empty();
 
         when(
           () => mockCloudRepository.generateWithMessages(
@@ -276,14 +256,11 @@ void main() {
       });
 
       test('detects and logs concatenated JSON in tool calls', () async {
-        final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Call functions'),
-          ),
+        final messages = <AiChatMessage>[
+          const AiUserMessage(AiUserTextContent('Call functions')),
         ];
 
-        final responseController =
-            StreamController<CreateChatCompletionStreamResponse>();
+        final responseController = StreamController<AiStreamChunk>();
 
         when(
           () => mockCloudRepository.generateWithMessages(
@@ -309,28 +286,23 @@ void main() {
 
         // Add response with concatenated JSON
         responseController.add(
-          CreateChatCompletionStreamResponse(
+          AiStreamChunk(
             id: 'test-response',
-            choices: [
-              const ChatCompletionStreamResponseChoice(
+            choices: const [
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
+                delta: AiStreamDelta(
                   toolCalls: [
-                    ChatCompletionStreamMessageToolCallChunk(
+                    AiToolCallChunk(
                       index: 0,
                       id: 'tool-1',
-                      type:
-                          ChatCompletionStreamMessageToolCallChunkType.function,
-                      function: ChatCompletionStreamMessageFunctionCall(
-                        name: 'function1',
-                        arguments: '{"a": 1}{"b": 2}', // Concatenated JSON
-                      ),
+                      name: 'function1',
+                      arguments: '{"a": 1}{"b": 2}', // Concatenated JSON
                     ),
                   ],
                 ),
               ),
             ],
-            object: 'chat.completion.chunk',
             created:
                 DateTime(2024, 3, 15, 10, 30).millisecondsSinceEpoch ~/ 1000,
           ),
@@ -342,24 +314,15 @@ void main() {
         expect(result.length, 1);
         // The malformed JSON is passed through but logged as a warning
         expect(
-          result
-              .first
-              .choices
-              ?.first
-              .delta
-              ?.toolCalls
-              ?.first
-              .function
-              ?.arguments,
+          result.first.choices.first.delta.toolCalls?.first.arguments,
           contains('}{'),
         );
       });
 
       test('handles empty messages list', () async {
-        final messages = <ChatCompletionMessage>[];
+        final messages = <AiChatMessage>[];
 
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<AiStreamChunk>.empty();
 
         when(
           () => mockCloudRepository.generateWithMessages(
@@ -398,31 +361,24 @@ void main() {
       });
 
       test('preserves tools parameter', () async {
-        final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Use tools'),
-          ),
+        final messages = <AiChatMessage>[
+          const AiUserMessage(AiUserTextContent('Use tools')),
         ];
 
         final tools = [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'tool1',
-              description: 'First tool',
-            ),
+          const AiTool(
+            name: 'tool1',
+            description: 'First tool',
+            parameters: <String, dynamic>{},
           ),
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'tool2',
-              description: 'Second tool',
-            ),
+          const AiTool(
+            name: 'tool2',
+            description: 'Second tool',
+            parameters: <String, dynamic>{},
           ),
         ];
 
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<AiStreamChunk>.empty();
 
         when(
           () => mockCloudRepository.generateWithMessages(
@@ -465,14 +421,11 @@ void main() {
         final collector = ThoughtSignatureCollector();
         final signatures = {'tool_0': 'sig-abc123'};
 
-        final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+        final messages = <AiChatMessage>[
+          const AiUserMessage(AiUserTextContent('Hello')),
         ];
 
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<AiStreamChunk>.empty();
 
         when(
           () => mockCloudRepository.generateWithMessages(
@@ -523,14 +476,11 @@ void main() {
           inferenceProviderType: InferenceProviderType.gemini,
         );
 
-        final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Test gemini'),
-          ),
+        final messages = <AiChatMessage>[
+          const AiUserMessage(AiUserTextContent('Test gemini')),
         ];
 
-        const responseStream =
-            Stream<CreateChatCompletionStreamResponse>.empty();
+        const responseStream = Stream<AiStreamChunk>.empty();
 
         when(
           () => mockCloudRepository.generateWithMessages(

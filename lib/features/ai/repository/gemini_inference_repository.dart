@@ -3,13 +3,13 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/gemini_stream_parser.dart';
 import 'package:lotti/features/ai/repository/gemini_thinking_config.dart';
 import 'package:lotti/features/ai/repository/gemini_utils.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 part 'gemini_multiturn_inference.dart';
 part 'gemini_chunk_factories.dart';
@@ -102,7 +102,7 @@ class GeminiInferenceRepository {
   ///
   /// If the streaming call completes without emitting anything, a
   /// non-streaming fallback is invoked to avoid an empty response bubble.
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<AiStreamChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
@@ -110,7 +110,7 @@ class GeminiInferenceRepository {
     required AiConfigInferenceProvider provider,
     String? systemMessage,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
+    List<AiTool>? tools,
     ThoughtSignatureCollector? signatureCollector,
   }) async* {
     final uri = GeminiUtils.buildStreamGenerateContentUri(
@@ -382,23 +382,21 @@ class GeminiInferenceRepository {
           );
         }
         if (payload.toolChunks.isNotEmpty) {
-          yield CreateChatCompletionStreamResponse(
+          yield AiStreamChunk(
             id: idPrefix,
             created: created,
             model: model,
             choices: [
-              ChatCompletionStreamResponseChoice(
+              AiStreamChoice(
                 index: 0,
-                delta: ChatCompletionStreamResponseDelta(
-                  toolCalls: payload.toolChunks,
-                ),
+                delta: AiStreamDelta(toolCalls: payload.toolChunks),
               ),
             ],
           );
         }
         // Emit usage for fallback response
         if (payload.usage != null) {
-          yield CreateChatCompletionStreamResponse(
+          yield AiStreamChunk(
             id: idPrefix,
             created: created,
             model: model,
@@ -480,7 +478,7 @@ class GeminiInferenceRepository {
   }) {
     final tb = StringBuffer();
     final cb = StringBuffer();
-    final toolChunks = <ChatCompletionStreamMessageToolCallChunk>[];
+    final toolChunks = <AiToolCallChunk>[];
     final signatures = <String, String>{};
     var toolIndex = 0;
 
@@ -505,23 +503,19 @@ class GeminiInferenceRepository {
               final name = fc['name']?.toString() ?? '';
               final args = jsonEncode(fc['args'] ?? {});
               final idx = toolIndex++;
-              // Use turn-prefixed ID for uniqueness across conversation turns
               final toolCallId = 'tool_turn${turnIndex}_$idx';
 
-              // Capture thought signature using shared helper
               final signature = extractThoughtSignature(p);
               if (signature != null) {
                 signatures[toolCallId] = signature;
               }
 
               toolChunks.add(
-                ChatCompletionStreamMessageToolCallChunk(
+                AiToolCallChunk(
                   index: idx,
                   id: toolCallId,
-                  function: ChatCompletionStreamMessageFunctionCall(
-                    name: name,
-                    arguments: args,
-                  ),
+                  name: name,
+                  arguments: args,
                 ),
               );
             }
@@ -530,8 +524,7 @@ class GeminiInferenceRepository {
       }
     }
 
-    // Parse usage metadata
-    CompletionUsage? usage;
+    AiUsage? usage;
     final usageMetadata = decoded['usageMetadata'];
     if (usageMetadata is Map<String, dynamic>) {
       final promptTokens = usageMetadata['promptTokenCount'] as int?;
@@ -539,13 +532,11 @@ class GeminiInferenceRepository {
       final thoughtsTokens = usageMetadata['thoughtsTokenCount'] as int?;
 
       if (promptTokens != null || candidatesTokens != null) {
-        usage = CompletionUsage(
+        usage = AiUsage(
           promptTokens: promptTokens,
           completionTokens: candidatesTokens,
           totalTokens: (promptTokens ?? 0) + (candidatesTokens ?? 0),
-          completionTokensDetails: thoughtsTokens != null
-              ? CompletionTokensDetails(reasoningTokens: thoughtsTokens)
-              : null,
+          reasoningTokens: thoughtsTokens,
         );
       }
     }
@@ -562,8 +553,8 @@ class GeminiInferenceRepository {
   /// Multi-turn streaming over an explicit message history. Thin delegator
   /// to [GeminiMultiTurnInference.generateTextWithMessagesImpl] so the
   /// method remains a mockable class member.
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<AiStreamChunk> generateTextWithMessages({
+    required List<AiChatMessage> messages,
     required String model,
     required double temperature,
     required GeminiThinkingConfig thinkingConfig,
@@ -571,7 +562,7 @@ class GeminiInferenceRepository {
     Map<String, String>? thoughtSignatures,
     String? systemMessage,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
+    List<AiTool>? tools,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
   }) => generateTextWithMessagesImpl(
@@ -622,8 +613,8 @@ class _ProcessedPayload {
 
   final String thinking;
   final String visible;
-  final List<ChatCompletionStreamMessageToolCallChunk> toolChunks;
-  final CompletionUsage? usage;
+  final List<AiToolCallChunk> toolChunks;
+  final AiUsage? usage;
 
   /// Thought signatures captured from function calls, keyed by tool call ID.
   final Map<String, String> signatures;

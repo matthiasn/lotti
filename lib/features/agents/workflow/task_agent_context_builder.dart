@@ -504,21 +504,18 @@ extension TaskAgentContextBuilder on TaskAgentWorkflow {
     }
   }
 
-  /// Converts [AgentToolRegistry.taskAgentTools] to OpenAI-compatible
-  /// [ChatCompletionTool] objects.
-  List<ChatCompletionTool> _buildToolDefinitions() {
-    return AgentToolRegistry.taskAgentTools.where((def) => def.enabled).map((
-      def,
-    ) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: def.name,
-          description: def.description,
-          parameters: def.parameters,
-        ),
-      );
-    }).toList();
+  /// Converts [AgentToolRegistry.taskAgentTools] to [AiTool] objects.
+  List<AiTool> _buildToolDefinitions() {
+    return AgentToolRegistry.taskAgentTools
+        .where((def) => def.enabled)
+        .map(
+          (def) => AiTool(
+            name: def.name,
+            description: def.description,
+            parameters: def.parameters,
+          ),
+        )
+        .toList();
   }
 
   /// Extracts the final assistant text content from the conversation manager.
@@ -528,12 +525,8 @@ extension TaskAgentContextBuilder on TaskAgentWorkflow {
     // Walk backwards through messages to find the last assistant message
     // with text content (not a tool-call-only message).
     for (final message in manager.messages.reversed) {
-      if (message case ChatCompletionMessage(
-        role: ChatCompletionMessageRole.assistant,
-      )) {
-        final content = message.mapOrNull(
-          assistant: (m) => m.content,
-        );
+      if (message is AiAssistantMessage) {
+        final content = message.content;
         if (content != null && content.isNotEmpty) {
           return content;
         }

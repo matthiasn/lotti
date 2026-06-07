@@ -9,7 +9,7 @@ extension OllamaImageAnalysis on OllamaInferenceRepository {
   /// - Uses the unified /api/chat endpoint with image support
   /// - Handles Ollama-specific response format
   /// - Provides comprehensive error handling
-  Stream<CreateChatCompletionStreamResponse> generateWithImagesImpl({
+  Stream<AiStreamChunk> generateWithImagesImpl({
     required String prompt,
     required String model,
     required double temperature,

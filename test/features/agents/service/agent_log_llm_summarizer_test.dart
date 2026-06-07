@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/projection/compaction_summary.dart';
 import 'package:lotti/features/agents/projection/input_capture.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -18,28 +18,25 @@ void main() {
 
   final provider = testInferenceProvider(apiKey: 'k-123');
 
-  Stream<CreateChatCompletionStreamResponse> streamOf(List<String> parts) =>
-      Stream.fromIterable([
-        // An empty-choices chunk first — the collector must tolerate it.
-        const CreateChatCompletionStreamResponse(
-          id: 'keepalive',
-          object: 'chat.completion.chunk',
-          created: 0,
-          choices: [],
-        ),
-        for (final part in parts)
-          CreateChatCompletionStreamResponse(
-            id: 'chunk',
-            object: 'chat.completion.chunk',
-            created: 0,
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: part),
-              ),
-            ],
+  Stream<AiStreamChunk> streamOf(List<String> parts) => Stream.fromIterable([
+    // An empty-choices chunk first — the collector must tolerate it.
+    const AiStreamChunk(
+      id: 'keepalive',
+      created: 0,
+      choices: [],
+    ),
+    for (final part in parts)
+      AiStreamChunk(
+        id: 'chunk',
+        created: 0,
+        choices: [
+          AiStreamChoice(
+            index: 0,
+            delta: AiStreamDelta(content: part),
           ),
-      ]);
+        ],
+      ),
+  ]);
 
   setUp(() {
     inference = MockCloudInferenceRepository();

@@ -29,8 +29,8 @@ extension GeminiMultiTurnInference on GeminiInferenceRepository {
   /// [turnIndex] provides the current turn number for generating unique
   /// tool call IDs that don't collide across conversation turns. This prevents
   /// signature/name lookup errors when replaying multi-turn function calls.
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessagesImpl({
-    required List<ChatCompletionMessage> messages,
+  Stream<AiStreamChunk> generateTextWithMessagesImpl({
+    required List<AiChatMessage> messages,
     required String model,
     required double temperature,
     required GeminiThinkingConfig thinkingConfig,
@@ -38,7 +38,7 @@ extension GeminiMultiTurnInference on GeminiInferenceRepository {
     Map<String, String>? thoughtSignatures,
     String? systemMessage,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
+    List<AiTool>? tools,
     ThoughtSignatureCollector? signatureCollector,
     int? turnIndex,
   }) async* {

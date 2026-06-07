@@ -10,8 +10,8 @@ import 'package:lotti/features/agents/model/project_agent_report_contract.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/projects/state/project_health_metrics.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// [ConversationStrategy] implementation for the Project Agent.
@@ -59,20 +59,20 @@ class ProjectAgentStrategy extends ConversationStrategy {
 
   @override
   Future<ConversationAction> processToolCalls({
-    required List<ChatCompletionMessageToolCall> toolCalls,
+    required List<AiToolCall> toolCalls,
     required ConversationManager manager,
   }) async {
     // Persist the assistant message that requested tool calls.
     await _recordAssistantMessage();
 
     for (final call in toolCalls) {
-      final toolName = call.function.name;
+      final toolName = call.name;
 
       Map<String, dynamic> args;
       try {
-        args = _parseToolArguments(call.function.arguments);
+        args = _parseToolArguments(call.arguments);
       } catch (e) {
-        final rawBytes = utf8.encode(call.function.arguments).length;
+        final rawBytes = utf8.encode(call.arguments).length;
         developer.log(
           'Failed to parse tool call arguments for $toolName '
           '(rawBytes=$rawBytes, errorType=${e.runtimeType})',

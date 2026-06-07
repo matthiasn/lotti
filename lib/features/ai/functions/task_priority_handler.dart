@@ -5,8 +5,8 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 /// Result of processing a priority update tool call.
 ///
@@ -152,11 +152,11 @@ class TaskPriorityHandler {
   /// 4. **Success**: Updates task and returns success result
   /// 5. **Repository error**: Returns error result, logs exception
   Future<TaskPriorityResult> processToolCall(
-    ChatCompletionMessageToolCall call, [
+    AiToolCall call, [
     ConversationManager? manager,
   ]) async {
     try {
-      final args = jsonDecode(call.function.arguments) as Map<String, dynamic>;
+      final args = jsonDecode(call.arguments) as Map<String, dynamic>;
 
       // Extract and normalize values using shared utility
       final rawPriority = TaskFunctionArgs.normalizeToString(args['priority']);

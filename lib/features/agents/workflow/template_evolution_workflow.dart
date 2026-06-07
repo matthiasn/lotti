@@ -20,6 +20,7 @@ import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 import 'package:lotti/features/agents/workflow/evolution_strategy.dart';
 import 'package:lotti/features/agents/workflow/soul_evolution_context_builder.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -28,7 +29,6 @@ import 'package:lotti/features/ai/util/content_extraction_helper.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 part 'soul_evolution_workflow.dart';
@@ -833,10 +833,9 @@ class TemplateEvolutionWorkflow {
     if (manager == null) return null;
 
     for (final message in manager.messages.reversed) {
-      if (message case ChatCompletionAssistantMessage(
-        content: final content?,
-      )) {
-        if (content.isNotEmpty) return content;
+      if (message is AiAssistantMessage) {
+        final content = message.content;
+        if (content != null && content.isNotEmpty) return content;
       }
     }
     return null;
@@ -881,20 +880,20 @@ class TemplateEvolutionWorkflow {
   }
 
   List<Map<String, String>> _snapshotTranscript(
-    List<ChatCompletionMessage> messages,
+    List<AiChatMessage> messages,
   ) {
     final transcript = <Map<String, String>>[];
     for (final message in messages) {
       switch (message) {
-        case ChatCompletionUserMessage(:final content):
+        case AiUserMessage(:final content):
           final text = ContentExtractionHelper.extractTextFromUserContent(
             content,
           ).trim();
           if (text.isNotEmpty) {
             transcript.add({'role': 'user', 'text': text});
           }
-        case ChatCompletionAssistantMessage(content: final content?)
-            when content.trim().isNotEmpty:
+        case AiAssistantMessage(:final content)
+            when content != null && content.trim().isNotEmpty:
           transcript.add({'role': 'assistant', 'text': content.trim()});
         default:
           break;
@@ -929,19 +928,18 @@ class TemplateEvolutionWorkflow {
     updateNotifications?.notifyUiOnly({templateId, agentNotification});
   }
 
-  /// Converts [AgentToolRegistry.evolutionAgentTools] to OpenAI-compatible
-  /// [ChatCompletionTool] objects, including the GenUI render_surface tool.
-  List<ChatCompletionTool> _buildToolDefinitions({GenUiBridge? bridge}) {
-    final tools = AgentToolRegistry.evolutionAgentTools.map((def) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: def.name,
-          description: def.description,
-          parameters: def.parameters,
-        ),
-      );
-    }).toList();
+  /// Converts [AgentToolRegistry.evolutionAgentTools] to [AiTool] objects,
+  /// including the GenUI render_surface tool.
+  List<AiTool> _buildToolDefinitions({GenUiBridge? bridge}) {
+    final tools = AgentToolRegistry.evolutionAgentTools
+        .map(
+          (def) => AiTool(
+            name: def.name,
+            description: def.description,
+            parameters: def.parameters,
+          ),
+        )
+        .toList();
 
     if (bridge != null) {
       tools.add(bridge.toolDefinition);
@@ -951,17 +949,16 @@ class TemplateEvolutionWorkflow {
   }
 
   /// Soul session tool definitions — excludes `propose_directives`.
-  List<ChatCompletionTool> _buildSoulToolDefinitions({GenUiBridge? bridge}) {
-    final tools = AgentToolRegistry.soulEvolutionAgentTools.map((def) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: def.name,
-          description: def.description,
-          parameters: def.parameters,
-        ),
-      );
-    }).toList();
+  List<AiTool> _buildSoulToolDefinitions({GenUiBridge? bridge}) {
+    final tools = AgentToolRegistry.soulEvolutionAgentTools
+        .map(
+          (def) => AiTool(
+            name: def.name,
+            description: def.description,
+            parameters: def.parameters,
+          ),
+        )
+        .toList();
 
     if (bridge != null) {
       tools.add(bridge.toolDefinition);

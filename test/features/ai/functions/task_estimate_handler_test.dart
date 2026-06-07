@@ -5,8 +5,8 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/ai/functions/task_estimate_handler.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 
@@ -201,35 +201,29 @@ void main() {
   }
 
   /// Creates a tool call for update_task_estimate.
-  ChatCompletionMessageToolCall createEstimateToolCall({
+  AiToolCall createEstimateToolCall({
     required int minutes,
     String? reason,
     String? confidence,
   }) {
-    return ChatCompletionMessageToolCall(
+    return AiToolCall(
       id: 'call_estimate_123',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: 'update_task_estimate',
-        arguments: jsonEncode({
-          'minutes': minutes,
-          'reason': ?reason,
-          'confidence': ?confidence,
-        }),
-      ),
+      name: 'update_task_estimate',
+      arguments: jsonEncode({
+        'minutes': minutes,
+        'reason': ?reason,
+        'confidence': ?confidence,
+      }),
     );
   }
 
-  ChatCompletionMessageToolCall createEstimateToolCallFromArgs(
+  AiToolCall createEstimateToolCallFromArgs(
     Map<String, Object?> args,
   ) {
-    return ChatCompletionMessageToolCall(
+    return AiToolCall(
       id: 'call_estimate_generated',
-      type: ChatCompletionMessageToolCallType.function,
-      function: ChatCompletionMessageFunctionCall(
-        name: 'update_task_estimate',
-        arguments: jsonEncode(args),
-      ),
+      name: 'update_task_estimate',
+      arguments: jsonEncode(args),
     );
   }
 
@@ -432,13 +426,10 @@ void main() {
     group('validation errors', () {
       test('should reject null minutes', () async {
         final task = createTask();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call_estimate_123',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_estimate',
-            arguments: '{"reason": "Some reason"}',
-          ),
+          name: 'update_task_estimate',
+          arguments: '{"reason": "Some reason"}',
         );
 
         final handler = TaskEstimateHandler(
@@ -498,13 +489,10 @@ void main() {
       test('should reject minutes exceeding max bound', () async {
         final task = createTask();
         // Create tool call with minutes > maxEstimateMinutes (1440)
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call_estimate_123',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_estimate',
-            arguments: '{"minutes": 999999}',
-          ),
+          name: 'update_task_estimate',
+          arguments: '{"minutes": 999999}',
         );
 
         final handler = TaskEstimateHandler(
@@ -524,13 +512,10 @@ void main() {
 
       test('should handle malformed JSON', () async {
         final task = createTask();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call_estimate_123',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_estimate',
-            arguments: 'not valid json',
-          ),
+          name: 'update_task_estimate',
+          arguments: 'not valid json',
         );
 
         final handler = TaskEstimateHandler(
@@ -847,13 +832,10 @@ void main() {
       test('should accept double minutes (rounded)', () async {
         final task = createTask();
         // AI might send 120.0 instead of 120
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call_estimate_123',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_estimate',
-            arguments: '{"minutes": 120.5}',
-          ),
+          name: 'update_task_estimate',
+          arguments: '{"minutes": 120.5}',
         );
 
         when(
@@ -878,13 +860,10 @@ void main() {
       test('should accept string minutes', () async {
         final task = createTask();
         // AI might send "90" as a string
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call_estimate_123',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_estimate',
-            arguments: '{"minutes": "90"}',
-          ),
+          name: 'update_task_estimate',
+          arguments: '{"minutes": "90"}',
         );
 
         when(
@@ -905,13 +884,10 @@ void main() {
 
       test('should reject non-numeric string minutes', () async {
         final task = createTask();
-        const toolCall = ChatCompletionMessageToolCall(
+        const toolCall = AiToolCall(
           id: 'call_estimate_123',
-          type: ChatCompletionMessageToolCallType.function,
-          function: ChatCompletionMessageFunctionCall(
-            name: 'update_task_estimate',
-            arguments: '{"minutes": "two hours"}',
-          ),
+          name: 'update_task_estimate',
+          arguments: '{"minutes": "two hours"}',
         );
 
         final handler = TaskEstimateHandler(

@@ -4,23 +4,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 
-// ChatCompletionMessage is a sealed class and cannot be faked
-
-class FakeChatCompletionMessageToolCall extends Fake
-    implements ChatCompletionMessageToolCall {}
-
 class FakeConversationManager extends Fake implements ConversationManager {}
+
+String? _messageContent(AiChatMessage message) {
+  if (message is AiSystemMessage) return message.content;
+  if (message is AiAssistantMessage) return message.content;
+  if (message is AiToolResultMessage) return message.content;
+  if (message is AiUserMessage) {
+    final content = message.content;
+    if (content is AiUserTextContent) return content.text;
+  }
+  return null;
+}
 
 /// Shared 8-argument stub for `generateTextWithMessages`;
 /// chain `.thenAnswer(...)` with the stream (or function) the test needs.
-When<Stream<CreateChatCompletionStreamResponse>> _stubGenerateText(
+When<Stream<AiStreamChunk>> _stubGenerateText(
   MockOllamaInferenceRepository mock,
 ) {
   return when(
@@ -44,8 +50,9 @@ void main() {
   late MockConversationStrategy mockStrategy;
 
   setUpAll(() {
-    // registerFallbackValue(FakeChatCompletionMessage()); // Not needed as ChatCompletionMessage is sealed
-    registerFallbackValue(FakeChatCompletionMessageToolCall());
+    registerFallbackValue(
+      const AiToolCall(id: 'fallback', name: 'fallback', arguments: '{}'),
+    );
     registerFallbackValue(FakeAiConfigInferenceProvider());
     registerFallbackValue(FakeConversationManager());
     registerFallbackValue(ThoughtSignatureCollector());
@@ -87,8 +94,8 @@ void main() {
 
       expect(manager, isNotNull);
       expect(manager!.messages.length, 1);
-      expect(manager.messages.first.role, ChatCompletionMessageRole.system);
-      expect(manager.messages.first.content, systemMessage);
+      expect(manager.messages.first.role, AiMessageRole.system);
+      expect(_messageContent(manager.messages.first), systemMessage);
     });
 
     test('createConversation with custom maxTurns', () {
@@ -166,17 +173,16 @@ void main() {
       test('adds user message and gets response', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     content: 'Hello, human!',
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           ]),
@@ -193,9 +199,9 @@ void main() {
 
         final manager = repository.getConversation(conversationId)!;
         expect(manager.messages.length, 2);
-        expect(manager.messages[0].role, ChatCompletionMessageRole.user);
-        expect(manager.messages[1].role, ChatCompletionMessageRole.assistant);
-        expect(manager.messages[1].content, 'Hello, human!');
+        expect(manager.messages[0].role, AiMessageRole.user);
+        expect(manager.messages[1].role, AiMessageRole.assistant);
+        expect(_messageContent(manager.messages[1]), 'Hello, human!');
       });
 
       test('forces temperature 1.0 for OpenAI providers', () async {
@@ -209,15 +215,14 @@ void main() {
         );
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'r',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(content: 'ok'),
+                  delta: AiStreamDelta(content: 'ok'),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           ]),
@@ -252,15 +257,14 @@ void main() {
         () async {
           _stubGenerateText(mockOllamaRepo).thenAnswer(
             (_) => Stream.fromIterable([
-              const CreateChatCompletionStreamResponse(
+              const AiStreamChunk(
                 id: 'r',
                 choices: [
-                  ChatCompletionStreamResponseChoice(
+                  AiStreamChoice(
                     index: 0,
-                    delta: ChatCompletionStreamResponseDelta(content: 'ok'),
+                    delta: AiStreamDelta(content: 'ok'),
                   ),
                 ],
-                object: 'chat.completion.chunk',
                 created: 1710500000,
               ),
             ]),
@@ -292,12 +296,7 @@ void main() {
       );
 
       test('forwards toolChoice to generateTextWithMessages', () async {
-        const toolChoice = ChatCompletionToolChoiceOption.tool(
-          ChatCompletionNamedToolChoice(
-            type: ChatCompletionNamedToolChoiceType.function,
-            function: ChatCompletionFunctionCallOption(name: 'update_report'),
-          ),
-        );
+        const toolChoice = AiToolChoiceFunction('update_report');
 
         when(
           () => mockOllamaRepo.generateTextWithMessages(
@@ -313,15 +312,14 @@ void main() {
           ),
         ).thenAnswer(
           (_) => Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'r',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(content: 'done'),
+                  delta: AiStreamDelta(content: 'done'),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           ]),
@@ -355,8 +353,7 @@ void main() {
       test(
         'strips <think> blocks from assistant content before persisting',
         () async {
-          final streamController =
-              StreamController<CreateChatCompletionStreamResponse>();
+          final streamController = StreamController<AiStreamChunk>();
 
           _stubGenerateText(
             mockOllamaRepo,
@@ -379,15 +376,14 @@ void main() {
             'The sky is blue because of Rayleigh scattering.',
           ]) {
             streamController.add(
-              CreateChatCompletionStreamResponse(
+              AiStreamChunk(
                 id: 'chunk',
                 choices: [
-                  ChatCompletionStreamResponseChoice(
+                  AiStreamChoice(
                     index: 0,
-                    delta: ChatCompletionStreamResponseDelta(content: chunk),
+                    delta: AiStreamDelta(content: chunk),
                   ),
                 ],
-                object: 'chat.completion.chunk',
                 created: 1710500000,
               ),
             );
@@ -396,7 +392,7 @@ void main() {
           await sendFuture;
 
           final manager = repository.getConversation(conversationId)!;
-          final assistantContent = manager.messages.last.content;
+          final assistantContent = _messageContent(manager.messages.last);
           expect(assistantContent, isNotNull);
           expect(assistantContent, isNot(contains('<think>')));
           expect(assistantContent, isNot(contains('</think>')));
@@ -411,17 +407,16 @@ void main() {
       test('drops assistant content that is only a <think> block', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'chunk',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     content: '<think>private reasoning</think>',
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           ]),
@@ -439,35 +434,30 @@ void main() {
         // The assistant turn is still recorded so turn accounting stays
         // accurate, but its persisted content is null instead of a stale
         // `<think>` payload.
-        expect(manager.messages.last.role, ChatCompletionMessageRole.assistant);
-        expect(manager.messages.last.content, isNull);
+        expect(manager.messages.last.role, AiMessageRole.assistant);
+        expect(_messageContent(manager.messages.last), isNull);
       });
 
       test('handles tool calls', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: 'tool-1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'test_function',
-                          arguments: '{"arg": "value"}',
-                        ),
+                        name: 'test_function',
+                        arguments: '{"arg": "value"}',
                       ),
                     ],
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           ]),
@@ -481,12 +471,10 @@ void main() {
           provider: provider,
           inferenceRepo: mockOllamaRepo,
           tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'test_function',
-                description: 'A test function',
-              ),
+            const AiTool(
+              name: 'test_function',
+              description: 'A test function',
+              parameters: <String, dynamic>{},
             ),
           ],
         );
@@ -495,14 +483,13 @@ void main() {
         expect(manager.messages.length, 2);
         // Verify tool calls were processed
         final assistantMsg = manager.messages.last;
-        expect(assistantMsg.role, ChatCompletionMessageRole.assistant);
+        expect(assistantMsg.role, AiMessageRole.assistant);
         // Tool calls would have been added to the assistant message
-        // The exact structure depends on the ChatCompletionMessage implementation
+        // The exact structure depends on the AiChatMessage implementation
       });
 
       test('handles strategy with continue action', () async {
-        final streamController =
-            StreamController<CreateChatCompletionStreamResponse>();
+        final streamController = StreamController<AiStreamChunk>();
 
         _stubGenerateText(
           mockOllamaRepo,
@@ -528,12 +515,10 @@ void main() {
           inferenceRepo: mockOllamaRepo,
           strategy: mockStrategy,
           tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'test_function',
-                description: 'A test function',
-              ),
+            const AiTool(
+              name: 'test_function',
+              description: 'A test function',
+              parameters: <String, dynamic>{},
             ),
           ],
         );
@@ -541,44 +526,38 @@ void main() {
         // First response with tool call
         streamController
           ..add(
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response-1',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: 'tool-1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'test_function',
-                          arguments: '{"arg": "value"}',
-                        ),
+                        name: 'test_function',
+                        arguments: '{"arg": "value"}',
                       ),
                     ],
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           )
           // Second response after continuation
           ..add(
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response-2',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     content: 'Final response',
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           );
@@ -598,28 +577,23 @@ void main() {
       test('handles strategy with complete action', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: 'tool-1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'test_function',
-                          arguments: '{"arg": "value"}',
-                        ),
+                        name: 'test_function',
+                        arguments: '{"arg": "value"}',
                       ),
                     ],
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           ]),
@@ -641,12 +615,10 @@ void main() {
           inferenceRepo: mockOllamaRepo,
           strategy: mockStrategy,
           tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'test_function',
-                description: 'A test function',
-              ),
+            const AiTool(
+              name: 'test_function',
+              description: 'A test function',
+              parameters: <String, dynamic>{},
             ),
           ],
         );
@@ -669,17 +641,16 @@ void main() {
         _stubGenerateText(mockOllamaRepo).thenAnswer((_) {
           callCount++;
           return Stream.value(
-            CreateChatCompletionStreamResponse(
+            AiStreamChunk(
               id: 'response-$callCount',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     content: 'Response $callCount',
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           );
@@ -775,8 +746,7 @@ void main() {
       test(
         'handles tool call arguments accumulation with StringBuffer',
         () async {
-          final streamController =
-              StreamController<CreateChatCompletionStreamResponse>();
+          final streamController = StreamController<AiStreamChunk>();
 
           _stubGenerateText(
             mockOllamaRepo,
@@ -789,12 +759,10 @@ void main() {
             provider: provider,
             inferenceRepo: mockOllamaRepo,
             tools: [
-              const ChatCompletionTool(
-                type: ChatCompletionToolType.function,
-                function: FunctionObject(
-                  name: 'test_function',
-                  description: 'A test function',
-                ),
+              const AiTool(
+                name: 'test_function',
+                description: 'A test function',
+                parameters: <String, dynamic>{},
               ),
             ],
           );
@@ -802,54 +770,44 @@ void main() {
           // First chunk with tool call name and partial arguments
           streamController
             ..add(
-              const CreateChatCompletionStreamResponse(
+              const AiStreamChunk(
                 id: 'test-response',
                 choices: [
-                  ChatCompletionStreamResponseChoice(
+                  AiStreamChoice(
                     index: 0,
-                    delta: ChatCompletionStreamResponseDelta(
+                    delta: AiStreamDelta(
                       toolCalls: [
-                        ChatCompletionStreamMessageToolCallChunk(
+                        AiToolCallChunk(
                           index: 0,
                           id: 'tool-1',
-                          type: ChatCompletionStreamMessageToolCallChunkType
-                              .function,
-                          function: ChatCompletionStreamMessageFunctionCall(
-                            name: 'test_function',
-                            arguments: '{"arg',
-                          ),
+                          name: 'test_function',
+                          arguments: '{"arg',
                         ),
                       ],
                     ),
                   ),
                 ],
-                object: 'chat.completion.chunk',
                 created: 1710500000,
               ),
             )
             // Second chunk with more arguments
             ..add(
-              const CreateChatCompletionStreamResponse(
+              const AiStreamChunk(
                 id: 'test-response',
                 choices: [
-                  ChatCompletionStreamResponseChoice(
+                  AiStreamChoice(
                     index: 0,
-                    delta: ChatCompletionStreamResponseDelta(
+                    delta: AiStreamDelta(
                       toolCalls: [
-                        ChatCompletionStreamMessageToolCallChunk(
+                        AiToolCallChunk(
                           index: 0,
                           id: 'tool-1',
-                          type: ChatCompletionStreamMessageToolCallChunkType
-                              .function,
-                          function: ChatCompletionStreamMessageFunctionCall(
-                            arguments: '": "value"}',
-                          ),
+                          arguments: '": "value"}',
                         ),
                       ],
                     ),
                   ),
                 ],
-                object: 'chat.completion.chunk',
                 created: 1710500000,
               ),
             );
@@ -871,8 +829,7 @@ void main() {
       );
 
       test('handles split UTF-8 characters in tool call arguments', () async {
-        final streamController =
-            StreamController<CreateChatCompletionStreamResponse>();
+        final streamController = StreamController<AiStreamChunk>();
 
         _stubGenerateText(
           mockOllamaRepo,
@@ -885,12 +842,10 @@ void main() {
           provider: provider,
           inferenceRepo: mockOllamaRepo,
           tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'test_function',
-                description: 'A test function',
-              ),
+            const AiTool(
+              name: 'test_function',
+              description: 'A test function',
+              parameters: <String, dynamic>{},
             ),
           ],
         );
@@ -898,54 +853,44 @@ void main() {
         // First chunk ending mid-UTF8 character (emoji 😀 = F0 9F 98 80)
         streamController
           ..add(
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: 'tool-1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'test_function',
-                          arguments: '{"emoji": "',
-                        ),
+                        name: 'test_function',
+                        arguments: '{"emoji": "',
                       ),
                     ],
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           )
           // Second chunk with emoji and rest
           ..add(
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: 'tool-1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          arguments: '😀"}',
-                        ),
+                        arguments: '😀"}',
                       ),
                     ],
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           );
@@ -962,27 +907,22 @@ void main() {
       test('handles invalid tool call with missing function name', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: 'tool-1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          arguments: '{"arg": "value"}',
-                        ),
+                        arguments: '{"arg": "value"}',
                       ),
                     ],
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           ]),
@@ -995,12 +935,10 @@ void main() {
           provider: provider,
           inferenceRepo: mockOllamaRepo,
           tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'test_function',
-                description: 'A test function',
-              ),
+            const AiTool(
+              name: 'test_function',
+              description: 'A test function',
+              parameters: <String, dynamic>{},
             ),
           ],
         );
@@ -1012,8 +950,7 @@ void main() {
       });
 
       test('handles empty tool call IDs', () async {
-        final streamController =
-            StreamController<CreateChatCompletionStreamResponse>();
+        final streamController = StreamController<AiStreamChunk>();
 
         _stubGenerateText(
           mockOllamaRepo,
@@ -1026,12 +963,10 @@ void main() {
           provider: provider,
           inferenceRepo: mockOllamaRepo,
           tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'test_function',
-                description: 'A test function',
-              ),
+            const AiTool(
+              name: 'test_function',
+              description: 'A test function',
+              parameters: <String, dynamic>{},
             ),
           ],
         );
@@ -1039,54 +974,44 @@ void main() {
         // First chunk with empty tool call ID
         streamController
           ..add(
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: '', // Empty ID
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'test_function',
-                          arguments: '{"arg": ',
-                        ),
+                        name: 'test_function',
+                        arguments: '{"arg": ',
                       ),
                     ],
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           )
           // Second chunk completing the arguments
           ..add(
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: '', // Still empty
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          arguments: '"value"}',
-                        ),
+                        arguments: '"value"}',
                       ),
                     ],
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           );
@@ -1101,8 +1026,7 @@ void main() {
       });
 
       test('handles multiple tool calls with separate buffers', () async {
-        final streamController =
-            StreamController<CreateChatCompletionStreamResponse>();
+        final streamController = StreamController<AiStreamChunk>();
 
         _stubGenerateText(
           mockOllamaRepo,
@@ -1115,19 +1039,15 @@ void main() {
           provider: provider,
           inferenceRepo: mockOllamaRepo,
           tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'function_a',
-                description: 'Function A',
-              ),
+            const AiTool(
+              name: 'function_a',
+              description: 'Function A',
+              parameters: <String, dynamic>{},
             ),
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'function_b',
-                description: 'Function B',
-              ),
+            const AiTool(
+              name: 'function_b',
+              description: 'Function B',
+              parameters: <String, dynamic>{},
             ),
           ],
         );
@@ -1135,73 +1055,47 @@ void main() {
         // First chunk with two tool calls
         streamController
           ..add(
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: 'tool-1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'function_a',
-                          arguments: '{"a": ',
-                        ),
+                        name: 'function_a',
+                        arguments: '{"a": ',
                       ),
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 1,
                         id: 'tool-2',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'function_b',
-                          arguments: '{"b": ',
-                        ),
+                        name: 'function_b',
+                        arguments: '{"b": ',
                       ),
                     ],
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           )
           // Second chunk completing both
           ..add(
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
-                        index: 0,
-                        id: 'tool-1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          arguments: '1}',
-                        ),
-                      ),
-                      ChatCompletionStreamMessageToolCallChunk(
-                        index: 1,
-                        id: 'tool-2',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          arguments: '2}',
-                        ),
-                      ),
+                      AiToolCallChunk(index: 0, id: 'tool-1', arguments: '1}'),
+                      AiToolCallChunk(index: 1, id: 'tool-2', arguments: '2}'),
                     ],
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           );
@@ -1214,10 +1108,10 @@ void main() {
         expect(manager, isNotNull);
         expect(manager!.messages.length, 2);
 
-        // Since ChatCompletionMessage is a sealed class without direct access to toolCalls,
+        // Since AiChatMessage is a sealed class without direct access to toolCalls,
         // we can only verify the basic message properties
         final assistantMsg = manager.messages.last;
-        expect(assistantMsg.role, ChatCompletionMessageRole.assistant);
+        expect(assistantMsg.role, AiMessageRole.assistant);
 
         // The actual tool calls would have been accumulated properly with separate buffers
         // Each tool call would have its own complete JSON:
@@ -1230,40 +1124,31 @@ void main() {
         () async {
           _stubGenerateText(mockOllamaRepo).thenAnswer(
             (_) => Stream.fromIterable([
-              const CreateChatCompletionStreamResponse(
+              const AiStreamChunk(
                 id: 'gemini-response',
                 choices: [
-                  ChatCompletionStreamResponseChoice(
+                  AiStreamChoice(
                     index: 0,
-                    delta: ChatCompletionStreamResponseDelta(
+                    delta: AiStreamDelta(
                       toolCalls: [
                         // First tool call - empty ID, null index, complete arguments
-                        ChatCompletionStreamMessageToolCallChunk(
+                        AiToolCallChunk(
                           id: '', // Empty ID
                           // index is null (not specified)
-                          type: ChatCompletionStreamMessageToolCallChunkType
-                              .function,
-                          function: ChatCompletionStreamMessageFunctionCall(
-                            name: 'function_a',
-                            arguments: '{"param": "value1"}',
-                          ),
+                          name: 'function_a',
+                          arguments: '{"param": "value1"}',
                         ),
                         // Second tool call - empty ID, null index, complete arguments
-                        ChatCompletionStreamMessageToolCallChunk(
+                        AiToolCallChunk(
                           id: '', // Empty ID
                           // index is null (not specified)
-                          type: ChatCompletionStreamMessageToolCallChunkType
-                              .function,
-                          function: ChatCompletionStreamMessageFunctionCall(
-                            name: 'function_b',
-                            arguments: '{"param": "value2"}',
-                          ),
+                          name: 'function_b',
+                          arguments: '{"param": "value2"}',
                         ),
                       ],
                     ),
                   ),
                 ],
-                object: 'chat.completion.chunk',
                 created: 1710500000,
               ),
             ]),
@@ -1276,19 +1161,15 @@ void main() {
             provider: provider,
             inferenceRepo: mockOllamaRepo,
             tools: [
-              const ChatCompletionTool(
-                type: ChatCompletionToolType.function,
-                function: FunctionObject(
-                  name: 'function_a',
-                  description: 'First function',
-                ),
+              const AiTool(
+                name: 'function_a',
+                description: 'First function',
+                parameters: <String, dynamic>{},
               ),
-              const ChatCompletionTool(
-                type: ChatCompletionToolType.function,
-                function: FunctionObject(
-                  name: 'function_b',
-                  description: 'Second function',
-                ),
+              const AiTool(
+                name: 'function_b',
+                description: 'Second function',
+                parameters: <String, dynamic>{},
               ),
             ],
           );
@@ -1300,38 +1181,125 @@ void main() {
 
           // The assistant message should have the tool calls
           final assistantMsg = manager.messages.last;
-          expect(assistantMsg.role, ChatCompletionMessageRole.assistant);
+          expect(assistantMsg.role, AiMessageRole.assistant);
 
           // Tool calls would have been given turn-prefixed IDs:
           // tool_turn0_0 and tool_turn0_1
         },
       );
 
+      test(
+        'merges OpenAI-style continuation into a Gemini-style tool call '
+        '(argument buffer fallback + late name adoption)',
+        () async {
+          _stubGenerateText(mockOllamaRepo).thenAnswer(
+            (_) => Stream.fromIterable([
+              // Gemini-style chunk: multiple complete tool calls with empty
+              // IDs and null indices — emitted directly, without seeding the
+              // per-call argument buffers.
+              const AiStreamChunk(
+                id: 'gemini-response',
+                choices: [
+                  AiStreamChoice(
+                    index: 0,
+                    delta: AiStreamDelta(
+                      toolCalls: [
+                        AiToolCallChunk(
+                          id: '',
+                          name: 'fn_a',
+                          arguments: '{"a":1}',
+                        ),
+                        AiToolCallChunk(id: '', name: '', arguments: '{"b":'),
+                      ],
+                    ),
+                  ),
+                ],
+                created: 1710500000,
+              ),
+              // OpenAI-style continuation addressed by index: completes the
+              // second call's arguments and delivers its name late.
+              const AiStreamChunk(
+                id: 'continuation',
+                choices: [
+                  AiStreamChoice(
+                    index: 0,
+                    delta: AiStreamDelta(
+                      toolCalls: [
+                        AiToolCallChunk(
+                          index: 1,
+                          name: 'fn_b',
+                          arguments: '2}',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                created: 1710500000,
+              ),
+            ]),
+          );
+
+          when(
+            () => mockStrategy.processToolCalls(
+              toolCalls: captureAny(named: 'toolCalls'),
+              manager: any(named: 'manager'),
+            ),
+          ).thenAnswer((_) async => ConversationAction.complete);
+
+          await repository.sendMessage(
+            conversationId: conversationId,
+            message: 'Mixed provider tool call framing',
+            model: 'test-model',
+            provider: provider,
+            inferenceRepo: mockOllamaRepo,
+            strategy: mockStrategy,
+            tools: [
+              const AiTool(
+                name: 'fn_b',
+                description: 'A test function',
+                parameters: <String, dynamic>{},
+              ),
+            ],
+          );
+
+          final captured =
+              verify(
+                    () => mockStrategy.processToolCalls(
+                      toolCalls: captureAny(named: 'toolCalls'),
+                      manager: any(named: 'manager'),
+                    ),
+                  ).captured.single
+                  as List<AiToolCall>;
+          expect(captured, hasLength(2));
+          expect(captured[0].name, 'fn_a');
+          expect(captured[0].arguments, '{"a":1}');
+          // The continuation merged into the existing call: arguments were
+          // accumulated via the buffer fallback and the late name adopted.
+          expect(captured[1].name, 'fn_b');
+          expect(captured[1].arguments, '{"b":2}');
+        },
+      );
+
       test('handles strategy with wait action', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: 'tool-1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'test_function',
-                          arguments: '{}',
-                        ),
+                        name: 'test_function',
+                        arguments: '{}',
                       ),
                     ],
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           ]),
@@ -1352,12 +1320,10 @@ void main() {
           inferenceRepo: mockOllamaRepo,
           strategy: mockStrategy,
           tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'test_function',
-                description: 'A test function',
-              ),
+            const AiTool(
+              name: 'test_function',
+              description: 'A test function',
+              parameters: <String, dynamic>{},
             ),
           ],
         );
@@ -1377,28 +1343,23 @@ void main() {
       test('handles strategy with null continuation prompt', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'test-response',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(
+                  delta: AiStreamDelta(
                     toolCalls: [
-                      ChatCompletionStreamMessageToolCallChunk(
+                      AiToolCallChunk(
                         index: 0,
                         id: 'tool-1',
-                        type: ChatCompletionStreamMessageToolCallChunkType
-                            .function,
-                        function: ChatCompletionStreamMessageFunctionCall(
-                          name: 'test_function',
-                          arguments: '{}',
-                        ),
+                        name: 'test_function',
+                        arguments: '{}',
                       ),
                     ],
                   ),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1710500000,
             ),
           ]),
@@ -1422,12 +1383,10 @@ void main() {
           inferenceRepo: mockOllamaRepo,
           strategy: mockStrategy,
           tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'test_function',
-                description: 'A test function',
-              ),
+            const AiTool(
+              name: 'test_function',
+              description: 'A test function',
+              parameters: <String, dynamic>{},
             ),
           ],
         );
@@ -1446,8 +1405,7 @@ void main() {
         expect(manager!.messages.length, 2);
       });
       test('returns accumulated usage from single-turn response', () async {
-        final streamController =
-            StreamController<CreateChatCompletionStreamResponse>();
+        final streamController = StreamController<AiStreamChunk>();
 
         _stubGenerateText(
           mockOllamaRepo,
@@ -1463,25 +1421,23 @@ void main() {
 
         streamController
           ..add(
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'resp',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(content: 'Hi'),
+                  delta: AiStreamDelta(content: 'Hi'),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1700000000,
             ),
           )
           ..add(
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'resp',
               choices: [],
-              object: 'chat.completion.chunk',
               created: 1700000000,
-              usage: CompletionUsage(
+              usage: AiUsage(
                 promptTokens: 100,
                 completionTokens: 50,
                 totalTokens: 150,
@@ -1507,30 +1463,25 @@ void main() {
             if (callCount == 1) {
               // First turn: tool call with usage
               return Stream.fromIterable([
-                const CreateChatCompletionStreamResponse(
+                const AiStreamChunk(
                   id: 'resp-1',
                   choices: [
-                    ChatCompletionStreamResponseChoice(
+                    AiStreamChoice(
                       index: 0,
-                      delta: ChatCompletionStreamResponseDelta(
+                      delta: AiStreamDelta(
                         toolCalls: [
-                          ChatCompletionStreamMessageToolCallChunk(
+                          AiToolCallChunk(
                             index: 0,
                             id: 'tool-1',
-                            type: ChatCompletionStreamMessageToolCallChunkType
-                                .function,
-                            function: ChatCompletionStreamMessageFunctionCall(
-                              name: 'test_function',
-                              arguments: '{}',
-                            ),
+                            name: 'test_function',
+                            arguments: '{}',
                           ),
                         ],
                       ),
                     ),
                   ],
-                  object: 'chat.completion.chunk',
                   created: 1700000000,
-                  usage: CompletionUsage(
+                  usage: AiUsage(
                     promptTokens: 80,
                     completionTokens: 20,
                     totalTokens: 100,
@@ -1540,17 +1491,16 @@ void main() {
             } else {
               // Second turn: final response with usage
               return Stream.fromIterable([
-                const CreateChatCompletionStreamResponse(
+                const AiStreamChunk(
                   id: 'resp-2',
                   choices: [
-                    ChatCompletionStreamResponseChoice(
+                    AiStreamChoice(
                       index: 0,
-                      delta: ChatCompletionStreamResponseDelta(content: 'Done'),
+                      delta: AiStreamDelta(content: 'Done'),
                     ),
                   ],
-                  object: 'chat.completion.chunk',
                   created: 1700000000,
-                  usage: CompletionUsage(
+                  usage: AiUsage(
                     promptTokens: 120,
                     completionTokens: 30,
                     totalTokens: 150,
@@ -1579,12 +1529,10 @@ void main() {
             inferenceRepo: mockOllamaRepo,
             strategy: mockStrategy,
             tools: [
-              const ChatCompletionTool(
-                type: ChatCompletionToolType.function,
-                function: FunctionObject(
-                  name: 'test_function',
-                  description: 'A test function',
-                ),
+              const AiTool(
+                name: 'test_function',
+                description: 'A test function',
+                parameters: <String, dynamic>{},
               ),
             ],
           );
@@ -1599,15 +1547,14 @@ void main() {
       test('returns null when no usage data in response', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'resp',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(content: 'Hi'),
+                  delta: AiStreamDelta(content: 'Hi'),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1700000000,
             ),
           ]),
@@ -1627,26 +1574,21 @@ void main() {
       test('captures reasoning and cached tokens from usage details', () async {
         _stubGenerateText(mockOllamaRepo).thenAnswer(
           (_) => Stream.fromIterable([
-            const CreateChatCompletionStreamResponse(
+            const AiStreamChunk(
               id: 'resp',
               choices: [
-                ChatCompletionStreamResponseChoice(
+                AiStreamChoice(
                   index: 0,
-                  delta: ChatCompletionStreamResponseDelta(content: 'Hi'),
+                  delta: AiStreamDelta(content: 'Hi'),
                 ),
               ],
-              object: 'chat.completion.chunk',
               created: 1700000000,
-              usage: CompletionUsage(
+              usage: AiUsage(
                 promptTokens: 200,
                 completionTokens: 100,
                 totalTokens: 300,
-                completionTokensDetails: CompletionTokensDetails(
-                  reasoningTokens: 40,
-                ),
-                promptTokensDetails: PromptTokensDetails(
-                  cachedTokens: 50,
-                ),
+                reasoningTokens: 40,
+                cachedInputTokens: 50,
               ),
             ),
           ]),
@@ -1718,8 +1660,8 @@ void main() {
 
         final messages = container.read(conversationMessagesProvider(id));
         expect(messages.length, 2);
-        expect(messages[0].role, ChatCompletionMessageRole.system);
-        expect(messages[1].role, ChatCompletionMessageRole.user);
+        expect(messages[0].role, AiMessageRole.system);
+        expect(messages[1].role, AiMessageRole.user);
       });
 
       test('conversationMessages provider returns empty for non-existent', () {

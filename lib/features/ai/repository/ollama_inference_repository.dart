@@ -4,12 +4,12 @@ import 'dart:developer' as developer;
 import 'dart:io';
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/gemini_tool_call.dart';
 import 'package:lotti/features/ai/repository/inference_repository_interface.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/util/content_extraction_helper.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 part 'ollama_image_analysis.dart';
 part 'ollama_model_management.dart';
@@ -49,17 +49,13 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   ///
   /// Uses [DateTime.now().microsecondsSinceEpoch] for the id so chunks
   /// emitted within the same millisecond still receive distinct ids.
-  static CreateChatCompletionStreamResponse _contentChunk(String content) {
+  static AiStreamChunk _contentChunk(String content) {
     final now = DateTime.now();
-    return CreateChatCompletionStreamResponse(
+    return AiStreamChunk(
       id: '$ollamaResponseIdPrefix${now.microsecondsSinceEpoch}',
       choices: [
-        ChatCompletionStreamResponseChoice(
-          delta: ChatCompletionStreamResponseDelta(content: content),
-          index: 0,
-        ),
+        AiStreamChoice(index: 0, delta: AiStreamDelta(content: content)),
       ],
-      object: 'chat.completion.chunk',
       created: now.millisecondsSinceEpoch ~/ 1000,
     );
   }
@@ -73,15 +69,15 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   /// - Handles Ollama-specific response format
   /// - Provides comprehensive error handling
   @override
-  Stream<CreateChatCompletionStreamResponse> generateText({
+  Stream<AiStreamChunk> generateText({
     required String prompt,
     required String model,
     required double temperature,
     required String? systemMessage,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice, // Ignored for Ollama
+    List<AiTool>? tools,
+    AiToolChoice? toolChoice, // Ignored for Ollama
   }) {
     // Validate inputs
     _validateOllamaRequest(
@@ -108,63 +104,90 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   /// This method accepts the full conversation messages for proper context.
   /// Note: Ollama doesn't support thought signatures, so those parameters are ignored.
   @override
-  Stream<CreateChatCompletionStreamResponse> generateTextWithMessages({
-    required List<ChatCompletionMessage> messages,
+  Stream<AiStreamChunk> generateTextWithMessages({
+    required List<AiChatMessage> messages,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
     int? maxCompletionTokens,
-    List<ChatCompletionTool>? tools,
-    ChatCompletionToolChoiceOption? toolChoice, // Ignored for Ollama
+    List<AiTool>? tools,
+    AiToolChoice? toolChoice, // Ignored for Ollama
     Map<String, String>? thoughtSignatures, // Ignored for Ollama
     ThoughtSignatureCollector? signatureCollector, // Ignored for Ollama
     int? turnIndex, // Ignored for Ollama
   }) {
-    // Convert ChatCompletionMessage objects to Ollama format
+    // Resolve tool_call id → function name from prior assistant turns so that
+    // AiToolResultMessage entries can supply the `tool_name` Ollama expects.
+    // Ollama has no `tool_call_id` field — results are matched to calls
+    // positionally via the function name. See
+    // https://docs.ollama.com/capabilities/tool-calling
+    final toolCallIdToName = <String, String>{
+      for (final m in messages.whereType<AiAssistantMessage>())
+        if (m.toolCalls != null)
+          for (final tc in m.toolCalls!) tc.id: tc.name,
+    };
+
     final ollamaMessages = messages.map((msg) {
-      final content = msg.content;
-      String? contentStr;
-
-      if (content is ChatCompletionUserMessageContent) {
-        // Extract text from ChatCompletionUserMessageContent
-        contentStr = ContentExtractionHelper.extractTextFromUserContent(
-          content,
-        );
-      } else if (content is String) {
-        contentStr = content;
-      } else if (content != null) {
-        // For other types, try to get JSON representation
-        try {
-          contentStr = jsonEncode(content);
-        } catch (_) {
-          contentStr = content.toString();
+      if (msg case AiToolResultMessage(:final toolCallId, :final content)) {
+        // Ollama has no `tool_call_id`; results are matched to calls by
+        // function name. Bailing out loudly here is the right call —
+        // sending the raw `toolCallId` as `tool_name` (or an empty string)
+        // would silently corrupt the history and break follow-up turns.
+        final toolName = toolCallIdToName[toolCallId];
+        if (toolName == null) {
+          throw StateError(
+            'Missing preceding assistant tool call for Ollama tool result: '
+            '$toolCallId',
+          );
         }
-      }
-
-      // For tool responses, Ollama expects a different format
-      if (msg.role == ChatCompletionMessageRole.tool) {
         return <String, dynamic>{
           'role': 'tool',
-          'content': contentStr ?? '',
+          'tool_name': toolName,
+          'content': content,
         };
       }
 
-      return <String, dynamic>{
-        'role': msg.role.name,
-        'content': contentStr ?? '',
+      return switch (msg) {
+        AiSystemMessage(:final content) => <String, dynamic>{
+          'role': 'system',
+          'content': content,
+        },
+        AiUserMessage(:final content) => <String, dynamic>{
+          'role': 'user',
+          'content': ContentExtractionHelper.extractTextFromUserContent(
+            content,
+          ),
+        },
+        AiAssistantMessage(:final content, :final toolCalls) =>
+          <String, dynamic>{
+            'role': 'assistant',
+            'content': content ?? '',
+            if (toolCalls != null && toolCalls.isNotEmpty)
+              'tool_calls': toolCalls
+                  .map(
+                    (tc) => {
+                      'type': 'function',
+                      'function': {'name': tc.name, 'arguments': tc.arguments},
+                    },
+                  )
+                  .toList(),
+          },
+        // AiToolResultMessage handled by the `if case` guard above.
+        // coverage:ignore-start
+        AiToolResultMessage() => throw StateError('unreachable'),
+        // coverage:ignore-end
       };
     }).toList();
 
-    // Convert tools to Ollama format if provided
     final ollamaTools = tools != null && tools.isNotEmpty
         ? tools
               .map(
                 (tool) => {
                   'type': 'function',
                   'function': {
-                    'name': tool.function.name,
-                    'description': tool.function.description,
-                    'parameters': tool.function.parameters ?? {},
+                    'name': tool.name,
+                    'description': tool.description,
+                    'parameters': tool.parameters,
                   },
                 },
               )
@@ -172,7 +195,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
         : null;
 
     final toolsLog = ollamaTools != null && tools != null
-        ? ' with ${ollamaTools.length} tools: ${tools.map((t) => t.function.name).join(', ')}'
+        ? ' with ${ollamaTools.length} tools: ${tools.map((t) => t.name).join(', ')}'
         : '';
     developer.log(
       'Preparing Ollama chat request for model: $model$toolsLog with ${messages.length} messages',
@@ -210,25 +233,28 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
     );
   }
 
-  Stream<CreateChatCompletionStreamResponse> _generateTextWithChat({
+  /// Generate text using Ollama's unified chat API
+  ///
+  /// This method uses the /api/chat endpoint for all text generation,
+  /// with optional tool support for models that have function calling capabilities.
+  Stream<AiStreamChunk> _generateTextWithChat({
     required String prompt,
     required String model,
     required double temperature,
     required AiConfigInferenceProvider provider,
-    List<ChatCompletionTool>? tools,
+    List<AiTool>? tools,
     String? systemMessage,
     int? maxCompletionTokens,
   }) {
-    // Convert tools to Ollama format if provided
     final ollamaTools = tools != null && tools.isNotEmpty
         ? tools
               .map(
                 (tool) => {
                   'type': 'function',
                   'function': {
-                    'name': tool.function.name,
-                    'description': tool.function.description,
-                    'parameters': tool.function.parameters ?? {},
+                    'name': tool.name,
+                    'description': tool.description,
+                    'parameters': tool.parameters,
                   },
                 },
               )
@@ -236,7 +262,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
         : null;
 
     final toolsLog = ollamaTools != null && tools != null
-        ? ' with ${ollamaTools.length} tools: ${tools.map((t) => t.function.name).join(', ')}'
+        ? ' with ${ollamaTools.length} tools: ${tools.map((t) => t.name).join(', ')}'
         : '';
     developer.log(
       'Preparing Ollama chat request for model: $model$toolsLog',
@@ -279,7 +305,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   }
 
   /// Stream Ollama chat API responses (supports function calling)
-  Stream<CreateChatCompletionStreamResponse> _streamChatRequest({
+  Stream<AiStreamChunk> _streamChatRequest({
     required Map<String, dynamic> requestBody,
     required Duration timeout,
     required String retryContext,
@@ -462,36 +488,40 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
               }
 
               // Create the response with tool calls
-              // We'll emit this as a single chunk containing all tool calls
+              // We'll emit this as a single chunk containing all tool calls.
               final toolNow = DateTime.now();
-              yield CreateChatCompletionStreamResponse(
+              final toolCallChunks = toolCallsList.map((tc) {
+                final map = tc as Map<String, dynamic>;
+                final fn = map['function'] as Map<String, dynamic>;
+                return AiToolCallChunk(
+                  index: map['index'] as int?,
+                  id: map['id'] as String?,
+                  name: fn['name'] as String?,
+                  arguments: fn['arguments'] as String?,
+                );
+              }).toList();
+              yield AiStreamChunk(
                 id: '$ollamaResponseIdPrefix${toolNow.microsecondsSinceEpoch}',
                 choices: [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta.fromJson({
-                      'tool_calls': toolCallsList,
-                    }),
+                  AiStreamChoice(
                     index: 0,
+                    delta: AiStreamDelta(toolCalls: toolCallChunks),
                   ),
                 ],
-                object: 'chat.completion.chunk',
                 created: toolNow.millisecondsSinceEpoch ~/ 1000,
               );
             } else if (message['content'] != null) {
               // Regular content response
               final frag = message['content'] as String;
               final contentNow = DateTime.now();
-              yield CreateChatCompletionStreamResponse(
+              yield AiStreamChunk(
                 id: '$ollamaResponseIdPrefix${contentNow.microsecondsSinceEpoch}',
                 choices: [
-                  ChatCompletionStreamResponseChoice(
-                    delta: ChatCompletionStreamResponseDelta(
-                      content: frag,
-                    ),
+                  AiStreamChoice(
                     index: 0,
+                    delta: AiStreamDelta(content: frag),
                   ),
                 ],
-                object: 'chat.completion.chunk',
                 created: contentNow.millisecondsSinceEpoch ~/ 1000,
               );
             }
@@ -516,12 +546,11 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
               final prompt = promptEval is int ? promptEval : 0;
               final completion = evalCount is int ? evalCount : 0;
               final usageNow = DateTime.now();
-              yield CreateChatCompletionStreamResponse(
+              yield AiStreamChunk(
                 id: '$ollamaResponseIdPrefix${usageNow.microsecondsSinceEpoch}',
                 choices: const [],
-                object: 'chat.completion.chunk',
                 created: usageNow.millisecondsSinceEpoch ~/ 1000,
-                usage: CompletionUsage(
+                usage: AiUsage(
                   promptTokens: prompt,
                   completionTokens: completion,
                   totalTokens: prompt + completion,
@@ -622,7 +651,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   /// Image analysis. Thin delegator to
   /// [OllamaImageAnalysis.generateWithImagesImpl] so the method remains a
   /// mockable class member.
-  Stream<CreateChatCompletionStreamResponse> generateWithImages({
+  Stream<AiStreamChunk> generateWithImages({
     required String prompt,
     required String model,
     required double temperature,

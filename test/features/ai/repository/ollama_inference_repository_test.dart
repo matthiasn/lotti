@@ -4,10 +4,10 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ollama_inference_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../mocks/mocks.dart';
 
@@ -82,7 +82,7 @@ void main() {
           final result = await stream.first;
 
           // Assert
-          expect(result.choices?.first.delta?.content, equals('Test response'));
+          expect(result.choices.first.delta.content, equals('Test response'));
 
           // Verify the correct endpoint was called
           final captured = verify(
@@ -100,12 +100,10 @@ void main() {
         const temperature = 0.7;
 
         final tools = [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'test_function',
-              description: 'Test function',
-            ),
+          const AiTool(
+            name: 'test_function',
+            description: 'Test function',
+            parameters: <String, dynamic>{},
           ),
         ];
 
@@ -140,7 +138,7 @@ void main() {
         // Assert
         expect(results, isNotEmpty);
         expect(
-          results.first.choices?.first.delta?.content,
+          results.first.choices.first.delta.content,
           equals('Test response'),
         );
 
@@ -159,12 +157,10 @@ void main() {
         const temperature = 0.7;
 
         final tools = [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'get_weather',
-              description: 'Get weather information',
-            ),
+          const AiTool(
+            name: 'get_weather',
+            description: 'Get weather information',
+            parameters: <String, dynamic>{},
           ),
         ];
 
@@ -212,7 +208,7 @@ void main() {
         // Assert
         expect(results, isNotEmpty);
         final toolCallsResponse = results.first;
-        expect(toolCallsResponse.choices?.first.delta?.toolCalls, isNotNull);
+        expect(toolCallsResponse.choices.first.delta.toolCalls, isNotNull);
       });
 
       test('should retry on timeout', () async {
@@ -254,7 +250,7 @@ void main() {
 
         // Assert
         expect(
-          result.choices?.first.delta?.content,
+          result.choices.first.delta.content,
           equals('Success after retry'),
         );
         expect(attempts, equals(3));
@@ -398,7 +394,7 @@ void main() {
 
         // Assert
         expect(
-          result.choices?.first.delta?.content,
+          result.choices.first.delta.content,
           equals('This is an image description'),
         );
 
@@ -563,7 +559,7 @@ void main() {
     });
   });
 
-  group('Content Extraction from ChatCompletionUserMessageContent', () {
+  group('Content Extraction from AiUserContent', () {
     late OllamaInferenceRepository repository;
     late MockHttpClient mockHttpClient;
 
@@ -573,11 +569,11 @@ void main() {
     });
 
     test('should extract text from list of content parts', () async {
-      final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.parts([
-            ChatCompletionMessageContentPart.text(text: 'Hello'),
-            ChatCompletionMessageContentPart.text(text: ' world'),
+      final messages = <AiChatMessage>[
+        const AiUserMessage(
+          AiUserPartsContent([
+            AiTextPart('Hello'),
+            AiTextPart(' world'),
           ]),
         ),
       ];
@@ -624,8 +620,8 @@ void main() {
 
     test('should handle string content directly', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string(
+        const AiUserMessage(
+          AiUserTextContent(
             'Direct string content',
           ),
         ),
@@ -673,9 +669,7 @@ void main() {
 
     test('should capture thinking content wrapped in think tags', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        const AiUserMessage(AiUserTextContent('Test')),
       ];
 
       final chunks = [
@@ -714,7 +708,7 @@ void main() {
 
       final events = await stream.toList();
       final allContent = events
-          .map((e) => e.choices?.first.delta?.content ?? '')
+          .map((e) => e.choices.first.delta.content ?? '')
           .join();
 
       // Thinking content is wrapped in <think> tags
@@ -722,67 +716,124 @@ void main() {
       expect(allContent, contains('Actual response'));
     });
 
-    test('should handle tool messages correctly', () async {
-      final messages = [
-        const ChatCompletionMessage.tool(
-          toolCallId: 'tool-123',
-          content: 'Tool execution result',
-        ),
-      ];
+    test(
+      'should serialize tool messages with tool_name resolved from prior '
+      'assistant tool call',
+      () async {
+        // Ollama matches tool results to calls via the function name
+        // (no tool_call_id), so an AiToolResultMessage must follow an
+        // AiAssistantMessage that emitted the matching toolCallId.
+        final messages = [
+          const AiAssistantMessage(
+            toolCalls: [
+              AiToolCall(
+                id: 'tool-123',
+                name: 'lookup_weather',
+                arguments: '{"city":"Berlin"}',
+              ),
+            ],
+          ),
+          const AiToolResultMessage(
+            toolCallId: 'tool-123',
+            content: 'Tool execution result',
+          ),
+        ];
 
-      final mockResponse = MockStreamedResponse();
-      when(() => mockResponse.statusCode).thenReturn(200);
-      when(() => mockResponse.stream).thenAnswer(
-        (_) => http.ByteStream(
-          Stream.value(utf8.encode('{"response": "test", "done": true}')),
-        ),
-      );
+        final mockResponse = MockStreamedResponse();
+        when(() => mockResponse.statusCode).thenReturn(200);
+        when(() => mockResponse.stream).thenAnswer(
+          (_) => http.ByteStream(
+            Stream.value(utf8.encode('{"response": "test", "done": true}')),
+          ),
+        );
 
-      when(
-        () => mockHttpClient.send(any()),
-      ).thenAnswer((_) async => mockResponse);
+        when(
+          () => mockHttpClient.send(any()),
+        ).thenAnswer((_) async => mockResponse);
 
-      final provider = AiConfigInferenceProvider(
-        id: 'test-provider',
-        name: 'Test',
-        baseUrl: 'http://localhost:11434',
-        apiKey: '',
-        createdAt: DateTime(2026, 3, 15),
-        inferenceProviderType: InferenceProviderType.ollama,
-      );
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
 
-      final stream = repository.generateTextWithMessages(
-        messages: messages,
-        model: 'test-model',
-        temperature: 0.7,
-        provider: provider,
-      );
+        final stream = repository.generateTextWithMessages(
+          messages: messages,
+          model: 'test-model',
+          temperature: 0.7,
+          provider: provider,
+        );
 
-      await stream.toList();
+        await stream.toList();
 
-      final captured = verify(() => mockHttpClient.send(captureAny())).captured;
-      final request = captured.first as http.Request;
-      final body = request.body;
-      final jsonBody = jsonDecode(body) as Map<String, dynamic>;
+        final captured = verify(
+          () => mockHttpClient.send(captureAny()),
+        ).captured;
+        final request = captured.first as http.Request;
+        final jsonBody = jsonDecode(request.body) as Map<String, dynamic>;
 
-      final jsonMessages = jsonBody['messages'] as List<dynamic>;
-      final firstMessage = jsonMessages[0] as Map<String, dynamic>;
-      expect(firstMessage['role'], 'tool');
-      expect(firstMessage['content'], 'Tool execution result');
-    });
+        final jsonMessages = jsonBody['messages'] as List<dynamic>;
+        // [assistant with tool_calls, tool result]
+        expect(jsonMessages, hasLength(2));
+        final toolMsg = jsonMessages[1] as Map<String, dynamic>;
+        expect(toolMsg['role'], 'tool');
+        // The function name was resolved from the prior assistant call.
+        expect(toolMsg['tool_name'], 'lookup_weather');
+        expect(toolMsg['content'], 'Tool execution result');
+      },
+    );
+
+    test(
+      'throws StateError when a tool result is missing its preceding '
+      'assistant tool call',
+      () {
+        // Orphan tool result — no matching AiAssistantMessage in history.
+        // Ollama has no tool_call_id so the serializer can't resolve the
+        // function name; we surface that loudly rather than corrupt history.
+        final messages = [
+          const AiToolResultMessage(
+            toolCallId: 'orphan-call',
+            content: 'result',
+          ),
+        ];
+
+        final provider = AiConfigInferenceProvider(
+          id: 'test-provider',
+          name: 'Test',
+          baseUrl: 'http://localhost:11434',
+          apiKey: '',
+          createdAt: DateTime(2026, 3, 15),
+          inferenceProviderType: InferenceProviderType.ollama,
+        );
+
+        expect(
+          () => repository
+              .generateTextWithMessages(
+                messages: messages,
+                model: 'test-model',
+                temperature: 0.7,
+                provider: provider,
+              )
+              .toList(),
+          throwsA(
+            isA<StateError>().having(
+              (e) => e.message,
+              'message',
+              contains('orphan-call'),
+            ),
+          ),
+        );
+      },
+    );
 
     test('should handle messages with null content', () async {
       final messages = [
-        const ChatCompletionMessage.assistant(
+        const AiAssistantMessage(
           toolCalls: [
-            ChatCompletionMessageToolCall(
-              id: 'tool-1',
-              type: ChatCompletionMessageToolCallType.function,
-              function: ChatCompletionMessageFunctionCall(
-                name: 'test_function',
-                arguments: '{}',
-              ),
-            ),
+            AiToolCall(id: 'tool-1', name: 'test_function', arguments: '{}'),
           ],
         ),
       ];
@@ -830,9 +881,7 @@ void main() {
     test('should handle content that cannot be JSON encoded', () async {
       // Create a message with standard content
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('test content'),
-        ),
+        const AiUserMessage(AiUserTextContent('test content')),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -878,9 +927,7 @@ void main() {
 
     test('should include maxCompletionTokens in options', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        const AiUserMessage(AiUserTextContent('Test')),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -924,14 +971,12 @@ void main() {
     });
 
     test('should handle empty text parts in content', () async {
-      final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.parts([
-            ChatCompletionMessageContentPart.text(text: ''),
-            ChatCompletionMessageContentPart.text(
-              text: '  ',
-            ), // Only whitespace
-            ChatCompletionMessageContentPart.text(text: 'Valid text'),
+      final messages = <AiChatMessage>[
+        const AiUserMessage(
+          AiUserPartsContent([
+            AiTextPart(''),
+            AiTextPart('  '), // Only whitespace
+            AiTextPart('Valid text'),
           ]),
         ),
       ];
@@ -989,9 +1034,7 @@ void main() {
 
     test('should handle malformed JSON in stream', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        const AiUserMessage(AiUserTextContent('Test')),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -1192,9 +1235,7 @@ void main() {
 
     test('should handle tool calls with existing ID in stream', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        const AiUserMessage(AiUserTextContent('Test')),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -1225,12 +1266,10 @@ void main() {
         temperature: 0.7,
         provider: provider,
         tools: [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'test_function',
-              description: 'Test function',
-            ),
+          const AiTool(
+            name: 'test_function',
+            description: 'Test function',
+            parameters: <String, dynamic>{},
           ),
         ],
       );
@@ -1270,8 +1309,8 @@ void main() {
 
       final responses = await futureList;
       expect(responses.length, 1);
-      expect(responses.first.choices?.first.delta?.toolCalls, isNotNull);
-      expect(responses.first.choices?.first.delta?.toolCalls?.length, 1);
+      expect(responses.first.choices.first.delta.toolCalls, isNotNull);
+      expect(responses.first.choices.first.delta.toolCalls?.length, 1);
     });
 
     test(
@@ -1281,9 +1320,7 @@ void main() {
         // The repository must use the response's index (not the loop variable)
         // so the downstream accumulator treats them as separate calls.
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Test'),
-          ),
+          const AiUserMessage(AiUserTextContent('Test')),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -1313,19 +1350,15 @@ void main() {
           temperature: 0.7,
           provider: provider,
           tools: [
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'set_task_title',
-                description: 'Set title',
-              ),
+            const AiTool(
+              name: 'set_task_title',
+              description: 'Set title',
+              parameters: <String, dynamic>{},
             ),
-            const ChatCompletionTool(
-              type: ChatCompletionToolType.function,
-              function: FunctionObject(
-                name: 'set_task_language',
-                description: 'Set language',
-              ),
+            const AiTool(
+              name: 'set_task_language',
+              description: 'Set language',
+              parameters: <String, dynamic>{},
             ),
           ],
         );
@@ -1384,24 +1417,22 @@ void main() {
         expect(responses.length, 2);
 
         // First response should have index 0
-        final firstToolCalls = responses[0].choices!.first.delta!.toolCalls!;
+        final firstToolCalls = responses[0].choices.first.delta.toolCalls!;
         expect(firstToolCalls.length, 1);
         expect(firstToolCalls.first.index, 0);
-        expect(firstToolCalls.first.function?.name, 'set_task_title');
+        expect(firstToolCalls.first.name, 'set_task_title');
 
         // Second response should have index 1 (not 0!)
-        final secondToolCalls = responses[1].choices!.first.delta!.toolCalls!;
+        final secondToolCalls = responses[1].choices.first.delta.toolCalls!;
         expect(secondToolCalls.length, 1);
         expect(secondToolCalls.first.index, 1);
-        expect(secondToolCalls.first.function?.name, 'set_task_language');
+        expect(secondToolCalls.first.name, 'set_task_language');
       },
     );
 
     test('falls back to loop index when response has no index field', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        const AiUserMessage(AiUserTextContent('Test')),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -1460,19 +1491,17 @@ void main() {
             temperature: 0.7,
             provider: provider,
             tools: [
-              const ChatCompletionTool(
-                type: ChatCompletionToolType.function,
-                function: FunctionObject(
-                  name: 'test_fn',
-                  description: 'Test',
-                ),
+              const AiTool(
+                name: 'test_fn',
+                description: 'Test',
+                parameters: <String, dynamic>{},
               ),
             ],
           )
           .toList();
 
       expect(responses.length, 1);
-      final toolCalls = responses.first.choices!.first.delta!.toolCalls!;
+      final toolCalls = responses.first.choices.first.delta.toolCalls!;
       expect(toolCalls.length, 2);
       // Falls back to loop indices 0 and 1
       expect(toolCalls[0].index, 0);
@@ -1485,9 +1514,7 @@ void main() {
         // Two separate stream chunks each with one tool call, both missing
         // id and index. The counter must assign 0 and 1, not 0 and 0.
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Test'),
-          ),
+          const AiUserMessage(AiUserTextContent('Test')),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -1551,19 +1578,15 @@ void main() {
               temperature: 0.7,
               provider: provider,
               tools: [
-                const ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(
-                    name: 'fn_a',
-                    description: 'Test A',
-                  ),
+                const AiTool(
+                  name: 'fn_a',
+                  description: 'Test A',
+                  parameters: <String, dynamic>{},
                 ),
-                const ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(
-                    name: 'fn_b',
-                    description: 'Test B',
-                  ),
+                const AiTool(
+                  name: 'fn_b',
+                  description: 'Test B',
+                  parameters: <String, dynamic>{},
                 ),
               ],
             )
@@ -1571,8 +1594,8 @@ void main() {
 
         // Two separate chunks → two separate responses
         expect(responses.length, 2);
-        final firstToolCalls = responses[0].choices!.first.delta!.toolCalls!;
-        final secondToolCalls = responses[1].choices!.first.delta!.toolCalls!;
+        final firstToolCalls = responses[0].choices.first.delta.toolCalls!;
+        final secondToolCalls = responses[1].choices.first.delta.toolCalls!;
         expect(firstToolCalls.first.index, 0);
         expect(secondToolCalls.first.index, 1);
       },
@@ -1584,9 +1607,7 @@ void main() {
         // First chunk has id + index, second chunk has same id but no index.
         // Both should get the same dense index so they merge downstream.
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Test'),
-          ),
+          const AiUserMessage(AiUserTextContent('Test')),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -1655,12 +1676,10 @@ void main() {
               temperature: 0.7,
               provider: provider,
               tools: [
-                const ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(
-                    name: 'fn_a',
-                    description: 'A',
-                  ),
+                const AiTool(
+                  name: 'fn_a',
+                  description: 'A',
+                  parameters: <String, dynamic>{},
                 ),
               ],
             )
@@ -1669,9 +1688,9 @@ void main() {
         // Two chunks emitted
         expect(responses.length, 2);
         final firstIndex =
-            responses[0].choices!.first.delta!.toolCalls!.first.index;
+            responses[0].choices.first.delta.toolCalls!.first.index;
         final secondIndex =
-            responses[1].choices!.first.delta!.toolCalls!.first.index;
+            responses[1].choices.first.delta.toolCalls!.first.index;
         // Both should have the same dense index (0) for merging
         expect(firstIndex, 0);
         expect(secondIndex, 0);
@@ -1682,9 +1701,7 @@ void main() {
       'remaps sparse Ollama indices to dense 0-based sequence',
       () async {
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Test'),
-          ),
+          const AiUserMessage(AiUserTextContent('Test')),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -1744,26 +1761,22 @@ void main() {
               temperature: 0.7,
               provider: provider,
               tools: [
-                const ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(
-                    name: 'fn_a',
-                    description: 'A',
-                  ),
+                const AiTool(
+                  name: 'fn_a',
+                  description: 'A',
+                  parameters: <String, dynamic>{},
                 ),
-                const ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(
-                    name: 'fn_b',
-                    description: 'B',
-                  ),
+                const AiTool(
+                  name: 'fn_b',
+                  description: 'B',
+                  parameters: <String, dynamic>{},
                 ),
               ],
             )
             .toList();
 
         expect(responses.length, 1);
-        final toolCalls = responses.first.choices!.first.delta!.toolCalls!;
+        final toolCalls = responses.first.choices.first.delta.toolCalls!;
         expect(toolCalls.length, 2);
         // Sparse 5,7 → dense 0,1
         expect(toolCalls[0].index, 0);
@@ -1777,9 +1790,7 @@ void main() {
         // Some Ollama versions put index inside the function object rather
         // than at the tool-call level. The parser should handle both.
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Test'),
-          ),
+          const AiUserMessage(AiUserTextContent('Test')),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -1830,19 +1841,17 @@ void main() {
               temperature: 0.7,
               provider: provider,
               tools: [
-                const ChatCompletionTool(
-                  type: ChatCompletionToolType.function,
-                  function: FunctionObject(
-                    name: 'test_fn',
-                    description: 'Test',
-                  ),
+                const AiTool(
+                  name: 'test_fn',
+                  description: 'Test',
+                  parameters: <String, dynamic>{},
                 ),
               ],
             )
             .toList();
 
         expect(responses.length, 1);
-        final toolCalls = responses.first.choices!.first.delta!.toolCalls!;
+        final toolCalls = responses.first.choices.first.delta.toolCalls!;
         expect(toolCalls.length, 1);
         // Raw index 5 from function sub-object is remapped to dense 0
         expect(toolCalls.first.index, 0);
@@ -1851,9 +1860,7 @@ void main() {
 
     test('should handle tool calls with pre-encoded arguments', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        const AiUserMessage(AiUserTextContent('Test')),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -1901,27 +1908,23 @@ void main() {
         temperature: 0.7,
         provider: provider,
         tools: [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'test_function',
-              description: 'Test function',
-            ),
+          const AiTool(
+            name: 'test_function',
+            description: 'Test function',
+            parameters: <String, dynamic>{},
           ),
         ],
       );
 
       final responses = await stream.toList();
       expect(responses.length, 1);
-      final toolCall = responses.first.choices?.first.delta?.toolCalls?.first;
-      expect(toolCall?.function?.arguments, '{"already": "encoded"}');
+      final toolCall = responses.first.choices.first.delta.toolCalls?.first;
+      expect(toolCall?.arguments, '{"already": "encoded"}');
     });
 
     test('should generate tool call ID if missing', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Test'),
-        ),
+        const AiUserMessage(AiUserTextContent('Test')),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -1968,19 +1971,17 @@ void main() {
         temperature: 0.7,
         provider: provider,
         tools: [
-          const ChatCompletionTool(
-            type: ChatCompletionToolType.function,
-            function: FunctionObject(
-              name: 'test_function',
-              description: 'Test function',
-            ),
+          const AiTool(
+            name: 'test_function',
+            description: 'Test function',
+            parameters: <String, dynamic>{},
           ),
         ],
       );
 
       final responses = await stream.toList();
       expect(responses.length, 1);
-      final toolCall = responses.first.choices?.first.delta?.toolCalls?.first;
+      final toolCall = responses.first.choices.first.delta.toolCalls?.first;
       // When Ollama omits the ID, we preserve null so that
       // ToolCallAccumulator can merge continuation chunks by index.
       expect(toolCall?.id, isNull);
@@ -1990,9 +1991,7 @@ void main() {
       'should throw exception on non-200 status with generic error',
       () async {
         final messages = [
-          const ChatCompletionMessage.user(
-            content: ChatCompletionUserMessageContent.string('Hello'),
-          ),
+          const AiUserMessage(AiUserTextContent('Hello')),
         ];
 
         final mockResponse = MockStreamedResponse();
@@ -2038,9 +2037,7 @@ void main() {
 
     test('should handle malformed JSON in stream gracefully', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+        const AiUserMessage(AiUserTextContent('Hello')),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -2082,9 +2079,7 @@ void main() {
 
     test('should handle empty stream lines', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+        const AiUserMessage(AiUserTextContent('Hello')),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -2126,9 +2121,7 @@ void main() {
 
     test('should capture thinking content from response', () async {
       final messages = [
-        const ChatCompletionMessage.user(
-          content: ChatCompletionUserMessageContent.string('Hello'),
-        ),
+        const AiUserMessage(AiUserTextContent('Hello')),
       ];
 
       final mockResponse = MockStreamedResponse();
@@ -2171,7 +2164,7 @@ void main() {
       // </think> closing tag, and final content
       expect(responses, hasLength(3));
       final allContent = responses
-          .map((e) => e.choices?.first.delta?.content ?? '')
+          .map((e) => e.choices.first.delta.content ?? '')
           .join();
       expect(allContent, contains('<think>processing...</think>'));
       expect(allContent, contains('final response'));
@@ -2401,9 +2394,7 @@ void main() {
       final events = await thinkingRepo
           .generateTextWithMessages(
             messages: [
-              const ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Hi'),
-              ),
+              const AiUserMessage(AiUserTextContent('Hi')),
             ],
             model: 'gemma4:26b',
             temperature: 0.7,
@@ -2412,7 +2403,7 @@ void main() {
           .toList();
 
       final allContent = events
-          .map((e) => e.choices?.first.delta?.content ?? '')
+          .map((e) => e.choices.first.delta.content ?? '')
           .join();
       expect(allContent, contains('<think>deep thought</think>'));
     });
@@ -2454,9 +2445,7 @@ void main() {
       final events = await thinkingRepo
           .generateTextWithMessages(
             messages: [
-              const ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Hi'),
-              ),
+              const AiUserMessage(AiUserTextContent('Hi')),
             ],
             model: 'gemma4:26b',
             temperature: 0.7,
@@ -2465,7 +2454,7 @@ void main() {
           .toList();
 
       final allContent = events
-          .map((e) => e.choices?.first.delta?.content ?? '')
+          .map((e) => e.choices.first.delta.content ?? '')
           .join();
 
       // Exactly one `<think>` opener and one `</think>` closer should
@@ -2514,9 +2503,7 @@ void main() {
         final events = await thinkingRepo
             .generateTextWithMessages(
               messages: [
-                const ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Hi'),
-                ),
+                const AiUserMessage(AiUserTextContent('Hi')),
               ],
               model: 'gemma4:26b',
               temperature: 0.7,
@@ -2525,7 +2512,7 @@ void main() {
             .toList();
 
         final allContent = events
-            .map((e) => e.choices?.firstOrNull?.delta?.content ?? '')
+            .map((e) => e.choices.firstOrNull?.delta.content ?? '')
             .join();
         expect(allContent, contains('<think>final thoughts</think>'));
 
@@ -2572,9 +2559,7 @@ void main() {
         final events = await thinkingRepo
             .generateTextWithMessages(
               messages: [
-                const ChatCompletionMessage.user(
-                  content: ChatCompletionUserMessageContent.string('Hi'),
-                ),
+                const AiUserMessage(AiUserTextContent('Hi')),
               ],
               model: 'gemma4:26b',
               temperature: 0.7,
@@ -2583,7 +2568,7 @@ void main() {
             .toList();
 
         final allContent = events
-            .map((e) => e.choices?.first.delta?.content ?? '')
+            .map((e) => e.choices.first.delta.content ?? '')
             .join();
         expect(allContent, contains('<think>reason</think>'));
         expect(allContent, contains('answer'));
@@ -2625,9 +2610,7 @@ void main() {
       final events = await thinkingRepo
           .generateTextWithMessages(
             messages: [
-              const ChatCompletionMessage.user(
-                content: ChatCompletionUserMessageContent.string('Hi'),
-              ),
+              const AiUserMessage(AiUserTextContent('Hi')),
             ],
             model: 'gemma4:26b',
             temperature: 0.7,
@@ -2636,7 +2619,7 @@ void main() {
           .toList();
 
       final allContent = events
-          .map((e) => e.choices?.first.delta?.content ?? '')
+          .map((e) => e.choices.first.delta.content ?? '')
           .join();
       expect(allContent, contains('<think>42</think>'));
       expect(allContent, contains('done'));
@@ -2655,80 +2638,6 @@ void main() {
         // We cannot call a real server, but the object should be created.
         final repo = OllamaInferenceRepository();
         expect(repo, isA<OllamaInferenceRepository>());
-      },
-    );
-  });
-
-  group('generateTextWithMessages – content encoding branches', () {
-    late OllamaInferenceRepository repo;
-    late MockHttpClient mockClient;
-
-    AiConfigInferenceProvider makeProvider() => AiConfigInferenceProvider(
-      id: 'test-provider',
-      name: 'Test',
-      baseUrl: 'http://localhost:11434',
-      apiKey: '',
-      createdAt: DateTime(2024, 3, 15),
-      inferenceProviderType: InferenceProviderType.ollama,
-    );
-
-    MockStreamedResponse okStreamResponse(String line) {
-      final resp = MockStreamedResponse();
-      when(() => resp.statusCode).thenReturn(200);
-      when(
-        () => resp.stream,
-      ).thenAnswer(
-        (_) => http.ByteStream(Stream.value(utf8.encode(line))),
-      );
-      return resp;
-    }
-
-    setUp(() {
-      mockClient = MockHttpClient();
-      repo = OllamaInferenceRepository(httpClient: mockClient);
-    });
-
-    test(
-      'developer message with parts content falls into jsonEncode branch '
-      '(line 139)',
-      () async {
-        // ChatCompletionDeveloperMessageContent is NOT a String and NOT a
-        // ChatCompletionUserMessageContent, so it hits the `else if` branch
-        // at line 136–142 and jsonEncode is called.
-        final messages = [
-          const ChatCompletionMessage.developer(
-            content: ChatCompletionDeveloperMessageContent.parts([
-              ChatCompletionMessageContentPart.text(
-                text: 'You are helpful',
-              ),
-            ]),
-          ),
-        ];
-
-        when(
-          () => mockClient.send(any()),
-        ).thenAnswer(
-          (_) async => okStreamResponse(
-            '{"message":{"content":"ok"},"done":true}\n',
-          ),
-        );
-
-        await repo
-            .generateTextWithMessages(
-              messages: messages,
-              model: 'test-model',
-              temperature: 0.7,
-              provider: makeProvider(),
-            )
-            .toList();
-
-        final captured = verify(() => mockClient.send(captureAny())).captured;
-        final request = captured.first as http.Request;
-        final body = jsonDecode(request.body) as Map<String, dynamic>;
-        final jsonMessages = body['messages'] as List<dynamic>;
-        final firstMsg = jsonMessages[0] as Map<String, dynamic>;
-        // The content should have been JSON-encoded (not null or empty).
-        expect(firstMsg['content'], isNotEmpty);
       },
     );
   });
@@ -2794,7 +2703,7 @@ void main() {
             .toList();
 
         expect(results, isNotEmpty);
-        expect(results.first.choices?.first.delta?.content, 'described');
+        expect(results.first.choices.first.delta.content, 'described');
 
         // Verify warmUpModel was called (line 249).
         verify(

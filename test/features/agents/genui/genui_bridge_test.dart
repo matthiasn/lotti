@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
 import 'package:lotti/features/agents/genui/genui_bridge.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 void main() {
   late SurfaceController processor;
@@ -29,18 +28,17 @@ void main() {
   group('toolDefinition', () {
     test('has correct name and type', () {
       final tool = bridge.toolDefinition;
-      expect(tool.function.name, 'render_surface');
-      expect(tool.type, ChatCompletionToolType.function);
+      expect(tool.name, 'render_surface');
     });
 
     test('includes required parameters in schema', () {
-      final params = bridge.toolDefinition.function.parameters!;
+      final params = bridge.toolDefinition.parameters;
       final required = params['required'] as List<dynamic>;
       expect(required, containsAll(['surfaceId', 'rootType', 'data']));
     });
 
     test('rootType enum contains all catalog item names', () {
-      final params = bridge.toolDefinition.function.parameters!;
+      final params = bridge.toolDefinition.parameters;
       final properties = params['properties'] as Map<String, dynamic>;
       final rootType = properties['rootType'] as Map<String, dynamic>;
       final enumValues = rootType['enum'] as List<dynamic>;

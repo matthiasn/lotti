@@ -296,17 +296,16 @@ immediately.''';
     }
   }
 
-  List<ChatCompletionTool> _buildToolDefinitions() {
-    return projectAgentTools.map((tool) {
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: tool.name,
-          description: tool.description,
-          parameters: tool.parameters,
-        ),
-      );
-    }).toList();
+  List<AiTool> _buildToolDefinitions() {
+    return projectAgentTools
+        .map(
+          (tool) => AiTool(
+            name: tool.name,
+            description: tool.description,
+            parameters: tool.parameters,
+          ),
+        )
+        .toList();
   }
 
   String? _extractFinalAssistantContent(ConversationManager? manager) {
@@ -314,9 +313,11 @@ immediately.''';
     final messages = manager.messages;
     for (var i = messages.length - 1; i >= 0; i--) {
       final msg = messages[i];
-      final content = msg.mapOrNull(assistant: (a) => a.content);
-      if (content != null && content.isNotEmpty) {
-        return content;
+      if (msg is AiAssistantMessage) {
+        final content = msg.content;
+        if (content != null && content.isNotEmpty) {
+          return content;
+        }
       }
     }
     return null;

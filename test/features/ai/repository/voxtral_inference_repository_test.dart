@@ -10,7 +10,6 @@ import 'package:lotti/features/ai/repository/voxtral_inference_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openai_dart/openai_dart.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
@@ -67,8 +66,8 @@ void main() {
 
         // Assert - should receive 2 chunks with content
         expect(results.length, equals(2));
-        expect(results[0].choices?.first.delta?.content, equals(chunk1));
-        expect(results[1].choices?.first.delta?.content, equals(chunk2));
+        expect(results[0].choices.first.delta.content, equals(chunk1));
+        expect(results[1].choices.first.delta.content, equals(chunk2));
 
         // Verify the request
         final captured = verify(
@@ -120,7 +119,7 @@ void main() {
         // Assert
         expect(results.length, equals(1));
         expect(
-          results[0].choices?.first.delta?.content,
+          results[0].choices.first.delta.content,
           equals(transcribedText),
         );
         expect(results[0].id, equals('chatcmpl-test'));
@@ -149,7 +148,7 @@ void main() {
 
         // Assert
         expect(results.length, equals(1));
-        expect(results[0].choices?.first.delta?.content, equals(expectedText));
+        expect(results[0].choices.first.delta.content, equals(expectedText));
 
         final captured = verify(
           () => mockHttpClient.send(captureAny()),
@@ -434,7 +433,7 @@ data: [DONE]
 
         // Assert - should still get the valid chunk
         expect(results.length, equals(1));
-        expect(results[0].choices?.first.delta?.content, equals('Valid chunk'));
+        expect(results[0].choices.first.delta.content, equals('Valid chunk'));
       });
 
       test('should handle empty stream gracefully', () async {
@@ -485,11 +484,11 @@ data: [DONE]
 
         // Assert - all chunks in order
         expect(results.length, equals(5));
-        expect(results[0].choices?.first.delta?.content, equals('Chunk 1. '));
-        expect(results[1].choices?.first.delta?.content, equals('Chunk 2. '));
-        expect(results[2].choices?.first.delta?.content, equals('Chunk 3. '));
-        expect(results[3].choices?.first.delta?.content, equals('Chunk 4. '));
-        expect(results[4].choices?.first.delta?.content, equals('Chunk 5.'));
+        expect(results[0].choices.first.delta.content, equals('Chunk 1. '));
+        expect(results[1].choices.first.delta.content, equals('Chunk 2. '));
+        expect(results[2].choices.first.delta.content, equals('Chunk 3. '));
+        expect(results[3].choices.first.delta.content, equals('Chunk 4. '));
+        expect(results[4].choices.first.delta.content, equals('Chunk 5.'));
       });
 
       group('non-streaming mode', () {
@@ -535,7 +534,7 @@ data: [DONE]
           // Assert
           expect(results.length, equals(1));
           expect(
-            results[0].choices?.first.delta?.content,
+            results[0].choices.first.delta.content,
             equals('Transcribed text.'),
           );
           expect(results[0].id, equals('chatcmpl-test'));
@@ -1185,7 +1184,7 @@ data: [DONE]
         },
       );
 
-      test('should handle unknown finish_reason with orElse fallback', () async {
+      test('should pass through unknown finish_reason as raw string', () async {
         // Arrange - response with unknown finish_reason
         final events = [
           {
@@ -1196,7 +1195,7 @@ data: [DONE]
               {
                 'index': 0,
                 'delta': {'content': 'Text'},
-                'finish_reason': 'unknown_reason', // Not a valid enum value
+                'finish_reason': 'unknown_reason',
               },
             ],
           },
@@ -1219,11 +1218,11 @@ data: [DONE]
 
         final results = await transcriptionStream.toList();
 
-        // Assert - should fallback to 'stop' for unknown finish reason
+        // Assert - raw string passes through (no enum mapping)
         expect(results.length, equals(1));
         expect(
-          results[0].choices?.first.finishReason,
-          equals(ChatCompletionFinishReason.stop),
+          results[0].choices.first.finishReason,
+          equals('unknown_reason'),
         );
       });
 
@@ -1254,7 +1253,7 @@ data: [DONE]
 
         // Assert - should only yield the chunk with content, not the empty stop chunk
         expect(results.length, equals(1));
-        expect(results[0].choices?.first.delta?.content, equals('Some text'));
+        expect(results[0].choices.first.delta.content, equals('Some text'));
       });
 
       test('should not include language hint for empty string', () async {
@@ -1362,7 +1361,7 @@ data: [DONE]
 
         // Assert - should skip null choices and only yield valid chunk
         expect(results.length, equals(1));
-        expect(results[0].choices?.first.delta?.content, equals('Valid'));
+        expect(results[0].choices.first.delta.content, equals('Valid'));
       });
 
       test('should handle chunks with empty choices array', () async {
@@ -1392,7 +1391,7 @@ data: [DONE]
 
         // Assert - should skip empty choices and only yield valid chunk
         expect(results.length, equals(1));
-        expect(results[0].choices?.first.delta?.content, equals('Valid'));
+        expect(results[0].choices.first.delta.content, equals('Valid'));
       });
 
       test('should handle chunks with null delta', () async {
@@ -1422,7 +1421,7 @@ data: [DONE]
 
         // Assert - should skip null delta and only yield valid chunk
         expect(results.length, equals(1));
-        expect(results[0].choices?.first.delta?.content, equals('Valid'));
+        expect(results[0].choices.first.delta.content, equals('Valid'));
       });
 
       test('should handle chunks with null content in delta', () async {
@@ -1452,7 +1451,7 @@ data: [DONE]
 
         // Assert - should skip null content and only yield valid chunk
         expect(results.length, equals(1));
-        expect(results[0].choices?.first.delta?.content, equals('Valid'));
+        expect(results[0].choices.first.delta.content, equals('Valid'));
       });
     });
 

@@ -6,49 +6,44 @@ part of 'gemini_inference_repository.dart';
 // ---------------------------------------------------------------------------
 
 /// Creates a response chunk containing a thinking block.
-CreateChatCompletionStreamResponse _createThinkingChunk({
+AiStreamChunk _createThinkingChunk({
   required String id,
   required int created,
   required String model,
   required String thinking,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return AiStreamChunk(
     id: id,
     created: created,
     model: model,
     choices: [
-      ChatCompletionStreamResponseChoice(
+      AiStreamChoice(
         index: 0,
-        delta: ChatCompletionStreamResponseDelta(
-          content: '<think>\n$thinking\n</think>\n',
-        ),
+        delta: AiStreamDelta(content: '<think>\n$thinking\n</think>\n'),
       ),
     ],
   );
 }
 
 /// Creates a response chunk containing visible text content.
-CreateChatCompletionStreamResponse _createTextChunk({
+AiStreamChunk _createTextChunk({
   required String id,
   required int created,
   required String model,
   required String text,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return AiStreamChunk(
     id: id,
     created: created,
     model: model,
     choices: [
-      ChatCompletionStreamResponseChoice(
-        index: 0,
-        delta: ChatCompletionStreamResponseDelta(content: text),
-      ),
+      AiStreamChoice(index: 0, delta: AiStreamDelta(content: text)),
     ],
   );
 }
 
 /// Creates a response chunk containing a tool call.
-CreateChatCompletionStreamResponse _createToolCallChunk({
+AiStreamChunk _createToolCallChunk({
   required String id,
   required int created,
   required String model,
@@ -57,22 +52,20 @@ CreateChatCompletionStreamResponse _createToolCallChunk({
   required String name,
   required String arguments,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return AiStreamChunk(
     id: id,
     created: created,
     model: model,
     choices: [
-      ChatCompletionStreamResponseChoice(
+      AiStreamChoice(
         index: 0,
-        delta: ChatCompletionStreamResponseDelta(
+        delta: AiStreamDelta(
           toolCalls: [
-            ChatCompletionStreamMessageToolCallChunk(
+            AiToolCallChunk(
               index: index,
               id: toolCallId,
-              function: ChatCompletionStreamMessageFunctionCall(
-                name: name,
-                arguments: arguments,
-              ),
+              name: name,
+              arguments: arguments,
             ),
           ],
         ),
@@ -82,7 +75,7 @@ CreateChatCompletionStreamResponse _createToolCallChunk({
 }
 
 /// Creates a response chunk containing usage statistics.
-CreateChatCompletionStreamResponse _createUsageChunk({
+AiStreamChunk _createUsageChunk({
   required String id,
   required int created,
   required String model,
@@ -90,18 +83,16 @@ CreateChatCompletionStreamResponse _createUsageChunk({
   int? completionTokens,
   int? thoughtsTokens,
 }) {
-  return CreateChatCompletionStreamResponse(
+  return AiStreamChunk(
     id: id,
     created: created,
     model: model,
     choices: const [],
-    usage: CompletionUsage(
+    usage: AiUsage(
       promptTokens: promptTokens,
       completionTokens: completionTokens,
       totalTokens: (promptTokens ?? 0) + (completionTokens ?? 0),
-      completionTokensDetails: thoughtsTokens != null
-          ? CompletionTokensDetails(reasoningTokens: thoughtsTokens)
-          : null,
+      reasoningTokens: thoughtsTokens,
     ),
   );
 }

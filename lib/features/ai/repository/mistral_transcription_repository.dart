@@ -3,9 +3,9 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/model/ai_chat_message.dart';
 import 'package:lotti/features/ai/repository/transcription_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
-import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
 /// Repository for handling Mistral transcription via the dedicated
@@ -44,7 +44,7 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
   /// [contextBias] is a list of words/phrases (up to 100) that the model
   /// should pay special attention to. Sent as comma-separated terms in the
   /// `context_bias` multipart form field.
-  Stream<CreateChatCompletionStreamResponse> transcribeAudio({
+  Stream<AiStreamChunk> transcribeAudio({
     required String model,
     required String audioBase64,
     required String baseUrl,
@@ -211,18 +211,15 @@ class MistralTranscriptionRepository extends TranscriptionRepository {
             name: _providerName,
           );
 
-          return CreateChatCompletionStreamResponse(
+          return AiStreamChunk(
             id: 'mistral-transcription-${_uuid.v4()}',
             choices: [
-              ChatCompletionStreamResponseChoice(
-                delta: ChatCompletionStreamResponseDelta(
-                  content: text,
-                ),
+              AiStreamChoice(
                 index: 0,
+                delta: AiStreamDelta(content: text),
               ),
             ],
-            object: 'chat.completion.chunk',
-            created: 0,
+            created: DateTime.now().millisecondsSinceEpoch ~/ 1000,
           );
         } on TranscriptionException {
           rethrow;
