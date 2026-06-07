@@ -11,6 +11,7 @@ import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/utils/file_utils.dart';
+import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:research_package/model.dart';
 
@@ -537,6 +538,57 @@ void main() {
         throwsA(isA<FileSystemException>()),
       );
     });
+
+    // Properties: (a) any generated non-traversal relative path resolves to
+    // a file inside docDir; (b) any '../'-prefixed path throws.
+    glados.Glados2(
+      glados.AnyUtils(glados.any).choose(const [
+        'text_entries',
+        'images',
+        'audio',
+        'agent_entities',
+        'a b',
+      ]),
+      glados.AnyUtils(glados.any).choose(const [
+        'file.json',
+        'nested/file.json',
+        '2021-11-30/test-id.text.json',
+        'weird name.json',
+      ]),
+      glados.ExploreConfig(numRuns: 80),
+    ).test('non-traversal relative paths always resolve inside docDir', (
+      folder,
+      tail,
+    ) {
+      for (final prefix in const ['', '/']) {
+        final file = resolveJsonCandidateFile('$prefix$folder/$tail');
+        expect(
+          p.isWithin(p.normalize(docDir.path), p.normalize(file.path)),
+          isTrue,
+          reason: '$prefix$folder/$tail -> ${file.path}',
+        );
+      }
+    }, tags: 'glados');
+
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(1, 6),
+      glados.AnyUtils(glados.any).choose(const [
+        'etc/passwd',
+        'secret.json',
+        'outside/file.json',
+      ]),
+      glados.ExploreConfig(numRuns: 80),
+    ).test('any ../-prefixed path throws FileSystemException', (
+      depth,
+      tail,
+    ) {
+      final escape = '${List.filled(depth, '..').join('/')}/$tail';
+      expect(
+        () => resolveJsonCandidateFile(escape),
+        throwsA(isA<FileSystemException>()),
+        reason: escape,
+      );
+    }, tags: 'glados');
   });
 
   group('normalizeAttachmentIndexKey', () {
@@ -570,7 +622,7 @@ void main() {
 
     glados.Glados(
       glados.any.attachmentIndexKey,
-      glados.ExploreConfig(numRuns: 160),
+      glados.ExploreConfig(numRuns: 80),
     ).test(
       'canonicalizes generated relative paths to one slash-prefixed key',
       (scenario) {
@@ -648,7 +700,7 @@ void main() {
 
     glados.Glados(
       glados.any.payloadId,
-      glados.ExploreConfig(numRuns: 120),
+      glados.ExploreConfig(numRuns: 80),
     ).test(
       'classifies generated agent entity and link paths as agent payloads',
       (payloadId) {

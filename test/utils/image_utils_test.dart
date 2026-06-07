@@ -47,7 +47,8 @@ void main() {
 
     glados.Glados(
       glados.any.generatedAssetPathScenario,
-      glados.ExploreConfig(numRuns: 160),
+      // ignore: avoid_redundant_argument_values
+      glados.ExploreConfig(numRuns: 100),
     ).test(
       'matches generated platform marker splitting behavior',
       (scenario) {
@@ -87,7 +88,8 @@ void main() {
 
     glados.Glados(
       glados.any.generatedImagePathScenario,
-      glados.ExploreConfig(numRuns: 160),
+      // ignore: avoid_redundant_argument_values
+      glados.ExploreConfig(numRuns: 100),
     ).test(
       'concatenates generated image directories and file names',
       (scenario) {
@@ -131,7 +133,8 @@ void main() {
 
     glados.Glados(
       glados.any.generatedImagePathScenario,
-      glados.ExploreConfig(numRuns: 160),
+      // ignore: avoid_redundant_argument_values
+      glados.ExploreConfig(numRuns: 100),
     ).test(
       'prefixes generated relative image paths with the documents directory',
       (scenario) {

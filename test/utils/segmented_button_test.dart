@@ -135,5 +135,48 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'value passes through and semanticsLabel defaults to label for the '
+      'full input matrix',
+      (tester) async {
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+
+        const labels = ['Day', 'Week', 'Month with spaces', '7d', 'Ümläut'];
+        const semanticsLabels = [null, 'Show by day', 'Show by week', ''];
+
+        // Exhaustive 5x4 matrix — the whole input space of the contract.
+        for (final label in labels) {
+          for (final semanticsLabel in semanticsLabels) {
+            final segment = buttonSegment<int>(
+              context: capturedContext,
+              value: 42,
+              selected: 42,
+              label: label,
+              semanticsLabel: semanticsLabel,
+            );
+
+            expect(segment.value, 42, reason: '$label / $semanticsLabel');
+            final text = segment.label! as Text;
+            expect(text.data, label);
+            expect(
+              text.semanticsLabel,
+              semanticsLabel ?? label,
+              reason: '$label / $semanticsLabel',
+            );
+          }
+        }
+      },
+    );
   });
 }
