@@ -15,6 +15,7 @@ import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
+import '../../../../../widget_test_utils.dart';
 
 void main() {
   group('CreateEntryModal', () {
@@ -48,75 +49,63 @@ void main() {
 
     tearDown(getIt.reset);
 
+    /// Pumps a host button wired to CreateEntryModal.show and opens the
+    /// modal (bottom-sheet route — the settle after the tap is required).
+    Future<void> pumpAndOpenModal(
+      WidgetTester tester, {
+      String? linkedFromId = 'test-linked-id',
+      String? categoryId = 'test-category-id',
+    }) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          child: makeTestableWidget2(
+            Builder(
+              builder: (context) => Scaffold(
+                body: ElevatedButton(
+                  onPressed: () => CreateEntryModal.show(
+                    context: context,
+                    linkedFromId: linkedFromId,
+                    categoryId: categoryId,
+                  ),
+                  child: const Text('Open Modal'),
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      await tester.tap(find.text('Open Modal'));
+      await tester.pumpAndSettle();
+    }
+
     testWidgets('shows modal with all menu items when events enabled', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () => CreateEntryModal.show(
-                    context: context,
-                    linkedFromId: 'test-linked-id',
-                    categoryId: 'test-category-id',
-                  ),
-                  child: const Text('Open Modal'),
-                ),
-              ),
-            ),
-          ),
-        ),
+      await pumpAndOpenModal(tester);
+
+      // "All" means all: with events enabled and a linked id, the five
+      // core items must each be present exactly once (screenshot items are
+      // platform-conditional and intentionally not pinned here).
+      final context = tester.element(
+        find.byType(CreateMenuListItem).first,
       );
-
-      await tester.pumpAndSettle();
-
-      // Open the modal
-      await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
-
-      // Verify the modal is displayed with menu items
-      // Note: The exact number depends on platform (some items are conditional)
-      // At minimum, we should have Event, Task, Audio, Timer, Text items
-      expect(find.byType(CreateMenuListItem), findsWidgets);
+      final messages = AppLocalizations.of(context)!;
+      for (final label in [
+        messages.addActionAddEvent,
+        messages.addActionAddTask,
+        messages.addActionAddAudioRecording,
+        messages.addActionAddTimer,
+        messages.addActionAddText,
+      ]) {
+        expect(find.text(label), findsOneWidget, reason: label);
+      }
     });
 
     testWidgets('shows dividers between menu items', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () => CreateEntryModal.show(
-                    context: context,
-                    linkedFromId: 'test-linked-id',
-                    categoryId: 'test-category-id',
-                  ),
-                  child: const Text('Open Modal'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Open the modal
-      await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await pumpAndOpenModal(tester);
 
       // Verify dividers are present between items
       expect(find.byType(Divider), findsWidgets);
@@ -125,70 +114,14 @@ void main() {
     testWidgets('shows Timer item when linkedFromId is provided', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () => CreateEntryModal.show(
-                    context: context,
-                    linkedFromId: 'test-linked-id',
-                    categoryId: 'test-category-id',
-                  ),
-                  child: const Text('Open Modal'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Open the modal
-      await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await pumpAndOpenModal(tester);
 
       // Verify Timer item is present (timer icon)
       expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
     });
 
     testWidgets('hides Timer item when linkedFromId is null', (tester) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () => CreateEntryModal.show(
-                    context: context,
-                    linkedFromId: null,
-                    categoryId: 'test-category-id',
-                  ),
-                  child: const Text('Open Modal'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Open the modal
-      await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await pumpAndOpenModal(tester, linkedFromId: null);
 
       // Verify Timer item is NOT present
       expect(find.byIcon(Icons.timer_outlined), findsNothing);
@@ -210,35 +143,7 @@ void main() {
         ]),
       );
 
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () => CreateEntryModal.show(
-                    context: context,
-                    linkedFromId: null,
-                    categoryId: 'test-category-id',
-                  ),
-                  child: const Text('Open Modal'),
-                ),
-              ),
-            ),
-          ),
-        ),
-      );
-
-      await tester.pumpAndSettle();
-
-      // Open the modal
-      await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
+      await pumpAndOpenModal(tester, linkedFromId: null);
 
       // Verify Event item is NOT present
       expect(find.byIcon(Icons.event_rounded), findsNothing);
@@ -247,35 +152,11 @@ void main() {
     testWidgets('displays correct icons for all standard menu items', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            journalDbProvider.overrideWithValue(mockDb),
-          ],
-          child: MaterialApp(
-            localizationsDelegates: AppLocalizations.localizationsDelegates,
-            supportedLocales: AppLocalizations.supportedLocales,
-            home: Builder(
-              builder: (context) => Scaffold(
-                body: ElevatedButton(
-                  onPressed: () => CreateEntryModal.show(
-                    context: context,
-                    linkedFromId: 'test-id',
-                    categoryId: 'test-category',
-                  ),
-                  child: const Text('Open Modal'),
-                ),
-              ),
-            ),
-          ),
-        ),
+      await pumpAndOpenModal(
+        tester,
+        linkedFromId: 'test-id',
+        categoryId: 'test-category',
       );
-
-      await tester.pumpAndSettle();
-
-      // Open the modal
-      await tester.tap(find.text('Open Modal'));
-      await tester.pumpAndSettle();
 
       // Verify core icons are present
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
