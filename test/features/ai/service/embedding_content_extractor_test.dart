@@ -23,6 +23,14 @@ extension _AnyExtractTask on glados.Any {
   /// Lists of 0–4 label names.
   glados.Generator<List<String>> get labelNameList =>
       glados.ListAnys(this).listWithLengthInRange(0, 4, labelName);
+
+  /// Body text: a distinctive, trim-stable, always-non-empty marker followed
+  /// by generated lowercase letters. The fixed `BODY_` prefix guarantees the
+  /// body is non-empty, never collides with the title/labels alphabet, and
+  /// has no leading/trailing whitespace (so `.trim()` is a no-op on it).
+  glados.Generator<String> get taskBody => glados.StringAnys(
+    this,
+  ).stringOf('abcdefghijklmnopqrstuvwxyz').map((suffix) => 'BODY_$suffix');
 }
 
 /// Builds a minimal [Metadata] for test entities.
@@ -609,6 +617,49 @@ void main() {
               reason: 'Result must contain label "$label"',
             );
           }
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados3(
+      glados.any.taskTitle,
+      glados.any.labelNameList,
+      glados.any.taskBody,
+      glados.ExploreConfig(numRuns: 110),
+    ).test(
+      'body text is appended last, after the Labels line when labels exist',
+      (title, labels, bodyText) {
+        // taskBody is always non-empty with no trailing whitespace, so the
+        // body survives the final trim() intact and sits at the very end.
+        final result = EmbeddingContentExtractor.extractTaskText(
+          title: title,
+          labelNames: labels,
+          bodyText: bodyText,
+        );
+        if (result == null) return;
+
+        // The body is appended last and has no trailing whitespace, so the
+        // output always ends with it (regardless of title/label presence).
+        expect(
+          result,
+          endsWith(bodyText),
+          reason: 'Body ("$bodyText") must be the trailing segment',
+        );
+
+        // When labels are present, the Labels line must precede the body. The
+        // distinctive BODY_ prefix cannot collide with the title/label
+        // alphabet, so indexOf locates the body unambiguously.
+        if (labels.isNotEmpty) {
+          final labelsLine = 'Labels: ${labels.join(', ')}';
+          expect(
+            result.indexOf(labelsLine),
+            allOf(
+              greaterThanOrEqualTo(0),
+              lessThan(result.indexOf(bodyText)),
+            ),
+            reason: 'Labels line must appear before the body',
+          );
         }
       },
       tags: 'glados',
