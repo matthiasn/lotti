@@ -291,6 +291,54 @@ Map<String, dynamic> _$AgentReportHeadEntityToJson(
   'runtimeType': instance.$type,
 };
 
+ScheduledWakeEntity _$ScheduledWakeEntityFromJson(Map<String, dynamic> json) =>
+    ScheduledWakeEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      scheduledAt: DateTime.parse(json['scheduledAt'] as String),
+      status: $enumDecode(_$ScheduledWakeStatusEnumMap, json['status']),
+      reason: json['reason'] as String,
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      triggerTokens:
+          (json['triggerTokens'] as List<dynamic>?)
+              ?.map((e) => e as String)
+              .toList() ??
+          const <String>[],
+      workspaceKey: json['workspaceKey'] as String?,
+      consumedAt: json['consumedAt'] == null
+          ? null
+          : DateTime.parse(json['consumedAt'] as String),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$ScheduledWakeEntityToJson(
+  ScheduledWakeEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'scheduledAt': instance.scheduledAt.toIso8601String(),
+  'status': _$ScheduledWakeStatusEnumMap[instance.status]!,
+  'reason': instance.reason,
+  'updatedAt': instance.updatedAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'triggerTokens': instance.triggerTokens,
+  'workspaceKey': instance.workspaceKey,
+  'consumedAt': instance.consumedAt?.toIso8601String(),
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$ScheduledWakeStatusEnumMap = {
+  ScheduledWakeStatus.pending: 'pending',
+  ScheduledWakeStatus.consumed: 'consumed',
+};
+
 CaptureEntity _$CaptureEntityFromJson(Map<String, dynamic> json) =>
     CaptureEntity(
       id: json['id'] as String,

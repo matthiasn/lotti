@@ -28,7 +28,9 @@ document and the parent plan disagree on mechanics, this document wins.
    all pre-existing per-day `day_agent` identities, clear their
    `scheduledWakeAt`, and re-parent their day-scoped domain entities
    (day plans, captures, parsed items, change sets) to the planner id via
-   normal synced upserts.
+   normal synced upserts — **bounded to recent history** (default trailing 14
+   days, chunked if large) so a long-time user does not flood sync or block
+   the UI thread. Older days are archived in place, not migrated.
 5. **Knowledge panel.** A section widget on the Daily OS day surface next to
    the existing learning cards; no new route.
 6. **`PlannerKnowledgeEntity` (parent plan Open Decision 5).** New
@@ -59,7 +61,7 @@ were run against the parent plan before implementation. Findings:
 | A6 | Day-filtering captures while observations stay global makes compaction checkpoint coverage day-dependent → non-convergent folds | Phases 3/5 design rule below |
 | A7 | Pre-existing day plans vanish behind `agentId` read guards after the flip | Phase 4 migration |
 | A8 | Exhaustive variant switches break on new entity variants: `agent_db_conversions.dart` (4 maps + `entitySubtype`), `agent_lww_timestamp.dart`, `AgentEntityTypes`, entity-enumerating tests | Phases 2/3/5 |
-| A9 | Riverpod dead keys after the flip: providers in `agents/state/day_agent_providers.dart` watch `agentUpdateStreamProvider(dayId)` with no broad fallback → lose reactivity entirely | Phase 4 (not 6) |
+| A9 | Riverpod dead keys after the flip: providers in `agents/state/day_agent_providers.dart` watch `agentUpdateStreamProvider(dayId)` with no broad fallback → lose reactivity entirely. Fix with **workspace-scoped** invalidation (per-`dayId` notifications), not a global-planner watch that rebuilds every loaded day (review finding) | Phase 4 (not 6) |
 | A10 | Wake-executor router (`agent_providers.dart`), `wake_batch_router.dart` (3× `mergeTokens`, 2× `WakeJob` ctor), `wake_drain_engine.dart` (`hasQueuedJobFor` / `hasDirectQueuedJobFor`) missing from the parent touch lists | Phases 2/4 |
 | A11 | Production prompt scaffold says "You operate on exactly one local calendar day"; seeded directives teach per-day + context-less pre-warm | Phases 4/5 |
 | A12 | `restorePendingWake` reconstructs token-less jobs → a restored pre-warm cannot resolve a day post-flip | Phase 2 |
@@ -123,8 +125,18 @@ Touches: `wake_queue.dart`, `wake_orchestrator.dart`, `wake_batch_router.dart`
 harness rework (A13) and entity factories.
 
 1. `String? workspaceKey` on `WakeJob` (`day:<dayId>` for Daily OS; null
-   otherwise; NOT in runKey hashes). All `WakeJob(` construction sites carry
-   it.
+   otherwise). All `WakeJob(` construction sites carry it. **Run-key
+   collision avoidance (review finding):** the queue dedupes by `runKey`, so
+   two same-reason day wakes for different workspaces enqueued in the same
+   tick must not hash identically. `RunKeyFactory.forManual` therefore
+   includes `workspaceKey` when non-null (every Daily OS day wake is manual);
+   when null the segment is omitted so existing single-workspace run keys stay
+   byte-identical. Subscription run keys already disambiguate via
+   `wakeCounter` + `timestamp`, and the day-scoped pre-warm rides a persisted
+   `ScheduledWakeEntity` fired through `enqueueManualWake` (workspace-keyed),
+   **not** the token-less `restorePendingWake` path — so the restore-collision
+   scenario does not arise. `restorePendingWake` itself only ever restores the
+   single per-agent `nextWakeAt`, so it cannot produce two colliding keys.
 2. Partition `mergeTokens`, `removeByAgent`, `hasQueuedJobFor`,
    `hasDirectQueuedJobFor` by `(agentId, workspaceKey, reasonClass)`; null
    partitions only with null. Reason classes: capture / draft / refine /
@@ -182,9 +194,9 @@ Touches: `day_agent_service.dart`, `derived_agent_state.dart`,
 `agent_sync_service.dart`, `day_agent_workflow.dart` (incl. prompt scaffold,
 A11), `agent_providers.dart` (wake-executor router, A10),
 `state/day_agent_provider.dart` + `agents/state/day_agent_providers.dart`
-(re-key invalidation to planner id + missing broad fallback, A9),
-`pending_wake_view_model.dart` (A15), `real_day_agent.dart` (planner
-resolution), the migration step, link/state tests.
+(workspace-scoped invalidation, A9), `pending_wake_view_model.dart` (A15),
+`real_day_agent.dart` (planner resolution), the migration step, link/state
+tests.
 
 1. Route all creation/enqueue through `getOrCreatePlannerAgent`; stop per-day
    identities, stop writing `slots.activeDayId`, stop creating per-day
@@ -199,10 +211,26 @@ resolution), the migration step, link/state tests.
    archive all other active `day_agent` identities, clear their
    `scheduledWakeAt`, re-parent their day plans / captures / parsed items /
    change sets to the planner id via synced upserts. `restoreSubscriptions`
-   skips archived agents.
+   skips archived agents. **Bound the volume (review finding):** re-parent only
+   recent history (default: trailing 14 days of day plans + their captures /
+   parsed items / change sets) so a long-time user does not flood the sync
+   channel or block the DB/UI thread; older days are archived in place
+   (identity flipped, entities left parented to the old id — invisible but not
+   migrated). If even the bounded set is large, chunk the upserts across
+   transactions rather than one bulk write. Migration runs once, guarded by a
+   persisted marker so it is not re-attempted on every launch.
 5. Prompt scaffold rewritten to planner semantics (A11); wake-card subject
    derived from the `planning_day:` token (A15).
-6. Persisted strings unchanged: `kind == day_agent`,
+6. **Workspace-scoped provider invalidation (A9 + review finding).** The dead
+   `agentUpdateStreamProvider(dayId)` keys must not be naively re-pointed at
+   the global planner id: that rebuilds every loaded day's providers on any
+   planner wake. Instead emit a workspace-scoped notification — the planner's
+   persisted-state-changed callback already fires per `dayId` (see
+   `onPersistedStateChanged?..call(agentId)..call(dayId)` in the workflow), so
+   day providers can keep watching a `dayId`-keyed stream fed by those
+   per-day notifications, with the planner id as a coarse fallback only where a
+   day key is unavailable. Verify only the affected day's providers rebuild.
+7. Persisted strings unchanged: `kind == day_agent`,
    `day_agent_plan:<dayId>`.
 
 Done when: two dates yield one planner (idempotent under simulated concurrent

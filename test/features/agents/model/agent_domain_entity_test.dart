@@ -469,6 +469,60 @@ void main() {
       });
     });
 
+    group('ScheduledWakeEntity (scheduledWake variant)', () {
+      test('roundtrips all fields', () {
+        final original = AgentDomainEntity.scheduledWake(
+          id: 'scheduled_wake:agent-001:day:dayplan-2026-05-25',
+          agentId: 'agent-001',
+          scheduledAt: DateTime(2026, 5, 25, 8, 30),
+          status: ScheduledWakeStatus.pending,
+          reason: 'scheduled',
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+          triggerTokens: const ['planning_day:dayplan-2026-05-25'],
+          workspaceKey: 'day:dayplan-2026-05-25',
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped, isA<ScheduledWakeEntity>());
+      });
+
+      test('defaults triggerTokens to empty and tolerates null workspace', () {
+        final original = AgentDomainEntity.scheduledWake(
+          id: 'scheduled_wake:agent-001:global',
+          agentId: 'agent-001',
+          scheduledAt: DateTime(2026, 5, 25, 9),
+          status: ScheduledWakeStatus.consumed,
+          reason: 'scheduled',
+          updatedAt: updatedAt,
+          vectorClock: null,
+          consumedAt: DateTime(2026, 5, 25, 9, 1),
+        );
+
+        final roundtripped = roundtrip(original) as ScheduledWakeEntity;
+
+        expect(roundtripped.triggerTokens, isEmpty);
+        expect(roundtripped.workspaceKey, isNull);
+        expect(roundtripped.status, ScheduledWakeStatus.consumed);
+        expect(roundtripped.consumedAt, DateTime(2026, 5, 25, 9, 1));
+      });
+
+      test('runtimeType discriminator key is "scheduledWake"', () {
+        final json = AgentDomainEntity.scheduledWake(
+          id: 'scheduled_wake:agent-001:global',
+          agentId: 'agent-001',
+          scheduledAt: DateTime(2026, 5, 25, 9),
+          status: ScheduledWakeStatus.pending,
+          reason: 'scheduled',
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ).toJson();
+        expect(json['runtimeType'], equals('scheduledWake'));
+      });
+    });
+
     group('Daily OS capture variants', () {
       test('CaptureEntity roundtrips all fields', () {
         final original = AgentDomainEntity.capture(

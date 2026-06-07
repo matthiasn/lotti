@@ -292,6 +292,7 @@ class DayAgentWorkflow {
           agentId: agentId,
           threadId: threadId,
           runKey: runKey,
+          dayId: dayId,
           toolName: toolName,
           args: args,
         ),
@@ -458,6 +459,7 @@ class DayAgentWorkflow {
     required String agentId,
     required String threadId,
     required String runKey,
+    required String dayId,
     required String toolName,
     required Map<String, dynamic> args,
   }) async {
@@ -547,7 +549,11 @@ class DayAgentWorkflow {
       );
     }
 
-    final wakeCountKey = _scheduledWakeCountKey(now);
+    // Cap is keyed by (dayId, date) so an active multi-day planner can still
+    // pre-warm each day; a single calendar-date key would let three planned
+    // days exhaust one shared budget (ADR 0022 Decision 12).
+    final wakeCountKey = _scheduledWakeCountKey(now, dayId);
+    final workspaceKey = dayAgentWorkspaceKey(dayId);
     try {
       await syncService.runInTransaction(() async {
         final state = await agentRepository.getAgentState(agentId);
@@ -562,9 +568,28 @@ class DayAgentWorkflow {
           );
         }
 
+        // Persist the pre-warm as a day-scoped scheduled-wake record rather
+        // than the single, clobberable AgentState.scheduledWakeAt: a
+        // long-lived planner has several outstanding day wakes, and each must
+        // restore with its own workspace + trigger tokens. The deterministic
+        // id overwrites a prior pending pre-warm for the same day.
+        await syncService.upsertEntity(
+          AgentDomainEntity.scheduledWake(
+            id: scheduledWakeRecordId(agentId, workspaceKey: workspaceKey),
+            agentId: agentId,
+            scheduledAt: scheduledAt,
+            status: ScheduledWakeStatus.pending,
+            reason: WakeReason.scheduled.name,
+            updatedAt: now,
+            vectorClock: null,
+            triggerTokens: [dayAgentPlanningDayToken(dayId)],
+            workspaceKey: workspaceKey,
+          ),
+        );
+
+        // The cap counter still lives on the per-agent state.
         await syncService.upsertEntity(
           state.copyWith(
-            scheduledWakeAt: scheduledAt,
             updatedAt: now,
             toolCounterByKey: _nextToolCounterByKey(
               state.toolCounterByKey,
@@ -947,16 +972,21 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     int nextCount,
   ) {
     const prefix = 'day_agent_set_next_wake:';
+    // Keys are `day_agent_set_next_wake:<dayId>:<date>`. Garbage-collect only
+    // stale prior-date counters, keeping every day's counter for the current
+    // date so interleaved multi-day planning does not reset another day's cap.
+    final todaySuffix = wakeCountKey.substring(wakeCountKey.lastIndexOf(':'));
     return {
       for (final entry in current.entries)
-        if (!entry.key.startsWith(prefix) || entry.key == wakeCountKey)
+        if (!entry.key.startsWith(prefix) || entry.key.endsWith(todaySuffix))
           entry.key: entry.value,
       wakeCountKey: nextCount,
     };
   }
 
-  static String _scheduledWakeCountKey(DateTime now) {
-    return 'day_agent_set_next_wake:${now.toIso8601String().substring(0, 10)}';
+  static String _scheduledWakeCountKey(DateTime now, String dayId) {
+    return 'day_agent_set_next_wake:$dayId:'
+        '${now.toIso8601String().substring(0, 10)}';
   }
 }
 

@@ -825,13 +825,38 @@ void main() {
           ],
         );
 
+        // set_next_wake persists a day-scoped ScheduledWakeEntity record
+        // (ADR 0022 Decision 12) rather than the clobberable state slot.
+        final scheduledRecord = upsertedEntities
+            .whereType<ScheduledWakeEntity>()
+            .single;
+        expect(scheduledRecord.scheduledAt, DateTime(2026, 5, 25, 8, 30));
+        expect(scheduledRecord.status, ScheduledWakeStatus.pending);
+        expect(scheduledRecord.workspaceKey, dayAgentWorkspaceKey(dayId));
+        expect(
+          scheduledRecord.triggerTokens,
+          contains(dayAgentPlanningDayToken(dayId)),
+        );
+        expect(
+          scheduledRecord.id,
+          scheduledWakeRecordId(
+            agentId,
+            workspaceKey: dayAgentWorkspaceKey(dayId),
+          ),
+        );
+        // No state carries scheduledWakeAt anymore; the cap counter is
+        // re-keyed by (dayId, date) and the stale prior-date entry is GC'd.
         final scheduledState = upsertedEntities
             .whereType<AgentStateEntity>()
-            .firstWhere((state) => state.scheduledWakeAt != null);
-        expect(scheduledState.scheduledWakeAt, DateTime(2026, 5, 25, 8, 30));
+            .firstWhere(
+              (state) => state.toolCounterByKey.keys.any(
+                (k) => k.startsWith('day_agent_set_next_wake:'),
+              ),
+            );
+        expect(scheduledState.scheduledWakeAt, isNull);
         expect(scheduledState.toolCounterByKey, {
           'unrelated_tool:host-a': 9,
-          'day_agent_set_next_wake:2026-05-25': 1,
+          'day_agent_set_next_wake:$dayId:2026-05-25': 1,
         });
         expect(scheduledState.processedCounterByHost, isEmpty);
 
@@ -2169,18 +2194,15 @@ void main() {
           conversationRepository.toolResponses.single,
           contains(scenario.expectedResponse),
         );
-        expect(
-          upsertedEntities.whereType<AgentStateEntity>().any(
-            (state) => state.scheduledWakeAt != null,
-          ),
-          isFalse,
-        );
+        // A rejected set_next_wake persists no scheduled-wake record.
+        expect(upsertedEntities.whereType<ScheduledWakeEntity>(), isEmpty);
       });
     }
 
     test('rejects scheduled wakes after the daily cap is reached', () async {
+      // Cap key is now (dayId, date)-scoped (ADR 0022 Decision 12).
       currentState = state(
-        toolCounterByKey: const {'day_agent_set_next_wake:2026-05-25': 4},
+        toolCounterByKey: {'day_agent_set_next_wake:$dayId:2026-05-25': 4},
       );
       conversationRepository.toolCalls = [
         _toolCall(
@@ -2199,12 +2221,8 @@ void main() {
         conversationRepository.toolResponses.single,
         contains('daily scheduled-wake cap reached'),
       );
-      expect(
-        upsertedEntities.whereType<AgentStateEntity>().any(
-          (state) => state.scheduledWakeAt != null,
-        ),
-        isFalse,
-      );
+      // The cap blocks both the record and any state mutation for the wake.
+      expect(upsertedEntities.whereType<ScheduledWakeEntity>(), isEmpty);
     });
 
     test(

@@ -135,6 +135,34 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = AgentReportHeadEntity;
 
+  /// Persisted scheduled-wake record (ADR 0022 Decision 12).
+  ///
+  /// A single `AgentStateEntity.scheduledWakeAt` cannot represent several
+  /// outstanding day-scoped wakes under one long-lived planner — a second
+  /// day's `set_next_wake` would clobber the first. Each day-scoped scheduled
+  /// wake (e.g. the morning pre-warm) is its own record carrying the
+  /// [workspaceKey] and [triggerTokens], so the scheduled-wake manager
+  /// restores it with full day context after a restart and never overwrites
+  /// another day's wake.
+  ///
+  /// The id is deterministic per `(agentId, workspaceKey)` so re-scheduling
+  /// the same workspace's pre-warm overwrites the prior record (LWW) rather
+  /// than accumulating; firing flips [status] to
+  /// [ScheduledWakeStatus.consumed] in place.
+  const factory AgentDomainEntity.scheduledWake({
+    required String id,
+    required String agentId,
+    required DateTime scheduledAt,
+    required ScheduledWakeStatus status,
+    required String reason,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    @Default(<String>[]) List<String> triggerTokens,
+    String? workspaceKey,
+    DateTime? consumedAt,
+    DateTime? deletedAt,
+  }) = ScheduledWakeEntity;
+
   /// Submitted Daily OS capture transcript.
   const factory AgentDomainEntity.capture({
     required String id,

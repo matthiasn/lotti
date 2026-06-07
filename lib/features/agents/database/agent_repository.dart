@@ -863,6 +863,25 @@ class AgentRepository {
         .toList();
   }
 
+  /// Fetch pending [ScheduledWakeEntity] records whose `scheduledAt` is at or
+  /// before [now] (ADR 0022 Decision 12).
+  ///
+  /// Unlike [getDueScheduledAgentStates] these carry an explicit workspace key
+  /// and trigger tokens, so a day-scoped wake (e.g. the morning pre-warm)
+  /// restores with full day context instead of riding the single, clobberable
+  /// `AgentStateEntity.scheduledWakeAt`.
+  Future<List<ScheduledWakeEntity>> getDueScheduledWakeRecords(
+    DateTime now,
+  ) async {
+    final rows = await _db
+        .getDueScheduledWakeRecords(now.toIso8601String())
+        .get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ScheduledWakeEntity>()
+        .toList();
+  }
+
   /// Fetch all agent identity entities (type = 'agent'), excluding deleted.
   ///
   /// Returns all agents regardless of their lifecycle state.
