@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glass_kit/glass_kit.dart';
 import 'package:lotti/features/ai/database/ai_config_db.dart';
@@ -23,6 +24,19 @@ import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  /// Creates a [ProviderContainer] with a teardown safety net: when an
+  /// assertion throws before the in-body `container.dispose()` runs, the
+  /// teardown still disposes the container so it never leaks into the next
+  /// test. The in-body dispose calls stay because they run *before* the
+  /// binding's pending-timer check and cancel cacheFor keep-alive timers
+  /// (addTearDown runs after that check, so it cannot replace them).
+  /// Riverpod's dispose() is a no-op on an already-disposed container.
+  ProviderContainer makeContainer({List<Override> overrides = const []}) {
+    final container = ProviderContainer(overrides: overrides);
+    addTearDown(container.dispose);
+    return container;
+  }
+
   group('AiRunningAnimation', () {
     testWidgets('should render SiriWaveform with correct height', (
       tester,
@@ -79,7 +93,7 @@ void main() {
       tester,
     ) async {
       // Create a provider container to manage state
-      final container = ProviderContainer();
+      final container = makeContainer();
 
       // Set the inference status to running
       container
@@ -117,7 +131,7 @@ void main() {
       tester,
     ) async {
       // Create a provider container to manage state
-      final container = ProviderContainer();
+      final container = makeContainer();
 
       // Set the inference status to running
       container
@@ -157,7 +171,7 @@ void main() {
       'should not wrap with GestureDetector when isInteractive is false',
       (tester) async {
         // Create a provider container to manage state
-        final container = ProviderContainer();
+        final container = makeContainer();
 
         // Set the inference status to running
         container
@@ -200,7 +214,7 @@ void main() {
       // Full modal display testing would require more complex setup
 
       // Create a provider container to manage state
-      final container = ProviderContainer();
+      final container = makeContainer();
 
       // Set the inference status to running
       container
@@ -233,13 +247,16 @@ void main() {
       final gesture = find.byType(GestureDetector);
       expect(gesture, findsOneWidget);
 
-      // Tapping should trigger _handleTap method
-      // The method will look for active inference and potentially show modal
+      // No active inference is registered (only the status is running), so
+      // the tap must be a no-op: no progress modal opens and nothing throws.
+      // The modal-opening path is covered in the 'modal interaction' group.
       await tester.tap(gesture);
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 600));
 
-      // Verify the tap was handled without errors
+      expect(find.byType(UnifiedAiProgressContent), findsNothing);
       expect(find.byType(AiRunningAnimation), findsOneWidget);
+      expect(tester.takeException(), isNull);
 
       container.dispose();
     });
@@ -254,7 +271,7 @@ void main() {
       };
 
       // Create a provider container to manage state
-      final container = ProviderContainer();
+      final container = makeContainer();
 
       // Set one of the inference statuses to running
       container
@@ -320,7 +337,7 @@ void main() {
       'should render glass container with animation when isRunning is true',
       (tester) async {
         // Create a provider container to manage state
-        final container = ProviderContainer();
+        final container = makeContainer();
 
         // Set the inference status to running
         container
@@ -359,7 +376,7 @@ void main() {
 
     testWidgets('should render with isInteractive parameter', (tester) async {
       // Create a provider container to manage state
-      final container = ProviderContainer();
+      final container = makeContainer();
 
       // Set the inference status to running
       container
@@ -401,6 +418,48 @@ void main() {
       container.dispose();
     });
 
+    testWidgets(
+      'should not be interactive by default (no GestureDetector)',
+      (tester) async {
+        final container = makeContainer();
+
+        // Set the inference status to running
+        container
+            .read(
+              inferenceStatusControllerProvider(
+                id: testId,
+                aiResponseType: testType,
+              ).notifier,
+            )
+            .setStatus(InferenceStatus.running);
+
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: WidgetTestBench(
+              child: AiRunningAnimationWrapperCard(
+                entryId: testId,
+                height: 100,
+                responseTypes: testSet,
+              ),
+            ),
+          ),
+        );
+
+        // Allow widget to build
+        await tester.pump();
+
+        // The inner wrapper must not be interactive and no tap target exists.
+        final wrapper = tester.widget<AiRunningAnimationWrapper>(
+          find.byType(AiRunningAnimationWrapper),
+        );
+        expect(wrapper.isInteractive, isFalse);
+        expect(find.byType(GestureDetector), findsNothing);
+
+        container.dispose();
+      },
+    );
+
     testWidgets('should handle multiple response types in card', (
       tester,
     ) async {
@@ -412,7 +471,7 @@ void main() {
       };
 
       // Create a provider container to manage state
-      final container = ProviderContainer();
+      final container = makeContainer();
 
       // Set the inference status to running for one type
       container
@@ -452,7 +511,7 @@ void main() {
       tester,
     ) async {
       // Create a provider container to manage state
-      final container = ProviderContainer();
+      final container = makeContainer();
       const testHeight = 150.0;
 
       // Set the inference status to running
@@ -533,7 +592,7 @@ void main() {
     testWidgets('renders decoder-bars shader when inference is running', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = makeContainer();
       try {
         setInferenceStatus(container, InferenceStatus.running);
 
@@ -570,7 +629,7 @@ void main() {
     testWidgets('wraps decoder bars in a tap target when interactive', (
       tester,
     ) async {
-      final container = ProviderContainer();
+      final container = makeContainer();
       try {
         setInferenceStatus(container, InferenceStatus.running);
 
@@ -598,7 +657,7 @@ void main() {
     testWidgets(
       'animates reserved height and shader amplitude before removing shader',
       (tester) async {
-        final container = ProviderContainer();
+        final container = makeContainer();
         try {
           await tester.pumpWidget(
             UncontrolledProviderScope(
@@ -721,7 +780,7 @@ void main() {
         requiredInputData: const [],
         aiResponseType: testType,
       );
-      final container = ProviderContainer(
+      final container = makeContainer(
         overrides: [
           aiConfigByIdProvider(
             testPromptId,
@@ -860,7 +919,7 @@ void main() {
       testWidgets(
         'tapping animation opens progress modal when inference is active',
         (tester) async {
-          final container = ProviderContainer(
+          final container = makeContainer(
             overrides: [
               // Override the AI config provider
               aiConfigByIdProvider(
@@ -927,7 +986,7 @@ void main() {
       testWidgets('animation does not open modal when not interactive', (
         tester,
       ) async {
-        final container = ProviderContainer();
+        final container = makeContainer();
 
         // Set status to running
         container
@@ -964,7 +1023,7 @@ void main() {
       testWidgets('handles missing active inference gracefully', (
         tester,
       ) async {
-        final container = ProviderContainer();
+        final container = makeContainer();
 
         // Set status to running but no active inference
         container
@@ -1005,7 +1064,7 @@ void main() {
       testWidgets('shows existing inference progress with showExisting flag', (
         tester,
       ) async {
-        final container = ProviderContainer(
+        final container = makeContainer(
           overrides: [
             aiConfigByIdProvider(
               testPromptId,
@@ -1066,7 +1125,7 @@ void main() {
           AiResponseType.imageAnalysis,
         };
 
-        final container = ProviderContainer(
+        final container = makeContainer(
           overrides: [
             aiConfigByIdProvider(
               testPromptId,
@@ -1122,7 +1181,7 @@ void main() {
       testWidgets(
         'AiRunningAnimationWrapperCard shows animation and handles tap',
         (tester) async {
-          final container = ProviderContainer(
+          final container = makeContainer(
             overrides: [
               aiConfigByIdProvider(
                 testPromptId,
