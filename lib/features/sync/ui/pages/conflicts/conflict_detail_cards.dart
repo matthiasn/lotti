@@ -149,23 +149,48 @@ class _CardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final colors = tokens.colors;
+    // spaceBetween + two loose halves: the timestamp stays flush right
+    // when there is room and ellipsizes instead of overflowing when the
+    // two-up desktop layout sits right at the 768 dp breakpoint (where
+    // each column is only ~336 dp wide).
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Container(
-          width: _kCardHeaderDotSize,
-          height: _kCardHeaderDotSize,
-          decoration: BoxDecoration(color: accent, shape: BoxShape.circle),
-        ),
-        SizedBox(width: tokens.spacing.step3),
-        Expanded(
-          child: Text(
-            eyebrow,
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: accent,
-            ),
+        Flexible(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: _kCardHeaderDotSize,
+                height: _kCardHeaderDotSize,
+                decoration: BoxDecoration(
+                  color: accent,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Flexible(
+                child: Text(
+                  eyebrow,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.others.overline.copyWith(
+                    color: accent,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        Text(timestampLabel, style: monoMetaStyle(tokens, colors)),
+        SizedBox(width: tokens.spacing.step3),
+        Flexible(
+          child: Text(
+            timestampLabel,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: monoMetaStyle(tokens, colors),
+          ),
+        ),
       ],
     );
   }
