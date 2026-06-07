@@ -49,6 +49,21 @@ void main() {
       expect(toolNames.toSet(), hasLength(toolNames.length));
     });
 
+    test('every wire name except recordObservations is workflow-routed', () {
+      // recordObservations is the only strategy-local tool; everything else is
+      // routed through the workflow handler. Pinning this relationship means a
+      // newly added tool that is left out of workflowHandlerTools (or this
+      // manual toolNames list) is caught instead of silently passing.
+      expect(
+        toolNames,
+        hasLength(DayAgentToolNames.workflowHandlerTools.length + 1),
+      );
+      expect(
+        toolNames.toSet().difference(DayAgentToolNames.workflowHandlerTools),
+        {DayAgentToolNames.recordObservations},
+      );
+    });
+
     test('groups workflow-routed tools by implementation owner', () {
       expect(
         DayAgentToolNames.foundationHandlerTools,
