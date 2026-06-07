@@ -203,6 +203,46 @@ void main() {
       );
     }, tags: 'glados');
 
+    glados.Glados3(
+      glados.any.smallVectorClock,
+      glados.any.smallVectorClock,
+      glados.any.smallVectorClock,
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'is transitive (sort-comparator contract on the sync hot path)',
+      (
+        a,
+        b,
+        c,
+      ) {
+        final ab = compareClocksCanonically(a, b);
+        final bc = compareClocksCanonically(b, c);
+        final ac = compareClocksCanonically(a, c);
+        if (ab > 0 && bc > 0) {
+          expect(
+            ac,
+            greaterThan(0),
+            reason: 'a=${a.vclock} b=${b.vclock} c=${c.vclock}',
+          );
+        }
+        if (ab < 0 && bc < 0) {
+          expect(
+            ac,
+            lessThan(0),
+            reason: 'a=${a.vclock} b=${b.vclock} c=${c.vclock}',
+          );
+        }
+        if (ab == 0 && bc == 0) {
+          expect(
+            ac,
+            0,
+            reason: 'a=${a.vclock} b=${b.vclock} c=${c.vclock}',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+
     test('orders by the first differing host counter', () {
       expect(
         compareClocksCanonically(
@@ -325,6 +365,56 @@ void main() {
       expect(viaLocal.wakeCounter, viaIncoming.wakeCounter);
       expect(viaLocal.wakeCounter.value, 8);
     });
+
+    glados.Glados2(
+      glados.any.gCounter,
+      glados.any.gCounter,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'join dominates both inputs per host, and merging a state with '
+      'itself is a counter no-op (CRDT idempotence)',
+      (a, b) {
+        final local = stateWith(wakeCounter: a, totalSessions: b);
+        final incoming = stateWith(wakeCounter: b, totalSessions: a);
+
+        final merged = mergeAgentStateCounters(
+          winner: local,
+          local: local,
+          incoming: incoming,
+        );
+
+        // Join is ≥ each input on every host, for both counters.
+        final hosts = {...a.byHost.keys, ...b.byHost.keys};
+        for (final host in hosts) {
+          expect(
+            merged.wakeCounter.byHost[host] ?? 0,
+            greaterThanOrEqualTo(a.byHost[host] ?? 0),
+          );
+          expect(
+            merged.wakeCounter.byHost[host] ?? 0,
+            greaterThanOrEqualTo(b.byHost[host] ?? 0),
+          );
+          expect(
+            merged.slots.totalSessionsCompleted.byHost[host] ?? 0,
+            greaterThanOrEqualTo(a.byHost[host] ?? 0),
+          );
+          expect(
+            merged.slots.totalSessionsCompleted.byHost[host] ?? 0,
+            greaterThanOrEqualTo(b.byHost[host] ?? 0),
+          );
+        }
+
+        // Idempotence: self-merge changes nothing.
+        final selfMerged = mergeAgentStateCounters(
+          winner: local,
+          local: local,
+          incoming: local,
+        );
+        expect(selfMerged.wakeCounter, a);
+        expect(selfMerged.slots.totalSessionsCompleted, b);
+      },
+      tags: 'glados',
+    );
 
     glados.Glados2(
       glados.any.gCounter,
