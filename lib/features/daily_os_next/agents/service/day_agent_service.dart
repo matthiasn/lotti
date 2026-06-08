@@ -485,6 +485,12 @@ class DayAgentService {
     var count = 0;
     for (final agent in activeAgents) {
       if (agent.kind != _agentKind) continue;
+      // Post-ADR-0022 the only legitimate active `day_agent` is the long-lived
+      // planner. A stray legacy per-day identity (e.g. one synced from a peer
+      // still on the old build after this device migrated) carries no
+      // restorable day context, so restoring its wake would only produce a
+      // failing "no resolvable day" wake — skip it.
+      if (agent.agentId != dailyOsPlannerAgentId) continue;
       try {
         await _hydrateThrottleDeadline(agent.agentId);
         count++;

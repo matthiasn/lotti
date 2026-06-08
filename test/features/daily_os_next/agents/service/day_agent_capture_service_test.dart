@@ -277,6 +277,9 @@ void main() {
                     reason: 'capture_submitted',
                     workspaceKey: 'day:dayplan-2026-05-25',
                     triggerTokens: captureAny(named: 'triggerTokens'),
+                    // Captures accumulate rather than supersede, so a second
+                    // same-day capture can't drop this one's still-queued parse.
+                    supersede: false,
                   ),
                 ).captured.single
                 as Set<String>;

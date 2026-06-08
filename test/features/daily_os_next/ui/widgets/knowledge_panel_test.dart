@@ -132,14 +132,24 @@ void main() {
     verify(() => service.retract('c')).called(1);
   });
 
-  testWidgets('flags a stale entry for re-confirmation', (tester) async {
+  testWidgets('flags only past-review entries for re-confirmation', (
+    tester,
+  ) async {
     final view = PlannerKnowledgeView(
       confirmed: [
         entry(
-          id: 'c',
-          key: 'k',
+          id: 'stale',
+          key: 'k1',
           statement: 'An old preference.',
           reviewAfter: DateTime(2020),
+        ),
+        // A future review date must NOT surface the badge — otherwise a
+        // regression that always rendered it would slip through.
+        entry(
+          id: 'fresh',
+          key: 'k2',
+          statement: 'A current preference.',
+          reviewAfter: DateTime(2099),
         ),
       ],
       proposed: const [],
@@ -148,6 +158,9 @@ void main() {
     await tester.pumpWidget(panel(view, MockDayAgentKnowledgeService()));
     await tester.pump();
 
+    // Exactly one badge — for the stale entry only.
     expect(find.text('Still true?'), findsOneWidget);
+    expect(find.text('An old preference.'), findsOneWidget);
+    expect(find.text('A current preference.'), findsOneWidget);
   });
 }

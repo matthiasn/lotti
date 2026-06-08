@@ -341,6 +341,67 @@ void main() {
         expect(vms.single.subtitle, 'Both Slots Agent');
       },
     );
+
+    // Hardcoded golden rows, independent of the production fallback expression,
+    // so a lockstep regression in both impl and the property test's mirror copy
+    // is still caught here.
+    test('maps concrete rows to golden title/subtitle values', () async {
+      PendingWakeRecord record({
+        required String agentId,
+        required String displayName,
+        AgentSlots slots = const AgentSlots(),
+        String? subjectLabel,
+      }) {
+        return PendingWakeRecord(
+          agent: makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            displayName: displayName,
+          ),
+          state: makeTestState(
+            id: 'state-$agentId',
+            agentId: agentId,
+            slots: slots,
+          ),
+          type: PendingWakeType.scheduled,
+          dueAt: DateTime(2026, 6, 8, 9),
+          subjectLabel: subjectLabel,
+        );
+      }
+
+      final vms = await _readPendingWakeVms(
+        records: [
+          // Day workspace label wins as the subject; agent name is the subtitle.
+          record(
+            agentId: 'planner',
+            displayName: 'Planner',
+            subjectLabel: 'dayplan-2026-06-08',
+          ),
+          // No label → resolve the linked task title.
+          record(
+            agentId: 'ta',
+            displayName: 'Task Agent',
+            slots: const AgentSlots(activeTaskId: 'task-1'),
+          ),
+          // No label, no linked subject → fall back to the agent name, no subtitle.
+          record(agentId: 'imp', displayName: 'Improver'),
+          // Label equal to the agent name → treated as "no distinct subject".
+          record(
+            agentId: 'p2',
+            displayName: 'Same',
+            subjectLabel: 'Same',
+          ),
+        ],
+        subjectTitles: const {'task-1': 'Fix the wake loop', null: null},
+      );
+
+      expect(vms.map((vm) => (vm.title, vm.subtitle)).toList(), [
+        ('dayplan-2026-06-08', 'Planner'),
+        ('Fix the wake loop', 'Task Agent'),
+        ('Improver', null),
+        ('Same', null),
+      ]);
+    });
   });
 }
 

@@ -86,7 +86,8 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
 });
 
 /// The subject label for a workspace-scoped wake: the id portion of a
-/// `<namespace>:<id>` workspace key (e.g. `day:2026-06-08` → `2026-06-08`).
+/// `<namespace>:<id>` workspace key (e.g. `day:dayplan-2026-06-08` →
+/// `dayplan-2026-06-08`).
 /// Namespace-agnostic so this stays a generic agents-layer concern. Returns
 /// `null` for a null/empty key so the caller falls back to the agent name.
 String? _workspaceSubjectLabel(String? workspaceKey) {

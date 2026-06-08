@@ -181,6 +181,10 @@ class DayAgentCaptureService {
       // it never supersedes or merges with another day's queued work under one
       // planner.
       workspaceKey: dayAgentWorkspaceKey(captureDayId(capture)),
+      // Each capture carries its own transcript to parse; a second capture for
+      // the same day must not drop the first's still-queued parse. Accumulate
+      // instead of superseding so every submission is parsed.
+      supersede: false,
     );
 
     return capture;

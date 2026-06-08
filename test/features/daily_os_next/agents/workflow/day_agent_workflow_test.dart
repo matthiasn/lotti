@@ -1072,6 +1072,42 @@ void main() {
     );
 
     test(
+      'set_next_wake normalizes a Z-suffixed time to naive-local so the due '
+      'query orders it consistently against a local now',
+      () async {
+        currentState = state();
+        conversationRepository
+          ..toolCalls = [
+            _toolCall(
+              id: 'call-set-wake-utc',
+              name: DayAgentToolNames.setNextWake,
+              args: {
+                // A UTC-suffixed instant, two days out so it clears the minimum
+                // lead time regardless of the test machine's timezone.
+                'at': '2026-05-27T12:00:00Z',
+                'reason': 'Pre-warm the next morning.',
+              },
+            ),
+          ]
+          ..finalResponse = 'Scheduled.'
+          ..usage = const InferenceUsage(inputTokens: 5, outputTokens: 3);
+
+        final result = await execute(workflow());
+
+        expect(result.success, isTrue);
+        final rec = upsertedEntities.whereType<ScheduledWakeEntity>().single;
+        // Persisted naive-local (no `Z`), so getDueScheduledWakeRecords'
+        // lexicographic compare against a naive-local `now` stays correct —
+        // and identical across devices in different timezones.
+        expect(rec.scheduledAt.isUtc, isFalse);
+        expect(
+          rec.scheduledAt,
+          DateTime.parse('2026-05-27T12:00:00Z').toLocal(),
+        );
+      },
+    );
+
+    test(
       'propagates the resolved model geminiThinkingMode to the wrapper',
       () async {
         when(

@@ -600,7 +600,14 @@ class DayAgentWorkflow {
 
     late final DateTime scheduledAt;
     try {
-      scheduledAt = DateTime.parse(rawAt.trim());
+      // Normalize to local: the tool asks for a local ISO-8601 time, but an LLM
+      // may emit a `Z`/offset form. `getDueScheduledWakeRecords` compares the
+      // stored `scheduledAt` string lexicographically against a naive-local
+      // `now`, so a `…Z` suffix (or offset) would make the due check disagree
+      // with wall-clock — and differ across devices in other timezones. Coerce
+      // to naive-local here so the persisted form is always suffix-free and
+      // ordering-consistent. Instant-based validation below is unaffected.
+      scheduledAt = DateTime.parse(rawAt.trim()).toLocal();
     } catch (_) {
       return const DayAgentToolResult(
         success: false,

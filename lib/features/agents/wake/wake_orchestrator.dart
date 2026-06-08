@@ -485,6 +485,7 @@ class WakeOrchestrator {
     required String reason,
     Set<String> triggerTokens = const {},
     String? workspaceKey,
+    bool supersede = true,
   }) {
     // Manual wakes bypass and clear the throttle gate so the user's action
     // takes effect immediately.
@@ -494,7 +495,14 @@ class WakeOrchestrator {
     // workspace so a day-A manual wake under one planner does not cancel
     // queued day-B work (ADR 0022). For single-workspace agents the workspace
     // is null and this is the same agent-wide superseding as before.
-    queue.removeByAgent(agentId, workspaceKey: workspaceKey);
+    //
+    // [supersede] = false makes the wake *accumulate* instead: callers whose
+    // wakes each carry distinct, non-re-derivable work (e.g. one capture parse
+    // per submission) opt out so a second submission in the same workspace
+    // cannot drop the first's still-queued parse before it drains.
+    if (supersede) {
+      queue.removeByAgent(agentId, workspaceKey: workspaceKey);
+    }
 
     final now = clock.now();
     final runKey = RunKeyFactory.forManual(

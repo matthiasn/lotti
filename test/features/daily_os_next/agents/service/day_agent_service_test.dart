@@ -157,27 +157,37 @@ void main() {
     });
 
     test(
-      'restoreSubscriptions hydrates pending wakes for active day agents',
+      'restoreSubscriptions hydrates the planner and skips other day agents',
       () async {
         final dueAt = DateTime(2026, 5, 25, 6, 30);
-        final dayAgent = identity();
+        final planner = identity(id: dailyOsPlannerAgentId);
         final taskAgent = identity(
           id: 'task-agent',
           kind: AgentKinds.taskAgent,
         );
+        // A stray legacy per-day identity (e.g. synced from a peer still on the
+        // old build) must never be restored post-ADR-0022 — only the planner.
+        final strayDayAgent = identity(id: 'stray-day-agent');
         when(
           () => agentService.listAgents(lifecycle: AgentLifecycle.active),
-        ).thenAnswer((_) async => [taskAgent, dayAgent]);
+        ).thenAnswer((_) async => [taskAgent, strayDayAgent, planner]);
         when(
-          () => repository.getAgentState(agentId),
-        ).thenAnswer((_) async => state(activeDayId: dayId, nextWakeAt: dueAt));
+          () => repository.getAgentState(dailyOsPlannerAgentId),
+        ).thenAnswer(
+          (_) async =>
+              state(stateAgentId: dailyOsPlannerAgentId, nextWakeAt: dueAt),
+        );
 
         await service.restoreSubscriptions();
 
         verify(
-          () => orchestrator.restorePendingWake(agentId: agentId, dueAt: dueAt),
+          () => orchestrator.restorePendingWake(
+            agentId: dailyOsPlannerAgentId,
+            dueAt: dueAt,
+          ),
         ).called(1);
         verifyNever(() => repository.getAgentState('task-agent'));
+        verifyNever(() => repository.getAgentState('stray-day-agent'));
       },
     );
 
@@ -768,36 +778,20 @@ void main() {
     });
 
     test(
-      'restoreSubscriptions logs and continues after a hydrate failure',
+      'restoreSubscriptions logs and does not propagate a planner hydrate '
+      'failure',
       () async {
-        final dueAt = DateTime(2026, 5, 25, 6, 30);
-        final failingDayAgent = identity(id: 'failing-day-agent');
-        final healthyDayAgent = identity(id: 'healthy-day-agent');
+        final planner = identity(id: dailyOsPlannerAgentId);
         when(
           () => agentService.listAgents(lifecycle: AgentLifecycle.active),
-        ).thenAnswer((_) async => [failingDayAgent, healthyDayAgent]);
+        ).thenAnswer((_) async => [planner]);
         when(
-          () => repository.getAgentState('failing-day-agent'),
+          () => repository.getAgentState(dailyOsPlannerAgentId),
         ).thenThrow(StateError('state read failed'));
-        when(
-          () => repository.getAgentState('healthy-day-agent'),
-        ).thenAnswer(
-          (_) async => state(
-            id: 'state-healthy',
-            stateAgentId: 'healthy-day-agent',
-            activeDayId: dayId,
-            nextWakeAt: dueAt,
-          ),
-        );
 
+        // Must complete normally despite the failing state read.
         await service.restoreSubscriptions();
 
-        verify(
-          () => orchestrator.restorePendingWake(
-            agentId: 'healthy-day-agent',
-            dueAt: dueAt,
-          ),
-        ).called(1);
         final errorMessage =
             verify(
                   () => domainLogger.error(
