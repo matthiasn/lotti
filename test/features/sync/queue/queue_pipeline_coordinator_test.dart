@@ -1559,9 +1559,26 @@ void main() {
   );
 
   test(
-    'coordinator built without overrides wires default collaborators',
+    'coordinator built without overrides drives a real start/stop '
+    'lifecycle: the default QueueMarkerSeeder seeds the live syncDb '
+    'marker from legacy settings and isRunning flips true then false',
     () async {
+      // No override collaborators: the coordinator builds its own
+      // InboundQueue, InboundWorker, BridgeCoordinator, PendingDecryptionPen
+      // and QueueMarkerSeeder against the real in-memory databases.
       when(() => sessionManager.client).thenReturn(client);
+      // The default seeder reads the legacy marker from settings; supply a
+      // value so a successful seed is observable as a queue_markers row.
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventId),
+      ).thenAnswer((_) async => r'$legacy-anchor');
+      when(
+        () => settingsDb.itemByKey(lastReadMatrixEventTs),
+      ).thenAnswer((_) async => '7000');
+      // Keep the fire-and-forget startup bridge a clean no-op (noRoom)
+      // rather than letting it attempt a real /messages walk.
+      when(() => client.getRoomById(roomId)).thenReturn(null);
+
       final coordinator = QueuePipelineCoordinator(
         syncDb: syncDb,
         settingsDb: settingsDb,
@@ -1574,7 +1591,21 @@ void main() {
         logging: logging,
       );
 
-      expect(coordinator.queue, isNotNull);
+      expect(coordinator.isRunning, isFalse);
+
+      await coordinator.start();
+      expect(coordinator.isRunning, isTrue);
+
+      // The default seeder ran against the real syncDb during start() and
+      // migrated the legacy marker — proving the default collaborator was
+      // wired with the live databases, not a stub.
+      final marker = await (syncDb.select(
+        syncDb.queueMarkers,
+      )..where((t) => t.roomId.equals(roomId))).getSingle();
+      expect(marker.lastAppliedEventId, r'$legacy-anchor');
+      expect(marker.lastAppliedTs, 7000);
+
+      await coordinator.stop();
       expect(coordinator.isRunning, isFalse);
     },
   );
@@ -2273,6 +2304,50 @@ void main() {
             subDomain: any<String>(named: 'subDomain'),
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'bridge logs noRoom WITHOUT consulting client.getRoomById when both '
+      'the cached room and the current room id are null — the _resolveRoom '
+      'guard short-circuits before the gateway lookup',
+      () async {
+        final realQueue = InboundQueue(db: syncDb, logging: logging);
+        addTearDown(realQueue.dispose);
+
+        // Distinct from the test above: there is no current room id at
+        // all, so _resolveRoom must return null on the `roomId == null`
+        // branch and never reach `client.getRoomById`.
+        when(() => roomManager.currentRoom).thenReturn(null);
+        when(() => roomManager.currentRoomId).thenReturn(null);
+
+        final coordinator = QueuePipelineCoordinator(
+          syncDb: syncDb,
+          settingsDb: settingsDb,
+          journalDb: journalDb,
+          sessionManager: sessionManager,
+          roomManager: roomManager,
+          eventProcessor: processor,
+          sequenceLogService: sequenceLog,
+          activityGate: null,
+          logging: logging,
+          queueOverride: realQueue,
+          workerOverride: worker,
+          penOverride: pen,
+          seederOverride: seeder,
+        );
+
+        await coordinator.triggerBridge();
+
+        verify(
+          () => logging.log(
+            any<LogDomain>(),
+            any<String>(that: contains('queue.bridge.skip reason=noRoom')),
+            subDomain: any<String>(named: 'subDomain'),
+          ),
+        ).called(1);
+        // The null-id guard fired before any gateway round-trip.
+        verifyNever(() => client.getRoomById(any()));
       },
     );
   });

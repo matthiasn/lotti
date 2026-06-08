@@ -4,7 +4,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
@@ -15,6 +14,7 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import 'test_utils.dart';
 
 class _MockActivityGate extends Mock implements UserActivityGate {}
 
@@ -39,30 +39,17 @@ class _SpySequenceLog extends SyncSequenceLogService {
   }
 }
 
+/// Local alias for the shared [buildSyncEvent] factory so the existing
+/// worker-test call sites keep their concise name.
 Event _buildSyncEvent({
   required String eventId,
   required String roomId,
   required int originTsMs,
-}) {
-  final event = MockEvent();
-  final content = <String, dynamic>{'msgtype': syncMessageType};
-  when(() => event.eventId).thenReturn(eventId);
-  when(() => event.roomId).thenReturn(roomId);
-  when(() => event.type).thenReturn(EventTypes.Message);
-  when(() => event.content).thenReturn(content);
-  when(() => event.text).thenReturn('stub text');
-  when(
-    () => event.originServerTs,
-  ).thenReturn(DateTime.fromMillisecondsSinceEpoch(originTsMs));
-  when(event.toJson).thenReturn(<String, dynamic>{
-    'event_id': eventId,
-    'room_id': roomId,
-    'origin_server_ts': originTsMs,
-    'type': EventTypes.Message,
-    'content': content,
-  });
-  return event;
-}
+}) => buildSyncEvent(
+  eventId: eventId,
+  roomId: roomId,
+  originTsMs: originTsMs,
+);
 
 class _GeneratedWorkerOutcomeScenario {
   const _GeneratedWorkerOutcomeScenario({required this.outcomes});
