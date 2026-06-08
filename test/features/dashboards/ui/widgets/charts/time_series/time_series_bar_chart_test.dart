@@ -1,73 +1,11 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/time_series_bar_chart.dart';
 import 'package:lotti/features/dashboards/ui/widgets/charts/time_series/utils.dart';
 import 'package:lotti/widgets/charts/utils.dart';
 import 'package:tinycolor2/tinycolor2.dart';
 
-import '../../../../../../widget_test_utils.dart';
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-/// Builds a [TimeSeriesBarChart] inside a fixed-size surface so that
-/// fl_chart's layout delegate fires and the widget tree is fully exercised.
-/// Calls [addTearDown(tester.view.reset)] per the conventions.
-Future<void> _pumpChart(
-  WidgetTester tester, {
-  required List<Observation> data,
-  required DateTime rangeStart,
-  required DateTime rangeEnd,
-  String unit = '',
-  bool valueInHours = false,
-  ColorByValue? colorByValue,
-  Size physicalSize = const Size(800, 600),
-}) async {
-  tester.view.physicalSize = physicalSize;
-  tester.view.devicePixelRatio = 1;
-  addTearDown(tester.view.reset);
-
-  await tester.pumpWidget(
-    makeTestableWidgetNoScroll(
-      Scaffold(
-        body: SizedBox(
-          width: physicalSize.width,
-          height: physicalSize.height,
-          child: TimeSeriesBarChart(
-            data: data,
-            rangeStart: rangeStart,
-            rangeEnd: rangeEnd,
-            unit: unit,
-            valueInHours: valueInHours,
-            colorByValue: colorByValue ?? (_) => Colors.blue,
-          ),
-        ),
-      ),
-    ),
-  );
-  await tester.pump();
-}
-
-/// Returns a minimal [TitleMeta] for testing bottom title widget callbacks.
-TitleMeta makeMeta() {
-  return TitleMeta(
-    min: 0,
-    max: 100,
-    appliedInterval: 1,
-    axisPosition: 0,
-    formattedValue: '',
-    parentAxisSize: 400,
-    sideTitles: const SideTitles(showTitles: true),
-    axisSide: AxisSide.bottom,
-    rotationQuarterTurns: 0,
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+import 'time_series_bar_chart_test_helpers.dart';
 
 void main() {
   // Fixed 30-day range used across most tests.
@@ -76,7 +14,7 @@ void main() {
 
   group('TimeSeriesBarChart — widget structure', () {
     testWidgets('renders a BarChart widget', (tester) async {
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [
           Observation(DateTime(2024, 3, 10), 5),
@@ -97,7 +35,7 @@ void main() {
     });
 
     testWidgets('wraps chart in a Padding widget', (tester) async {
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [],
         rangeStart: rangeStart,
@@ -115,7 +53,7 @@ void main() {
       final obs1 = Observation(DateTime(2024, 3, 5), 42);
       final obs2 = Observation(DateTime(2024, 3, 15), 88);
 
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [obs1, obs2],
         rangeStart: rangeStart,
@@ -140,7 +78,7 @@ void main() {
     });
 
     testWidgets('each bar group has exactly one rod', (tester) async {
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [
           Observation(DateTime(2024, 3, 10), 7),
@@ -161,7 +99,7 @@ void main() {
 
     testWidgets('bar rod toY matches the observation value', (tester) async {
       final obs = Observation(DateTime(2024, 3, 10), 99);
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [obs],
         rangeStart: rangeStart,
@@ -176,7 +114,7 @@ void main() {
 
     testWidgets('colorByValue callback is applied to each rod', (tester) async {
       const redColor = Colors.red;
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [Observation(DateTime(2024, 3, 10), 5)],
         rangeStart: rangeStart,
@@ -195,7 +133,7 @@ void main() {
     ) async {
       // A 30-day range with no real observations still generates a group for
       // every day in range (filled with value=0).
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [],
         rangeStart: rangeStart,
@@ -209,7 +147,7 @@ void main() {
 
     testWidgets('empty-day placeholder has rod value 0', (tester) async {
       // With no real data every rod should have toY == 0.
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [],
         rangeStart: DateTime(2024, 3),
@@ -255,7 +193,7 @@ void main() {
       ),
     ]) {
       testWidgets(testCase.label, (tester) async {
-        await _pumpChart(
+        await hPumpChart(
           tester,
           data: [],
           rangeStart: testCase.start,
@@ -276,7 +214,7 @@ void main() {
 
   group('TimeSeriesBarChart — grid line callbacks', () {
     testWidgets('getDrawingHorizontalLine returns gridLine', (tester) async {
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [],
         rangeStart: rangeStart,
@@ -289,7 +227,7 @@ void main() {
     });
 
     testWidgets('getDrawingVerticalLine returns gridLine', (tester) async {
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [],
         rangeStart: rangeStart,
@@ -306,7 +244,7 @@ void main() {
     testWidgets('getTooltipColor derives from the desaturated theme primary', (
       tester,
     ) async {
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [Observation(DateTime(2024, 3, 10), 5)],
         rangeStart: rangeStart,
@@ -327,7 +265,7 @@ void main() {
       tester,
     ) async {
       final obs = Observation(DateTime(2024, 3, 10), 1234.5);
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [obs],
         rangeStart: rangeStart,
@@ -351,7 +289,7 @@ void main() {
 
     testWidgets('getTooltipItem includes formatted date', (tester) async {
       final obs = Observation(DateTime(2024, 3, 15), 42);
-      await _pumpChart(
+      await hPumpChart(
         tester,
         data: [obs],
         rangeStart: rangeStart,
@@ -380,7 +318,7 @@ void main() {
       ) async {
         // 1.5 hours → "01:30"
         final obs = Observation(DateTime(2024, 3, 10), 1.5);
-        await _pumpChart(
+        await hPumpChart(
           tester,
           data: [obs],
           rangeStart: rangeStart,
@@ -401,297 +339,6 @@ void main() {
         expect(item, isNotNull);
         // hoursToHhMm(1.5) == "01:30"
         expect(item!.text, contains('01:30'));
-      },
-    );
-  });
-
-  group('TimeSeriesBarChart — bottom title widgets', () {
-    testWidgets('day=1 renders a SideTitleWidget with a date label', (
-      tester,
-    ) async {
-      // Use a range ≥30 days so that only day=1 triggers the label.
-      final start = DateTime(2024, 3);
-      final end = DateTime(2024, 4, 30);
-      await _pumpChart(
-        tester,
-        data: [],
-        rangeStart: start,
-        rangeEnd: end,
-      );
-
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      final getTitles =
-          barChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day1 = DateTime(2024, 3).millisecondsSinceEpoch.toDouble();
-      final widget = getTitles(day1, makeMeta());
-
-      expect(widget, isA<SideTitleWidget>());
-    });
-
-    testWidgets(
-      'non-label day (e.g., day 7) in >=30-day range returns SizedBox',
-      (
-        tester,
-      ) async {
-        final start = DateTime(2024, 3);
-        final end = DateTime(2024, 4, 30);
-        await _pumpChart(
-          tester,
-          data: [],
-          rangeStart: start,
-          rangeEnd: end,
-        );
-
-        final barChart = tester.widget<BarChart>(find.byType(BarChart));
-        final getTitles =
-            barChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-        // day=7 is NOT 1, 8, 15, or 22 — should return SizedBox.shrink.
-        final day7 = DateTime(2024, 3, 7).millisecondsSinceEpoch.toDouble();
-        final widget = getTitles(day7, makeMeta());
-
-        expect(widget, isA<SizedBox>());
-      },
-    );
-
-    testWidgets('day=15 shows label when rangeInDays < 92', (tester) async {
-      // Short range (< 92 days): day=15 should render a label.
-      final shortStart = DateTime(2024, 3);
-      final shortEnd = DateTime(2024, 4, 30); // ~60 days
-
-      await _pumpChart(
-        tester,
-        data: [],
-        rangeStart: shortStart,
-        rangeEnd: shortEnd,
-      );
-
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      final getTitles =
-          barChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day15 = DateTime(2024, 3, 15).millisecondsSinceEpoch.toDouble();
-      final widgetShort = getTitles(day15, makeMeta());
-      expect(
-        widgetShort,
-        isA<SideTitleWidget>(),
-        reason: 'day=15 should show in <92-day range',
-      );
-    });
-
-    testWidgets('day=15 returns SizedBox in a >=92-day range', (tester) async {
-      // Long range (>=92 days): day=15 should NOT render a label.
-      final longStart = DateTime(2024);
-      final longEnd = DateTime(2024, 5, 15); // ~135 days
-
-      await _pumpChart(
-        tester,
-        data: [],
-        rangeStart: longStart,
-        rangeEnd: longEnd,
-      );
-
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      final getTitles =
-          barChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day15 = DateTime(2024, 3, 15).millisecondsSinceEpoch.toDouble();
-      final widgetLong = getTitles(day15, makeMeta());
-      expect(
-        widgetLong,
-        isA<SizedBox>(),
-        reason: 'day=15 should NOT show in >=92-day range',
-      );
-    });
-
-    testWidgets('day=8 shows label when rangeInDays < 30', (tester) async {
-      final start = DateTime(2024, 3);
-      final end = DateTime(2024, 3, 20); // 19 days
-
-      await _pumpChart(
-        tester,
-        data: [],
-        rangeStart: start,
-        rangeEnd: end,
-      );
-
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      final getTitles =
-          barChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day8 = DateTime(2024, 3, 8).millisecondsSinceEpoch.toDouble();
-      final widget = getTitles(day8, makeMeta());
-      expect(
-        widget,
-        isA<SideTitleWidget>(),
-        reason: 'day=8 should show in <30-day range',
-      );
-    });
-
-    testWidgets('day=8 returns SizedBox when rangeInDays >= 30', (
-      tester,
-    ) async {
-      final start = DateTime(2024, 3);
-      final end = DateTime(2024, 4, 15); // 45 days
-
-      await _pumpChart(
-        tester,
-        data: [],
-        rangeStart: start,
-        rangeEnd: end,
-      );
-
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      final getTitles =
-          barChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day8 = DateTime(2024, 3, 8).millisecondsSinceEpoch.toDouble();
-      final widget = getTitles(day8, makeMeta());
-      expect(
-        widget,
-        isA<SizedBox>(),
-        reason: 'day=8 should NOT show in >=30-day range',
-      );
-    });
-
-    testWidgets('day=22 shows label when rangeInDays < 30', (tester) async {
-      final start = DateTime(2024, 3);
-      final end = DateTime(2024, 3, 20); // 19 days
-
-      await _pumpChart(
-        tester,
-        data: [],
-        rangeStart: start,
-        rangeEnd: end,
-      );
-
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      final getTitles =
-          barChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day22 = DateTime(2024, 3, 22).millisecondsSinceEpoch.toDouble();
-      final widget = getTitles(day22, makeMeta());
-      expect(
-        widget,
-        isA<SideTitleWidget>(),
-        reason: 'day=22 should show in <30-day range',
-      );
-    });
-
-    testWidgets('day=22 returns SizedBox when rangeInDays >= 30', (
-      tester,
-    ) async {
-      final start = DateTime(2024, 3);
-      final end = DateTime(2024, 4, 15); // 45 days
-
-      await _pumpChart(
-        tester,
-        data: [],
-        rangeStart: start,
-        rangeEnd: end,
-      );
-
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      final getTitles =
-          barChart.data.titlesData.bottomTitles.sideTitles.getTitlesWidget;
-
-      final day22 = DateTime(2024, 3, 22).millisecondsSinceEpoch.toDouble();
-      final widget = getTitles(day22, makeMeta());
-      expect(
-        widget,
-        isA<SizedBox>(),
-        reason: 'day=22 should NOT show in >=30-day range',
-      );
-    });
-  });
-
-  group('TimeSeriesBarChart — bar data configuration', () {
-    testWidgets('border data is shown', (tester) async {
-      await _pumpChart(
-        tester,
-        data: [],
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
-
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      expect(barChart.data.borderData.show, isTrue);
-    });
-
-    testWidgets('right and top titles are not shown', (tester) async {
-      await _pumpChart(
-        tester,
-        data: [],
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
-
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      final titlesData = barChart.data.titlesData;
-      expect(
-        titlesData.rightTitles.sideTitles.showTitles,
-        isFalse,
-        reason: 'right titles should be hidden',
-      );
-      expect(
-        titlesData.topTitles.sideTitles.showTitles,
-        isFalse,
-        reason: 'top titles should be hidden',
-      );
-    });
-
-    testWidgets('left titles are shown with reservedSize 40', (tester) async {
-      await _pumpChart(
-        tester,
-        data: [],
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
-
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      final leftTitles = barChart.data.titlesData.leftTitles.sideTitles;
-      expect(leftTitles.showTitles, isTrue);
-      expect(leftTitles.reservedSize, 40);
-    });
-
-    testWidgets('bottom titles are shown with reservedSize 30', (tester) async {
-      await _pumpChart(
-        tester,
-        data: [],
-        rangeStart: rangeStart,
-        rangeEnd: rangeEnd,
-      );
-
-      final barChart = tester.widget<BarChart>(find.byType(BarChart));
-      final bottomTitles = barChart.data.titlesData.bottomTitles.sideTitles;
-      expect(bottomTitles.showTitles, isTrue);
-      expect(bottomTitles.reservedSize, 30);
-    });
-
-    testWidgets(
-      'grid data is not shown but has valid horizontal/vertical intervals',
-      (tester) async {
-        await _pumpChart(
-          tester,
-          data: [],
-          rangeStart: rangeStart,
-          rangeEnd: rangeEnd,
-        );
-
-        final barChart = tester.widget<BarChart>(find.byType(BarChart));
-        final gridData = barChart.data.gridData;
-        expect(gridData.show, isFalse);
-        expect(
-          gridData.horizontalInterval,
-          double.maxFinite,
-          reason: 'horizontal interval should be maxFinite',
-        );
-        expect(
-          gridData.verticalInterval,
-          isNotNull,
-          reason: 'vertical interval should be set',
-        );
       },
     );
   });
