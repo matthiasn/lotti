@@ -1,6 +1,7 @@
 # Planning Agent Architecture — Overview
 
-- Status: Direction accepted; implementation pending
+- Status: ADR 0022 (long-lived Daily OS planner) implemented; ADR 0023 (domain
+  agents) still pending
 - Date: 2026-06-07
 - Branch: `doc/planning_agent_architecture`
 
