@@ -14,7 +14,7 @@
 | `lib/.../state/outbox_state_controller.dart` | 165 | Yes (755 lines) | `await Future<void>.delayed(Duration.zero)` on lines 419, 438 |
 | `lib/.../state/sequence_log_populate_controller.dart` | 171 | Yes (676 lines) | Good; Glados coverage present |
 | `lib/.../state/sync_maintenance_controller.dart` | 163 | Yes (599 lines) | `MockSyncMaintenanceRepository` declared inline (not in centralized mocks) |
-| `lib/.../state/matrix_stats_provider.dart` | 96 | Yes (56 lines for `matrix_stats_provider_test.dart` + 180 for `matrix_state_providers_test.dart`) | `matrix_state_providers_test.dart` has no source-file mirror (covers `matrix_stats_provider.dart`); `await Future<void>.delayed(Duration.zero)` in matrix_stats test |
+| `lib/.../state/matrix_stats_provider.dart` | 96 | Yes (`matrix_stats_provider_test.dart`; the former orphan `matrix_state_providers_test.dart` was consolidated in and deleted) | Resolved: single test file per source; no `Future.delayed` micro-yields remain |
 | `lib/.../state/sync_activity_signaler.dart` | 49 | Yes (102 lines) | **6 uses** of `await Future<void>.delayed(Duration.zero)` — should be `await Future<void>.value()` |
 | `lib/.../state/backfill_config_controller.dart` | 37 | Yes (147 lines) | Thin controller, adequate coverage |
 | `lib/.../state/fts5_controller.dart` | 62 | Yes (147 lines) | Adequate |
@@ -25,7 +25,7 @@
 | `lib/.../state/purge_controller.dart` | 72 | Yes (111 lines) | Uses `setUpTestGetIt()` / `tearDownTestGetIt()` correctly |
 | `lib/.../state/synced_audio_inference_providers.dart` | 79 | Yes (291 lines) | Inline `MockSyncedAudioInferenceDispatcher` (not in centralized mocks) |
 
-**No missing test files** — every non-generated source file has a corresponding test file. Note: `matrix_state_providers_test.dart` covers `matrix_stats_provider.dart` but does not follow the one-test-file-per-source-file naming convention (it is an extra test file for the same source).
+**No missing test files** — every non-generated source file has a corresponding test file. (The former extra test file `matrix_state_providers_test.dart` has been consolidated into `matrix_stats_provider_test.dart`, so the one-test-file-per-source convention now holds throughout this directory.)
 
 ---
 
@@ -39,9 +39,11 @@
 - [x] **[MED]** `test/features/sync/state/provisioning_controller_test.dart` is **812 lines**. The `decodeBundle` validation group (~lines 120–400), the `configureFromBundle` flows (~lines 402–595), and the `retry`/`regenerateHandover` groups (~lines 596–812) are natural seams. Splitting into `provisioning_controller_decode_test.dart` and `provisioning_controller_configure_test.dart` would bring each under 500 lines.
   **RESOLVED (assessed, no change):** splitting one source file's tests across files violates the one-test-file-per-source rule; the named groups already mark the seams internally.
 
-- [ ] **[LOW]** `test/features/sync/state/outbox_state_controller_test.dart` is **755 lines** — borderline but the inbound-queue depth tests at lines 445–752 are a coherent block that tests a `@visibleForTesting` function (`inboundQueueDepthStream`). These could be extracted to `inbound_queue_depth_stream_test.dart` (a helper-function test), though this would violate the one-test-file-per-source-file convention unless `inboundQueueDepthStream` were moved to its own file.
+- [x] **[LOW]** `test/features/sync/state/outbox_state_controller_test.dart` is **755 lines** — borderline but the inbound-queue depth tests at lines 445–752 are a coherent block that tests a `@visibleForTesting` function (`inboundQueueDepthStream`). These could be extracted to `inbound_queue_depth_stream_test.dart` (a helper-function test), though this would violate the one-test-file-per-source-file convention unless `inboundQueueDepthStream` were moved to its own file.
+  **RESOLVED (assessed, no change):** `inboundQueueDepthStream` is a `@visibleForTesting` helper that lives inside `outbox_state_controller.dart`; extracting the tests would either orphan them (violating one-test-file-per-source) or require relocating the helper to its own lib file (a production change out of scope for a test-quality pass). The file is only borderline (755 lines) and the inbound-queue block is a cohesive group testing one helper, so it stays co-located with its source.
 
-- [ ] **[LOW]** `matrix_state_providers_test.dart` (180 lines) has no matching source file — it covers `matrix_stats_provider.dart` alongside `matrix_stats_provider_test.dart`. This violates the "one test file per source file" rule. The `SyncMetricsHistory` and `SyncMetrics` provider tests should consolidate into `matrix_stats_provider_test.dart` and `matrix_state_providers_test.dart` should be deleted, or the source file should be renamed to signal the dual test coverage.
+- [x] **[LOW]** `matrix_state_providers_test.dart` (180 lines) has no matching source file — it covers `matrix_stats_provider.dart` alongside `matrix_stats_provider_test.dart`. This violates the "one test file per source file" rule. The `SyncMetricsHistory` and `SyncMetrics` provider tests should consolidate into `matrix_stats_provider_test.dart` and `matrix_state_providers_test.dart` should be deleted, or the source file should be renamed to signal the dual test coverage.
+  **RESOLVED:** consolidated the `MatrixStats providers` and `MatrixStats equality` groups into `matrix_stats_provider_test.dart` (wrapping the existing `SyncMetricsHistory` tests in their own group) and deleted the orphan `matrix_state_providers_test.dart`, restoring the one-test-file-per-source convention. Also replaced the two `Future<void>.delayed(Duration.zero)` micro-yields carried over from the deleted file with `await pumpEventQueue()` to match the rest of the file and the fake-time policy.
 
 ---
 
@@ -67,7 +69,8 @@
 - [x] **[MED]** **`provisioning_error_test.dart` only tests enum existence and `name` strings** — these are constructor smoke tests of zero behavioral value. AGENTS.md explicitly prohibits "constructor smoke tests" that "only instantiate an object and check `isNotNull`". The test should either be deleted (the enum is covered indirectly by `provisioning_controller_test.dart`) or replaced with a test verifying the UI mapping of each error variant to a localized message.
   **RESOLVED:** file deleted — the two-variant enum carries no logic, and the UI mapping to localized messages is already asserted for both variants in `provisioned_config_page_test.dart`.
 
-- [ ] **[LOW]** **`matrix_stats_provider_test.dart:50`** uses `await Future<void>.delayed(Duration.zero)` to let a `FutureProvider` resolve. Replace with `await Future<void>.value()` and use `container.read(syncMetricsHistoryProvider)` after flushing microtasks.
+- [x] **[LOW]** **`matrix_stats_provider_test.dart:50`** uses `await Future<void>.delayed(Duration.zero)` to let a `FutureProvider` resolve. Replace with `await Future<void>.value()` and use `container.read(syncMetricsHistoryProvider)` after flushing microtasks.
+  **RESOLVED (stale):** the file contains no `Future.delayed` anywhere; the future-resolution waits already use `await pumpEventQueue()` (lines 50, 79), which is the project-sanctioned microtask drain. No change needed.
 
 ---
 
@@ -82,7 +85,8 @@ Two Glados tests already exist in this directory and are well-designed:
 - [x] **[MED]** **`BackfillStatsController.copyWith` has 8 boolean "clear" flags and 11 optional fields**, each independently null-able. The hand-coded `copyWith` tests at `backfill_stats_controller_test.dart:1147–1260` only cover a subset of combinations. A Glados property that generates a fully-populated `BackfillStatsState` and verifies `copyWith()` (no args) is idempotent, plus `copyWith(clearX: true)` always nulls the corresponding field and does not affect others, would catch copy-paste errors in the 11-field `copyWith` body.
   **RESOLVED (partially stale):** the no-arg idempotence Glados property already existed; added the missing half — a Glados2 property driving each clear flag in turn against a fully populated state, asserting exactly its field nulls while every other field (incl. all booleans) is untouched.
 
-- [ ] **[LOW]** **`SyncMaintenanceController.syncAll` step ordering invariant** — the Glados property at `sync_maintenance_controller_test.dart` already covers step selection and failure injection. However, it does not verify the progress-weighting invariant: "after N steps complete successfully, `state.progress` equals `round((N / total) * 100)`". Adding this assertion to the existing Glados test (not a new test) would tighten the property without added overhead.
+- [x] **[LOW]** **`SyncMaintenanceController.syncAll` step ordering invariant** — the Glados property at `sync_maintenance_controller_test.dart` already covers step selection and failure injection. However, it does not verify the progress-weighting invariant: "after N steps complete successfully, `state.progress` equals `round((N / total) * 100)`". Adding this assertion to the existing Glados test (not a new test) would tighten the property without added overhead.
+  **RESOLVED:** added an `expectedProgress` getter to the scenario (equal-weight: 100 on success, `round(((failureIndex + 1) / total) * 100)` on failure since the failing step still fires its terminal `onProgress(1)`) and assert `state.progress == scenario.expectedProgress` in the existing Glados test — no new test added.
 
 ---
 
@@ -98,7 +102,8 @@ Two Glados tests already exist in this directory and are well-designed:
 - [x] **[MED]** **`SyncMetricsHistory` listen-to-`matrixSyncMetricsFutureProvider` reactive path** is only tested in `matrix_stats_provider_test.dart` via `appendFromMetrics` (the `@visibleForTesting` direct path), not via the `ref.listen` reactive wiring. The `ref.listen` callback that appends to history when `matrixSyncMetricsFutureProvider` emits is the production code path and is not covered.
   **RESOLVED:** new test overrides the typed-metrics future and asserts the `ref.listen(fireImmediately)` wiring appends the emitted KPI values to history — the production path, not the `@visibleForTesting` append. (The invalidate-refresh emission sequencing is riverpod-version dependent and deliberately not pinned.)
 
-- [ ] **[LOW]** **`MatrixVerificationModalLock.tryAcquire` concurrent-call invariant is not property-tested.** The state machine is trivial (false → true via `tryAcquire`, true → false via `release`), and `matrix_verification_modal_lock_provider_test.dart` covers the basic cases. No Glados test is needed here — but a test asserting `tryAcquire` returns `false` when called twice without `release`, and `release` after `tryAcquire` restores availability, would add meaningful behavioral assertions beyond what exists.
+- [x] **[LOW]** **`MatrixVerificationModalLock.tryAcquire` concurrent-call invariant is not property-tested.** The state machine is trivial (false → true via `tryAcquire`, true → false via `release`), and `matrix_verification_modal_lock_provider_test.dart` covers the basic cases. No Glados test is needed here — but a test asserting `tryAcquire` returns `false` when called twice without `release`, and `release` after `tryAcquire` restores availability, would add meaningful behavioral assertions beyond what exists.
+  **RESOLVED (stale):** the suggested behavioral assertions already exist — `'tryAcquire returns false when already locked'` (double `tryAcquire` without `release`) and `'tryAcquire succeeds after release'` (release restores availability) both pin exactly these invariants. The reviewer agrees no Glados test is warranted for a two-state lock.
 
 ---
 
@@ -112,7 +117,8 @@ Two Glados tests already exist in this directory and are well-designed:
 - [x] **[MED]** **`outbox_state_controller_test.dart` inbound-queue tests use real async I/O via `SyncDatabase(inMemoryDatabase: true)` and `InboundQueue`** (lines 445–595). These are necessarily real-I/O tests (testing actual DB + queue integration), but two of them use `await completer.future.timeout(const Duration(seconds: 2))` as their primary synchronization. In practice, the `stats()` call on the in-memory SQLite resolves in <5 ms, but the 2 s budget adds CI headroom risk. Replace with shorter 200 ms timeouts and a comment explaining the budget.
   **RESOLVED:** all four 2 s budgets reduced to 200 ms with a comment noting the in-memory SQLite resolves in <5 ms and the timeout is hang-failure headroom, not a wait.
 
-- [ ] **[LOW]** **`provisioning_controller_test.dart` runs all `configureFromBundle` tests as real-`async` tests** (no `fakeAsync`), relying on real microtask ordering for the mock `await` chains. This is fine since no real timers are involved, but the test pattern of calling `await controller.configureFromBundle(...)` and then reading state synchronously is fragile if the controller ever adds real delays. Adding `fakeAsync` would future-proof these tests.
+- [x] **[LOW]** **`provisioning_controller_test.dart` runs all `configureFromBundle` tests as real-`async` tests** (no `fakeAsync`), relying on real microtask ordering for the mock `await` chains. This is fine since no real timers are involved, but the test pattern of calling `await controller.configureFromBundle(...)` and then reading state synchronously is fragile if the controller ever adds real delays. Adding `fakeAsync` would future-proof these tests.
+  **RESOLVED (assessed, no change):** `configureFromBundle` (verified against source lines 98–194) contains no `Timer`, `Future.delayed`, `DateTime.now()`, retry, or debounce — it is a pure await-chain over fully-mocked async service calls. The fake-time policy mandates `fakeAsync` specifically for timers/delays/retries/debounce, none of which apply; wrapping these tests in `fakeAsync` would only add `flushMicrotasks()` boilerplate with no behavioral benefit. The current real-`async` + `await` pattern is policy-compliant. Should the controller ever introduce a real delay, `fakeAsync` can be added at that point.
 
 ---
 

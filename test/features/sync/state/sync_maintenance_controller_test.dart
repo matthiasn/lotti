@@ -64,6 +64,22 @@ class _GeneratedSyncMaintenanceScenario {
     return orderedSteps.take(index + 1).toList();
   }
 
+  /// Expected overall progress percentage once `syncAll` settles.
+  ///
+  /// Each step is weighted equally (1 / total). On success all steps complete
+  /// and progress is pinned to 100. On failure the failing step still fires its
+  /// terminal `onProgress(1)` before throwing, so the last progress update is
+  /// `round(((failureIndex + 1) / total) * 100)`; the failing step never reaches
+  /// the post-operation `totalProgress += weight` increment.
+  int get expectedProgress {
+    final total = orderedSteps.length;
+    if (total == 0) return 0;
+    final index = failureIndex;
+    if (index == null) return 100;
+    final weight = 1 / total;
+    return ((index + 1) * weight * 100).round();
+  }
+
   @override
   String toString() {
     return '_GeneratedSyncMaintenanceScenario('
@@ -473,6 +489,10 @@ void main() {
             reason: '$scenario step=$step',
           );
         }
+
+        // Progress is the equal-weight invariant: after k of N steps reach
+        // their terminal onProgress(1), progress == round((k / N) * 100).
+        expect(state.progress, scenario.expectedProgress, reason: '$scenario');
 
         if (scenario.shouldFail) {
           expect(state.currentStep, scenario.failureStep);
