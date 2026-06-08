@@ -24,7 +24,7 @@ A `search_memory` tool: the planner passes a keyword/phrase and gets back the ma
 ### Mechanism — `AgentLogCompactor.searchLog`
 The compactor already projects the full `InputEventLog` (`_projectActiveView`) and resolves event content (`_resolveEventContents`, lazy-resolver aware). Add:
 
-```
+```dart
 class MemoryLogHit { contentEntryId; at (DateTime); type (capture|observation|…); text; edited }
 
 Future<List<MemoryLogHit>> searchLog(agentId, {required query, int limit = 8})
