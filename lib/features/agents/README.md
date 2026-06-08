@@ -349,7 +349,18 @@ the workflow falls back to the inline journal prompt for that wake.
 observations + proposal verdicts), project agents (captured project-linked
 journal entries + observations), and day agents (submitted capture
 transcripts + observations, both projected as inline events from
-already-synced entities — no payload capture step). The **improver** agent is
+already-synced entities — no payload capture step). Day capture transcripts
+are projected as **deferred** inline events (`InputEvent.inlineDeferred`):
+position + id are eager — enough to order the log and run the checkpoint
+completeness check, which keys on id, not content — while the transcript is
+resolved on demand (`AgentLogCompactor.resolveInlineContent`) for only the
+post-cutoff tail the wake renders. The single long-lived planner accumulates
+captures across every day it plans, so loading every transcript each wake
+would be O(all captures ever); instead the workflow loads just the lightweight
+metadata (`AgentRepository.getCaptureEventMetaByAgentId` — id + the two
+ordering timestamps, no transcript) and the compactor pulls full text only for
+the handful of uncovered-tail captures. Folded captures live in the summary
+prose and are never reloaded. The **improver** agent is
 deliberately out: its wake context is a per-ritual *windowed* snapshot
 (feedback since the last scan watermark, instance reports, version history) —
 there is no unbounded per-agent input stream to fold, and capturing it would

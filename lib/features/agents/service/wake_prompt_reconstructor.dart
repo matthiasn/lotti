@@ -48,14 +48,23 @@ class WakePromptReconstructor {
     final record = decodePromptRecord(content);
     if (record == null) return null;
 
+    // Captures become deferred inline events (id + position); their transcripts
+    // are resolved from the already-loaded set via a map resolver, so the
+    // compactor renders only the tail it needs without a second query.
+    final captures = await _loadCaptures(agentId);
+    final captureContent = <String, Map<String, Object?>>{
+      for (final capture in captures)
+        capture.id: captureInlineContent(capture.transcript),
+    };
     final inlineEvents = <InputEvent>[
       ...await _decisionEvents(agentId),
-      ...await _captureEvents(agentId),
+      ...dayCaptureEvents(captures.map(captureEventMeta)),
     ];
 
     final compactor = AgentLogCompactor(
       syncService: syncService,
       inlineEvents: inlineEvents,
+      resolveInlineContent: (id) async => captureContent[id],
     );
     final log = await compactor.assembleContextAsOf(
       agentId,
@@ -93,13 +102,16 @@ class WakePromptReconstructor {
     }
   }
 
-  Future<List<InputEvent>> _captureEvents(String agentId) async {
+  Future<List<CaptureEntity>> _loadCaptures(String agentId) async {
     try {
       final captures = await _repository.getEntitiesByAgentId(
         agentId,
         type: AgentEntityTypes.capture,
       );
-      return dayCaptureEvents(captures.whereType<CaptureEntity>());
+      return [
+        for (final capture in captures.whereType<CaptureEntity>())
+          if (capture.deletedAt == null) capture,
+      ];
     } catch (e) {
       domainLogger?.error(
         LogDomain.agentWorkflow,

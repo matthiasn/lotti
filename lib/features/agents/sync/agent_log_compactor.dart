@@ -41,12 +41,21 @@ class AgentLogCompactor {
   AgentLogCompactor({
     required AgentSyncService syncService,
     this.inlineEvents = const [],
+    this.resolveInlineContent,
   }) : _sync = syncService;
 
   final AgentSyncService _sync;
 
   /// Events whose content is carried inline rather than payload-backed.
   final List<InputEvent> inlineEvents;
+
+  /// Resolves content for [InputEvent.inlineDeferred] events by their
+  /// `contentEntryId`. Invoked only for the events the compactor actually
+  /// renders/folds (the post-cutoff tail), so a covered deferred source never
+  /// loads its (potentially large) content again. Returns null when the source
+  /// is missing (the event is then dropped, like a missing payload).
+  final Future<Map<String, Object?>?> Function(String contentEntryId)?
+  resolveInlineContent;
 
   AgentRepository get _repository => _sync.repository;
 
@@ -103,31 +112,36 @@ class AgentLogCompactor {
     return EventPosition(at: parsedAt, sourceAt: parsedSourceAt, key: key);
   }
 
-  /// Resolves the rendered content for [events] — inline events carry it
-  /// directly, payload-backed events load it **concurrently** — preserving
-  /// event order and dropping any whose payload is missing.
+  /// Resolves the rendered content for [events] — eager-inline events carry it
+  /// directly, deferred-inline events resolve via [resolveInlineContent], and
+  /// payload-backed events load their payload — all **concurrently**,
+  /// preserving event order and dropping any whose content is missing.
   Future<List<({InputEvent event, Map<String, Object?> content})>>
   _resolveEventContents(List<InputEvent> events) async {
-    final payloads = await Future.wait([
+    final resolved = await Future.wait([
       for (final event in events)
-        if (event.contentDigest case final digest?)
-          _repository.getEntity(digest)
-        else
-          Future<AgentDomainEntity?>.value(),
+        () async {
+          final inline = event.inlineContent;
+          if (inline != null) {
+            return (event: event, content: inline);
+          }
+          if (event.deferredInline) {
+            final content = await resolveInlineContent?.call(
+              event.contentEntryId,
+            );
+            return content == null ? null : (event: event, content: content);
+          }
+          final digest = event.contentDigest;
+          if (digest == null) return null;
+          final payload = await _repository.getEntity(digest);
+          return payload is AgentMessagePayloadEntity
+              ? (event: event, content: payload.content)
+              : null;
+        }(),
     ]);
-    final result = <({InputEvent event, Map<String, Object?> content})>[];
-    for (var i = 0; i < events.length; i++) {
-      final inline = events[i].inlineContent;
-      if (inline != null) {
-        result.add((event: events[i], content: inline));
-        continue;
-      }
-      final payload = payloads[i];
-      if (payload is AgentMessagePayloadEntity) {
-        result.add((event: events[i], content: payload.content));
-      }
-    }
-    return result;
+    return [
+      for (final entry in resolved) ?entry,
+    ];
   }
 
   Future<({InputEventLog log, SummaryCheckpoint? active})> _projectActiveView(
@@ -349,8 +363,12 @@ class AgentLogCompactor {
       for (final loaded in folded)
         loaded.event.contentEntryId:
             loaded.event.contentDigest ??
-            // Exactly one of digest/inlineContent is set by construction.
-            ContentDigest.of(loaded.event.inlineContent),
+            // Inline events (eager or deferred) have no payload digest; cover
+            // them by the digest of their resolved content. `loaded.content`
+            // equals the eager `inlineContent` for eager events and the
+            // resolver output for deferred ones, so the digest is identical
+            // across both paths (and across app versions).
+            ContentDigest.of(loaded.content),
     };
 
     final summaryText = await summarize(

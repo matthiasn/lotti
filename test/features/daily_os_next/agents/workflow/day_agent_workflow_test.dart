@@ -287,6 +287,11 @@ void main() {
     when(
       () => repository.getEntitiesByAgentId(agentId, type: any(named: 'type')),
     ).thenAnswer((_) async => const <AgentDomainEntity>[]);
+    // Capture events are now built from lightweight metadata; transcripts are
+    // resolved lazily per id via getEntity. Default: no captures.
+    when(
+      () => repository.getCaptureEventMetaByAgentId(agentId),
+    ).thenAnswer((_) async => const []);
     when(
       () => repository.getAttentionPlanningInputsForWindow(
         start: any(named: 'start'),
@@ -620,23 +625,30 @@ void main() {
         () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
       ).thenAnswer((_) async => []);
       when(() => repository.getLinksFrom(agentId)).thenAnswer((_) async => []);
-      when(
-        () => repository.getEntitiesByAgentId(
-          agentId,
-          type: AgentEntityTypes.capture,
-        ),
-      ).thenAnswer(
-        (_) async => [
+      final capture =
           AgentDomainEntity.capture(
-            id: 'cap-1',
-            agentId: agentId,
-            transcript: 'morning planning capture',
-            capturedAt: DateTime.utc(2026, 5, 25, 7),
-            createdAt: DateTime.utc(2026, 5, 25, 7, 1),
-            vectorClock: null,
+                id: 'cap-1',
+                agentId: agentId,
+                transcript: 'morning planning capture',
+                capturedAt: DateTime.utc(2026, 5, 25, 7),
+                createdAt: DateTime.utc(2026, 5, 25, 7, 1),
+                vectorClock: null,
+              )
+              as CaptureEntity;
+      // The substrate loads only lightweight metadata; the transcript is
+      // resolved lazily (tail only) via getEntity.
+      when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+        (_) async => [
+          (
+            id: capture.id,
+            createdAt: capture.createdAt,
+            capturedAt: capture.capturedAt,
           ),
         ],
       );
+      when(
+        () => repository.getEntity('cap-1'),
+      ).thenAnswer((_) async => capture);
       final obs = AgentDomainEntity.agentMessage(
         id: 'obs-1',
         agentId: agentId,
@@ -724,10 +736,7 @@ void main() {
       ).thenAnswer((_) async => []);
       when(() => repository.getLinksFrom(agentId)).thenAnswer((_) async => []);
       when(
-        () => repository.getEntitiesByAgentId(
-          agentId,
-          type: AgentEntityTypes.capture,
-        ),
+        () => repository.getCaptureEventMetaByAgentId(agentId),
       ).thenThrow(StateError('capture table unavailable'));
 
       final sut = DayAgentWorkflow(

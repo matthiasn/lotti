@@ -499,37 +499,43 @@ void main() {
       glados.Glados(
         glados.IntAnys(glados.any).intInRange(0, 2100), // requested-id count
         glados.ExploreConfig(numRuns: 120),
-      ).test('chunking dedups its input and never exceeds the host-var cap', (
-        count,
-      ) {
-        // Half the ids are duplicated to exercise the dedup step.
-        final input = <String>[
-          for (var i = 0; i < count; i++) 'id-$i',
-          for (var i = 0; i < count ~/ 2; i++) 'id-$i',
-        ];
-        final deduped = input.toSet();
+      ).test(
+        'chunking dedups its input and never exceeds the host-var cap',
+        (
+          count,
+        ) {
+          // Half the ids are duplicated to exercise the dedup step.
+          final input = <String>[
+            for (var i = 0; i < count; i++) 'id-$i',
+            for (var i = 0; i < count ~/ 2; i++) 'id-$i',
+          ];
+          final deduped = input.toSet();
 
-        final chunks = AgentRepository.debugSqliteInClauseChunks(input).toList();
-        final flattened = chunks.expand((chunk) => chunk).toList();
+          final chunks = AgentRepository.debugSqliteInClauseChunks(
+            input,
+          ).toList();
+          final flattened = chunks.expand((chunk) => chunk).toList();
 
-        // No chunk exceeds the SQLite host-variable cut-off.
-        for (final chunk in chunks) {
-          expect(
-            chunk.length,
-            lessThanOrEqualTo(AgentRepository.debugInClauseChunkSize),
-            reason: 'count=$count',
-          );
-        }
-        // Every distinct input id appears exactly once across all chunks ...
-        expect(flattened.toSet(), deduped, reason: 'count=$count');
-        expect(flattened, hasLength(deduped.length), reason: 'count=$count');
-        // ... and an empty input yields no chunks at all.
-        if (deduped.isEmpty) {
-          expect(chunks, isEmpty, reason: 'count=$count');
-        } else {
-          expect(chunks, isNotEmpty, reason: 'count=$count');
-        }
-      }, tags: 'glados');
+          // No chunk exceeds the SQLite host-variable cut-off.
+          for (final chunk in chunks) {
+            expect(
+              chunk.length,
+              lessThanOrEqualTo(AgentRepository.debugInClauseChunkSize),
+              reason: 'count=$count',
+            );
+          }
+          // Every distinct input id appears exactly once across all chunks ...
+          expect(flattened.toSet(), deduped, reason: 'count=$count');
+          expect(flattened, hasLength(deduped.length), reason: 'count=$count');
+          // ... and an empty input yields no chunks at all.
+          if (deduped.isEmpty) {
+            expect(chunks, isEmpty, reason: 'count=$count');
+          } else {
+            expect(chunks, isNotEmpty, reason: 'count=$count');
+          }
+        },
+        tags: 'glados',
+      );
     });
 
     test('upsert overwrites existing entity with same ID', () async {
@@ -626,6 +632,83 @@ void main() {
 
         final unlimited = await repo.getEntitiesByAgentId(testAgentId);
         expect(unlimited.length, 3);
+      });
+    });
+
+    group('getCaptureEventMetaByAgentId', () {
+      CaptureEntity capture(
+        String id, {
+        required DateTime createdAt,
+        required DateTime capturedAt,
+        DateTime? deletedAt,
+      }) =>
+          AgentDomainEntity.capture(
+                id: id,
+                agentId: testAgentId,
+                transcript: 'a long transcript for $id',
+                capturedAt: capturedAt,
+                createdAt: createdAt,
+                vectorClock: null,
+                deletedAt: deletedAt,
+              )
+              as CaptureEntity;
+
+      test(
+        'returns id + ordering timestamps for this agent, excluding deleted, '
+        'other agents, and non-capture entities',
+        () async {
+          await repo.upsertEntity(
+            capture(
+              'cap-1',
+              createdAt: DateTime.utc(2026, 6, 4, 8, 1),
+              capturedAt: DateTime.utc(2026, 6, 4, 8),
+            ),
+          );
+          await repo.upsertEntity(
+            capture(
+              'cap-2',
+              createdAt: DateTime.utc(2026, 6, 5, 9, 1),
+              capturedAt: DateTime.utc(2026, 6, 5, 9),
+            ),
+          );
+          // Soft-deleted capture — excluded.
+          await repo.upsertEntity(
+            capture(
+              'cap-del',
+              createdAt: DateTime.utc(2026, 6, 6),
+              capturedAt: DateTime.utc(2026, 6, 6),
+              deletedAt: DateTime.utc(2026, 6, 7),
+            ),
+          );
+          // Another agent's capture — excluded.
+          await repo.upsertEntity(
+            AgentDomainEntity.capture(
+                  id: 'cap-other',
+                  agentId: otherAgentId,
+                  transcript: 'x',
+                  capturedAt: DateTime.utc(2026, 6, 4),
+                  createdAt: DateTime.utc(2026, 6, 4),
+                  vectorClock: null,
+                )
+                as CaptureEntity,
+          );
+          // A non-capture entity for this agent — excluded.
+          await repo.upsertEntity(makeAgentState());
+
+          final metas = await repo.getCaptureEventMetaByAgentId(testAgentId);
+
+          expect(metas.map((m) => m.id), unorderedEquals(['cap-1', 'cap-2']));
+          final byId = {for (final m in metas) m.id: m};
+          expect(byId['cap-1']!.createdAt, DateTime.utc(2026, 6, 4, 8, 1));
+          expect(byId['cap-1']!.capturedAt, DateTime.utc(2026, 6, 4, 8));
+          expect(byId['cap-2']!.createdAt, DateTime.utc(2026, 6, 5, 9, 1));
+          expect(byId['cap-2']!.capturedAt, DateTime.utc(2026, 6, 5, 9));
+        },
+      );
+
+      test('returns an empty list when the agent has no captures', () async {
+        await repo.upsertEntity(makeAgentState());
+        expect(await repo.getCaptureEventMetaByAgentId(testAgentId), isEmpty);
       });
     });
 

@@ -751,4 +751,120 @@ void main() {
       expect(liveSummaries.single.id, isNot(firstSummary.id));
     },
   );
+
+  group('deferred inline events (lazy capture content)', () {
+    // Mirrors `dayCaptureEvents`: position + id are eager, transcript resolves
+    // on demand so a long-lived agent never reloads its whole history.
+    InputEvent deferredCapture(String id, {required int day}) =>
+        InputEvent.inlineDeferred(
+          position: EventPosition(
+            at: DateTime.utc(2024, 3, day, 0, 1),
+            sourceAt: DateTime.utc(2024, 3, day),
+            key: 'capture|$id',
+          ),
+          contentEntryId: id,
+          sourceCreatedAt: DateTime.utc(2024, 3, day),
+        );
+
+    test(
+      'the read path resolves content ONLY for the post-cutoff tail; covered '
+      'captures stay covered without ever reloading their transcript',
+      () async {
+        final resolvedIds = <String>[];
+        Future<Map<String, Object?>?> resolver(String id) async {
+          resolvedIds.add(id);
+          return <String, Object?>{'entryType': 'capture', 'text': 'body $id'};
+        }
+
+        final events = [
+          deferredCapture('c1', day: 1),
+          deferredCapture('c2', day: 2),
+          deferredCapture('c3', day: 3),
+        ];
+        final c = AgentLogCompactor(
+          syncService: sync,
+          inlineEvents: events,
+          resolveInlineContent: resolver,
+        );
+
+        // First fold covers {c1, c2}; tail = [c3]. (The fold legitimately reads
+        // the folded sources once to summarize them.)
+        expect(
+          await c.maybeCompact(
+            agentId: _agentId,
+            budget: 0,
+            summarize: stubSummarize,
+            at: DateTime.utc(2024, 3, 20),
+          ),
+          isNotNull,
+        );
+
+        // The warm-wake invariant: a subsequent assembly reads ONLY the tail.
+        resolvedIds.clear();
+        final assembled = await c.assembleContextDetailed(_agentId);
+        expect(resolvedIds, ['c3']);
+        expect(assembled.text, contains('body c3'));
+        expect(assembled.text, isNot(contains('body c1')));
+        expect(assembled.text, isNot(contains('body c2')));
+
+        // The checkpoint is still active even though c1/c2 content was never
+        // reloaded — coverage is proven by id, not by content.
+        final active = selectActiveSummary(
+          summaries: await c.loadSummaries(_agentId),
+          log: projectInputEvents(
+            messages: repo.messages,
+            links: repo.links,
+            inlineEvents: events,
+          ),
+        );
+        expect(active, isNotNull);
+      },
+    );
+
+    test(
+      'a late-arriving deferred capture BEFORE the cutoff invalidates the '
+      'checkpoint (convergence preserved without loading content)',
+      () async {
+        Future<Map<String, Object?>?> resolver(String id) async =>
+            <String, Object?>{'entryType': 'capture', 'text': 'body $id'};
+
+        final folded = [
+          deferredCapture('c1', day: 1),
+          deferredCapture('c2', day: 2),
+          deferredCapture('c3', day: 3),
+        ];
+        final c = AgentLogCompactor(
+          syncService: sync,
+          inlineEvents: folded,
+          resolveInlineContent: resolver,
+        );
+        // Covers {c1, c2}; cutoff at c2 (day 2).
+        await c.maybeCompact(
+          agentId: _agentId,
+          budget: 0,
+          summarize: stubSummarize,
+          at: DateTime.utc(2024, 3, 20),
+        );
+
+        // A peer's capture lands at day 1 (before the cutoff) and is NOT in the
+        // checkpoint's covered set. The completeness check keys on id, so it is
+        // detected even though its transcript is never loaded.
+        final withLateArrival = projectInputEvents(
+          messages: repo.messages,
+          links: repo.links,
+          inlineEvents: [...folded, deferredCapture('c1b', day: 1)],
+        );
+        final active = selectActiveSummary(
+          summaries: await c.loadSummaries(_agentId),
+          log: withLateArrival,
+        );
+        expect(
+          active,
+          isNull,
+          reason:
+              'an uncovered pre-cutoff event must invalidate the checkpoint',
+        );
+      },
+    );
+  });
 }

@@ -237,15 +237,18 @@ class DayAgentWorkflow {
       domainLogger: domainLogger,
     );
     var capturesLoaded = false;
-    var captureEntities = const <CaptureEntity>[];
+    var captureMetas = const <CaptureEventMeta>[];
     try {
-      captureEntities = (await agentRepository.getEntitiesByAgentId(
+      // Only the lightweight ordering metadata (id + timestamps) — never the
+      // full transcripts — so per-wake cost stays flat as the single
+      // long-lived planner's capture history grows. Transcripts are resolved
+      // lazily for just the post-cutoff tail via [_resolveCaptureContent].
+      captureMetas = await agentRepository.getCaptureEventMetaByAgentId(
         agentId,
-        type: AgentEntityTypes.capture,
-      )).whereType<CaptureEntity>().toList();
+      );
       capturesLoaded = true;
     } catch (e) {
-      _logError('failed to load capture entities', error: e);
+      _logError('failed to load capture metadata', error: e);
     }
     final memoryView = await memory.compactAndAssemble(
       agentId: agentId,
@@ -260,7 +263,8 @@ class DayAgentWorkflow {
       runKey: runKey,
       budget: compactionTailBudgetTokens,
       retainTokens: compactionTailRetainTokens,
-      inlineEvents: dayCaptureEvents(captureEntities),
+      inlineEvents: dayCaptureEvents(captureMetas),
+      resolveInlineContent: _resolveCaptureContent,
     );
 
     final captureContext = await _captureContext(

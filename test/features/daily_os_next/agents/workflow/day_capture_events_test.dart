@@ -22,8 +22,9 @@ CaptureEntity _capture(
 
 void main() {
   group('dayCaptureEvents', () {
-    test('projects a capture as an inline event at its submission time', () {
-      final events = dayCaptureEvents([_capture('cap-1')]);
+    test('projects metadata as a DEFERRED inline event at its submission '
+        'time (no transcript loaded)', () {
+      final events = dayCaptureEvents([captureEventMeta(_capture('cap-1'))]);
 
       expect(events, hasLength(1));
       final event = events.single;
@@ -31,29 +32,42 @@ void main() {
       expect(event.position.sourceAt, DateTime.utc(2026, 6, 4, 8));
       expect(event.position.key, 'capture|cap-1');
       expect(event.contentEntryId, 'cap-1');
+      expect(event.sourceCreatedAt, DateTime.utc(2026, 6, 4, 8));
+      // Deferred: content is resolved lazily, so neither digest nor inline
+      // content is carried up front.
+      expect(event.deferredInline, isTrue);
       expect(event.contentDigest, isNull);
-      expect(event.inlineContent, {
-        'entryType': 'capture',
-        'text': 'a spoken capture',
-      });
+      expect(event.inlineContent, isNull);
     });
 
-    test('skips soft-deleted captures', () {
+    test('preserves submission order across multiple captures', () {
       final events = dayCaptureEvents([
-        _capture('cap-1'),
-        _capture('cap-2', deletedAt: DateTime.utc(2026, 6, 5)),
+        captureEventMeta(_capture('cap-1')),
+        captureEventMeta(_capture('cap-2')),
       ]);
-      expect(events.map((e) => e.contentEntryId), ['cap-1']);
+      expect(events.map((e) => e.contentEntryId), ['cap-1', 'cap-2']);
+      expect(events.every((e) => e.deferredInline), isTrue);
     });
+  });
 
-    test('normalizes transcript whitespace so one capture is one line', () {
-      final events = dayCaptureEvents([
-        _capture('cap-1', transcript: 'first thought\n\nsecond  thought\n'),
-      ]);
-      expect(
-        events.single.inlineContent!['text'],
-        'first thought second thought',
-      );
+  group('captureEventMeta', () {
+    test('extracts id and the two ordering timestamps', () {
+      final meta = captureEventMeta(_capture('cap-1'));
+      expect(meta.id, 'cap-1');
+      expect(meta.createdAt, DateTime.utc(2026, 6, 4, 8, 1));
+      expect(meta.capturedAt, DateTime.utc(2026, 6, 4, 8));
     });
+  });
+
+  group('captureInlineContent', () {
+    test(
+      'tags the entry as a capture and normalizes transcript whitespace',
+      () {
+        expect(
+          captureInlineContent('first thought\n\nsecond  thought\n'),
+          {'entryType': 'capture', 'text': 'first thought second thought'},
+        );
+      },
+    );
   });
 }

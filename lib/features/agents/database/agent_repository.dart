@@ -255,6 +255,48 @@ class AgentRepository {
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
+  /// Lightweight ordering metadata for [agentId]'s non-deleted `capture`
+  /// entities — id + the two timestamps that fix an event's log position —
+  /// **without** materializing the (potentially large) transcript.
+  ///
+  /// The day planner is a single long-lived agent, so its capture history grows
+  /// without bound. The compaction substrate only needs each capture's id and
+  /// position to order the log and run the checkpoint completeness check (which
+  /// keys on id, not content); transcripts are pulled in lazily for just the
+  /// post-cutoff tail (see `AgentLogCompactor.resolveInlineContent`). Reading
+  /// only these columns keeps per-wake cost flat instead of O(all captures).
+  Future<List<({String id, DateTime createdAt, DateTime capturedAt})>>
+  getCaptureEventMetaByAgentId(String agentId) async {
+    final rows = await _db
+        .customSelect(
+          r"SELECT id, json_extract(serialized, '$.createdAt') AS created_at, "
+          r"json_extract(serialized, '$.capturedAt') AS captured_at "
+          'FROM agent_entities '
+          'WHERE agent_id = ? AND type = ? AND deleted_at IS NULL',
+          variables: [
+            Variable.withString(agentId),
+            Variable.withString(AgentEntityTypes.capture),
+          ],
+          readsFrom: {_db.agentEntities},
+        )
+        .get();
+    final metas = <({String id, DateTime createdAt, DateTime capturedAt})>[];
+    for (final row in rows) {
+      final createdAtRaw = row.read<String?>('created_at');
+      final capturedAtRaw = row.read<String?>('captured_at');
+      if (createdAtRaw == null || capturedAtRaw == null) continue;
+      final createdAt = DateTime.tryParse(createdAtRaw);
+      final capturedAt = DateTime.tryParse(capturedAtRaw);
+      if (createdAt == null || capturedAt == null) continue;
+      metas.add((
+        id: row.read<String>('id'),
+        createdAt: createdAt,
+        capturedAt: capturedAt,
+      ));
+    }
+    return metas;
+  }
+
   /// See [AgentAttentionProjection].
   Future<List<AttentionRequestEntity>> getAttentionClaimsForWindow({
     required DateTime start,
