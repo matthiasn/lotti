@@ -45,7 +45,8 @@
 - [x] **[MED]** `sync_maintenance_repository_test.dart` lines 502–531: `syncAiSettings` error test uses `expectLater(..., throwsA(exception))` but the three `getConfigsByType` stubs for `model` and `prompt` are set up even though they're unreachable when `inferenceProvider` throws. Remove the two unreachable stubs — they add noise and could mask future behavior changes.
   - **RESOLVED:** done — the two unreachable stubs are removed with a comment explaining why: `thenThrow` fires synchronously while the `Future.wait` list literal is still being built, so the model/prompt fetches are never invoked.
 
-- [ ] **[LOW]** `sync_maintenance_repository_test.dart` lines 970–994: the `syncMaintenanceRepositoryProvider` test calls `getIt.reset()` inline and registers singletons before constructing a `ProviderContainer`. This is the same pattern as the centralized `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart`. Prefer using those helpers to avoid manual `addTearDown(getIt.reset)` bookkeeping.
+- [x] **[LOW]** `sync_maintenance_repository_test.dart` lines 970–994: the `syncMaintenanceRepositoryProvider` test calls `getIt.reset()` inline and registers singletons before constructing a `ProviderContainer`. This is the same pattern as the centralized `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart`. Prefer using those helpers to avoid manual `addTearDown(getIt.reset)` bookkeeping.
+  **RESOLVED:** the test now calls `setUpTestGetIt(additionalSetup: ...)` to register the only extra dependency the provider resolves from get_it (`VectorClockService`; `DomainLogger` comes from the helper) and `addTearDown(tearDownTestGetIt)` for cleanup, replacing the inline `getIt.reset()` + hand-registered singletons + `addTearDown(getIt.reset)` bookkeeping. The assertion is unchanged (provider builds a `SyncMaintenanceRepository`); using the real `DomainLogger` is harmless since construction never logs.
 
 ---
 
@@ -54,7 +55,8 @@
 - [x] **[MED]** `SyncMaintenanceRepository._runOperation` progress math: the `onProgress` callback must always emit values in `[0.0, 1.0]` monotonically, and `onDetailedProgress` must satisfy `0 <= processed <= total`. A Glados property over generated `(List<bool> shouldSync, int total)` inputs would verify this invariant exhaustively without adding real DB calls — wire stub fetchers that return generated lists of fictitious entities and verify the callback sequence.
   - **RESOLVED:** done — added a Glados2 property (rows 0–32 × deletion mask, numRuns 120, `tags: 'glados'`) driving `syncMeasurables` with generated synced/skipped mixes: progress values all in [0,1], non-decreasing, ending at exactly 1.0; detailed counts keep `total` constant, `0 <= processed <= total`, non-decreasing, ending fully processed — including the empty-list short-circuit.
 
-- [ ] **[LOW]** `fetchTotalsForSteps` with an arbitrary subset of `SyncStep` values: the function must never return a map with unexpected keys. A Glados property generating random `Set<SyncStep>` subsets and asserting that the returned map's key set equals the input set (excluding `SyncStep.complete`) would catch future regressions in the step-routing logic.
+- [x] **[LOW]** `fetchTotalsForSteps` with an arbitrary subset of `SyncStep` values: the function must never return a map with unexpected keys. A Glados property generating random `Set<SyncStep>` subsets and asserting that the returned map's key set equals the input set (excluding `SyncStep.complete`) would catch future regressions in the step-routing logic.
+  **RESOLVED:** added a Glados property (`numRuns: 120`, `tags: 'glados'`) in the `fetchTotalsForSteps` group that generates random `List<SyncStep>` (length 0..N over `choose(SyncStep.values)`), collapses to a set, stubs every fetcher once, and asserts `totals.keys.toSet() == steps` exactly, all totals `>= 0`, and `complete` (when requested) contributes `0`. NOTE: the original review premise was slightly off — the impl does **not** exclude `SyncStep.complete`; `_calculateTotalForStep` returns `0` for it and `fetchTotalsForSteps` keeps the key (confirmed by the existing `{SyncStep.complete: 0}` example test). The property therefore pins the actual contract: key set equals the input set, with `complete` included at `0`.
 
 ---
 
@@ -68,7 +70,8 @@
 - [x] **[MED]** `_calculateTotalForStep` with `SyncStep.complete` (should return 0 without calling any repository method) is exercised implicitly only when `fetchTotalsForSteps` is called with `complete` in the set. Add an explicit test that includes `SyncStep.complete` in the input set and asserts it is not present in the returned map (or returns 0).
   - **RESOLVED:** done — added an explicit test: `fetchTotalsForSteps({SyncStep.complete})` returns `{complete: 0}` and touches no repository fetcher (verifyNever on all six).
 
-- [ ] **[LOW]** `SyncNodeProfileRepository.watchKnownNodes` test at line 206 uses `await pumpEventQueue()` to settle async stream emissions — this is correct. However, the test makes 3 upsert calls and asserts `emissions.length == 3`. If the Drift `watchKnownNodes` stream coalesces rapid writes into fewer emissions on slow CI, the test could fail non-deterministically. Consider adding a small `await pumpEventQueue()` between each upsert to ensure ordering.
+- [x] **[LOW]** `SyncNodeProfileRepository.watchKnownNodes` test at line 206 uses `await pumpEventQueue()` to settle async stream emissions — this is correct. However, the test makes 3 upsert calls and asserts `emissions.length == 3`. If the Drift `watchKnownNodes` stream coalesces rapid writes into fewer emissions on slow CI, the test could fail non-deterministically. Consider adding a small `await pumpEventQueue()` between each upsert to ensure ordering.
+  **RESOLVED:** added `await pumpEventQueue()` after each of the three `upsertNode` calls in the `'emits the updated directory on upsert'` test. The repository broadcasts through a `StreamController.broadcast` whose `add` delivers on a microtask, so settling between writes makes the one-emission-per-upsert assertion deterministic regardless of scheduling on slow CI.
 
 ---
 
@@ -77,7 +80,8 @@
 - [x] **[MED]** `sync_maintenance_repository_test.dart`: each of the 8 copy-paste syncXxx tests (lines 127–406) constructs full mock stubs and calls `verify(capture(...))`. By DRY-ing these into helpers (see Test Quality section), the total mock-stub setup overhead is halved, saving ~16 stub registrations per run.
   - **RESOLVED:** (stale) — the 8 copy-paste syncXxx tests were already DRY-ed into the parameterized `entitySyncSpecs` record loop (one stub/make/call spec per entity type, two shared test bodies).
 
-- [ ] **[LOW]** `sync_node_profile_repository_test.dart` Glados test at line 336 uses `numRuns: 60`. This is already conservative. The `pumpEventQueue()` at line 402 is called once per iteration and settles all pending Drift emissions — this is correct and the only async cost in the Glados loop. No change needed.
+- [x] **[LOW]** `sync_node_profile_repository_test.dart` Glados test at line 336 uses `numRuns: 60`. This is already conservative. The `pumpEventQueue()` at line 402 is called once per iteration and settles all pending Drift emissions — this is correct and the only async cost in the Glados loop. No change needed.
+  **RESOLVED (assessed, no change):** confirmed accurate — the observation itself concludes "No change needed," and that conclusion holds. `numRuns: 60` is an explicitly-chosen, non-default value (not the default 100), and the single per-iteration `pumpEventQueue()` is the correct and minimal way to settle the broadcast emissions inside the Glados loop. This is a pre-existing, well-tagged state-machine property unrelated to the items being actioned; no code change is warranted.
 
 ---
 
