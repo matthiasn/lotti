@@ -314,5 +314,138 @@ void main() {
         expect(find.byKey(Key(habitFlossing.id)), findsNothing);
       },
     );
+
+    testWidgets(
+      'empty searchString keeps every habit visible when showSearch is true',
+      (tester) async {
+        // An empty fragment is contained in every name, so the filter pass
+        // must be a no-op and both cards remain rendered.
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          openNow: [habitFlossing, habitFlossingDueLater],
+          showSearch: true,
+          displayFilter: HabitDisplayFilter.openNow,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              habitsControllerProvider.overrideWith(
+                () => FakeHabitsController(testState),
+              ),
+            ],
+            child: makeTestableWidgetWithScaffold(
+              const HabitsTabPage(),
+            ),
+          ),
+        );
+
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+        expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'lowercase searchString matches mixed-case habit names',
+      (tester) async {
+        // The controller stores searchString lowercased; the page lowercases
+        // each name before comparing. 'flossing' must therefore match the
+        // capitalised "Flossing" / "Flossing later today" names.
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          openNow: [habitFlossing, habitFlossingDueLater],
+          showSearch: true,
+          searchString: 'flossing',
+          displayFilter: HabitDisplayFilter.openNow,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              habitsControllerProvider.overrideWith(
+                () => FakeHabitsController(testState),
+              ),
+            ],
+            child: makeTestableWidgetWithScaffold(
+              const HabitsTabPage(),
+            ),
+          ),
+        );
+
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+        expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'searchString matching the description keeps the habit visible',
+      (tester) async {
+        // The filter also scans description text. 'gums' only appears in the
+        // shared description, not in either name, so both habits survive.
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          openNow: [habitFlossing, habitFlossingDueLater],
+          showSearch: true,
+          searchString: 'gums',
+          displayFilter: HabitDisplayFilter.openNow,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              habitsControllerProvider.overrideWith(
+                () => FakeHabitsController(testState),
+              ),
+            ],
+            child: makeTestableWidgetWithScaffold(
+              const HabitsTabPage(),
+            ),
+          ),
+        );
+
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byKey(Key(habitFlossing.id)), findsOneWidget);
+        expect(find.byKey(Key(habitFlossingDueLater.id)), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'non-matching searchString hides every habit and renders no cards',
+      (tester) async {
+        // 'zzz' is absent from both names and the shared description, so the
+        // filter drops every habit and no HabitCompletionCard is built.
+        final testState = HabitsState.initial().copyWith(
+          habitDefinitions: [habitFlossing, habitFlossingDueLater],
+          openNow: [habitFlossing, habitFlossingDueLater],
+          showSearch: true,
+          searchString: 'zzz',
+          displayFilter: HabitDisplayFilter.openNow,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              habitsControllerProvider.overrideWith(
+                () => FakeHabitsController(testState),
+              ),
+            ],
+            child: makeTestableWidgetWithScaffold(
+              const HabitsTabPage(),
+            ),
+          ),
+        );
+
+        await tester.pump(const Duration(milliseconds: 100));
+
+        expect(find.byKey(Key(habitFlossing.id)), findsNothing);
+        expect(find.byKey(Key(habitFlossingDueLater.id)), findsNothing);
+        expect(find.byType(HabitCompletionCard), findsNothing);
+      },
+    );
   });
 }

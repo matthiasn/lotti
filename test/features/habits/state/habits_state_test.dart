@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
@@ -87,37 +88,60 @@ void main() {
   });
 
   group('getHabitDays', () {
-    test('returns correct number of days', () {
-      final days = getHabitDays(7);
+    // getHabitDays reads `clock.now()`, so pin a fixed instant to make the
+    // window fully deterministic (no midnight flakiness). 10:30 ensures the
+    // partial trailing day still rounds to inclusive `today`.
+    final fixedNow = DateTime(2024, 3, 15, 10, 30);
 
-      // Should have 8 days (today + 7 days back)
-      expect(days.length, 8);
+    test('spans timeSpanDays back through today inclusive', () {
+      withClock(Clock.fixed(fixedNow), () {
+        final days = getHabitDays(7);
+
+        // 7 days back + today, fully enumerated and pinned to the clock.
+        expect(days, [
+          '2024-03-08',
+          '2024-03-09',
+          '2024-03-10',
+          '2024-03-11',
+          '2024-03-12',
+          '2024-03-13',
+          '2024-03-14',
+          '2024-03-15',
+        ]);
+      });
     });
 
     test('days are sorted in ascending order', () {
-      final days = getHabitDays(7);
+      withClock(Clock.fixed(fixedNow), () {
+        final days = getHabitDays(7);
 
-      for (var i = 0; i < days.length - 1; i++) {
-        expect(
-          DateTime.parse(days[i]).isBefore(DateTime.parse(days[i + 1])),
-          true,
-          reason: 'Day $i should be before day ${i + 1}',
-        );
-      }
+        for (var i = 0; i < days.length - 1; i++) {
+          expect(
+            DateTime.parse(days[i]).isBefore(DateTime.parse(days[i + 1])),
+            true,
+            reason: 'Day $i should be before day ${i + 1}',
+          );
+        }
+      });
     });
 
     test('last day is today', () {
-      final days = getHabitDays(7);
-      // getHabitDays uses DateTime.now() internally, so we verify format
-      // rather than an exact date to avoid coupling to a specific instant.
-      expect(days.last, matches(RegExp(r'^\d{4}-\d{2}-\d{2}$')));
+      withClock(Clock.fixed(fixedNow), () {
+        final days = getHabitDays(7);
+        expect(days.last, '2024-03-15');
+      });
     });
 
     test('returns more days for larger time span', () {
-      final days7 = getHabitDays(7);
-      final days14 = getHabitDays(14);
+      withClock(Clock.fixed(fixedNow), () {
+        final days7 = getHabitDays(7);
+        final days14 = getHabitDays(14);
 
-      expect(days14.length, greaterThan(days7.length));
+        expect(days7.length, 8);
+        expect(days14.length, 15);
+        expect(days14.first, '2024-03-01');
+        expect(days14.last, '2024-03-15');
+      });
     });
   });
 
@@ -334,6 +358,87 @@ void main() {
       final result = completionRate(state, byDay);
 
       expect(result, 100);
+    });
+  });
+
+  group('dayPercentages', () {
+    // Habits active before the selected day so totalForDay counts them.
+    final activeDate = DateTime(2025, 12, 20);
+
+    HabitDefinition createHabit(String id) {
+      return HabitDefinition(
+        id: id,
+        name: 'Habit $id',
+        description: 'Description',
+        createdAt: activeDate,
+        updatedAt: activeDate,
+        vectorClock: null,
+        private: false,
+        active: true,
+        activeFrom: activeDate,
+        habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+      );
+    }
+
+    HabitsState stateWith({
+      Set<String> successful = const {},
+      Set<String> skipped = const {},
+      Set<String> failed = const {},
+    }) {
+      return HabitsState.initial().copyWith(
+        selectedInfoYmd: '2025-12-30',
+        habitDefinitions: [
+          createHabit('1'),
+          createHabit('2'),
+          createHabit('3'),
+          createHabit('4'),
+        ],
+        successfulByDay: {'2025-12-30': successful},
+        skippedByDay: {'2025-12-30': skipped},
+        failedByDay: {'2025-12-30': failed},
+      );
+    }
+
+    test('returns the raw rate for each band when they fit under 100', () {
+      // 4 habits: 2 success (50%), 1 skipped (25%), 1 failed (25%).
+      final result = dayPercentages(
+        stateWith(
+          successful: {'1', '2'},
+          skipped: {'3'},
+          failed: {'4'},
+        ),
+      );
+
+      expect(result.success, 50);
+      expect(result.skipped, 25);
+      expect(result.failed, 25);
+    });
+
+    test(
+      'clamps failed to the remaining headroom (success + skipped = 100)',
+      () {
+        // 3 success (75%) + 1 skipped (25%) leaves 0 headroom, so even though
+        // the raw failed rate would be 50%, the clamp drops it to 0.
+        final result = dayPercentages(
+          stateWith(
+            successful: {'1', '2', '3'},
+            skipped: {'4'},
+            failed: {'1', '2'}, // raw failed = 50%
+          ),
+        );
+
+        expect(result.success, 75);
+        expect(result.skipped, 25);
+        expect(result.failed, 0);
+      },
+    );
+
+    test('returns all zeros when there are no completions', () {
+      final result = dayPercentages(stateWith());
+
+      expect(result.success, 0);
+      expect(result.skipped, 0);
+      expect(result.failed, 0);
     });
   });
 

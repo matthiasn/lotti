@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:clock/clock.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -94,6 +95,26 @@ int completionRate(
   return percentage.round();
 }
 
+/// The success / skipped / failed percentages for `state`'s selected day.
+///
+/// Pure transformation extracted from `HabitsController.setInfoYmd` so the
+/// clamp can be tested in isolation. `success` and `skipped` are the raw
+/// completion rates for [HabitsState.selectedInfoYmd]; `failed` is clamped to
+/// the remaining headroom (`100 - success - skipped`) so the three bands never
+/// sum above 100 — without the clamp, overlapping completion records on a day
+/// could push the stacked bar past full.
+typedef DayPercentages = ({int success, int skipped, int failed});
+
+DayPercentages dayPercentages(HabitsState state) {
+  final success = completionRate(state, state.successfulByDay);
+  final skipped = completionRate(state, state.skippedByDay);
+  final failed = min(
+    completionRate(state, state.failedByDay),
+    100 - success - skipped,
+  );
+  return (success: success, skipped: skipped, failed: failed);
+}
+
 /// Counts the total habits that should be tracked for a given day.
 int totalForDay(String ymd, HabitsState state) {
   final activeHabitIds = activeBy(
@@ -148,8 +169,11 @@ double habitMinY({
 }
 
 /// Generates a list of date strings for the given time span.
+///
+/// Reads the current instant via [clock] (defaults to the wall clock) so
+/// callers can pin "today" deterministically in tests with `withClock`.
 List<String> getHabitDays(int timeSpanDays) {
-  final now = DateTime.now();
+  final now = clock.now();
   final days = daysInRange(
     rangeStart: now.dayAtMidnight.subtract(Duration(days: timeSpanDays)),
     rangeEnd: now,
