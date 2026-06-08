@@ -8,10 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
 import 'package:lotti/features/ai_chat/services/realtime_transcription_service.dart';
@@ -108,95 +105,42 @@ void main() {
     });
 
     test('skips non-audio models', () async {
-      final db = AiConfigDb(inMemoryDatabase: true);
-      final aiRepo = AiConfigRepository(db);
-
-      await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
-          id: kTestProviderId,
-          baseUrl: 'https://api.mistral.ai/v1',
-          apiKey: 'key',
-          name: 'Mistral',
-          createdAt: DateTime(2024),
-          inferenceProviderType: InferenceProviderType.mistral,
-        ),
-        fromSync: true,
-      );
-      // Model has text input only — not audio
-      await aiRepo.saveConfig(
-        AiConfig.model(
-          id: 'text-only',
-          name: 'Text Model',
-          providerModelId: kTestProviderModelId,
-          inferenceProviderId: kTestProviderId,
-          createdAt: DateTime(2024),
-          inputModalities: const [Modality.text],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        ),
-        fromSync: true,
-      );
-
-      final repo = MistralRealtimeTranscriptionRepository();
-      final container = ProviderContainer(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-          realtimeTranscriptionServiceProvider.overrideWith(
-            (ref) => RealtimeTranscriptionService(ref, repository: repo),
+      // A Mistral provider whose only model is text-only: the audio-modality
+      // filter rejects it, so no realtime config resolves.
+      final bench = await RealtimeTranscriptionTestBench.create(
+        configs: [
+          realtimeProviderConfig(id: kTestProviderId),
+          realtimeModelConfig(
+            id: 'text-only',
+            providerId: kTestProviderId,
+            name: 'Text Model',
+            audio: false,
           ),
         ],
       );
-      addTearDown(container.dispose);
+      addTearDown(bench.dispose);
 
-      final svc = container.read(realtimeTranscriptionServiceProvider);
-      final config = await svc.resolveRealtimeConfig();
-      expect(config, isNull);
+      expect(await bench.service.resolveRealtimeConfig(), isNull);
     });
 
     test('skips non-Mistral providers', () async {
-      final db = AiConfigDb(inMemoryDatabase: true);
-      final aiRepo = AiConfigRepository(db);
-
-      // Provider is Gemini, not Mistral
-      await aiRepo.saveConfig(
-        AiConfig.inferenceProvider(
-          id: 'p-gemini',
-          baseUrl: 'https://api.example.com',
-          apiKey: 'key',
-          name: 'Gemini',
-          createdAt: DateTime(2024),
-          inferenceProviderType: InferenceProviderType.gemini,
-        ),
-        fromSync: true,
-      );
-      await aiRepo.saveConfig(
-        AiConfig.model(
-          id: 'wrong-provider',
-          name: 'Realtime',
-          providerModelId: kTestProviderModelId,
-          inferenceProviderId: 'p-gemini',
-          createdAt: DateTime(2024),
-          inputModalities: const [Modality.audio],
-          outputModalities: const [Modality.text],
-          isReasoningModel: false,
-        ),
-        fromSync: true,
-      );
-
-      final repo = MistralRealtimeTranscriptionRepository();
-      final container = ProviderContainer(
-        overrides: [
-          aiConfigRepositoryProvider.overrideWith((_) => aiRepo),
-          realtimeTranscriptionServiceProvider.overrideWith(
-            (ref) => RealtimeTranscriptionService(ref, repository: repo),
+      // The realtime audio model sits behind a Gemini provider, so the
+      // Mistral provider-type filter rejects it and the MLX fallback finds
+      // nothing either.
+      final bench = await RealtimeTranscriptionTestBench.create(
+        configs: [
+          realtimeProviderConfig(
+            id: 'p-gemini',
+            type: InferenceProviderType.gemini,
+            name: 'Gemini',
+            baseUrl: 'https://api.example.com',
           ),
+          realtimeModelConfig(id: 'wrong-provider', providerId: 'p-gemini'),
         ],
       );
-      addTearDown(container.dispose);
+      addTearDown(bench.dispose);
 
-      final svc = container.read(realtimeTranscriptionServiceProvider);
-      final config = await svc.resolveRealtimeConfig();
-      expect(config, isNull);
+      expect(await bench.service.resolveRealtimeConfig(), isNull);
     });
   });
 

@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/repository/mistral_realtime_transcription_repo
 import 'package:lotti/features/ai/repository/mistral_transcription_repository.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/mlx_audio_channel.dart';
+import 'package:meta/meta.dart';
 
 const _kDefaultAudioModel = 'gemini-2.5-flash';
 const _kTranscriptionPrompt = 'Transcribe the audio to natural text.';
@@ -138,6 +139,16 @@ class AudioTranscriptionService {
     }
   }
 }
+
+/// Test-only access to the batch audio-model selection priority, so its
+/// ordering algebra (Mistral-offline > Mistral-batch > MLX-Qwen >
+/// flash-preferred > first) can be property-tested without driving the
+/// streaming pipeline.
+@visibleForTesting
+AiConfigModel debugSelectBatchAudioModel(
+  List<AiConfigModel> audioModels,
+  Iterable<AiConfigInferenceProvider> providers,
+) => _selectBatchAudioModel(audioModels, providers);
 
 AiConfigModel _selectBatchAudioModel(
   List<AiConfigModel> audioModels,

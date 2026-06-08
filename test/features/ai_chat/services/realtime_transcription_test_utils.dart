@@ -199,6 +199,44 @@ const kTestProviderModelId = 'voxtral-mini-transcribe-realtime-2602';
 const kTestMlxProviderId = 'p-mlx-rt-svc';
 const kTestMlxModelId = 'm-mlx-rt-svc';
 
+/// Builds an inference-provider config for the realtime bench's `configs`
+/// override, so filter/negative tests can seed bespoke rows without
+/// hand-wiring an `AiConfigRepository` + container.
+AiConfig realtimeProviderConfig({
+  required String id,
+  InferenceProviderType type = InferenceProviderType.mistral,
+  String name = 'Mistral',
+  String baseUrl = 'https://api.mistral.ai/v1',
+  String apiKey = 'key',
+}) => AiConfig.inferenceProvider(
+  id: id,
+  baseUrl: baseUrl,
+  apiKey: apiKey,
+  name: name,
+  createdAt: DateTime(2024),
+  inferenceProviderType: type,
+);
+
+/// Builds a model config for the realtime bench's `configs` override.
+/// Defaults to an audio-input realtime model; pass `audio: false` for a
+/// text-only model to exercise the audio-modality filter.
+AiConfig realtimeModelConfig({
+  required String id,
+  required String providerId,
+  String name = 'Realtime',
+  String providerModelId = kTestProviderModelId,
+  bool audio = true,
+}) => AiConfig.model(
+  id: id,
+  name: name,
+  providerModelId: providerModelId,
+  inferenceProviderId: providerId,
+  createdAt: DateTime(2024),
+  inputModalities: audio ? const [Modality.audio] : const [Modality.text],
+  outputModalities: const [Modality.text],
+  isReasoningModel: false,
+);
+
 class FakeMlxAudioChannel extends MlxAudioChannel {
   final eventsController = StreamController<MlxAudioRealtimeEvent>.broadcast(
     sync: true,
@@ -292,15 +330,25 @@ class RealtimeTranscriptionTestBench {
   StreamController<Uint8List>? _pcmController;
 
   /// Creates a fully wired test bench with config in the DB.
+  ///
+  /// When [configs] is provided, exactly those rows are seeded and the
+  /// [addConfig]/[addMlxConfig] default fixtures are skipped — use this for
+  /// filter/negative cases (e.g. a non-audio model, or a realtime model behind
+  /// a non-Mistral provider) instead of hand-wiring a container.
   static Future<RealtimeTranscriptionTestBench> create({
     bool addConfig = true,
     bool addMlxConfig = false,
+    List<AiConfig>? configs,
     Duration doneTimeout = const Duration(seconds: 10),
   }) async {
     final db = AiConfigDb(inMemoryDatabase: true);
     final aiRepo = AiConfigRepository(db);
 
-    if (addConfig) {
+    if (configs != null) {
+      for (final config in configs) {
+        await aiRepo.saveConfig(config, fromSync: true);
+      }
+    } else if (addConfig) {
       await aiRepo.saveConfig(
         AiConfig.inferenceProvider(
           id: kTestProviderId,
@@ -326,7 +374,7 @@ class RealtimeTranscriptionTestBench {
         fromSync: true,
       );
     }
-    if (addMlxConfig) {
+    if (configs == null && addMlxConfig) {
       await aiRepo.saveConfig(
         AiConfig.inferenceProvider(
           id: kTestMlxProviderId,
