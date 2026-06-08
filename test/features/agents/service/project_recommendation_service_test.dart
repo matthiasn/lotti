@@ -12,349 +12,7 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
-enum _GeneratedRecommendationRawStepsSlot { missing, nonList, list }
-
-enum _GeneratedRecommendationStepSlot {
-  validTitleOnly,
-  validWithRationale,
-  validWithPriority,
-  validWithEmptyMetadata,
-  validWithWhitespaceMetadata,
-  blankTitle,
-  missingTitle,
-  nonStringTitle,
-  nonMap,
-}
-
-enum _GeneratedRecommendationExistingSlot {
-  activeSameProject,
-  activeOtherProject,
-  dismissedSameProject,
-  resolvedSameProject,
-  wrongType,
-}
-
-enum _GeneratedRecommendationLookupSlot {
-  missing,
-  wrongType,
-  active,
-  resolved,
-  dismissed,
-  superseded,
-}
-
-enum _GeneratedRecommendationTransitionOperation { resolve, dismiss }
-
-final _generatedRecommendationNow = DateTime(2026, 5, 21, 12, 30);
-
-class _GeneratedRecommendationDraft {
-  const _GeneratedRecommendationDraft({
-    required this.title,
-    this.rationale,
-    this.priority,
-  });
-
-  final String title;
-  final String? rationale;
-  final String? priority;
-}
-
-class _GeneratedRecommendationRecordScenario {
-  const _GeneratedRecommendationRecordScenario({
-    required this.rawStepsSlot,
-    required this.stepSlots,
-    required this.existingSlots,
-  });
-
-  final _GeneratedRecommendationRawStepsSlot rawStepsSlot;
-  final List<_GeneratedRecommendationStepSlot> stepSlots;
-  final List<_GeneratedRecommendationExistingSlot> existingSlots;
-
-  List<Object?> get rawStepValues {
-    return [
-      for (final (index, slot) in stepSlots.indexed) _rawStep(index, slot),
-    ];
-  }
-
-  Map<String, dynamic>? get decisionArgs {
-    return switch (rawStepsSlot) {
-      _GeneratedRecommendationRawStepsSlot.missing => const {},
-      _GeneratedRecommendationRawStepsSlot.nonList => const {'steps': 'nope'},
-      _GeneratedRecommendationRawStepsSlot.list => {'steps': rawStepValues},
-    };
-  }
-
-  List<_GeneratedRecommendationDraft> get validDrafts {
-    if (rawStepsSlot != _GeneratedRecommendationRawStepsSlot.list) {
-      return const [];
-    }
-    return [
-      for (final (index, slot) in stepSlots.indexed)
-        if (_expectedDraft(index, slot) != null) _expectedDraft(index, slot)!,
-    ];
-  }
-
-  List<AgentDomainEntity> get existingEntities {
-    return [
-      for (final (index, slot) in existingSlots.indexed)
-        _existingEntity(index, slot),
-    ];
-  }
-
-  List<ProjectRecommendationEntity> get supersededRecommendations {
-    return [
-      for (final entity in existingEntities)
-        if (entity is ProjectRecommendationEntity &&
-            entity.projectId == 'generated-project' &&
-            entity.status == ProjectRecommendationStatus.active)
-          entity,
-    ];
-  }
-
-  Object? _rawStep(int index, _GeneratedRecommendationStepSlot slot) {
-    return switch (slot) {
-      _GeneratedRecommendationStepSlot.validTitleOnly => {
-        'title': '  Generated step $index  ',
-      },
-      _GeneratedRecommendationStepSlot.validWithRationale => {
-        'title': 'Generated rationale step $index',
-        'rationale': '  Explain step $index  ',
-      },
-      _GeneratedRecommendationStepSlot.validWithPriority => {
-        'title': 'Generated priority step $index',
-        'priority': ' high ',
-      },
-      _GeneratedRecommendationStepSlot.validWithEmptyMetadata => {
-        'title': 'Generated clean step $index',
-        'rationale': '   ',
-        'priority': '',
-      },
-      // Whitespace-only (but non-empty) rationale AND priority: forces the
-      // `.trim().isNotEmpty` guard — not just `.isEmpty` — to drop both, and
-      // ensures a blank priority is never passed through `.toUpperCase()`.
-      _GeneratedRecommendationStepSlot.validWithWhitespaceMetadata => {
-        'title': 'Generated trimmed step $index',
-        'rationale': ' \t ',
-        'priority': '   ',
-      },
-      _GeneratedRecommendationStepSlot.blankTitle => {'title': '   '},
-      _GeneratedRecommendationStepSlot.missingTitle => {
-        'rationale': 'missing title',
-      },
-      _GeneratedRecommendationStepSlot.nonStringTitle => {'title': index},
-      _GeneratedRecommendationStepSlot.nonMap => 'not-a-step-$index',
-    };
-  }
-
-  _GeneratedRecommendationDraft? _expectedDraft(
-    int index,
-    _GeneratedRecommendationStepSlot slot,
-  ) {
-    return switch (slot) {
-      _GeneratedRecommendationStepSlot.validTitleOnly =>
-        _GeneratedRecommendationDraft(title: 'Generated step $index'),
-      _GeneratedRecommendationStepSlot.validWithRationale =>
-        _GeneratedRecommendationDraft(
-          title: 'Generated rationale step $index',
-          rationale: 'Explain step $index',
-        ),
-      _GeneratedRecommendationStepSlot.validWithPriority =>
-        _GeneratedRecommendationDraft(
-          title: 'Generated priority step $index',
-          priority: 'HIGH',
-        ),
-      _GeneratedRecommendationStepSlot.validWithEmptyMetadata =>
-        _GeneratedRecommendationDraft(title: 'Generated clean step $index'),
-      _GeneratedRecommendationStepSlot.validWithWhitespaceMetadata =>
-        _GeneratedRecommendationDraft(title: 'Generated trimmed step $index'),
-      _GeneratedRecommendationStepSlot.blankTitle ||
-      _GeneratedRecommendationStepSlot.missingTitle ||
-      _GeneratedRecommendationStepSlot.nonStringTitle ||
-      _GeneratedRecommendationStepSlot.nonMap => null,
-    };
-  }
-
-  AgentDomainEntity _existingEntity(
-    int index,
-    _GeneratedRecommendationExistingSlot slot,
-  ) {
-    return switch (slot) {
-      _GeneratedRecommendationExistingSlot.activeSameProject =>
-        makeTestProjectRecommendation(
-          id: 'generated-existing-$index',
-          agentId: 'generated-agent',
-          projectId: 'generated-project',
-          title: 'Existing active $index',
-        ),
-      _GeneratedRecommendationExistingSlot.activeOtherProject =>
-        makeTestProjectRecommendation(
-          id: 'generated-existing-$index',
-          agentId: 'generated-agent',
-          projectId: 'other-project',
-          title: 'Other active $index',
-        ),
-      _GeneratedRecommendationExistingSlot.dismissedSameProject =>
-        makeTestProjectRecommendation(
-          id: 'generated-existing-$index',
-          agentId: 'generated-agent',
-          projectId: 'generated-project',
-          status: ProjectRecommendationStatus.dismissed,
-          title: 'Dismissed $index',
-        ),
-      _GeneratedRecommendationExistingSlot.resolvedSameProject =>
-        makeTestProjectRecommendation(
-          id: 'generated-existing-$index',
-          agentId: 'generated-agent',
-          projectId: 'generated-project',
-          status: ProjectRecommendationStatus.resolved,
-          title: 'Resolved $index',
-        ),
-      _GeneratedRecommendationExistingSlot.wrongType => makeTestState(
-        id: 'generated-state-$index',
-        agentId: 'generated-agent',
-      ),
-    };
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedRecommendationRecordScenario('
-        'rawStepsSlot: $rawStepsSlot, stepSlots: $stepSlots, '
-        'existingSlots: $existingSlots)';
-  }
-}
-
-class _GeneratedRecommendationTransitionScenario {
-  const _GeneratedRecommendationTransitionScenario({
-    required this.lookupSlot,
-    required this.operation,
-  });
-
-  final _GeneratedRecommendationLookupSlot lookupSlot;
-  final _GeneratedRecommendationTransitionOperation operation;
-
-  AgentDomainEntity? get lookupEntity {
-    return switch (lookupSlot) {
-      _GeneratedRecommendationLookupSlot.missing => null,
-      _GeneratedRecommendationLookupSlot.wrongType => makeTestState(
-        id: 'generated-rec',
-        agentId: 'generated-agent',
-      ),
-      _GeneratedRecommendationLookupSlot.active =>
-        makeTestProjectRecommendation(
-          id: 'generated-rec',
-          agentId: 'generated-agent',
-          projectId: 'generated-project',
-        ),
-      _GeneratedRecommendationLookupSlot.resolved =>
-        makeTestProjectRecommendation(
-          id: 'generated-rec',
-          agentId: 'generated-agent',
-          projectId: 'generated-project',
-          status: ProjectRecommendationStatus.resolved,
-          resolvedAt: DateTime(2026, 5, 20),
-        ),
-      _GeneratedRecommendationLookupSlot.dismissed =>
-        makeTestProjectRecommendation(
-          id: 'generated-rec',
-          agentId: 'generated-agent',
-          projectId: 'generated-project',
-          status: ProjectRecommendationStatus.dismissed,
-          dismissedAt: DateTime(2026, 5, 20),
-        ),
-      _GeneratedRecommendationLookupSlot.superseded =>
-        makeTestProjectRecommendation(
-          id: 'generated-rec',
-          agentId: 'generated-agent',
-          projectId: 'generated-project',
-          status: ProjectRecommendationStatus.superseded,
-          supersededAt: DateTime(2026, 5, 20),
-        ),
-    };
-  }
-
-  bool get expectsTransition =>
-      lookupSlot == _GeneratedRecommendationLookupSlot.active;
-
-  ProjectRecommendationStatus get expectedStatus {
-    return switch (operation) {
-      _GeneratedRecommendationTransitionOperation.resolve =>
-        ProjectRecommendationStatus.resolved,
-      _GeneratedRecommendationTransitionOperation.dismiss =>
-        ProjectRecommendationStatus.dismissed,
-    };
-  }
-
-  Future<bool> run(ProjectRecommendationService service) {
-    return switch (operation) {
-      _GeneratedRecommendationTransitionOperation.resolve =>
-        service.markResolved('generated-rec'),
-      _GeneratedRecommendationTransitionOperation.dismiss =>
-        service.dismissRecommendation('generated-rec'),
-    };
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedRecommendationTransitionScenario('
-        'lookupSlot: $lookupSlot, operation: $operation)';
-  }
-}
-
-extension _AnyGeneratedProjectRecommendationScenario on glados.Any {
-  glados.Generator<_GeneratedRecommendationRawStepsSlot>
-  get recommendationRawStepsSlot =>
-      glados.AnyUtils(this).choose(_GeneratedRecommendationRawStepsSlot.values);
-
-  glados.Generator<_GeneratedRecommendationStepSlot>
-  get recommendationStepSlot =>
-      glados.AnyUtils(this).choose(_GeneratedRecommendationStepSlot.values);
-
-  glados.Generator<_GeneratedRecommendationExistingSlot>
-  get recommendationExistingSlot =>
-      glados.AnyUtils(this).choose(_GeneratedRecommendationExistingSlot.values);
-
-  glados.Generator<_GeneratedRecommendationLookupSlot>
-  get recommendationLookupSlot =>
-      glados.AnyUtils(this).choose(_GeneratedRecommendationLookupSlot.values);
-
-  glados.Generator<_GeneratedRecommendationTransitionOperation>
-  get recommendationTransitionOperation => glados.AnyUtils(
-    this,
-  ).choose(_GeneratedRecommendationTransitionOperation.values);
-
-  glados.Generator<_GeneratedRecommendationRecordScenario>
-  get recommendationRecordScenario => glados.CombinableAny(this).combine3(
-    recommendationRawStepsSlot,
-    glados.ListAnys(this).listWithLengthInRange(0, 7, recommendationStepSlot),
-    glados.ListAnys(
-      this,
-    ).listWithLengthInRange(0, 5, recommendationExistingSlot),
-    (
-      _GeneratedRecommendationRawStepsSlot rawStepsSlot,
-      List<_GeneratedRecommendationStepSlot> stepSlots,
-      List<_GeneratedRecommendationExistingSlot> existingSlots,
-    ) => _GeneratedRecommendationRecordScenario(
-      rawStepsSlot: rawStepsSlot,
-      stepSlots: stepSlots,
-      existingSlots: existingSlots,
-    ),
-  );
-
-  glados.Generator<_GeneratedRecommendationTransitionScenario>
-  get recommendationTransitionScenario => glados.CombinableAny(this).combine2(
-    recommendationLookupSlot,
-    recommendationTransitionOperation,
-    (
-      _GeneratedRecommendationLookupSlot lookupSlot,
-      _GeneratedRecommendationTransitionOperation operation,
-    ) => _GeneratedRecommendationTransitionScenario(
-      lookupSlot: lookupSlot,
-      operation: operation,
-    ),
-  );
-}
+import 'project_recommendation_service_test_helpers.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -454,7 +112,7 @@ void main() {
       args: scenario.decisionArgs,
     );
 
-    await withClock(Clock.fixed(_generatedRecommendationNow), () async {
+    await withClock(Clock.fixed(hGeneratedRecommendationNow), () async {
       if (scenario.validDrafts.isEmpty) {
         await expectLater(
           () => generatedService.recordConfirmedRecommendations(
@@ -494,8 +152,8 @@ void main() {
     );
     for (final entity in superseded) {
       expect(entity.status, ProjectRecommendationStatus.superseded);
-      expect(entity.updatedAt, _generatedRecommendationNow);
-      expect(entity.supersededAt, _generatedRecommendationNow);
+      expect(entity.updatedAt, hGeneratedRecommendationNow);
+      expect(entity.supersededAt, hGeneratedRecommendationNow);
     }
 
     final created = writtenEntities
@@ -510,8 +168,8 @@ void main() {
       expect(entity.title, draft.title);
       expect(entity.position, index);
       expect(entity.status, ProjectRecommendationStatus.active);
-      expect(entity.createdAt, _generatedRecommendationNow);
-      expect(entity.updatedAt, _generatedRecommendationNow);
+      expect(entity.createdAt, hGeneratedRecommendationNow);
+      expect(entity.updatedAt, hGeneratedRecommendationNow);
       expect(entity.sourceChangeSetId, changeSet.id);
       expect(entity.sourceDecisionId, decision.id);
       expect(entity.rationale, draft.rationale);
@@ -562,7 +220,7 @@ void main() {
     );
 
     final result = await withClock(
-      Clock.fixed(_generatedRecommendationNow),
+      Clock.fixed(hGeneratedRecommendationNow),
       () => scenario.run(generatedService),
     );
 
@@ -575,17 +233,17 @@ void main() {
 
     final updated = writtenEntities.single as ProjectRecommendationEntity;
     expect(updated.status, scenario.expectedStatus);
-    expect(updated.updatedAt, _generatedRecommendationNow);
+    expect(updated.updatedAt, hGeneratedRecommendationNow);
     expect(
       updated.resolvedAt,
       scenario.expectedStatus == ProjectRecommendationStatus.resolved
-          ? _generatedRecommendationNow
+          ? hGeneratedRecommendationNow
           : isNull,
     );
     expect(
       updated.dismissedAt,
       scenario.expectedStatus == ProjectRecommendationStatus.dismissed
-          ? _generatedRecommendationNow
+          ? hGeneratedRecommendationNow
           : isNull,
     );
     expect(uiNotifications, [

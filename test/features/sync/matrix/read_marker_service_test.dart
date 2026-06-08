@@ -8,172 +8,7 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockClient extends Mock implements Client {}
-
-typedef MockLogging = MockDomainLogger;
-
-class MockMatrixException extends Mock implements MatrixException {}
-
-enum _GeneratedReadMarkerEventIdKind { server, localPlaceholder }
-
-enum _GeneratedReadMarkerLoginKind { loggedIn, loggedOut }
-
-enum _GeneratedReadMarkerRemoteKind { same, empty, other }
-
-enum _GeneratedReadMarkerTimelineKind {
-  absent,
-  candidateNewer,
-  remoteNewer,
-  candidateOnly,
-  remoteOnly,
-  throwsOnEvents,
-}
-
-enum _GeneratedReadMarkerRoomOutcome {
-  succeeds,
-  missingUnknown,
-  throwsGeneric,
-}
-
-enum _GeneratedReadMarkerTimelineOutcome { succeeds, throwsGeneric }
-
-class _GeneratedReadMarkerScenario {
-  const _GeneratedReadMarkerScenario({
-    required this.eventIdKind,
-    required this.loginKind,
-    required this.remoteKind,
-    required this.timelineKind,
-    required this.roomOutcome,
-    required this.timelineOutcome,
-    required this.slot,
-  });
-
-  final _GeneratedReadMarkerEventIdKind eventIdKind;
-  final _GeneratedReadMarkerLoginKind loginKind;
-  final _GeneratedReadMarkerRemoteKind remoteKind;
-  final _GeneratedReadMarkerTimelineKind timelineKind;
-  final _GeneratedReadMarkerRoomOutcome roomOutcome;
-  final _GeneratedReadMarkerTimelineOutcome timelineOutcome;
-  final int slot;
-
-  String get eventId {
-    switch (eventIdKind) {
-      case _GeneratedReadMarkerEventIdKind.server:
-        return '\$generated-marker-$slot';
-      case _GeneratedReadMarkerEventIdKind.localPlaceholder:
-        return 'lotti-generated-marker-$slot';
-    }
-  }
-
-  String get remoteId {
-    switch (remoteKind) {
-      case _GeneratedReadMarkerRemoteKind.same:
-        return eventId;
-      case _GeneratedReadMarkerRemoteKind.empty:
-        return '';
-      case _GeneratedReadMarkerRemoteKind.other:
-        return '\$remote-marker-$slot';
-    }
-  }
-
-  bool get hasTimeline =>
-      timelineKind != _GeneratedReadMarkerTimelineKind.absent;
-
-  bool get serverAssigned =>
-      eventIdKind == _GeneratedReadMarkerEventIdKind.server;
-
-  bool get loggedIn => loginKind == _GeneratedReadMarkerLoginKind.loggedIn;
-
-  bool get guardBlocksRemoteUpdate =>
-      serverAssigned &&
-      loggedIn &&
-      remoteKind == _GeneratedReadMarkerRemoteKind.other &&
-      timelineKind == _GeneratedReadMarkerTimelineKind.remoteNewer;
-
-  bool get savesLocalMarker => serverAssigned;
-
-  bool get attemptsRoomMarker =>
-      serverAssigned && loggedIn && !guardBlocksRemoteUpdate;
-
-  bool get attemptsTimelineFallback =>
-      attemptsRoomMarker &&
-      hasTimeline &&
-      roomOutcome == _GeneratedReadMarkerRoomOutcome.throwsGeneric;
-
-  bool get logsRoomFailure =>
-      attemptsRoomMarker &&
-      roomOutcome == _GeneratedReadMarkerRoomOutcome.throwsGeneric &&
-      (!hasTimeline ||
-          timelineOutcome == _GeneratedReadMarkerTimelineOutcome.throwsGeneric);
-
-  bool get logsMissingEvent =>
-      attemptsRoomMarker &&
-      roomOutcome == _GeneratedReadMarkerRoomOutcome.missingUnknown;
-
-  @override
-  String toString() {
-    return '_GeneratedReadMarkerScenario('
-        'eventIdKind: $eventIdKind, '
-        'loginKind: $loginKind, '
-        'remoteKind: $remoteKind, '
-        'timelineKind: $timelineKind, '
-        'roomOutcome: $roomOutcome, '
-        'timelineOutcome: $timelineOutcome, '
-        'slot: $slot'
-        ')';
-  }
-}
-
-extension _AnyGeneratedReadMarkerScenario on glados.Any {
-  glados.Generator<_GeneratedReadMarkerEventIdKind> get readMarkerEventIdKind =>
-      glados.AnyUtils(this).choose(_GeneratedReadMarkerEventIdKind.values);
-
-  glados.Generator<_GeneratedReadMarkerLoginKind> get readMarkerLoginKind =>
-      glados.AnyUtils(this).choose(_GeneratedReadMarkerLoginKind.values);
-
-  glados.Generator<_GeneratedReadMarkerRemoteKind> get readMarkerRemoteKind =>
-      glados.AnyUtils(this).choose(_GeneratedReadMarkerRemoteKind.values);
-
-  glados.Generator<_GeneratedReadMarkerTimelineKind>
-  get readMarkerTimelineKind =>
-      glados.AnyUtils(this).choose(_GeneratedReadMarkerTimelineKind.values);
-
-  glados.Generator<_GeneratedReadMarkerRoomOutcome> get readMarkerRoomOutcome =>
-      glados.AnyUtils(this).choose(_GeneratedReadMarkerRoomOutcome.values);
-
-  glados.Generator<_GeneratedReadMarkerTimelineOutcome>
-  get readMarkerTimelineOutcome =>
-      glados.AnyUtils(this).choose(_GeneratedReadMarkerTimelineOutcome.values);
-
-  glados.Generator<_GeneratedReadMarkerScenario> get readMarkerScenario =>
-      glados.CombinableAny(this).combine7(
-        readMarkerEventIdKind,
-        readMarkerLoginKind,
-        readMarkerRemoteKind,
-        readMarkerTimelineKind,
-        readMarkerRoomOutcome,
-        readMarkerTimelineOutcome,
-        glados.IntAnys(this).intInRange(0, 8),
-        (
-          _GeneratedReadMarkerEventIdKind eventIdKind,
-          _GeneratedReadMarkerLoginKind loginKind,
-          _GeneratedReadMarkerRemoteKind remoteKind,
-          _GeneratedReadMarkerTimelineKind timelineKind,
-          _GeneratedReadMarkerRoomOutcome roomOutcome,
-          _GeneratedReadMarkerTimelineOutcome timelineOutcome,
-          int slot,
-        ) => _GeneratedReadMarkerScenario(
-          eventIdKind: eventIdKind,
-          loginKind: loginKind,
-          remoteKind: remoteKind,
-          timelineKind: timelineKind,
-          roomOutcome: roomOutcome,
-          timelineOutcome: timelineOutcome,
-          slot: slot,
-        ),
-      );
-}
+import 'read_marker_service_test_helpers.dart';
 
 void main() {
   setUpAll(() {
@@ -572,17 +407,17 @@ void main() {
         ).thenAnswer((_) async => 1);
 
         switch (scenario.roomOutcome) {
-          case _GeneratedReadMarkerRoomOutcome.succeeds:
+          case GeneratedReadMarkerRoomOutcome.succeeds:
             when(() => room.setReadMarker(any<String>())).thenAnswer(
               (_) async {},
             );
-          case _GeneratedReadMarkerRoomOutcome.missingUnknown:
+          case GeneratedReadMarkerRoomOutcome.missingUnknown:
             final matrixException = MockMatrixException();
             when(() => matrixException.errcode).thenReturn('M_UNKNOWN');
             when(
               () => room.setReadMarker(any<String>()),
             ).thenThrow(matrixException);
-          case _GeneratedReadMarkerRoomOutcome.throwsGeneric:
+          case GeneratedReadMarkerRoomOutcome.throwsGeneric:
             when(
               () => room.setReadMarker(any<String>()),
             ).thenThrow(Exception('room marker failed'));
@@ -591,40 +426,40 @@ void main() {
         if (timeline != null) {
           final hasRemoteMarker = scenario.remoteId.isNotEmpty;
           switch (scenario.timelineKind) {
-            case _GeneratedReadMarkerTimelineKind.absent:
+            case GeneratedReadMarkerTimelineKind.absent:
               throw StateError('absent timeline should not be instantiated');
-            case _GeneratedReadMarkerTimelineKind.candidateNewer:
+            case GeneratedReadMarkerTimelineKind.candidateNewer:
               final candidate = buildEvent(scenario.eventId, 200);
               final events = hasRemoteMarker
                   ? <Event>[buildEvent(scenario.remoteId, 100), candidate]
                   : <Event>[candidate];
               when(() => timeline.events).thenReturn(events);
-            case _GeneratedReadMarkerTimelineKind.remoteNewer:
+            case GeneratedReadMarkerTimelineKind.remoteNewer:
               final candidate = buildEvent(scenario.eventId, 100);
               final events = hasRemoteMarker
                   ? <Event>[candidate, buildEvent(scenario.remoteId, 200)]
                   : <Event>[candidate];
               when(() => timeline.events).thenReturn(events);
-            case _GeneratedReadMarkerTimelineKind.candidateOnly:
+            case GeneratedReadMarkerTimelineKind.candidateOnly:
               final candidate = buildEvent(scenario.eventId, 100);
               when(() => timeline.events).thenReturn(<Event>[candidate]);
-            case _GeneratedReadMarkerTimelineKind.remoteOnly:
+            case GeneratedReadMarkerTimelineKind.remoteOnly:
               final events = hasRemoteMarker
                   ? <Event>[buildEvent(scenario.remoteId, 100)]
                   : <Event>[];
               when(() => timeline.events).thenReturn(events);
-            case _GeneratedReadMarkerTimelineKind.throwsOnEvents:
+            case GeneratedReadMarkerTimelineKind.throwsOnEvents:
               when(() => timeline.events).thenThrow(Exception('events failed'));
           }
 
           switch (scenario.timelineOutcome) {
-            case _GeneratedReadMarkerTimelineOutcome.succeeds:
+            case GeneratedReadMarkerTimelineOutcome.succeeds:
               when(
                 () => timeline.setReadMarker(
                   eventId: any<String>(named: 'eventId'),
                 ),
               ).thenAnswer((_) async {});
-            case _GeneratedReadMarkerTimelineOutcome.throwsGeneric:
+            case GeneratedReadMarkerTimelineOutcome.throwsGeneric:
               when(
                 () => timeline.setReadMarker(
                   eventId: any<String>(named: 'eventId'),
