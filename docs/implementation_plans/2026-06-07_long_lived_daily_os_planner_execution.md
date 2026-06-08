@@ -322,6 +322,36 @@ Replace date→agent lookups with planner + explicit day workspace;
 invalidation pass. Done when capture → parse → reconcile → draft → refine →
 commit works for one day AND interleaved across two days without leaks.
 
+**Status:** most of this phase was absorbed by Phases 3–4 and verified, not
+re-implemented:
+
+- `real_day_agent.dart` already routes every call site through
+  `getDayAgentForDate` (→ the planner) with an explicit
+  `dayId: dayAgentIdForDate(date)` workspace (Phase 4 cutover).
+- `pendingPlanDiffsForDay` is already scoped by **both** planner `agentId`
+  **and** plan target (`cs.taskId == dayAgentPlanEntityId(dayId)`); the
+  cross-day case is covered by `filters out change sets for a different plan
+  (taskId mismatch)`.
+- `captures_panel.dart` already consumes the day-scoped
+  `capturesForDateProvider(date)` (Phase 3); controller invalidation was
+  re-keyed to the planner id in Phase 4 (A9).
+
+What this phase added: **A15** — the planner's day pre-warms are
+`ScheduledWakeEntity` records (not `AgentState.scheduledWakeAt`) and it pins no
+`activeDayId` slot, so the Settings → Agents → Pending Wakes diagnostic both
+read a dead slot and stopped showing those wakes. Fixed by surfacing pending
+scheduled-wake records (new `getPendingScheduledWakeRecords` query) labelled by
+their workspace id, carried on `PendingWakeRecord.subjectLabel`; the view-model
+prefers that label over the linked-entry title.
+
+**Deferred to Phase 8:** the single consolidated interleaved-day end-to-end
+test. The interleaved isolation property is already covered piecewise across
+all four layers (one-identity service, no-merge wake queue, cross-day tool
+rejection, cross-day diff filter); a real-services integration harness does not
+yet exist in the Daily OS Next tests (the adapter test mocks its services), so
+the consolidated end-to-end test lands with the Phase 8 hardening sweep where
+that harness belongs — same branch, same PR.
+
 ### Phase 7 — Docs, renames, old-model removal
 
 1. Rename non-persisted symbols/files off `day_agent_*` toward planner-shaped
