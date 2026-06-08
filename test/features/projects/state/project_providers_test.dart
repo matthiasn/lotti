@@ -870,69 +870,13 @@ void main() {
     test(
       'visibleProjectGroupsProvider filters by selected project statuses',
       () async {
-        final snapshot = ProjectsOverviewSnapshot(
-          groups: [
-            ProjectCategoryGroup(
-              categoryId: workCategory.id,
-              category: workCategory,
-              projects: [
-                ProjectListItemData(
-                  project: makeTestProject(
-                    id: 'project-work',
-                    title: 'Device Sync',
-                    status: ProjectStatus.active(
-                      id: 'status-active',
-                      createdAt: DateTime(2024, 3, 15),
-                      utcOffset: 0,
-                    ),
-                    categoryId: workCategory.id,
-                  ),
-                  category: workCategory,
-                  taskRollup: const ProjectTaskRollupData(totalTaskCount: 5),
-                ),
-              ],
-            ),
-            ProjectCategoryGroup(
-              categoryId: studyCategory.id,
-              category: studyCategory,
-              projects: [
-                ProjectListItemData(
-                  project: makeTestProject(
-                    id: 'project-study',
-                    title: 'API Migration',
-                    status: ProjectStatus.completed(
-                      id: 'status-completed',
-                      createdAt: DateTime(2024, 3, 16),
-                      utcOffset: 0,
-                    ),
-                    categoryId: studyCategory.id,
-                  ),
-                  category: studyCategory,
-                  taskRollup: const ProjectTaskRollupData(totalTaskCount: 2),
-                ),
-              ],
-            ),
-          ],
-        );
-        final scopedContainer = ProviderContainer(
-          overrides: [
-            projectsOverviewProvider.overrideWith(
-              (ref) => Stream.value(snapshot),
-            ),
-          ],
-        );
-        addTearDown(scopedContainer.dispose);
-        final subscription = scopedContainer.listen(
-          projectsOverviewProvider,
-          (previous, next) {},
-          fireImmediately: true,
-        );
-        addTearDown(subscription.close);
-
-        await scopedContainer.read(projectsOverviewProvider.future);
+        // The canonical snapshot has one active project ('Device Sync', Work)
+        // and one open project ('React Course', Study); filtering by 'active'
+        // must keep only the active one.
+        final scopedContainer = await makeOverviewContainer();
         scopedContainer
             .read(projectsFilterControllerProvider.notifier)
-            .setSelectedStatusIds({ProjectStatusFilterIds.completed});
+            .setSelectedStatusIds({ProjectStatusFilterIds.active});
 
         final filtered = scopedContainer
             .read(visibleProjectGroupsProvider)
@@ -940,9 +884,10 @@ void main() {
 
         expect(filtered, isNotNull);
         expect(filtered, hasLength(1));
+        expect(filtered!.single.category?.name, 'Work');
         expect(
-          filtered!.single.projects.single.project.data.title,
-          'API Migration',
+          filtered.single.projects.single.project.data.title,
+          'Device Sync',
         );
       },
     );
