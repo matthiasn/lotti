@@ -88,15 +88,10 @@ void main() {
     );
   }
 
-  testWidgets('shows heading and empty state for categories', (tester) async {
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
-
-    expect(find.text('Applicable categories'), findsOneWidget);
-    expect(find.text('Applies to all categories'), findsOneWidget);
-  });
-
-  testWidgets('adds and removes category via modal and chip', (tester) async {
+  /// Fixes a large desktop-sized viewport, pumps the editor sheet, and drains
+  /// the first frames with bounded pumps. The sheet's data is provided
+  /// synchronously via mocks, so no `pumpAndSettle` is needed to render it.
+  Future<void> pumpCategoriesEditor(WidgetTester tester) async {
     tester.view.devicePixelRatio = 1.0;
     tester.view.physicalSize = const Size(1200, 2000);
     addTearDown(() {
@@ -104,20 +99,44 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
     await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
 
-    // Add category via modal
-    expect(find.text('Add category'), findsOneWidget);
-    await tester.ensureVisible(find.text('Add category'));
+  /// Opens the "Add category" modal, toggles each [categoryNames] entry on, and
+  /// confirms with Done. Modal animations are fixed-duration, so bounded pumps
+  /// replace `pumpAndSettle`.
+  Future<void> addCategoriesViaModal(
+    WidgetTester tester,
+    List<String> categoryNames,
+  ) async {
     await tester.ensureVisible(find.text('Add category'));
     await tester.tap(find.text('Add category'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
-    // Select "Work" from the modal list and confirm
-    await tester.tap(find.text('Work').first);
-    await tester.pumpAndSettle();
+    for (final name in categoryNames) {
+      await tester.tap(find.text(name).first);
+      await tester.pump();
+    }
+
     await tester.tap(find.widgetWithText(FilledButton, 'Done'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
+  testWidgets('shows heading and empty state for categories', (tester) async {
+    await pumpCategoriesEditor(tester);
+
+    expect(find.text('Applicable categories'), findsOneWidget);
+    expect(find.text('Applies to all categories'), findsOneWidget);
+  });
+
+  testWidgets('adds and removes category via modal and chip', (tester) async {
+    await pumpCategoriesEditor(tester);
+
+    expect(find.text('Add category'), findsOneWidget);
+    await addCategoriesViaModal(tester, ['Work']);
 
     // Chip rendered with Work
     expect(find.widgetWithText(InputChip, 'Work'), findsOneWidget);
@@ -125,7 +144,8 @@ void main() {
 
     // Remove the chip via its delete action
     await tester.tap(find.byTooltip('Remove'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.text('Applies to all categories'), findsOneWidget);
   });
@@ -133,12 +153,6 @@ void main() {
   testWidgets('saving forwards applicableCategoryIds to repository', (
     tester,
   ) async {
-    tester.view.devicePixelRatio = 1.0;
-    tester.view.physicalSize = const Size(1200, 2000);
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
     final created = testLabelDefinition1.copyWith(
       id: 'label-x',
       name: 'Scoped Label',
@@ -155,24 +169,17 @@ void main() {
       ),
     ).thenAnswer((_) async => created);
 
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
+    await pumpCategoriesEditor(tester);
 
     // Add category via modal and save
-    await tester.ensureVisible(find.text('Add category'));
-    await tester.ensureVisible(find.text('Add category'));
-    await tester.tap(find.text('Add category'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Work').first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Done'));
-    await tester.pumpAndSettle();
+    await addCategoriesViaModal(tester, ['Work']);
     expect(find.widgetWithText(InputChip, 'Work'), findsOneWidget);
 
     final createButton = find.widgetWithText(FilledButton, 'Create');
     await tester.ensureVisible(createButton);
     await tester.tap(createButton);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     verify(
       () => repository.createLabel(
@@ -187,13 +194,6 @@ void main() {
   });
 
   testWidgets('saving forwards multiple applicableCategoryIds', (tester) async {
-    tester.view.devicePixelRatio = 1.0;
-    tester.view.physicalSize = const Size(1200, 2000);
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-
     when(
       () => repository.createLabel(
         name: any(named: 'name'),
@@ -205,26 +205,17 @@ void main() {
       ),
     ).thenAnswer((_) async => testLabelDefinition1);
 
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
+    await pumpCategoriesEditor(tester);
 
     // Add both categories in one modal (multi-select)
-    await tester.ensureVisible(find.text('Add category'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Add category'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Work').first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Home').first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Done'));
-    await tester.pumpAndSettle();
+    await addCategoriesViaModal(tester, ['Work', 'Home']);
 
     // Save
     final createButton = find.widgetWithText(FilledButton, 'Create');
     await tester.ensureVisible(createButton);
     await tester.tap(createButton);
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
 
     final captured = verify(
       () => repository.createLabel(
@@ -244,12 +235,6 @@ void main() {
   testWidgets('chips use category color and contrast-aware text', (
     tester,
   ) async {
-    tester.view.devicePixelRatio = 1.0;
-    tester.view.physicalSize = const Size(1200, 2000);
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
     // Override cache with light and dark categories to validate styling.
     final catLight = CategoryDefinition(
       id: 'cat-light',
@@ -276,20 +261,10 @@ void main() {
     when(() => cacheService.getCategoryById('cat-light')).thenReturn(catLight);
     when(() => cacheService.getCategoryById('cat-dark')).thenReturn(catDark);
 
-    await tester.pumpWidget(host());
-    await tester.pumpAndSettle();
+    await pumpCategoriesEditor(tester);
 
     // Add both categories via the modal (multi-select now)
-    await tester.ensureVisible(find.text('Add category'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Add category'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Bright').first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Deep').first);
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(FilledButton, 'Done'));
-    await tester.pumpAndSettle();
+    await addCategoriesViaModal(tester, ['Bright', 'Deep']);
 
     final brightChip = tester.widget<InputChip>(
       find.widgetWithText(InputChip, 'Bright'),
