@@ -24,9 +24,20 @@ SavedTaskFilterCountRepository savedTaskFilterCountRepository(Ref ref) {
   );
 }
 
+/// Debounce window for notification-driven recomputes.
+///
+/// Each recompute fans out one `repo.count` per saved filter, so an
+/// unfiltered burst of `taskNotification`s (e.g. while a batch of tasks
+/// arrives over sync) would otherwise re-run every saved-filter count once
+/// per batch. `UpdateNotifications` already coalesces sync bursts into ~1s
+/// batches and local edits into 100 ms batches; this second, short stage
+/// collapses any remaining back-to-back batches into a single recompute.
+/// The initial computation is never debounced — only invalidations are.
+const _savedTaskFilterCountsDebounce = Duration(milliseconds: 300);
+
 /// Live `{savedFilterId → matching task count}` for every persisted saved
-/// filter, recomputed when the filter list changes or when a task-shaped
-/// notification arrives.
+/// filter, recomputed (debounced) when the filter list changes or when a
+/// task-shaped notification arrives.
 ///
 /// `UpdateNotifications.updateStream` multiplexes both locally-originated
 /// notifications and sync-originated ones (the latter are debounced by
@@ -39,10 +50,16 @@ Future<Map<String, int>> savedTaskFilterCounts(Ref ref) async {
       const <SavedTaskFilter>[];
   if (saved.isEmpty) return const <String, int>{};
 
+  Timer? debounce;
   final sub = getIt<UpdateNotifications>().updateStream.listen((affectedIds) {
-    if (affectedIds.contains(taskNotification)) ref.invalidateSelf();
+    if (!affectedIds.contains(taskNotification)) return;
+    debounce?.cancel();
+    debounce = Timer(_savedTaskFilterCountsDebounce, ref.invalidateSelf);
   });
-  ref.onDispose(sub.cancel);
+  ref.onDispose(() {
+    debounce?.cancel();
+    sub.cancel();
+  });
 
   final repo = ref.watch(savedTaskFilterCountRepositoryProvider);
   final counts = await Future.wait(

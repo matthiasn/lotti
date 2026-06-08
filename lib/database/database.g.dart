@@ -7753,14 +7753,6 @@ abstract class _$JournalDb extends GeneratedDatabase {
     ).asyncMap(linkedEntries.mapFromRow);
   }
 
-  Selectable<JournalDbEntity> projectForTask(String taskId) {
-    return customSelect(
-      'SELECT j.* FROM journal AS j INNER JOIN linked_entries AS le ON le.from_id = j.id WHERE le.to_id = ?1 AND le.type = \'ProjectLink\' AND COALESCE(le.hidden, FALSE) = FALSE AND j.deleted = FALSE AND j.type = \'Project\' ORDER BY COALESCE(le.updated_at, le.created_at) DESC, le.id DESC LIMIT 1',
-      variables: [Variable<String>(taskId)],
-      readsFrom: {journal, linkedEntries},
-    ).asyncMap(journal.mapFromRow);
-  }
-
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();

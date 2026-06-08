@@ -18,6 +18,25 @@ import 'package:mocktail/mocktail.dart';
 import '../mocks/mocks.dart';
 import 'test_utils.dart';
 
+/// Counts how many times the project-for-task coalescer fires its bulk
+/// fetch, so a test can assert that concurrent callers collapse into one
+/// wave instead of fanning out a query per task row.
+class _CountingProjectForTaskJournalDb extends JournalDb {
+  _CountingProjectForTaskJournalDb() : super(inMemoryDatabase: true);
+
+  int fetchCount = 0;
+  Set<String> lastMergedIds = const <String>{};
+
+  @override
+  Future<Map<String, ProjectEntry>> runProjectForTaskFetch(
+    Set<String> taskIds,
+  ) {
+    fetchCount++;
+    lastMergedIds = {...taskIds};
+    return super.runProjectForTaskFetch(taskIds);
+  }
+}
+
 void main() {
   setUpAll(registerJournalDbTestFallbacks);
 
@@ -695,6 +714,208 @@ void main() {
         final resultWithPrivate = await db!.getProjectForTask('task-priv-ft');
         expect(resultWithPrivate, isNotNull);
         expect(resultWithPrivate!.meta.id, 'proj-priv-ft');
+      });
+
+      test(
+        'getProjectForTask resolves the latest non-hidden ProjectLink',
+        () async {
+          // Two active ProjectLinks to different projects: the denormalized
+          // project_id must track the most-recent one, matching the
+          // ORDER BY COALESCE(updated_at, created_at) DESC, id DESC the old
+          // join used.
+          final base = DateTime(2024, 7, 11);
+          final projectOld = buildProjectEntry(
+            id: 'proj-latest-old',
+            timestamp: base,
+            categoryId: 'cat-latest',
+          );
+          final projectNew = buildProjectEntry(
+            id: 'proj-latest-new',
+            timestamp: base,
+            categoryId: 'cat-latest',
+          );
+          final task = buildTaskEntry(
+            id: 'task-latest',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'ts-latest',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'cat-latest',
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(projectOld));
+          await db!.upsertJournalDbEntity(toDbEntity(projectNew));
+          await db!.upsertJournalDbEntity(toDbEntity(task));
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-latest-old',
+              fromId: 'proj-latest-old',
+              toId: 'task-latest',
+              timestamp: base,
+            ),
+          );
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-latest-new',
+              fromId: 'proj-latest-new',
+              toId: 'task-latest',
+              timestamp: base.add(const Duration(days: 1)),
+            ),
+          );
+
+          final result = await db!.getProjectForTask('task-latest');
+          expect(result, isNotNull);
+          expect(result!.meta.id, 'proj-latest-new');
+        },
+      );
+
+      test(
+        'concurrent getProjectForTask callers collapse into one coalesced fetch',
+        () async {
+          final countingDb = _CountingProjectForTaskJournalDb();
+          addTearDown(countingDb.close);
+          await initConfigFlags(countingDb, inMemoryDatabase: true);
+
+          final base = DateTime(2024, 7, 12);
+          for (var i = 0; i < 3; i++) {
+            await countingDb.upsertJournalDbEntity(
+              toDbEntity(
+                buildProjectEntry(
+                  id: 'p-coalesce-$i',
+                  timestamp: base,
+                  categoryId: 'cat-coalesce',
+                ),
+              ),
+            );
+            await countingDb.upsertJournalDbEntity(
+              toDbEntity(
+                buildTaskEntry(
+                  id: 't-coalesce-$i',
+                  timestamp: base,
+                  status: TaskStatus.open(
+                    id: 'ts-coalesce-$i',
+                    createdAt: base,
+                    utcOffset: 0,
+                  ),
+                  categoryId: 'cat-coalesce',
+                ),
+              ),
+            );
+            await countingDb.upsertEntryLink(
+              buildProjectLink(
+                id: 'pl-coalesce-$i',
+                fromId: 'p-coalesce-$i',
+                toId: 't-coalesce-$i',
+                timestamp: base,
+              ),
+            );
+          }
+
+          // Fire all three in the same microtask turn so they join one wave.
+          final results = await Future.wait([
+            countingDb.getProjectForTask('t-coalesce-0'),
+            countingDb.getProjectForTask('t-coalesce-1'),
+            countingDb.getProjectForTask('t-coalesce-2'),
+          ]);
+
+          expect(countingDb.fetchCount, 1);
+          expect(
+            countingDb.lastMergedIds,
+            {'t-coalesce-0', 't-coalesce-1', 't-coalesce-2'},
+          );
+          expect(results[0]?.meta.id, 'p-coalesce-0');
+          expect(results[1]?.meta.id, 'p-coalesce-1');
+          expect(results[2]?.meta.id, 'p-coalesce-2');
+        },
+      );
+
+      group('getProjectIdMapForTasks -', () {
+        test('returns empty map for empty input', () async {
+          expect(await db!.getProjectIdMapForTasks({}), isEmpty);
+        });
+
+        test('maps tasks to project ids and omits unlinked tasks', () async {
+          final base = DateTime(2024, 7, 13);
+          final project = buildProjectEntry(
+            id: 'proj-map',
+            timestamp: base,
+            categoryId: 'cat-map',
+          );
+          final linkedTask = buildTaskEntry(
+            id: 'task-map-linked',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'ts-map-linked',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'cat-map',
+          );
+          final unlinkedTask = buildTaskEntry(
+            id: 'task-map-unlinked',
+            timestamp: base,
+            status: TaskStatus.open(
+              id: 'ts-map-unlinked',
+              createdAt: base,
+              utcOffset: 0,
+            ),
+            categoryId: 'cat-map',
+          );
+
+          await db!.upsertJournalDbEntity(toDbEntity(project));
+          await db!.upsertJournalDbEntity(toDbEntity(linkedTask));
+          await db!.upsertJournalDbEntity(toDbEntity(unlinkedTask));
+          await db!.upsertEntryLink(
+            buildProjectLink(
+              id: 'pl-map',
+              fromId: 'proj-map',
+              toId: 'task-map-linked',
+              timestamp: base,
+            ),
+          );
+
+          final map = await db!.getProjectIdMapForTasks({
+            'task-map-linked',
+            'task-map-unlinked',
+          });
+
+          expect(map, {'task-map-linked': 'proj-map'});
+        });
+
+        test(
+          'resolves every task across multiple bind-variable chunks',
+          () async {
+            // > _sqliteInListChunk (500) so the chunk loop runs twice.
+            final base = DateTime(2024, 7, 14);
+            final ids = <String>{};
+            for (var i = 0; i < 501; i++) {
+              final id = 'task-chunk-$i';
+              ids.add(id);
+              await db!.upsertJournalDbEntity(
+                toDbEntity(
+                  buildTaskEntry(
+                    id: id,
+                    timestamp: base,
+                    status: TaskStatus.open(
+                      id: 'ts-chunk-$i',
+                      createdAt: base,
+                      utcOffset: 0,
+                    ),
+                  ),
+                ),
+              );
+              await db!.updateProjectIdColumn(id, 'proj-chunk-shared');
+            }
+
+            final map = await db!.getProjectIdMapForTasks(ids);
+
+            expect(map, hasLength(501));
+            expect(map['task-chunk-0'], 'proj-chunk-shared');
+            expect(map['task-chunk-500'], 'proj-chunk-shared');
+          },
+        );
       });
 
       test(

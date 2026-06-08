@@ -1340,14 +1340,3 @@ SELECT * FROM linked_entries
   AND COALESCE(hidden, false) = false
   ORDER BY COALESCE(updated_at, created_at) DESC, id DESC
   LIMIT 1;
-
-projectForTask:
-SELECT j.* FROM journal j
-  INNER JOIN linked_entries le ON le.from_id = j.id
-  WHERE le.to_id = :taskId
-  AND le.type = 'ProjectLink'
-  AND COALESCE(le.hidden, false) = false
-  AND j.deleted = false
-  AND j.type = 'Project'
-  ORDER BY COALESCE(le.updated_at, le.created_at) DESC, le.id DESC
-  LIMIT 1;

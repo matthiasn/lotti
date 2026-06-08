@@ -103,7 +103,13 @@ TL;DR exists yet.
 
 Tasks are linked to projects through `EntryLink.project`. The database also
 maintains a denormalized `project_id` on tasks so overview queries do not need
-to rediscover the relationship expensively every time.
+to rediscover the relationship expensively every time. That column is the read
+path for the "project of a task" lookup too: `JournalDb.getProjectForTask`
+resolves through `journal.project_id` (indexed by `idx_journal_project_id`)
+rather than joining `linked_entries` and sorting — the column is kept in
+lock-step with the latest non-hidden `ProjectLink` on every link/entity write,
+so the result is identical to the old join without its `USE TEMP B-TREE FOR
+ORDER BY` sort.
 
 ## Create Flow
 
@@ -149,6 +155,40 @@ Two design choices matter here:
 
 1. linking enforces both the same-category rule and the single-project-per-task rule
 2. project overview queries are batched and grouped so the top-level tab can stay fast
+
+### Read coalescing & refetch debounce
+
+Two hot read paths are shaped to survive sync bursts and list fan-out:
+
+- **`getProjectForTask` is microtask-coalesced.** `projectForTaskProvider` is a
+  `FutureProvider.autoDispose.family`, so a task list mounts one lookup per
+  visible row. Instead of N single-task queries, concurrent callers in the same
+  microtask merge into one wave (`_PendingProjectForTaskWave` in
+  `database_project_queries.dart`): one `project_id` lookup for all task ids,
+  then one bulk project fetch. Each caller pulls its task's project out of the
+  shared result.
+
+```mermaid
+sequenceDiagram
+  participant Rows as "N task rows (projectForTaskProvider)"
+  participant DB as "JournalDb.getProjectForTask"
+  participant Wave as "_PendingProjectForTaskWave"
+  Rows->>DB: getProjectForTask(taskId) ×N (same microtask)
+  DB->>Wave: merge taskId
+  Note over Wave: one scheduleMicrotask per wave
+  Wave->>DB: getProjectIdMapForTasks({all task ids})
+  Wave->>DB: getJournalEntitiesForIdsUnordered({distinct project ids})
+  Wave-->>Rows: each caller resolves its project from the map
+```
+
+- **`watchProjectsOverview` debounces refetches.** The grouped overview re-runs
+  the project rollup aggregate when a relevant `projectNotification` /
+  `taskNotification` batch arrives. `UpdateNotifications` already coalesces sync
+  bursts (~1s) and local edits (100ms); the repository adds a short debounce
+  (`projectsOverviewRefetchDebounce`, default 300ms) so any remaining
+  back-to-back batches collapse into a single rebuild. The first fetch on
+  subscribe stays immediate, and the existing in-flight `fetching` /
+  `pendingRefetch` guard is preserved.
 
 ## Overview Tab Model
 

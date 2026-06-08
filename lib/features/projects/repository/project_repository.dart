@@ -32,6 +32,7 @@ class ProjectRepository {
     required this._persistenceLogic,
     required this._updateNotifications,
     required this._vectorClockService,
+    this.projectsOverviewRefetchDebounce = const Duration(milliseconds: 300),
   });
 
   final JournalDb _journalDb;
@@ -39,6 +40,13 @@ class ProjectRepository {
   final PersistenceLogic _persistenceLogic;
   final UpdateNotifications _updateNotifications;
   final VectorClockService _vectorClockService;
+
+  /// Debounce window applied to notification-driven `watchProjectsOverview`
+  /// refetches. Each refetch reruns the project rollup aggregate, so a burst
+  /// of project/task notifications (e.g. during sync) would otherwise rebuild
+  /// the whole overview once per batch. Injectable so tests can collapse it to
+  /// `Duration.zero`.
+  final Duration projectsOverviewRefetchDebounce;
 
   SyncSequenceLogService? get _sequenceLogService =>
       getIt.isRegistered<SyncSequenceLogService>()
@@ -205,6 +213,7 @@ class ProjectRepository {
   }) {
     late StreamController<ProjectsOverviewSnapshot> controller;
     StreamSubscription<Set<String>>? subscription;
+    Timer? refetchDebounce;
     var fetching = false;
     var pendingRefetch = false;
     ProjectsOverviewSnapshot? currentSnapshot;
@@ -241,12 +250,17 @@ class ProjectRepository {
           final snapshot = currentSnapshot;
           if (snapshot == null ||
               _projectsOverviewNeedsRefresh(affectedIds, snapshot)) {
-            doFetch();
+            // Debounce so a burst of relevant notifications collapses into a
+            // single rollup refetch; the initial fetch below stays immediate.
+            refetchDebounce?.cancel();
+            refetchDebounce = Timer(projectsOverviewRefetchDebounce, doFetch);
           }
         });
         doFetch();
       },
       onCancel: () async {
+        refetchDebounce?.cancel();
+        refetchDebounce = null;
         await subscription?.cancel();
         subscription = null;
       },

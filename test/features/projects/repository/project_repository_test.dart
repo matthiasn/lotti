@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -159,6 +160,10 @@ void main() {
       persistenceLogic: mockPersistence,
       updateNotifications: mockNotifications,
       vectorClockService: mockVectorClockService,
+      // Collapse the refetch debounce so the stream-matcher tests below see
+      // notification-driven refetches without waiting on a real timer. The
+      // debounce timing itself is covered by a dedicated fakeAsync test.
+      projectsOverviewRefetchDebounce: Duration.zero,
     );
   });
 
@@ -339,6 +344,103 @@ void main() {
       await Future<void>.microtask(() {});
       updateStreamController.add({taskNotification});
       await expectation;
+    });
+
+    test(
+      'debounces a burst of relevant notifications into a single refetch',
+      () async {
+        // Uses the harness repository (debounce collapsed to Duration.zero):
+        // a synchronous burst of notifications still coalesces because the
+        // zero-delay timer only fires once the microtask queue drains.
+        var fetchCount = 0;
+        final project = makeTestProject(
+          id: 'project-001',
+          title: 'My Project',
+          categoryId: workCategory.id,
+        );
+        when(() => mockDb.getVisibleProjects()).thenAnswer((_) async {
+          fetchCount++;
+          return [project];
+        });
+        when(() => mockDb.getProjectTaskRollups(any())).thenAnswer(
+          (_) async => {
+            'project-001': (
+              totalTaskCount: 1,
+              completedTaskCount: 0,
+              blockedTaskCount: 0,
+            ),
+          },
+        );
+
+        final subscription = repository
+            .watchProjectsOverview(query: const ProjectsQuery())
+            .listen((_) {});
+        addTearDown(subscription.cancel);
+
+        await pumpEventQueue();
+        expect(fetchCount, 1); // initial fetch only
+
+        updateStreamController
+          ..add({taskNotification})
+          ..add({taskNotification})
+          ..add({taskNotification});
+        await pumpEventQueue();
+
+        // Exactly one coalesced refetch, not one per notification.
+        expect(fetchCount, 2);
+      },
+    );
+
+    test('refetch fires only after the debounce window elapses', () {
+      fakeAsync((async) {
+        var fetchCount = 0;
+        final project = makeTestProject(
+          id: 'project-001',
+          title: 'My Project',
+          categoryId: workCategory.id,
+        );
+        when(() => mockDb.getVisibleProjects()).thenAnswer((_) async {
+          fetchCount++;
+          return [project];
+        });
+        when(() => mockDb.getProjectTaskRollups(any())).thenAnswer(
+          (_) async => {
+            'project-001': (
+              totalTaskCount: 1,
+              completedTaskCount: 0,
+              blockedTaskCount: 0,
+            ),
+          },
+        );
+
+        final windowRepo = ProjectRepository(
+          journalDb: mockDb,
+          entitiesCacheService: mockEntitiesCacheService,
+          persistenceLogic: mockPersistence,
+          updateNotifications: mockNotifications,
+          vectorClockService: mockVectorClockService,
+          // Distinct from the 300ms default to prove the injected value is
+          // honored rather than a hardcoded constant.
+          projectsOverviewRefetchDebounce: const Duration(milliseconds: 500),
+        );
+
+        final subscription = windowRepo
+            .watchProjectsOverview(query: const ProjectsQuery())
+            .listen((_) {});
+
+        async.elapse(Duration.zero);
+        expect(fetchCount, 1); // initial fetch is immediate
+
+        updateStreamController.add({taskNotification});
+        async.elapse(const Duration(milliseconds: 400));
+        expect(fetchCount, 1); // still inside the window
+
+        async.elapse(const Duration(milliseconds: 150)); // 550ms total
+        expect(fetchCount, 2);
+
+        subscription.cancel();
+        async.elapse(Duration.zero);
+      });
     });
 
     test('emits error when getProjectsOverview throws', () async {

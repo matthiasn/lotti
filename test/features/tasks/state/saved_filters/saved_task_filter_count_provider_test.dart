@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -66,6 +67,28 @@ ProviderContainer _buildContainer({
   );
 }
 
+/// Builds a counts container, wires the notification stream, and drives the
+/// async dependency chain under [fakeAsync] until the first real computation
+/// has run. The stubbed saved-filters controller resolves a microtask after
+/// the first build, so the counts provider only fans out `repo.count` once
+/// that dependency has data — `elapse(Duration.zero)` settles both.
+ProviderContainer _settledCountsContainer(
+  FakeAsync async, {
+  required TestGetItMocks mocks,
+  required StreamController<Set<String>> controller,
+  required _FakeRepo repo,
+  List<SavedTaskFilter> seed = const [_filter, _filter2],
+}) {
+  when(
+    () => mocks.updateNotifications.updateStream,
+  ).thenAnswer((_) => controller.stream);
+  final container = _buildContainer(seed: seed, repo: repo)
+    ..listen(savedTaskFilterCountsProvider, (_, _) {})
+    ..read(savedTaskFilterCountsProvider.future).ignore();
+  async.elapse(Duration.zero);
+  return container;
+}
+
 void main() {
   late TestGetItMocks mocks;
 
@@ -116,40 +139,107 @@ void main() {
     });
 
     test(
-      're-runs every count when UpdateNotifications fires with '
-      'taskNotification (covers both local writes AND sync-originated '
-      'changes since updateStream multiplexes both)',
-      () async {
-        final controller = StreamController<Set<String>>.broadcast();
-        addTearDown(controller.close);
-        when(
-          () => mocks.updateNotifications.updateStream,
-        ).thenAnswer((_) => controller.stream);
+      'debounces a burst of taskNotifications into a single recompute, '
+      'then propagates the fresh counts',
+      () {
+        fakeAsync((async) {
+          final controller = StreamController<Set<String>>.broadcast();
+          final repo = _FakeRepo(const [3, 5, 7, 9]);
+          final container = _settledCountsContainer(
+            async,
+            mocks: mocks,
+            controller: controller,
+            repo: repo,
+          );
 
-        final repo = _FakeRepo(const [3, 5, 7, 9]);
-        final container = _buildContainer(
-          seed: const [_filter, _filter2],
-          repo: repo,
-        );
-        addTearDown(container.dispose);
-        final sub = container.listen(
-          savedTaskFilterCountsProvider,
-          (_, _) {},
-        );
-        addTearDown(sub.close);
+          // Initial computation runs immediately (never debounced).
+          expect(repo.calls, 2);
+          expect(
+            container.read(savedTaskFilterCountsProvider).value,
+            {'sv-1': 3, 'sv-2': 5},
+          );
 
-        final initial = await container.read(
-          savedTaskFilterCountsProvider.future,
-        );
-        expect(initial, {'sv-1': 3, 'sv-2': 5});
+          // Three task notifications inside one debounce window.
+          controller
+            ..add({taskNotification, 'task-a'})
+            ..add({taskNotification, 'task-b'})
+            ..add({taskNotification, 'task-c'});
+          async.elapse(Duration.zero);
+          // Debounce still pending: no recompute yet.
+          expect(repo.calls, 2);
 
-        controller.add({taskNotification, 'some-task-id'});
-        await pumpEventQueue();
+          async.elapse(const Duration(milliseconds: 300));
 
-        final next = await container.read(savedTaskFilterCountsProvider.future);
-        expect(next, {'sv-1': 7, 'sv-2': 9});
+          // Exactly one recompute (2 filters), not one per notification.
+          expect(repo.calls, 4);
+          expect(
+            container.read(savedTaskFilterCountsProvider).value,
+            {'sv-1': 7, 'sv-2': 9},
+          );
+
+          container.dispose();
+          controller.close();
+          async.elapse(Duration.zero);
+        });
       },
     );
+
+    test('a taskNotification after the window triggers a fresh recompute', () {
+      fakeAsync((async) {
+        final controller = StreamController<Set<String>>.broadcast();
+        final repo = _FakeRepo(const [1, 1, 1, 1, 1, 1]);
+        final container = _settledCountsContainer(
+          async,
+          mocks: mocks,
+          controller: controller,
+          repo: repo,
+        );
+        expect(repo.calls, 2);
+
+        controller.add({taskNotification});
+        async
+          ..elapse(Duration.zero)
+          ..elapse(const Duration(milliseconds: 300));
+        expect(repo.calls, 4);
+
+        // A second, separate notification past the window recomputes again.
+        controller.add({taskNotification});
+        async
+          ..elapse(Duration.zero)
+          ..elapse(const Duration(milliseconds: 300));
+        expect(repo.calls, 6);
+
+        container.dispose();
+        controller.close();
+        async.elapse(Duration.zero);
+      });
+    });
+
+    test('disposing cancels a pending debounce (no late recompute)', () {
+      fakeAsync((async) {
+        final controller = StreamController<Set<String>>.broadcast();
+        final repo = _FakeRepo(const [1]);
+        final container = _settledCountsContainer(
+          async,
+          mocks: mocks,
+          controller: controller,
+          repo: repo,
+        );
+        expect(repo.calls, 2);
+
+        controller.add({taskNotification});
+        async.elapse(Duration.zero);
+        expect(repo.calls, 2); // debounce armed but not fired
+
+        container.dispose();
+        // Elapsing past the window must not resurrect the cancelled timer.
+        async.elapse(const Duration(milliseconds: 300));
+        expect(repo.calls, 2);
+
+        controller.close();
+        async.elapse(Duration.zero);
+      });
+    });
 
     test('ignores non-task notifications', () async {
       final controller = StreamController<Set<String>>.broadcast();
