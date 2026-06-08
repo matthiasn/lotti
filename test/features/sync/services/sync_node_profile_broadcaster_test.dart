@@ -1,5 +1,6 @@
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
@@ -60,6 +61,14 @@ void main() {
   final t0 = DateTime.utc(2026, 3, 15, 12);
   final t1 = DateTime.utc(2026, 3, 15, 13);
 
+  // A deterministic, per-test clock that dispenses successive timestamps from a
+  // queue. Unlike a stateful `tick++` counter, this makes each clock reading an
+  // explicit element — adding timestamps for tests that probe more than twice is
+  // a matter of seeding more entries, not reasoning about counter arithmetic.
+  late List<DateTime> clockQueue;
+  DateTime nextClock() =>
+      clockQueue.length > 1 ? clockQueue.removeAt(0) : clockQueue.first;
+
   setUp(() {
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     settingsDb = SettingsDb(inMemoryDatabase: true);
@@ -75,13 +84,13 @@ void main() {
       capabilities: [NodeCapability.mlxAudio],
     );
 
-    var tick = 0;
+    clockQueue = [t0, t1];
     broadcaster = SyncNodeProfileBroadcaster(
       repository: repo,
       probe: probe.probe,
       vectorClockService: vectorClockService,
       outboxService: outboxService,
-      clock: () => tick++ == 0 ? t0 : t1,
+      clock: nextClock,
     );
   });
 
@@ -240,14 +249,13 @@ void main() {
         () => logger.log(any(), any(), subDomain: any(named: 'subDomain')),
       ).thenAnswer((_) {});
 
-      var tick = 0;
       final loggingBroadcaster = SyncNodeProfileBroadcaster(
         repository: repo,
         probe: probe.probe,
         vectorClockService: vectorClockService,
         outboxService: outboxService,
         domainLogger: logger,
-        clock: () => tick++ == 0 ? t0 : t1,
+        clock: nextClock,
       );
 
       await loggingBroadcaster.broadcastIfChanged();
@@ -286,7 +294,7 @@ void main() {
         vectorClockService: vectorClockService,
         outboxService: outboxService,
         domainLogger: logger,
-        clock: () => t0,
+        clock: nextClock,
       );
 
       await loggingBroadcaster.broadcastIfChanged();
@@ -300,4 +308,121 @@ void main() {
       ).called(1);
     },
   );
+
+  group('glados: broadcastIfChanged diff invariant', () {
+    glados.Glados(
+      glados.any.probeSequence,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'returns true iff probed content differs from the last persisted '
+      'self profile; false on an identical re-probe',
+      (steps) async {
+        driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+        // Glados reuses one binding across runs — own a fresh in-memory DB per
+        // run so prior persisted state never leaks into the next sequence.
+        final db = SettingsDb(inMemoryDatabase: true);
+        final localRepo = SyncNodeProfileRepository(settingsDb: db);
+        final vcs = MockVectorClockService();
+        // ignore: unnecessary_lambdas — mocktail requires the call inside when().
+        when(() => vcs.getHost()).thenAnswer((_) async => 'self-h');
+        final outbox = MockOutboxService();
+        when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+
+        final localProbe = _FakeProbe(
+          platform: 'macos',
+          capabilities: const [],
+        );
+        // Each broadcast reads the clock once; a monotonically increasing
+        // counter keeps updatedAt distinct so content equality is the only
+        // thing the diff can hinge on.
+        var seconds = 0;
+        final localBroadcaster = SyncNodeProfileBroadcaster(
+          repository: localRepo,
+          probe: localProbe.probe,
+          vectorClockService: vcs,
+          outboxService: outbox,
+          clock: () => DateTime.utc(2026, 3, 15, 12, 0, seconds++),
+        );
+
+        try {
+          _ProbeShape? lastPersisted;
+          for (final shape in steps) {
+            localProbe
+              ..platform = shape.platform
+              ..capabilities = List<NodeCapability>.from(shape.capabilities);
+
+            final broadcast = await localBroadcaster.broadcastIfChanged();
+
+            // The invariant: a broadcast is issued exactly when the probed
+            // content differs from whatever was last persisted (displayName is
+            // carried forward by the broadcaster, so only platform/capabilities
+            // vary here).
+            final expectedChange =
+                lastPersisted == null || !lastPersisted.contentEquals(shape);
+            expect(
+              broadcast,
+              expectedChange,
+              reason:
+                  'shape=$shape lastPersisted=$lastPersisted '
+                  'broadcast=$broadcast',
+            );
+
+            // On a broadcast the new content becomes the persisted baseline;
+            // on a no-op the baseline is unchanged.
+            if (broadcast) lastPersisted = shape;
+          }
+
+          // Final cross-check against the actual persisted row.
+          final self = await localRepo.getSelf();
+          if (lastPersisted != null) {
+            expect(self?.platform, lastPersisted.platform);
+            expect(self?.capabilities, lastPersisted.capabilities);
+          }
+        } finally {
+          await localRepo.dispose();
+          await db.close();
+        }
+      },
+      tags: 'glados',
+    );
+  });
+}
+
+/// One probed snapshot used by the diff-invariant Glados property: the
+/// dimensions the broadcaster actually diffs on in these runs.
+class _ProbeShape {
+  const _ProbeShape({required this.platform, required this.capabilities});
+
+  final String platform;
+  final List<NodeCapability> capabilities;
+
+  bool contentEquals(_ProbeShape other) {
+    if (platform != other.platform) return false;
+    if (capabilities.length != other.capabilities.length) return false;
+    for (var i = 0; i < capabilities.length; i++) {
+      if (capabilities[i] != other.capabilities[i]) return false;
+    }
+    return true;
+  }
+
+  @override
+  String toString() => '_ProbeShape(platform=$platform, caps=$capabilities)';
+}
+
+extension _AnyProbeSequence on glados.Any {
+  glados.Generator<List<NodeCapability>> get capabilityList =>
+      glados.ListAnys(this).list(
+        glados.AnyUtils(this).choose(NodeCapability.values),
+      );
+
+  glados.Generator<_ProbeShape> get probeShape =>
+      glados.CombinableAny(this).combine2(
+        glados.AnyUtils(this).choose(const ['macos', 'linux', 'ios']),
+        capabilityList,
+        (String platform, List<NodeCapability> caps) =>
+            _ProbeShape(platform: platform, capabilities: caps),
+      );
+
+  glados.Generator<List<_ProbeShape>> get probeSequence =>
+      glados.ListAnys(this).nonEmptyList(probeShape);
 }
