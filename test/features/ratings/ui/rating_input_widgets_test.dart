@@ -223,10 +223,13 @@ void main() {
       expect(selectedSegmentIndex(segments, 0.205), 2);
     });
 
-    test('does not match exactly at the tolerance boundary', () {
+    test('does not match a value beyond the tolerance band', () {
       final segments = _segmentsOfLength(4);
-      // Exactly 0.01 away is NOT a match (strict `< 0.01`).
-      expect(selectedSegmentIndex(segments, segments[1].value + 0.01), -1);
+      // 0.02 away is clearly outside the strict `< 0.01` band → no match.
+      // (Exactly 0.01 is avoided here: 0.1 + 0.01 lands at 0.00999…998 in IEEE
+      // double, which is < 0.01 and would match — the band edge is not a stable
+      // contract to assert.)
+      expect(selectedSegmentIndex(segments, segments[1].value + 0.02), -1);
     });
 
     // Round-trip property: feeding any segment's own value back into the
