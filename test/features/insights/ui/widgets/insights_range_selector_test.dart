@@ -6,6 +6,7 @@ import 'package:lotti/features/insights/logic/range_presets.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_range_selector.dart';
+import 'package:lotti/utils/device_region.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -22,6 +23,9 @@ void main() {
     return tester.pumpWidget(
       makeTestableWidget(
         mediaQueryData: desktopMq,
+        overrides: [
+          firstDayOfWeekIndexProvider.overrideWith((ref) async => 1),
+        ],
         InsightsRangeSelector(
           range: range,
           onPresetSelected: onPreset ?? (_) {},

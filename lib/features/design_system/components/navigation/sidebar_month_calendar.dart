@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/utils/first_day_of_week.dart';
 
 /// Compact month calendar for the desktop navigation sidebar — the
 /// `CalendarWidget` from the Daily OS design handoff (sidebar spec):
@@ -20,6 +21,7 @@ class SidebarMonthCalendar extends StatelessWidget {
     this.selectedDay,
     this.markedDays = const <DateTime>{},
     this.today,
+    this.firstDayOfWeekIndex,
     super.key,
   });
 
@@ -43,6 +45,15 @@ class SidebarMonthCalendar extends StatelessWidget {
   /// `clock.now()`.
   final DateTime? today;
 
+  /// Explicit first column of the grid (Flutter convention:
+  /// `0 = Sunday` … `6 = Saturday`). When null, falls back to the app
+  /// locale's `MaterialLocalizations.firstDayOfWeekIndex`.
+  ///
+  /// The Daily OS host derives this from the device region (US starts on
+  /// Sunday, most of Europe on Monday), resolved natively since macOS hides
+  /// the region from Flutter's locale APIs.
+  final int? firstDayOfWeekIndex;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
@@ -57,13 +68,14 @@ class SidebarMonthCalendar extends StatelessWidget {
       for (final day in markedDays) DateTime(day.year, day.month, day.day),
     };
 
+    final firstDayOfWeekIndex =
+        this.firstDayOfWeekIndex ?? materialLocalizations.firstDayOfWeekIndex;
     final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
-    final firstDayOffset = DateUtils.firstDayOffset(
-      month.year,
-      month.month,
-      materialLocalizations,
+    final firstDayOffset = leadingBlankDayCount(
+      year: month.year,
+      month: month.month,
+      firstDayOfWeekIndex: firstDayOfWeekIndex,
     );
-    final firstDayOfWeekIndex = materialLocalizations.firstDayOfWeekIndex;
     final narrowWeekdays = materialLocalizations.narrowWeekdays;
 
     return Column(

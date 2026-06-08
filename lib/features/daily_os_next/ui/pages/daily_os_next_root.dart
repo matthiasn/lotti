@@ -11,6 +11,8 @@ import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_planning_modal.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_region.dart';
+import 'package:lotti/utils/first_day_of_week_picker.dart';
 
 /// Entry point for the Daily OS Next surface.
 ///
@@ -42,6 +44,10 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
     // `lastDate` and trip a `showDatePicker` assertion. Day arithmetic
     // via the `DateTime` constructor stays DST-safe.
     final selected = ref.read(dailyOsNextSelectedDateProvider);
+    final firstDayOfWeekIndex = await ref.read(
+      firstDayOfWeekIndexProvider.future,
+    );
+    if (!mounted) return;
     final picked = await showDatePicker(
       context: context,
       initialDate: selected,
@@ -55,6 +61,7 @@ class _DailyOsNextRootState extends ConsumerState<DailyOsNextRoot> {
         selected.month,
         selected.day,
       ),
+      builder: firstDayOfWeekPickerBuilder(firstDayOfWeekIndex),
     );
     if (picked != null) {
       ref.read(dailyOsNextSelectedDateProvider.notifier).select(picked);

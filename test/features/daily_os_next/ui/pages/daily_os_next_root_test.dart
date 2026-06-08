@@ -13,6 +13,7 @@ import 'package:lotti/features/daily_os_next/ui/pages/capture_page.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/daily_os_next_root.dart';
 import 'package:lotti/features/daily_os_next/ui/pages/day_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_region.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -32,6 +33,7 @@ Widget _wrap(
       dailyOsActualTimeBlocksProvider.overrideWith(
         (ref, _) async => actualBlocks,
       ),
+      firstDayOfWeekIndexProvider.overrideWith((ref) async => 1),
       ...overrides,
     ],
     child: makeTestableWidget2(

@@ -31,6 +31,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Daily OS Next: tapping a recorded session on the Day timeline now reopens
   its task scrolled to — and briefly highlighting — that exact entry again,
   instead of dropping you at the top of the task.
+- Daily OS Next: the sidebar month calendar now starts the week on your
+  device region's first weekday — Monday across most of Europe, Sunday in
+  the US — read from the OS region (natively on macOS) rather than the app
+  language, instead of always starting on Sunday.
 
 ## [0.9.1016]
 ### Added

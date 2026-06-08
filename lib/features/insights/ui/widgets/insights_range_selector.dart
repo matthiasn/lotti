@@ -1,11 +1,14 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_pill_button.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/utils/device_region.dart';
+import 'package:lotti/utils/first_day_of_week_picker.dart';
 
 /// Quick-access range presets plus a custom range picker, mirroring the
 /// Cursor usage dashboard: `[May 30 – Jun 05 ▾] 1d 7d 30d MTD YTD Last
@@ -48,6 +51,13 @@ class InsightsRangeSelector extends StatelessWidget {
 
   Future<void> _pickCustomRange(BuildContext context) async {
     final now = clock.now();
+    // Read once for the picker (event handler, not a widget dependency), so
+    // the calendar starts the week on the device region's first weekday.
+    final firstDayOfWeekIndex = await ProviderScope.containerOf(
+      context,
+      listen: false,
+    ).read(firstDayOfWeekIndexProvider.future);
+    if (!context.mounted) return;
     final picked = await showDateRangePicker(
       context: context,
       firstDate: DateTime(now.year - 10),
@@ -56,6 +66,7 @@ class InsightsRangeSelector extends StatelessWidget {
         start: dayStart(range.startDay),
         end: dayStart(range.endDayExclusive - 1),
       ),
+      builder: firstDayOfWeekPickerBuilder(firstDayOfWeekIndex),
     );
     if (picked != null) {
       onCustomRangeSelected(picked.start, picked.end);

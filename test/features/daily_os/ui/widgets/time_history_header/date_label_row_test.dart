@@ -7,6 +7,7 @@ import 'package:lotti/features/daily_os/state/time_budget_progress_controller.da
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/date_label_row.dart';
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/day_label_chip.dart';
+import 'package:lotti/utils/device_region.dart';
 
 import '../../../../../test_helper.dart';
 import 'test_helpers.dart';
@@ -43,6 +44,7 @@ void main() {
         dayBudgetStatsProvider(date: date).overrideWith(
           (ref) async => effectiveStats,
         ),
+        firstDayOfWeekIndexProvider.overrideWith((ref) async => 1),
       ],
       child: DateLabelRow(
         selectedDate: date,

@@ -44,6 +44,33 @@ void main() {
       },
     );
 
+    testWidgets(
+      'injected firstDayOfWeekIndex shifts the grid (Monday vs Sunday start)',
+      (tester) async {
+        Future<double> dayOneDx(int firstDayOfWeekIndex) async {
+          await tester.pumpWidget(
+            _wrap(
+              SidebarMonthCalendar(
+                month: DateTime(2026, 5),
+                today: DateTime(2026, 5, 24),
+                firstDayOfWeekIndex: firstDayOfWeekIndex,
+                onPreviousMonth: () {},
+                onNextMonth: () {},
+                onDaySelected: (_) {},
+              ),
+            ),
+          );
+          return tester.getCenter(find.text('1')).dx;
+        }
+
+        // 1 May 2026 is a Friday. With a Monday-start week it sits in the 5th
+        // column; switching to a Sunday-start week shifts it one column right.
+        final mondayStartDx = await dayOneDx(DateTime.monday % 7); // 1
+        final sundayStartDx = await dayOneDx(DateTime.sunday % 7); // 0
+        expect(sundayStartDx, greaterThan(mondayStartDx));
+      },
+    );
+
     testWidgets('today is highlighted with the teal circle', (tester) async {
       await tester.pumpWidget(
         _wrap(
