@@ -750,7 +750,7 @@ void main() {
     group('generated migration semantics', () {
       glados.Glados(
         glados.any.checklistMigrationScenario,
-        glados.ExploreConfig(numRuns: 220),
+        glados.ExploreConfig(numRuns: 180),
       ).test(
         'matches generated checklist migration branch semantics',
         (scenario) async {

@@ -43,14 +43,22 @@ void main() {
   final timestamp = DateTime(2024, 3, 15, 12);
   late SettingsDb db;
 
-  setUp(() {
+  setUpAll(() {
     // Avoid drift warning when optimizer reuses isolates
     driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
     db = SettingsDb(inMemoryDatabase: true);
   });
 
-  tearDown(() async {
+  tearDownAll(() async {
     await db.close();
+  });
+
+  tearDown(() async {
+    // Reset the shared instance to an empty table so each test is
+    // order-independent. Tests that exercise loader/coalescing behavior spin
+    // up their own throwaway [SettingsDb] subclasses locally and never touch
+    // the shared [db], so truncating `settings` is sufficient cleanup.
+    await db.customStatement('DELETE FROM settings');
   });
 
   test('removeSettingsItem removes existing entries', () async {

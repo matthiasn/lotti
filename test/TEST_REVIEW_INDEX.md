@@ -105,9 +105,10 @@ usually be higher-leverage than file-by-file fixes.
   invariants (sync, database), geohash/duration/format utils, lane-assignment & timeline math (daily_os),
   version comparison (whats_new). `VectorClock.merge`/`mergeUniqueClocks` are untested pure logic, and
   `vector_clock_glados_test.dart` is missing `tags: 'glados'` (running in the wrong CI shard).
-- [ ] **[MED] Glados `numRuns` tuning.** Several properties run >200 (up to 300) on pure functions;
+- [x] **[MED] Glados `numRuns` tuning.** Several properties run >200 (up to 300) on pure functions;
   trimming toward the README's ≤120–180 guidance recovers a meaningful slice of the ~3,280-run Glados
   budget with negligible coverage loss.
+  - **RESOLVED:** capped every `numRuns` in `test/` at 180 (22 files; previously 40×200, plus 220/240/250/260/300/400). Reducing run count cannot make a passing property fail; analyzer clean and a sample of the changed files passes the Glados lane. All properties now sit within the ≤180 band.
 - [ ] **[LOW] Weak / smoke-only tests.** `findsOneWidget`-only, `isNotNull`, and constructor smoke
   tests concentrated in widget/design-system layers — upgrade to behavioral assertions.
 - [ ] **[LOW] Completely untested production code.** e.g. `agent_list_toolbar.dart`,

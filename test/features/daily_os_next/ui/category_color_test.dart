@@ -15,7 +15,7 @@ void main() {
   group('categoryColorFromHex — properties', () {
     glados.Glados<String>(
       glados.any.hexish,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('always returns a fully opaque colour for any input', (hex) {
       final color = categoryColorFromHex(hex);
       expect((color.toARGB32() >> 24) & 0xFF, 0xFF, reason: 'hex="$hex"');

@@ -298,7 +298,7 @@ void main() {
   group('shortenConflictId — Glados property', () {
     glados.Glados<String>(
       glados.any.letterOrDigits,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'ids of 8 chars or fewer pass through; longer ids truncate to the '
       'first 8',

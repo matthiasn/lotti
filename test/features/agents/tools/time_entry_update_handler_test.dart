@@ -509,7 +509,7 @@ void main() {
 
       glados.Glados(
         glados.any.timeEntryUpdateScenario,
-        glados.ExploreConfig(numRuns: 200),
+        glados.ExploreConfig(numRuns: 180),
       ).test(
         'matches generated validation, linkage, range, and persistence semantics',
         (scenario) async {

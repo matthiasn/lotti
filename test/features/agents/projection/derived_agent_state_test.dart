@@ -389,7 +389,7 @@ void main() {
   group('deriveAgentState — convergence (order independence)', () {
     glados.Glados(
       glados.any.foldScenario,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('two devices holding the same log set derive equal state', (
       scenario,
     ) {
@@ -590,7 +590,7 @@ void main() {
 
     glados.Glados(
       glados.any.foldScenario,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('never regresses a watermark and is idempotent', (scenario) {
       final cache = makeTestState(lastWakeAt: _day(4));
 

@@ -13,7 +13,7 @@ void main() {
     glados.Glados2(
       glados.any.jsonScalars,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('is permutation-invariant over map keys', (values, seed) {
       final entries = [
         for (var i = 0; i < values.length; i++) MapEntry('k$i', values[i]),
@@ -27,7 +27,7 @@ void main() {
 
     glados.Glados(
       glados.any.contentMap,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('is stable across a JSON encode/decode round-trip', (map) {
       final round = jsonDecode(jsonEncode(map)) as Map<String, dynamic>;
       expect(ContentDigest.of(round), ContentDigest.of(map));
@@ -35,7 +35,7 @@ void main() {
 
     glados.Glados(
       glados.any.contentMap,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('emits a version-tagged base64url digest with no padding', (map) {
       final digest = ContentDigest.of(map);
       expect(digest, startsWith('${ContentDigest.version}:'));

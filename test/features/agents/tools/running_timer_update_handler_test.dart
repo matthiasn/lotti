@@ -445,7 +445,7 @@ void main() {
 
     glados.Glados(
       glados.any.runningTimerUpdateScenario,
-      glados.ExploreConfig(numRuns: 220),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'matches generated validation, ownership, id, type, and persistence semantics',
       (scenario) async {

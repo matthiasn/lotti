@@ -916,7 +916,7 @@ void main() {
     group('subscription management', () {
       glados.Glados(
         glados.any.wakeRoutingScenario,
-        glados.ExploreConfig(numRuns: 240),
+        glados.ExploreConfig(numRuns: 180),
       ).test(
         'matches generated subscription routing, replacement, and removal',
         (scenario) {
@@ -1513,7 +1513,7 @@ void main() {
     group('processNext', () {
       glados.Glados(
         glados.any.wakeDrainScenario,
-        glados.ExploreConfig(numRuns: 220),
+        glados.ExploreConfig(numRuns: 180),
       ).test(
         'matches generated drain persistence, content gates, and requeueing',
         (scenario) {

@@ -133,7 +133,7 @@ void main() {
     glados.Glados2(
       glados.any.selectionScenario,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'is order-independent and picks the greatest-cutoff valid candidate',
       (scenario, seed) {

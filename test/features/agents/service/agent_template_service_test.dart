@@ -1621,7 +1621,7 @@ void main() {
   group('updateTemplate', () {
     glados.Glados(
       glados.any.templateUpdateScenario,
-      glados.ExploreConfig(numRuns: 220),
+      glados.ExploreConfig(numRuns: 180),
     ).test('matches generated update/versioning invariants', (scenario) async {
       final generatedRepository = MockAgentRepository();
       final generatedSync = MockAgentSyncService();

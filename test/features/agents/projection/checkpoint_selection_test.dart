@@ -82,7 +82,7 @@ void main() {
     glados.Glados2(
       glados.any.projectionDag,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('is independent of arrival order', (dag, seed) {
       final fromBuild = selectActiveCheckpoint(canonicalOrder(dag.events));
       final fromShuffle = selectActiveCheckpoint(
@@ -93,7 +93,7 @@ void main() {
 
     glados.Glados(
       glados.any.projectionDag,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('partitions non-summary events into covered xor tail', (dag) {
       final ordered = canonicalOrder(dag.events);
       final selection = selectActiveCheckpoint(ordered);
@@ -116,7 +116,7 @@ void main() {
 
     glados.Glados(
       glados.any.projectionDag,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('an active checkpoint is a summary ancestral to every head', (
       dag,
     ) {
@@ -141,7 +141,7 @@ void main() {
 
     glados.Glados(
       glados.any.projectionDag,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'the active checkpoint covers the most history among candidates',
       (

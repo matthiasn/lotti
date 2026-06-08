@@ -1084,7 +1084,7 @@ void main() {
 
     glados.Glados(
       glados.any.processorScenario,
-      glados.ExploreConfig(numRuns: 260),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'matches generated normalization, validation, telemetry, and persistence semantics',
       (scenario) async {

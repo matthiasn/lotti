@@ -118,7 +118,7 @@ void main() {
 
     glados.Glados(
       glados.any.frontierOps,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('matches a latest-wins (createdAt, id) fold of the log', (specs) {
       final log = _realize(specs);
       final frontier = projectInputFrontier(
@@ -131,7 +131,7 @@ void main() {
     glados.Glados2(
       glados.any.frontierOps,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('is independent of message/link arrival order', (specs, seed) {
       final log = _realize(specs);
       final ordered = projectInputFrontier(

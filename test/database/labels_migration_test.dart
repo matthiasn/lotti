@@ -65,41 +65,9 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
 
       // First create basic schema at v25 (without label tables)
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          category TEXT,
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0
-        )
-      ''');
+      createJournalTable(sqlite, version: 25);
 
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS tag_entities (
-          id TEXT PRIMARY KEY,
-          tag TEXT NOT NULL,
-          type TEXT NOT NULL,
-          inactive BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          schema_version INTEGER DEFAULT 0
-        )
-      ''');
+      createLegacyTagEntitiesTable(sqlite);
 
       sqlite.execute('''
         CREATE TABLE IF NOT EXISTS category_definitions (
@@ -167,26 +135,7 @@ void main() {
         final dbFile = File(path.join(testDirectory!.path, 'test_v27.db'));
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          category TEXT,
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0
-        )
-      ''');
+        createJournalTable(sqlite, version: 26);
 
         createLinkedEntriesTableWithBuggyIndex(sqlite);
 
@@ -221,54 +170,13 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
 
       // Create journal table
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          category TEXT,
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0
-        )
-      ''');
+      createJournalTable(sqlite, version: 27);
 
       // Create label_definitions table
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS label_definitions (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          color TEXT NOT NULL,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          deleted BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          schema_version INTEGER DEFAULT 0
-        )
-      ''');
+      createLegacyLabelDefinitionsTable(sqlite);
 
       // Create old labeled table WITHOUT ON DELETE CASCADE
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS labeled (
-          id TEXT NOT NULL UNIQUE,
-          journal_id TEXT NOT NULL,
-          label_id TEXT NOT NULL,
-          PRIMARY KEY (id),
-          FOREIGN KEY(journal_id) REFERENCES journal(id),
-          FOREIGN KEY(label_id) REFERENCES label_definitions(id),
-          UNIQUE(journal_id, label_id)
-        )
-      ''');
+      createLegacyLabeledTable(sqlite);
 
       // Insert test data
       sqlite.execute('''
@@ -342,26 +250,7 @@ void main() {
       final dbFile = File(path.join(testDirectory!.path, 'test_idempotent.db'));
       final sqlite = sqlite3.open(dbFile.path);
 
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          category TEXT,
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0
-        )
-      ''');
+      createJournalTable(sqlite, version: 25);
       createLinkedEntriesTableWithBuggyIndex(sqlite);
       sqlite.execute('PRAGMA user_version = 25');
       sqlite.dispose();
@@ -414,52 +303,11 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
 
       // Create tables
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          category TEXT,
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0
-        )
-      ''');
+      createJournalTable(sqlite, version: 27);
 
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS label_definitions (
-          id TEXT PRIMARY KEY,
-          name TEXT NOT NULL,
-          color TEXT NOT NULL,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          deleted BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          schema_version INTEGER DEFAULT 0
-        )
-      ''');
+      createLegacyLabelDefinitionsTable(sqlite);
 
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS labeled (
-          id TEXT NOT NULL UNIQUE,
-          journal_id TEXT NOT NULL,
-          label_id TEXT NOT NULL,
-          PRIMARY KEY (id),
-          FOREIGN KEY(journal_id) REFERENCES journal(id),
-          FOREIGN KEY(label_id) REFERENCES label_definitions(id),
-          UNIQUE(journal_id, label_id)
-        )
-      ''');
+      createLegacyLabeledTable(sqlite);
 
       // Insert multiple labels and tasks
       for (var i = 0; i < 5; i++) {
@@ -569,26 +417,7 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
 
       // Create minimal schema
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          category TEXT,
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0
-        )
-      ''');
+      createJournalTable(sqlite, version: 25);
       createLinkedEntriesTableWithBuggyIndex(sqlite);
       sqlite.execute('PRAGMA user_version = 25');
       sqlite.dispose();

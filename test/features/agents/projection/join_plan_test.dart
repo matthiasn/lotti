@@ -26,7 +26,7 @@ void main() {
     glados.Glados2(
       glados.any.headIds,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 300),
+      glados.ExploreConfig(numRuns: 180),
     ).test('depends only on the head set, not order or duplicates', (
       heads,
       seed,
@@ -39,7 +39,7 @@ void main() {
 
     glados.Glados(
       glados.any.headIds,
-      glados.ExploreConfig(numRuns: 300),
+      glados.ExploreConfig(numRuns: 180),
     ).test('is domain-tagged and versioned (cannot collide with a frontier '
         'digest over the same ids)', (heads) {
       final sorted = _unique(heads).toList()..sort();
@@ -64,7 +64,7 @@ void main() {
 
     glados.Glados(
       glados.any.headIds,
-      glados.ExploreConfig(numRuns: 400),
+      glados.ExploreConfig(numRuns: 180),
     ).test('emits iff there are ≥2 heads and the view is complete', (heads) {
       final plan = planJoin(headIds: heads, viewComplete: true);
       if (_unique(heads).length >= 2) {
@@ -81,7 +81,7 @@ void main() {
 
     glados.Glados(
       glados.any.headIds,
-      glados.ExploreConfig(numRuns: 400),
+      glados.ExploreConfig(numRuns: 180),
     ).test('never emits while the local view is incomplete', (heads) {
       // Even with ≥2 heads, a dangling-parent (unsettled) view defers — healing
       // on it could mint a join over a non-tip.
@@ -91,7 +91,7 @@ void main() {
     glados.Glados2(
       glados.any.headIds,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 300),
+      glados.ExploreConfig(numRuns: 180),
     ).test('the plan depends only on the head set, not arrival order', (
       heads,
       seed,

@@ -139,7 +139,7 @@ void main() {
     glados.Glados2(
       glados.any.eventOps,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 180),
     ).test('is a pure function of the op set, not its order', (specs, seed) {
       final ordered = _project(specs);
       final shuffled = _project(shuffledBySeed(specs, seed));
@@ -148,7 +148,7 @@ void main() {
 
     glados.Glados(
       glados.any.eventOps,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 180),
     ).test('marks exactly the non-first event per source as an edit', (specs) {
       final log = _project(specs);
       // Oracle: walk captures in position order, first per entry is not an
@@ -178,7 +178,7 @@ void main() {
 
     glados.Glados(
       glados.any.eventOps,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'visibleTailEvents is exactly the ordered append-only op stream',
       (
@@ -226,7 +226,7 @@ void main() {
     glados.Glados2(
       glados.any.eventOps,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 180),
     ).test('a cutoff yields exactly the strictly-later suffix of the '
         'no-cutoff tail', (specs, seed) {
       final log = _project(specs);
@@ -242,7 +242,7 @@ void main() {
     glados.Glados2(
       glados.any.appendedOps,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'single-device appends are render-stable: the earlier log is a strict '
       'prefix of the later one',

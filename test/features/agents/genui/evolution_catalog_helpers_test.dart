@@ -386,7 +386,7 @@ void main() {
     glados.Glados2(
       glados.any.mixedJsonValue,
       glados.any.jsonKey,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'every reader applies exactly its own type gate over arbitrary values',
       (value, key) {

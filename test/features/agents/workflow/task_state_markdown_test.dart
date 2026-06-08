@@ -51,7 +51,7 @@ void main() {
 
     glados.Glados(
       glados.any.actionItems,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'every checklist item renders with its id and correct checkbox',
       (
