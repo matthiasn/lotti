@@ -615,6 +615,74 @@ void main() {
       },
     );
 
+    group('search_memory recall', () {
+      test('recalls matching log detail through the dispatch', () async {
+        when(() => syncService.repository).thenReturn(repository);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getLinksFrom(agentId),
+        ).thenAnswer((_) async => []);
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'cap-1',
+                  agentId: agentId,
+                  transcript: 'remember to buy oat milk',
+                  capturedAt: DateTime.utc(2026, 5, 20, 7),
+                  createdAt: DateTime.utc(2026, 5, 20, 7, 1),
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+          (_) async => [
+            (
+              id: capture.id,
+              createdAt: capture.createdAt,
+              capturedAt: capture.capturedAt,
+            ),
+          ],
+        );
+        when(
+          () => repository.getEntity('cap-1'),
+        ).thenAnswer((_) async => capture);
+
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {'query': 'oat milk'},
+          ),
+        ];
+
+        final result = await execute(workflow());
+
+        expect(result.success, isTrue);
+        final response = conversationRepository.toolResponses.single;
+        expect(response, contains('remember to buy oat milk'));
+        expect(response, contains('(capture'));
+      });
+
+      test('rejects an empty query without searching', () async {
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {'query': '   '},
+          ),
+        ];
+
+        final result = await execute(workflow());
+
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          'Error: "query" must be a non-empty string.',
+        );
+      });
+    });
+
     test('read-flips to a dayLog of capture transcripts and observations, '
         'dropping the recentObservations listing', () async {
       when(() => syncService.repository).thenReturn(repository);

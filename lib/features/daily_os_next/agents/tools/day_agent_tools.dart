@@ -72,6 +72,32 @@ const dayAgentTools = <AgentToolDefinition>[
     },
   ),
   AgentToolDefinition(
+    name: DayAgentToolNames.searchMemory,
+    description:
+        'Recall specific past detail from your memory. Searches the full '
+        'capture-and-observation log across every day — including detail that '
+        'has been folded out of the current summary — for entries containing '
+        'all of the given keywords. Use this when you need an exact past fact '
+        'the summary only generalizes.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'query': {
+          'type': 'string',
+          'description': 'Keywords to match (all must appear, any order).',
+        },
+        'limit': {
+          'type': 'integer',
+          'description': 'Max entries to return (1-20, default 8).',
+          'minimum': 1,
+          'maximum': 20,
+        },
+      },
+      'required': ['query'],
+      'additionalProperties': false,
+    },
+  ),
+  AgentToolDefinition(
     name: DayAgentToolNames.submitCapture,
     description:
         'Persist a user capture transcript and enqueue parsing. capturedAt '

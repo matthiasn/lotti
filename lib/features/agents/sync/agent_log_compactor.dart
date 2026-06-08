@@ -226,6 +226,66 @@ class AgentLogCompactor {
     );
   }
 
+  /// Keyword search over the agent's FULL immutable memory log (folded events
+  /// AND the verbatim tail), returning up to [limit] most-recent hits whose
+  /// rendered text contains EVERY whitespace-separated term in [query]
+  /// (case-insensitive). The agent's recall tool: detail folded out of the
+  /// summary is still in the log, so this lets a wake reach back into it.
+  ///
+  /// On-demand by design. The per-wake assembly path stays lazy (it resolves
+  /// only the tail); this is the one reader that scans beyond the tail, and it
+  /// only runs when the agent explicitly recalls. Events are scanned
+  /// newest-first in chunks so recent matches stop the scan early rather than
+  /// resolving the whole multi-year history.
+  Future<List<MemoryLogHit>> searchLog(
+    String agentId, {
+    required String query,
+    int limit = 8,
+  }) async {
+    final terms = query
+        .toLowerCase()
+        .split(RegExp(r'\s+'))
+        .where((t) => t.isNotEmpty)
+        .toList();
+    if (terms.isEmpty || limit <= 0) return const [];
+
+    final view = await _projectActiveView(agentId);
+    if (view.log.events.isEmpty) return const [];
+
+    final events = view.log.events.reversed.toList(); // newest-first
+    final hits = <MemoryLogHit>[];
+    const chunk = 50;
+    for (var i = 0; i < events.length && hits.length < limit; i += chunk) {
+      final end = i + chunk < events.length ? i + chunk : events.length;
+      final loaded = await _resolveEventContents(events.sublist(i, end));
+      for (final l in loaded) {
+        final text = _searchableText(l.content);
+        final haystack = text.toLowerCase();
+        if (terms.every(haystack.contains)) {
+          hits.add(
+            MemoryLogHit(
+              contentEntryId: l.event.contentEntryId,
+              at: l.event.position.at,
+              type:
+                  (l.content['entryType'] as String?) ??
+                  (l.event.isObservation ? 'observation' : 'entry'),
+              text: text,
+              edited: l.event.isEdit,
+            ),
+          );
+          if (hits.length >= limit) break;
+        }
+      }
+    }
+    return hits;
+  }
+
+  static String _searchableText(Map<String, Object?> content) {
+    final text = content['text'];
+    if (text is String) return text;
+    return jsonEncode(content);
+  }
+
   /// Re-derives the log block a PAST wake rendered (ADR 0020 v2 prompt
   /// records): the checkpoint pinned by [summaryId] (used even if later
   /// invalidated — the wake really rendered its prose) plus the visible
@@ -418,6 +478,35 @@ class AgentLogCompactor {
     });
     return summaryId;
   }
+}
+
+/// One keyword hit from [AgentLogCompactor.searchLog] — a raw memory-log entry
+/// (capture transcript or observation) that matched the query, including
+/// detail that has been folded out of the compacted summary.
+class MemoryLogHit {
+  /// Wraps a search hit.
+  const MemoryLogHit({
+    required this.contentEntryId,
+    required this.at,
+    required this.type,
+    required this.text,
+    required this.edited,
+  });
+
+  /// The originating entity id (capture id, observation message id, …).
+  final String contentEntryId;
+
+  /// The event's log position time (capture/observation creation).
+  final DateTime at;
+
+  /// The entry type — `capture`, `observation`, or `entry` as a fallback.
+  final String type;
+
+  /// The rendered searchable text of the entry.
+  final String text;
+
+  /// True when a later event supersedes this one for the same source.
+  final bool edited;
 }
 
 /// One assembled compacted log plus the marker that pins it for

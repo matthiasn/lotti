@@ -6,6 +6,9 @@ abstract final class DayAgentToolNames {
   /// Schedules the next time-based wake for this day agent.
   static const setNextWake = 'set_next_wake';
 
+  /// Recalls raw memory-log detail folded out of the compacted summary.
+  static const searchMemory = 'search_memory';
+
   /// Persists a user capture transcript.
   static const submitCapture = 'submit_capture';
 
@@ -57,6 +60,7 @@ abstract final class DayAgentToolNames {
   /// Foundation tools implemented by the day-agent workflow itself.
   static const foundationHandlerTools = <String>{
     setNextWake,
+    searchMemory,
   };
 
   /// Durable-knowledge tools delegated to the knowledge service.
@@ -118,6 +122,11 @@ abstract final class DayAgentToolNames {
 
   /// Whether [name] is the foundation wake scheduling tool.
   static bool isSetNextWakeTool(String name) {
-    return foundationHandlerTools.contains(name);
+    return name == setNextWake;
+  }
+
+  /// Whether [name] is the memory-recall tool.
+  static bool isSearchMemoryTool(String name) {
+    return name == searchMemory;
   }
 }

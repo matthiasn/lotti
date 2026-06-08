@@ -867,4 +867,77 @@ void main() {
       },
     );
   });
+
+  group('searchLog (recall)', () {
+    test('finds folded content the summary no longer shows verbatim', () async {
+      await captureAll([
+        src('e1', 'buy milk and eggs', day: 1),
+        src('e2', 'call the dentist', day: 2),
+        src('e3', 'review the Q3 report', day: 3),
+      ], 10);
+      await compact(budget: 0); // folds e1,e2 into the summary; tail = [e3]
+
+      final folded = await compactor.searchLog(_agentId, query: 'milk');
+      expect(folded.map((h) => h.contentEntryId), ['e1']);
+      expect(folded.single.text, 'buy milk and eggs');
+
+      final tail = await compactor.searchLog(_agentId, query: 'report');
+      expect(tail.map((h) => h.contentEntryId), ['e3']);
+    });
+
+    test('term-AND, case-insensitive, newest-first, and limit', () async {
+      await captureAll([
+        src('e1', 'morning gym session', day: 1),
+        src('e2', 'gym membership renewal', day: 2),
+        src('e3', 'evening gym plan', day: 3),
+      ], 10);
+
+      // All three mention "gym"; results are newest-first, case-insensitive.
+      final all = await compactor.searchLog(_agentId, query: 'GYM');
+      expect(all.map((h) => h.contentEntryId), ['e3', 'e2', 'e1']);
+
+      // All terms must appear (AND).
+      final both = await compactor.searchLog(_agentId, query: 'gym renewal');
+      expect(both.map((h) => h.contentEntryId), ['e2']);
+
+      // limit caps the result, keeping the newest.
+      final capped = await compactor.searchLog(
+        _agentId,
+        query: 'gym',
+        limit: 1,
+      );
+      expect(capped.map((h) => h.contentEntryId), ['e3']);
+    });
+
+    test('empty and no-match queries return nothing', () async {
+      await captureAll([src('e1', 'alpha', day: 1)], 10);
+      expect(await compactor.searchLog(_agentId, query: '   '), isEmpty);
+      expect(await compactor.searchLog(_agentId, query: 'zzz'), isEmpty);
+    });
+
+    test('resolves DEFERRED inline capture content on demand', () async {
+      final event = InputEvent.inlineDeferred(
+        position: EventPosition(
+          at: DateTime.utc(2024, 3, 5, 0, 1),
+          sourceAt: DateTime.utc(2024, 3, 5),
+          key: 'capture|cap-x',
+        ),
+        contentEntryId: 'cap-x',
+        sourceCreatedAt: DateTime.utc(2024, 3, 5),
+      );
+      final c = AgentLogCompactor(
+        syncService: sync,
+        inlineEvents: [event],
+        resolveInlineContent: (_) async => <String, Object?>{
+          'entryType': 'capture',
+          'text': 'lazy transcript about taxes',
+        },
+      );
+
+      final hits = await c.searchLog(_agentId, query: 'taxes');
+      expect(hits.single.contentEntryId, 'cap-x');
+      expect(hits.single.type, 'capture');
+      expect(hits.single.text, 'lazy transcript about taxes');
+    });
+  });
 }

@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
+import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
@@ -579,6 +580,10 @@ class DayAgentWorkflow {
       );
     }
 
+    if (DayAgentToolNames.isSearchMemoryTool(toolName)) {
+      return _searchMemory(agentId: agentId, args: args);
+    }
+
     if (!DayAgentToolNames.isSetNextWakeTool(toolName)) {
       return DayAgentToolResult(
         success: false,
@@ -691,6 +696,74 @@ class DayAgentWorkflow {
     }
   }
 
+  /// Recall handler for `search_memory`: keyword-scans the full immutable
+  /// memory log — including detail folded out of the compacted summary — for
+  /// entries matching the query. Built over the same lazy capture resolution
+  /// the wake uses, so it spans folded + tail without the per-wake path ever
+  /// loading everything; this opt-in recall is the only reader beyond the tail.
+  Future<DayAgentToolResult> _searchMemory({
+    required String agentId,
+    required Map<String, dynamic> args,
+  }) async {
+    final rawQuery = args['query'];
+    if (rawQuery is! String || rawQuery.trim().isEmpty) {
+      return const DayAgentToolResult(
+        success: false,
+        output: 'Error: "query" must be a non-empty string.',
+      );
+    }
+    final query = rawQuery.trim();
+    final rawLimit = args['limit'];
+    final limit = rawLimit is int ? rawLimit.clamp(1, 20) : 8;
+
+    var captureMetas = const <CaptureEventMeta>[];
+    try {
+      captureMetas = await agentRepository.getCaptureEventMetaByAgentId(
+        agentId,
+      );
+    } catch (e) {
+      _logError('search_memory: failed to load capture metadata', error: e);
+    }
+
+    final compactor = AgentLogCompactor(
+      syncService: syncService,
+      inlineEvents: dayCaptureEvents(captureMetas),
+      resolveInlineContent: _resolveCaptureContent,
+    );
+
+    final List<MemoryLogHit> hits;
+    try {
+      hits = await compactor.searchLog(agentId, query: query, limit: limit);
+    } catch (e, s) {
+      _logError('search_memory failed', error: e, stackTrace: s);
+      return const DayAgentToolResult(
+        success: false,
+        output: 'Error: memory search failed.',
+      );
+    }
+
+    if (hits.isEmpty) {
+      return DayAgentToolResult(
+        success: true,
+        output: 'No memory entries match "$query".',
+      );
+    }
+
+    final buf = StringBuffer(
+      'Found ${hits.length} memory match(es) for "$query" '
+      '(most recent first):',
+    );
+    for (final hit in hits) {
+      buf
+        ..writeln()
+        ..write(
+          '- [${hit.at.toIso8601String()}] '
+          '(${hit.type}${hit.edited ? ', edited' : ''}) ${hit.text}',
+        );
+    }
+    return DayAgentToolResult(success: true, output: buf.toString());
+  }
+
   Future<_TemplateContext?> _resolveTemplate(String agentId) async {
     final template = await templateService.getTemplateForAgent(agentId);
     if (template == null) return null;
@@ -729,6 +802,7 @@ class DayAgentWorkflow {
     final toolLines = <String>[
       '- `record_observations`: private memory for learnings and uncertainty.',
       '- `set_next_wake`: schedule the next useful pre-warm wake.',
+      '- `search_memory`: recall exact past detail folded out of the summary.',
       if (captureService != null) captureToolLines,
       if (planService != null) planToolLines,
       if (knowledgeService != null) knowledgeToolLines,
