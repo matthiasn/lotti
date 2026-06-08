@@ -46,6 +46,7 @@ class TestWidgetWithMixinState extends State<TestWidgetWithMixin>
   void triggerScroll(
     String entryId, {
     double alignment = 0.5,
+    bool isInitialLoad = false,
     VoidCallback? onScrolled,
   }) {
     onScrolledCallback = onScrolled;
@@ -53,6 +54,7 @@ class TestWidgetWithMixinState extends State<TestWidgetWithMixin>
       entryId,
       alignment,
       getEntryKey: _getEntryKey,
+      isInitialLoad: isInitialLoad,
       onScrolled: () {
         onScrolledCallCount++;
         onScrolled?.call();
@@ -273,24 +275,42 @@ void main() {
       expect(state.highlightedEntryId, isNull);
     });
 
-    testWidgets('disposeHighlight cancels timer and sets disposed flag', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          const TestWidgetWithMixin(entryIds: ['entry-1']),
-        ),
-      );
+    testWidgets(
+      'disposeHighlight cancels the armed retry timer so it never fires',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const TestWidgetWithMixin(entryIds: ['entry-1']),
+          ),
+        );
 
-      await tester.pump();
+        final state =
+            tester.state<TestWidgetWithMixinState>(
+                find.byType(TestWidgetWithMixin),
+              )
+              // Arm the retry timer first (scrollToEntry schedules a 100 ms timer
+              // before any attempt runs), then dispose while it is still pending.
+              ..triggerScroll('entry-1')
+              ..disposeHighlight();
 
-      // Dispose the widget
-      await tester.pumpWidget(Container());
+        // Pump well past the 100 ms scroll-timer delay plus a retry cycle.
+        // _disposed being set + the retry timer being cancelled in
+        // disposeHighlight() means no attempt ever runs: the entry is never
+        // highlighted and the cancelled timer leaves nothing pending (a live
+        // timer would surface as a pending-timer failure on tearDown).
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
 
-      // The disposeHighlight should have been called in dispose()
-      // No assertion errors should occur
-      expect(tester.takeException(), isNull);
-    });
+        expect(
+          state.highlightedEntryId,
+          isNull,
+          reason: 'cancelled timer + disposed flag must suppress highlighting',
+        );
+        expect(state.onScrolledCallCount, 0);
+        expect(tester.takeException(), isNull);
+      },
+    );
 
     testWidgets('scrollToEntry calls onScrolled callback', (tester) async {
       await tester.pumpWidget(
@@ -381,6 +401,44 @@ void main() {
         await tester.pump();
 
         expect(state.highlightedEntryId, equals('entry-1'));
+      },
+    );
+
+    testWidgets(
+      'isInitialLoad scroll uses the initial delay and still highlights',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const TestWidgetWithMixin(entryIds: ['entry-1', 'entry-2']),
+          ),
+        );
+
+        final state = tester.state<TestWidgetWithMixinState>(
+          find.byType(TestWidgetWithMixin),
+        );
+
+        expect(state.highlightedEntryId, isNull);
+
+        // initialScrollDelay is zero in test mode, so the post-frame attempt
+        // runs promptly even though the longer initial-load delay path was
+        // taken (instead of the fixed 100 ms subsequent-scroll path).
+        var scrolled = false;
+        state.triggerScroll(
+          'entry-1',
+          isInitialLoad: true,
+          onScrolled: () => scrolled = true,
+        );
+
+        // Drive the zero-delay scroll timer, the scheduled post-frame
+        // callback, and the microtask that resolves ensureVisible.
+        await tester.pump(const Duration(milliseconds: 1));
+        await tester.pump();
+        await tester.pump();
+
+        expect(scrolled, isTrue);
+        expect(state.onScrolledCallCount, 1);
+        expect(state.highlightedEntryId, equals('entry-1'));
+        expect(tester.takeException(), isNull);
       },
     );
 
@@ -537,20 +595,14 @@ void main() {
         );
 
         // initialScrollDelay is zero in test mode; the post-frame callback runs
-        // the throwing ensureVisible, then resolves the catch branch. Pump a few
-        // frames so the timer fires, the post-frame callback runs, and the
-        // awaited (throwing) future settles.
-        for (var i = 0; i < 5; i++) {
-          await tester.pump(const Duration(milliseconds: 120));
-        }
-
-        // The catch branch treats the throw as terminal: it cancels the retry
-        // timer (line 155) and clears the scroll intent exactly once (line 157),
-        // so even after pumping well past the retry delay there is no second
-        // attempt and the entry is never highlighted (highlight is only set on
-        // the success path).
-        for (var i = 0; i < 10; i++) {
-          await tester.pump(const Duration(milliseconds: 120));
+        // the throwing ensureVisible, then resolves the catch branch. The catch
+        // branch is terminal — it cancels the retry timer and clears intent
+        // exactly once, so there is never a second attempt. A single bounded
+        // loop (6 × 60 ms = 360 ms) drives the timer, the post-frame callback
+        // and the awaited (throwing) future to completion, and pumps well past
+        // the 50 ms test-mode retry delay to prove no retry is scheduled.
+        for (var i = 0; i < 6; i++) {
+          await tester.pump(const Duration(milliseconds: 60));
         }
 
         expect(callbackInvoked, isTrue);
