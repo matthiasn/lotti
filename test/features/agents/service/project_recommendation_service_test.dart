@@ -20,6 +20,7 @@ enum _GeneratedRecommendationStepSlot {
   validWithRationale,
   validWithPriority,
   validWithEmptyMetadata,
+  validWithWhitespaceMetadata,
   blankTitle,
   missingTitle,
   nonStringTitle,
@@ -129,6 +130,14 @@ class _GeneratedRecommendationRecordScenario {
         'rationale': '   ',
         'priority': '',
       },
+      // Whitespace-only (but non-empty) rationale AND priority: forces the
+      // `.trim().isNotEmpty` guard — not just `.isEmpty` — to drop both, and
+      // ensures a blank priority is never passed through `.toUpperCase()`.
+      _GeneratedRecommendationStepSlot.validWithWhitespaceMetadata => {
+        'title': 'Generated trimmed step $index',
+        'rationale': ' \t ',
+        'priority': '   ',
+      },
       _GeneratedRecommendationStepSlot.blankTitle => {'title': '   '},
       _GeneratedRecommendationStepSlot.missingTitle => {
         'rationale': 'missing title',
@@ -157,6 +166,8 @@ class _GeneratedRecommendationRecordScenario {
         ),
       _GeneratedRecommendationStepSlot.validWithEmptyMetadata =>
         _GeneratedRecommendationDraft(title: 'Generated clean step $index'),
+      _GeneratedRecommendationStepSlot.validWithWhitespaceMetadata =>
+        _GeneratedRecommendationDraft(title: 'Generated trimmed step $index'),
       _GeneratedRecommendationStepSlot.blankTitle ||
       _GeneratedRecommendationStepSlot.missingTitle ||
       _GeneratedRecommendationStepSlot.nonStringTitle ||
