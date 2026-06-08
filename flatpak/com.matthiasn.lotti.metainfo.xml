@@ -34,7 +34,6 @@
   <releases>
     <release version="0.9.1017" date="2026-06-07">
       <description>
-          <p>Daily OS Next now has one long-lived planning assistant that remembers across days instead of starting fresh every morning, so it can learn how you like your days to be planned. A new "What I've learned" panel surfaces what it remembers: confirm a suggestion, edit the wording, or forget it — and you can simply tell it something to keep in mind. Each calendar day is still its own workspace, so plans, captures, and refinements for one day never bleed into another.</p>
           <p>New desktop "Time Analysis" dashboard under Daily OS, opened from a sidebar entry beneath the month calendar onto the full screen: see where your time went per category and per day, with quick range presets (1d, 7d, 30d, MTD, YTD, last month), a custom date range, a daily/cumulative chart toggle, headline totals, optional focus categories, and a precise per-category table. Range switching is instantaneous even with years of entries, and private entries stay hidden unless the private flag is on.</p>
           <p>Time tracked on entries created before mid-2024 could show up as "Uncategorized" in time-by-category views; the category data is now backfilled once on upgrade.</p>
           <p>Daily OS Next: tapping a recorded session on the Day timeline now reopens its task scrolled to — and briefly highlighting — that exact entry again, instead of dropping you at the top of the task.</p>

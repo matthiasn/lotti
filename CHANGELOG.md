@@ -6,13 +6,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.9.1017]
 ### Added
-- Daily OS Next now has one long-lived planning assistant that remembers across
-  days instead of starting fresh every morning, so it can learn how you like
-  your days to be planned. A new "What I've learned" panel surfaces what it
-  remembers: confirm a suggestion, edit the wording, or forget it — and you can
-  simply tell it something to keep in mind. Each calendar day is still its own
-  workspace, so plans, captures, and refinements for one day never bleed into
-  another.
 - New desktop "Time Analysis" dashboard under Daily OS, opened from a
   sidebar entry beneath the month calendar onto the full screen: see where
   your time went per category and per day, with quick range presets
