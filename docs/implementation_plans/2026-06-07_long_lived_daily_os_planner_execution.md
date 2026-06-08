@@ -255,12 +255,32 @@ rebuild on planner notifications for the right day.
 
 ### Phase 5 — Durable knowledge + two-loop memory
 
-Touches: `agent_domain_entity.dart` (+codegen: `PlannerKnowledgeEntity` +
-`PlannerKnowledgeHeadEntity`), conversions/LWW/constants (A8), new
+**Status (user-confirmed):** the **fast loop** is implemented and reviewed
+(durable `PlannerKnowledgeEntity`, code-side Head selection, `propose_knowledge`
++ confirm/retract/edit service, two-tier prefix-cache-optimal prompt injection,
+the "What I've learned" panel + l10n). Two deviations/deferrals are approved:
+
+- **No `PlannerKnowledgeHeadEntity`.** Head selection is a pure projection over
+  the entry set (`activePlannerKnowledge`) — convergent without a second
+  variant; `supersedesId` is provenance-only.
+- **The weekly one-on-one ritual (slow loop, A16) is DEFERRED to a follow-up.**
+  Wiring the planner into `TemplateEvolutionWorkflow` (gather planner
+  observations + fold confirmed knowledge into a new user-approved template
+  version + seed/trigger an improver for the day-agent template) is a genuine
+  subsystem integration, not a small change — the escalation point this plan
+  reserved. The fast loop already delivers ADR 0022's core "memorize what I
+  tell you" promise; the slow-loop consolidation lands separately.
+  `seeded_directive_content.dart` (A11) and the localized planner display name
+  (CodeRabbit) ride that follow-up.
+
+Original Phase 5 touch list (for reference):
+`agent_domain_entity.dart` (+codegen: `PlannerKnowledgeEntity`),
+conversions/LWW/constants (A8), new
 `day_agent_knowledge_service.dart`, `day_agent_tool_names.dart` + tool defs,
 `day_agent_workflow.dart` (hook-index injection + scoped retrieval + memory
-split), `template_evolution_workflow.dart` + ritual/improver wiring (A16),
-`seeded_directive_content.dart` (A11), UI `ui/widgets/knowledge_panel.dart` +
+split), `template_evolution_workflow.dart` + ritual/improver wiring (A16,
+deferred), `seeded_directive_content.dart` (A11, deferred), UI
+`ui/widgets/knowledge_panel.dart` +
 provider + day-surface integration, l10n in all primary arb files (informal
 tone), mirrored tests.
 
