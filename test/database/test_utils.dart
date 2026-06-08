@@ -102,6 +102,26 @@ void unregisterJournalDbTestServices() {
     ..unregister<Directory>();
 }
 
+/// Deletes every row from every table in [db] **without** recreating the
+/// schema, so a single `setUpAll`-opened in-memory [JournalDb] can be reused
+/// across all tests in a file while each test still starts from an empty
+/// database. This makes per-test setup cheap (the expensive ~40-step migration
+/// ladder runs once per file instead of once per test) while preserving full
+/// isolation.
+///
+/// Foreign-key enforcement is toggled off for the sweep so the delete order is
+/// irrelevant, and `db.allTables` guarantees no table is missed (the source of
+/// cross-test contamination that a hand-listed truncation would risk). Callers
+/// that rely on the config flags should re-seed them with `initConfigFlags`
+/// after clearing (the flags table is cleared too).
+Future<void> clearAllTables(JournalDb db) async {
+  await db.customStatement('PRAGMA foreign_keys = OFF');
+  for (final table in db.allTables) {
+    await db.customStatement('DELETE FROM ${table.actualTableName}');
+  }
+  await db.customStatement('PRAGMA foreign_keys = ON');
+}
+
 /// Deterministic timestamp shared by the entry builders below.
 final testDate = DateTime(2024, 3, 15, 10, 30);
 
