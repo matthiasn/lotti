@@ -75,9 +75,10 @@ AgentSlots _generatedPendingWakeSlots(
     _GeneratedPendingWakeSubjectSlot.task => AgentSlots(
       activeTaskId: _taskId(index),
     ),
-    _GeneratedPendingWakeSubjectSlot.day => AgentSlots(
-      activeDayId: _dayId(index),
-    ),
+    // The planner's day wakes no longer pin an `activeDayId` slot — they carry
+    // the day as a workspace `subjectLabel` on the record (see
+    // [_subjectLabelFor]); the agent's slots are empty.
+    _GeneratedPendingWakeSubjectSlot.day => const AgentSlots(),
     _GeneratedPendingWakeSubjectSlot.project => AgentSlots(
       activeProjectId: _projectId(index),
     ),
@@ -92,10 +93,18 @@ String? _expectedSubjectId(_GeneratedPendingWakeSubjectSlot slot, int index) {
   return switch (slot) {
     _GeneratedPendingWakeSubjectSlot.none => null,
     _GeneratedPendingWakeSubjectSlot.task => _taskId(index),
-    _GeneratedPendingWakeSubjectSlot.day => _dayId(index),
+    // The day subject is resolved from the record's [subjectLabel], not a
+    // linked journal entry, so it has no journal-title key.
+    _GeneratedPendingWakeSubjectSlot.day => null,
     _GeneratedPendingWakeSubjectSlot.project => _projectId(index),
     _GeneratedPendingWakeSubjectSlot.both => _taskId(index),
   };
+}
+
+/// The workspace subject carried on the record itself (planner day wakes).
+/// `null` for the slots whose subject resolves from a linked journal entry.
+String? _subjectLabelFor(_GeneratedPendingWakeSubjectSlot slot, int index) {
+  return slot == _GeneratedPendingWakeSubjectSlot.day ? _dayId(index) : null;
 }
 
 String _taskId(int index) => 'task-$index';
@@ -226,6 +235,7 @@ void main() {
               ),
               type: type,
               dueAt: dueAt,
+              subjectLabel: _subjectLabelFor(spec.subjectSlot, index),
             ),
           );
         }
@@ -241,9 +251,16 @@ void main() {
           final record = records[index];
           final reason = '$scenario (index $index)';
           final agentName = 'Agent $index';
-          final subjectTitle =
-              subjectTitles[_expectedSubjectId(spec.subjectSlot, index)]
-                  ?.trim();
+          // A record-carried workspace label wins over any linked-entry title,
+          // mirroring [_toVm].
+          final subjectLabel = _subjectLabelFor(
+            spec.subjectSlot,
+            index,
+          )?.trim();
+          final subjectTitle = (subjectLabel != null && subjectLabel.isNotEmpty)
+              ? subjectLabel
+              : subjectTitles[_expectedSubjectId(spec.subjectSlot, index)]
+                    ?.trim();
           final hasSubject =
               subjectTitle != null &&
               subjectTitle.isNotEmpty &&

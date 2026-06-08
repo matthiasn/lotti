@@ -895,6 +895,21 @@ class AgentRepository {
         .toList();
   }
 
+  /// Fetch all still-pending [ScheduledWakeEntity] records regardless of when
+  /// they fire, ordered by `scheduledAt`.
+  ///
+  /// Unlike [getDueScheduledWakeRecords] (which bounds on `scheduledAt <= now`
+  /// to fire wakes), this surfaces future records too — it backs the
+  /// Settings → Agents → Pending Wakes diagnostic list, where the planner's
+  /// outstanding day pre-warms must be visible before they come due.
+  Future<List<ScheduledWakeEntity>> getPendingScheduledWakeRecords() async {
+    final rows = await _db.getPendingScheduledWakeRecords().get();
+    return rows
+        .map(AgentDbConversions.fromEntityRow)
+        .whereType<ScheduledWakeEntity>()
+        .toList();
+  }
+
   /// Fetch all agent identity entities (type = 'agent'), excluding deleted.
   ///
   /// Returns all agents regardless of their lifecycle state.

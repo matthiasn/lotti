@@ -69,7 +69,11 @@ final FutureProvider<List<PendingWakeVm>> agentPendingWakeRowVmsProvider =
 
 PendingWakeVm _toVm(PendingWakeRecord record, String? rawSubjectTitle) {
   final agentName = record.agent.displayName;
-  final subjectTitle = rawSubjectTitle?.trim();
+  // A workspace-scoped wake (planner day pre-warm) carries its subject on the
+  // record; otherwise fall back to the resolved linked-entry title.
+  final subjectTitle = (record.subjectLabel?.trim().isNotEmpty ?? false)
+      ? record.subjectLabel!.trim()
+      : rawSubjectTitle?.trim();
   final hasSubject =
       subjectTitle != null &&
       subjectTitle.isNotEmpty &&
@@ -87,9 +91,12 @@ PendingWakeVm _toVm(PendingWakeRecord record, String? rawSubjectTitle) {
 }
 
 String? _subjectEntryId(PendingWakeRecord record) {
-  return record.state.slots.activeTaskId ??
-      record.state.slots.activeDayId ??
-      record.state.slots.activeProjectId;
+  // The day planner no longer pins an `activeDayId` slot — its day-scoped
+  // wakes carry their subject as a workspace label on the record instead
+  // (see [PendingWakeRecord.subjectLabel]). Only task/project agents resolve
+  // their subject from a linked journal entry here.
+  if (record.subjectLabel != null) return null;
+  return record.state.slots.activeTaskId ?? record.state.slots.activeProjectId;
 }
 
 /// Localized label for a [PendingWakeType]. Same copy the legacy

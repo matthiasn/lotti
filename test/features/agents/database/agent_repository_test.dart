@@ -5947,6 +5947,92 @@ void main() {
     });
   });
 
+  // ── getPendingScheduledWakeRecords ─────────────────────────────────────────
+
+  group('getPendingScheduledWakeRecords', () {
+    ScheduledWakeEntity makeScheduledWake({
+      required String id,
+      required DateTime scheduledAt,
+      ScheduledWakeStatus status = ScheduledWakeStatus.pending,
+      String workspaceKey = 'day:dayplan-2026-04-01',
+      DateTime? deletedAt,
+    }) {
+      return AgentDomainEntity.scheduledWake(
+            id: id,
+            agentId: testAgentId,
+            scheduledAt: scheduledAt,
+            status: status,
+            reason: WakeReason.scheduled.name,
+            updatedAt: testDate,
+            vectorClock: const VectorClock({'node-1': 7}),
+            workspaceKey: workspaceKey,
+            deletedAt: deletedAt,
+          )
+          as ScheduledWakeEntity;
+    }
+
+    test(
+      'returns all pending records regardless of due time, ordered by '
+      'scheduledAt ascending — unlike the due query it surfaces future wakes',
+      () async {
+        // Deliberately out of order, and the second one is far in the future:
+        // the due query would hide it, the pending query must not.
+        await repo.upsertEntity(
+          makeScheduledWake(
+            id: 'wake-later',
+            scheduledAt: DateTime(2026, 4, 5, 9),
+          ),
+        );
+        await repo.upsertEntity(
+          makeScheduledWake(
+            id: 'wake-earlier',
+            scheduledAt: DateTime(2026, 4, 1, 6),
+          ),
+        );
+
+        final result = await repo.getPendingScheduledWakeRecords();
+
+        expect(
+          result.map((r) => r.id),
+          ['wake-earlier', 'wake-later'],
+        );
+      },
+    );
+
+    test('excludes consumed and soft-deleted records', () async {
+      await repo.upsertEntity(
+        makeScheduledWake(
+          id: 'wake-consumed',
+          scheduledAt: DateTime(2026, 4, 1, 11),
+          status: ScheduledWakeStatus.consumed,
+        ),
+      );
+      await repo.upsertEntity(
+        makeScheduledWake(
+          id: 'wake-deleted',
+          scheduledAt: DateTime(2026, 4, 1, 11),
+          deletedAt: DateTime(2026, 4, 1, 11, 30),
+        ),
+      );
+      await repo.upsertEntity(
+        makeScheduledWake(
+          id: 'wake-pending',
+          scheduledAt: DateTime(2026, 4, 1, 11),
+        ),
+      );
+
+      final result = await repo.getPendingScheduledWakeRecords();
+
+      expect(result.map((r) => r.id), ['wake-pending']);
+    });
+
+    test('returns empty list when no pending records exist', () async {
+      final result = await repo.getPendingScheduledWakeRecords();
+
+      expect(result, isEmpty);
+    });
+  });
+
   // ── getEntitiesWithNullVectorClock / countEntitiesWithNullVectorClock ──────
 
   group('getEntitiesWithNullVectorClock', () {
