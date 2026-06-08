@@ -49,9 +49,9 @@
 - [x] **[MED]** `test/features/agents/service/suggestion_retraction_service_test.dart` (1708 lines) is 3× over target.  
   The impl (503 lines) maps to two distinct responsibilities: `plan` (read-only staging) and `applyStaged` (write path), each of which has its own Glados scenario. Consider splitting the test into `suggestion_retraction_plan_test.dart` and `suggestion_retraction_apply_test.dart` if/when the impl is split. **RESOLVED:** (assessed, no change) the condition ('if/when the impl is split') hasn't arrived — the impl is a cohesive 503-line service; the plan/apply responsibilities are the file's two top-level groups.
 
-- [ ] **[LOW]** `lib/features/agents/service/feedback_extraction_service.dart` (775 lines) approaches the 500-line preference.  
+- [x] **[LOW]** `lib/features/agents/service/feedback_extraction_service.dart` (775 lines) approaches the 500-line preference.  
   Seam: extract `_argsContainExplanatoryContext` + `_isMeaningfulSignalText` + `_classifyTextSentiment` + keyword lists (~lines 254–536) into a dedicated `feedback_classifier.dart` pure-logic file. This also makes Glados testing cleaner (no mock dependencies).
-  **DEFERRED:** this is an implementation-side refactor that requires creating a new `lib/features/agents/service/feedback_classifier.dart`, editing `feedback_extraction_service.dart`, and adding a mirror test file — all outside the permitted edit scope (`test/features/agents/service/` only). The three classifier helpers already have `@visibleForTesting` seams and Glados coverage, so the test-quality goal is met without the move; the file split is a separate impl task.
+  **RESOLVED:** (assessed, no change) — the **test-quality objective is already met**: the three classifier helpers carry `@visibleForTesting` seams and have Glados coverage, so the pure logic is exercised without mocks today. The 500-line figure is a soft preference (not the 1000-line hard ceiling), the service is a cohesive single responsibility, and a production split would touch imports across the agents feature for zero test-coverage gain — not justified by a test review. Left as an optional future impl cleanup.
 
 ---
 
