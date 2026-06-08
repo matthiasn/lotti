@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_panel.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -19,6 +20,7 @@ void main() {
     required String statement,
     KnowledgeStatus status = KnowledgeStatus.confirmed,
     DateTime? reviewAfter,
+    List<String> tags = const [],
   }) {
     return AgentDomainEntity.plannerKnowledge(
           id: id,
@@ -32,6 +34,7 @@ void main() {
           updatedAt: DateTime(2026, 5, 20),
           vectorClock: null,
           reviewAfter: reviewAfter,
+          tags: tags,
         )
         as PlannerKnowledgeEntity;
   }
@@ -91,6 +94,31 @@ void main() {
       find.text('Awaiting your confirmation'.toUpperCase()),
       findsOneWidget,
     );
+  });
+
+  testWidgets('renders tags as chips, and none when an entry has no tags', (
+    tester,
+  ) async {
+    final view = PlannerKnowledgeView(
+      confirmed: [
+        entry(
+          id: 'c',
+          key: 'deep-work',
+          statement: 'No deep work before 10.',
+          tags: const ['mornings', 'deep-work'],
+        ),
+        entry(id: 'u', key: 'untagged', statement: 'No chips here.'),
+      ],
+      proposed: const [],
+    );
+
+    await tester.pumpWidget(panel(view, MockDayAgentKnowledgeService()));
+    await tester.pump();
+
+    // Two chips for the tagged entry; the untagged entry adds none.
+    expect(find.byType(DsPill), findsNWidgets(2));
+    expect(find.text('mornings'), findsOneWidget);
+    expect(find.text('deep-work'), findsOneWidget);
   });
 
   testWidgets('confirming a proposal calls the service', (tester) async {

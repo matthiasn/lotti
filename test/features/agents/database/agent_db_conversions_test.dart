@@ -471,6 +471,7 @@ void main() {
         updatedAt: updatedAt,
         vectorClock: const VectorClock({'node-a': 3}),
         scope: 'category:focus',
+        tags: const ['mornings', 'deep-work'],
       );
 
       final companion = AgentDbConversions.toEntityCompanion(entity);
@@ -500,6 +501,7 @@ void main() {
       expect(k.source, KnowledgeSource.userStated);
       expect(k.status, KnowledgeStatus.confirmed);
       expect(k.scope, 'category:focus');
+      expect(k.tags, const ['mornings', 'deep-work']);
     });
 
     test('scheduledWake writes type/subtype and roundtrips through a row', () {

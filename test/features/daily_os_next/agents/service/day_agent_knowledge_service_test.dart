@@ -130,6 +130,18 @@ void main() {
           });
     });
 
+    test('stores normalized tags (trim, drop empty, dedup, cap)', () async {
+      final entry = await service.propose(
+        agentId: agentId,
+        key: 'k',
+        hook: 'h',
+        statement: 's',
+        tags: const ['  mornings  ', 'Mornings', '', 'deep-work'],
+      );
+      // Trimmed, empties dropped, case-insensitive dedup keeps first-seen.
+      expect(entry.tags, const ['mornings', 'deep-work']);
+    });
+
     test('rejects a malformed scope at the public choke point', () async {
       await expectLater(
         service.propose(
@@ -193,6 +205,22 @@ void main() {
       final stored = upserts.single as PlannerKnowledgeEntity;
       expect(stored.status, KnowledgeStatus.confirmed);
       expect(stored.key, 'deep-work');
+    });
+
+    test('passes through tags from the tool args', () async {
+      final result = await service.executeTool(
+        agentId: agentId,
+        toolName: DayAgentToolNames.proposeKnowledge,
+        args: const {
+          'key': 'k',
+          'hook': 'h',
+          'statement': 's',
+          'tags': ['mornings', 'deep-work'],
+        },
+      );
+      expect(result.success, isTrue);
+      final stored = upserts.single as PlannerKnowledgeEntity;
+      expect(stored.tags, const ['mornings', 'deep-work']);
     });
 
     test('rejects an unknown tool name', () async {
@@ -299,6 +327,7 @@ void main() {
                 updatedAt: now,
                 vectorClock: null,
                 reviewAfter: DateTime(2026, 5, 2),
+                tags: const ['mornings'],
               )
               as PlannerKnowledgeEntity;
       when(() => repository.getEntity('e3')).thenAnswer((_) async => stale);
@@ -311,6 +340,8 @@ void main() {
             expect(updated.status, KnowledgeStatus.confirmed);
             // The stale review flag is cleared by a fresh edit.
             expect(updated.reviewAfter, isNull);
+            // Tags are immutable across an edit — carried forward, not dropped.
+            expect(updated.tags, const ['mornings']);
           });
     });
 

@@ -433,7 +433,11 @@ stateDiagram-v2
   plus scope-filtered full statements (global always; `category:`/`project:`
   scopes only when the wake touches them), and entries past their `reviewAfter`
   resurface for re-confirmation. Because it is a domain entity that never enters
-  the compaction fold, durable knowledge survives summarization untouched.
+  the compaction fold, durable knowledge survives summarization untouched. An
+  entry also carries optional author-time `tags` (A-MEM construction attributes
+  the agent supplies on `propose_knowledge`) — normalized once at origin
+  (trim/dedup/cap) and carried forward immutably across confirm/edit, surfaced
+  as `DsPill` chips under each entry in the "What I've learned" panel.
 - `summarize_recent_patterns` returns transient learning-card payloads from
   recent `DayPlanEntity` rows across **all** days under the one planner — the
   deliberate cross-day learning the single identity enables. It does not persist

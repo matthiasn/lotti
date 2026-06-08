@@ -350,6 +350,14 @@ void main() {
         (props['source']! as Map<String, dynamic>)['enum'],
         ['userStated', 'agentInferred'],
       );
+      // Optional author-time tags: a string array, not required.
+      final tags = props['tags']! as Map<String, dynamic>;
+      expect(tags['type'], 'array');
+      expect(tags['items'], {'type': 'string'});
+      expect(
+        requiredFor(DayAgentToolNames.proposeKnowledge),
+        isNot(contains('tags')),
+      );
     });
 
     test('nested item schemas keep their own strict contracts', () {

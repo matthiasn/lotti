@@ -388,6 +388,9 @@ PlannerKnowledgeEntity _$PlannerKnowledgeEntityFromJson(
       : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
   value: json['value'] as String? ?? '',
   scope: json['scope'] as String? ?? 'global',
+  tags:
+      (json['tags'] as List<dynamic>?)?.map((e) => e as String).toList() ??
+      const <String>[],
   supersedesId: json['supersedesId'] as String?,
   confirmedAt: json['confirmedAt'] == null
       ? null
@@ -419,6 +422,7 @@ Map<String, dynamic> _$PlannerKnowledgeEntityToJson(
   'vectorClock': instance.vectorClock,
   'value': instance.value,
   'scope': instance.scope,
+  'tags': instance.tags,
   'supersedesId': instance.supersedesId,
   'confirmedAt': instance.confirmedAt?.toIso8601String(),
   'retractedAt': instance.retractedAt?.toIso8601String(),

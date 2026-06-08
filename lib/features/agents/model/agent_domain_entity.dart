@@ -210,6 +210,11 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     /// `global` (always surfaced), `category:<id>`, or `project:<id>`.
     @Default('global') String scope,
 
+    /// Author-time topic tags (A-MEM construction attributes), set once at
+    /// origin and carried forward immutably across confirm/edit. Surfaced as
+    /// chips in the "What I've learned" panel and reusable for later recall.
+    @Default(<String>[]) List<String> tags,
+
     /// The prior entry this supersedes (recency-wins), if any.
     String? supersedesId,
     DateTime? confirmedAt,

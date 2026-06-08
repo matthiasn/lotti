@@ -4,6 +4,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
+import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -123,6 +124,17 @@ class _KnowledgeRow extends ConsumerWidget {
               style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: tokens.colors.alert.warning.defaultColor,
               ),
+            ),
+          ],
+          if (entry.tags.isNotEmpty) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Wrap(
+              spacing: tokens.spacing.step2,
+              runSpacing: tokens.spacing.step2,
+              children: [
+                for (final tag in entry.tags)
+                  DsPill(variant: DsPillVariant.filled, label: tag),
+              ],
             ),
           ],
           SizedBox(height: tokens.spacing.step2),

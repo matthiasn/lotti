@@ -579,6 +579,14 @@ const dayAgentTools = <AgentToolDefinition>[
           'type': 'string',
           'enum': ['userStated', 'agentInferred'],
         },
+        'tags': {
+          'type': 'array',
+          'items': {'type': 'string'},
+          'description':
+              'Optional short topic tags for this entry (e.g. "mornings", '
+              '"deep-work"). Shown to the user as chips; reuse the same tag '
+              'across related entries so they group.',
+        },
       },
       'required': ['key', 'hook', 'statement'],
       'additionalProperties': false,

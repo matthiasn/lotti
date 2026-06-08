@@ -101,6 +101,14 @@ class DayAgentKnowledgeService {
       ),
     };
 
+    final rawTags = args['tags'];
+    final tags = rawTags is List
+        ? <String>[
+            for (final t in rawTags)
+              if (t is String) t,
+          ]
+        : const <String>[];
+
     final entry = await propose(
       agentId: agentId,
       key: key,
@@ -109,6 +117,7 @@ class DayAgentKnowledgeService {
       value: value,
       scope: scope,
       source: source,
+      tags: tags,
     );
     return {
       'id': entry.id,
@@ -131,6 +140,7 @@ class DayAgentKnowledgeService {
     String value = '',
     String scope = knowledgeGlobalScope,
     KnowledgeSource source = KnowledgeSource.agentInferred,
+    List<String> tags = const [],
   }) async {
     // Validate at the public choke point (not just the tool wrapper): a
     // malformed scope stored here would silently never match any wake's
@@ -160,6 +170,7 @@ class DayAgentKnowledgeService {
               vectorClock: null,
               value: value,
               scope: resolvedScope,
+              tags: _normalizeTags(tags),
               supersedesId: prior?.id,
               confirmedAt: confirmed ? now : null,
             )
@@ -287,6 +298,29 @@ class DayAgentKnowledgeService {
     throw const DayAgentKnowledgeException(
       '"scope" must be "global", "category:<id>", or "project:<id>".',
     );
+  }
+
+  /// Normalizes author-time [tags]: trim, drop empties, cap each tag's length,
+  /// de-duplicate case-insensitively (keeping first-seen casing/order), and
+  /// bound the count — so a runaway tag list can never bloat the panel or a
+  /// future prompt rendering.
+  static List<String> _normalizeTags(List<String> tags) {
+    const maxTags = 8;
+    const maxTagLength = 40;
+    final seen = <String>{};
+    final result = <String>[];
+    for (final raw in tags) {
+      final trimmed = raw.trim();
+      if (trimmed.isEmpty) continue;
+      final capped = trimmed.length > maxTagLength
+          ? trimmed.substring(0, maxTagLength)
+          : trimmed;
+      if (seen.add(capped.toLowerCase())) {
+        result.add(capped);
+        if (result.length >= maxTags) break;
+      }
+    }
+    return result;
   }
 
   /// Rejects a `hook` longer than [_maxHookLength]. The hook is the always-on
