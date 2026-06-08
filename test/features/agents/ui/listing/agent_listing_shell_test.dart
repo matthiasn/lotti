@@ -442,6 +442,58 @@ void main() {
         expect(_alphaAboveBravo(tester), isFalse);
       },
     );
+
+    testWidgets(
+      'swapping both axis lists so neither selected id survives reseats both '
+      'the group and the sort at once',
+      (tester) async {
+        final harness = _AxisSwapHarness(
+          rows: [
+            _row(id: 'a', title: 'Alpha'),
+            _row(id: 'b', title: 'Bravo'),
+          ],
+          initialGroupAxes: [_group('g1', 'One')],
+          // Ascending sort -> Alpha above Bravo before the swap.
+          initialSortAxes: [_sort('s1', 'SortOne')],
+          // Neither the group id 'g1' nor the sort id 's1' survive, so both
+          // reseat ternary branches take their false path simultaneously
+          // (double reseat). The new group axis relabels the header and the
+          // new sort axis sorts descending, so both consequences are
+          // independently observable.
+          swappedGroupAxes: [_group('g2', 'Two')],
+          swappedSortAxes: [_sort('s2', 'SortTwo', descending: true)],
+        );
+        final key = GlobalKey<_AxisSwapHarnessState>();
+
+        await tester.binding.setSurfaceSize(const Size(1200, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Scaffold(
+              body: _AxisSwapHost(key: key, config: harness),
+            ),
+            mediaQueryData: const MediaQueryData(size: Size(1200, 900)),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Before the swap: grouped by 'g1', sorted ascending.
+        expect(find.text('GROUP[One]'), findsOneWidget);
+        expect(find.text('GROUP[Two]'), findsNothing);
+        expect(_alphaAboveBravo(tester), isTrue);
+
+        key.currentState!.swap();
+        await tester.pumpAndSettle();
+
+        // After the double reseat: both dead ids are replaced by the new
+        // first axes. The header relabels to the new group axis AND the row
+        // order flips to descending — proving both ids were reseated in the
+        // same didUpdateWidget pass.
+        expect(find.text('GROUP[One]'), findsNothing);
+        expect(find.text('GROUP[Two]'), findsOneWidget);
+        expect(_alphaAboveBravo(tester), isFalse);
+      },
+    );
   });
 }
 
