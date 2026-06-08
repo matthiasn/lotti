@@ -367,6 +367,10 @@ class EvolutionChatState extends _$EvolutionChatState {
   static bool _hasNonEmptyText(String? text) =>
       text?.trim().isNotEmpty ?? false;
 
+  /// Test seam for the non-empty-text guard — pure, no state.
+  @visibleForTesting
+  static bool debugHasNonEmptyText(String? text) => _hasNonEmptyText(text);
+
   static String _proposalKey(PendingProposal proposal) {
     return [
       proposal.generalDirective.trim(),

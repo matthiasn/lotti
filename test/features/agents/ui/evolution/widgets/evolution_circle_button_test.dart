@@ -24,11 +24,21 @@ void main() {
     );
   }
 
-  testWidgets('renders the given icon', (tester) async {
+  testWidgets('renders the given icon and is disabled without onPressed', (
+    tester,
+  ) async {
     await tester.pumpWidget(buildSubject());
     await tester.pumpAndSettle();
 
     expect(find.byIcon(Icons.mic), findsOneWidget);
+
+    // With no onPressed and forceActive false, the button is disabled and
+    // renders the inactive (muted) icon color rather than the active one.
+    final iconButton = tester.widget<IconButton>(find.byType(IconButton));
+    expect(iconButton.onPressed, isNull);
+
+    final icon = tester.widget<Icon>(find.byIcon(Icons.mic));
+    expect(icon.color, isNot(Colors.white));
   });
 
   testWidgets('invokes onPressed when tapped', (tester) async {
