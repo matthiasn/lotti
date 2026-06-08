@@ -233,6 +233,25 @@ extension _AnyGeneratedOutboundDrainScenario on glados.Any {
       );
 }
 
+/// A single room's behaviour for the room-resolution property.
+///
+/// [marked] rooms report a sync state event; [unmarked] report `null`;
+/// [throwing] raise from `getState` (which `_resolveSyncRoomId` treats as
+/// unmarked via its `catch`).
+enum _GeneratedRoomKind {
+  marked,
+  unmarked,
+  throwing,
+}
+
+extension _AnyGeneratedRoomKindList on glados.Any {
+  glados.Generator<_GeneratedRoomKind> get generatedRoomKind =>
+      glados.AnyUtils(this).choose(_GeneratedRoomKind.values);
+
+  glados.Generator<List<_GeneratedRoomKind>> get generatedRoomTopology =>
+      glados.ListAnys(this).listWithLengthInRange(0, 6, generatedRoomKind);
+}
+
 MockRoom _generatedRoom({
   required String id,
   required bool isSyncMarked,
@@ -325,6 +344,11 @@ void main() {
     late MockRoom room;
     final events = <Map<String, Object?>>[];
 
+    // No setUpTestGetIt()/tearDownTestGetIt() here on purpose: OutboundQueue
+    // takes all of its collaborators (SyncDatabase, MatrixSdkGateway, the event
+    // sink) via its constructor and never touches the global getIt locator, so
+    // there is no service-locator state to register or to leak into other tests.
+    // The in-memory SyncDatabase is closed in tearDown.
     setUp(() {
       db = SyncDatabase(inMemoryDatabase: true);
       gateway = MockMatrixSdkGateway();
@@ -763,6 +787,102 @@ void main() {
             expect(generatedEvents.single['roomId'], scenario.expectedRoomId);
           } else {
             expect(generatedEvents, isEmpty);
+          }
+        } finally {
+          await localDb.close();
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
+      glados.any.generatedRoomTopology,
+      glados.ExploreConfig(numRuns: 160),
+    ).test(
+      'resolves to the sync room iff exactly one room is sync-marked',
+      (kinds) async {
+        final localDb = SyncDatabase(inMemoryDatabase: true);
+        final localGateway = MockMatrixSdkGateway();
+        final localClient = MockMatrixClient();
+        final generatedEvents = <Map<String, Object?>>[];
+
+        // Build the generated room list and compute the oracle: the resolver
+        // returns a room id only when exactly one room is sync-marked
+        // (throwing rooms are treated as unmarked).
+        final markedIds = <String>[];
+        final rooms = <Room>[];
+        for (var index = 0; index < kinds.length; index++) {
+          final kind = kinds[index];
+          final id = '!generated-room-$index:localhost';
+          rooms.add(
+            _generatedRoom(
+              id: id,
+              isSyncMarked: kind == _GeneratedRoomKind.marked,
+              throwsOnState: kind == _GeneratedRoomKind.throwing,
+            ),
+          );
+          if (kind == _GeneratedRoomKind.marked) {
+            markedIds.add(id);
+          }
+        }
+        final expectedRoomId = markedIds.length == 1 ? markedIds.single : null;
+
+        when(() => localGateway.client).thenReturn(localClient);
+        when(() => localClient.rooms).thenReturn(rooms);
+        when(
+          () => localGateway.sendText(
+            roomId: any<String>(named: 'roomId'),
+            message: any<String>(named: 'message'),
+            messageType: 'com.lotti.sync.message',
+            displayPendingEvent: false,
+          ),
+        ).thenAnswer((_) async => _generatedEventId);
+
+        try {
+          // No explicit override → resolution depends purely on room topology.
+          await localDb.addOutboxItem(
+            _buildOutbox(
+              subject: 'resolve-head',
+              message: _syncMessageJson('resolve-head'),
+              createdAt: DateTime(2024, 1, 2),
+            ),
+          );
+
+          final queue = OutboundQueue(
+            syncDatabase: localDb,
+            gateway: localGateway,
+            emitEvent: generatedEvents.add,
+          );
+
+          final delay = await queue.drain();
+          final head = await localDb.getOutboxItemById(1);
+
+          if (expectedRoomId == null) {
+            // Ambiguous or absent sync room → nothing is sent, item untouched.
+            expect(delay, isNull);
+            expect(head!.status, OutboxStatus.pending.index);
+            verifyNever(
+              () => localGateway.sendText(
+                roomId: any<String>(named: 'roomId'),
+                message: any<String>(named: 'message'),
+                messageType: any<String>(named: 'messageType'),
+                displayPendingEvent: any<bool>(named: 'displayPendingEvent'),
+              ),
+            );
+            expect(generatedEvents, isEmpty);
+          } else {
+            // Exactly one marked room → it receives the send and is marked sent.
+            expect(head!.status, OutboxStatus.sent.index);
+            verify(
+              () => localGateway.sendText(
+                roomId: expectedRoomId,
+                message: any<String>(named: 'message'),
+                messageType: 'com.lotti.sync.message',
+                displayPendingEvent: false,
+              ),
+            ).called(1);
+            expect(generatedEvents.single['event'], 'sendAck');
+            expect(generatedEvents.single['roomId'], expectedRoomId);
           }
         } finally {
           await localDb.close();
