@@ -518,24 +518,45 @@ void main() {
       mockDb = MockJournalDb();
     });
 
-    test('builds snapshot from a Task entity', () async {
-      final task = Task(
+    // Builds a [Task] whose shared metadata is fixed (from [testTask]) and
+    // whose [TaskData] fields vary only by the named parameters under test, so
+    // the resolveTaskMetadata tests read as data, not boilerplate.
+    Task makeTask({
+      required TaskStatus status,
+      required String title,
+      Duration? estimate,
+      DateTime? due,
+      TaskPriority priority = TaskPriority.p2Medium,
+      String? languageCode,
+    }) {
+      return Task(
         data: TaskData(
-          status: TaskStatus.open(
-            id: 'status-1',
-            createdAt: DateTime(2026, 3),
-            utcOffset: 60,
-          ),
-          title: 'Fix login bug',
+          status: status,
+          title: title,
           statusHistory: [],
           dateTo: DateTime(2026, 3),
           dateFrom: DateTime(2026, 3),
-          estimate: const Duration(hours: 2),
-          due: DateTime(2026, 3, 15),
-          priority: TaskPriority.p1High,
+          estimate: estimate,
+          due: due,
+          priority: priority,
+          languageCode: languageCode,
         ),
         meta: testTask.meta,
         entryText: testTask.entryText,
+      );
+    }
+
+    test('builds snapshot from a Task entity', () async {
+      final task = makeTask(
+        status: TaskStatus.open(
+          id: 'status-1',
+          createdAt: DateTime(2026, 3),
+          utcOffset: 60,
+        ),
+        title: 'Fix login bug',
+        estimate: const Duration(hours: 2),
+        due: DateTime(2026, 3, 15),
+        priority: TaskPriority.p1High,
       );
       when(
         () => mockDb.journalEntityById('task-1'),
@@ -582,20 +603,13 @@ void main() {
     });
 
     test('handles task with null optional fields', () async {
-      final task = Task(
-        data: TaskData(
-          status: TaskStatus.inProgress(
-            id: 'status-2',
-            createdAt: DateTime(2026, 3),
-            utcOffset: 60,
-          ),
-          title: 'Minimal task',
-          statusHistory: [],
-          dateTo: DateTime(2026, 3),
-          dateFrom: DateTime(2026, 3),
+      final task = makeTask(
+        status: TaskStatus.inProgress(
+          id: 'status-2',
+          createdAt: DateTime(2026, 3),
+          utcOffset: 60,
         ),
-        meta: testTask.meta,
-        entryText: testTask.entryText,
+        title: 'Minimal task',
       );
       when(
         () => mockDb.journalEntityById('task-2'),
@@ -612,6 +626,30 @@ void main() {
       expect(snapshot.priority, 'P2'); // default
       expect(snapshot.estimateMinutes, isNull);
       expect(snapshot.dueDate, isNull);
+      expect(snapshot.languageCode, isNull);
+    });
+
+    test('surfaces a non-null languageCode in the snapshot', () async {
+      final task = makeTask(
+        status: TaskStatus.open(
+          id: 'status-3',
+          createdAt: DateTime(2026, 3),
+          utcOffset: 60,
+        ),
+        title: 'Task with language',
+        languageCode: 'de',
+      );
+      when(
+        () => mockDb.journalEntityById('task-3'),
+      ).thenAnswer((_) async => task);
+
+      final snapshot = await ChangeProposalFilter.resolveTaskMetadata(
+        mockDb,
+        'task-3',
+      );
+
+      expect(snapshot, isNotNull);
+      expect(snapshot!.languageCode, 'de');
     });
   });
 }

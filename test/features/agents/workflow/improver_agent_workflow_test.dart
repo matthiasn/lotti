@@ -11,6 +11,44 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
+const _targetTemplateId = 'target-template-001';
+
+/// Builds an improver [AgentIdentityEntity] (template-improver kind) for the
+/// improver workflow tests.
+AgentIdentityEntity makeImproverIdentity({
+  String agentId = kTestAgentId,
+}) {
+  return makeTestIdentity(
+    agentId: agentId,
+    kind: AgentKinds.templateImprover,
+    displayName: 'Test Improver',
+  );
+}
+
+/// Builds an improver [AgentStateEntity] with the feedback/one-on-one
+/// watermarks and recursion depth that the improver workflow branches on.
+AgentStateEntity makeImproverState({
+  String? activeTemplateId = _targetTemplateId,
+  DateTime? lastFeedbackScanAt,
+  DateTime? lastOneOnOneAt,
+  int? totalSessionsCompleted,
+  int wakeCounter = 0,
+  int? recursionDepth,
+}) {
+  return makeTestState(
+    slots: AgentSlots(
+      activeTemplateId: activeTemplateId,
+      lastFeedbackScanAt: lastFeedbackScanAt,
+      lastOneOnOneAt: lastOneOnOneAt,
+      totalSessionsCompleted: totalSessionsCompleted == null
+          ? const GCounter.empty()
+          : GCounter({'test-host': totalSessionsCompleted}),
+      recursionDepth: recursionDepth,
+    ),
+    wakeCounter: wakeCounter,
+  );
+}
+
 void main() {
   late MockFeedbackExtractionService mockFeedbackService;
   late MockTemplateEvolutionWorkflow mockEvolutionWorkflow;
@@ -20,7 +58,7 @@ void main() {
   late MockAgentSyncService mockSyncService;
   late ImproverAgentWorkflow workflow;
 
-  const targetTemplateId = 'target-template-001';
+  const targetTemplateId = _targetTemplateId;
 
   setUpAll(registerAllFallbackValues);
 
@@ -46,38 +84,6 @@ void main() {
     stubReconciledAgentState(mockSyncService, mockRepository);
     when(() => mockTemplateService.repository).thenReturn(mockRepository);
   });
-
-  AgentIdentityEntity makeImproverIdentity({
-    String agentId = kTestAgentId,
-  }) {
-    return makeTestIdentity(
-      agentId: agentId,
-      kind: AgentKinds.templateImprover,
-      displayName: 'Test Improver',
-    );
-  }
-
-  AgentStateEntity makeImproverState({
-    String? activeTemplateId = targetTemplateId,
-    DateTime? lastFeedbackScanAt,
-    DateTime? lastOneOnOneAt,
-    int? totalSessionsCompleted,
-    int wakeCounter = 0,
-    int? recursionDepth,
-  }) {
-    return makeTestState(
-      slots: AgentSlots(
-        activeTemplateId: activeTemplateId,
-        lastFeedbackScanAt: lastFeedbackScanAt,
-        lastOneOnOneAt: lastOneOnOneAt,
-        totalSessionsCompleted: totalSessionsCompleted == null
-            ? const GCounter.empty()
-            : GCounter({'test-host': totalSessionsCompleted}),
-        recursionDepth: recursionDepth,
-      ),
-      wakeCounter: wakeCounter,
-    );
-  }
 
   /// Stubs for the full happy-path scenario.
   void stubHappyPath({int feedbackCount = 5}) {

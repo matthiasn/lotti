@@ -65,6 +65,16 @@ class _GeneratedSoulContextCounts {
   }
 }
 
+extension _AnyFeedbackSentiments on glados.Any {
+  glados.Generator<FeedbackSentiment> get feedbackSentiment =>
+      glados.AnyUtils(this).choose(FeedbackSentiment.values);
+
+  /// A small list of sentiments (≤ 9) — kept under the per-template cap so the
+  /// ordering invariant is observed without truncation interference.
+  glados.Generator<List<FeedbackSentiment>> get feedbackSentimentList =>
+      glados.ListAnys(this).listWithLengthInRange(1, 9, feedbackSentiment);
+}
+
 extension _AnyGeneratedSoulContextCounts on glados.Any {
   glados.Generator<_GeneratedSoulContextCounts> get soulContextCounts =>
       glados.CombinableAny(this).combine5(
@@ -246,6 +256,54 @@ void main() {
       expect(ctx.initialUserMessage, contains('Laura Task Agent'));
       expect(ctx.initialUserMessage, contains('Laura Project Analyst'));
       expect(ctx.initialUserMessage, contains('2 template(s)'));
+    });
+
+    test('truncates the affected-template list with an "and N more" line', () {
+      // Past maxCrossTemplateNames, only the cap is listed by name and the
+      // remainder is summarised — exercise the overflow branch directly with a
+      // concrete static case (the Glados property covers it generatively).
+      const overflow = 3;
+      final templates = [
+        for (
+          var i = 0;
+          i < SoulEvolutionContextBuilder.maxCrossTemplateNames + overflow;
+          i++
+        )
+          (templateId: 't$i', displayName: 'Template $i'),
+      ];
+
+      final ctx = builder.build(
+        soul: makeTestSoulDocument(),
+        currentVersion: makeTestSoulDocumentVersion(),
+        recentVersions: [],
+        affectedTemplates: templates,
+        feedbackByTemplate: {},
+        pastNotes: [],
+        sessionNumber: 1,
+      );
+
+      final message = ctx.initialUserMessage;
+      // The capped names are shown…
+      expect(message, contains('- Template 0'));
+      expect(
+        message,
+        contains(
+          '- Template ${SoulEvolutionContextBuilder.maxCrossTemplateNames - 1}',
+        ),
+      );
+      // …the first name beyond the cap is NOT listed individually…
+      expect(
+        message,
+        isNot(
+          contains(
+            '- Template ${SoulEvolutionContextBuilder.maxCrossTemplateNames}\n',
+          ),
+        ),
+      );
+      // …and the overflow line names the exact remainder.
+      expect(message, contains('- ...and $overflow more'));
+      // The "all N template(s)" total still reflects the full count.
+      expect(message, contains('ALL ${templates.length} template(s)'));
     });
 
     test('shows no templates message when empty', () {
@@ -533,5 +591,60 @@ void main() {
         );
       }
     }, tags: 'glados');
+
+    // Property: within a template group, _writeFeedback renders all negative
+    // items before all positive before all neutral (a stable sort by the
+    // documented sentiment order), regardless of the input ordering.
+    glados.Glados(
+      glados.any.feedbackSentimentList,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'orders feedback negative → positive → neutral within a group',
+      (
+        sentiments,
+      ) {
+        final ctx = builder.build(
+          soul: makeTestSoulDocument(),
+          currentVersion: makeTestSoulDocumentVersion(),
+          recentVersions: [],
+          affectedTemplates: [(templateId: 't1', displayName: 'Task Agent')],
+          feedbackByTemplate: {
+            't1': makeTestClassifiedFeedback(
+              items: [
+                for (var i = 0; i < sentiments.length; i++)
+                  makeTestClassifiedFeedbackItem(
+                    sentiment: sentiments[i],
+                    detail: 'Ordered feedback $i',
+                  ),
+              ],
+            ),
+          },
+          pastNotes: [],
+          sessionNumber: 1,
+        );
+
+        // Extract the rendered sentiment-tag sequence in document order.
+        final renderedTags = RegExp(
+          r'- \[(negative|positive|neutral)\] Ordered',
+        ).allMatches(ctx.initialUserMessage).map((m) => m.group(1)).toList();
+
+        // All input items fit under the per-template cap, so all render.
+        expect(
+          renderedTags,
+          hasLength(sentiments.length),
+          reason: '$sentiments',
+        );
+
+        const rank = {'negative': 0, 'positive': 1, 'neutral': 2};
+        for (var i = 1; i < renderedTags.length; i++) {
+          expect(
+            rank[renderedTags[i - 1]],
+            lessThanOrEqualTo(rank[renderedTags[i]]!),
+            reason: 'not sorted at $i: $renderedTags (input $sentiments)',
+          );
+        }
+      },
+      tags: 'glados',
+    );
   });
 }
