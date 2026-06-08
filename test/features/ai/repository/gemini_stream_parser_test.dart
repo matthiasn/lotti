@@ -164,5 +164,45 @@ void main() {
       },
       tags: 'glados',
     );
+
+    // Property for the maxBufferSize trim+align invariant: even when a junk
+    // prefix that on its own exceeds the cap arrives before a valid object,
+    // the object is still recovered once it completes. The junk is generated
+    // without any '{' so the left-trim's "align to next '{'" step cannot chop
+    // into the object that follows. The junk is fed first so that, when the
+    // object arrives in the next chunk, the trim path runs against an already
+    // over-cap buffer (the worst case for the trim+align logic). Note: the cap
+    // bounds growth across calls, not a single oversized chunk, so we assert on
+    // object recovery rather than on a hard buffer-length bound after the junk.
+    Glados3(
+      any.intInRange(1, 64), // cap
+      any.intInRange(0, 200), // extra junk beyond the cap
+      any.nonEmptyLetterOrDigits, // brace-free value placed in the object
+      // Cheaper than the default; pure in-memory string scanning.
+      ExploreConfig(numRuns: 120),
+    ).test(
+      'recovers a valid object after an oversized junk prefix',
+      (cap, extraJunk, value) {
+        final parser = GeminiStreamParser(maxBufferSize: cap);
+        final junk = 'x' * (cap + extraJunk);
+        // First chunk: pure junk, no braces. Nothing completes yet.
+        final firstOut = parser.addChunk(junk);
+        expect(firstOut, isEmpty);
+        // The all-'x' junk leaves no '{' to trim/align against, so it stays
+        // buffered verbatim; it must not have produced any objects.
+        expect(parser.remainder(), junk);
+
+        // Second chunk: a complete, valid JSON object. This is where the
+        // trim+align path runs against an over-cap buffer.
+        final obj = jsonEncode({'v': value});
+        final out = parser.addChunk(obj);
+
+        expect(out.length, 1);
+        expect(out.first['v'], value);
+        // After parsing the only object, no remainder lingers.
+        expect(parser.remainder(), isEmpty);
+      },
+      tags: 'glados',
+    );
   });
 }

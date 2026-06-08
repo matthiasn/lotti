@@ -435,6 +435,34 @@ void main() {
             ),
           );
         });
+
+        test('throws on 5xx server error with status and body', () async {
+          final provider = createProvider();
+          const errorBody =
+              '{"code":"InternalError","message":"Service unavailable"}';
+
+          when(() => mockHttpClient.send(any())).thenAnswer(
+            (_) async => createStreamedResponse(errorBody, statusCode: 503),
+          );
+
+          expect(
+            () => repository.generateImage(
+              prompt: 'test',
+              model: 'wan2.6-image',
+              provider: provider,
+            ),
+            throwsA(
+              isA<Exception>().having(
+                (e) => e.toString(),
+                'message',
+                allOf(
+                  contains('503'),
+                  contains('InternalError'),
+                ),
+              ),
+            ),
+          );
+        });
       });
 
       group('SSE parsing failures', () {
