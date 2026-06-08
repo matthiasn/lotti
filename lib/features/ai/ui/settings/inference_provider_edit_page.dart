@@ -38,7 +38,9 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 
 part 'inference_provider_form_create.dart';
+part 'inference_provider_form_create_status.dart';
 part 'inference_provider_form_edit.dart';
+part 'inference_provider_form_edit_setup.dart';
 
 /// Runs the FTUE setup for the given provider type.
 ///

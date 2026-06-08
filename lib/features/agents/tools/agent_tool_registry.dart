@@ -2,6 +2,10 @@
 
 part 'evolution_tool_definitions.dart';
 part 'task_agent_tool_definitions.dart';
+part 'task_field_tool_definitions.dart';
+part 'task_checklist_tool_definitions.dart';
+part 'task_time_tool_definitions.dart';
+part 'task_planning_tool_definitions.dart';
 
 /// Metadata describing a single tool that an agent can call.
 ///

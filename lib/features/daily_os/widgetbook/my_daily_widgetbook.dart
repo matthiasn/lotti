@@ -22,8 +22,12 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:widgetbook/widgetbook.dart';
 
 part 'my_daily_preview_screen.dart';
+part 'my_daily_preview_screen_cards.dart';
 part 'my_daily_preview_timeline.dart';
+part 'my_daily_preview_timeline_specs.dart';
+part 'my_daily_preview_timeline_chrome.dart';
 part 'my_daily_widgetbook_fixtures.dart';
+part 'my_daily_widgetbook_preview_data.dart';
 
 const _holidayCategoryId = 'holiday';
 const _tasksCategoryId = 'lotti-tasks';

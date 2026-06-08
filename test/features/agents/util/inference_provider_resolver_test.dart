@@ -6,157 +6,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
-
-enum _GeneratedModelLookupShape {
-  empty,
-  nonMatchingOnly,
-  matchingFirst,
-  matchingSecond,
-  duplicateMatches,
-}
-
-enum _GeneratedProviderLookupShape {
-  missing,
-  wrongType,
-  cloudWithKey,
-  cloudEmptyKey,
-  cloudWhitespaceKey,
-  localEmptyKey,
-}
-
-class _GeneratedProviderResolutionScenario {
-  const _GeneratedProviderResolutionScenario({
-    required this.modelShape,
-    required this.providerShape,
-  });
-
-  static const modelId = 'generated-model';
-
-  final _GeneratedModelLookupShape modelShape;
-  final _GeneratedProviderLookupShape providerShape;
-
-  List<AiConfig> get models {
-    final nonMatchingModel = testAiModel(
-      id: 'non-matching-model',
-      providerModelId: 'other-model',
-      inferenceProviderId: 'provider-other',
-    );
-    final firstMatchingModel = testAiModel(
-      id: 'first-matching-model',
-      providerModelId: modelId,
-      inferenceProviderId: 'provider-first',
-    );
-    final secondMatchingModel = testAiModel(
-      id: 'second-matching-model',
-      providerModelId: modelId,
-      inferenceProviderId: 'provider-second',
-    );
-
-    return switch (modelShape) {
-      _GeneratedModelLookupShape.empty => <AiConfig>[],
-      _GeneratedModelLookupShape.nonMatchingOnly => [
-        nonMatchingModel,
-        testInferenceProvider(id: 'not-a-model'),
-      ],
-      _GeneratedModelLookupShape.matchingFirst => [
-        firstMatchingModel,
-        nonMatchingModel,
-      ],
-      _GeneratedModelLookupShape.matchingSecond => [
-        nonMatchingModel,
-        firstMatchingModel,
-      ],
-      _GeneratedModelLookupShape.duplicateMatches => [
-        firstMatchingModel,
-        secondMatchingModel,
-      ],
-    };
-  }
-
-  List<String> get matchingProviderIds {
-    return switch (modelShape) {
-      _GeneratedModelLookupShape.empty ||
-      _GeneratedModelLookupShape.nonMatchingOnly => const <String>[],
-      _GeneratedModelLookupShape.matchingFirst ||
-      _GeneratedModelLookupShape.matchingSecond => const ['provider-first'],
-      _GeneratedModelLookupShape.duplicateMatches => const [
-        'provider-first',
-        'provider-second',
-      ],
-    };
-  }
-
-  String? get expectedProviderId =>
-      resolvesProvider ? matchingProviderIds.first : null;
-
-  bool get hasMatchingModel => matchingProviderIds.isNotEmpty;
-
-  List<String> get expectedLookupProviderIds {
-    if (!hasMatchingModel) return const <String>[];
-    return resolvesProvider
-        ? matchingProviderIds.take(1).toList(growable: false)
-        : matchingProviderIds;
-  }
-
-  bool get resolvesProvider {
-    return hasMatchingModel &&
-        (providerShape == _GeneratedProviderLookupShape.cloudWithKey ||
-            providerShape == _GeneratedProviderLookupShape.localEmptyKey);
-  }
-
-  AiConfig? providerFor(String providerId) {
-    return switch (providerShape) {
-      _GeneratedProviderLookupShape.missing => null,
-      _GeneratedProviderLookupShape.wrongType => testAiModel(
-        id: providerId,
-        providerModelId: 'wrong-type',
-        inferenceProviderId: 'provider-other',
-      ),
-      _GeneratedProviderLookupShape.cloudWithKey => testInferenceProvider(
-        id: providerId,
-        apiKey: 'generated-key',
-      ),
-      _GeneratedProviderLookupShape.cloudEmptyKey => testInferenceProvider(
-        id: providerId,
-        apiKey: '',
-      ),
-      _GeneratedProviderLookupShape.cloudWhitespaceKey => testInferenceProvider(
-        id: providerId,
-        apiKey: '   ',
-      ),
-      _GeneratedProviderLookupShape.localEmptyKey => testLocalInferenceProvider(
-        id: providerId,
-      ),
-    };
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedProviderResolutionScenario('
-        'modelShape: $modelShape, providerShape: $providerShape)';
-  }
-}
-
-extension _AnyGeneratedProviderResolutionScenario on glados.Any {
-  glados.Generator<_GeneratedModelLookupShape> get modelLookupShape =>
-      glados.AnyUtils(this).choose(_GeneratedModelLookupShape.values);
-
-  glados.Generator<_GeneratedProviderLookupShape> get providerLookupShape =>
-      glados.AnyUtils(this).choose(_GeneratedProviderLookupShape.values);
-
-  glados.Generator<_GeneratedProviderResolutionScenario>
-  get providerResolutionScenario => glados.CombinableAny(this).combine2(
-    modelLookupShape,
-    providerLookupShape,
-    (
-      _GeneratedModelLookupShape modelShape,
-      _GeneratedProviderLookupShape providerShape,
-    ) => _GeneratedProviderResolutionScenario(
-      modelShape: modelShape,
-      providerShape: providerShape,
-    ),
-  );
-}
+import 'inference_provider_resolver_test_helpers.dart';
 
 void main() {
   late MockAiConfigRepository mockAiConfig;
@@ -483,7 +333,7 @@ void main() {
       });
 
       final provider = await resolveInferenceProvider(
-        modelId: _GeneratedProviderResolutionScenario.modelId,
+        modelId: GeneratedProviderResolutionScenario.modelId,
         aiConfigRepository: generatedRepository,
         logTag: 'GeneratedProviderResolutionTest',
       );
@@ -493,7 +343,7 @@ void main() {
         expect(provider!.id, scenario.expectedProviderId);
         // The resolved record carries the provider's real fields through.
         if (scenario.providerShape ==
-            _GeneratedProviderLookupShape.cloudWithKey) {
+            GeneratedProviderLookupShape.cloudWithKey) {
           expect(provider.apiKey, 'generated-key', reason: '$scenario');
         }
       } else {

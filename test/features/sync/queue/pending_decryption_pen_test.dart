@@ -1,9 +1,7 @@
-import 'dart:collection';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/pending_decryption_pen.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -11,221 +9,7 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-Event _buildEvent({
-  required String eventId,
-  required String roomId,
-  required int originTsMs,
-  required String type,
-  Map<String, dynamic>? content,
-}) {
-  final event = MockEvent();
-  final c = content ?? <String, dynamic>{'msgtype': syncMessageType};
-  when(() => event.eventId).thenReturn(eventId);
-  when(() => event.roomId).thenReturn(roomId);
-  when(() => event.type).thenReturn(type);
-  when(() => event.content).thenReturn(c);
-  when(() => event.text).thenReturn('stub');
-  when(
-    () => event.originServerTs,
-  ).thenReturn(DateTime.fromMillisecondsSinceEpoch(originTsMs));
-  when(event.toJson).thenReturn(<String, dynamic>{
-    'event_id': eventId,
-    'room_id': roomId,
-    'origin_server_ts': originTsMs,
-    'type': type,
-    'content': c,
-  });
-  return event;
-}
-
-enum _GeneratedPenOperationKind {
-  holdEncrypted,
-  holdPlain,
-  flushAllStillEncrypted,
-  flushAllDecrypt,
-  flushTargetDecrypt,
-  flushTargetThrows,
-}
-
-class _GeneratedPenOperation {
-  const _GeneratedPenOperation({
-    required this.kind,
-    required this.targetSlot,
-  });
-
-  final _GeneratedPenOperationKind kind;
-  final int targetSlot;
-
-  String get eventId =>
-      r'$pen-'
-      '$targetSlot';
-
-  bool get isFlush {
-    switch (kind) {
-      case _GeneratedPenOperationKind.flushAllStillEncrypted:
-      case _GeneratedPenOperationKind.flushAllDecrypt:
-      case _GeneratedPenOperationKind.flushTargetDecrypt:
-      case _GeneratedPenOperationKind.flushTargetThrows:
-        return true;
-      case _GeneratedPenOperationKind.holdEncrypted:
-      case _GeneratedPenOperationKind.holdPlain:
-        return false;
-    }
-  }
-
-  bool decrypts(String eventId) {
-    switch (kind) {
-      case _GeneratedPenOperationKind.flushAllDecrypt:
-        return true;
-      case _GeneratedPenOperationKind.flushTargetDecrypt:
-        return eventId == this.eventId;
-      case _GeneratedPenOperationKind.holdEncrypted:
-      case _GeneratedPenOperationKind.holdPlain:
-      case _GeneratedPenOperationKind.flushAllStillEncrypted:
-      case _GeneratedPenOperationKind.flushTargetThrows:
-        return false;
-    }
-  }
-
-  bool throwsFor(String eventId) =>
-      kind == _GeneratedPenOperationKind.flushTargetThrows &&
-      eventId == this.eventId;
-
-  @override
-  String toString() {
-    return '_GeneratedPenOperation('
-        'kind: $kind, '
-        'targetSlot: $targetSlot'
-        ')';
-  }
-}
-
-class _GeneratedPenScenario {
-  const _GeneratedPenScenario({
-    required this.capacity,
-    required this.maxAttempts,
-    required this.operations,
-  });
-
-  final int capacity;
-  final int maxAttempts;
-  final List<_GeneratedPenOperation> operations;
-
-  @override
-  String toString() {
-    return '_GeneratedPenScenario('
-        'capacity: $capacity, '
-        'maxAttempts: $maxAttempts, '
-        'operations: $operations'
-        ')';
-  }
-}
-
-class _ExpectedHeldPenEntry {
-  int attempts = 0;
-}
-
-class _ExpectedPenFlush {
-  const _ExpectedPenFlush({
-    required this.enqueued,
-    required this.stillEncrypted,
-    required this.dropped,
-  });
-
-  final int enqueued;
-  final int stillEncrypted;
-  final int dropped;
-}
-
-class _ExpectedPenModel {
-  _ExpectedPenModel({
-    required this.capacity,
-    required this.maxAttempts,
-  });
-
-  final int capacity;
-  final int maxAttempts;
-  final LinkedHashMap<String, _ExpectedHeldPenEntry> held =
-      LinkedHashMap<String, _ExpectedHeldPenEntry>();
-  final Set<String> queuedEventIds = <String>{};
-
-  void holdEncrypted(String eventId) {
-    final existing = held.remove(eventId) ?? _ExpectedHeldPenEntry();
-    held[eventId] = existing;
-    while (held.length > capacity) {
-      held.remove(held.keys.first);
-    }
-  }
-
-  _ExpectedPenFlush flush(_GeneratedPenOperation operation) {
-    var enqueued = 0;
-    var stillEncrypted = 0;
-    var dropped = 0;
-    final decrypted = <String>[];
-
-    for (final eventId in held.keys.toList(growable: false)) {
-      final entry = held[eventId];
-      if (entry == null) continue;
-
-      if (operation.decrypts(eventId)) {
-        decrypted.add(eventId);
-        continue;
-      }
-
-      entry.attempts++;
-      if (entry.attempts >= maxAttempts) {
-        held.remove(eventId);
-        dropped++;
-      } else {
-        stillEncrypted++;
-      }
-    }
-
-    for (final eventId in decrypted) {
-      held.remove(eventId);
-      queuedEventIds.add(eventId);
-    }
-    enqueued = decrypted.length;
-
-    return _ExpectedPenFlush(
-      enqueued: enqueued,
-      stillEncrypted: stillEncrypted,
-      dropped: dropped,
-    );
-  }
-}
-
-extension _AnyPendingDecryptionPenScenario on glados.Any {
-  glados.Generator<_GeneratedPenOperationKind> get penOperationKind =>
-      glados.AnyUtils(this).choose(_GeneratedPenOperationKind.values);
-
-  glados.Generator<_GeneratedPenOperation> get penOperation =>
-      glados.CombinableAny(this).combine2(
-        penOperationKind,
-        glados.IntAnys(this).intInRange(0, 5),
-        (
-          _GeneratedPenOperationKind kind,
-          int targetSlot,
-        ) => _GeneratedPenOperation(kind: kind, targetSlot: targetSlot),
-      );
-
-  glados.Generator<_GeneratedPenScenario> get penScenario =>
-      glados.CombinableAny(this).combine3(
-        glados.IntAnys(this).intInRange(1, 5),
-        glados.IntAnys(this).intInRange(1, 4),
-        glados.ListAnys(this).listWithLengthInRange(1, 24, penOperation),
-        (
-          int capacity,
-          int maxAttempts,
-          List<_GeneratedPenOperation> operations,
-        ) => _GeneratedPenScenario(
-          capacity: capacity,
-          maxAttempts: maxAttempts,
-          operations: operations,
-        ),
-      );
-}
+import 'pending_decryption_pen_test_helpers.dart';
 
 void main() {
   late SyncDatabase db;
@@ -255,7 +39,7 @@ void main() {
     'hold returns false for already-decrypted events so producer can enqueue them',
     () {
       final pen = PendingDecryptionPen(logging: logging);
-      final plain = _buildEvent(
+      final plain = buildEvent(
         eventId: r'$plain',
         roomId: roomId,
         originTsMs: 1,
@@ -268,7 +52,7 @@ void main() {
 
   test('hold retains encrypted events (F3)', () {
     final pen = PendingDecryptionPen(logging: logging);
-    final enc = _buildEvent(
+    final enc = buildEvent(
       eventId: r'$enc',
       roomId: roomId,
       originTsMs: 1,
@@ -283,7 +67,7 @@ void main() {
     () async {
       final pen = PendingDecryptionPen(logging: logging);
       const encId = r'$rotate';
-      final encrypted = _buildEvent(
+      final encrypted = buildEvent(
         eventId: encId,
         roomId: roomId,
         originTsMs: 100,
@@ -291,7 +75,7 @@ void main() {
       );
       pen.hold(encrypted);
 
-      final decrypted = _buildEvent(
+      final decrypted = buildEvent(
         eventId: encId,
         roomId: roomId,
         originTsMs: 100,
@@ -311,7 +95,7 @@ void main() {
 
   test('flushInto keeps still-encrypted events for the next sweep', () async {
     final pen = PendingDecryptionPen(logging: logging);
-    final encrypted = _buildEvent(
+    final encrypted = buildEvent(
       eventId: r'$stuck',
       roomId: roomId,
       originTsMs: 1,
@@ -330,7 +114,7 @@ void main() {
     'entry exceeding maxAttempts is dropped without being enqueued',
     () async {
       final pen = PendingDecryptionPen(logging: logging, maxAttempts: 2);
-      final encrypted = _buildEvent(
+      final encrypted = buildEvent(
         eventId: r'$doomed',
         roomId: roomId,
         originTsMs: 1,
@@ -352,19 +136,19 @@ void main() {
 
   test('capacity eviction drops the oldest entry', () async {
     final pen = PendingDecryptionPen(logging: logging, capacity: 2);
-    final a = _buildEvent(
+    final a = buildEvent(
       eventId: r'$a',
       roomId: roomId,
       originTsMs: 1,
       type: EventTypes.Encrypted,
     );
-    final b = _buildEvent(
+    final b = buildEvent(
       eventId: r'$b',
       roomId: roomId,
       originTsMs: 2,
       type: EventTypes.Encrypted,
     );
-    final c = _buildEvent(
+    final c = buildEvent(
       eventId: r'$c',
       roomId: roomId,
       originTsMs: 3,
@@ -378,13 +162,13 @@ void main() {
     // Stage decrypted versions for $b and $c; if the pen ever asks for
     // $a it would have to be an eviction regression, and the flush
     // would crash on the missing stub.
-    final bDecrypted = _buildEvent(
+    final bDecrypted = buildEvent(
       eventId: r'$b',
       roomId: roomId,
       originTsMs: 2,
       type: EventTypes.Message,
     );
-    final cDecrypted = _buildEvent(
+    final cDecrypted = buildEvent(
       eventId: r'$c',
       roomId: roomId,
       originTsMs: 3,
@@ -413,7 +197,7 @@ void main() {
     'the same size',
     () {
       final pen = PendingDecryptionPen(logging: logging, capacity: 4);
-      final encrypted = _buildEvent(
+      final encrypted = buildEvent(
         eventId: r'$rehold',
         roomId: roomId,
         originTsMs: 1,
@@ -432,7 +216,7 @@ void main() {
     'as still-encrypted for the next sweep',
     () async {
       final pen = PendingDecryptionPen(logging: logging);
-      final encrypted = _buildEvent(
+      final encrypted = buildEvent(
         eventId: r'$err',
         roomId: roomId,
         originTsMs: 1,
@@ -466,14 +250,14 @@ void main() {
             logging: logging,
             sweepInterval: const Duration(milliseconds: 10),
           )..hold(
-            _buildEvent(
+            buildEvent(
               eventId: r'$sweep',
               roomId: roomId,
               originTsMs: 1,
               type: EventTypes.Encrypted,
             ),
           );
-      final decrypted = _buildEvent(
+      final decrypted = buildEvent(
         eventId: r'$sweep',
         roomId: roomId,
         originTsMs: 1,
@@ -524,12 +308,12 @@ void main() {
           capacity: scenario.capacity,
           maxAttempts: scenario.maxAttempts,
         );
-        final expected = _ExpectedPenModel(
+        final expected = ExpectedPenModel(
           capacity: scenario.capacity,
           maxAttempts: scenario.maxAttempts,
         );
-        var activeFlush = const _GeneratedPenOperation(
-          kind: _GeneratedPenOperationKind.flushAllStillEncrypted,
+        var activeFlush = const GeneratedPenOperation(
+          kind: GeneratedPenOperationKind.flushAllStillEncrypted,
           targetSlot: 0,
         );
         when(
@@ -539,7 +323,7 @@ void main() {
           if (activeFlush.throwsFor(eventId)) {
             throw StateError('generated fetch failure');
           }
-          return _buildEvent(
+          return buildEvent(
             eventId: eventId,
             roomId: roomId,
             originTsMs: 1000 + int.parse(eventId.split('-').last),
@@ -551,10 +335,10 @@ void main() {
 
         for (final operation in scenario.operations) {
           switch (operation.kind) {
-            case _GeneratedPenOperationKind.holdEncrypted:
+            case GeneratedPenOperationKind.holdEncrypted:
               expect(
                 pen.hold(
-                  _buildEvent(
+                  buildEvent(
                     eventId: operation.eventId,
                     roomId: roomId,
                     originTsMs: 1000 + operation.targetSlot,
@@ -564,10 +348,10 @@ void main() {
                 isTrue,
               );
               expected.holdEncrypted(operation.eventId);
-            case _GeneratedPenOperationKind.holdPlain:
+            case GeneratedPenOperationKind.holdPlain:
               expect(
                 pen.hold(
-                  _buildEvent(
+                  buildEvent(
                     eventId: operation.eventId,
                     roomId: roomId,
                     originTsMs: 1000 + operation.targetSlot,
@@ -576,10 +360,10 @@ void main() {
                 ),
                 isFalse,
               );
-            case _GeneratedPenOperationKind.flushAllStillEncrypted:
-            case _GeneratedPenOperationKind.flushAllDecrypt:
-            case _GeneratedPenOperationKind.flushTargetDecrypt:
-            case _GeneratedPenOperationKind.flushTargetThrows:
+            case GeneratedPenOperationKind.flushAllStillEncrypted:
+            case GeneratedPenOperationKind.flushAllDecrypt:
+            case GeneratedPenOperationKind.flushTargetDecrypt:
+            case GeneratedPenOperationKind.flushTargetThrows:
               activeFlush = operation;
               final actual = await pen.flushInto(
                 queue: localQueue,
