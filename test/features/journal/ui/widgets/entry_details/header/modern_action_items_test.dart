@@ -47,7 +47,6 @@ import 'package:share_plus/share_plus.dart';
 // SharePlatform is only re-exported from share_plus with a `show` clause that
 // omits it, so the platform interface package is imported directly here to
 // install a fake instance. It is a transitive dependency of share_plus.
-// ignore: depend_on_referenced_packages
 import 'package:share_plus_platform_interface/share_plus_platform_interface.dart'
     show SharePlatform;
 

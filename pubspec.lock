@@ -2600,7 +2600,7 @@ packages:
     source: hosted
     version: "12.0.2"
   share_plus_platform_interface:
-    dependency: transitive
+    dependency: "direct dev"
     description:
       name: share_plus_platform_interface
       sha256: "88023e53a13429bd65d8e85e11a9b484f49d4c190abbd96c7932b74d6927cc9a"
