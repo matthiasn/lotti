@@ -1,15 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_sessions_controller.dart';
 import 'package:lotti/features/ai_chat/ui/models/chat_ui_models.dart';
-import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
+import '../../../../widget_test_utils.dart';
 
 void main() {
   setUpAll(() {
@@ -17,17 +16,16 @@ void main() {
   });
   group('ChatSessionsController', () {
     late MockChatRepository mockChatRepository;
-    late MockDomainLogger mockDomainLogger;
     late ProviderContainer container;
 
-    setUp(() {
+    setUp(() async {
       mockChatRepository = MockChatRepository();
-      mockDomainLogger = MockDomainLogger();
 
-      // Register mock services with GetIt
-      if (!GetIt.instance.isRegistered<DomainLogger>()) {
-        GetIt.instance.registerSingleton<DomainLogger>(mockDomainLogger);
-      }
+      // Registers a real DomainLogger (backed by a real LoggingService) so the
+      // controller's getIt<DomainLogger>() resolves. The controller only logs
+      // through it; nothing in these tests asserts on the logger, so a mock is
+      // unnecessary.
+      await setUpTestGetIt();
 
       container = ProviderContainer(
         overrides: [
@@ -36,9 +34,9 @@ void main() {
       );
     });
 
-    tearDown(() {
+    tearDown(() async {
       container.dispose();
-      GetIt.instance.reset();
+      await tearDownTestGetIt();
     });
 
     group('build', () {

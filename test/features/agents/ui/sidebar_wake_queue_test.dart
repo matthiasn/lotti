@@ -1188,6 +1188,50 @@ void main() {
         });
       },
     );
+
+    testWidgets(
+      'includes a wake due exactly at the 1h cutoff — the boundary uses '
+      '!isAfter, so dueAt == cutoff is still considered visible',
+      (tester) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          final visible = await evaluate(
+            tester,
+            // eta equals kSidebarWakeQueueScheduledLookahead exactly, so
+            // dueAt == cutoff. isAfter(cutoff) is false, so !isAfter is true.
+            wakes: [
+              makeWake(
+                agentId: 'a-edge',
+                displayName: 'Edge',
+                eta: kSidebarWakeQueueScheduledLookahead,
+              ),
+            ],
+          );
+          expect(visible, isTrue);
+        });
+      },
+    );
+
+    testWidgets(
+      'excludes a wake one microsecond past the 1h cutoff — confirms the '
+      'boundary is exclusive on the far side',
+      (tester) async {
+        await withClock(Clock.fixed(fixedNow), () async {
+          final visible = await evaluate(
+            tester,
+            wakes: [
+              makeWake(
+                agentId: 'a-edge',
+                displayName: 'Edge',
+                eta:
+                    kSidebarWakeQueueScheduledLookahead +
+                    const Duration(microseconds: 1),
+              ),
+            ],
+          );
+          expect(visible, isFalse);
+        });
+      },
+    );
   });
 }
 

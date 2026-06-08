@@ -39,7 +39,7 @@ _Date: 2026-06-02_
 | `test/.../journal_page_scope_test.dart` | 84 | — | OK |
 | `test/.../image_paste_controller_test.dart` | 516 | — | OK |
 | `test/.../linked_entries_activity_filter_test.dart` | 63 | — | OK |
-| `test/.../highlight_state_test.dart` | 191 | — | **No source mirror**: tests inline timer logic from a UI widget, not a `state/` file |
+| ~~`test/.../highlight_state_test.dart`~~ | — | — | **Removed**: orphan with no `state/` source mirror; real source covered by `highlight_scroll_mixin_test.dart` |
 | `test/.../helpers/journal_controller_test_setup.dart` | 160 | — | Good shared setup; used consistently |
 
 ---
@@ -92,11 +92,18 @@ _Date: 2026-06-02_
   the `_StaticLinksController` and `MockIncludeHiddenController` helpers into the test's own
   private scope or a local helpers file.
 
-- [ ] **[LOW]** `test/features/journal/state/highlight_state_test.dart` (191 lines): This file
+- [x] **[LOW]** `test/features/journal/state/highlight_state_test.dart` (191 lines): This file
   has no corresponding source file in `lib/features/journal/state/`. It tests inline timer
   logic that lives in a UI widget (`entry_details_page.dart` / `HighlightScrollMixin`). It
   should either be co-located with its actual source file or removed as its "source" no longer
   maps to anything in this directory.
+  **RESOLVED:** Removed. The file reimplemented timer logic against plain local `String?`/`Timer`
+  variables — it asserted nothing about any production class. The real source
+  (`lib/features/journal/ui/mixins/highlight_scroll_mixin.dart`) is already fully covered by
+  `test/features/journal/ui/mixins/highlight_scroll_mixin_test.dart` (auto-clear after
+  `highlightDuration`, disposed-flag guard, concurrent-scroll timer cancellation). Co-locating
+  was not possible from within `state/`, and the inline-variable tests had zero coverage value,
+  so the orphan file was deleted per the "no unused code" rule.
 
 ---
 
@@ -167,18 +174,29 @@ _Date: 2026-06-02_
   assigned. These are constructor-smoke tests on plain Dart variables — they test nothing about **RESOLVED:** Done — the 'Highlight State Management' group (local-variable assignment theater) was deleted; the timer-logic group remains.
   any production class.
 
-- [ ] **[LOW]** `test/features/journal/state/journal_page_controller_test.dart` — **Getter-only
+- [x] **[LOW]** `test/features/journal/state/journal_page_controller_test.dart` — **Getter-only
   smoke tests**: `selectedEntryTypesInternal returns internal set` (line 512) and
   `filtersInternal returns internal filters set` (line 525) assert `isNotEmpty` and
   `contains(...)` without checking the actual set contents. The assertion for the first case
   does not verify the expected initial set of entry types.
+  **RESOLVED:** Both tests strengthened. `selectedEntryTypesInternal` now asserts the getter
+  equals the full default `entryTypes.toSet()` (no config-flag event has narrowed it) and that
+  it matches `state.selectedEntryTypes`. `filtersInternal` now asserts the empty initial value,
+  then sets two filters and asserts the getter equals exactly that set and mirrors
+  `state.filters` — `equals(...)` instead of the previous `isNotEmpty`/`contains`.
 
-- [ ] **[LOW]** `test/features/journal/state/entry_controller_test.dart` — **focusNodeListener
+- [x] **[LOW]** `test/features/journal/state/entry_controller_test.dart` — **focusNodeListener
   comment-heavy test**: Lines 2 680–2 748 contain 35+ comment lines explaining why the test
   cannot achieve its goal in a headless environment, then calls `focusNodeListener()` twice and
   asserts `shouldShowEditorToolBar` is `false`. The test provides no coverage signal beyond what
   the preceding test already covers. The actual productive path (lines 2 751–2 815) correctly
   uses `testWidgets`.
+  **RESOLVED:** Rewrote the test concisely (~50 lines of meandering comments removed) and gave it
+  a real contract: it now proves the `hasFocus == _isFocused` early-return guard fires by
+  asserting `identical(stateAfter, stateBefore)` — `emitState()` always constructs a fresh
+  `AsyncData`, so an unchanged instance reference is positive evidence no emission occurred —
+  plus that both `isFocused` and `shouldShowEditorToolBar` stay false. This is a distinct,
+  meaningful assertion the testWidgets path does not cover.
 
 ---
 
@@ -217,10 +235,18 @@ genuine candidates with algebraic invariants over pure logic:
   A `Glados3` test over `(flags: JournalConfigFlags, selectedEntryTypes: Set<String>,
   selectedProjectIds: Set<String>)` would be valuable.
 
-- [ ] **[LOW]** `lib/features/journal/state/journal_filter_persistence.dart` —
+- [x] **[LOW]** `lib/features/journal/state/journal_filter_persistence.dart` —
   `_encodeTasksFilter` / `TasksFilter.fromJson` round-trip: A classic Glados round-trip property
   (`encode → decode → encode` idempotence). The `sortOption` and `agentAssignmentFilter` enum
   fields make a short generator over all enum combinations worthwhile.
+  **RESOLVED:** Added a `glados.Any.tasksFilter` generator (combine8: 5 bounded string-sets, both
+  enums via `choose(values)`, 5 booleans packed into a 0..31 bitmask) and two Glados properties
+  (numRuns 120, tagged 'glados') in `journal_filter_persistence_test.dart`: (1) `saveFilters`
+  then `loadFilters` over a Map-backed `MockSettingsDb` reproduces an equal filter — exercising
+  the private `_encodeTasksFilter` and `TasksFilter.fromJson` together through the real
+  persistence pipeline; (2) encode idempotence — after a fresh instance reloads the stored value,
+  re-saving the same filter performs no second write, proving the encoded form is stable across
+  the load path. glados imported with an `as glados` prefix to avoid clashing with flutter_test.
 
 ---
 
@@ -267,13 +293,23 @@ genuine candidates with algebraic invariants over pure logic:
   that verifies its value for each combination of `_agentAssignmentFilter` and
   `_selectedProjectIds.isNotEmpty` would add clarity.
 
-- [ ] **[LOW]** `lib/features/journal/state/entry_controller.dart` — **`copyEntryTextPlain` and
+- [x] **[LOW]** `lib/features/journal/state/entry_controller.dart` — **`copyEntryTextPlain` and
   `copyEntryTextMarkdown`** (lines 513–524): No tests exist for these two clipboard methods.
+  **RESOLVED:** Added a `copyEntryText methods` group in `entry_controller_test.dart` (4 tests)
+  that overrides `appClipboardProvider` with a recording `AppClipboard`. It asserts both methods
+  write the entry content to the clipboard (plain text trims to `'test entry text'`; markdown
+  contains it) and that both honour the trim-empty early-return guard — an empty-text entry
+  triggers no clipboard write. No real clipboard/file I/O; the provider is fully mocked.
 
-- [ ] **[LOW]** `lib/features/journal/state/journal_paging_controller.dart` — **`isMounted`
+- [x] **[LOW]** `lib/features/journal/state/journal_paging_controller.dart` — **`isMounted`
   early-exit during sequential refresh** (lines 120–121): The test suite covers the success
   and error paths, but not the path where `isMounted()` returns `false` mid-loop, which
   should cause the refresh to silently exit without updating state.
+  **RESOLVED:** Added a test in the `refreshLoadedPages` group: two loaded pages, sequential
+  refresh, `isMounted()` flipped to false during the first `runQuery`. It asserts only the first
+  page was queried (loop bailed at the `isMounted()` guard before the second iteration), neither
+  `onLeadingItems` nor `onPostFilterOffset` ran, and the original pages remain in `value.pages`
+  (no `replacePages`).
 
 ---
 
@@ -313,7 +349,7 @@ genuine candidates with algebraic invariants over pure logic:
   tests grows, this cost grows linearly. Consider creating the DB once at group level with a **RESOLVED:** Assessed, no change — deliberate per-test isolation: this repo runs CI under very_good in one isolate with a documented in-suite-contamination history, and a shared mutable AgentDatabase across tests trades a ~20-40ms saving for exactly that risk.
   shared teardown. **Estimated impact**: ~20–40 ms per test run.
 
-- [ ] **[LOW]** `test/features/journal/state/entry_controller_test.dart` — **`testWidgets` tests
+- [x] **[LOW]** `test/features/journal/state/entry_controller_test.dart` — **`testWidgets` tests
   in `focusNodeListener – widget-focus branch`** (lines 2 763–2 864) each call
   `await tester.pump(const Duration(minutes: 2))` to drain the `cacheFor(1 min)` timer. Two
   tests × 2-minute virtual pump = 4 minutes of virtual time advanced per run. Although this is
@@ -322,6 +358,11 @@ genuine candidates with algebraic invariants over pure logic:
   overridable per test (or if the container were disposed earlier and the pump reduced to just
   past 1 minute), the overhead would halve. **Estimated impact**: marginal; virtual time pump
   overhead in Flutter test framework.
+  **RESOLVED:** All three `pump(Duration(minutes: 2))` drains (the two focusNode tests plus the
+  taskTitle focus test) now pump `entryCacheDuration + Duration(milliseconds: 1)`. The container
+  is already disposed first, so pumping just past the 1-minute cache timer is sufficient to clear
+  the pending-timer invariant; this halves the advanced virtual time and references the actual
+  `entryCacheDuration` constant so the drain stays correct if the cache window changes.
 
 ---
 

@@ -636,7 +636,7 @@ void main() {
     });
 
     group('Getters for Testing', () {
-      test('selectedEntryTypesInternal returns internal set', () {
+      test('selectedEntryTypesInternal exposes the full default set', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(false).notifier,
@@ -644,11 +644,21 @@ void main() {
 
           settle(async);
 
-          expect(controller.selectedEntryTypesInternal, isNotEmpty);
+          // No config-flag event has been emitted, so the controller keeps the
+          // full default selection (`entryTypes`) it was constructed with.
+          expect(
+            controller.selectedEntryTypesInternal,
+            equals(entryTypes.toSet()),
+          );
+          // The getter exposes the same set the controller publishes in state.
+          expect(
+            controller.selectedEntryTypesInternal,
+            equals(controller.state.selectedEntryTypes.toSet()),
+          );
         });
       });
 
-      test('filtersInternal returns internal filters set', () {
+      test('filtersInternal reflects the exact set passed to setFilters', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(false).notifier,
@@ -656,13 +666,28 @@ void main() {
 
           settle(async);
 
-          controller.setFilters({DisplayFilter.starredEntriesOnly});
+          // Initial filters set is empty.
+          expect(controller.filtersInternal, isEmpty);
+
+          controller.setFilters({
+            DisplayFilter.starredEntriesOnly,
+            DisplayFilter.flaggedEntriesOnly,
+          });
 
           settle(async);
 
+          // The getter returns exactly what was set — no more, no less — and
+          // mirrors the published state.
           expect(
             controller.filtersInternal,
-            contains(DisplayFilter.starredEntriesOnly),
+            equals({
+              DisplayFilter.starredEntriesOnly,
+              DisplayFilter.flaggedEntriesOnly,
+            }),
+          );
+          expect(
+            controller.filtersInternal,
+            equals(controller.state.filters),
           );
         });
       });

@@ -4,11 +4,61 @@ import 'dart:convert';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/journal/state/journal_filter_persistence.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+
+// Candidate values kept small and bounded so the generated sets exercise
+// membership/ordering variety without exploding the search space.
+const _categoryPool = ['cat-a', 'cat-b', 'cat-c'];
+const _projectPool = ['proj-1', 'proj-2'];
+const _statusPool = ['OPEN', 'IN_PROGRESS', 'DONE'];
+const _labelPool = ['label-x', 'label-y'];
+const _priorityPool = ['P0', 'P1', 'P2', 'P3'];
+
+extension _AnyTasksFilter on glados.Any {
+  glados.Generator<Set<String>> _setFrom(List<String> pool) =>
+      glados.SetAyns(this).set(glados.AnyUtils(this).choose(pool));
+
+  glados.Generator<TasksFilter> get tasksFilter =>
+      glados.CombinableAny(this).combine8(
+        _setFrom(_categoryPool),
+        _setFrom(_projectPool),
+        _setFrom(_statusPool),
+        _setFrom(_labelPool),
+        _setFrom(_priorityPool),
+        glados.AnyUtils(this).choose(TaskSortOption.values),
+        glados.AnyUtils(this).choose(AgentAssignmentFilter.values),
+        // Pack the five boolean fields into a 0..31 bitmask.
+        glados.IntAnys(this).intInRange(0, 32),
+        (
+          Set<String> categories,
+          Set<String> projects,
+          Set<String> statuses,
+          Set<String> labels,
+          Set<String> priorities,
+          TaskSortOption sortOption,
+          AgentAssignmentFilter agentFilter,
+          int boolBits,
+        ) => TasksFilter(
+          selectedCategoryIds: categories,
+          selectedProjectIds: projects,
+          selectedTaskStatuses: statuses,
+          selectedLabelIds: labels,
+          selectedPriorities: priorities,
+          sortOption: sortOption,
+          agentAssignmentFilter: agentFilter,
+          showCreationDate: boolBits & 1 != 0,
+          showDueDate: boolBits & 2 != 0,
+          showCoverArt: boolBits & 4 != 0,
+          showProjectsHeader: boolBits & 8 != 0,
+          showDistances: boolBits & 16 != 0,
+        ),
+      );
+}
 
 void main() {
   late MockSettingsDb mockSettingsDb;
@@ -521,6 +571,95 @@ void main() {
           );
         });
       },
+    );
+  });
+
+  group('round-trip (Glados)', () {
+    glados.Glados<TasksFilter>(
+      glados.any.tasksFilter,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'saveFilters then loadFilters reproduces an equal filter',
+      (filter) {
+        fakeAsync((async) {
+          const key = 'rt-key';
+          // Map-backed settings store so save actually persists and load reads
+          // it back through the real encode/decode pipeline.
+          final store = <String, String>{};
+          final db = MockSettingsDb();
+          when(() => db.itemByKey(any())).thenAnswer(
+            (invocation) async =>
+                store[invocation.positionalArguments.first as String],
+          );
+          when(() => db.saveSettingsItem(any(), any())).thenAnswer((
+            invocation,
+          ) async {
+            store[invocation.positionalArguments[0] as String] =
+                invocation.positionalArguments[1] as String;
+            return 1;
+          });
+
+          final persistence = JournalFilterPersistence(db)
+            ..saveFilters(filter, key);
+          async.flushMicrotasks();
+
+          TasksFilter? loaded;
+          persistence.loadFilters(key).then((v) => loaded = v);
+          async.flushMicrotasks();
+
+          expect(loaded, equals(filter), reason: 'round-trip for $filter');
+        });
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados<TasksFilter>(
+      glados.any.tasksFilter,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'encode is idempotent: a saved filter round-trips without a second write',
+      (filter) {
+        fakeAsync((async) {
+          const key = 'idem-key';
+          final store = <String, String>{};
+          final db = MockSettingsDb();
+          when(() => db.itemByKey(any())).thenAnswer(
+            (invocation) async =>
+                store[invocation.positionalArguments.first as String],
+          );
+          var writeCount = 0;
+          when(() => db.saveSettingsItem(any(), any())).thenAnswer((
+            invocation,
+          ) async {
+            writeCount++;
+            store[invocation.positionalArguments[0] as String] =
+                invocation.positionalArguments[1] as String;
+            return 1;
+          });
+
+          JournalFilterPersistence(db).saveFilters(filter, key);
+          async.flushMicrotasks();
+          expect(writeCount, 1, reason: 'first save persists $filter');
+
+          // A fresh persistence instance loads the encoded value (seeding its
+          // dedup snapshot) and then saving the same filter must be a no-op,
+          // proving the encoded form is stable across the load path.
+          final reloaded = JournalFilterPersistence(db);
+          TasksFilter? loaded;
+          reloaded.loadFilters(key).then((v) => loaded = v);
+          async.flushMicrotasks();
+          expect(loaded, equals(filter));
+
+          reloaded.saveFilters(filter, key);
+          async.flushMicrotasks();
+          expect(
+            writeCount,
+            1,
+            reason: 'no redundant write after reload for $filter',
+          );
+        });
+      },
+      tags: 'glados',
     );
   });
 }

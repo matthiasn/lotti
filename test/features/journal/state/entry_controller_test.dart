@@ -17,6 +17,7 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/repository/app_clipboard_service.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_tools.dart';
@@ -34,6 +35,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/utils/cache_extension.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -2746,6 +2748,119 @@ void main() {
     });
   });
 
+  group('copyEntryText methods', () {
+    // Entry whose text is empty so the trim-empty guards fire.
+    final emptyTextEntry = testTextEntry.copyWith(
+      meta: testTextEntry.meta.copyWith(id: 'empty-text-entry'),
+      entryText: const EntryText(plainText: '', markdown: ''),
+    );
+
+    setUp(() {
+      when(
+        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+      ).thenAnswer((_) async => testTextEntry);
+      when(
+        () => mockJournalDb.journalEntityById(emptyTextEntry.meta.id),
+      ).thenAnswer((_) async => emptyTextEntry);
+    });
+
+    test(
+      'copyEntryTextPlain writes the document plain text to the clipboard',
+      () async {
+        final writes = <String>[];
+        final container = makeProviderContainer(
+          overrides: [
+            appClipboardProvider.overrideWithValue(
+              AppClipboard(
+                writePlainText: (text) async => writes.add(text),
+              ),
+            ),
+          ],
+        );
+        final provider = entryControllerProvider(id: testTextEntry.meta.id);
+        final notifier = container.read(provider.notifier);
+        await container.read(provider.future);
+
+        await notifier.copyEntryTextPlain();
+
+        expect(writes, hasLength(1));
+        // The quill document is seeded from the entry's text, so the copied
+        // value carries the entry content (quill appends a trailing newline).
+        expect(writes.single.trim(), 'test entry text');
+      },
+    );
+
+    test(
+      'copyEntryTextMarkdown writes the markdown rendering to the clipboard',
+      () async {
+        final writes = <String>[];
+        final container = makeProviderContainer(
+          overrides: [
+            appClipboardProvider.overrideWithValue(
+              AppClipboard(
+                writePlainText: (text) async => writes.add(text),
+              ),
+            ),
+          ],
+        );
+        final provider = entryControllerProvider(id: testTextEntry.meta.id);
+        final notifier = container.read(provider.notifier);
+        await container.read(provider.future);
+
+        await notifier.copyEntryTextMarkdown();
+
+        expect(writes, hasLength(1));
+        expect(writes.single, contains('test entry text'));
+      },
+    );
+
+    test(
+      'copyEntryTextPlain skips empty text without touching the clipboard',
+      () async {
+        var writeCalled = false;
+        final container = makeProviderContainer(
+          overrides: [
+            appClipboardProvider.overrideWithValue(
+              AppClipboard(
+                writePlainText: (_) async => writeCalled = true,
+              ),
+            ),
+          ],
+        );
+        final provider = entryControllerProvider(id: emptyTextEntry.meta.id);
+        final notifier = container.read(provider.notifier);
+        await container.read(provider.future);
+
+        await notifier.copyEntryTextPlain();
+
+        expect(writeCalled, isFalse);
+      },
+    );
+
+    test(
+      'copyEntryTextMarkdown skips empty text without touching the clipboard',
+      () async {
+        var writeCalled = false;
+        final container = makeProviderContainer(
+          overrides: [
+            appClipboardProvider.overrideWithValue(
+              AppClipboard(
+                writePlainText: (_) async => writeCalled = true,
+              ),
+            ),
+          ],
+        );
+        final provider = entryControllerProvider(id: emptyTextEntry.meta.id);
+        final notifier = container.read(provider.notifier);
+        await container.read(provider.future);
+
+        await notifier.copyEntryTextMarkdown();
+
+        expect(writeCalled, isFalse);
+      },
+    );
+  });
+
   group('focusNodeListener – state-change branch', () {
     setUp(() {
       when(
@@ -2754,8 +2869,15 @@ void main() {
     });
 
     test(
-      'focusNodeListener leaves toolbar hidden when focus state is unchanged',
+      'early-return guard emits no new state when focus is unchanged',
       () async {
+        // In a headless provider test the focusNode is never attached to a
+        // widget tree, so focusNode.hasFocus stays false. After build()
+        // _isFocused is also false, so the `hasFocus == _isFocused` guard
+        // (entry_controller.dart line 44) fires and the listener returns
+        // before reaching emitState(). We prove the early return by asserting
+        // the *same* state instance is retained — emitState() would always
+        // construct a fresh AsyncData — and that the toolbar flag stays false.
         final container = makeProviderContainer();
         final entryId = testTextEntry.meta.id;
         final provider = entryControllerProvider(id: entryId);
@@ -2763,60 +2885,19 @@ void main() {
 
         await container.read(provider.future);
 
-        // Force _isFocused=false (initial) while making hasFocus appear true
-        // by setting the dirty flag first so we have a valid entry state,
-        // then directly exercise the listener with a manually-driven focus
-        // state change.  We drive the state by temporarily overriding the
-        // internal flag via setDirty (which does not change _isFocused) and
-        // then simulating the transition through focusNodeListener.
+        final stateBefore = container.read(provider).value;
+        expect(stateBefore?.isFocused, isFalse);
+        expect(stateBefore?.shouldShowEditorToolBar, isFalse);
 
-        // Prime: set internal _isFocused to true by calling the listener
-        // after forcing hasFocus mismatch.  The easiest approach in a
-        // headless test is to manipulate _isFocused indirectly: call
-        // focusNodeListener() while _isFocused is currently false and
-        // focusNode.hasFocus is also false → the guard triggers and it
-        // returns early.  To break the symmetry, we flip _isFocused to
-        // true internally by calling setDirty to put the notifier in a
-        // known state, then directly call emitState to verify that the
-        // _shouldShowEditorToolBar field isn't yet set.
-
-        // Verify initial toolbar state
-        final stateBeforeFocus = container.read(provider).value;
-        expect(stateBeforeFocus?.shouldShowEditorToolBar, isFalse);
-
-        // Calling focusNodeListener when both hasFocus and _isFocused are
-        // false causes the guard to fire (return early).  That path is
-        // already exercised by existing tests.  Here we want the BODY of the
-        // function (lines 48–65) to run, which requires hasFocus != _isFocused.
-
-        // After build(), _isFocused == false.  We manipulate the internal
-        // boolean by calling focusNodeListener() after setting _isFocused to
-        // true indirectly.  The only public way to set _isFocused is through
-        // focusNodeListener itself.  In a widget-less test hasFocus is always
-        // false.  So we set _isFocused to true by temporarily forking the
-        // listener call:
-        //   1. Set _dirty to mark a state to assert on.
-        //   2. Call notifier.focusNodeListener() once – it returns early
-        //      because hasFocus==false == _isFocused==false.
-        //   3. We reach into the focusNode and simulate a focus event by
-        //      calling the listener directly after patching the private bool
-        //      through the public setDirty/emitState cycle (no direct access).
-
-        // The most reliable approach in a provider test without a widget tree:
-        // verify that calling setDirty(value:false, requestFocus:false) does
-        // NOT call focusNode.requestFocus, and that calling
-        // setDirty(value:true) with requestFocus:true does.  This at least
-        // exercises emitState() transitioning between saved/dirty – the
-        // focusNodeListener body itself requires a widget binding with a real
-        // focus scope to change hasFocus.  We call it repeatedly to at least
-        // drive the desktop hotkey block.
         notifier
           ..focusNodeListener()
           ..focusNodeListener();
 
-        // The early-return guard must leave the toolbar flag untouched.
         final stateAfter = container.read(provider).value;
-        expect(stateAfter, isNotNull);
+        // No emitState() ran, so the listener neither flipped the flags nor
+        // re-published state.
+        expect(identical(stateAfter, stateBefore), isTrue);
+        expect(stateAfter?.isFocused, isFalse);
         expect(stateAfter?.shouldShowEditorToolBar, isFalse);
       },
     );
@@ -2880,10 +2961,12 @@ void main() {
         expect(stateAfterFocus?.isFocused, isTrue);
         expect(stateAfterFocus?.shouldShowEditorToolBar, isTrue);
 
-        // Dispose the container now and drain the cacheFor(1 min) timer so
-        // the testWidgets pending-timer invariant check passes.
+        // Dispose the container now and drain the cacheFor(entryCacheDuration)
+        // timer so the testWidgets pending-timer invariant check passes.
+        // Pumping just past the cache duration is sufficient — no need to
+        // advance a full extra minute of virtual frames.
         container.dispose();
-        await tester.pump(const Duration(minutes: 2));
+        await tester.pump(entryCacheDuration + const Duration(milliseconds: 1));
       },
     );
 
@@ -2931,9 +3014,9 @@ void main() {
         // Toolbar visibility is retained after blur (not cleared by the listener).
         expect(stateAfterBlur?.shouldShowEditorToolBar, isTrue);
 
-        // Dispose and drain the cacheFor timer.
+        // Dispose and drain the cacheFor timer (just past the cache duration).
         container.dispose();
-        await tester.pump(const Duration(minutes: 2));
+        await tester.pump(entryCacheDuration + const Duration(milliseconds: 1));
       },
     );
   });
@@ -2989,9 +3072,9 @@ void main() {
         // State is not modified by taskTitleFocusNodeListener.
         expect(container.read(provider).value?.entry, isA<Task>());
 
-        // Dispose and drain the cacheFor timer.
+        // Dispose and drain the cacheFor timer (just past the cache duration).
         container.dispose();
-        await tester.pump(const Duration(minutes: 2));
+        await tester.pump(entryCacheDuration + const Duration(milliseconds: 1));
       },
     );
   });
