@@ -28,7 +28,8 @@ This document also serves as the index for the sync feature's subdir-level test 
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `vector_clock_test.dart` at 448 lines is the largest root-level file. It contains both static example tests and 5 Glados properties. It is below the 1000-line ceiling and the seams are already grouped by Glados vs. static; no split is required now.
+- [x] **[LOW]** `vector_clock_test.dart` at 448 lines is the largest root-level file. It contains both static example tests and 5 Glados properties. It is below the 1000-line ceiling and the seams are already grouped by Glados vs. static; no split is required now.
+  - **RESOLVED:** (assessed, no change) — confirmed 448 lines, well under the 1000-line ceiling, with static-vs-Glados seams already grouped; no split warranted.
 
 ---
 
@@ -39,19 +40,24 @@ This document also serves as the index for the sync feature's subdir-level test 
 - [x] **[MED]** `vector_clock_logging_test.dart` (68 lines): all four tests call `logVectorClockAssignment(...)` and verify only that no exception is thrown. `MockDomainLogger` is wired but never queried with `verify(...)`. The function's contract is to call `loggingService.log(...)` — this is never asserted. Add `verify(() => loggingService.log(LogDomain.sync, any(), subDomain: any(named: 'subDomain'))).called(1)` to at least one test to confirm the logging call fires.
   - **RESOLVED:** done — both representative tests now capture the `log` call: the minimal case pins the exact message ('ASSIGN previous=null assigned=null') and the all-parameters case asserts every formatted field (type, entryId, clocks, covered list, extras) plus the right subDomain.
 
-- [ ] **[LOW]** `utils_test.dart` (14 lines): tests only verify two constant string values (`hostKey == 'VC_HOST'`, `nextAvailableCounterKey == 'VC_NEXT_AVAILABLE_COUNTER'`). This is a valid regression guard for magic constants; no improvement needed.
+- [x] **[LOW]** `utils_test.dart` (14 lines): tests only verify two constant string values (`hostKey == 'VC_HOST'`, `nextAvailableCounterKey == 'VC_NEXT_AVAILABLE_COUNTER'`). This is a valid regression guard for magic constants; no improvement needed.
+  - **RESOLVED:** (assessed, no change) — these are persisted storage keys; pinning the literals is a legitimate regression guard against accidental rename/data loss.
 
-- [ ] **[LOW]** `secure_storage_test.dart`: `SecureStorage.write` is tested for persistence, caching, and update behavior. No test covers `deleteAll` (if it exists) or confirms behavior when `FlutterSecureStorage` throws. These are low-risk omissions given the simplicity of the wrapper.
+- [x] **[LOW]** `secure_storage_test.dart`: `SecureStorage.write` is tested for persistence, caching, and update behavior. No test covers `deleteAll` (if it exists) or confirms behavior when `FlutterSecureStorage` throws. These are low-risk omissions given the simplicity of the wrapper.
+  - **RESOLVED:** (assessed, no change) — `SecureStorage` has no `deleteAll` method (only `read`/`write`/`delete`, all pure pass-throughs to `FlutterSecureStorage`). A throw-propagation test would require a `MethodChannel`-throwing harness to cover a trivial pass-through that adds no swallow/transform logic; the reviewer's own "low-risk omission" assessment stands.
 
 ---
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[LOW]** `vector_clock_test.dart` already has 5 Glados properties covering commutativity, symmetry, transitivity, merge dominance, and zero-counter sparse equality. This is thorough. No further Glados work needed.
+- [x] **[LOW]** `vector_clock_test.dart` already has 5 Glados properties covering commutativity, symmetry, transitivity, merge dominance, and zero-counter sparse equality. This is thorough. No further Glados work needed.
+  - **RESOLVED:** (assessed, no change) — confirmed the 5 properties exhaustively cover the merge algebra; no additional invariant to exercise.
 
-- [ ] **[LOW]** `g_counter_test.dart` already has 6 Glados properties covering commutativity, idempotence, associativity, monotonicity, increment plan, and join-commutativity with shuffled delivery order. Exemplary coverage.
+- [x] **[LOW]** `g_counter_test.dart` already has 6 Glados properties covering commutativity, idempotence, associativity, monotonicity, increment plan, and join-commutativity with shuffled delivery order. Exemplary coverage.
+  - **RESOLVED:** (assessed, no change) — confirmed the CRDT algebra is fully covered.
 
-- [ ] **[LOW]** `tuning_test.dart` has Glados for `BackfillHostStats`. Coverage is complete for the pure logic.
+- [x] **[LOW]** `tuning_test.dart` has Glados for `BackfillHostStats`. Coverage is complete for the pure logic.
+  - **RESOLVED:** (assessed, no change) — confirmed the pure tuning logic is property-covered.
 
 - [x] **[MED]** `client_runner_test.dart`: `ClientRunner` is a sequential queue with a callback. A Glados property over generated `List<int>` request sequences would verify that: every enqueued request is eventually processed exactly once, in enqueue order, regardless of interleaving. The current static tests cover sequential ordering and drain-on-close, but not arbitrary-length queues. Feasible with `fakeAsync` + `flushMicrotasks`.
   - **RESOLVED:** done — added a Glados property (lists of 0–24 ints, numRuns 120, `tags: 'glados'`): with value-dependent per-item latencies under fakeAsync, every enqueued request is processed exactly once in enqueue order and `queueSize` drains to 0.
@@ -68,7 +74,8 @@ This document also serves as the index for the sync feature's subdir-level test 
 - [x] **[MED]** `secure_storage_test.dart`: `SecureStorage.readValue` is tested for a missing key at line 83. But `SecureStorage.write` followed by `readValue` (not `read`) is not tested — it is unclear if both getters share the same cache. Add a test that calls `write` and then `readValue` to confirm cache coherence.
   - **RESOLVED:** done — added `'write is immediately visible through readValue (shared cache)'` pinning the cache coherence between the two getters.
 
-- [ ] **[LOW]** `vector_clock_logging_test.dart`: `logVectorClockAssignment` is the only function in `vector_clock_logging.dart`. The export `vectorClockLogDomain` is tested (line 19). The only missing behavior is the actual log call verification (see Test Quality section above).
+- [x] **[LOW]** `vector_clock_logging_test.dart`: `logVectorClockAssignment` is the only function in `vector_clock_logging.dart`. The export `vectorClockLogDomain` is tested (line 19). The only missing behavior is the actual log call verification (see Test Quality section above).
+  - **RESOLVED:** done — the two former "without error" smoke tests now capture the emitted `log` message: one asserts null-valued extras are filtered out (`present=yes` present, `absent` absent) and the other pins the empty-extras line exactly (`'CHECK previous=null assigned=null'`).
 
 ---
 
@@ -77,11 +84,14 @@ This document also serves as the index for the sync feature's subdir-level test 
 - [x] **[MED]** `vector_clock_test.dart` Glados properties use `numRuns: 120–160`. All are correctly tagged `'glados'` and run in the separate Glados CI lane. Standard lane is unaffected.
   - **RESOLVED:** (assessed, no change) — as the item itself concludes: the properties are correctly tagged into the Glados CI lane and the standard lane is unaffected.
 
-- [ ] **[LOW]** `g_counter_test.dart` Glados properties use `numRuns: 200` for commutativity and `numRuns: 120–200` for other properties. These are already at the high end of the recommended range. The `numRuns: 200` commutativity test involves only a map-merge operation — this is cheap. However, consider reducing `numRuns` to 160 for consistency with the rest of the codebase; `200` runs on a CRDT merge adds no failure-finding benefit that `160` wouldn't provide.
+- [x] **[LOW]** `g_counter_test.dart` Glados properties use `numRuns: 200` for commutativity and `numRuns: 120–200` for other properties. These are already at the high end of the recommended range. The `numRuns: 200` commutativity test involves only a map-merge operation — this is cheap. However, consider reducing `numRuns` to 160 for consistency with the rest of the codebase; `200` runs on a CRDT merge adds no failure-finding benefit that `160` wouldn't provide.
+  - **RESOLVED:** done — normalized all `numRuns` in `g_counter_test.dart` to 160 (was 200×6 and 250×1), matching the codebase-wide Glados range.
 
-- [ ] **[LOW]** `secure_storage_test.dart`: `setUpAll` mocks a `MethodChannel` via `setMockMethodCallHandler` and clears it in `tearDownAll`. This is correct and adds negligible overhead.
+- [x] **[LOW]** `secure_storage_test.dart`: `setUpAll` mocks a `MethodChannel` via `setMockMethodCallHandler` and clears it in `tearDownAll`. This is correct and adds negligible overhead.
+  - **RESOLVED:** (assessed, no change) — confirmed the channel mock is installed once and torn down; negligible per-file overhead.
 
-- [ ] **[LOW]** `client_runner_test.dart`: all tests use `fakeAsync` correctly. No real timers.
+- [x] **[LOW]** `client_runner_test.dart`: all tests use `fakeAsync` correctly. No real timers.
+  - **RESOLVED:** (assessed, no change) — confirmed all timing is driven via `fakeAsync`; no real wall-clock waits.
 
 ---
 

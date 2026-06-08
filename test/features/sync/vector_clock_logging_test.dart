@@ -76,21 +76,45 @@ void main() {
       expect(message, contains('extra_key=extra_value'));
     });
 
-    test('handles null extras without error', () {
+    test('null-valued extras are filtered out of the log line', () {
       logVectorClockAssignment(
         loggingService,
         subDomain: 'test',
         action: 'ASSIGN',
         extras: {'present': 'yes', 'absent': null},
       );
+
+      final message =
+          verify(
+                () => loggingService.log(
+                  LogDomain.sync,
+                  captureAny(),
+                  subDomain: 'test',
+                ),
+              ).captured.single
+              as String;
+      // Non-null extras are appended; null-valued extras are omitted entirely.
+      expect(message, contains('present=yes'));
+      expect(message, isNot(contains('absent')));
     });
 
-    test('handles empty extras map without error', () {
+    test('empty extras map logs only action plus clock fields', () {
       logVectorClockAssignment(
         loggingService,
         subDomain: 'test',
         action: 'CHECK',
       );
+
+      final message =
+          verify(
+                () => loggingService.log(
+                  LogDomain.sync,
+                  captureAny(),
+                  subDomain: 'test',
+                ),
+              ).captured.single
+              as String;
+      expect(message, 'CHECK previous=null assigned=null');
     });
   });
 }
