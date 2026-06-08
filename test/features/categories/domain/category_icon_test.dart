@@ -196,6 +196,48 @@ void main() {
         ); // Should match "health" (4 chars, 67% of "health")
       });
 
+      test(
+        'prefix match enforces the 4-character length gate independently '
+        'of the 60% threshold',
+        () {
+          // "Music" (display, 5 chars). A 3-char prefix already satisfies the
+          // 60% rule (3 >= 5 * 0.6 = 3.0), so the *only* reason it must be
+          // rejected is the `nameWord.length >= 4` gate. The 4-char prefix
+          // clears both gates and matches.
+          expect(
+            CategoryIconExtension.suggestFromName('mus'),
+            isNull,
+            reason: '3 chars fails the length gate even at 60% of "music"',
+          );
+          expect(
+            CategoryIconExtension.suggestFromName('musi'),
+            equals(CategoryIcon.music),
+            reason: '4 chars clears the length gate and 80% of "music"',
+          );
+        },
+      );
+
+      test(
+        'prefix match enforces the 60% threshold independently of the '
+        'length gate',
+        () {
+          // "Savings" (display, 7 chars). Both prefixes below clear the 4-char
+          // length gate, so the *only* discriminator is the 60% threshold:
+          //   "savi" -> 4 / 7 = 0.571  < 0.6  => rejected
+          //   "savin" -> 5 / 7 = 0.714 >= 0.6 => accepted
+          expect(
+            CategoryIconExtension.suggestFromName('savi'),
+            isNull,
+            reason: '4/7 = 57% is below the 60% threshold for "savings"',
+          );
+          expect(
+            CategoryIconExtension.suggestFromName('savin'),
+            equals(CategoryIcon.savings),
+            reason: '5/7 = 71% clears the 60% threshold for "savings"',
+          );
+        },
+      );
+
       test('should find keyword mappings', () {
         expect(
           CategoryIconExtension.suggestFromName('gym'),
@@ -504,26 +546,54 @@ void main() {
   });
 
   group('CategoryIconConstants', () {
-    test('should have reasonable default values', () {
-      expect(CategoryIconConstants.defaultIconSize, greaterThan(0));
-      expect(CategoryIconConstants.iconSizeMultiplier, greaterThan(0));
-      expect(CategoryIconConstants.iconSizeMultiplier, lessThan(1));
-      expect(CategoryIconConstants.textSizeMultiplier, greaterThan(0));
-      expect(CategoryIconConstants.textSizeMultiplier, lessThan(1));
-      expect(CategoryIconConstants.borderWidth, greaterThan(0));
-      expect(CategoryIconConstants.pickerGridColumns, greaterThan(0));
-      expect(CategoryIconConstants.pickerMaxWidth, greaterThan(0));
-    });
+    // These are compile-time `const` values, so they cannot drift at runtime.
+    // The single test below therefore asserts the call-site *contracts* the
+    // constants must satisfy to be safe — not arbitrary ranges. A future edit
+    // that breaks one of these contracts (e.g. an alpha > 1 fed into
+    // Color.withValues, or a size multiplier >= 1 that would scale icons *up*
+    // instead of down) would silently misbehave in the UI; this guards that.
+    test('values satisfy their call-site contracts', () {
+      // Size *multipliers* scale a base size down — they are applied as
+      // `size * multiplier` in category_icon_display/compact. A value outside
+      // (0, 1) would enlarge instead of shrink the glyph/text.
+      for (final multiplier in <double>[
+        CategoryIconConstants.iconSizeMultiplier,
+        CategoryIconConstants.textSizeMultiplier,
+        CategoryIconConstants.fallbackIconSizeMultiplier,
+      ]) {
+        expect(multiplier, greaterThan(0));
+        expect(multiplier, lessThan(1));
+      }
 
-    test('should have alpha values in valid range', () {
-      expect(
+      // Alpha and luminance feed Color.withValues(alpha:) / computeLuminance(),
+      // both of which require a normalized [0, 1] fraction.
+      for (final fraction in <double>[
         CategoryIconConstants.selectedBackgroundAlpha,
-        greaterThanOrEqualTo(0),
+        CategoryIconConstants.luminanceThreshold,
+      ]) {
+        expect(fraction, inInclusiveRange(0, 1));
+      }
+
+      // modalMaxHeightRatio caps a modal at a fraction of the screen height
+      // (size.height * ratio in category_create_modal) — must be (0, 1].
+      expect(
+        CategoryIconConstants.modalMaxHeightRatio,
+        greaterThan(0),
       );
       expect(
-        CategoryIconConstants.selectedBackgroundAlpha,
+        CategoryIconConstants.modalMaxHeightRatio,
         lessThanOrEqualTo(1),
       );
+
+      // Pixel dimensions and counts used for layout must be strictly positive.
+      for (final dimension in <num>[
+        CategoryIconConstants.defaultIconSize,
+        CategoryIconConstants.borderWidth,
+        CategoryIconConstants.pickerGridColumns,
+        CategoryIconConstants.pickerMaxWidth,
+      ]) {
+        expect(dimension, greaterThan(0));
+      }
     });
   });
 
