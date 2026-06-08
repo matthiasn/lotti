@@ -28,7 +28,8 @@
 - [x] **[MED]** `test/…/state/audio_waveform_provider_test.dart:11` — Defines `_MockAudioWaveformService` locally; `MockAudioWaveformService` (or equivalent) does not yet exist in `test/mocks/mocks.dart`. If this service is used in other test files, promote it.
   **RESOLVED:** done — `MockAudioWaveformService` promoted to `test/mocks/mocks.dart` per the central-mocks rule; the test file imports it from there.
 
-- [ ] **[LOW]** `lib/…/state/recorder_controller.dart:1` — At 734 lines the impl file is approaching threshold; consider extracting `_RealtimeRecordingMixin` or a `RealtimeRecorderController` subclass once tests are stable.
+- [x] **[LOW]** `lib/…/state/recorder_controller.dart:1` — At 734 lines the impl file is approaching threshold; consider extracting `_RealtimeRecordingMixin` or a `RealtimeRecorderController` subclass once tests are stable.
+  - **RESOLVED:** (assessed — keep as-is) the item itself says "once tests are stable" — a future production refactor, not a test gap. The controller is fully test-covered today; extracting a realtime mixin is optional impl cleanup.
   **DEFERRED:** This is a production-code refactor in `lib/` (now 740 lines), outside the `test/features/speech/state/` area this pass is scoped to. Extracting a realtime mixin/subclass would change the public/private surface the existing tests exercise and is best done as a focused source-side change with its own review, not from inside the test-quality pass.
 
 ## Test quality improvements

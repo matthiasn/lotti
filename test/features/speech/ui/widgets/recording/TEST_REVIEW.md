@@ -29,7 +29,8 @@
 - [x] **[MED]** `test/…/recording/audio_recording_indicator_timer_text_test.dart` (58 lines) tests a sub-widget of the same source file as `audio_recording_indicator_test.dart`. Fold it into the indicator test; 479 + 58 = 537 lines is acceptable.
   **RESOLVED:** done — the timer-text width test (tabular figures keep 41 vs 48 minutes at identical width) was folded into `audio_recording_indicator_test.dart` with its fixed-state fake controller; the orphan file is deleted.
 
-- [ ] **[LOW]** `lib/…/recording/audio_recording_modal.dart` (453 lines) is near threshold. If post-merge test file is very large, consider extracting `AudioRecordingModalContent` into its own source file `audio_recording_modal_content.dart` as a natural split seam.
+- [x] **[LOW]** `lib/…/recording/audio_recording_modal.dart` (453 lines) is near threshold. If post-merge test file is very large, consider extracting `AudioRecordingModalContent` into its own source file `audio_recording_modal_content.dart` as a natural split seam.
+  - **RESOLVED:** (assessed — keep as-is) 453 lines is under the 500-line soft preference; the suggested content-widget extraction is conditional ("if post-merge test file is very large") and optional. No test gap.
   **DEFERRED:** out of scope for a test-quality pass — this is a production-code structural refactor (moving a widget to a new source file), conditioned on the test file being "very large", and would create new source/test files outside the test improvements remit. The condition is also weak now: the modal test was already merged into a single file. Leaving the source structure to a dedicated refactor PR.
 
 ## Test quality improvements

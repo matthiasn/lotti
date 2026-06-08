@@ -44,7 +44,8 @@
 
 - [x] **[MED]** `test/features/ai/util/model_prepopulation_service_test.dart` (659 lines) vs impl (150 lines) — the ratio is 4×. The Glados generator scaffold is verbose but necessary; the static tests themselves repeat the 8-key `when` stub. Extract a `_stubRepo(mock, existingConfigs)` helper. **RESOLVED:** Done — added `stubRepo({models, providers})` covering the three standard stubs; the four full verbatim blocks now call it (capture-variant stubs stay inline since they ARE the assertions).
 
-- [ ] **[LOW]** `lib/features/ai/util/profile_seeding_service.dart` (255 lines) contains both the seeding logic and the full `defaultProfiles` static list (135 lines). Separating these is optional but would make each concern easier to locate.
+- [x] **[LOW]** `lib/features/ai/util/profile_seeding_service.dart` (255 lines) contains both the seeding logic and the full `defaultProfiles` static list (135 lines). Separating these is optional but would make each concern easier to locate.
+  - **RESOLVED:** (assessed — keep as-is) 255 lines is well under threshold; separating `defaultProfiles` is explicitly optional. No test gap — the seeding logic is covered by its mirror test.
   **DEFERRED:** this is an impl-file split (lib/), outside the test/features/ai/util/ scope of this pass; touching the source module and its importers belongs to a separate refactor task.
 
 ---
