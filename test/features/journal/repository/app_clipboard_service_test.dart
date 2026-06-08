@@ -82,5 +82,38 @@ void main() {
       // test env that routes through Flutter's Clipboard channel.
       expect(stored, 'Provider value');
     });
+
+    test(
+      'honors the empty-string guard from makeSuperClipboardService',
+      () async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        String? stored = 'untouched';
+        var setDataCalls = 0;
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              if (call.method == 'Clipboard.setData') {
+                setDataCalls++;
+                stored = (call.arguments as Map)['text'] as String?;
+              }
+              return null;
+            });
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null),
+        );
+
+        final clipboard = container.read(appClipboardProvider);
+        await clipboard.writePlainText('');
+
+        // The provider wires through makeSuperClipboardService, whose empty-string
+        // guard short-circuits before touching the platform channel.
+        expect(setDataCalls, 0);
+        expect(stored, 'untouched');
+      },
+    );
   });
 }

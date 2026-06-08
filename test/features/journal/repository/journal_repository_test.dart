@@ -52,6 +52,22 @@ Metadata testMeta({
   );
 }
 
+/// Journal-entry fixture wrapping [testMeta]; pass only the fields that differ.
+///
+/// Defaults to the canonical `'Test content'` / `'test'` text used across the
+/// mutation and read tests. Provide [meta] when a non-default metadata shape is
+/// needed (e.g. a specific id or non-2023 timestamps).
+JournalEntity testJournalEntry({
+  Metadata? meta,
+  String plainText = 'Test content',
+  String markdown = 'test',
+}) {
+  return JournalEntity.journalEntry(
+    entryText: EntryText(plainText: plainText, markdown: markdown),
+    meta: meta ?? testMeta(),
+  );
+}
+
 void main() {
   group('JournalRepository', () {
     late MockJournalDb mockJournalDb;
@@ -106,13 +122,7 @@ void main() {
         const journalEntityId = 'test-id';
         const categoryId = 'category-id';
 
-        final testEntity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Test content',
-            markdown: 'test',
-          ),
-          meta: testMeta(),
-        );
+        final testEntity = testJournalEntry();
 
         final updatedMeta = testEntity.meta.copyWith(
           categoryId: categoryId,
@@ -192,11 +202,7 @@ void main() {
         const journalEntityId = 'test-id';
         const String? categoryId = null;
 
-        final testEntity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Test content',
-            markdown: 'test',
-          ),
+        final testEntity = testJournalEntry(
           meta: testMeta(categoryId: 'existing-category'),
         );
 
@@ -302,13 +308,7 @@ void main() {
         // Arrange
         const journalEntityId = 'test-id';
 
-        final testEntity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Test content',
-            markdown: 'test',
-          ),
-          meta: testMeta(),
-        );
+        final testEntity = testJournalEntry();
 
         final updatedMeta = testEntity.meta.copyWith(
           deletedAt: DateTime(2024, 3, 15, 11),
@@ -387,11 +387,9 @@ void main() {
         // Arrange
         const journalEntityId = 'active-timer-id';
 
-        final testEntity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Timer entry',
-            markdown: 'timer',
-          ),
+        final testEntity = testJournalEntry(
+          plainText: 'Timer entry',
+          markdown: 'timer',
           meta: testMeta(id: journalEntityId),
         );
 
@@ -456,19 +454,14 @@ void main() {
         const journalEntityId = 'non-active-timer-id';
         const activeTimerId = 'different-active-timer-id';
 
-        final testEntity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Non-active entry',
-            markdown: 'test',
-          ),
+        final testEntity = testJournalEntry(
+          plainText: 'Non-active entry',
           meta: testMeta(id: journalEntityId),
         );
 
-        final activeTimer = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Active timer',
-            markdown: 'timer',
-          ),
+        final activeTimer = testJournalEntry(
+          plainText: 'Active timer',
+          markdown: 'timer',
           meta: testMeta(id: activeTimerId),
         );
 
@@ -532,13 +525,7 @@ void main() {
         // Arrange
         const journalEntityId = 'test-id';
 
-        final testEntity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Test content',
-            markdown: 'test',
-          ),
-          meta: testMeta(),
-        );
+        final testEntity = testJournalEntry();
 
         final updatedMeta = testEntity.meta.copyWith(
           deletedAt: DateTime(2024, 3, 15, 11),
@@ -604,11 +591,7 @@ void main() {
         final dateFrom = DateTime(2023);
         final dateTo = DateTime(2023, 1, 2);
 
-        final testEntity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Test content',
-            markdown: 'test',
-          ),
+        final testEntity = testJournalEntry(
           meta: Metadata(
             id: journalEntityId,
             createdAt: DateTime(2023),
@@ -740,13 +723,7 @@ void main() {
     group('updateJournalEntity', () {
       test('delegates to PersistenceLogic and returns the result', () async {
         // Arrange
-        final testEntity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Test content',
-            markdown: 'test',
-          ),
-          meta: testMeta(),
-        );
+        final testEntity = testJournalEntry();
 
         // Mock the updateJournalEntity call
         when(
@@ -771,13 +748,7 @@ void main() {
 
       test('handles exceptions and returns false', () async {
         // Arrange
-        final testEntity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Test content',
-            markdown: 'test',
-          ),
-          meta: testMeta(),
-        );
+        final testEntity = testJournalEntry();
 
         // Mock the updateJournalEntity call to throw an exception
         when(
@@ -1034,18 +1005,14 @@ void main() {
         const linkedTo = 'linked-to-id';
 
         final testEntities = [
-          JournalEntity.journalEntry(
-            entryText: const EntryText(
-              plainText: 'Entry 1',
-              markdown: 'Entry 1',
-            ),
+          testJournalEntry(
+            plainText: 'Entry 1',
+            markdown: 'Entry 1',
             meta: testMeta(id: 'entry-1'),
           ),
-          JournalEntity.journalEntry(
-            entryText: const EntryText(
-              plainText: 'Entry 2',
-              markdown: 'Entry 2',
-            ),
+          testJournalEntry(
+            plainText: 'Entry 2',
+            markdown: 'Entry 2',
             meta: testMeta(id: 'entry-2'),
           ),
         ];
@@ -1066,11 +1033,9 @@ void main() {
       test('concurrent lookups each hit the DB', () async {
         const linkedTo = 'linked-to-id';
         final testEntities = [
-          JournalEntity.journalEntry(
-            entryText: const EntryText(
-              plainText: 'Entry 1',
-              markdown: 'Entry 1',
-            ),
+          testJournalEntry(
+            plainText: 'Entry 1',
+            markdown: 'Entry 1',
             meta: testMeta(id: 'entry-1'),
           ),
         ];
@@ -1091,21 +1056,17 @@ void main() {
       test('fetches from DB on each call', () async {
         const linkedTo = 'linked-to-id';
         final initialEntities = [
-          JournalEntity.journalEntry(
-            entryText: const EntryText(
-              plainText: 'Entry 1',
-              markdown: 'Entry 1',
-            ),
+          testJournalEntry(
+            plainText: 'Entry 1',
+            markdown: 'Entry 1',
             meta: testMeta(id: 'entry-1'),
           ),
         ];
         final refreshedEntities = [
           ...initialEntities,
-          JournalEntity.journalEntry(
-            entryText: const EntryText(
-              plainText: 'Entry 2',
-              markdown: 'Entry 2',
-            ),
+          testJournalEntry(
+            plainText: 'Entry 2',
+            markdown: 'Entry 2',
             meta: Metadata(
               id: 'entry-2',
               createdAt: DateTime(2024),
@@ -1143,13 +1104,7 @@ void main() {
       test('returns the journal entity when found', () async {
         // Arrange
         const entityId = 'test-entity-id';
-        final testEntity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Test content',
-            markdown: 'test',
-          ),
-          meta: testMeta(id: entityId),
-        );
+        final testEntity = testJournalEntry(meta: testMeta(id: entityId));
 
         // Mock the journalEntityById call
         when(
@@ -1183,18 +1138,14 @@ void main() {
 
       test('fetches from DB on each call without caching', () async {
         const entityId = 'test-entity-id';
-        final initialEntity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Initial content',
-            markdown: 'initial',
-          ),
+        final initialEntity = testJournalEntry(
+          plainText: 'Initial content',
+          markdown: 'initial',
           meta: testMeta(id: entityId),
         );
-        final updatedEntity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'Updated content',
-            markdown: 'updated',
-          ),
+        final updatedEntity = testJournalEntry(
+          plainText: 'Updated content',
+          markdown: 'updated',
           meta: Metadata(
             id: entityId,
             createdAt: DateTime(2023),
@@ -1718,21 +1669,10 @@ void main() {
           dateTo: dateTime2023,
           schemaVersion: 1,
           serialized: jsonEncode(
-            JournalEntity.journalEntry(
-              entryText: const EntryText(
-                plainText: 'Entry 1',
-                markdown: 'Entry 1',
-              ),
-              meta: Metadata(
-                id: 'entity-1',
-                createdAt: dateTime2023,
-                updatedAt: dateTime2023,
-                dateFrom: dateTime2023,
-                dateTo: dateTime2023,
-                starred: false,
-                private: false,
-                flag: EntryFlag.none,
-              ),
+            testJournalEntry(
+              plainText: 'Entry 1',
+              markdown: 'Entry 1',
+              meta: testMeta(id: 'entity-1'),
             ).toJson(),
           ),
         );
@@ -1754,21 +1694,10 @@ void main() {
           dateTo: dateTime2023,
           schemaVersion: 1,
           serialized: jsonEncode(
-            JournalEntity.journalEntry(
-              entryText: const EntryText(
-                plainText: 'Entry 2',
-                markdown: 'Entry 2',
-              ),
-              meta: Metadata(
-                id: 'entity-2',
-                createdAt: dateTime2023,
-                updatedAt: dateTime2023,
-                dateFrom: dateTime2023,
-                dateTo: dateTime2023,
-                starred: false,
-                private: false,
-                flag: EntryFlag.none,
-              ),
+            testJournalEntry(
+              plainText: 'Entry 2',
+              markdown: 'Entry 2',
+              meta: testMeta(id: 'entity-2'),
             ).toJson(),
           ),
         );
@@ -1815,21 +1744,10 @@ void main() {
             dateTo: dateTime2023,
             schemaVersion: 1,
             serialized: jsonEncode(
-              JournalEntity.journalEntry(
-                entryText: const EntryText(
-                  plainText: 'Entry 1',
-                  markdown: 'Entry 1',
-                ),
-                meta: Metadata(
-                  id: 'entity-1',
-                  createdAt: dateTime2023,
-                  updatedAt: dateTime2023,
-                  dateFrom: dateTime2023,
-                  dateTo: dateTime2023,
-                  starred: false,
-                  private: false,
-                  flag: EntryFlag.none,
-                ),
+              testJournalEntry(
+                plainText: 'Entry 1',
+                markdown: 'Entry 1',
+                meta: testMeta(id: 'entity-1'),
               ).toJson(),
             ),
           );
@@ -2278,8 +2196,9 @@ void main() {
         'returns exactly what the DB yields when some ids resolve to '
         'no entity',
         () async {
-          final onlyFound = JournalEntity.journalEntry(
-            entryText: const EntryText(plainText: 'found', markdown: 'found'),
+          final onlyFound = testJournalEntry(
+            plainText: 'found',
+            markdown: 'found',
             meta: testMeta(id: 'found-id'),
           );
           when(
@@ -2314,11 +2233,9 @@ void main() {
       );
 
       test('delegates to the bulk fetcher and dedupes the input set', () async {
-        final entity = JournalEntity.journalEntry(
-          entryText: const EntryText(
-            plainText: 'bulk-fetch',
-            markdown: 'bulk',
-          ),
+        final entity = testJournalEntry(
+          plainText: 'bulk-fetch',
+          markdown: 'bulk',
           meta: Metadata(
             id: 'a',
             createdAt: DateTime(2024, 3, 15),
@@ -2386,10 +2303,7 @@ void main() {
         testMeta(),
       );
       registerFallbackValue(
-        JournalEntity.journalEntry(
-          entryText: const EntryText(plainText: 'test', markdown: 'test'),
-          meta: testMeta(),
-        ),
+        testJournalEntry(plainText: 'test'),
       );
       registerFallbackValue(
         SyncMessage.entryLink(
