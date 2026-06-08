@@ -28,6 +28,14 @@ extension _AnyHealthData on glados.Any {
   glados.Generator<List<_EntrySpec>> get entrySpecs =>
       glados.ListAnys(this).listWithLengthInRange(1, 12, entrySpec);
 
+  /// A non-empty list of minute values in [1..6000] (for transformToHours).
+  glados.Generator<List<int>> get minuteValues =>
+      glados.ListAnys(this).listWithLengthInRange(
+        1,
+        12,
+        glados.any.intInRange(1, 6000),
+      );
+
   /// A threshold-to-hex-color map with 1–4 entries.
   glados.Generator<Map<num, String>> get thresholdMap =>
       glados.CombinableAny(this).combine4(
@@ -62,6 +70,9 @@ List<JournalEntity> _makeEntries(
 }
 
 void main() {
+  // Deterministic anchor date shared by example and Glados property tests.
+  final propertyBase = DateTime(2024, 3, 10);
+
   group('aggregateNone', () {
     test('returns one observation per quantitative entity', () {
       final entities = [
@@ -233,6 +244,34 @@ void main() {
     test('returns empty list for empty input', () {
       expect(transformToHours([]), isEmpty);
     });
+
+    glados.Glados(
+      glados.any.minuteValues,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'multiplying each result back by 60 recovers the original values',
+      (minutes) {
+        final observations = [
+          for (var i = 0; i < minutes.length; i++)
+            Observation(propertyBase.add(Duration(days: i)), minutes[i]),
+        ];
+
+        final result = transformToHours(observations);
+
+        expect(result, hasLength(observations.length));
+        for (var i = 0; i < result.length; i++) {
+          // dateTime is preserved verbatim.
+          expect(result[i].dateTime, observations[i].dateTime);
+          // value / 60 * 60 round-trips back to the original minute value.
+          expect(
+            result[i].value * 60,
+            closeTo(observations[i].value, 1e-9),
+            reason: 'value $i must round-trip through hours conversion',
+          );
+        }
+      },
+      tags: 'glados',
+    );
   });
 
   group('aggregateByType', () {
@@ -439,8 +478,6 @@ void main() {
   // -------------------------------------------------------------------------
   // Glados property tests.
   // -------------------------------------------------------------------------
-
-  final propertyBase = DateTime(2024, 3, 10);
 
   group('aggregateDailySum — properties', () {
     glados.Glados(
