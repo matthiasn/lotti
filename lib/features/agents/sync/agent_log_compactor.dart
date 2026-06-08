@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -254,36 +255,112 @@ class AgentLogCompactor {
         .where((t) => t.isNotEmpty)
         .toList();
     if (terms.isEmpty || limit <= 0) return const [];
+    return _scanLog(
+      agentId,
+      limit: limit,
+      matches: (event, text) {
+        final haystack = text.toLowerCase();
+        return terms.every(haystack.contains);
+      },
+    );
+  }
 
+  /// Pulls up specific memory-log entries by their [ids] — the "follow a link"
+  /// counterpart to [searchLog], used to expand a `[[relation:id]]` reference
+  /// the agent saw. Same lazy newest-first scan: it resolves content only for
+  /// matching events and stops once [limit] are found, so following a handful
+  /// of links never loads the whole history. Returns at most [limit] hits.
+  Future<List<MemoryLogHit>> resolveByIds(
+    String agentId, {
+    required Set<String> ids,
+    int limit = 20,
+  }) async {
+    if (ids.isEmpty || limit <= 0) return const [];
+    return _scanLog(
+      agentId,
+      limit: limit,
+      matches: (event, text) => ids.contains(event.contentEntryId),
+    );
+  }
+
+  /// Shared newest-first chunked scan behind [searchLog] and [resolveByIds].
+  ///
+  /// Resolves content per chunk, collecting the first [limit] events for which
+  /// [matches] holds. Two things are derived for every returned hit without a
+  /// second pass over the log:
+  /// - its outgoing `[[relation:id]]` links, validated for existence against
+  ///   the full (cheaply-projected) set of log entry ids;
+  /// - whether the hit is itself superseded — accumulated from every scanned
+  ///   `[[supersedes:id]]` token. Superseders are always newer than their
+  ///   target and the scan runs newest-first, so this is complete for every
+  ///   returned hit even when the scan stops early at [limit].
+  Future<List<MemoryLogHit>> _scanLog(
+    String agentId, {
+    required int limit,
+    required bool Function(InputEvent event, String text) matches,
+  }) async {
     final view = await _projectActiveView(agentId);
     if (view.log.events.isEmpty) return const [];
 
+    final knownIds = <String>{
+      for (final e in view.log.events) e.contentEntryId,
+    };
     final events = view.log.events.reversed.toList(); // newest-first
-    final hits = <MemoryLogHit>[];
+    final supersededBy = <String, String>{};
+    final matched =
+        <
+          ({
+            InputEvent event,
+            String type,
+            String text,
+            bool edited,
+            List<MemoryLink> parsed,
+          })
+        >[];
+
     const chunk = 50;
-    for (var i = 0; i < events.length && hits.length < limit; i += chunk) {
+    outer:
+    for (var i = 0; i < events.length; i += chunk) {
       final end = i + chunk < events.length ? i + chunk : events.length;
       final loaded = await _resolveEventContents(events.sublist(i, end));
       for (final l in loaded) {
         final text = _searchableText(l.content);
-        final haystack = text.toLowerCase();
-        if (terms.every(haystack.contains)) {
-          hits.add(
-            MemoryLogHit(
-              contentEntryId: l.event.contentEntryId,
-              at: l.event.position.at,
-              type:
-                  (l.content['entryType'] as String?) ??
-                  (l.event.isObservation ? 'observation' : 'entry'),
-              text: text,
-              edited: l.event.isEdit,
-            ),
-          );
-          if (hits.length >= limit) break;
+        final parsed = parseMemoryLinks(text);
+        for (final link in parsed) {
+          if (link.relation == LinkRelation.supersedes) {
+            supersededBy.putIfAbsent(
+              link.entryId,
+              () => l.event.contentEntryId,
+            );
+          }
+        }
+        if (matches(l.event, text)) {
+          matched.add((
+            event: l.event,
+            type:
+                (l.content['entryType'] as String?) ??
+                (l.event.isObservation ? 'observation' : 'entry'),
+            text: text,
+            edited: l.event.isEdit,
+            parsed: parsed,
+          ));
+          if (matched.length >= limit) break outer;
         }
       }
     }
-    return hits;
+
+    return [
+      for (final m in matched)
+        MemoryLogHit(
+          contentEntryId: m.event.contentEntryId,
+          at: m.event.position.at,
+          type: m.type,
+          text: m.text,
+          edited: m.edited,
+          links: resolveMemoryLinks(m.parsed, knownIds: knownIds),
+          supersededByEntryId: supersededBy[m.event.contentEntryId],
+        ),
+    ];
   }
 
   static String _searchableText(Map<String, Object?> content) {
@@ -486,17 +563,19 @@ class AgentLogCompactor {
   }
 }
 
-/// One keyword hit from [AgentLogCompactor.searchLog] — a raw memory-log entry
-/// (capture transcript or observation) that matched the query, including
-/// detail that has been folded out of the compacted summary.
+/// One hit from [AgentLogCompactor.searchLog] / [AgentLogCompactor.resolveByIds]
+/// — a raw memory-log entry (capture transcript or observation) that matched,
+/// including detail that has been folded out of the compacted summary.
 class MemoryLogHit {
-  /// Wraps a search hit.
+  /// Wraps a hit.
   const MemoryLogHit({
     required this.contentEntryId,
     required this.at,
     required this.type,
     required this.text,
     required this.edited,
+    this.links = const [],
+    this.supersededByEntryId,
   });
 
   /// The originating entity id (capture id, observation message id, …).
@@ -513,6 +592,14 @@ class MemoryLogHit {
 
   /// True when a later event supersedes this one for the same source.
   final bool edited;
+
+  /// Author-time `[[relation:id]]` links parsed from this entry's text, each
+  /// validated for existence against the log (see [ResolvedMemoryLink]).
+  final List<ResolvedMemoryLink> links;
+
+  /// When another entry carries `[[supersedes:thisId]]`, the id of the newest
+  /// such entry; null when nothing supersedes this one.
+  final String? supersededByEntryId;
 }
 
 /// One assembled compacted log plus the marker that pins it for

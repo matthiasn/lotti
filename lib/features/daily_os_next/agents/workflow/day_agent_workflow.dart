@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -705,14 +706,21 @@ class DayAgentWorkflow {
     required String agentId,
     required Map<String, dynamic> args,
   }) async {
+    final rawIds = args['ids'];
+    final ids = rawIds is List
+        ? <String>{
+            for (final e in rawIds)
+              if (e is String && e.trim().isNotEmpty) e.trim(),
+          }
+        : const <String>{};
     final rawQuery = args['query'];
-    if (rawQuery is! String || rawQuery.trim().isEmpty) {
+    final query = rawQuery is String ? rawQuery.trim() : '';
+    if (ids.isEmpty && query.isEmpty) {
       return const DayAgentToolResult(
         success: false,
-        output: 'Error: "query" must be a non-empty string.',
+        output: 'Error: provide "query" keywords or "ids" to recall.',
       );
     }
-    final query = rawQuery.trim();
     final rawLimit = args['limit'];
     final limit = rawLimit is int ? rawLimit.clamp(1, 20) : 8;
 
@@ -733,7 +741,9 @@ class DayAgentWorkflow {
 
     final List<MemoryLogHit> hits;
     try {
-      hits = await compactor.searchLog(agentId, query: query, limit: limit);
+      hits = ids.isNotEmpty
+          ? await compactor.resolveByIds(agentId, ids: ids)
+          : await compactor.searchLog(agentId, query: query, limit: limit);
     } catch (e, s) {
       _logError('search_memory failed', error: e, stackTrace: s);
       return const DayAgentToolResult(
@@ -742,26 +752,42 @@ class DayAgentWorkflow {
       );
     }
 
+    final subject = ids.isNotEmpty ? 'ids ${ids.join(', ')}' : '"$query"';
     if (hits.isEmpty) {
       return DayAgentToolResult(
         success: true,
-        output: 'No memory entries match "$query".',
+        output: 'No memory entries match $subject.',
       );
     }
 
     final buf = StringBuffer(
-      'Found ${hits.length} memory match(es) for "$query" '
-      '(most recent first):',
+      'Found ${hits.length} memory match(es) for $subject (most recent first):',
     );
     for (final hit in hits) {
       buf
         ..writeln()
         ..write(
           '- [${hit.at.toIso8601String()}] '
-          '(${hit.type}${hit.edited ? ', edited' : ''}) ${hit.text}',
+          '(${hit.type}${hit.edited ? ', edited' : ''}) '
+          '(id: ${hit.contentEntryId}) ${hit.text}',
         );
+      if (hit.supersededByEntryId != null) {
+        buf.write(' [superseded by ${hit.supersededByEntryId}]');
+      }
+      if (hit.links.isNotEmpty) {
+        buf
+          ..writeln()
+          ..write('  links: ${hit.links.map(_formatLink).join(', ')}');
+      }
     }
     return DayAgentToolResult(success: true, output: buf.toString());
+  }
+
+  static String _formatLink(ResolvedMemoryLink link) {
+    final target = link.exists
+        ? link.link.entryId
+        : '${link.link.entryId} (not found)';
+    return '${link.link.relation.wire}:$target';
   }
 
   Future<_TemplateContext?> _resolveTemplate(String agentId) async {
@@ -802,7 +828,7 @@ class DayAgentWorkflow {
     final toolLines = <String>[
       '- `record_observations`: private memory for learnings and uncertainty.',
       '- `set_next_wake`: schedule the next useful pre-warm wake.',
-      '- `search_memory`: recall exact past detail folded out of the summary.',
+      '- `search_memory`: recall past detail folded out of the summary by keyword, or pass `ids` to pull up specific entries (e.g. to follow a [[relation:id]] link).',
       if (captureService != null) captureToolLines,
       if (planService != null) planToolLines,
       if (knowledgeService != null) knowledgeToolLines,
@@ -867,6 +893,17 @@ Refine rules:
   user's verdicts, surfaced through the UI.
 - Commit, shutdown, and agenda mutation tools are not available yet. Do
   not claim that you committed or shut down a day.
+
+Linking your memory:
+- When an observation or knowledge note you write refines, supersedes,
+  contradicts, or relates to an earlier entry you can see (in this prompt or a
+  `search_memory` result), cite it inline as `[[relation:id]]` using that
+  entry's id — e.g. `[[refines:obs-12ab]]`. Use only ids you have actually
+  seen; never invent one.
+- To record a corrected "new version" of an earlier observation, write a fresh
+  observation containing `[[supersedes:<oldId>]]` rather than restating it as
+  fact — your memory is append-only, so newer entries win by superseding, never
+  by overwriting.
 
 Record private observations and schedule one useful future wake when warranted.
 

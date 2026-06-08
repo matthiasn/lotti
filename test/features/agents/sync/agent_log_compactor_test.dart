@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -966,6 +967,83 @@ void main() {
       expect(hits.single.contentEntryId, 'cap-x');
       expect(hits.single.type, 'capture');
       expect(hits.single.text, 'lazy transcript about taxes');
+    });
+  });
+
+  group('resolveByIds (follow a link)', () {
+    test(
+      'pulls up the requested entries newest-first, skipping unknowns',
+      () async {
+        await captureAll([
+          src('e1', 'buy milk', day: 1),
+          src('e2', 'call dentist', day: 2),
+          src('e3', 'review report', day: 3),
+        ], 10);
+
+        final hits = await compactor.resolveByIds(_agentId, ids: {'e1', 'e3'});
+        expect(hits.map((h) => h.contentEntryId), ['e3', 'e1']); // newest-first
+        expect(
+          await compactor.resolveByIds(_agentId, ids: {'ghost'}),
+          isEmpty,
+        );
+      },
+    );
+
+    test('an empty id set short-circuits without scanning', () async {
+      await captureAll([src('e1', 'note', day: 1)], 10);
+      expect(await compactor.resolveByIds(_agentId, ids: const {}), isEmpty);
+    });
+
+    test('reaches entries already folded into the summary', () async {
+      await captureAll([
+        src('e1', 'buy milk and eggs', day: 1),
+        src('e2', 'review the Q3 report', day: 2),
+      ], 10);
+      await compact(budget: 0); // folds e1 into the summary; tail = [e2]
+
+      final hits = await compactor.resolveByIds(_agentId, ids: {'e1'});
+      expect(hits.single.contentEntryId, 'e1');
+      expect(hits.single.text, 'buy milk and eggs');
+    });
+  });
+
+  group('author-time links on hits', () {
+    test('searchLog validates outgoing links against the log', () async {
+      await captureAll([src('cap1', 'standup with the team', day: 1)], 10);
+      await seedObservation(
+        'o1',
+        'planning note [[relates:cap1]] [[relates:ghost]]',
+        day: 11,
+      );
+
+      final hit = (await compactor.searchLog(
+        _agentId,
+        query: 'planning',
+      )).single;
+      final byTarget = {for (final l in hit.links) l.link.entryId: l};
+      expect(byTarget['cap1']!.exists, isTrue);
+      expect(byTarget['cap1']!.link.relation, LinkRelation.relates);
+      expect(byTarget['ghost']!.exists, isFalse);
+    });
+
+    test('flags an entry superseded by a newer note', () async {
+      await seedObservation('a', 'old gym plan', day: 1);
+      await seedObservation('b', 'new gym plan [[supersedes:a]]', day: 2);
+
+      final hits = await compactor.searchLog(_agentId, query: 'gym');
+      final byId = {for (final h in hits) h.contentEntryId: h};
+      expect(byId['a']!.supersededByEntryId, 'b');
+      expect(byId['b']!.supersededByEntryId, isNull);
+      // The superseding note carries the (existing) outgoing supersedes link.
+      expect(byId['b']!.links.single.link.entryId, 'a');
+      expect(byId['b']!.links.single.exists, isTrue);
+    });
+
+    test('entries without links expose an empty link list', () async {
+      await captureAll([src('e1', 'just a plain capture', day: 1)], 10);
+      final hit = (await compactor.searchLog(_agentId, query: 'plain')).single;
+      expect(hit.links, isEmpty);
+      expect(hit.supersededByEntryId, isNull);
     });
   });
 

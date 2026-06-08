@@ -665,7 +665,7 @@ void main() {
         expect(response, contains('(capture'));
       });
 
-      test('rejects an empty query without searching', () async {
+      test('rejects a call with neither query nor ids', () async {
         conversationRepository.toolCalls = [
           _toolCall(
             name: DayAgentToolNames.searchMemory,
@@ -678,7 +678,7 @@ void main() {
         expect(result.success, isTrue);
         expect(
           conversationRepository.toolResponses.single,
-          'Error: "query" must be a non-empty string.',
+          'Error: provide "query" keywords or "ids" to recall.',
         );
       });
 
@@ -777,6 +777,150 @@ void main() {
         expect(
           conversationRepository.toolResponses.single,
           contains('memory search failed'),
+        );
+      });
+
+      test('follows a link by pulling up the entry by id', () async {
+        stubLogReads();
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'cap-1',
+                  agentId: agentId,
+                  transcript: 'remember to buy oat milk',
+                  capturedAt: DateTime.utc(2026, 5, 20, 7),
+                  createdAt: DateTime.utc(2026, 5, 20, 7, 1),
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+          (_) async => [
+            (
+              id: capture.id,
+              createdAt: capture.createdAt,
+              capturedAt: capture.capturedAt,
+            ),
+          ],
+        );
+        when(
+          () => repository.getEntity('cap-1'),
+        ).thenAnswer((_) async => capture);
+
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {
+              'ids': ['cap-1'],
+            },
+          ),
+        ];
+
+        final result = await execute(workflow());
+        expect(result.success, isTrue);
+        final response = conversationRepository.toolResponses.single;
+        expect(response, contains('for ids cap-1'));
+        expect(response, contains('(id: cap-1)'));
+        expect(response, contains('remember to buy oat milk'));
+      });
+
+      test('reports no match when none of the requested ids resolve', () async {
+        stubLogReads();
+        when(
+          () => repository.getCaptureEventMetaByAgentId(agentId),
+        ).thenAnswer((_) async => const []);
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {
+              'ids': ['ghost'],
+            },
+          ),
+        ];
+
+        final result = await execute(workflow());
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          'No memory entries match ids ghost.',
+        );
+      });
+
+      test('renders author-time links and supersession on hits', () async {
+        when(() => syncService.repository).thenReturn(repository);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getLinksFrom(agentId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getCaptureEventMetaByAgentId(agentId),
+        ).thenAnswer((_) async => const []);
+
+        AgentMessageEntity obs(String id, DateTime at) =>
+            AgentDomainEntity.agentMessage(
+                  id: id,
+                  agentId: agentId,
+                  threadId: id,
+                  kind: AgentMessageKind.observation,
+                  createdAt: at,
+                  vectorClock: null,
+                  contentEntryId: 'pl-$id',
+                  metadata: const AgentMessageMetadata(),
+                )
+                as AgentMessageEntity;
+        AgentMessagePayloadEntity payload(String id, String text) =>
+            AgentDomainEntity.agentMessagePayload(
+                  id: 'pl-$id',
+                  agentId: agentId,
+                  createdAt: DateTime.utc(2026, 5, 20),
+                  vectorClock: null,
+                  content: <String, Object?>{'text': text},
+                )
+                as AgentMessagePayloadEntity;
+
+        when(
+          () => repository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            obs('obs-a', DateTime.utc(2026, 5, 20)),
+            obs('obs-b', DateTime.utc(2026, 5, 21)),
+          ],
+        );
+        when(
+          () => repository.getEntity('pl-obs-a'),
+        ).thenAnswer((_) async => payload('obs-a', 'old gym plan'));
+        when(() => repository.getEntity('pl-obs-b')).thenAnswer(
+          (_) async => payload(
+            'obs-b',
+            'new gym plan [[supersedes:obs-a]] [[relates:ghost]]',
+          ),
+        );
+
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {'query': 'gym'},
+          ),
+        ];
+
+        final result = await execute(workflow());
+        expect(result.success, isTrue);
+        final response = conversationRepository.toolResponses.single;
+        // obs-a is flagged as superseded by the newer obs-b.
+        expect(
+          response,
+          contains('(id: obs-a) old gym plan [superseded by obs-b]'),
+        );
+        // obs-b surfaces its outgoing links, with the dead one annotated.
+        expect(
+          response,
+          contains('links: supersedes:obs-a, relates:ghost (not found)'),
         );
       });
     });

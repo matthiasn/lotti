@@ -99,8 +99,27 @@ Runtime behavior:
   `currentLocalTime` lets same-day drafting distinguish future plan slots from
   time that has already passed.
 - `DayAgentStrategy` handles private observations itself and delegates
-  `set_next_wake`, the knowledge tools, Capture/Reconcile tools, draft plan
-  tools, and refine tools through the workflow handler.
+  `set_next_wake`, `search_memory`, the knowledge tools, Capture/Reconcile
+  tools, draft plan tools, and refine tools through the workflow handler.
+- `search_memory` is the planner's recall + memory-linking tool, handled by the
+  workflow itself (`DayAgentWorkflow._searchMemory` over `AgentLogCompactor`).
+  With `query` it keyword-scans the **full** immutable capture-and-observation
+  log — including detail folded out of the current summary — newest-first and
+  bounded (`searchLog`); with `ids` it pulls up specific entries (`resolveByIds`,
+  the "follow a link" path). Recall is lazy: the per-wake assembly resolves only
+  the tail, and `search_memory` is the one reader that scans beyond it, and only
+  when the agent explicitly recalls.
+- **Author-time memory links (convergence-safe A-MEM, Phase 0).** Notes the
+  agent writes (observations, knowledge) may cite a related entry inline as
+  `[[relation:id]]` — `refines` / `supersedes` / `contradicts` / `relates`
+  (`lib/features/agents/memory/memory_links.dart`). The token is plain content
+  of an append-only entry, so it never mutates history, never touches the cached
+  prompt prefix, and stays convergent because the cited id is the synced entity
+  id. `search_memory` resolves each hit's outgoing links — validating existence
+  (a hallucinated id renders as `(not found)`, never followed) — and flags an
+  entry that a newer note supersedes, giving the agent a navigable, append-only
+  memory graph without an explicit edge store or any in-place rewrite. See
+  `docs/implementation_plans/2026-06-08_convergence_safe_a_mem.md`.
 - `DayAgentCaptureService` owns direct Capture/Reconcile mutations:
   `submit_capture`, `parse_capture_to_items`, `match_to_corpus`,
   `link_capture_phrase_to_task`, `break_capture_link`,

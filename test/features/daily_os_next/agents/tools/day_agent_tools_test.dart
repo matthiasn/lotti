@@ -57,6 +57,18 @@ void main() {
       }
     });
 
+    test('search_memory exposes query + ids + limit and requires neither '
+        'query nor ids in the schema', () {
+      final params = parametersFor(DayAgentToolNames.searchMemory);
+      final props = params['properties'] as Map<String, dynamic>;
+      expect(props.keys, containsAll(['query', 'ids', 'limit']));
+      expect((props['ids'] as Map)['type'], 'array');
+      expect((props['ids'] as Map)['items'], {'type': 'string'});
+      // No required key — the handler enforces "query or ids" at call time, so
+      // an ids-only recall is schema-valid.
+      expect(params.containsKey('required'), isFalse);
+    });
+
     test('requires the fields needed for capture and reconcile mutations', () {
       expect(
         requiredFor(DayAgentToolNames.submitCapture),
