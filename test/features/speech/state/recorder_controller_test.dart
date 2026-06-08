@@ -25,7 +25,6 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' as rec;
 import 'package:record/record.dart';
@@ -33,8 +32,6 @@ import 'package:record/record.dart';
 import '../../../mocks/mocks.dart';
 
 class MockAmplitude extends Mock implements Amplitude {}
-
-class MockPlayerState extends Mock implements PlayerState {}
 
 class MockRecAudioRecorder extends Mock implements rec.AudioRecorder {}
 

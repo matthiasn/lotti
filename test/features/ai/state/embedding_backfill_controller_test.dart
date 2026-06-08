@@ -547,7 +547,11 @@ void main() {
     });
 
     test('sets error when embedding pipeline not registered', () async {
-      await getIt.reset();
+      // The controller gates on `getIt.isRegistered<EmbeddingStore>()`, so
+      // unregister only that one dependency rather than nuking the whole
+      // registry with `getIt.reset()` (which would contaminate the batched
+      // `very_good test` run if this test failed before tearDown).
+      getIt.unregister<EmbeddingStore>();
       container.dispose();
       container = ProviderContainer();
 
