@@ -81,6 +81,7 @@ import 'package:lotti/features/ai_chat/services/realtime_transcription_service.d
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
@@ -1040,6 +1041,9 @@ class MockDayAgentCaptureService extends Mock
     implements DayAgentCaptureService {}
 
 class MockDayAgentPlanService extends Mock implements DayAgentPlanService {}
+
+class MockDayAgentKnowledgeService extends Mock
+    implements DayAgentKnowledgeService {}
 
 class MockDayAgentWorkflow extends Mock implements DayAgentWorkflow {}
 

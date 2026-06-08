@@ -331,6 +331,12 @@ extension _AgentHandlers on SyncEventProcessor {
       id: incoming.id,
       jsonPath: jsonPath,
       restoreLocalJson: () => jsonEncode(local.toJson()),
+      // Type-specific monotonic rules (ADR 0022): retraction is terminal;
+      // a future-reschedule beats a past consume. Deferred to LWW otherwise.
+      concurrentOverride: () => resolveConcurrentAgentEntityOverride(
+        local: local,
+        incoming: incoming,
+      ),
     );
   }
 
@@ -443,23 +449,25 @@ extension _AgentHandlers on SyncEventProcessor {
     required String id,
     required String? jsonPath,
     required String Function() restoreLocalJson,
+    ConcurrentWinner? Function()? concurrentOverride,
   }) async {
     try {
       final status = VectorClock.compare(localVc, incomingVc);
       // Causal dominance decides first; the genuinely `concurrent` branch is
-      // resolved by a deterministic LWW + vector-clock tiebreak so two devices
-      // converge regardless of arrival order (the timestamp closures are only
-      // evaluated on that branch).
+      // resolved by an optional type-specific monotonic rule, then a
+      // deterministic LWW + vector-clock tiebreak so two devices converge
+      // regardless of arrival order (the closures are only evaluated there).
       final keepLocal = switch (status) {
         VclockStatus.a_gt_b || VclockStatus.equal => true,
         VclockStatus.b_gt_a => false,
         VclockStatus.concurrent =>
-          resolveConcurrent(
-                localVc: localVc,
-                incomingVc: incomingVc,
-                localUpdatedAt: localUpdatedAt(),
-                incomingUpdatedAt: incomingUpdatedAt(),
-              ) ==
+          (concurrentOverride?.call() ??
+                  resolveConcurrent(
+                    localVc: localVc,
+                    incomingVc: incomingVc,
+                    localUpdatedAt: localUpdatedAt(),
+                    incomingUpdatedAt: incomingUpdatedAt(),
+                  )) ==
               ConcurrentWinner.local,
       };
       if (!keepLocal) return false;

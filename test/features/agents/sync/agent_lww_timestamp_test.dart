@@ -68,6 +68,22 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
     expected: _updated,
   ),
   (
+    label: 'plannerKnowledge',
+    entity: AgentDomainEntity.plannerKnowledge(
+      id: 'pk-1',
+      agentId: 'daily_os_planner',
+      key: 'deep-work',
+      hook: 'no deep work before 10',
+      statementText: 'Never schedule deep work before 10:00.',
+      source: KnowledgeSource.userStated,
+      status: KnowledgeStatus.confirmed,
+      createdAt: _created,
+      updatedAt: _updated,
+      vectorClock: null,
+    ),
+    expected: _updated,
+  ),
+  (
     label: 'capture',
     entity: AgentDomainEntity.capture(
       id: 'capture-1',
@@ -273,7 +289,7 @@ void main() {
     test('covers every AgentDomainEntity variant', () {
       // Guards the data table above: if a variant is added (and classified in
       // the exhaustive `map`), this count must be bumped with a new case.
-      expect(_cases.length, 28);
+      expect(_cases.length, 29);
     });
   });
 }

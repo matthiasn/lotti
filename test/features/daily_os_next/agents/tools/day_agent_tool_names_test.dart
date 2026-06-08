@@ -6,6 +6,7 @@ void main() {
     const toolNames = <String>[
       DayAgentToolNames.recordObservations,
       DayAgentToolNames.setNextWake,
+      DayAgentToolNames.searchMemory,
       DayAgentToolNames.submitCapture,
       DayAgentToolNames.parseCaptureToItems,
       DayAgentToolNames.matchToCorpus,
@@ -21,12 +22,14 @@ void main() {
       DayAgentToolNames.revertDiff,
       DayAgentToolNames.commitDay,
       DayAgentToolNames.uncommitDay,
+      DayAgentToolNames.proposeKnowledge,
     ];
 
     test('uses the wire names expected by the day-agent prompt', () {
       expect(toolNames, [
         'record_observations',
         'set_next_wake',
+        'search_memory',
         'submit_capture',
         'parse_capture_to_items',
         'match_to_corpus',
@@ -42,6 +45,7 @@ void main() {
         'revert_diff',
         'commit_day',
         'uncommit_day',
+        'propose_knowledge',
       ]);
     });
 
@@ -67,7 +71,7 @@ void main() {
     test('groups workflow-routed tools by implementation owner', () {
       expect(
         DayAgentToolNames.foundationHandlerTools,
-        {DayAgentToolNames.setNextWake},
+        {DayAgentToolNames.setNextWake, DayAgentToolNames.searchMemory},
       );
       expect(
         DayAgentToolNames.captureReconcileTools,
@@ -95,11 +99,17 @@ void main() {
         },
       );
       expect(
+        DayAgentToolNames.knowledgeTools,
+        {DayAgentToolNames.proposeKnowledge},
+      );
+      expect(
         DayAgentToolNames.workflowHandlerTools,
         {
           DayAgentToolNames.setNextWake,
+          DayAgentToolNames.searchMemory,
           ...DayAgentToolNames.captureReconcileTools,
           ...DayAgentToolNames.planTools,
+          ...DayAgentToolNames.knowledgeTools,
         },
       );
     });
@@ -164,29 +174,30 @@ void main() {
     });
 
     test('routing membership is explicit for every tool name', () {
-      // One row per tool: (name, capture/reconcile?, plan?, setNextWake?).
+      // One row per tool: (capture/reconcile?, plan?, setNextWake?, search?).
       // An adversarial move of a name between sets fails here by name.
-      const routing = <String, (bool, bool, bool)>{
-        DayAgentToolNames.recordObservations: (false, false, false),
-        DayAgentToolNames.setNextWake: (false, false, true),
-        DayAgentToolNames.submitCapture: (true, false, false),
-        DayAgentToolNames.parseCaptureToItems: (true, false, false),
-        DayAgentToolNames.matchToCorpus: (true, false, false),
-        DayAgentToolNames.linkCapturePhraseToTask: (true, false, false),
-        DayAgentToolNames.breakCaptureLink: (true, false, false),
-        DayAgentToolNames.surfacePendingDecisions: (true, false, false),
-        DayAgentToolNames.applyTriage: (true, false, false),
-        DayAgentToolNames.createTaskFromPhrase: (true, false, false),
-        DayAgentToolNames.draftDayPlan: (false, true, false),
-        DayAgentToolNames.summarizeRecentPatterns: (false, true, false),
-        DayAgentToolNames.proposePlanDiff: (false, true, false),
-        DayAgentToolNames.acceptDiff: (false, true, false),
-        DayAgentToolNames.revertDiff: (false, true, false),
-        DayAgentToolNames.commitDay: (false, true, false),
-        DayAgentToolNames.uncommitDay: (false, true, false),
+      const routing = <String, (bool, bool, bool, bool)>{
+        DayAgentToolNames.recordObservations: (false, false, false, false),
+        DayAgentToolNames.setNextWake: (false, false, true, false),
+        DayAgentToolNames.searchMemory: (false, false, false, true),
+        DayAgentToolNames.submitCapture: (true, false, false, false),
+        DayAgentToolNames.parseCaptureToItems: (true, false, false, false),
+        DayAgentToolNames.matchToCorpus: (true, false, false, false),
+        DayAgentToolNames.linkCapturePhraseToTask: (true, false, false, false),
+        DayAgentToolNames.breakCaptureLink: (true, false, false, false),
+        DayAgentToolNames.surfacePendingDecisions: (true, false, false, false),
+        DayAgentToolNames.applyTriage: (true, false, false, false),
+        DayAgentToolNames.createTaskFromPhrase: (true, false, false, false),
+        DayAgentToolNames.draftDayPlan: (false, true, false, false),
+        DayAgentToolNames.summarizeRecentPatterns: (false, true, false, false),
+        DayAgentToolNames.proposePlanDiff: (false, true, false, false),
+        DayAgentToolNames.acceptDiff: (false, true, false, false),
+        DayAgentToolNames.revertDiff: (false, true, false, false),
+        DayAgentToolNames.commitDay: (false, true, false, false),
+        DayAgentToolNames.uncommitDay: (false, true, false, false),
       };
 
-      for (final MapEntry(key: name, value: (capture, plan, wake))
+      for (final MapEntry(key: name, value: (capture, plan, wake, search))
           in routing.entries) {
         expect(
           DayAgentToolNames.isCaptureReconcileTool(name),
@@ -203,11 +214,16 @@ void main() {
           wake,
           reason: '$name setNextWake',
         );
+        expect(
+          DayAgentToolNames.isSearchMemoryTool(name),
+          search,
+          reason: '$name searchMemory',
+        );
         // The workflow handler covers all routed sets but not
         // strategy-local tools like recordObservations.
         expect(
           DayAgentToolNames.isWorkflowHandlerTool(name),
-          capture || plan || wake,
+          capture || plan || wake || search,
           reason: '$name workflowHandler',
         );
       }

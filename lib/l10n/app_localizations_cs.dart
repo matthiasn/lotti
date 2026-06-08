@@ -3408,6 +3408,43 @@ class AppLocalizationsCs extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Dobré ráno.';
 
   @override
+  String get dailyOsNextKnowledgeConfirm => 'Potvrdit';
+
+  @override
+  String get dailyOsNextKnowledgeConfirmedHeader => 'Potvrzeno';
+
+  @override
+  String get dailyOsNextKnowledgeEdit => 'Upravit';
+
+  @override
+  String get dailyOsNextKnowledgeEditCancel => 'Zrušit';
+
+  @override
+  String get dailyOsNextKnowledgeEditHookHint => 'Jednořádkové shrnutí';
+
+  @override
+  String get dailyOsNextKnowledgeEditSave => 'Uložit';
+
+  @override
+  String get dailyOsNextKnowledgeEditStatementHint => 'Co si mám zapamatovat?';
+
+  @override
+  String get dailyOsNextKnowledgeEmpty =>
+      'Zatím nic — zapamatuji si, co mi řekneš.';
+
+  @override
+  String get dailyOsNextKnowledgeProposedHeader => 'Čeká na tvé potvrzení';
+
+  @override
+  String get dailyOsNextKnowledgeRetract => 'Zapomenout';
+
+  @override
+  String get dailyOsNextKnowledgeStale => 'Platí to stále?';
+
+  @override
+  String get dailyOsNextKnowledgeTitle => 'Co jsem se naučil';
+
+  @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Odpojit';
 
   @override

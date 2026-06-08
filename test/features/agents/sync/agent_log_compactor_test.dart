@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
+import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -112,6 +114,33 @@ void main() {
           else
             event.contentEntryId,
       ],
+    );
+  }
+
+  // A fully isolated harness — Glados re-runs its body many times, so
+  // property tests must not share the setUp's accumulating repo/compactor.
+  ({
+    AgentInputCaptureService capture,
+    AgentLogCompactor compactor,
+  })
+  buildHarness() {
+    final harnessRepo = InMemoryAgentRepository()
+      ..seed([makeTestState(agentId: _agentId)]);
+    final vc = MockVectorClockService();
+    var counter = 0;
+    when(
+      () => vc.getNextVectorClock(previous: any(named: 'previous')),
+    ).thenAnswer((_) async => VectorClock({'h1': ++counter}));
+    final outbox = MockOutboxService();
+    when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+    final harnessSync = AgentSyncService(
+      repository: harnessRepo,
+      outboxService: outbox,
+      vectorClockService: vc,
+    );
+    return (
+      capture: AgentInputCaptureService(syncService: harnessSync),
+      compactor: AgentLogCompactor(syncService: harnessSync),
     );
   }
 
@@ -751,4 +780,404 @@ void main() {
       expect(liveSummaries.single.id, isNot(firstSummary.id));
     },
   );
+
+  group('deferred inline events (lazy capture content)', () {
+    // Mirrors `dayCaptureEvents`: position + id are eager, transcript resolves
+    // on demand so a long-lived agent never reloads its whole history.
+    InputEvent deferredCapture(String id, {required int day}) =>
+        InputEvent.inlineDeferred(
+          position: EventPosition(
+            at: DateTime.utc(2024, 3, day, 0, 1),
+            sourceAt: DateTime.utc(2024, 3, day),
+            key: 'capture|$id',
+          ),
+          contentEntryId: id,
+          sourceCreatedAt: DateTime.utc(2024, 3, day),
+        );
+
+    test(
+      'the read path resolves content ONLY for the post-cutoff tail; covered '
+      'captures stay covered without ever reloading their transcript',
+      () async {
+        final resolvedIds = <String>[];
+        Future<Map<String, Object?>?> resolver(String id) async {
+          resolvedIds.add(id);
+          return <String, Object?>{'entryType': 'capture', 'text': 'body $id'};
+        }
+
+        final events = [
+          deferredCapture('c1', day: 1),
+          deferredCapture('c2', day: 2),
+          deferredCapture('c3', day: 3),
+        ];
+        final c = AgentLogCompactor(
+          syncService: sync,
+          inlineEvents: events,
+          resolveInlineContent: resolver,
+        );
+
+        // First fold covers {c1, c2}; tail = [c3]. (The fold legitimately reads
+        // the folded sources once to summarize them.)
+        expect(
+          await c.maybeCompact(
+            agentId: _agentId,
+            budget: 0,
+            summarize: stubSummarize,
+            at: DateTime.utc(2024, 3, 20),
+          ),
+          isNotNull,
+        );
+
+        // The warm-wake invariant: a subsequent assembly reads ONLY the tail.
+        resolvedIds.clear();
+        final assembled = await c.assembleContextDetailed(_agentId);
+        expect(resolvedIds, ['c3']);
+        expect(assembled.text, contains('body c3'));
+        expect(assembled.text, isNot(contains('body c1')));
+        expect(assembled.text, isNot(contains('body c2')));
+
+        // The checkpoint is still active even though c1/c2 content was never
+        // reloaded — coverage is proven by id, not by content.
+        final active = selectActiveSummary(
+          summaries: await c.loadSummaries(_agentId),
+          log: projectInputEvents(
+            messages: repo.messages,
+            links: repo.links,
+            inlineEvents: events,
+          ),
+        );
+        expect(active, isNotNull);
+      },
+    );
+
+    test(
+      'a late-arriving deferred capture BEFORE the cutoff invalidates the '
+      'checkpoint (convergence preserved without loading content)',
+      () async {
+        Future<Map<String, Object?>?> resolver(String id) async =>
+            <String, Object?>{'entryType': 'capture', 'text': 'body $id'};
+
+        final folded = [
+          deferredCapture('c1', day: 1),
+          deferredCapture('c2', day: 2),
+          deferredCapture('c3', day: 3),
+        ];
+        final c = AgentLogCompactor(
+          syncService: sync,
+          inlineEvents: folded,
+          resolveInlineContent: resolver,
+        );
+        // Covers {c1, c2}; cutoff at c2 (day 2).
+        await c.maybeCompact(
+          agentId: _agentId,
+          budget: 0,
+          summarize: stubSummarize,
+          at: DateTime.utc(2024, 3, 20),
+        );
+
+        // A peer's capture lands at day 1 (before the cutoff) and is NOT in the
+        // checkpoint's covered set. The completeness check keys on id, so it is
+        // detected even though its transcript is never loaded.
+        final withLateArrival = projectInputEvents(
+          messages: repo.messages,
+          links: repo.links,
+          inlineEvents: [...folded, deferredCapture('c1b', day: 1)],
+        );
+        final active = selectActiveSummary(
+          summaries: await c.loadSummaries(_agentId),
+          log: withLateArrival,
+        );
+        expect(
+          active,
+          isNull,
+          reason:
+              'an uncovered pre-cutoff event must invalidate the checkpoint',
+        );
+      },
+    );
+  });
+
+  group('searchLog (recall)', () {
+    test('finds folded content the summary no longer shows verbatim', () async {
+      await captureAll([
+        src('e1', 'buy milk and eggs', day: 1),
+        src('e2', 'call the dentist', day: 2),
+        src('e3', 'review the Q3 report', day: 3),
+      ], 10);
+      await compact(budget: 0); // folds e1,e2 into the summary; tail = [e3]
+
+      final folded = await compactor.searchLog(_agentId, query: 'milk');
+      expect(folded.map((h) => h.contentEntryId), ['e1']);
+      expect(folded.single.text, 'buy milk and eggs');
+
+      final tail = await compactor.searchLog(_agentId, query: 'report');
+      expect(tail.map((h) => h.contentEntryId), ['e3']);
+    });
+
+    test('term-AND, case-insensitive, newest-first, and limit', () async {
+      await captureAll([
+        src('e1', 'morning gym session', day: 1),
+        src('e2', 'gym membership renewal', day: 2),
+        src('e3', 'evening gym plan', day: 3),
+      ], 10);
+
+      // All three mention "gym"; results are newest-first, case-insensitive.
+      final all = await compactor.searchLog(_agentId, query: 'GYM');
+      expect(all.map((h) => h.contentEntryId), ['e3', 'e2', 'e1']);
+
+      // All terms must appear (AND).
+      final both = await compactor.searchLog(_agentId, query: 'gym renewal');
+      expect(both.map((h) => h.contentEntryId), ['e2']);
+
+      // limit caps the result, keeping the newest.
+      final capped = await compactor.searchLog(
+        _agentId,
+        query: 'gym',
+        limit: 1,
+      );
+      expect(capped.map((h) => h.contentEntryId), ['e3']);
+    });
+
+    test('empty and no-match queries return nothing', () async {
+      await captureAll([src('e1', 'alpha', day: 1)], 10);
+      expect(await compactor.searchLog(_agentId, query: '   '), isEmpty);
+      expect(await compactor.searchLog(_agentId, query: 'zzz'), isEmpty);
+    });
+
+    test('resolves DEFERRED inline capture content on demand', () async {
+      final event = InputEvent.inlineDeferred(
+        position: EventPosition(
+          at: DateTime.utc(2024, 3, 5, 0, 1),
+          sourceAt: DateTime.utc(2024, 3, 5),
+          key: 'capture|cap-x',
+        ),
+        contentEntryId: 'cap-x',
+        sourceCreatedAt: DateTime.utc(2024, 3, 5),
+      );
+      final c = AgentLogCompactor(
+        syncService: sync,
+        inlineEvents: [event],
+        resolveInlineContent: (_) async => <String, Object?>{
+          'entryType': 'capture',
+          'text': 'lazy transcript about taxes',
+        },
+      );
+
+      final hits = await c.searchLog(_agentId, query: 'taxes');
+      expect(hits.single.contentEntryId, 'cap-x');
+      expect(hits.single.type, 'capture');
+      expect(hits.single.text, 'lazy transcript about taxes');
+    });
+  });
+
+  group('resolveByIds (follow a link)', () {
+    test(
+      'pulls up the requested entries newest-first, skipping unknowns',
+      () async {
+        await captureAll([
+          src('e1', 'buy milk', day: 1),
+          src('e2', 'call dentist', day: 2),
+          src('e3', 'review report', day: 3),
+        ], 10);
+
+        final hits = await compactor.resolveByIds(_agentId, ids: {'e1', 'e3'});
+        expect(hits.map((h) => h.contentEntryId), ['e3', 'e1']); // newest-first
+        expect(
+          await compactor.resolveByIds(_agentId, ids: {'ghost'}),
+          isEmpty,
+        );
+      },
+    );
+
+    test('an empty id set short-circuits without scanning', () async {
+      await captureAll([src('e1', 'note', day: 1)], 10);
+      expect(await compactor.resolveByIds(_agentId, ids: const {}), isEmpty);
+    });
+
+    test('reaches entries already folded into the summary', () async {
+      await captureAll([
+        src('e1', 'buy milk and eggs', day: 1),
+        src('e2', 'review the Q3 report', day: 2),
+      ], 10);
+      await compact(budget: 0); // folds e1 into the summary; tail = [e2]
+
+      final hits = await compactor.resolveByIds(_agentId, ids: {'e1'});
+      expect(hits.single.contentEntryId, 'e1');
+      expect(hits.single.text, 'buy milk and eggs');
+    });
+  });
+
+  group('author-time links on hits', () {
+    test('searchLog validates outgoing links against the log', () async {
+      await captureAll([src('cap1', 'standup with the team', day: 1)], 10);
+      await seedObservation(
+        'o1',
+        'planning note [[relates:cap1]] [[relates:ghost]]',
+        day: 11,
+      );
+
+      final hit = (await compactor.searchLog(
+        _agentId,
+        query: 'planning',
+      )).single;
+      final byTarget = {for (final l in hit.links) l.link.entryId: l};
+      expect(byTarget['cap1']!.exists, isTrue);
+      expect(byTarget['cap1']!.link.relation, LinkRelation.relates);
+      expect(byTarget['ghost']!.exists, isFalse);
+    });
+
+    test('flags an entry superseded by a newer note', () async {
+      await seedObservation('a', 'old gym plan', day: 1);
+      await seedObservation('b', 'new gym plan [[supersedes:a]]', day: 2);
+
+      final hits = await compactor.searchLog(_agentId, query: 'gym');
+      final byId = {for (final h in hits) h.contentEntryId: h};
+      expect(byId['a']!.supersededByEntryId, 'b');
+      expect(byId['b']!.supersededByEntryId, isNull);
+      // The superseding note carries the (existing) outgoing supersedes link.
+      expect(byId['b']!.links.single.link.entryId, 'a');
+      expect(byId['b']!.links.single.exists, isTrue);
+    });
+
+    test('entries without links expose an empty link list', () async {
+      await captureAll([src('e1', 'just a plain capture', day: 1)], 10);
+      final hit = (await compactor.searchLog(_agentId, query: 'plain')).single;
+      expect(hit.links, isEmpty);
+      expect(hit.supersededByEntryId, isNull);
+    });
+
+    test('extraKnownIds widens validation to ids outside the log', () async {
+      // A link to a durable-knowledge key (e.g. a `moc-…` map) lives outside
+      // the episodic log, so it is a dead link until the caller widens the set.
+      await seedObservation(
+        'o1',
+        'see the map [[relates:moc-deep-work]]',
+        day: 1,
+      );
+
+      final plain = (await compactor.searchLog(_agentId, query: 'map')).single;
+      expect(plain.links.single.exists, isFalse);
+
+      final widened = (await compactor.searchLog(
+        _agentId,
+        query: 'map',
+        extraKnownIds: {'moc-deep-work'},
+      )).single;
+      expect(widened.links.single.exists, isTrue);
+    });
+
+    test('forward-follows an outgoing link to the superseding entry', () async {
+      await seedObservation('a', 'gym plan v1', day: 1);
+      await seedObservation('b', 'gym plan v2 [[supersedes:a]]', day: 2);
+      await seedObservation('c', 'gym recap [[relates:a]]', day: 3);
+
+      final hits = await compactor.searchLog(_agentId, query: 'gym');
+      final c = hits.firstWhere((h) => h.contentEntryId == 'c');
+      expect(c.links.single.link.entryId, 'a');
+      expect(c.links.single.liveEntryId, 'b'); // jumped to the live version
+      expect(c.links.single.superseded, isTrue);
+    });
+  });
+
+  group('properties', () {
+    glados.Glados(
+      glados.ListAnys(
+        glados.any,
+      ).listWithLengthInRange(
+        1,
+        6,
+        glados.IntAnys(glados.any).intInRange(0, 1000),
+      ),
+      glados.ExploreConfig(numRuns: 40),
+    ).test(
+      'assembleContext is append-only as captures accumulate (the '
+      'prefix-cache invariant)',
+      (vals) async {
+        final h = buildHarness();
+        var prev = '';
+        // Capture cumulatively (each wake re-submits the prefix + one new
+        // entry); between folds every render must only APPEND bytes.
+        for (var k = 0; k < vals.length; k++) {
+          final sources = [
+            for (var i = 0; i <= k; i++)
+              src('e$i', 'note $i v${vals[i]}', day: i + 1),
+          ];
+          await h.capture.captureWakeInputs(
+            agentId: _agentId,
+            sources: sources,
+            at: DateTime.utc(2024, 3, 10 + k),
+          );
+          final ctx = await h.compactor.assembleContext(_agentId);
+          expect(
+            ctx.startsWith(prev),
+            isTrue,
+            reason: 'append-only broke at step $k for $vals',
+          );
+          prev = ctx;
+        }
+      },
+      tags: 'glados',
+    );
+
+    const vocab = ['alpha', 'beta', 'gamma', 'delta', 'epsilon'];
+    glados.Glados2(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        6,
+        glados.ListAnys(
+          glados.any,
+        ).listWithLengthInRange(
+          1,
+          3,
+          glados.IntAnys(glados.any).intInRange(0, 5),
+        ),
+      ),
+      glados.ListAnys(
+        glados.any,
+      ).listWithLengthInRange(
+        1,
+        2,
+        glados.IntAnys(glados.any).intInRange(0, 5),
+      ),
+      glados.ExploreConfig(numRuns: 50),
+    ).test(
+      'searchLog hits satisfy term-AND, the limit, and recency order',
+      (docs, queryIdx) async {
+        final h = buildHarness();
+        for (var i = 0; i < docs.length; i++) {
+          final text = docs[i].map((w) => vocab[w]).join(' ');
+          await h.capture.captureWakeInputs(
+            agentId: _agentId,
+            sources: [src('d$i', text, day: i + 1)],
+            at: DateTime.utc(2024, 3, 10 + i),
+          );
+        }
+        final query = queryIdx.map((w) => vocab[w]).join(' ');
+        final terms = query.toLowerCase().split(' ');
+        final hits = await h.compactor.searchLog(
+          _agentId,
+          query: query,
+          limit: 3,
+        );
+
+        expect(hits.length, lessThanOrEqualTo(3));
+        for (final hit in hits) {
+          final haystack = hit.text.toLowerCase();
+          expect(
+            terms.every(haystack.contains),
+            isTrue,
+            reason: 'hit "${hit.text}" missing a term of "$query"',
+          );
+        }
+        for (var i = 1; i < hits.length; i++) {
+          expect(
+            hits[i].at.isAfter(hits[i - 1].at),
+            isFalse,
+            reason: 'recency order broken',
+          );
+        }
+      },
+      tags: 'glados',
+    );
+  });
 }

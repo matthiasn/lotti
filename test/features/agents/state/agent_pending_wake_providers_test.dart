@@ -6,6 +6,7 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/pending_wake_record.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -633,6 +634,9 @@ void main() {
             'agent-b': secondState,
           },
         );
+        when(
+          mockRepository.getPendingScheduledWakeRecords,
+        ).thenAnswer((_) async => const []);
 
         final container = ProviderContainer(
           overrides: [
@@ -710,6 +714,9 @@ void main() {
             'agent-b': deletedState,
           },
         );
+        when(
+          mockRepository.getPendingScheduledWakeRecords,
+        ).thenAnswer((_) async => const []);
 
         final container = ProviderContainer(
           overrides: [
@@ -750,6 +757,118 @@ void main() {
         when(
           () => mockRepository.getAgentStatesByAgentIds(any()),
         ).thenAnswer((_) async => {'agent-a': state});
+        when(
+          mockRepository.getPendingScheduledWakeRecords,
+        ).thenAnswer((_) async => const []);
+
+        final container = ProviderContainer(
+          overrides: [
+            agentServiceProvider.overrideWithValue(mockAgentService),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(() {
+          notifications.dispose();
+          container.dispose();
+        });
+
+        final records = await container.read(pendingWakeRecordsProvider.future);
+
+        expect(records, isEmpty);
+      },
+    );
+
+    test(
+      'surfaces a workspace-scoped scheduled-wake record with the day as its '
+      'subject label',
+      () async {
+        final mockAgentService = MockAgentService();
+        final mockRepository = MockAgentRepository();
+        final notifications = UpdateNotifications();
+        const plannerId = 'daily_os_planner';
+        final identity = makeTestIdentity(
+          agentId: plannerId,
+          displayName: 'Daily OS Planner',
+        );
+        // The planner pins no nextWakeAt / scheduledWakeAt — its day pre-warm
+        // lives entirely in the scheduled-wake record.
+        final state = makeTestState(agentId: plannerId);
+        final dueAt = kAgentTestDate.add(const Duration(hours: 14));
+
+        when(
+          mockAgentService.listAgents,
+        ).thenAnswer((_) async => [identity]);
+        when(
+          () => mockRepository.getAgentStatesByAgentIds(any()),
+        ).thenAnswer((_) async => {plannerId: state});
+        when(mockRepository.getPendingScheduledWakeRecords).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.scheduledWake(
+                  id: 'sched-1',
+                  agentId: plannerId,
+                  scheduledAt: dueAt,
+                  status: ScheduledWakeStatus.pending,
+                  reason: 'scheduled',
+                  updatedAt: kAgentTestDate,
+                  vectorClock: null,
+                  triggerTokens: const ['planning_day:dayplan-2026-06-08'],
+                  workspaceKey: 'day:dayplan-2026-06-08',
+                )
+                as ScheduledWakeEntity,
+          ],
+        );
+
+        final container = ProviderContainer(
+          overrides: [
+            agentServiceProvider.overrideWithValue(mockAgentService),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            updateNotificationsProvider.overrideWithValue(notifications),
+          ],
+        );
+        addTearDown(() {
+          notifications.dispose();
+          container.dispose();
+        });
+
+        final records = await container.read(pendingWakeRecordsProvider.future);
+
+        expect(records, hasLength(1));
+        final record = records.single;
+        expect(record.type, PendingWakeType.scheduled);
+        expect(record.agent.agentId, plannerId);
+        expect(record.dueAt, dueAt);
+        // `day:<dayId>` workspace → the day id is the subject label.
+        expect(record.subjectLabel, 'dayplan-2026-06-08');
+      },
+    );
+
+    test(
+      'drops a scheduled-wake record whose agent identity is unknown',
+      () async {
+        final mockAgentService = MockAgentService();
+        final mockRepository = MockAgentRepository();
+        final notifications = UpdateNotifications();
+
+        when(mockAgentService.listAgents).thenAnswer((_) async => const []);
+        when(
+          () => mockRepository.getAgentStatesByAgentIds(any()),
+        ).thenAnswer((_) async => const {});
+        when(mockRepository.getPendingScheduledWakeRecords).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.scheduledWake(
+                  id: 'sched-orphan',
+                  agentId: 'missing-agent',
+                  scheduledAt: kAgentTestDate.add(const Duration(hours: 1)),
+                  status: ScheduledWakeStatus.pending,
+                  reason: 'scheduled',
+                  updatedAt: kAgentTestDate,
+                  vectorClock: null,
+                  workspaceKey: 'day:dayplan-2026-06-08',
+                )
+                as ScheduledWakeEntity,
+          ],
+        );
 
         final container = ProviderContainer(
           overrides: [
@@ -792,6 +911,9 @@ void main() {
         when(
           () => mockRepository.getAgentStatesByAgentIds(any()),
         ).thenAnswer((_) async => scenario.statesByAgentId);
+        when(
+          mockRepository.getPendingScheduledWakeRecords,
+        ).thenAnswer((_) async => const []);
 
         try {
           final records = await container.read(

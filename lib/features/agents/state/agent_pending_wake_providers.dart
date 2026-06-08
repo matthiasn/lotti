@@ -19,6 +19,9 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
   final agentService = ref.watch(agentServiceProvider);
   final repository = ref.watch(agentRepositoryProvider);
   final identities = await agentService.listAgents();
+  final identitiesByAgentId = {
+    for (final identity in identities) identity.agentId: identity,
+  };
   final statesByAgentId = await repository.getAgentStatesByAgentIds(
     identities.map((identity) => identity.agentId).toList(),
   );
@@ -55,9 +58,45 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
     }
   }
 
+  // Workspace-scoped scheduled wakes (the planner's day pre-warms, ADR 0022)
+  // live as their own records rather than on `AgentState.scheduledWakeAt`, so
+  // surface them here too. Their subject is the workspace id (the day), not a
+  // linked task/project — derived generically from `workspaceKey` so the
+  // agents layer stays free of any daily-OS coupling.
+  final pendingScheduled = await repository.getPendingScheduledWakeRecords();
+  for (final record in pendingScheduled) {
+    final identity = identitiesByAgentId[record.agentId];
+    final state = statesByAgentId[record.agentId];
+    if (identity == null || state == null || state.deletedAt != null) {
+      continue;
+    }
+    records.add(
+      PendingWakeRecord(
+        agent: identity,
+        state: state,
+        type: PendingWakeType.scheduled,
+        dueAt: record.scheduledAt,
+        subjectLabel: _workspaceSubjectLabel(record.workspaceKey),
+      ),
+    );
+  }
+
   records.sort((a, b) => a.dueAt.compareTo(b.dueAt));
   return records;
 });
+
+/// The subject label for a workspace-scoped wake: the id portion of a
+/// `<namespace>:<id>` workspace key (e.g. `day:dayplan-2026-06-08` →
+/// `dayplan-2026-06-08`).
+/// Namespace-agnostic so this stays a generic agents-layer concern. Returns
+/// `null` for a null/empty key so the caller falls back to the agent name.
+String? _workspaceSubjectLabel(String? workspaceKey) {
+  if (workspaceKey == null || workspaceKey.isEmpty) return null;
+  final colon = workspaceKey.indexOf(':');
+  if (colon < 0) return workspaceKey;
+  final id = workspaceKey.substring(colon + 1).trim();
+  return id.isEmpty ? null : id;
+}
 
 // Returns the raw `Set<String>` from `UpdateNotifications` rather than
 // `void`: Riverpod deduplicates `AsyncData` values using `==`, and repeated

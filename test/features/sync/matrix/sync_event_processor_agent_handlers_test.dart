@@ -249,6 +249,62 @@ void main() {
     });
 
     test(
+      'a concurrent retract of durable knowledge is kept — a later edit cannot '
+      'revive it (ADR 0022 monotonic override)',
+      () async {
+        // Concurrent clocks (local leads host-A, incoming leads host-B) with a
+        // STRICTLY LATER incoming timestamp: plain LWW would apply the edit and
+        // resurrect the retracted knowledge. The monotonic override keeps the
+        // retraction instead.
+        const localVc = VectorClock({'host-A': 2, 'host-B': 1});
+        const incomingVc = VectorClock({'host-A': 1, 'host-B': 2});
+        final local = AgentDomainEntity.plannerKnowledge(
+          id: 'k1',
+          agentId: 'agent-1',
+          key: 'deep-work',
+          hook: 'no deep work before 10',
+          statementText: 'Never schedule deep work before 10:00.',
+          source: KnowledgeSource.userStated,
+          status: KnowledgeStatus.retracted,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 16),
+          vectorClock: localVc,
+          retractedAt: DateTime(2024, 3, 16),
+        );
+        final incoming = AgentDomainEntity.plannerKnowledge(
+          id: 'k1',
+          agentId: 'agent-1',
+          key: 'deep-work',
+          hook: 'no deep work before 10',
+          statementText: 'edited back to active',
+          source: KnowledgeSource.userStated,
+          status: KnowledgeStatus.confirmed,
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 17),
+          vectorClock: incomingVc,
+          confirmedAt: DateTime(2024, 3, 17),
+        );
+        when(
+          () => mockAgentRepo.getEntity('k1'),
+        ).thenAnswer((_) async => local);
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: incoming,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        // The retraction wins despite the later edit timestamp, so the
+        // incoming confirm is neither applied nor written.
+        verifyNever(() => mockAgentRepo.upsertEntity(any()));
+      },
+    );
+
+    test(
       'prefetches local agent entities once for outbox bundle dominance checks',
       () async {
         const localVc = VectorClock({'host-A': 2});

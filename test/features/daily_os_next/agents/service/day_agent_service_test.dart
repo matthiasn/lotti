@@ -113,6 +113,14 @@ void main() {
         activeDayId: any(named: 'activeDayId'),
       ),
     ).thenAnswer((_) async => null);
+    // Default: the planner already exists (enqueue paths resolve it via
+    // getDayAgentForDate → getAgent). Tests that exercise creation re-stub.
+    when(
+      () => agentService.getAgent(dailyOsPlannerAgentId),
+    ).thenAnswer((_) async => identity());
+    when(
+      () => agentService.listAgents(lifecycle: any(named: 'lifecycle')),
+    ).thenAnswer((_) async => []);
 
     service = DayAgentService(
       agentService: agentService,
@@ -126,270 +134,60 @@ void main() {
   });
 
   group('DayAgentService', () {
-    test('creates one day agent and schedules its creation wake', () async {
-      const categoryIds = {'cat-focus'};
-      final createdIdentity = identity();
-      final initialState = state();
-      final template = makeTestTemplate(
-        id: dayAgentTemplateId,
-        agentId: dayAgentTemplateId,
-        kind: AgentTemplateKind.dayAgent,
-        modelId: 'models/day',
-        profileId: 'profile-day',
-      );
-
+    test('getDayAgentForDate returns the planner regardless of date', () async {
+      final planner = identity(id: dailyOsPlannerAgentId);
       when(
-        () => repository.getEntity(dayAgentTemplateId),
-      ).thenAnswer((_) async => template);
-      when(
-        () => agentService.createAgent(
-          kind: any(named: 'kind'),
-          displayName: any(named: 'displayName'),
-          config: any(named: 'config'),
-          allowedCategoryIds: categoryIds,
-        ),
-      ).thenAnswer((_) async => createdIdentity);
-      when(
-        () => repository.getAgentState(agentId),
-      ).thenAnswer((_) async => initialState);
+        () => agentService.getAgent(dailyOsPlannerAgentId),
+      ).thenAnswer((_) async => planner);
 
-      final result = await withClock(
-        Clock.fixed(now),
-        () => service.createDayAgent(
-          date: testDate,
-          allowedCategoryIds: categoryIds,
-        ),
-      );
+      final a = await service.getDayAgentForDate(DateTime(2026, 5, 25));
+      final b = await service.getDayAgentForDate(DateTime(2026, 5, 26));
 
-      expect(result, createdIdentity);
-      final createCall = verify(
-        () => agentService.createAgent(
-          kind: captureAny(named: 'kind'),
-          displayName: captureAny(named: 'displayName'),
-          config: captureAny(named: 'config'),
-          allowedCategoryIds: categoryIds,
-        ),
-      ).captured;
-      expect(createCall[0], AgentKinds.dayAgent);
-      expect(createCall[1], 'Shepherd 2026-05-25');
-      expect(
-        createCall[2],
-        const AgentConfig(modelId: 'models/day', profileId: 'profile-day'),
-      );
-
-      final entities = verify(
-        () => syncService.upsertEntity(captureAny()),
-      ).captured.cast<AgentDomainEntity>();
-      final updatedState = entities.single as AgentStateEntity;
-      expect(updatedState.slots.activeDayId, dayId);
-      expect(updatedState.updatedAt, now);
-
-      final links = verify(
-        () => syncService.upsertLink(captureAny()),
-      ).captured.cast<AgentLink>();
-      expect(links, hasLength(2));
-      final templateLink = links.whereType<TemplateAssignmentLink>().single;
-      expect(templateLink.fromId, dayAgentTemplateId);
-      expect(templateLink.toId, agentId);
-      // Agent → day link so activeDayId is derivable from the synced log (B3).
-      final dayLink = links.whereType<AgentDayLink>().single;
-      expect(dayLink.fromId, agentId);
-      expect(dayLink.toId, dayId);
-
-      verify(
-        () => orchestrator.enqueueManualWake(
-          agentId: agentId,
-          reason: WakeReason.creation.name,
-          workspaceKey: dayAgentWorkspaceKey(dayId),
-          triggerTokens: {dayAgentPlanningDayToken(dayId)},
-        ),
-      ).called(1);
-      expect(changedTokens, [agentId, dayId]);
+      // One identity owns every day (ADR 0022): the date no longer selects it.
+      expect(a?.agentId, dailyOsPlannerAgentId);
+      expect(b?.agentId, dailyOsPlannerAgentId);
     });
 
-    test('rejects duplicate active day agent for the same date', () async {
-      final existing = identity();
+    test('getDayAgentForDate returns null before the planner exists', () async {
       when(
-        () => repository.getActiveAgentByKindAndActiveDayId(
-          kind: AgentKinds.dayAgent,
-          activeDayId: dayId,
-        ),
-      ).thenAnswer(
-        (_) async => existing,
-      );
-
-      await expectLater(
-        service.createDayAgent(date: testDate),
-        throwsA(isA<StateError>()),
-      );
-
-      verifyNever(
-        () => agentService.createAgent(
-          kind: any(named: 'kind'),
-          displayName: any(named: 'displayName'),
-          config: any(named: 'config'),
-        ),
-      );
-    });
-
-    test(
-      'rejects a duplicate discovered inside the create transaction',
-      () async {
-        final existing = identity(id: 'race-winner');
-        var lookupCount = 0;
-        when(
-          () => repository.getActiveAgentByKindAndActiveDayId(
-            kind: AgentKinds.dayAgent,
-            activeDayId: dayId,
-          ),
-        ).thenAnswer((_) async {
-          lookupCount++;
-          return lookupCount == 1 ? null : existing;
-        });
-
-        await expectLater(
-          service.createDayAgent(date: testDate),
-          throwsA(
-            isA<StateError>().having(
-              (error) => error.message,
-              'message',
-              contains('race-winner'),
-            ),
-          ),
-        );
-
-        verifyNever(() => repository.getEntity(any()));
-        verifyNever(
-          () => agentService.createAgent(
-            kind: any(named: 'kind'),
-            displayName: any(named: 'displayName'),
-            config: any(named: 'config'),
-          ),
-        );
-      },
-    );
-
-    test('rejects templates that are not active day-agent templates', () async {
-      final projectTemplate = makeTestTemplate(
-        id: dayAgentTemplateId,
-        agentId: dayAgentTemplateId,
-        kind: AgentTemplateKind.projectAgent,
-      );
-      when(
-        () => repository.getEntity(dayAgentTemplateId),
-      ).thenAnswer((_) async => projectTemplate);
-
-      await expectLater(
-        service.createDayAgent(date: testDate),
-        throwsA(
-          isA<StateError>().having(
-            (error) => error.message,
-            'message',
-            contains('not an active day-agent template'),
-          ),
-        ),
-      );
-
-      verifyNever(
-        () => agentService.createAgent(
-          kind: any(named: 'kind'),
-          displayName: any(named: 'displayName'),
-          config: any(named: 'config'),
-        ),
-      );
-    });
-
-    test('throws when the newly created agent has no state entity', () async {
-      final createdIdentity = identity();
-      final template = makeTestTemplate(
-        id: dayAgentTemplateId,
-        agentId: dayAgentTemplateId,
-        kind: AgentTemplateKind.dayAgent,
-      );
-      when(
-        () => repository.getEntity(dayAgentTemplateId),
-      ).thenAnswer((_) async => template);
-      when(
-        () => agentService.createAgent(
-          kind: any(named: 'kind'),
-          displayName: any(named: 'displayName'),
-          config: any(named: 'config'),
-          allowedCategoryIds: any(named: 'allowedCategoryIds'),
-        ),
-      ).thenAnswer((_) async => createdIdentity);
-      when(
-        () => repository.getAgentState(agentId),
+        () => agentService.getAgent(dailyOsPlannerAgentId),
       ).thenAnswer((_) async => null);
 
-      await expectLater(
-        service.createDayAgent(date: testDate),
-        throwsA(
-          isA<StateError>().having(
-            (error) => error.message,
-            'message',
-            contains('has no state entity'),
-          ),
-        ),
-      );
-
-      verifyNever(() => syncService.upsertLink(any()));
-      verifyNever(
-        () => orchestrator.enqueueManualWake(
-          agentId: any(named: 'agentId'),
-          reason: any(named: 'reason'),
-          workspaceKey: any(named: 'workspaceKey'),
-          triggerTokens: any(named: 'triggerTokens'),
-        ),
-      );
-    });
-
-    test('getDayAgentForDate uses targeted active-day lookup', () async {
-      final newer = identity(id: 'newer', createdAt: DateTime(2026, 5, 25));
-      when(
-        () => repository.getActiveAgentByKindAndActiveDayId(
-          kind: AgentKinds.dayAgent,
-          activeDayId: dayId,
-        ),
-      ).thenAnswer(
-        (_) async => newer,
-      );
-
-      final result = await service.getDayAgentForDate(testDate);
-
-      expect(result?.agentId, 'newer');
-      verify(
-        () => repository.getActiveAgentByKindAndActiveDayId(
-          kind: AgentKinds.dayAgent,
-          activeDayId: dayId,
-        ),
-      ).called(1);
-      verifyNever(
-        () => repository.getAgentStatesByAgentIds(any()),
-      );
+      expect(await service.getDayAgentForDate(DateTime(2026, 5, 25)), isNull);
     });
 
     test(
-      'restoreSubscriptions hydrates pending wakes for active day agents',
+      'restoreSubscriptions hydrates the planner and skips other day agents',
       () async {
         final dueAt = DateTime(2026, 5, 25, 6, 30);
-        final dayAgent = identity();
+        final planner = identity(id: dailyOsPlannerAgentId);
         final taskAgent = identity(
           id: 'task-agent',
           kind: AgentKinds.taskAgent,
         );
+        // A stray legacy per-day identity (e.g. synced from a peer still on the
+        // old build) must never be restored post-ADR-0022 — only the planner.
+        final strayDayAgent = identity(id: 'stray-day-agent');
         when(
           () => agentService.listAgents(lifecycle: AgentLifecycle.active),
-        ).thenAnswer((_) async => [taskAgent, dayAgent]);
+        ).thenAnswer((_) async => [taskAgent, strayDayAgent, planner]);
         when(
-          () => repository.getAgentState(agentId),
-        ).thenAnswer((_) async => state(activeDayId: dayId, nextWakeAt: dueAt));
+          () => repository.getAgentState(dailyOsPlannerAgentId),
+        ).thenAnswer(
+          (_) async =>
+              state(stateAgentId: dailyOsPlannerAgentId, nextWakeAt: dueAt),
+        );
 
         await service.restoreSubscriptions();
 
         verify(
-          () => orchestrator.restorePendingWake(agentId: agentId, dueAt: dueAt),
+          () => orchestrator.restorePendingWake(
+            agentId: dailyOsPlannerAgentId,
+            dueAt: dueAt,
+          ),
         ).called(1);
         verifyNever(() => repository.getAgentState('task-agent'));
+        verifyNever(() => repository.getAgentState('stray-day-agent'));
       },
     );
 
@@ -486,10 +284,7 @@ void main() {
         'returns false and skips enqueue when no day agent exists',
         () async {
           when(
-            () => repository.getActiveAgentByKindAndActiveDayId(
-              kind: AgentKinds.dayAgent,
-              activeDayId: dayId,
-            ),
+            () => agentService.getAgent(dailyOsPlannerAgentId),
           ).thenAnswer((_) async => null);
 
           final result = await service.enqueueDraftingWake(dayDate: testDate);
@@ -816,10 +611,7 @@ void main() {
         'returns false and skips enqueue when no day agent exists',
         () async {
           when(
-            () => repository.getActiveAgentByKindAndActiveDayId(
-              kind: AgentKinds.dayAgent,
-              activeDayId: dayId,
-            ),
+            () => agentService.getAgent(dailyOsPlannerAgentId),
           ).thenAnswer((_) async => null);
 
           final result = await service.enqueueRefineWake(
@@ -986,36 +778,20 @@ void main() {
     });
 
     test(
-      'restoreSubscriptions logs and continues after a hydrate failure',
+      'restoreSubscriptions logs and does not propagate a planner hydrate '
+      'failure',
       () async {
-        final dueAt = DateTime(2026, 5, 25, 6, 30);
-        final failingDayAgent = identity(id: 'failing-day-agent');
-        final healthyDayAgent = identity(id: 'healthy-day-agent');
+        final planner = identity(id: dailyOsPlannerAgentId);
         when(
           () => agentService.listAgents(lifecycle: AgentLifecycle.active),
-        ).thenAnswer((_) async => [failingDayAgent, healthyDayAgent]);
+        ).thenAnswer((_) async => [planner]);
         when(
-          () => repository.getAgentState('failing-day-agent'),
+          () => repository.getAgentState(dailyOsPlannerAgentId),
         ).thenThrow(StateError('state read failed'));
-        when(
-          () => repository.getAgentState('healthy-day-agent'),
-        ).thenAnswer(
-          (_) async => state(
-            id: 'state-healthy',
-            stateAgentId: 'healthy-day-agent',
-            activeDayId: dayId,
-            nextWakeAt: dueAt,
-          ),
-        );
 
+        // Must complete normally despite the failing state read.
         await service.restoreSubscriptions();
 
-        verify(
-          () => orchestrator.restorePendingWake(
-            agentId: 'healthy-day-agent',
-            dueAt: dueAt,
-          ),
-        ).called(1);
         final errorMessage =
             verify(
                   () => domainLogger.error(
@@ -1186,5 +962,272 @@ void main() {
         expect(changedTokens, isEmpty);
       },
     );
+
+    group('legacy migration', () {
+      final plannerTemplate = makeTestTemplate(
+        id: dayAgentTemplateId,
+        agentId: dayAgentTemplateId,
+        kind: AgentTemplateKind.dayAgent,
+        modelId: 'models/day',
+        profileId: 'profile-day',
+      );
+
+      void stubFreshPlannerCreation() {
+        final created = identity(id: dailyOsPlannerAgentId);
+        when(
+          () => agentService.getAgent(dailyOsPlannerAgentId),
+        ).thenAnswer((_) async => null);
+        when(
+          () => repository.getEntity(dayAgentTemplateId),
+        ).thenAnswer((_) async => plannerTemplate);
+        when(
+          () => agentService.createAgent(
+            agentId: any(named: 'agentId'),
+            kind: any(named: 'kind'),
+            displayName: any(named: 'displayName'),
+            config: any(named: 'config'),
+            allowedCategoryIds: any(named: 'allowedCategoryIds'),
+          ),
+        ).thenAnswer((_) async => created);
+      }
+
+      test(
+        'archives legacy day agents and re-parents their recent entities',
+        () async {
+          stubFreshPlannerCreation();
+          final legacy = identity(id: 'legacy-day-1');
+          when(
+            () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+          ).thenAnswer(
+            (_) async => [
+              identity(id: dailyOsPlannerAgentId),
+              legacy,
+              // A task agent must be left untouched.
+              identity(id: 'task-1', kind: AgentKinds.taskAgent),
+            ],
+          );
+          when(
+            () => repository.getAgentState('legacy-day-1'),
+          ).thenAnswer(
+            (_) async => makeTestState(
+              id: 'state-legacy',
+              agentId: 'legacy-day-1',
+              slots: const AgentSlots(activeDayId: dayId),
+              scheduledWakeAt: DateTime(2026, 5, 25, 6),
+              updatedAt: now,
+            ),
+          );
+          // makeTestDayPlan defaults dayId to dayplan-2026-05-25 (== dayId).
+          final recentPlan = makeTestDayPlan(
+            agentId: 'legacy-day-1',
+            planDate: now.subtract(const Duration(days: 1)),
+          );
+          final oldPlan = makeTestDayPlan(
+            id: 'day_agent_plan:dayplan-2026-02-10',
+            agentId: 'legacy-day-1',
+            dayId: 'dayplan-2026-02-10',
+            planDate: DateTime(2026, 2, 10),
+          );
+          // A recent pending plan diff must follow its plan to the planner.
+          final recentDiff =
+              AgentDomainEntity.changeSet(
+                    id: 'cs-recent',
+                    agentId: 'legacy-day-1',
+                    taskId: 'day_agent_plan:$dayId',
+                    threadId: 'thread-1',
+                    runKey: 'run-1',
+                    status: ChangeSetStatus.pending,
+                    items: const [],
+                    createdAt: now.subtract(const Duration(days: 1)),
+                    vectorClock: null,
+                  )
+                  as ChangeSetEntity;
+          final recentCapture = makeTestCapture(
+            id: 'cap-recent',
+            agentId: 'legacy-day-1',
+            capturedAt: now.subtract(const Duration(days: 1)),
+            createdAt: now.subtract(const Duration(days: 1)),
+          );
+          final oldCapture = makeTestCapture(
+            id: 'cap-old',
+            agentId: 'legacy-day-1',
+            capturedAt: DateTime(2026, 2, 10),
+            createdAt: DateTime(2026, 2, 10),
+          );
+          ParsedItemEntity parsedItem(String id, DateTime createdAt) =>
+              AgentDomainEntity.parsedItem(
+                    id: id,
+                    agentId: 'legacy-day-1',
+                    captureId: 'cap-recent',
+                    kind: ParsedItemKind.newTask,
+                    title: 'parsed',
+                    categoryId: 'cat',
+                    confidence: ParsedItemConfidence.high,
+                    confidenceScore: 0.9,
+                    createdAt: createdAt,
+                    vectorClock: null,
+                  )
+                  as ParsedItemEntity;
+          final recentItem = parsedItem(
+            'pi-recent',
+            now.subtract(const Duration(days: 1)),
+          );
+          final oldItem = parsedItem('pi-old', DateTime(2026, 2, 10));
+          when(
+            () => repository.getEntitiesByAgentId('legacy-day-1'),
+          ).thenAnswer(
+            (_) async => [
+              recentPlan,
+              oldPlan,
+              recentDiff,
+              recentCapture,
+              oldCapture,
+              recentItem,
+              oldItem,
+            ],
+          );
+
+          await withClock(
+            Clock.fixed(now),
+            service.getOrCreatePlannerAgent,
+          );
+
+          final upserts = verify(
+            () => syncService.upsertEntity(captureAny()),
+          ).captured.cast<AgentDomainEntity>();
+
+          // Legacy identity archived (dormant).
+          final archived = upserts.whereType<AgentIdentityEntity>().firstWhere(
+            (e) => e.agentId == 'legacy-day-1',
+          );
+          expect(archived.lifecycle, AgentLifecycle.dormant);
+
+          // Its scheduledWakeAt was cleared so it stops being woken.
+          final clearedState = upserts.whereType<AgentStateEntity>().firstWhere(
+            (e) => e.agentId == 'legacy-day-1',
+          );
+          expect(clearedState.scheduledWakeAt, isNull);
+
+          // The recent plan is re-parented; the old one is left in place.
+          final reparented = upserts.whereType<DayPlanEntity>().toList();
+          expect(reparented, hasLength(1));
+          expect(reparented.single.agentId, dailyOsPlannerAgentId);
+          expect(reparented.single.dayId, dayId);
+
+          // The recent pending diff follows the plan to the planner.
+          final reparentedDiff = upserts.whereType<ChangeSetEntity>().single;
+          expect(reparentedDiff.id, 'cs-recent');
+          expect(reparentedDiff.agentId, dailyOsPlannerAgentId);
+
+          // Recent captures and parsed items are re-parented; old ones aren't.
+          final reparentedCaptures = upserts
+              .whereType<CaptureEntity>()
+              .toList();
+          expect(reparentedCaptures.map((e) => e.id), ['cap-recent']);
+          expect(reparentedCaptures.single.agentId, dailyOsPlannerAgentId);
+          final reparentedItems = upserts
+              .whereType<ParsedItemEntity>()
+              .toList();
+          expect(reparentedItems.map((e) => e.id), ['pi-recent']);
+          expect(reparentedItems.single.agentId, dailyOsPlannerAgentId);
+        },
+      );
+
+      test(
+        'migrates legacy agents even when the planner already exists',
+        () async {
+          // The planner is already present (no creation), yet a legacy day
+          // agent that synced in afterwards must still be archived — migration
+          // runs on every resolve, not only on first creation.
+          when(
+            () => agentService.getAgent(dailyOsPlannerAgentId),
+          ).thenAnswer((_) async => identity(id: dailyOsPlannerAgentId));
+          final legacy = identity(id: 'legacy-late');
+          when(
+            () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+          ).thenAnswer(
+            (_) async => [identity(id: dailyOsPlannerAgentId), legacy],
+          );
+          when(() => repository.getAgentState('legacy-late')).thenAnswer(
+            (_) async => makeTestState(
+              id: 'state-legacy-late',
+              agentId: 'legacy-late',
+              slots: const AgentSlots(activeDayId: dayId),
+              scheduledWakeAt: DateTime(2026, 5, 25, 6),
+              updatedAt: now,
+            ),
+          );
+          when(
+            () => repository.getEntitiesByAgentId('legacy-late'),
+          ).thenAnswer((_) async => const []);
+
+          final result = await withClock(
+            Clock.fixed(now),
+            service.getOrCreatePlannerAgent,
+          );
+
+          expect(result.agentId, dailyOsPlannerAgentId);
+          final upserts = verify(
+            () => syncService.upsertEntity(captureAny()),
+          ).captured.cast<AgentDomainEntity>();
+          final archived = upserts.whereType<AgentIdentityEntity>().firstWhere(
+            (e) => e.agentId == 'legacy-late',
+          );
+          expect(archived.lifecycle, AgentLifecycle.dormant);
+        },
+      );
+
+      test('continues migrating after one legacy agent fails', () async {
+        // A per-agent failure must not strand later agents' scheduledWakeAt
+        // (the migration never retries).
+        stubFreshPlannerCreation();
+        final bad = identity(id: 'legacy-bad');
+        final good = identity(id: 'legacy-good');
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [bad, good]);
+        when(
+          () => repository.getAgentState('legacy-bad'),
+        ).thenThrow(StateError('read failed'));
+        when(
+          () => repository.getAgentState('legacy-good'),
+        ).thenAnswer(
+          (_) async => makeTestState(
+            id: 'state-good',
+            agentId: 'legacy-good',
+            scheduledWakeAt: DateTime(2026, 5, 25, 6),
+            updatedAt: now,
+          ),
+        );
+        when(
+          () => repository.getEntitiesByAgentId('legacy-good'),
+        ).thenAnswer((_) async => const []);
+
+        await withClock(Clock.fixed(now), service.getOrCreatePlannerAgent);
+
+        // The good agent was still archived despite the bad one throwing.
+        final upserts = verify(
+          () => syncService.upsertEntity(captureAny()),
+        ).captured.cast<AgentDomainEntity>();
+        final archivedGood = upserts
+            .whereType<AgentIdentityEntity>()
+            .firstWhere(
+              (e) => e.agentId == 'legacy-good',
+            );
+        expect(archivedGood.lifecycle, AgentLifecycle.dormant);
+      });
+
+      test('migration failure does not block planner creation', () async {
+        stubFreshPlannerCreation();
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenThrow(StateError('list failed'));
+
+        final result = await service.getOrCreatePlannerAgent();
+
+        // The planner is still returned even though migration threw.
+        expect(result.agentId, dailyOsPlannerAgentId);
+      });
+    });
   });
 }

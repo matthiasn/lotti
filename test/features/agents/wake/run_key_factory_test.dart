@@ -329,6 +329,9 @@ void main() {
         final withNullKey = RunKeyFactory.forManual(
           agentId: 'agent-1',
           reason: 'scheduled',
+          // Explicit null is the point of this test (omitted == null).
+          // ignore: avoid_redundant_argument_values
+          workspaceKey: null,
           timestamp: ts,
         );
 

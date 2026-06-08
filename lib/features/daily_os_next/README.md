@@ -13,63 +13,126 @@ not depend on the existing Daily OS UI controllers.
 ## Agent Runtime
 
 The day-agent layer under `agents/` reuses the shared agent infrastructure from
-`features/agents` and adds only the Daily OS Next runtime surface area. The
-current backend supports the foundation wake, Capture/Reconcile, draft
-day-plan, and refine tool paths; the Flutter UI integration is intentionally
+`features/agents` and adds only the Daily OS Next runtime surface area. It
+supports the foundation wake, Capture/Reconcile, draft day-plan, refine, and
+durable-knowledge tool paths; the Flutter UI integration is intentionally
 separate.
+
+### One long-lived planner, explicit day workspaces (ADR 0022)
+
+The runtime has **one durable planner identity** —
+`daily_os_planner` (`dailyOsPlannerAgentId`) — not one identity per calendar
+day. The planner learns across days; each day is an explicit **workspace**, not
+a separate mind. This is the model defined by ADR 0022 (Accepted) and replaces
+the earlier per-day `day_agent` identity (the `kind` string stays `day_agent`
+for storage compatibility, but only one such identity now exists).
 
 ```mermaid
 flowchart TD
-  Template["Shepherd template"] --> Identity["day_agent identity"]
-  Identity --> State["AgentState.activeDayId"]
-  Identity --> DayLink["agent_links: agent_day (agent → day)"]
-  State --> Wake["DayAgentWorkflow"]
+  Template["Shepherd template"] --> Planner["daily_os_planner identity (deterministic id)"]
+  Planner --> Wake["DayAgentWorkflow (per wake, one day workspace)"]
+  Day["planning_day:&lt;dayId&gt; token + day:&lt;dayId&gt; workspaceKey"] --> Wake
+  Knowledge["PlannerKnowledgeEntity (durable, compaction-exempt)"] --> Wake
   Wake --> Strategy["DayAgentStrategy"]
   Strategy --> Observe["record_observations"]
   Strategy --> Schedule["set_next_wake"]
+  Strategy --> KnowledgeTools["propose/confirm/retract_knowledge"]
   Strategy --> CaptureTools["capture/reconcile tools"]
   CaptureTools --> CaptureService["DayAgentCaptureService"]
-  CaptureService --> Entities["agent_entities: capture + parsedItem"]
+  CaptureService --> Entities["agent_entities: capture (dayId) + parsedItem"]
   CaptureService --> Links["agent_links: capture_to_parsed_item + parsed_item_to_task"]
   CaptureService --> Tasks["JournalDb tasks"]
   Strategy --> PlanTools["draft + refine tools"]
   PlanTools --> PlanService["DayAgentPlanService"]
-  PlanService --> DayPlan["agent_entities: day_plan"]
+  PlanService --> DayPlan["agent_entities: day_plan (day_agent_plan:&lt;dayId&gt;)"]
   PlanService --> PlanLinks["agent_links: capture_to_plan"]
   PlanService --> RefineSets["agent_entities: changeSet + changeDecision"]
   DayPlan --> SharedModel["DayPlanData + PlannedBlock"]
-  Schedule --> State
+  Schedule --> ScheduledWake["agent_entities: scheduledWake (workspaceKey)"]
+  KnowledgeTools --> KnowledgeStore["agent_entities: plannerKnowledge"]
 ```
 
 Runtime behavior:
 
-- `DayAgentService` creates one active `day_agent` identity per local calendar
-  day.
-- `AgentSlots.activeDayId` stores the deterministic day subject ID
-  (`dayplan-YYYY-MM-DD`).
-- The `dayplan-YYYY-MM-DD` token is reused in three distinct places. They are
-  intentionally collapsed onto one string so a single date keys the entire
-  day-agent surface, but the storage namespaces keep them from colliding:
-  the legacy Daily OS `DayPlanEntry.id` (journal row), the day-agent identity
-  subject ID surfaced as `AgentSlots.activeDayId`, and `DayPlanEntity.dayId`
-  on the drafted plan. The plan entity itself is stored under
-  `day_agent_plan:<dayId>` so the agent draft never overwrites the journal
-  row, and the `agentId` discriminator separates the identity from the plan.
-- Day-agent lookup is repository-backed by `activeDayId`; the service does not
-  hydrate every active day-agent state just to find one calendar day.
-- Creation also writes an `agent_day` link (agent → day) alongside the
-  `activeDayId` slot, mirroring the `agent_task`/`agent_project` slot links, so
-  the slot can be derived from the synced log (State-as-Projection, PR 4 B3).
-  The slot remains the read source until that cutover.
+- `DayAgentService.getOrCreatePlannerAgent()` is the single creation entry
+  point. It mints the planner under the **deterministic** id
+  `daily_os_planner` (via `AgentService.createAgent(agentId: ...)`), so two
+  devices that independently create it converge through LWW instead of
+  diverging into two identities. It is idempotent — a second call returns the
+  existing planner. `getDayAgentForDate(date)` resolves the same planner
+  regardless of date (it does not key on any day slot).
+- The planner pins **no** `activeDayId` slot and writes **no** per-day
+  `agent_day` link. A wake's day is carried explicitly by its trigger tokens
+  (`planning_day:<dayId>`, plus the mode tokens `drafting:` / `refine:` and
+  `capture_submitted:`) and a `day:<dayId>` workspace key on the queued
+  `WakeJob`; `DayAgentWorkflow` resolves the day strictly from that context and
+  fails the wake when no day can be resolved (no slot fallback).
+- `dayAgentIdForDate(date)` (→ `dayplan-YYYY-MM-DD`) is now a **workspace id**,
+  not an identity. The `dayplan-YYYY-MM-DD` string is still reused across
+  storage namespaces without colliding: the legacy Daily OS `DayPlanEntry.id`
+  (journal row), the `planning_day:` workspace token, `CaptureEntity.dayId`,
+  and `DayPlanEntity.dayId`. The drafted plan is stored under
+  `day_agent_plan:<dayId>` so the agent draft never overwrites the journal row,
+  and the `agentId` discriminator separates the planner identity from the plan.
+- **Legacy migration** runs on **every** `getOrCreatePlannerAgent` resolve
+  (idempotent, best-effort), not only first creation: a legacy `day_agent` that
+  syncs in from another device after the planner exists, or one stranded by an
+  interrupted first pass, still converges; after the first successful pass the
+  active-`day_agent` query is empty and it returns immediately. Every other
+  active `day_agent` identity is archived (lifecycle → dormant, its
+  `scheduledWakeAt` cleared so it is never re-woken or restored), and its recent
+  (≤14-day) `dayPlan` / `capture` / `parsedItem` / `changeSet` entities are
+  re-parented to the planner id via normal synced upserts so pre-flip plans
+  stay visible. Each legacy agent is migrated under its own try/catch, so one
+  failure neither blocks planner creation nor stops the others.
 - The shared template service seeds the `Shepherd` day-agent template.
-- `DayAgentWorkflow` builds the prompt from template directives, recent private
-  observations, and, for `capture_submitted:<captureId>` wakes, the submitted
-  capture plus a bounded task corpus snapshot. Every wake user message also
-  carries `currentLocalTime` so same-day drafting can distinguish future plan
-  slots from time that has already passed.
+- `DayAgentWorkflow` builds the prompt from template directives, the planner's
+  durable knowledge (a compact always-on **hook index** plus scoped full
+  statements), recent private observations, the day's `dayLog`, and — for
+  `capture_submitted:<captureId>` wakes — the submitted capture plus a bounded
+  task corpus snapshot. The user-message keys are ordered **stable → volatile**
+  so the cacheable prompt prefix is maximised for local KV-cache / prefix-cache
+  reuse. The two knowledge tiers are split by stability: the always-on
+  `knowledgeIndex` (global, slow-changing) leads the prefix *before* the large
+  `dayLog`, while the scope-filtered `knowledgeStatements` vary by which scopes
+  the wake touches (capture vs drafting vs refine) and therefore trail the
+  `dayLog`/`attentionPlanning` — a changing statement set must never evict the
+  much larger `dayLog` prefix behind it. Net order: `dayId`, `planDate`,
+  `knowledgeIndex`, `dayLog`, `attentionPlanning`, `knowledgeStatements`, the
+  per-wake mode block, then `triggerTokens` and `currentLocalTime` last.
+  `currentLocalTime` lets same-day drafting distinguish future plan slots from
+  time that has already passed.
 - `DayAgentStrategy` handles private observations itself and delegates
-  `set_next_wake`, Capture/Reconcile tools, draft plan tools, and refine
-  tools through the workflow handler.
+  `set_next_wake`, `search_memory`, the knowledge tools, Capture/Reconcile
+  tools, draft plan tools, and refine tools through the workflow handler.
+- `search_memory` is the planner's recall + memory-linking tool, handled by the
+  workflow itself (`DayAgentWorkflow._searchMemory` over `AgentLogCompactor`).
+  With `query` it keyword-scans the **full** immutable capture-and-observation
+  log — including detail folded out of the current summary — newest-first and
+  bounded (`searchLog`); with `ids` it pulls up specific entries (`resolveByIds`,
+  the "follow a link" path). Recall is lazy: the per-wake assembly resolves only
+  the tail, and `search_memory` is the one reader that scans beyond it, and only
+  when the agent explicitly recalls.
+- **Author-time memory links (convergence-safe A-MEM, Phase 0).** Notes the
+  agent writes (observations, knowledge) may cite a related entry inline as
+  `[[relation:id]]` — `refines` / `supersedes` / `contradicts` / `relates`
+  (`lib/features/agents/memory/memory_links.dart`). The token is plain content
+  of an append-only entry, so it never mutates history, never touches the cached
+  prompt prefix, and stays convergent because the cited id is the synced entity
+  id. `search_memory` resolves each hit's outgoing links — validating existence
+  (a hallucinated id renders as `(not found)`, never followed; a non-`supersedes`
+  link to a superseded entry forward-follows to the live version, rendered
+  `relation:old → live`) — and flags an entry that a newer note supersedes,
+  giving the agent a navigable, append-only memory graph without an explicit
+  edge store or any in-place rewrite. Validation is widened with the planner's
+  durable-knowledge keys (passed as `extraKnownIds`), so a cross-tier link to a
+  knowledge entry — e.g. a **Map of Content** keyed `moc-<topic>` whose statement
+  curates `[[relates:id]]` links to a topic's entries — resolves rather than
+  reading as dead. The system prompt fosters the Zettelkasten habits this
+  enables: atomic, keyword-led notes; superseding rather than overwriting;
+  distilling captures into linked permanent observations; maintaining MOCs; and
+  actually following links via `search_memory(ids:)`. See
+  `docs/implementation_plans/2026-06-08_convergence_safe_a_mem.md`.
 - `DayAgentCaptureService` owns direct Capture/Reconcile mutations:
   `submit_capture`, `parse_capture_to_items`, `match_to_corpus`,
   `link_capture_phrase_to_task`, `break_capture_link`,
@@ -174,11 +237,12 @@ stateDiagram-v2
   available at lower (opportunistic) priority so something noticed in them
   can still be planned; `completed`/`archived` are unavailable.
   `filterDayPlanProjects` orders the scheduled tier first. The helpers are not yet
-  wired into the day-agent identity: `AgentIdentity.allowedCategoryIds` treats
+  wired into the planner identity: `AgentIdentity.allowedCategoryIds` treats
   an EMPTY set as allow-all, so passing the strict (possibly empty) opt-in set
-  there would invert the semantics — the identity also snapshots the set at
-  first capture of the day, so flag edits would not apply mid-day. Wiring the
-  agent layer needs an explicit "constrained" marker first.
+  there would invert the semantics. Wiring the agent layer needs an explicit
+  "constrained" marker first; the per-wake prompt already derives its
+  `touchedScopes` from attention claims and the baseline plan's categories, not
+  from `allowedCategoryIds`.
 - Capture supports both voice and typed intake. The idle copy exposes a real
   "type instead" action that moves the controller directly to the editable
   transcript state without opening the microphone. When Capture is opened for a
@@ -271,8 +335,6 @@ stateDiagram-v2
   last seven days. Due-today tasks and in-progress work still surface, but
   weeks-old overdue rows are left out of daily proposals unless the user brings
   them back through search, capture, or an explicit task decision.
-- `summarize_recent_patterns` returns transient learning-card payloads from
-  recent `DayPlanEntity` rows. It does not persist new state.
 - `PlannedBlock` now carries the agent-facing metadata required by the draft
   flow: optional task/title, block origin (`ai`, `cal`, `buffer`, `manual`),
   lifecycle state, and the model's placement reason.
@@ -351,10 +413,59 @@ stateDiagram-v2
   Task-agent wakes now resolve their own stale claims when terminal task state
   makes the request obsolete, and can use `resolve_attention_request` for
   LLM-mediated claim maintenance.
-- Wakes consume any `scheduledWakeAt` timestamp that is no longer in the future
-  so app restart does not replay an already-fired scheduled wake.
+- `set_next_wake` persists each pre-warm as a day-scoped `ScheduledWakeEntity`
+  record (deterministic id per `(agentId, workspaceKey)`) carrying its
+  `workspaceKey` and `planning_day:<dayId>` trigger tokens — **not** the single,
+  clobberable `AgentState.scheduledWakeAt`. A long-lived planner has several
+  outstanding day wakes at once, and each must restore after a restart with its
+  own day context. `ScheduledWakeManager` fires due records
+  (`getDueScheduledWakeRecords`), enqueues them with their persisted tokens +
+  workspace, then flips `status` to `consumed` in place (LWW, never
+  hard-deleted) so a duplicate device delivery cannot re-fire it. The daily
+  pre-warm cap is keyed by `(dayId, date)` so an active multi-day planner can
+  pre-warm each day independently. The Settings → Agents → Pending Wakes
+  diagnostic surfaces these records (`getPendingScheduledWakeRecords`) labelled
+  by their day.
+- Durable knowledge ("memorize what I tell you", ADR 0022 Decisions 9–10) is a
+  separate, **compaction-exempt** store: `propose_knowledge` writes a
+  `PlannerKnowledgeEntity` (`source: userStated` lands `confirmed`,
+  `agentInferred` lands `proposed`); `DayAgentKnowledgeService` also exposes
+  confirm / retract / edit. The active "Head" set is a pure projection over the
+  entries (`activePlannerKnowledge` — most-recent confirmed per `key`,
+  recency-wins, a retraction resurfaces the prior entry); there is no second
+  Head entity. Knowledge is injected into every wake as a compact hook index
+  plus scope-filtered full statements (global always; `category:`/`project:`
+  scopes only when the wake touches them), and entries past their `reviewAfter`
+  resurface for re-confirmation. Because it is a domain entity that never enters
+  the compaction fold, durable knowledge survives summarization untouched. An
+  entry also carries optional author-time `tags` (A-MEM construction attributes
+  the agent supplies on `propose_knowledge`) — normalized once at origin
+  (trim/dedup/cap) and carried forward immutably across confirm/edit, surfaced
+  as `DsPill` chips under each entry in the "What I've learned" panel.
+- `summarize_recent_patterns` returns transient learning-card payloads from
+  recent `DayPlanEntity` rows across **all** days under the one planner — the
+  deliberate cross-day learning the single identity enables. It does not persist
+  new state.
 - Future Daily OS Next commit, agenda, and shutdown tools should be added
   under this feature without importing `features/daily_os`.
+
+The planner identity's lifecycle (ADR 0022) — one durable mind, many day
+workspaces, with legacy day agents archived on first flip:
+
+```mermaid
+stateDiagram-v2
+  [*] --> Created: getOrCreatePlannerAgent (deterministic id)
+  Created --> Migrating: archive legacy day agents + re-parent recent entities
+  Migrating --> Active: planner ready
+  state Active {
+    [*] --> Idle
+    Idle --> DayWake: planning_day:&lt;dayId&gt; wake (capture / draft / refine / pre-warm)
+    DayWake --> Idle: wake completes (one day workspace touched)
+    Idle --> Learning: propose/confirm/retract_knowledge
+    Learning --> Idle: Head set updated (compaction-exempt)
+  }
+  Active --> Active: convergent re-creation on another device merges via LWW
+```
 
 ```mermaid
 stateDiagram-v2

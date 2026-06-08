@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/decision_events.dart';
@@ -252,4 +253,74 @@ void main() {
       expect(reconstructed, 'H\n${assembled.text}\nT');
     },
   );
+
+  test(
+    'lazily resolves a day-capture transcript in the reconstructed tail',
+    () async {
+      final capture = makeTestCapture(
+        id: 'cap-1',
+        agentId: _agentId,
+        transcript: 'recall this detail',
+        capturedAt: DateTime.utc(2024, 3, 2),
+        createdAt: DateTime.utc(2024, 3, 2),
+      );
+      when(
+        () => repo.getEntitiesByAgentId(
+          _agentId,
+          type: AgentEntityTypes.capture,
+        ),
+      ).thenAnswer((_) async => [capture]);
+
+      final reconstructed = await reconstructor.reconstruct(
+        agentId: _agentId,
+        content: <String, Object?>{
+          'promptFormat': 'v2',
+          'head': 'H\n',
+          'tail': '\nT',
+          'log': <String, Object?>{
+            // A boundary after the capture so it renders in the tail; the
+            // reconstructor must lazily resolve its transcript on demand.
+            'until': <String, Object?>{
+              'at': DateTime.utc(2024, 3, 5).toIso8601String(),
+              'sourceAt': DateTime.utc(2024, 3, 5).toIso8601String(),
+              'key': 'zzz',
+            },
+          },
+        },
+      );
+      expect(reconstructed, contains('recall this detail'));
+    },
+  );
+
+  test('degrades to the log alone when the capture load throws', () async {
+    when(
+      () => repo.getEntitiesByAgentId(
+        _agentId,
+        type: AgentEntityTypes.capture,
+      ),
+    ).thenThrow(StateError('capture table unavailable'));
+    await captureAll([src('e1', 'note', day: 1)], 10);
+    final assembled = await compactor.assembleContextDetailed(_agentId);
+
+    final reconstructed = await reconstructor.reconstruct(
+      agentId: _agentId,
+      content: <String, Object?>{
+        'promptFormat': 'v2',
+        'head': 'H\n',
+        'tail': '\nT',
+        'log': <String, Object?>{
+          if (assembled.lastEventPosition != null)
+            'until': <String, Object?>{
+              'at': assembled.lastEventPosition!.at.toIso8601String(),
+              'sourceAt': assembled.lastEventPosition!.sourceAt
+                  .toIso8601String(),
+              'key': assembled.lastEventPosition!.key,
+            },
+        },
+      },
+    );
+    // Capture load failed → no day-capture events, but the payload-backed log
+    // still reconstructs (never null).
+    expect(reconstructed, 'H\n${assembled.text}\nT');
+  });
 }

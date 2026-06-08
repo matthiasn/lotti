@@ -42,6 +42,7 @@ abstract final class AgentEntityTypes {
   static const agentReport = 'agentReport';
   static const agentReportHead = 'agentReportHead';
   static const scheduledWake = 'scheduledWake';
+  static const plannerKnowledge = 'plannerKnowledge';
   static const projectRecommendation = 'projectRecommendation';
   static const agentTemplateVersion = 'agentTemplateVersion';
   static const agentTemplateHead = 'agentTemplateHead';

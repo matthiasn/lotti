@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -41,12 +42,21 @@ class AgentLogCompactor {
   AgentLogCompactor({
     required AgentSyncService syncService,
     this.inlineEvents = const [],
+    this.resolveInlineContent,
   }) : _sync = syncService;
 
   final AgentSyncService _sync;
 
   /// Events whose content is carried inline rather than payload-backed.
   final List<InputEvent> inlineEvents;
+
+  /// Resolves content for [InputEvent.inlineDeferred] events by their
+  /// `contentEntryId`. Invoked only for the events the compactor actually
+  /// renders/folds (the post-cutoff tail), so a covered deferred source never
+  /// loads its (potentially large) content again. Returns null when the source
+  /// is missing (the event is then dropped, like a missing payload).
+  final Future<Map<String, Object?>?> Function(String contentEntryId)?
+  resolveInlineContent;
 
   AgentRepository get _repository => _sync.repository;
 
@@ -103,31 +113,36 @@ class AgentLogCompactor {
     return EventPosition(at: parsedAt, sourceAt: parsedSourceAt, key: key);
   }
 
-  /// Resolves the rendered content for [events] — inline events carry it
-  /// directly, payload-backed events load it **concurrently** — preserving
-  /// event order and dropping any whose payload is missing.
+  /// Resolves the rendered content for [events] — eager-inline events carry it
+  /// directly, deferred-inline events resolve via [resolveInlineContent], and
+  /// payload-backed events load their payload — all **concurrently**,
+  /// preserving event order and dropping any whose content is missing.
   Future<List<({InputEvent event, Map<String, Object?> content})>>
   _resolveEventContents(List<InputEvent> events) async {
-    final payloads = await Future.wait([
+    final resolved = await Future.wait([
       for (final event in events)
-        if (event.contentDigest case final digest?)
-          _repository.getEntity(digest)
-        else
-          Future<AgentDomainEntity?>.value(),
+        () async {
+          final inline = event.inlineContent;
+          if (inline != null) {
+            return (event: event, content: inline);
+          }
+          if (event.deferredInline) {
+            final content = await resolveInlineContent?.call(
+              event.contentEntryId,
+            );
+            return content == null ? null : (event: event, content: content);
+          }
+          final digest = event.contentDigest;
+          if (digest == null) return null;
+          final payload = await _repository.getEntity(digest);
+          return payload is AgentMessagePayloadEntity
+              ? (event: event, content: payload.content)
+              : null;
+        }(),
     ]);
-    final result = <({InputEvent event, Map<String, Object?> content})>[];
-    for (var i = 0; i < events.length; i++) {
-      final inline = events[i].inlineContent;
-      if (inline != null) {
-        result.add((event: events[i], content: inline));
-        continue;
-      }
-      final payload = payloads[i];
-      if (payload is AgentMessagePayloadEntity) {
-        result.add((event: events[i], content: payload.content));
-      }
-    }
-    return result;
+    return [
+      for (final entry in resolved) ?entry,
+    ];
   }
 
   Future<({InputEventLog log, SummaryCheckpoint? active})> _projectActiveView(
@@ -194,8 +209,14 @@ class AgentLogCompactor {
       log: view.log,
       cutoff: view.active?.cutoff,
     );
+    // _resolveEventContents can drop events whose content is (temporarily)
+    // unavailable — e.g. a deferred capture not yet synced. The replay marker
+    // must pin to the last event actually RENDERED, not the raw tail, or
+    // assembleContextAsOf could later reconstruct a different prompt once the
+    // dropped content arrives.
+    final resolved = await _resolveEventContents(tailEvents);
     final tail = [
-      for (final loaded in await _resolveEventContents(tailEvents))
+      for (final loaded in resolved)
         TailLine(
           source: _toRenderedSource(loaded.event, loaded.content),
           edited: loaded.event.isEdit,
@@ -208,8 +229,168 @@ class AgentLogCompactor {
         tail: tail,
       ),
       activeSummaryId: view.active?.id,
-      lastEventPosition: tailEvents.isEmpty ? null : tailEvents.last.position,
+      lastEventPosition: resolved.isEmpty ? null : resolved.last.event.position,
     );
+  }
+
+  /// Keyword search over the agent's FULL immutable memory log (folded events
+  /// AND the verbatim tail), returning up to [limit] most-recent hits whose
+  /// rendered text contains EVERY whitespace-separated term in [query]
+  /// (case-insensitive). The agent's recall tool: detail folded out of the
+  /// summary is still in the log, so this lets a wake reach back into it.
+  ///
+  /// On-demand by design. The per-wake assembly path stays lazy (it resolves
+  /// only the tail); this is the one reader that scans beyond the tail, and it
+  /// only runs when the agent explicitly recalls. Events are scanned
+  /// newest-first in chunks so recent matches stop the scan early rather than
+  /// resolving the whole multi-year history.
+  Future<List<MemoryLogHit>> searchLog(
+    String agentId, {
+    required String query,
+    int limit = 8,
+    Set<String> extraKnownIds = const {},
+  }) async {
+    final terms = query
+        .toLowerCase()
+        .split(RegExp(r'\s+'))
+        .where((t) => t.isNotEmpty)
+        .toList();
+    if (terms.isEmpty || limit <= 0) return const [];
+    return _scanLog(
+      agentId,
+      limit: limit,
+      extraKnownIds: extraKnownIds,
+      matches: (event, text) {
+        final haystack = text.toLowerCase();
+        return terms.every(haystack.contains);
+      },
+    );
+  }
+
+  /// Pulls up specific memory-log entries by their [ids] — the "follow a link"
+  /// counterpart to [searchLog], used to expand a `[[relation:id]]` reference
+  /// the agent saw. Same lazy newest-first scan: it resolves content only for
+  /// matching events and stops once [limit] are found, so following a handful
+  /// of links never loads the whole history. Returns at most [limit] hits.
+  Future<List<MemoryLogHit>> resolveByIds(
+    String agentId, {
+    required Set<String> ids,
+    int limit = 20,
+    Set<String> extraKnownIds = const {},
+  }) async {
+    if (ids.isEmpty || limit <= 0) return const [];
+    return _scanLog(
+      agentId,
+      limit: limit,
+      extraKnownIds: extraKnownIds,
+      matches: (event, text) => ids.contains(event.contentEntryId),
+    );
+  }
+
+  /// Shared newest-first chunked scan behind [searchLog] and [resolveByIds].
+  ///
+  /// Resolves content per chunk, collecting the first [limit] events for which
+  /// [matches] holds. Two things are derived for every returned hit without a
+  /// second pass over the log — with different completeness guarantees:
+  /// - **`supersededByEntryId` (the hit's *own* supersession) is complete.**
+  ///   It is accumulated from every scanned `[[supersedes:id]]` token; because
+  ///   the agent can only cite ids it saw in an earlier wake, a superseder is
+  ///   strictly newer than its target, and the scan runs newest-first — so any
+  ///   superseder of a returned hit is always scanned before the hit matches,
+  ///   even when the scan stops early at [limit]. (A same-instant tie that the
+  ///   position key happened to order superseder-after-target is the only gap;
+  ///   it cannot arise from real cross-wake authoring.)
+  /// - **Outgoing `[[relation:id]]` links are best-effort.** Existence is
+  ///   validated against the full (cheaply-projected) set of log entry ids plus
+  ///   [extraKnownIds] (e.g. durable-knowledge keys outside the episodic log),
+  ///   which is always complete. Forward-following a non-`supersedes` target to
+  ///   its live version, however, only fires when that target's superseder was
+  ///   itself within the scan window — otherwise the link renders at its
+  ///   original (still-valid) id. This is presentation-only (transient tool
+  ///   output, never persisted), so the bound is acceptable.
+  ///
+  /// [extraKnownIds] lets a caller widen link validation beyond the memory log
+  /// (the planner passes its knowledge keys/ids so cross-tier links resolve);
+  /// the compactor stays agnostic about what those ids mean.
+  Future<List<MemoryLogHit>> _scanLog(
+    String agentId, {
+    required int limit,
+    required bool Function(InputEvent event, String text) matches,
+    Set<String> extraKnownIds = const {},
+  }) async {
+    final view = await _projectActiveView(agentId);
+    if (view.log.events.isEmpty) return const [];
+
+    final knownIds = <String>{
+      for (final e in view.log.events) e.contentEntryId,
+      ...extraKnownIds,
+    };
+    final events = view.log.events.reversed.toList(); // newest-first
+    final supersededBy = <String, String>{};
+    final matched =
+        <
+          ({
+            InputEvent event,
+            String type,
+            String text,
+            bool edited,
+            List<MemoryLink> parsed,
+          })
+        >[];
+
+    const chunk = 50;
+    outer:
+    for (var i = 0; i < events.length; i += chunk) {
+      final end = i + chunk < events.length ? i + chunk : events.length;
+      final loaded = await _resolveEventContents(events.sublist(i, end));
+      for (final l in loaded) {
+        final text = _searchableText(l.content);
+        final parsed = parseMemoryLinks(text);
+        for (final link in parsed) {
+          if (link.relation == LinkRelation.supersedes) {
+            supersededBy.putIfAbsent(
+              link.entryId,
+              () => l.event.contentEntryId,
+            );
+          }
+        }
+        if (matches(l.event, text)) {
+          matched.add((
+            event: l.event,
+            type:
+                (l.content['entryType'] as String?) ??
+                (l.event.isObservation ? 'observation' : 'entry'),
+            text: text,
+            edited: l.event.isEdit,
+            parsed: parsed,
+          ));
+          if (matched.length >= limit) break outer;
+        }
+      }
+    }
+
+    return [
+      for (final m in matched)
+        MemoryLogHit(
+          contentEntryId: m.event.contentEntryId,
+          at: m.event.position.at,
+          type: m.type,
+          text: m.text,
+          edited: m.edited,
+          links: resolveMemoryLinks(
+            m.parsed,
+            knownIds: knownIds,
+            supersededBy: supersededBy,
+          ),
+          supersededByEntryId: supersededBy[m.event.contentEntryId],
+        ),
+    ];
+  }
+
+  static String _searchableText(Map<String, Object?> content) {
+    final text = content['text'];
+    if (text is String) return text;
+    return jsonEncode(content);
   }
 
   /// Re-derives the log block a PAST wake rendered (ADR 0020 v2 prompt
@@ -349,8 +530,12 @@ class AgentLogCompactor {
       for (final loaded in folded)
         loaded.event.contentEntryId:
             loaded.event.contentDigest ??
-            // Exactly one of digest/inlineContent is set by construction.
-            ContentDigest.of(loaded.event.inlineContent),
+            // Inline events (eager or deferred) have no payload digest; cover
+            // them by the digest of their resolved content. `loaded.content`
+            // equals the eager `inlineContent` for eager events and the
+            // resolver output for deferred ones, so the digest is identical
+            // across both paths (and across app versions).
+            ContentDigest.of(loaded.content),
     };
 
     final summaryText = await summarize(
@@ -400,6 +585,45 @@ class AgentLogCompactor {
     });
     return summaryId;
   }
+}
+
+/// One hit from [AgentLogCompactor.searchLog] / [AgentLogCompactor.resolveByIds]
+/// — a raw memory-log entry (capture transcript or observation) that matched,
+/// including detail that has been folded out of the compacted summary.
+class MemoryLogHit {
+  /// Wraps a hit.
+  const MemoryLogHit({
+    required this.contentEntryId,
+    required this.at,
+    required this.type,
+    required this.text,
+    required this.edited,
+    this.links = const [],
+    this.supersededByEntryId,
+  });
+
+  /// The originating entity id (capture id, observation message id, …).
+  final String contentEntryId;
+
+  /// The event's log position time (capture/observation creation).
+  final DateTime at;
+
+  /// The entry type — `capture`, `observation`, or `entry` as a fallback.
+  final String type;
+
+  /// The rendered searchable text of the entry.
+  final String text;
+
+  /// True when a later event supersedes this one for the same source.
+  final bool edited;
+
+  /// Author-time `[[relation:id]]` links parsed from this entry's text, each
+  /// validated for existence against the log (see [ResolvedMemoryLink]).
+  final List<ResolvedMemoryLink> links;
+
+  /// When another entry carries `[[supersedes:thisId]]`, the id of the newest
+  /// such entry; null when nothing supersedes this one.
+  final String? supersededByEntryId;
 }
 
 /// One assembled compacted log plus the marker that pins it for

@@ -108,6 +108,59 @@ final class DayAgentCaptureServiceProvider
 String _$dayAgentCaptureServiceHash() =>
     r'f06f0abd8e56b3cc4d57f14b544b48a656ebc4e7';
 
+/// The Daily OS durable-knowledge service (ADR 0022).
+
+@ProviderFor(dayAgentKnowledgeService)
+final dayAgentKnowledgeServiceProvider = DayAgentKnowledgeServiceProvider._();
+
+/// The Daily OS durable-knowledge service (ADR 0022).
+
+final class DayAgentKnowledgeServiceProvider
+    extends
+        $FunctionalProvider<
+          DayAgentKnowledgeService,
+          DayAgentKnowledgeService,
+          DayAgentKnowledgeService
+        >
+    with $Provider<DayAgentKnowledgeService> {
+  /// The Daily OS durable-knowledge service (ADR 0022).
+  DayAgentKnowledgeServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'dayAgentKnowledgeServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$dayAgentKnowledgeServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<DayAgentKnowledgeService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  DayAgentKnowledgeService create(Ref ref) {
+    return dayAgentKnowledgeService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(DayAgentKnowledgeService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<DayAgentKnowledgeService>(value),
+    );
+  }
+}
+
+String _$dayAgentKnowledgeServiceHash() =>
+    r'd0894616a648d40931f93955b7c283baf383edb6';
+
 /// The Daily OS day-agent drafting service.
 
 @ProviderFor(dayAgentPlanService)

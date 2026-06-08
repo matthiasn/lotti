@@ -20,8 +20,9 @@ Startup does this:
 2. wires `WakeOrchestrator.wakeExecutor` to the correct workflow for each
    agent kind
 3. starts `WakeOrchestrator` on `UpdateNotifications.localUpdateStream`
-4. starts `ScheduledWakeManager`, which polls hourly for due
-   `scheduledWakeAt` values
+4. starts `ScheduledWakeManager`, which polls hourly for both due
+   `scheduledWakeAt` state values and due `ScheduledWakeEntity` records (the
+   Daily OS planner's day-scoped pre-warms, ADR 0022)
 5. starts `ProjectActivityMonitor`
 6. seeds default agent templates
 7. seeds default inference profiles and default skills, then upgrades older
@@ -110,6 +111,11 @@ log. It shows only wake records that can still fire later:
   `WakeOrchestrator`
 - `scheduledWakeAt`: the scheduled wake used by project agents and template
   improvers
+- pending `ScheduledWakeEntity` records (`getPendingScheduledWakeRecords`): the
+  Daily OS planner's day pre-warms, which live as their own workspace-scoped
+  records rather than on the single `AgentState.scheduledWakeAt` (ADR 0022 — a
+  long-lived planner has several outstanding day wakes at once). Their subject
+  is the day id, derived from the record's `day:<dayId>` `workspaceKey`.
 
 All three scheduling fields (`nextWakeAt`, `sleepUntil`, `scheduledWakeAt`) are
 **device-local** (PR 4 B4): each device schedules its own wakes, so the sync
@@ -213,14 +219,24 @@ Persisted agent-side entities include:
   `AttentionAwardEntity`
 - `StandingAgreementEntity`
 - `WakeTokenUsageEntity`
+- `ScheduledWakeEntity` — a day-scoped persisted scheduled wake for the Daily OS
+  planner (ADR 0022). Carries `workspaceKey` + `triggerTokens` and a
+  `pending | consumed` status, so several outstanding day pre-warms survive a
+  restart with full day context instead of sharing one clobberable
+  `AgentState.scheduledWakeAt`.
+- `PlannerKnowledgeEntity` — the Daily OS planner's durable knowledge ("memorize
+  what I tell you", ADR 0022). Compaction-exempt; the active Head set is a pure
+  recency-wins projection over the entries (no separate Head entity).
 
 Persisted links include:
 
 - `agent_state`
 - `agent_task`
 - `agent_project`
-- `agent_day` (day agent → its day; back-links `slots.activeDayId` like the
-  task/project slot links so it can be derived from the synced log)
+- `agent_day` (**legacy** — the old per-day day-agent identity → its day,
+  back-linking `slots.activeDayId`. ADR 0022's single long-lived planner pins no
+  `activeDayId` slot and writes no new `agent_day` links; the link type and
+  projection remain only to read pre-migration data.)
 - `template_assignment`
 - `improver_target`
 - `soul_assignment`
@@ -333,7 +349,18 @@ the workflow falls back to the inline journal prompt for that wake.
 observations + proposal verdicts), project agents (captured project-linked
 journal entries + observations), and day agents (submitted capture
 transcripts + observations, both projected as inline events from
-already-synced entities — no payload capture step). The **improver** agent is
+already-synced entities — no payload capture step). Day capture transcripts
+are projected as **deferred** inline events (`InputEvent.inlineDeferred`):
+position + id are eager — enough to order the log and run the checkpoint
+completeness check, which keys on id, not content — while the transcript is
+resolved on demand (`AgentLogCompactor.resolveInlineContent`) for only the
+post-cutoff tail the wake renders. The single long-lived planner accumulates
+captures across every day it plans, so loading every transcript each wake
+would be O(all captures ever); instead the workflow loads just the lightweight
+metadata (`AgentRepository.getCaptureEventMetaByAgentId` — id + the two
+ordering timestamps, no transcript) and the compactor pulls full text only for
+the handful of uncovered-tail captures. Folded captures live in the summary
+prose and are never reloaded. The **improver** agent is
 deliberately out: its wake context is a per-ritual *windowed* snapshot
 (feedback since the last scan watermark, instance reports, version history) —
 there is no unbounded per-agent input stream to fold, and capturing it would
@@ -635,7 +662,14 @@ stateDiagram-v2
 
 - matches notification batches against `AgentSubscription`s
 - deduplicates jobs by run key in `WakeQueue`
-- merges trigger tokens for already-queued jobs of the same agent
+- merges trigger tokens for already-queued jobs of the same agent **and
+  workspace**. `WakeJob.workspaceKey` partitions merging, superseding, and
+  cancellation by `(agentId, workspaceKey)` (ADR 0022): the Daily OS planner is
+  one identity handling many day workspaces (`day:<dayId>`), so a day-B capture
+  wake must never merge into — or cancel — a day-A draft wake. A null workspace
+  (task/project/improver agents) only partitions with other null workspaces, so
+  their behavior is unchanged. The key is deliberately **excluded** from run-key
+  hashes (it scopes queue partitioning, not dedup identity).
 - enforces single-flight execution per agent through `WakeRunner`
 - persists wake-run entries before execution
 - suppresses self-notifications using vector clocks
@@ -668,7 +702,7 @@ flowchart TD
   Update["localUpdateStream batch"] --> Match["Match AgentSubscription tokens"]
   Match --> Suppress{"Suppressed by vector-clock tracking?"}
   Suppress -->|yes| Drop["Drop wake"]
-  Suppress -->|no| Merge{"Queued job for same agent?"}
+  Suppress -->|no| Merge{"Queued job for same agent + workspace?"}
   Merge -->|yes| Coalesce["Merge trigger tokens"]
   Merge -->|no| Queue["WakeQueue.enqueue(runKey)"]
   Queue --> Drain["WakeOrchestrator.processNext()"]

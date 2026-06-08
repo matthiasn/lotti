@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/memory/memory_links.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/agents/model/observation_record.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
+import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
@@ -27,7 +29,9 @@ import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
+import 'package:lotti/features/daily_os_next/agents/service/day_agent_knowledge_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
@@ -53,6 +57,7 @@ class DayAgentWorkflow {
     required this.domainLogger,
     this.captureService,
     this.planService,
+    this.knowledgeService,
     this.soulDocumentService,
     this.onPersistedStateChanged,
     this.config = const DayAgentConfig(),
@@ -87,6 +92,9 @@ class DayAgentWorkflow {
 
   /// Day-plan backend tool implementation.
   final DayAgentPlanService? planService;
+
+  /// Durable-knowledge backend tool implementation (ADR 0022).
+  final DayAgentKnowledgeService? knowledgeService;
 
   /// Structured logger.
   final DomainLogger domainLogger;
@@ -142,10 +150,10 @@ class DayAgentWorkflow {
     }
 
     // Day workspace resolution (ADR 0022 Decisions 3–4): the wake's trigger
-    // tokens are authoritative. A capture-submitted wake carries no day token,
-    // so its day resolves from the capture's own `dayId` scope; the per-day
-    // `activeDayId` slot remains a last-resort fallback until the identity
-    // cutover removes per-day identities.
+    // tokens are authoritative. The long-lived planner has no `activeDayId`
+    // slot, so the day comes from the day tokens or — for a capture-submitted
+    // wake, which carries no day token — from the capture's own `dayId` scope.
+    // The workflow fails fast when no day can be resolved.
     final dayResolution = resolvePlannerWakeDay(triggerTokens);
     if (dayResolution.isAmbiguous) {
       final candidates = dayResolution.candidates.toList()..sort();
@@ -154,12 +162,8 @@ class DayAgentWorkflow {
         error: 'Ambiguous day workspace in trigger tokens: $candidates',
       );
     }
-    // Token day first, then the legacy per-day slot. Only when neither yields a
-    // day (a capture-only wake under one planner, where the slot is gone) do we
-    // load the capture to resolve its own `dayId` scope — avoiding a redundant
-    // capture read in the common per-day path.
-    var dayId = dayResolution.dayId ?? state.slots.activeDayId;
-    if (dayId == null || dayId.isEmpty) {
+    var dayId = dayResolution.dayId;
+    if (dayId == null) {
       final captureResolution = await _dayIdFromCaptureTokens(
         agentId: agentId,
         triggerTokens: triggerTokens,
@@ -235,15 +239,18 @@ class DayAgentWorkflow {
       domainLogger: domainLogger,
     );
     var capturesLoaded = false;
-    var captureEntities = const <CaptureEntity>[];
+    var captureMetas = const <CaptureEventMeta>[];
     try {
-      captureEntities = (await agentRepository.getEntitiesByAgentId(
+      // Only the lightweight ordering metadata (id + timestamps) — never the
+      // full transcripts — so per-wake cost stays flat as the single
+      // long-lived planner's capture history grows. Transcripts are resolved
+      // lazily for just the post-cutoff tail via [_resolveCaptureContent].
+      captureMetas = await agentRepository.getCaptureEventMetaByAgentId(
         agentId,
-        type: AgentEntityTypes.capture,
-      )).whereType<CaptureEntity>().toList();
+      );
       capturesLoaded = true;
     } catch (e) {
-      _logError('failed to load capture entities', error: e);
+      _logError('failed to load capture metadata', error: e);
     }
     final memoryView = await memory.compactAndAssemble(
       agentId: agentId,
@@ -258,7 +265,8 @@ class DayAgentWorkflow {
       runKey: runKey,
       budget: compactionTailBudgetTokens,
       retainTokens: compactionTailRetainTokens,
-      inlineEvents: dayCaptureEvents(captureEntities),
+      inlineEvents: dayCaptureEvents(captureMetas),
+      resolveInlineContent: _resolveCaptureContent,
     );
 
     final captureContext = await _captureContext(
@@ -276,6 +284,15 @@ class DayAgentWorkflow {
       wakeContext: wakeContext,
     );
     final attentionPlanning = await _attentionPlanningContext(dayDate);
+    final knowledge = await _knowledgeContext(
+      agentIdentity: agentIdentity,
+      touchedScopes: _touchedScopes(
+        attentionPlanning: attentionPlanning,
+        draftingContext: draftingContext,
+        refineContext: refineContext,
+      ),
+      now: now,
+    );
     final systemPrompt = _buildSystemPrompt(templateCtx);
     final userMessage = _buildUserMessage(
       dayId: resolvedDayId,
@@ -288,6 +305,7 @@ class DayAgentWorkflow {
       draftingContext: draftingContext,
       refineContext: refineContext,
       attentionPlanning: attentionPlanning,
+      knowledge: knowledge,
       compactedLog: memoryView.useCompactedLog ? memoryView.compactedLog : null,
     );
 
@@ -487,6 +505,21 @@ class DayAgentWorkflow {
     required String toolName,
     required Map<String, dynamic> args,
   }) async {
+    // Reject day-scoped tool calls targeting a day other than this wake's
+    // workspace (ADR 0022 Decision 4). Under one planner the model must never
+    // mutate a different day than the wake it is running.
+    final argDayId = args['dayId'];
+    if (argDayId is String &&
+        argDayId.trim().isNotEmpty &&
+        argDayId.trim() != dayId) {
+      return DayAgentToolResult(
+        success: false,
+        output:
+            'Error: tool dayId "${argDayId.trim()}" does not match the wake '
+            'workspace "$dayId".',
+      );
+    }
+
     if (DayAgentToolNames.isCaptureReconcileTool(toolName)) {
       final service = captureService;
       if (service == null) {
@@ -529,6 +562,29 @@ class DayAgentWorkflow {
       );
     }
 
+    if (DayAgentToolNames.isKnowledgeTool(toolName)) {
+      final service = knowledgeService;
+      if (service == null) {
+        return const DayAgentToolResult(
+          success: false,
+          output: 'Error: durable-knowledge tools are not configured.',
+        );
+      }
+      final result = await service.executeTool(
+        agentId: agentId,
+        toolName: toolName,
+        args: args,
+      );
+      return DayAgentToolResult(
+        success: result.success,
+        output: result.output,
+      );
+    }
+
+    if (DayAgentToolNames.isSearchMemoryTool(toolName)) {
+      return _searchMemory(agentId: agentId, args: args);
+    }
+
     if (!DayAgentToolNames.isSetNextWakeTool(toolName)) {
       return DayAgentToolResult(
         success: false,
@@ -554,7 +610,14 @@ class DayAgentWorkflow {
 
     late final DateTime scheduledAt;
     try {
-      scheduledAt = DateTime.parse(rawAt.trim());
+      // Normalize to local: the tool asks for a local ISO-8601 time, but an LLM
+      // may emit a `Z`/offset form. `getDueScheduledWakeRecords` compares the
+      // stored `scheduledAt` string lexicographically against a naive-local
+      // `now`, so a `…Z` suffix (or offset) would make the due check disagree
+      // with wall-clock — and differ across devices in other timezones. Coerce
+      // to naive-local here so the persisted form is always suffix-free and
+      // ordering-consistent. Instant-based validation below is unaffected.
+      scheduledAt = DateTime.parse(rawAt.trim()).toLocal();
     } catch (_) {
       return const DayAgentToolResult(
         success: false,
@@ -634,6 +697,125 @@ class DayAgentWorkflow {
     }
   }
 
+  /// Recall handler for `search_memory`: keyword-scans the full immutable
+  /// memory log — including detail folded out of the compacted summary — for
+  /// entries matching the query. Built over the same lazy capture resolution
+  /// the wake uses, so it spans folded + tail without the per-wake path ever
+  /// loading everything; this opt-in recall is the only reader beyond the tail.
+  Future<DayAgentToolResult> _searchMemory({
+    required String agentId,
+    required Map<String, dynamic> args,
+  }) async {
+    final rawIds = args['ids'];
+    final ids = rawIds is List
+        ? <String>{
+            for (final e in rawIds)
+              if (e is String && e.trim().isNotEmpty) e.trim(),
+          }
+        : const <String>{};
+    final rawQuery = args['query'];
+    final query = rawQuery is String ? rawQuery.trim() : '';
+    if (ids.isEmpty && query.isEmpty) {
+      return const DayAgentToolResult(
+        success: false,
+        output: 'Error: provide "query" keywords or "ids" to recall.',
+      );
+    }
+    final rawLimit = args['limit'];
+    final limit = rawLimit is int ? rawLimit.clamp(1, 20) : 8;
+
+    var captureMetas = const <CaptureEventMeta>[];
+    try {
+      captureMetas = await agentRepository.getCaptureEventMetaByAgentId(
+        agentId,
+      );
+    } catch (e) {
+      _logError('search_memory: failed to load capture metadata', error: e);
+    }
+
+    // Widen link validation beyond the episodic log so a note that links to a
+    // durable-knowledge entry (e.g. a `moc-<topic>` map) resolves instead of
+    // rendering as a dead link. Durable knowledge lives outside the memory log,
+    // so the agent cites it by key; include keys and entity ids. Non-fatal.
+    final extraKnownIds = <String>{};
+    try {
+      final knowledge = await knowledgeService?.allFor(agentId) ?? const [];
+      for (final entry in knowledge) {
+        extraKnownIds
+          ..add(entry.key)
+          ..add(entry.id);
+      }
+    } catch (e) {
+      _logError('search_memory: failed to load knowledge ids', error: e);
+    }
+
+    final compactor = AgentLogCompactor(
+      syncService: syncService,
+      inlineEvents: dayCaptureEvents(captureMetas),
+      resolveInlineContent: _resolveCaptureContent,
+    );
+
+    final List<MemoryLogHit> hits;
+    try {
+      hits = ids.isNotEmpty
+          ? await compactor.resolveByIds(
+              agentId,
+              ids: ids,
+              extraKnownIds: extraKnownIds,
+            )
+          : await compactor.searchLog(
+              agentId,
+              query: query,
+              limit: limit,
+              extraKnownIds: extraKnownIds,
+            );
+    } catch (e, s) {
+      _logError('search_memory failed', error: e, stackTrace: s);
+      return const DayAgentToolResult(
+        success: false,
+        output: 'Error: memory search failed.',
+      );
+    }
+
+    final subject = ids.isNotEmpty ? 'ids ${ids.join(', ')}' : '"$query"';
+    if (hits.isEmpty) {
+      return DayAgentToolResult(
+        success: true,
+        output: 'No memory entries match $subject.',
+      );
+    }
+
+    final buf = StringBuffer(
+      'Found ${hits.length} memory match(es) for $subject (most recent first):',
+    );
+    for (final hit in hits) {
+      buf
+        ..writeln()
+        ..write(
+          '- [${hit.at.toIso8601String()}] '
+          '(${hit.type}${hit.edited ? ', edited' : ''}) '
+          '(id: ${hit.contentEntryId}) ${hit.text}',
+        );
+      if (hit.supersededByEntryId != null) {
+        buf.write(' [superseded by ${hit.supersededByEntryId}]');
+      }
+      if (hit.links.isNotEmpty) {
+        buf
+          ..writeln()
+          ..write('  links: ${hit.links.map(_formatLink).join(', ')}');
+      }
+    }
+    return DayAgentToolResult(success: true, output: buf.toString());
+  }
+
+  static String _formatLink(ResolvedMemoryLink link) {
+    final wire = link.link.relation.wire;
+    final id = link.link.entryId;
+    if (!link.exists) return '$wire:$id (not found)';
+    if (link.superseded) return '$wire:$id → ${link.liveEntryId}';
+    return '$wire:$id';
+  }
+
   Future<_TemplateContext?> _resolveTemplate(String agentId) async {
     final template = await templateService.getTemplateForAgent(agentId);
     if (template == null) return null;
@@ -665,15 +847,25 @@ class DayAgentWorkflow {
     const planToolLines =
         '- `draft_day_plan`: persist a drafted day plan with blocks and reasons.\n'
         '- `summarize_recent_patterns`: return learning cards from recent day drafts.';
+    const knowledgeToolLines =
+        '- `propose_knowledge`: durably remember how the user wants to be '
+        'planned. Use source "userStated" only when the user told you '
+        'directly (that confirms it); otherwise it awaits their confirmation.';
     final toolLines = <String>[
       '- `record_observations`: private memory for learnings and uncertainty.',
       '- `set_next_wake`: schedule the next useful pre-warm wake.',
+      '- `search_memory`: recall past detail folded out of the summary by keyword, or pass `ids` to pull up specific entries (e.g. to follow a [[relation:id]] link).',
       if (captureService != null) captureToolLines,
       if (planService != null) planToolLines,
+      if (knowledgeService != null) knowledgeToolLines,
     ];
     final scaffold =
         '''
-You are a Daily OS day agent. You operate on exactly one local calendar day.
+You are the Daily OS planner: one durable agent that plans across days and
+learns over time. Each wake operates on exactly one day workspace — the `dayId`
+in the user message — but your memory and observations span every day you have
+planned. Confine this wake's tool calls to that `dayId`; never plan or mutate a
+different day than the one this wake targets.
 
 Available tools:
 
@@ -727,6 +919,26 @@ Refine rules:
   user's verdicts, surfaced through the UI.
 - Commit, shutdown, and agenda mutation tools are not available yet. Do
   not claim that you committed or shut down a day.
+
+Your memory (append-only — you add, never overwrite):
+- Keep each observation atomic: one idea per note, so it can be linked and
+  superseded cleanly. Lead with a short `keywords: …` line when it will help
+  later recall find the note.
+- When an observation or knowledge note you write refines, supersedes,
+  contradicts, or relates to an earlier entry you can see (in this prompt or a
+  `search_memory` result), cite it inline as `[[relation:id]]` using that
+  entry's id — e.g. `[[refines:obs-12ab]]`. Use only ids you have actually
+  seen; never invent one.
+- To record a corrected "new version" of an earlier observation, write a fresh
+  observation containing `[[supersedes:<oldId>]]` rather than restating it as
+  fact — newer entries win by superseding, never by overwriting.
+- After a capture, write the durable takeaway as a linked observation rather
+  than leaving the raw transcript as your only memory of it.
+- Maintain topic maps: a `propose_knowledge` entry keyed `moc-<topic>` whose
+  statement curates `[[relates:id]]` links to the entries that matter for that
+  topic is a durable hub you (and the user) can navigate.
+- Actually follow your links: when an entry cites `[[relation:id]]`, call
+  `search_memory` with `ids` to pull those entries up before deciding.
 
 Record private observations and schedule one useful future wake when warranted.
 
@@ -815,6 +1027,9 @@ ${const JsonEncoder.withIndent('  ').convert(config.toJson())}''';
     }
     if (DayAgentToolNames.isPlanTool(toolName)) {
       return planService != null;
+    }
+    if (DayAgentToolNames.isKnowledgeTool(toolName)) {
+      return knowledgeService != null;
     }
     return true;
   }
@@ -1197,4 +1412,15 @@ class _RefineContext {
             },
     };
   }
+}
+
+/// Rendered durable-knowledge prompt blocks (ADR 0022): the always-on hook
+/// index and the scope-filtered full statements for the current wake.
+class _KnowledgeContext {
+  const _KnowledgeContext({required this.hookIndex, required this.statements});
+
+  const _KnowledgeContext.empty() : hookIndex = '', statements = '';
+
+  final String hookIndex;
+  final String statements;
 }

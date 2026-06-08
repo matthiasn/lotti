@@ -19,12 +19,13 @@ void main() {
       // Pin the exact tool count so a tool added to dayAgentTools but missing
       // from the expected list below (or vice versa) is caught: containsAll
       // alone tolerates extras, hasLength closes that gap.
-      expect(names, hasLength(17));
+      expect(names, hasLength(19));
       expect(
         names,
         containsAll(const [
           DayAgentToolNames.recordObservations,
           DayAgentToolNames.setNextWake,
+          DayAgentToolNames.searchMemory,
           DayAgentToolNames.submitCapture,
           DayAgentToolNames.parseCaptureToItems,
           DayAgentToolNames.matchToCorpus,
@@ -40,6 +41,7 @@ void main() {
           DayAgentToolNames.revertDiff,
           DayAgentToolNames.commitDay,
           DayAgentToolNames.uncommitDay,
+          DayAgentToolNames.proposeKnowledge,
         ]),
       );
     });
@@ -53,6 +55,18 @@ void main() {
           reason: tool.name,
         );
       }
+    });
+
+    test('search_memory exposes query + ids + limit and requires neither '
+        'query nor ids in the schema', () {
+      final params = parametersFor(DayAgentToolNames.searchMemory);
+      final props = params['properties'] as Map<String, dynamic>;
+      expect(props.keys, containsAll(['query', 'ids', 'limit']));
+      expect((props['ids'] as Map)['type'], 'array');
+      expect((props['ids'] as Map)['items'], {'type': 'string'});
+      // No required key — the handler enforces "query or ids" at call time, so
+      // an ids-only recall is schema-valid.
+      expect(params.containsKey('required'), isFalse);
     });
 
     test('requires the fields needed for capture and reconcile mutations', () {
@@ -322,6 +336,30 @@ void main() {
       expect(props.containsKey('deferTo'), isTrue);
       expect(params['required'], isNot(contains('deferTo')));
     });
+    test('proposeKnowledge requires key/hook/statement and pins the source '
+        'enum', () {
+      final params = parametersFor(DayAgentToolNames.proposeKnowledge);
+      expect(params['type'], 'object');
+      expect(params['additionalProperties'], isFalse);
+      expect(
+        requiredFor(DayAgentToolNames.proposeKnowledge),
+        containsAll(['key', 'hook', 'statement']),
+      );
+      final props = params['properties']! as Map<String, dynamic>;
+      expect(
+        (props['source']! as Map<String, dynamic>)['enum'],
+        ['userStated', 'agentInferred'],
+      );
+      // Optional author-time tags: a string array, not required.
+      final tags = props['tags']! as Map<String, dynamic>;
+      expect(tags['type'], 'array');
+      expect(tags['items'], {'type': 'string'});
+      expect(
+        requiredFor(DayAgentToolNames.proposeKnowledge),
+        isNot(contains('tags')),
+      );
+    });
+
     test('nested item schemas keep their own strict contracts', () {
       // setNextWake: both fields required.
       expect(

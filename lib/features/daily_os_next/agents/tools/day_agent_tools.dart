@@ -72,6 +72,39 @@ const dayAgentTools = <AgentToolDefinition>[
     },
   ),
   AgentToolDefinition(
+    name: DayAgentToolNames.searchMemory,
+    description:
+        'Recall specific past detail from your memory. With `query`, searches '
+        'the full capture-and-observation log across every day — including '
+        'detail folded out of the current summary — for entries containing all '
+        'the given keywords. With `ids`, pulls up specific entries by id, e.g. '
+        'to follow a [[relation:id]] link surfaced in a prior result. Provide '
+        'either `query` or `ids`.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'query': {
+          'type': 'string',
+          'description': 'Keywords to match (all must appear, any order).',
+        },
+        'ids': {
+          'type': 'array',
+          'items': {'type': 'string'},
+          'description':
+              'Specific entry ids to pull up (e.g. to follow a '
+              '[[relation:id]] link). Provide query or ids.',
+        },
+        'limit': {
+          'type': 'integer',
+          'description': 'Max entries to return (1-20, default 8).',
+          'minimum': 1,
+          'maximum': 20,
+        },
+      },
+      'additionalProperties': false,
+    },
+  ),
+  AgentToolDefinition(
     name: DayAgentToolNames.submitCapture,
     description:
         'Persist a user capture transcript and enqueue parsing. capturedAt '
@@ -505,6 +538,57 @@ const dayAgentTools = <AgentToolDefinition>[
         'dayId': {'type': 'string'},
       },
       'required': ['dayId'],
+      'additionalProperties': false,
+    },
+  ),
+  AgentToolDefinition(
+    name: DayAgentToolNames.proposeKnowledge,
+    description:
+        'Durably remember something about how the user wants to be planned '
+        '("memorize what I tell you"). Use a stable, reusable key (e.g. '
+        '"deep-work-earliest-start"), a one-line hook for the always-on index, '
+        'and the full verbatim statement. Set source to "userStated" only when '
+        'the user told you directly — that confirms it immediately; otherwise '
+        "use \"agentInferred\" and it awaits the user's confirmation. Re-using "
+        'an existing key supersedes the prior value (recency wins).',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'key': {
+          'type': 'string',
+          'description': 'Stable slug grouping this knowledge across updates.',
+        },
+        'hook': {
+          'type': 'string',
+          'description': 'One-line summary for the always-on knowledge index.',
+        },
+        'statement': {
+          'type': 'string',
+          'description': 'The full, verbatim thing to remember.',
+        },
+        'value': {
+          'type': 'string',
+          'description': 'Optional structured value, e.g. "10:00 local".',
+        },
+        'scope': {
+          'type': 'string',
+          'description':
+              '"global" (default), "category:<id>", or "project:<id>".',
+        },
+        'source': {
+          'type': 'string',
+          'enum': ['userStated', 'agentInferred'],
+        },
+        'tags': {
+          'type': 'array',
+          'items': {'type': 'string'},
+          'description':
+              'Optional short topic tags for this entry (e.g. "mornings", '
+              '"deep-work"). Shown to the user as chips; reuse the same tag '
+              'across related entries so they group.',
+        },
+      },
+      'required': ['key', 'hook', 'statement'],
       'additionalProperties': false,
     },
   ),

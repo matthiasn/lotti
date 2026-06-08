@@ -469,6 +469,72 @@ void main() {
       });
     });
 
+    group('PlannerKnowledgeEntity (plannerKnowledge variant)', () {
+      test('roundtrips all fields', () {
+        final original = AgentDomainEntity.plannerKnowledge(
+          id: 'pk-1',
+          agentId: 'daily_os_planner',
+          key: 'deep-work-earliest-start',
+          hook: 'no deep work before 10',
+          statementText: 'Never schedule deep work before 10:00.',
+          source: KnowledgeSource.userStated,
+          status: KnowledgeStatus.confirmed,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: vectorClock,
+          value: '10:00 local',
+          scope: 'category:focus',
+          supersedesId: 'pk-0',
+          confirmedAt: updatedAt,
+          reviewAfter: DateTime(2026, 7, 15),
+        );
+
+        final roundtripped = roundtrip(original);
+
+        expect(roundtripped, equals(original));
+        expect(roundtripped, isA<PlannerKnowledgeEntity>());
+      });
+
+      test('defaults value/scope and tolerates absent optionals', () {
+        final original = AgentDomainEntity.plannerKnowledge(
+          id: 'pk-2',
+          agentId: 'daily_os_planner',
+          key: 'k',
+          hook: 'h',
+          statementText: 's',
+          source: KnowledgeSource.agentInferred,
+          status: KnowledgeStatus.proposed,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        );
+
+        final roundtripped = roundtrip(original) as PlannerKnowledgeEntity;
+
+        expect(roundtripped.value, isEmpty);
+        expect(roundtripped.scope, 'global');
+        expect(roundtripped.supersedesId, isNull);
+        expect(roundtripped.confirmedAt, isNull);
+        expect(roundtripped.reviewAfter, isNull);
+      });
+
+      test('runtimeType discriminator key is "plannerKnowledge"', () {
+        final json = AgentDomainEntity.plannerKnowledge(
+          id: 'pk-3',
+          agentId: 'daily_os_planner',
+          key: 'k',
+          hook: 'h',
+          statementText: 's',
+          source: KnowledgeSource.userStated,
+          status: KnowledgeStatus.confirmed,
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ).toJson();
+        expect(json['runtimeType'], equals('plannerKnowledge'));
+      });
+    });
+
     group('ScheduledWakeEntity (scheduledWake variant)', () {
       test('roundtrips all fields', () {
         final original = AgentDomainEntity.scheduledWake(

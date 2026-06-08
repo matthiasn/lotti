@@ -6,6 +6,9 @@ abstract final class DayAgentToolNames {
   /// Schedules the next time-based wake for this day agent.
   static const setNextWake = 'set_next_wake';
 
+  /// Recalls raw memory-log detail folded out of the compacted summary.
+  static const searchMemory = 'search_memory';
+
   /// Persists a user capture transcript.
   static const submitCapture = 'submit_capture';
 
@@ -51,9 +54,18 @@ abstract final class DayAgentToolNames {
   /// Reverts a committed day plan back to draft so it can be edited again.
   static const uncommitDay = 'uncommit_day';
 
+  /// Proposes a durable planner-knowledge entry ("memorize what I tell you").
+  static const proposeKnowledge = 'propose_knowledge';
+
   /// Foundation tools implemented by the day-agent workflow itself.
   static const foundationHandlerTools = <String>{
     setNextWake,
+    searchMemory,
+  };
+
+  /// Durable-knowledge tools delegated to the knowledge service.
+  static const knowledgeTools = <String>{
+    proposeKnowledge,
   };
 
   /// Capture/reconcile tools delegated to the capture service.
@@ -85,6 +97,7 @@ abstract final class DayAgentToolNames {
     ...foundationHandlerTools,
     ...captureReconcileTools,
     ...planTools,
+    ...knowledgeTools,
   };
 
   /// Whether [name] should be routed through the workflow handler.
@@ -102,8 +115,18 @@ abstract final class DayAgentToolNames {
     return planTools.contains(name);
   }
 
+  /// Whether [name] is handled by the durable-knowledge service.
+  static bool isKnowledgeTool(String name) {
+    return knowledgeTools.contains(name);
+  }
+
   /// Whether [name] is the foundation wake scheduling tool.
   static bool isSetNextWakeTool(String name) {
-    return foundationHandlerTools.contains(name);
+    return name == setNextWake;
+  }
+
+  /// Whether [name] is the memory-recall tool.
+  static bool isSearchMemoryTool(String name) {
+    return name == searchMemory;
   }
 }

@@ -66,7 +66,8 @@ class InputEvent extends Equatable {
     required this.sourceCreatedAt,
     required this.isEdit,
     this.isObservation = false,
-  }) : inlineContent = null;
+  }) : inlineContent = null,
+       deferredInline = false;
 
   /// Creates an event whose content is carried inline rather than behind a
   /// content-addressed payload — for events derived deterministically from
@@ -79,7 +80,26 @@ class InputEvent extends Equatable {
     required Map<String, Object?> this.inlineContent,
   }) : contentDigest = null,
        isEdit = false,
-       isObservation = false;
+       isObservation = false,
+       deferredInline = false;
+
+  /// Creates an inline event whose content is **resolved on demand** rather
+  /// than carried eagerly — for large, already-synced sources (e.g. day
+  /// capture transcripts) where loading every source's content on every wake
+  /// is wasteful. The position + [contentEntryId] are enough for ordering and
+  /// the checkpoint completeness check (which keys on [contentEntryId], not
+  /// content), so a covered event never needs its content loaded again; only
+  /// the post-cutoff tail the compactor actually renders is resolved (via
+  /// `AgentLogCompactor.resolveInlineContent`).
+  const InputEvent.inlineDeferred({
+    required this.position,
+    required this.contentEntryId,
+    required this.sourceCreatedAt,
+  }) : contentDigest = null,
+       inlineContent = null,
+       isEdit = false,
+       isObservation = false,
+       deferredInline = true;
 
   /// The event's position in the log.
   final EventPosition position;
@@ -92,9 +112,15 @@ class InputEvent extends Equatable {
   final String? contentDigest;
 
   /// Inline rendered content for events not backed by a payload, or null
-  /// for payload-backed events. Exactly one of this and [contentDigest] is
-  /// set.
+  /// for payload-backed and [deferredInline] events. For a non-deferred event,
+  /// exactly one of this and [contentDigest] is set.
   final Map<String, Object?>? inlineContent;
+
+  /// True when this is an inline event whose content is resolved lazily (see
+  /// [InputEvent.inlineDeferred]): both [contentDigest] and [inlineContent]
+  /// are null, and the compactor fetches content via its resolver only for the
+  /// tail events it renders.
+  final bool deferredInline;
 
   /// The source's snapshotted chronological position.
   final DateTime sourceCreatedAt;
@@ -119,6 +145,7 @@ class InputEvent extends Equatable {
     sourceCreatedAt,
     isEdit,
     isObservation,
+    deferredInline,
   ];
 }
 

@@ -2516,6 +2516,50 @@ void main() {
         });
       });
 
+      test(
+        'supersede:false accumulates a second same-workspace wake instead of '
+        'dropping the first still-queued one',
+        () {
+          fakeAsync((async) {
+            orchestrator = WakeOrchestrator(
+              repository: mockRepository,
+              queue: queue,
+              runner: runner,
+              wakeExecutor: noOpExecutor,
+            );
+            // Hold single-flight so neither wake can drain; both stay queued
+            // and we can observe whether the second superseded the first.
+            late bool locked;
+            runner.tryAcquire('planner').then((v) => locked = v);
+            async.flushMicrotasks();
+            expect(locked, isTrue);
+
+            orchestrator.enqueueManualWake(
+              agentId: 'planner',
+              reason: 'capture_submitted',
+              triggerTokens: {'capture_submitted:capX'},
+              workspaceKey: 'day:dayplan-2026-06-08',
+              supersede: false,
+            );
+            // Distinct wall-clock → distinct runKey, so the second job is not
+            // deduplicated into the first.
+            async.elapse(const Duration(seconds: 1));
+            orchestrator.enqueueManualWake(
+              agentId: 'planner',
+              reason: 'capture_submitted',
+              triggerTokens: {'capture_submitted:capY'},
+              workspaceKey: 'day:dayplan-2026-06-08',
+              supersede: false,
+            );
+            async.flushMicrotasks();
+
+            // Both capture parses survive — neither dropped the other. With the
+            // default (supersede:true) the second would have removed the first.
+            expect(queue.length, 2);
+          });
+        },
+      );
+
       test('uses the provided reason in the wake job', () {
         fakeAsync((async) {
           (orchestrator = WakeOrchestrator(

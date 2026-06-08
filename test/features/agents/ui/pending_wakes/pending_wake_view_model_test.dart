@@ -75,9 +75,10 @@ AgentSlots _generatedPendingWakeSlots(
     _GeneratedPendingWakeSubjectSlot.task => AgentSlots(
       activeTaskId: _taskId(index),
     ),
-    _GeneratedPendingWakeSubjectSlot.day => AgentSlots(
-      activeDayId: _dayId(index),
-    ),
+    // The planner's day wakes no longer pin an `activeDayId` slot — they carry
+    // the day as a workspace `subjectLabel` on the record (see
+    // [_subjectLabelFor]); the agent's slots are empty.
+    _GeneratedPendingWakeSubjectSlot.day => const AgentSlots(),
     _GeneratedPendingWakeSubjectSlot.project => AgentSlots(
       activeProjectId: _projectId(index),
     ),
@@ -92,10 +93,18 @@ String? _expectedSubjectId(_GeneratedPendingWakeSubjectSlot slot, int index) {
   return switch (slot) {
     _GeneratedPendingWakeSubjectSlot.none => null,
     _GeneratedPendingWakeSubjectSlot.task => _taskId(index),
-    _GeneratedPendingWakeSubjectSlot.day => _dayId(index),
+    // The day subject is resolved from the record's [subjectLabel], not a
+    // linked journal entry, so it has no journal-title key.
+    _GeneratedPendingWakeSubjectSlot.day => null,
     _GeneratedPendingWakeSubjectSlot.project => _projectId(index),
     _GeneratedPendingWakeSubjectSlot.both => _taskId(index),
   };
+}
+
+/// The workspace subject carried on the record itself (planner day wakes).
+/// `null` for the slots whose subject resolves from a linked journal entry.
+String? _subjectLabelFor(_GeneratedPendingWakeSubjectSlot slot, int index) {
+  return slot == _GeneratedPendingWakeSubjectSlot.day ? _dayId(index) : null;
 }
 
 String _taskId(int index) => 'task-$index';
@@ -226,6 +235,7 @@ void main() {
               ),
               type: type,
               dueAt: dueAt,
+              subjectLabel: _subjectLabelFor(spec.subjectSlot, index),
             ),
           );
         }
@@ -241,9 +251,16 @@ void main() {
           final record = records[index];
           final reason = '$scenario (index $index)';
           final agentName = 'Agent $index';
-          final subjectTitle =
-              subjectTitles[_expectedSubjectId(spec.subjectSlot, index)]
-                  ?.trim();
+          // A record-carried workspace label wins over any linked-entry title,
+          // mirroring [_toVm].
+          final subjectLabel = _subjectLabelFor(
+            spec.subjectSlot,
+            index,
+          )?.trim();
+          final subjectTitle = (subjectLabel != null && subjectLabel.isNotEmpty)
+              ? subjectLabel
+              : subjectTitles[_expectedSubjectId(spec.subjectSlot, index)]
+                    ?.trim();
           final hasSubject =
               subjectTitle != null &&
               subjectTitle.isNotEmpty &&
@@ -324,6 +341,67 @@ void main() {
         expect(vms.single.subtitle, 'Both Slots Agent');
       },
     );
+
+    // Hardcoded golden rows, independent of the production fallback expression,
+    // so a lockstep regression in both impl and the property test's mirror copy
+    // is still caught here.
+    test('maps concrete rows to golden title/subtitle values', () async {
+      PendingWakeRecord record({
+        required String agentId,
+        required String displayName,
+        AgentSlots slots = const AgentSlots(),
+        String? subjectLabel,
+      }) {
+        return PendingWakeRecord(
+          agent: makeTestIdentity(
+            id: agentId,
+            agentId: agentId,
+            displayName: displayName,
+          ),
+          state: makeTestState(
+            id: 'state-$agentId',
+            agentId: agentId,
+            slots: slots,
+          ),
+          type: PendingWakeType.scheduled,
+          dueAt: DateTime(2026, 6, 8, 9),
+          subjectLabel: subjectLabel,
+        );
+      }
+
+      final vms = await _readPendingWakeVms(
+        records: [
+          // Day workspace label wins as the subject; agent name is the subtitle.
+          record(
+            agentId: 'planner',
+            displayName: 'Planner',
+            subjectLabel: 'dayplan-2026-06-08',
+          ),
+          // No label → resolve the linked task title.
+          record(
+            agentId: 'ta',
+            displayName: 'Task Agent',
+            slots: const AgentSlots(activeTaskId: 'task-1'),
+          ),
+          // No label, no linked subject → fall back to the agent name, no subtitle.
+          record(agentId: 'imp', displayName: 'Improver'),
+          // Label equal to the agent name → treated as "no distinct subject".
+          record(
+            agentId: 'p2',
+            displayName: 'Same',
+            subjectLabel: 'Same',
+          ),
+        ],
+        subjectTitles: const {'task-1': 'Fix the wake loop', null: null},
+      );
+
+      expect(vms.map((vm) => (vm.title, vm.subtitle)).toList(), [
+        ('dayplan-2026-06-08', 'Planner'),
+        ('Fix the wake loop', 'Task Agent'),
+        ('Improver', null),
+        ('Same', null),
+      ]);
+    });
   });
 }
 

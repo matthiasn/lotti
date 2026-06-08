@@ -255,12 +255,32 @@ rebuild on planner notifications for the right day.
 
 ### Phase 5 — Durable knowledge + two-loop memory
 
-Touches: `agent_domain_entity.dart` (+codegen: `PlannerKnowledgeEntity` +
-`PlannerKnowledgeHeadEntity`), conversions/LWW/constants (A8), new
+**Status (user-confirmed):** the **fast loop** is implemented and reviewed
+(durable `PlannerKnowledgeEntity`, code-side Head selection, `propose_knowledge`
++ confirm/retract/edit service, two-tier prefix-cache-optimal prompt injection,
+the "What I've learned" panel + l10n). Two deviations/deferrals are approved:
+
+- **No `PlannerKnowledgeHeadEntity`.** Head selection is a pure projection over
+  the entry set (`activePlannerKnowledge`) — convergent without a second
+  variant; `supersedesId` is provenance-only.
+- **The weekly one-on-one ritual (slow loop, A16) is DEFERRED to a follow-up.**
+  Wiring the planner into `TemplateEvolutionWorkflow` (gather planner
+  observations + fold confirmed knowledge into a new user-approved template
+  version + seed/trigger an improver for the day-agent template) is a genuine
+  subsystem integration, not a small change — the escalation point this plan
+  reserved. The fast loop already delivers ADR 0022's core "memorize what I
+  tell you" promise; the slow-loop consolidation lands separately.
+  `seeded_directive_content.dart` (A11) and the localized planner display name
+  (CodeRabbit) ride that follow-up.
+
+Original Phase 5 touch list (for reference):
+`agent_domain_entity.dart` (+codegen: `PlannerKnowledgeEntity`),
+conversions/LWW/constants (A8), new
 `day_agent_knowledge_service.dart`, `day_agent_tool_names.dart` + tool defs,
 `day_agent_workflow.dart` (hook-index injection + scoped retrieval + memory
-split), `template_evolution_workflow.dart` + ritual/improver wiring (A16),
-`seeded_directive_content.dart` (A11), UI `ui/widgets/knowledge_panel.dart` +
+split), `template_evolution_workflow.dart` + ritual/improver wiring (A16,
+deferred), `seeded_directive_content.dart` (A11, deferred), UI
+`ui/widgets/knowledge_panel.dart` +
 provider + day-surface integration, l10n in all primary arb files (informal
 tone), mirrored tests.
 
@@ -302,6 +322,36 @@ Replace date→agent lookups with planner + explicit day workspace;
 invalidation pass. Done when capture → parse → reconcile → draft → refine →
 commit works for one day AND interleaved across two days without leaks.
 
+**Status:** most of this phase was absorbed by Phases 3–4 and verified, not
+re-implemented:
+
+- `real_day_agent.dart` already routes every call site through
+  `getDayAgentForDate` (→ the planner) with an explicit
+  `dayId: dayAgentIdForDate(date)` workspace (Phase 4 cutover).
+- `pendingPlanDiffsForDay` is already scoped by **both** planner `agentId`
+  **and** plan target (`cs.taskId == dayAgentPlanEntityId(dayId)`); the
+  cross-day case is covered by `filters out change sets for a different plan
+  (taskId mismatch)`.
+- `captures_panel.dart` already consumes the day-scoped
+  `capturesForDateProvider(date)` (Phase 3); controller invalidation was
+  re-keyed to the planner id in Phase 4 (A9).
+
+What this phase added: **A15** — the planner's day pre-warms are
+`ScheduledWakeEntity` records (not `AgentState.scheduledWakeAt`) and it pins no
+`activeDayId` slot, so the Settings → Agents → Pending Wakes diagnostic both
+read a dead slot and stopped showing those wakes. Fixed by surfacing pending
+scheduled-wake records (new `getPendingScheduledWakeRecords` query) labelled by
+their workspace id, carried on `PendingWakeRecord.subjectLabel`; the view-model
+prefers that label over the linked-entry title.
+
+**Deferred to Phase 8:** the single consolidated interleaved-day end-to-end
+test. The interleaved isolation property is already covered piecewise across
+all four layers (one-identity service, no-merge wake queue, cross-day tool
+rejection, cross-day diff filter); a real-services integration harness does not
+yet exist in the Daily OS Next tests (the adapter test mocks its services), so
+the consolidated end-to-end test lands with the Phase 8 hardening sweep where
+that harness belongs — same branch, same PR.
+
 ### Phase 7 — Docs, renames, old-model removal
 
 1. Rename non-persisted symbols/files off `day_agent_*` toward planner-shaped
@@ -324,6 +374,56 @@ Full `make analyze`; full Daily OS Next + agents test suites; the end-to-end
 verification list below; a final multi-agent adversarial sweep over the whole
 branch diff (correctness, sync/convergence, test-quality lenses) repeated
 until a pass yields no confirmed findings.
+
+**Status — adversarial sweep run (two rounds).**
+
+Round 1 deployed four parallel adversarial reviewers — correctness/cross-day,
+sync/convergence, test-quality, and a **dedicated cacheability reviewer** (per
+the explicit user requirement). The cacheability reviewer returned a *verified
+clean bill*: deterministic insertion-order JSON, sorted knowledge/trigger
+tokens, snapshot (not `now`-relative) timestamps, a template-version-stable
+system prompt, and a confirmed stable→volatile key order with `triggerTokens`
++ `currentLocalTime` last — nothing volatile caps the cacheable prefix. The
+other three produced one MAJOR + several MINOR/NIT findings, all fixed:
+
+- **MAJOR** — rapid same-day captures could lose a parse (a second capture's
+  manual wake superseded the first's still-queued parse). Fixed:
+  `enqueueManualWake` gained `supersede` (default true); capture wakes pass
+  `supersede: false` so each submission's parse accumulates. Realizes the A4
+  "cross-reason never dropped" intent for the accumulating capture case.
+- **MINOR (sync)** — `set_next_wake` stored an LLM-parsed `scheduledAt` that
+  could carry a `Z`/offset, breaking the due-query's lexicographic compare
+  against a naive-local `now`. Fixed: normalize to local at parse.
+- **MINOR (correctness)** — a stray legacy active `day_agent` is no longer
+  restored; `restoreSubscriptions` hydrates only the deterministic planner id.
+- Test-quality: golden rows added to the pending-wake VM test (was mirroring
+  the impl), an explicit-null run-key case, a negative stale-badge case.
+
+Round 2 deployed a fix-verifier (which *empirically* confirmed both behavioral
+fixes are correct and their tests fail on revert — genuinely discriminating)
+and a completeness critic. No new actionable correctness bugs. Residual items
+are pre-existing and out of ADR 0022 scope, or known-deferred:
+
+- Ollama silently ignores forced `tool_choice` (pre-existing AI-layer
+  limitation; the plan's provider-neutral list is Gemini/Mistral/OpenAI-
+  compatible, and the planner resolves to cloud models). Not addressed here.
+- The migration intentionally does not re-parent legacy observations/audit
+  records (now documented in the migration docstring; forward-looking memory
+  per Decision 6, nothing user-visible lost).
+- The seeded `dayAgentGeneralDirective` was re-read and found *accurate*, not
+  contradictory ("shape one calendar day at a time" is the real per-wake
+  behavior; pre-warms carry day context; "improve future days" is correct
+  cross-day framing) — the A11 *enhancement* (durable-knowledge framing) stays
+  deferred, but there is no live correctness bug.
+
+**Deferred to a follow-up PR (consciously, see Phase 5/6/7 notes):** the weekly
+ritual (A16) + seeded-directive enhancement (A11) + localized planner display
+name; the cosmetic `day_agent_*` symbol/file renames; the `activeDayId` /
+`agent_day` old-model removal; and a single consolidated interleaved-day
+end-to-end integration test (the interleaved isolation property is already
+verified piecewise across the service, wake-queue, workflow, and plan-service
+suites — the round-1 test-quality reviewer confirmed cross-day isolation is
+"genuinely proven, not just single-day happy path").
 
 ## Per-phase execution protocol
 

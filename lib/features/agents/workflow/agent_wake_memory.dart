@@ -133,6 +133,8 @@ class AgentWakeMemory {
   ///
   /// [inlineEvents] join the substrate (e.g. resolved proposal verdicts via
   /// `decisionEventsFromLedger`); [captureSucceeded] is [capture]'s result.
+  /// [resolveInlineContent] lazily resolves content for deferred inline events
+  /// (e.g. day capture transcripts) — invoked only for the post-cutoff tail.
   Future<WakeMemoryView> compactAndAssemble({
     required String agentId,
     required bool captureSucceeded,
@@ -144,6 +146,8 @@ class AgentWakeMemory {
     int budget = 50000,
     int retainTokens = 20000,
     List<InputEvent> inlineEvents = const [],
+    Future<Map<String, Object?>?> Function(String contentEntryId)?
+    resolveInlineContent,
   }) async {
     if (!captureSucceeded) {
       _log(
@@ -160,6 +164,7 @@ class AgentWakeMemory {
     final compactor = AgentLogCompactor(
       syncService: syncService,
       inlineEvents: inlineEvents,
+      resolveInlineContent: resolveInlineContent,
     );
 
     final summarizerService = logSummarizer;

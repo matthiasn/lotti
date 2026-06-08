@@ -181,4 +181,16 @@ extension DayAgentPersistence on DayAgentWorkflow {
           entry.key: entry.value as AgentMessagePayloadEntity,
     };
   }
+
+  /// Lazily resolves a deferred capture event's inline content (its transcript)
+  /// by capture id — invoked by the compactor only for the post-cutoff tail it
+  /// renders, so folded captures never reload their transcript. Returns null
+  /// when the capture is missing/not a capture (the event is then dropped).
+  Future<Map<String, Object?>?> _resolveCaptureContent(
+    String captureId,
+  ) async {
+    final entity = await agentRepository.getEntity(captureId);
+    if (entity is! CaptureEntity) return null;
+    return captureInlineContent(entity.transcript);
+  }
 }

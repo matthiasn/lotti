@@ -4,6 +4,7 @@ import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/shutdown_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/category_color.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/category_chip.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/knowledge_panel.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
@@ -84,6 +85,10 @@ class _ShutdownBody extends ConsumerWidget {
         _MetricsCard(metrics: data.metrics),
         SizedBox(height: tokens.spacing.step5),
         _ReflectionCard(forDate: forDate),
+        SizedBox(height: tokens.spacing.step5),
+        // Durable "what I've learned" knowledge (ADR 0022) — confirm/edit/forget
+        // the things the planner remembers about how you want to be planned.
+        const KnowledgePanel(),
         SizedBox(height: tokens.spacing.step5),
         _TomorrowNoteCard(note: data.tomorrowNote),
       ],

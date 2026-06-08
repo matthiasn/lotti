@@ -3428,6 +3428,43 @@ class AppLocalizationsEs extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Buenos días.';
 
   @override
+  String get dailyOsNextKnowledgeConfirm => 'Confirmar';
+
+  @override
+  String get dailyOsNextKnowledgeConfirmedHeader => 'Confirmado';
+
+  @override
+  String get dailyOsNextKnowledgeEdit => 'Editar';
+
+  @override
+  String get dailyOsNextKnowledgeEditCancel => 'Cancelar';
+
+  @override
+  String get dailyOsNextKnowledgeEditHookHint => 'Resumen de una línea';
+
+  @override
+  String get dailyOsNextKnowledgeEditSave => 'Guardar';
+
+  @override
+  String get dailyOsNextKnowledgeEditStatementHint => '¿Qué debo recordar?';
+
+  @override
+  String get dailyOsNextKnowledgeEmpty =>
+      'Nada aún — recordaré lo que me digas.';
+
+  @override
+  String get dailyOsNextKnowledgeProposedHeader => 'Esperando tu confirmación';
+
+  @override
+  String get dailyOsNextKnowledgeRetract => 'Olvidar';
+
+  @override
+  String get dailyOsNextKnowledgeStale => '¿Sigue siendo así?';
+
+  @override
+  String get dailyOsNextKnowledgeTitle => 'Lo que he aprendido';
+
+  @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Romper enlace';
 
   @override

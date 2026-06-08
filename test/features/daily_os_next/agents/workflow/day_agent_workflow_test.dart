@@ -156,6 +156,7 @@ void main() {
     MockSoulDocumentService? soulDocumentService,
     MockDayAgentCaptureService? captureService,
     MockDayAgentPlanService? planService,
+    MockDayAgentKnowledgeService? knowledgeService,
   }) {
     return DayAgentWorkflow(
       agentRepository: repository,
@@ -167,6 +168,7 @@ void main() {
       soulDocumentService: soulDocumentService,
       captureService: captureService,
       planService: planService,
+      knowledgeService: knowledgeService,
       domainLogger: domainLogger,
       onPersistedStateChanged: changedTokens.add,
     );
@@ -181,7 +183,7 @@ void main() {
       () => sut.execute(
         agentIdentity: identity(),
         runKey: runKey,
-        triggerTokens: triggerTokens ?? {'capture-1', dayId},
+        triggerTokens: triggerTokens ?? {dayAgentPlanningDayToken(dayId)},
         threadId: threadId,
       ),
     );
@@ -285,6 +287,11 @@ void main() {
     when(
       () => repository.getEntitiesByAgentId(agentId, type: any(named: 'type')),
     ).thenAnswer((_) async => const <AgentDomainEntity>[]);
+    // Capture events are now built from lightweight metadata; transcripts are
+    // resolved lazily per id via getEntity. Default: no captures.
+    when(
+      () => repository.getCaptureEventMetaByAgentId(agentId),
+    ).thenAnswer((_) async => const []);
     when(
       () => repository.getAttentionPlanningInputsForWindow(
         start: any(named: 'start'),
@@ -333,10 +340,11 @@ void main() {
       expect(upsertedEntities, isEmpty);
     });
 
-    test('fails the wake when the active day id is empty', () async {
-      currentState = state(activeDayId: '');
-
-      final result = await execute(workflow());
+    test('fails the wake when no day can be resolved from tokens', () async {
+      // Post-cutover the planner has no activeDayId slot: a wake with no day
+      // token and no capture cannot resolve a workspace and must fail fast
+      // (ADR 0022 Decision 3).
+      final result = await execute(workflow(), triggerTokens: const {});
 
       expect(result.success, isFalse);
       expect(result.error, 'No active day ID');
@@ -607,6 +615,554 @@ void main() {
       },
     );
 
+    group('search_memory recall', () {
+      test('recalls matching log detail through the dispatch', () async {
+        when(() => syncService.repository).thenReturn(repository);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getLinksFrom(agentId),
+        ).thenAnswer((_) async => []);
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'cap-1',
+                  agentId: agentId,
+                  transcript: 'remember to buy oat milk',
+                  capturedAt: DateTime.utc(2026, 5, 20, 7),
+                  createdAt: DateTime.utc(2026, 5, 20, 7, 1),
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+          (_) async => [
+            (
+              id: capture.id,
+              createdAt: capture.createdAt,
+              capturedAt: capture.capturedAt,
+            ),
+          ],
+        );
+        when(
+          () => repository.getEntity('cap-1'),
+        ).thenAnswer((_) async => capture);
+
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {'query': 'oat milk'},
+          ),
+        ];
+
+        final result = await execute(workflow());
+
+        expect(result.success, isTrue);
+        final response = conversationRepository.toolResponses.single;
+        expect(response, contains('remember to buy oat milk'));
+        expect(response, contains('(capture'));
+      });
+
+      test('rejects a call with neither query nor ids', () async {
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {'query': '   '},
+          ),
+        ];
+
+        final result = await execute(workflow());
+
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          'Error: provide "query" keywords or "ids" to recall.',
+        );
+      });
+
+      void stubLogReads() {
+        when(() => syncService.repository).thenReturn(repository);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getLinksFrom(agentId),
+        ).thenAnswer((_) async => []);
+      }
+
+      test('reports no match when nothing in the log matches', () async {
+        stubLogReads();
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'cap-1',
+                  agentId: agentId,
+                  transcript: 'buy oat milk',
+                  capturedAt: DateTime.utc(2026, 5, 20, 7),
+                  createdAt: DateTime.utc(2026, 5, 20, 7, 1),
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+          (_) async => [
+            (
+              id: capture.id,
+              createdAt: capture.createdAt,
+              capturedAt: capture.capturedAt,
+            ),
+          ],
+        );
+        when(
+          () => repository.getEntity('cap-1'),
+        ).thenAnswer((_) async => capture);
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {'query': 'zzz nonsense'},
+          ),
+        ];
+
+        final result = await execute(workflow());
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          contains('No memory entries match'),
+        );
+      });
+
+      test(
+        'absorbs a capture-metadata load failure and still answers',
+        () async {
+          stubLogReads();
+          when(
+            () => repository.getCaptureEventMetaByAgentId(agentId),
+          ).thenThrow(StateError('meta down'));
+          conversationRepository.toolCalls = [
+            _toolCall(
+              name: DayAgentToolNames.searchMemory,
+              args: {'query': 'anything'},
+            ),
+          ];
+
+          final result = await execute(workflow());
+          expect(result.success, isTrue);
+          expect(
+            conversationRepository.toolResponses.single,
+            contains('No memory entries match'),
+          );
+        },
+      );
+
+      test('returns a tool error when the log search throws', () async {
+        when(() => syncService.repository).thenReturn(repository);
+        when(
+          () => repository.getCaptureEventMetaByAgentId(agentId),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+        ).thenThrow(StateError('log down'));
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {'query': 'anything'},
+          ),
+        ];
+
+        final result = await execute(workflow());
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          contains('memory search failed'),
+        );
+      });
+
+      test('follows a link by pulling up the entry by id', () async {
+        stubLogReads();
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'cap-1',
+                  agentId: agentId,
+                  transcript: 'remember to buy oat milk',
+                  capturedAt: DateTime.utc(2026, 5, 20, 7),
+                  createdAt: DateTime.utc(2026, 5, 20, 7, 1),
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+          (_) async => [
+            (
+              id: capture.id,
+              createdAt: capture.createdAt,
+              capturedAt: capture.capturedAt,
+            ),
+          ],
+        );
+        when(
+          () => repository.getEntity('cap-1'),
+        ).thenAnswer((_) async => capture);
+
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {
+              'ids': ['cap-1'],
+            },
+          ),
+        ];
+
+        final result = await execute(workflow());
+        expect(result.success, isTrue);
+        final response = conversationRepository.toolResponses.single;
+        expect(response, contains('for ids cap-1'));
+        expect(response, contains('(id: cap-1)'));
+        expect(response, contains('remember to buy oat milk'));
+      });
+
+      test('reports no match when none of the requested ids resolve', () async {
+        stubLogReads();
+        when(
+          () => repository.getCaptureEventMetaByAgentId(agentId),
+        ).thenAnswer((_) async => const []);
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {
+              'ids': ['ghost'],
+            },
+          ),
+        ];
+
+        final result = await execute(workflow());
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          'No memory entries match ids ghost.',
+        );
+      });
+
+      test('renders author-time links and supersession on hits', () async {
+        when(() => syncService.repository).thenReturn(repository);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getLinksFrom(agentId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getCaptureEventMetaByAgentId(agentId),
+        ).thenAnswer((_) async => const []);
+
+        AgentMessageEntity obs(String id, DateTime at) =>
+            AgentDomainEntity.agentMessage(
+                  id: id,
+                  agentId: agentId,
+                  threadId: id,
+                  kind: AgentMessageKind.observation,
+                  createdAt: at,
+                  vectorClock: null,
+                  contentEntryId: 'pl-$id',
+                  metadata: const AgentMessageMetadata(),
+                )
+                as AgentMessageEntity;
+        AgentMessagePayloadEntity payload(String id, String text) =>
+            AgentDomainEntity.agentMessagePayload(
+                  id: 'pl-$id',
+                  agentId: agentId,
+                  createdAt: DateTime.utc(2026, 5, 20),
+                  vectorClock: null,
+                  content: <String, Object?>{'text': text},
+                )
+                as AgentMessagePayloadEntity;
+
+        when(
+          () => repository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            obs('obs-a', DateTime.utc(2026, 5, 20)),
+            obs('obs-b', DateTime.utc(2026, 5, 21)),
+            obs('obs-c', DateTime.utc(2026, 5, 22)),
+          ],
+        );
+        when(
+          () => repository.getEntity('pl-obs-a'),
+        ).thenAnswer((_) async => payload('obs-a', 'old gym plan'));
+        when(() => repository.getEntity('pl-obs-b')).thenAnswer(
+          (_) async => payload(
+            'obs-b',
+            'new gym plan [[supersedes:obs-a]] [[relates:ghost]]',
+          ),
+        );
+        when(
+          () => repository.getEntity('pl-obs-c'),
+        ).thenAnswer(
+          (_) async => payload('obs-c', 'gym recap [[relates:obs-a]]'),
+        );
+
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {'query': 'gym'},
+          ),
+        ];
+
+        final result = await execute(workflow());
+        expect(result.success, isTrue);
+        final response = conversationRepository.toolResponses.single;
+        // obs-a is flagged as superseded by the newer obs-b.
+        expect(
+          response,
+          contains('(id: obs-a) old gym plan [superseded by obs-b]'),
+        );
+        // obs-b surfaces its outgoing links: supersedes keeps the old id, the
+        // dead one is annotated.
+        expect(
+          response,
+          contains('links: supersedes:obs-a, relates:ghost (not found)'),
+        );
+        // obs-c's relates link forward-follows the superseded target to live.
+        expect(response, contains('links: relates:obs-a → obs-b'));
+      });
+
+      test('validates a link to a knowledge entry via its key', () async {
+        final ks = MockDayAgentKnowledgeService();
+        when(() => ks.activeFor(agentId)).thenAnswer((_) async => const []);
+        when(() => ks.allFor(agentId)).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.plannerKnowledge(
+                  id: 'k1',
+                  agentId: agentId,
+                  key: 'deep-work',
+                  hook: 'h',
+                  statementText: 's',
+                  source: KnowledgeSource.userStated,
+                  status: KnowledgeStatus.confirmed,
+                  createdAt: now,
+                  updatedAt: now,
+                  vectorClock: null,
+                )
+                as PlannerKnowledgeEntity,
+          ],
+        );
+        when(() => syncService.repository).thenReturn(repository);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getLinksFrom(agentId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getCaptureEventMetaByAgentId(agentId),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => repository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.agentMessage(
+                  id: 'obs',
+                  agentId: agentId,
+                  threadId: 'obs',
+                  kind: AgentMessageKind.observation,
+                  createdAt: DateTime.utc(2026, 5, 20),
+                  vectorClock: null,
+                  contentEntryId: 'pl-obs',
+                  metadata: const AgentMessageMetadata(),
+                )
+                as AgentMessageEntity,
+          ],
+        );
+        when(() => repository.getEntity('pl-obs')).thenAnswer(
+          (_) async =>
+              AgentDomainEntity.agentMessagePayload(
+                    id: 'pl-obs',
+                    agentId: agentId,
+                    createdAt: DateTime.utc(2026, 5, 20),
+                    vectorClock: null,
+                    content: const {'text': 'topic map [[relates:deep-work]]'},
+                  )
+                  as AgentMessagePayloadEntity,
+        );
+
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {'query': 'topic'},
+          ),
+        ];
+
+        final result = await execute(workflow(knowledgeService: ks));
+        expect(result.success, isTrue);
+        final response = conversationRepository.toolResponses.single;
+        // The knowledge key resolves (not a dead link) because the workflow
+        // widened validation with the planner's knowledge keys.
+        expect(response, contains('links: relates:deep-work'));
+        expect(response, isNot(contains('relates:deep-work (not found)')));
+      });
+    });
+
+    group('propose_knowledge dispatch', () {
+      test('routes propose_knowledge through the knowledge service', () async {
+        final knowledgeService = MockDayAgentKnowledgeService();
+        when(
+          () => knowledgeService.executeTool(
+            agentId: agentId,
+            toolName: DayAgentToolNames.proposeKnowledge,
+            args: any(named: 'args'),
+          ),
+        ).thenAnswer(
+          (_) async => DayAgentDirectToolResult.success(const {
+            'id': 'k1',
+            'key': 'deep-work',
+            'status': 'confirmed',
+          }),
+        );
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.proposeKnowledge,
+            args: {
+              'key': 'deep-work',
+              'hook': 'h',
+              'statement': 's',
+              'source': 'userStated',
+            },
+          ),
+        ];
+
+        final result = await execute(
+          workflow(knowledgeService: knowledgeService),
+        );
+        expect(result.success, isTrue);
+        verify(
+          () => knowledgeService.executeTool(
+            agentId: agentId,
+            toolName: DayAgentToolNames.proposeKnowledge,
+            args: any(named: 'args'),
+          ),
+        ).called(1);
+      });
+
+      test('errors when no knowledge service is configured', () async {
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.proposeKnowledge,
+            args: {'key': 'k', 'hook': 'h', 'statement': 's'},
+          ),
+        ];
+
+        final result = await execute(workflow());
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          contains('durable-knowledge tools are not configured'),
+        );
+      });
+    });
+
+    group('knowledge scope edge paths', () {
+      test(
+        'omits knowledge blocks when the knowledge service throws',
+        () async {
+          final knowledgeService = MockDayAgentKnowledgeService();
+          when(
+            () => knowledgeService.activeFor(agentId),
+          ).thenThrow(StateError('knowledge down'));
+
+          final result = await execute(
+            workflow(knowledgeService: knowledgeService),
+          );
+          expect(result.success, isTrue);
+          final sent =
+              jsonDecode(conversationRepository.lastUserMessage!)
+                  as Map<String, dynamic>;
+          expect(sent.containsKey('knowledgeIndex'), isFalse);
+          expect(sent.containsKey('knowledgeStatements'), isFalse);
+        },
+      );
+
+      test(
+        'injects project-scoped knowledge for a project-targeted claim',
+        () async {
+          final claim =
+              AgentDomainEntity.attentionRequest(
+                    id: 'c-proj',
+                    agentId: 'task-agent',
+                    kind: AttentionRequestKind.project,
+                    title: 'Project X',
+                    categoryId: 'work',
+                    requestedMinutes: 60,
+                    impact: 3,
+                    urgency: 3,
+                    energyFit: AttentionEnergyFit.high,
+                    evidenceRefs: const [],
+                    createdAt: DateTime.utc(2026, 5, 24),
+                    vectorClock: null,
+                    targetKind: 'project',
+                    targetId: 'proj-1',
+                  )
+                  as AttentionRequestEntity;
+          when(
+            () => repository.getAttentionPlanningInputsForWindow(
+              start: any(named: 'start'),
+              end: any(named: 'end'),
+            ),
+          ).thenAnswer(
+            (_) async => AttentionPlanningInputs(
+              claims: [claim],
+              standingAgreements: const [],
+            ),
+          );
+          final knowledgeService = MockDayAgentKnowledgeService();
+          when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+            (_) async => [
+              AgentDomainEntity.plannerKnowledge(
+                    id: 'k-proj',
+                    agentId: agentId,
+                    key: 'proj-pref',
+                    hook: 'project hook',
+                    statementText: 'Protect project X mornings.',
+                    source: KnowledgeSource.userStated,
+                    status: KnowledgeStatus.confirmed,
+                    createdAt: DateTime(2026, 5, 20),
+                    updatedAt: DateTime(2026, 5, 20),
+                    vectorClock: null,
+                    scope: 'project:proj-1',
+                  )
+                  as PlannerKnowledgeEntity,
+            ],
+          );
+
+          final result = await execute(
+            workflow(knowledgeService: knowledgeService),
+          );
+          expect(result.success, isTrue);
+          final sent =
+              jsonDecode(conversationRepository.lastUserMessage!)
+                  as Map<String, dynamic>;
+          // The project-targeted claim put project:proj-1 in touched scopes, so
+          // the project-scoped statement is pulled in.
+          expect(
+            sent['knowledgeStatements'],
+            contains('Protect project X morn'),
+          );
+        },
+      );
+    });
+
     test('read-flips to a dayLog of capture transcripts and observations, '
         'dropping the recentObservations listing', () async {
       when(() => syncService.repository).thenReturn(repository);
@@ -617,23 +1173,30 @@ void main() {
         () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
       ).thenAnswer((_) async => []);
       when(() => repository.getLinksFrom(agentId)).thenAnswer((_) async => []);
-      when(
-        () => repository.getEntitiesByAgentId(
-          agentId,
-          type: AgentEntityTypes.capture,
-        ),
-      ).thenAnswer(
-        (_) async => [
+      final capture =
           AgentDomainEntity.capture(
-            id: 'cap-1',
-            agentId: agentId,
-            transcript: 'morning planning capture',
-            capturedAt: DateTime.utc(2026, 5, 25, 7),
-            createdAt: DateTime.utc(2026, 5, 25, 7, 1),
-            vectorClock: null,
+                id: 'cap-1',
+                agentId: agentId,
+                transcript: 'morning planning capture',
+                capturedAt: DateTime.utc(2026, 5, 25, 7),
+                createdAt: DateTime.utc(2026, 5, 25, 7, 1),
+                vectorClock: null,
+              )
+              as CaptureEntity;
+      // The substrate loads only lightweight metadata; the transcript is
+      // resolved lazily (tail only) via getEntity.
+      when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+        (_) async => [
+          (
+            id: capture.id,
+            createdAt: capture.createdAt,
+            capturedAt: capture.capturedAt,
           ),
         ],
       );
+      when(
+        () => repository.getEntity('cap-1'),
+      ).thenAnswer((_) async => capture);
       final obs = AgentDomainEntity.agentMessage(
         id: 'obs-1',
         agentId: agentId,
@@ -668,7 +1231,10 @@ void main() {
         domainLogger: domainLogger,
         onPersistedStateChanged: changedTokens.add,
       );
-      final result = await execute(sut, triggerTokens: {dayId});
+      final result = await execute(
+        sut,
+        triggerTokens: {dayAgentPlanningDayToken(dayId)},
+      );
       expect(result.success, isTrue);
 
       // The SENT prompt carries the dayLog with capture transcripts and
@@ -718,10 +1284,7 @@ void main() {
       ).thenAnswer((_) async => []);
       when(() => repository.getLinksFrom(agentId)).thenAnswer((_) async => []);
       when(
-        () => repository.getEntitiesByAgentId(
-          agentId,
-          type: AgentEntityTypes.capture,
-        ),
+        () => repository.getCaptureEventMetaByAgentId(agentId),
       ).thenThrow(StateError('capture table unavailable'));
 
       final sut = DayAgentWorkflow(
@@ -734,7 +1297,10 @@ void main() {
         domainLogger: domainLogger,
         onPersistedStateChanged: changedTokens.add,
       );
-      final result = await execute(sut, triggerTokens: {dayId});
+      final result = await execute(
+        sut,
+        triggerTokens: {dayAgentPlanningDayToken(dayId)},
+      );
       expect(result.success, isTrue);
 
       // No dayLog in the sent prompt, and the persisted payload stays a
@@ -818,7 +1384,10 @@ void main() {
         ),
       );
 
-      final result = await execute(workflow(), triggerTokens: {dayId});
+      final result = await execute(
+        workflow(),
+        triggerTokens: {dayAgentPlanningDayToken(dayId)},
+      );
       expect(result.success, isTrue);
 
       final attentionPlanning =
@@ -872,7 +1441,10 @@ void main() {
         ),
       ).thenThrow(StateError('attention window unavailable'));
 
-      final result = await execute(workflow(), triggerTokens: {dayId});
+      final result = await execute(
+        workflow(),
+        triggerTokens: {dayAgentPlanningDayToken(dayId)},
+      );
 
       // The throwing load path is actually exercised: if the workflow stopped
       // calling getAttentionPlanningInputsForWindow, this test would no longer
@@ -986,7 +1558,7 @@ void main() {
         // Volatile wall-clock must be the trailing key so the rest of the
         // payload stays a stable prefix across wakes (prefix/KV-cache reuse).
         expect(userPayload.keys.last, 'currentLocalTime');
-        expect(userPayload['triggerTokens'], ['capture-1', dayId]);
+        expect(userPayload['triggerTokens'], [dayAgentPlanningDayToken(dayId)]);
         expect(
           userPayload['recentObservations'],
           [
@@ -1053,6 +1625,42 @@ void main() {
           'models/day',
         );
         expect(changedTokens, [agentId, agentId, dayId]);
+      },
+    );
+
+    test(
+      'set_next_wake normalizes a Z-suffixed time to naive-local so the due '
+      'query orders it consistently against a local now',
+      () async {
+        currentState = state();
+        conversationRepository
+          ..toolCalls = [
+            _toolCall(
+              id: 'call-set-wake-utc',
+              name: DayAgentToolNames.setNextWake,
+              args: {
+                // A UTC-suffixed instant, two days out so it clears the minimum
+                // lead time regardless of the test machine's timezone.
+                'at': '2026-05-27T12:00:00Z',
+                'reason': 'Pre-warm the next morning.',
+              },
+            ),
+          ]
+          ..finalResponse = 'Scheduled.'
+          ..usage = const InferenceUsage(inputTokens: 5, outputTokens: 3);
+
+        final result = await execute(workflow());
+
+        expect(result.success, isTrue);
+        final rec = upsertedEntities.whereType<ScheduledWakeEntity>().single;
+        // Persisted naive-local (no `Z`), so getDueScheduledWakeRecords'
+        // lexicographic compare against a naive-local `now` stays correct —
+        // and identical across devices in different timezones.
+        expect(rec.scheduledAt.isUtc, isFalse);
+        expect(
+          rec.scheduledAt,
+          DateTime.parse('2026-05-27T12:00:00Z').toLocal(),
+        );
       },
     );
 
@@ -1162,7 +1770,10 @@ void main() {
 
       final result = await execute(
         workflow(captureService: captureService),
-        triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+        triggerTokens: {
+          dayAgentCaptureSubmittedToken('capture-1'),
+          dayAgentPlanningDayToken(dayId),
+        },
       );
 
       expect(result.success, isTrue);
@@ -1239,7 +1850,10 @@ void main() {
 
           final result = await execute(
             workflow(captureService: captureService),
-            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+            triggerTokens: {
+              dayAgentCaptureSubmittedToken('capture-1'),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isTrue);
@@ -1303,7 +1917,10 @@ void main() {
 
           final result = await execute(
             workflow(captureService: captureService),
-            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+            triggerTokens: {
+              dayAgentCaptureSubmittedToken('capture-1'),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isFalse);
@@ -1339,7 +1956,10 @@ void main() {
 
           final result = await execute(
             workflow(captureService: captureService),
-            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+            triggerTokens: {
+              dayAgentCaptureSubmittedToken('capture-1'),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isTrue);
@@ -1404,7 +2024,10 @@ void main() {
 
           final result = await execute(
             workflow(captureService: captureService),
-            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+            triggerTokens: {
+              dayAgentCaptureSubmittedToken('capture-1'),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isFalse);
@@ -1432,7 +2055,10 @@ void main() {
 
         final result = await execute(
           workflow(planService: planService),
-          triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+          triggerTokens: {
+            dayAgentDraftingToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
         );
 
         expect(result.success, isTrue);
@@ -1491,7 +2117,10 @@ void main() {
 
         final result = await execute(
           workflow(planService: planService),
-          triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+          triggerTokens: {
+            dayAgentDraftingToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
         );
 
         expect(result.success, isTrue);
@@ -1522,7 +2151,7 @@ void main() {
 
         final result = await execute(
           workflow(planService: planService),
-          triggerTokens: {dayId},
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
         );
 
         expect(result.success, isTrue);
@@ -1711,7 +2340,10 @@ void main() {
 
           final result = await execute(
             workflow(planService: planService),
-            triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isTrue);
@@ -1819,7 +2451,10 @@ void main() {
 
           final result = await execute(
             workflow(planService: planService),
-            triggerTokens: {dayAgentCaptureSubmittedToken('capture-1'), dayId},
+            triggerTokens: {
+              dayAgentCaptureSubmittedToken('capture-1'),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isTrue);
@@ -1871,7 +2506,10 @@ void main() {
 
           final result = await execute(
             workflow(planService: planService),
-            triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isFalse);
@@ -1900,7 +2538,10 @@ void main() {
 
           final result = await execute(
             workflow(planService: planService),
-            triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+            triggerTokens: {
+              dayAgentDraftingToken(dayId),
+              dayAgentPlanningDayToken(dayId),
+            },
           );
 
           expect(result.success, isFalse);
@@ -1967,7 +2608,10 @@ void main() {
 
         final result = await execute(
           workflow(planService: planService),
-          triggerTokens: {dayAgentRefineToken(dayId), dayId},
+          triggerTokens: {
+            dayAgentRefineToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
         );
 
         expect(result.success, isTrue);
@@ -2007,7 +2651,10 @@ void main() {
 
         final result = await execute(
           workflow(planService: planService),
-          triggerTokens: {dayAgentRefineToken(dayId), dayId},
+          triggerTokens: {
+            dayAgentRefineToken(dayId),
+            dayAgentPlanningDayToken(dayId),
+          },
         );
 
         expect(result.success, isTrue);
@@ -2027,7 +2674,7 @@ void main() {
 
         final result = await execute(
           workflow(planService: planService),
-          triggerTokens: {dayId},
+          triggerTokens: {dayAgentPlanningDayToken(dayId)},
         );
 
         expect(result.success, isTrue);
@@ -2146,6 +2793,269 @@ void main() {
         'blocks': <Object?>[],
       });
     });
+
+    test('rejects a tool call targeting a different day workspace', () async {
+      // ADR 0022 Decision 4: under one planner the model must never mutate a
+      // day other than the wake's workspace.
+      final planService = MockDayAgentPlanService();
+      conversationRepository.toolCalls = [
+        _toolCall(
+          name: DayAgentToolNames.draftDayPlan,
+          args: const {
+            'dayId': 'dayplan-2026-05-26',
+            'blocks': <Object?>[],
+          },
+        ),
+      ];
+
+      final result = await execute(workflow(planService: planService));
+
+      expect(result.success, isTrue);
+      expect(
+        conversationRepository.toolResponses.single,
+        contains('does not match the wake workspace'),
+      );
+      // The mismatched call is rejected before reaching the plan service.
+      verifyNever(
+        () => planService.executeTool(
+          agentId: any(named: 'agentId'),
+          threadId: any(named: 'threadId'),
+          runKey: any(named: 'runKey'),
+          toolName: any(named: 'toolName'),
+          args: any(named: 'args'),
+        ),
+      );
+    });
+
+    test(
+      'injects the durable-knowledge hook index + scoped statements',
+      () async {
+        final knowledgeService = MockDayAgentKnowledgeService();
+        final globalEntry =
+            AgentDomainEntity.plannerKnowledge(
+                  id: 'k-global',
+                  agentId: agentId,
+                  key: 'deep-work',
+                  hook: 'no deep work before 10',
+                  statementText: 'Never schedule deep work before 10:00.',
+                  source: KnowledgeSource.userStated,
+                  status: KnowledgeStatus.confirmed,
+                  createdAt: DateTime(2026, 5, 20),
+                  updatedAt: DateTime(2026, 5, 20),
+                  vectorClock: null,
+                )
+                as PlannerKnowledgeEntity;
+        when(
+          () => knowledgeService.activeFor(agentId),
+        ).thenAnswer((_) async => [globalEntry]);
+
+        final result = await execute(
+          workflow(knowledgeService: knowledgeService),
+        );
+
+        expect(result.success, isTrue);
+        final sent =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        // Hook index always present; the global statement is pulled in.
+        expect(
+          sent['knowledgeIndex'],
+          contains('[deep-work] no deep work before 10 (scope: global)'),
+        );
+        expect(
+          sent['knowledgeStatements'],
+          contains('Never schedule deep work before 10:00.'),
+        );
+        // Prefix-cache stability: the always-on index leads the prefix, the
+        // per-wake scope-filtered statements trail it, and the wall-clock is
+        // the last (most volatile) key.
+        final keys = sent.keys.toList();
+        expect(
+          keys.indexOf('knowledgeIndex'),
+          lessThan(keys.indexOf('knowledgeStatements')),
+        );
+        expect(
+          keys.indexOf('knowledgeStatements'),
+          lessThan(keys.indexOf('currentLocalTime')),
+        );
+        expect(keys.last, 'currentLocalTime');
+      },
+    );
+
+    test('omits knowledge blocks when there is no active knowledge', () async {
+      final knowledgeService = MockDayAgentKnowledgeService();
+      when(
+        () => knowledgeService.activeFor(agentId),
+      ).thenAnswer((_) async => []);
+
+      final result = await execute(
+        workflow(knowledgeService: knowledgeService),
+      );
+
+      expect(result.success, isTrue);
+      final sent =
+          jsonDecode(conversationRepository.lastUserMessage!)
+              as Map<String, dynamic>;
+      expect(sent.containsKey('knowledgeIndex'), isFalse);
+      expect(sent.containsKey('knowledgeStatements'), isFalse);
+    });
+
+    test(
+      'durable knowledge is injected once via knowledgeStatements — never '
+      'folded into the day log (ADR 0022 compaction exemption)',
+      () async {
+        final knowledgeService = MockDayAgentKnowledgeService();
+        const statement = 'Never schedule deep work before 10:00.';
+        when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.plannerKnowledge(
+                  id: 'k1',
+                  agentId: agentId,
+                  key: 'deep-work',
+                  hook: 'no deep work before 10',
+                  statementText: statement,
+                  source: KnowledgeSource.userStated,
+                  status: KnowledgeStatus.confirmed,
+                  createdAt: DateTime(2026, 5, 20),
+                  updatedAt: DateTime(2026, 5, 20),
+                  vectorClock: null,
+                )
+                as PlannerKnowledgeEntity,
+          ],
+        );
+
+        final result = await execute(
+          workflow(knowledgeService: knowledgeService),
+        );
+
+        expect(result.success, isTrue);
+        // Exactly one occurrence: the knowledge is a domain entity surfaced
+        // only via knowledgeStatements, never pulled into the compaction fold.
+        final raw = conversationRepository.lastUserMessage!;
+        expect(statement.allMatches(raw).length, 1);
+      },
+    );
+
+    test(
+      'a category-scoped statement is withheld when the wake touches no '
+      'matching category',
+      () async {
+        final knowledgeService = MockDayAgentKnowledgeService();
+        when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.plannerKnowledge(
+                  id: 'k-fitness',
+                  agentId: agentId,
+                  key: 'gym',
+                  hook: 'protect gym blocks',
+                  statementText: 'Protect gym 3x/week.',
+                  source: KnowledgeSource.userStated,
+                  status: KnowledgeStatus.confirmed,
+                  createdAt: DateTime(2026, 5, 20),
+                  updatedAt: DateTime(2026, 5, 20),
+                  vectorClock: null,
+                  scope: 'category:fitness',
+                )
+                as PlannerKnowledgeEntity,
+          ],
+        );
+
+        final result = await execute(
+          workflow(knowledgeService: knowledgeService),
+        );
+
+        expect(result.success, isTrue);
+        final sent =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        // Hook index always lists the key (discovery)...
+        expect(sent['knowledgeIndex'], contains('[gym]'));
+        // ...but the full statement is withheld since this wake touches no
+        // fitness category.
+        expect(sent.containsKey('knowledgeStatements'), isFalse);
+      },
+    );
+
+    test(
+      'scope-filtered statements trail the dayLog so a changing statement set '
+      'cannot evict the large dayLog prefix (C1)',
+      () async {
+        // A wake with BOTH durable knowledge and a compacted dayLog: the
+        // always-on index must lead the prefix, the dayLog sits in the stable
+        // middle, and the per-wake scope-filtered statements trail it.
+        when(() => syncService.repository).thenReturn(repository);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getLinksFrom(agentId),
+        ).thenAnswer((_) async => []);
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'cap-x',
+                  agentId: agentId,
+                  transcript: 'a folded capture transcript',
+                  capturedAt: DateTime.utc(2026, 5, 25, 7),
+                  createdAt: DateTime.utc(2026, 5, 25, 7, 1),
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+          (_) async => [
+            (
+              id: capture.id,
+              createdAt: capture.createdAt,
+              capturedAt: capture.capturedAt,
+            ),
+          ],
+        );
+        when(
+          () => repository.getEntity('cap-x'),
+        ).thenAnswer((_) async => capture);
+
+        final knowledgeService = MockDayAgentKnowledgeService();
+        when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.plannerKnowledge(
+                  id: 'k-global',
+                  agentId: agentId,
+                  key: 'deep-work',
+                  hook: 'no deep work before 10',
+                  statementText: 'Never schedule deep work before 10:00.',
+                  source: KnowledgeSource.userStated,
+                  status: KnowledgeStatus.confirmed,
+                  createdAt: DateTime(2026, 5, 20),
+                  updatedAt: DateTime(2026, 5, 20),
+                  vectorClock: null,
+                )
+                as PlannerKnowledgeEntity,
+          ],
+        );
+
+        final result = await execute(
+          workflow(knowledgeService: knowledgeService),
+        );
+
+        expect(result.success, isTrue);
+        final sent =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        final keys = sent.keys.toList();
+        // The C1 invariant: index → dayLog → statements.
+        expect(keys, containsAll(['knowledgeIndex', 'dayLog']));
+        expect(
+          keys.indexOf('knowledgeIndex'),
+          lessThan(keys.indexOf('dayLog')),
+        );
+        expect(
+          keys.indexOf('dayLog'),
+          lessThan(keys.indexOf('knowledgeStatements')),
+        );
+      },
+    );
 
     test('returns a tool error when plan tools are not configured', () async {
       conversationRepository.toolCalls = [
@@ -2615,11 +3525,14 @@ void main() {
     });
 
     test(
-      'rejects invalid active day IDs before starting a conversation',
+      'rejects an unparsable day id from the wake token',
       () async {
-        currentState = state(activeDayId: 'not-a-day-plan');
-
-        final result = await execute(workflow());
+        // A planning_day token whose id is not a parseable dayplan must be
+        // rejected before any conversation starts.
+        final result = await execute(
+          workflow(),
+          triggerTokens: {dayAgentPlanningDayToken('not-a-day-plan')},
+        );
 
         expect(result.success, isFalse);
         expect(result.error, contains('Invalid active day ID'));

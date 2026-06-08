@@ -182,6 +182,49 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = CaptureEntity;
 
+  /// Durable, compaction-exempt planner knowledge — "memorize what I tell you"
+  /// (ADR 0022 Decisions 9–10).
+  ///
+  /// Each entry is keyed by a stable [key] (e.g. `deep-work-earliest-start`).
+  /// The active entry per key is the most recent non-retracted one (recency
+  /// wins; [supersedesId] points at the entry it replaces). Entries are NEVER
+  /// folded into the compaction substrate, so user instructions cannot dissolve
+  /// over the planner's life. They are surfaced two-tier: a compact [hook]
+  /// index is always in the prompt; the full [statementText] is pulled on
+  /// demand, scoped by [scope].
+  const factory AgentDomainEntity.plannerKnowledge({
+    required String id,
+    required String agentId,
+    required String key,
+    required String hook,
+    required String statementText,
+    required KnowledgeSource source,
+    required KnowledgeStatus status,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+
+    /// Structured or short value, e.g. "10:00 local". Optional free-form.
+    @Default('') String value,
+
+    /// `global` (always surfaced), `category:<id>`, or `project:<id>`.
+    @Default('global') String scope,
+
+    /// Author-time topic tags (A-MEM construction attributes), set once at
+    /// origin and carried forward immutably across confirm/edit. Surfaced as
+    /// chips in the "What I've learned" panel and reusable for later recall.
+    @Default(<String>[]) List<String> tags,
+
+    /// The prior entry this supersedes (recency-wins), if any.
+    String? supersedesId,
+    DateTime? confirmedAt,
+    DateTime? retractedAt,
+
+    /// When the entry should be re-surfaced for staleness re-confirmation.
+    DateTime? reviewAfter,
+    DateTime? deletedAt,
+  }) = PlannerKnowledgeEntity;
+
   /// LLM-parsed item extracted from a submitted Daily OS capture.
   const factory AgentDomainEntity.parsedItem({
     required String id,

@@ -11,6 +11,7 @@ class PendingWakeRecord {
     required this.state,
     required this.type,
     required this.dueAt,
+    this.subjectLabel,
   });
 
   final AgentIdentityEntity agent;
@@ -18,5 +19,14 @@ class PendingWakeRecord {
   final PendingWakeType type;
   final DateTime dueAt;
 
-  String get id => '${agent.agentId}:${type.name}:${dueAt.toIso8601String()}';
+  /// Pre-resolved subject line for wakes whose subject is a workspace rather
+  /// than a linked task/project — e.g. a planner day pre-warm sourced from a
+  /// [ScheduledWakeEntity], where the day id (from the record's `workspaceKey`)
+  /// is the meaningful subject. `null` for state-derived wakes, which resolve
+  /// their subject from the agent's slots instead.
+  final String? subjectLabel;
+
+  String get id =>
+      '${agent.agentId}:${type.name}:${dueAt.toIso8601String()}'
+      '${subjectLabel == null ? '' : ':$subjectLabel'}';
 }
