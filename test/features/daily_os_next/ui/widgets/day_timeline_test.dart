@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -1143,11 +1144,14 @@ void main() {
 
         // Deliberate exception to the deterministic-dates rule: this test
         // covers the no-injected-clock FALLBACK branch, so touching the real
-        // clock is the point. Place the draft on the real calendar day to
-        // make the now-line fall inside the window; assertions read the
-        // rendered badge back from the tree so a minute rollover mid-test
+        // clock is the point. The widget's fallback reads the raw wall clock
+        // (`DateTime.now`), so we use `clock.now()` here — which is the same
+        // wall clock outside a `withClock` zone — to satisfy the no-bare-
+        // `DateTime.now()` test rule while still placing the draft on the real
+        // calendar day so the now-line falls inside the window. Assertions read
+        // the rendered badge back from the tree so a minute rollover mid-test
         // cannot flake.
-        final wallNow = DateTime.now();
+        final wallNow = clock.now();
         final today = DateTime(wallNow.year, wallNow.month, wallNow.day);
         final draft = DraftPlan(
           dayDate: today,
