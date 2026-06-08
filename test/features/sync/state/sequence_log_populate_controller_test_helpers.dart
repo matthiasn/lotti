@@ -5,7 +5,6 @@ import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/state/sequence_log_populate_controller.dart';
 import 'package:mocktail/mocktail.dart';
 
-
 // Fake types for mocktail fallback
 class FakeEntryStream extends Fake
     implements Stream<List<({String id, Map<String, int>? vectorClock})>> {}
