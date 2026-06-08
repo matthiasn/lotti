@@ -156,6 +156,15 @@ void main() {
     return File(p.join(cacheDir.path, '${sanitizedId}_$bucketCount.json'));
   }
 
+  /// Builds a valid cache payload map for [audio].
+  ///
+  /// Field-name mapping note: the on-disk cache stores the number of buckets
+  /// under the JSON key `sampleCount` (the service's `_AudioWaveformCachePayload`
+  /// serialises its `actualSampleCount` field as `sampleCount`). For convenience
+  /// the [sampleCount] parameter therefore defaults to [bucketCount] so callers
+  /// that only pass `bucketCount` get a self-consistent payload. Override
+  /// [sampleCount] independently only when deliberately testing a mismatch
+  /// between the requested bucket count and the stored sample count.
   Map<String, dynamic> buildPayload(
     JournalAudio audio, {
     required int bucketCount,
