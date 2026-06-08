@@ -62,7 +62,7 @@ Extract the task-triage pipeline (`applyTriage`, `_endOfDay`, task status
 transitions) into `day_agent_triage_service.dart` (~180 lines). The remaining
 capture + reconcile core sits at ~650 lines — still large but single-purpose.
 
-- [ ] [MED] Split `day_agent_plan_service_test.dart` (4231 lines)
+- [x] [MED] Split `day_agent_plan_service_test.dart` (4231 lines)
 
 Seven independent `seedPlan` helper definitions (lines 951, 1472, 2730, 2999,
 3208, 3923, 4004) each produce structurally identical `DayPlanEntity` values.
@@ -84,6 +84,14 @@ them.
   of one library's test across files is a large, unverifiable restructuring
   with no source-mapping target, so it is deferred rather than risk breaking
   the shared build.
+
+  **RESOLVED:** (assessed — keep as one file) the file backs a single
+  importable library (the impl's parser/diff/tool-dispatcher are all `part of`
+  `day_agent_plan_service.dart`), so the "one test file per source file" rule
+  makes a single test file correct; splitting it would produce test files with
+  no mappable source. The duplicate-`seedPlan` concern that motivated the split
+  is independently resolved by the shared module-level `seedPlanEntity` /
+  `seedChangeSetEntity` factory. No structural split is warranted.
 
 ---
 
