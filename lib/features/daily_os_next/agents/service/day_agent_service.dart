@@ -94,7 +94,16 @@ class DayAgentService {
     String? displayName,
   }) async {
     final existing = await agentService.getAgent(dailyOsPlannerAgentId);
-    if (existing != null) return existing;
+    if (existing != null) {
+      // Migration is idempotent and best-effort, so run it on every resolve —
+      // not only on first creation. A legacy `day_agent` can sync in from
+      // another device after the planner already exists here, or a
+      // first-creation migration can have failed or been interrupted; running
+      // it on the existing path lets convergence eventually heal instead of
+      // stranding that data under its old id forever.
+      await _migrateLegacyDayAgents(planner: existing);
+      return existing;
+    }
 
     final resolvedTemplateId = templateId ?? dayAgentTemplateId;
 
@@ -149,16 +158,19 @@ class DayAgentService {
         'created planner agent ${DomainLogger.sanitizeId(identity.agentId)}',
         subDomain: 'lifecycle',
       );
-      await _migrateLegacyDayAgents(planner: identity);
     }
+    await _migrateLegacyDayAgents(planner: identity);
     return identity;
   }
 
-  /// One-time, idempotent migration from the old per-day identity model to the
-  /// single planner (ADR 0022 Decision 2).
+  /// Idempotent, best-effort migration from the old per-day identity model to
+  /// the single planner (ADR 0022 Decision 2).
   ///
-  /// Runs once, when the planner is first created. For every other active
-  /// `day_agent` identity it:
+  /// Runs on every `getOrCreatePlannerAgent` resolve — not only first creation —
+  /// so a legacy `day_agent` that syncs in from another device after the planner
+  /// exists, or one stranded by an interrupted first migration, still converges.
+  /// After the first successful pass the active-`day_agent` query is empty and
+  /// this returns immediately. For every other active `day_agent` identity it:
   /// 1. clears the agent's `scheduledWakeAt` so the scheduled-wake manager
   ///    stops waking the now-defunct per-day agent, and
   /// 2. archives it (lifecycle → dormant) so it no longer wakes or is

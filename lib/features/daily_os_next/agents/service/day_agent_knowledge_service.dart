@@ -293,7 +293,15 @@ class DayAgentKnowledgeService {
       knowledgeCategoryScopePrefix,
       knowledgeProjectScopePrefix,
     ]) {
-      if (raw.startsWith(prefix) && raw.length > prefix.length) return raw;
+      if (raw.startsWith(prefix)) {
+        // Trim the id portion and require it to be non-empty: a whitespace-only
+        // id (e.g. "category: ") has length > prefix yet would never match a
+        // wake's trimmed touched scopes, silently hiding the knowledge forever.
+        // Returning the normalized `$prefix$id` also drops stray surrounding
+        // whitespace so it matches the trimmed scope keys.
+        final id = raw.substring(prefix.length).trim();
+        if (id.isNotEmpty) return '$prefix$id';
+      }
     }
     throw const DayAgentKnowledgeException(
       '"scope" must be "global", "category:<id>", or "project:<id>".',

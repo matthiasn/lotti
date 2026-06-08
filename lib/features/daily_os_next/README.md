@@ -74,7 +74,11 @@ Runtime behavior:
   and `DayPlanEntity.dayId`. The drafted plan is stored under
   `day_agent_plan:<dayId>` so the agent draft never overwrites the journal row,
   and the `agentId` discriminator separates the planner identity from the plan.
-- **Legacy migration** runs once, inside `getOrCreatePlannerAgent`: every other
+- **Legacy migration** runs on **every** `getOrCreatePlannerAgent` resolve
+  (idempotent, best-effort), not only first creation: a legacy `day_agent` that
+  syncs in from another device after the planner exists, or one stranded by an
+  interrupted first pass, still converges; after the first successful pass the
+  active-`day_agent` query is empty and it returns immediately. Every other
   active `day_agent` identity is archived (lifecycle → dormant, its
   `scheduledWakeAt` cleared so it is never re-woken or restored), and its recent
   (≤14-day) `dayPlan` / `capture` / `parsedItem` / `changeSet` entities are

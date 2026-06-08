@@ -1133,6 +1133,50 @@ void main() {
         },
       );
 
+      test(
+        'migrates legacy agents even when the planner already exists',
+        () async {
+          // The planner is already present (no creation), yet a legacy day
+          // agent that synced in afterwards must still be archived — migration
+          // runs on every resolve, not only on first creation.
+          when(
+            () => agentService.getAgent(dailyOsPlannerAgentId),
+          ).thenAnswer((_) async => identity(id: dailyOsPlannerAgentId));
+          final legacy = identity(id: 'legacy-late');
+          when(
+            () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+          ).thenAnswer(
+            (_) async => [identity(id: dailyOsPlannerAgentId), legacy],
+          );
+          when(() => repository.getAgentState('legacy-late')).thenAnswer(
+            (_) async => makeTestState(
+              id: 'state-legacy-late',
+              agentId: 'legacy-late',
+              slots: const AgentSlots(activeDayId: dayId),
+              scheduledWakeAt: DateTime(2026, 5, 25, 6),
+              updatedAt: now,
+            ),
+          );
+          when(
+            () => repository.getEntitiesByAgentId('legacy-late'),
+          ).thenAnswer((_) async => const []);
+
+          final result = await withClock(
+            Clock.fixed(now),
+            service.getOrCreatePlannerAgent,
+          );
+
+          expect(result.agentId, dailyOsPlannerAgentId);
+          final upserts = verify(
+            () => syncService.upsertEntity(captureAny()),
+          ).captured.cast<AgentDomainEntity>();
+          final archived = upserts.whereType<AgentIdentityEntity>().firstWhere(
+            (e) => e.agentId == 'legacy-late',
+          );
+          expect(archived.lifecycle, AgentLifecycle.dormant);
+        },
+      );
+
       test('continues migrating after one legacy agent fails', () async {
         // A per-agent failure must not strand later agents' scheduledWakeAt
         // (the migration never retries).

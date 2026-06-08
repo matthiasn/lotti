@@ -157,6 +157,31 @@ void main() {
       expect(upserts, isEmpty);
     });
 
+    test('rejects a whitespace-only scope id that could never match', () async {
+      await expectLater(
+        service.propose(
+          agentId: agentId,
+          key: 'k',
+          hook: 'h',
+          statement: 's',
+          scope: 'category:   ', // prefix present, but the id is blank
+        ),
+        throwsA(isA<DayAgentKnowledgeException>()),
+      );
+      expect(upserts, isEmpty);
+    });
+
+    test('normalizes a scope id by trimming surrounding whitespace', () async {
+      final entry = await service.propose(
+        agentId: agentId,
+        key: 'k',
+        hook: 'h',
+        statement: 's',
+        scope: 'category: focus ', // matches the trimmed touched-scope key
+      );
+      expect(entry.scope, 'category:focus');
+    });
+
     test('rejects an over-long hook at the public choke point', () async {
       // The tool wrapper delegates hook validation here, so a programmatic
       // caller that bypasses the tool is still bounded.
