@@ -163,9 +163,18 @@ class DayAgentService {
   ///    stops waking the now-defunct per-day agent, and
   /// 2. archives it (lifecycle → dormant) so it no longer wakes or is
   ///    restored, and
-  /// 3. re-parents its recent day-scoped entities (day plans, captures, parsed
-  ///    items) onto the planner so the user's existing plans stay visible and
-  ///    the planner's memory sees recent history.
+  /// 3. re-parents its recent day-scoped **artifacts** — day plans, captures,
+  ///    parsed items, and change sets — onto the planner so the user's existing
+  ///    plans (and their pending refine diffs) stay visible.
+  ///
+  /// Deliberately **not** re-parented: the legacy agent's `agentMessage`
+  /// observations/reports, `wakeTokenUsage`, and `changeDecision` audit records.
+  /// Per ADR 0022 Decision 6 the planner's cross-day episodic memory is
+  /// forward-looking — it learns from days it actually plans — so pre-flip
+  /// observations stay with the archived agent rather than seeding the planner's
+  /// fold. The audit/usage records are diagnostics that no day-surface read
+  /// keys by planner id (`pendingPlanDiffsForDay` reads change *sets*, which are
+  /// re-parented), so leaving them in place loses nothing user-visible.
   ///
   /// Re-parenting is **bounded to recent history** ([_migrationLookback]) and
   /// chunked implicitly per agent, so a long-time experimental user does not

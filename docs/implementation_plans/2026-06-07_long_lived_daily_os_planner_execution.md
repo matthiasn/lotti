@@ -375,6 +375,56 @@ verification list below; a final multi-agent adversarial sweep over the whole
 branch diff (correctness, sync/convergence, test-quality lenses) repeated
 until a pass yields no confirmed findings.
 
+**Status — adversarial sweep run (two rounds).**
+
+Round 1 deployed four parallel adversarial reviewers — correctness/cross-day,
+sync/convergence, test-quality, and a **dedicated cacheability reviewer** (per
+the explicit user requirement). The cacheability reviewer returned a *verified
+clean bill*: deterministic insertion-order JSON, sorted knowledge/trigger
+tokens, snapshot (not `now`-relative) timestamps, a template-version-stable
+system prompt, and a confirmed stable→volatile key order with `triggerTokens`
++ `currentLocalTime` last — nothing volatile caps the cacheable prefix. The
+other three produced one MAJOR + several MINOR/NIT findings, all fixed:
+
+- **MAJOR** — rapid same-day captures could lose a parse (a second capture's
+  manual wake superseded the first's still-queued parse). Fixed:
+  `enqueueManualWake` gained `supersede` (default true); capture wakes pass
+  `supersede: false` so each submission's parse accumulates. Realizes the A4
+  "cross-reason never dropped" intent for the accumulating capture case.
+- **MINOR (sync)** — `set_next_wake` stored an LLM-parsed `scheduledAt` that
+  could carry a `Z`/offset, breaking the due-query's lexicographic compare
+  against a naive-local `now`. Fixed: normalize to local at parse.
+- **MINOR (correctness)** — a stray legacy active `day_agent` is no longer
+  restored; `restoreSubscriptions` hydrates only the deterministic planner id.
+- Test-quality: golden rows added to the pending-wake VM test (was mirroring
+  the impl), an explicit-null run-key case, a negative stale-badge case.
+
+Round 2 deployed a fix-verifier (which *empirically* confirmed both behavioral
+fixes are correct and their tests fail on revert — genuinely discriminating)
+and a completeness critic. No new actionable correctness bugs. Residual items
+are pre-existing and out of ADR 0022 scope, or known-deferred:
+
+- Ollama silently ignores forced `tool_choice` (pre-existing AI-layer
+  limitation; the plan's provider-neutral list is Gemini/Mistral/OpenAI-
+  compatible, and the planner resolves to cloud models). Not addressed here.
+- The migration intentionally does not re-parent legacy observations/audit
+  records (now documented in the migration docstring; forward-looking memory
+  per Decision 6, nothing user-visible lost).
+- The seeded `dayAgentGeneralDirective` was re-read and found *accurate*, not
+  contradictory ("shape one calendar day at a time" is the real per-wake
+  behavior; pre-warms carry day context; "improve future days" is correct
+  cross-day framing) — the A11 *enhancement* (durable-knowledge framing) stays
+  deferred, but there is no live correctness bug.
+
+**Deferred to a follow-up PR (consciously, see Phase 5/6/7 notes):** the weekly
+ritual (A16) + seeded-directive enhancement (A11) + localized planner display
+name; the cosmetic `day_agent_*` symbol/file renames; the `activeDayId` /
+`agent_day` old-model removal; and a single consolidated interleaved-day
+end-to-end integration test (the interleaved isolation property is already
+verified piecewise across the service, wake-queue, workflow, and plan-service
+suites — the round-1 test-quality reviewer confirmed cross-day isolation is
+"genuinely proven, not just single-day happy path").
+
 ## Per-phase execution protocol
 
 1. Implement; `make build_runner` when entities change (generated files are
