@@ -765,6 +765,10 @@ void main() {
 
         // Entity should still be accessible.
         expect(await store.hasEmbedding('entity-1'), isTrue);
+
+        // The surviving copy resolves to cat-b (the later shard), confirming
+        // the primary index points at the kept shard, not the cleaned-up one.
+        expect(await store.getCategoryId('entity-1'), 'cat-b');
       });
 
       test('builds reverseTaskIndex from metadata', () async {
