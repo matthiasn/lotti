@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 
@@ -202,5 +203,80 @@ void main() {
         async.flushMicrotasks();
       });
     });
+
+    test('disposing while waiting never resolves the wait as idle', () {
+      fakeAsync((async) {
+        // Start non-idle so waitUntilIdle actually awaits the stream.
+        final service = UserActivityService()..updateActivity();
+        final gate = UserActivityGate(
+          activityService: service,
+          idleThreshold: const Duration(milliseconds: 100),
+        );
+        expect(gate.canProcess, isFalse);
+
+        var resolvedAsIdle = false;
+        // Swallow any terminal error from the closed stream; the contract under
+        // test is that disposal must NOT make a pending waiter believe the
+        // system went idle (it must never complete normally on dispose).
+        gate.waitUntilIdle().then(
+          (_) => resolvedAsIdle = true,
+          onError: (Object _) {},
+        );
+        async.flushMicrotasks();
+        expect(resolvedAsIdle, isFalse);
+
+        // Dispose cancels the idle timer and closes the controller. Even after
+        // elapsing well past the idle threshold, the waiter must never flip to
+        // "idle" — disposal is not idleness.
+        unawaited(gate.dispose());
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(seconds: 1))
+          ..flushMicrotasks();
+
+        expect(resolvedAsIdle, isFalse);
+
+        unawaited(service.dispose());
+        async.flushMicrotasks();
+      });
+    });
+  });
+
+  // The construction-time idle decision is a pure boundary comparison
+  // (`elapsed >= idleThreshold`). Property-test it across random elapsed and
+  // threshold values, including the equal-boundary case, so the `>=` semantics
+  // hold for every combination rather than the few hand-picked scenarios above.
+  group('UserActivityGate — construction idle decision (property)', () {
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(0, 500),
+      glados.IntAnys(glados.any).intInRange(1, 500),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'canProcess at construction equals elapsed >= idleThreshold',
+      (elapsedMs, thresholdMs) {
+        fakeAsync((async) {
+          final service = UserActivityService()..updateActivity();
+          // Advance fake time so the gate sees exactly `elapsedMs` since the
+          // last activity when it reads clock.now() in its constructor.
+          async.elapse(Duration(milliseconds: elapsedMs));
+
+          final gate = UserActivityGate(
+            activityService: service,
+            idleThreshold: Duration(milliseconds: thresholdMs),
+          );
+
+          expect(
+            gate.canProcess,
+            elapsedMs >= thresholdMs,
+            reason: 'elapsed=$elapsedMs threshold=$thresholdMs',
+          );
+
+          unawaited(gate.dispose());
+          unawaited(service.dispose());
+          async.flushMicrotasks();
+        });
+      },
+      tags: 'glados',
+    );
   });
 }
