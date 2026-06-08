@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -162,5 +164,92 @@ void main() {
     expect(find.text('Still true?'), findsOneWidget);
     expect(find.text('An old preference.'), findsOneWidget);
     expect(find.text('A current preference.'), findsOneWidget);
+  });
+
+  testWidgets('editing a confirmed entry saves the new hook and statement', (
+    tester,
+  ) async {
+    final service = MockDayAgentKnowledgeService();
+    when(
+      () => service.editStatement(
+        'c',
+        hook: any(named: 'hook'),
+        statement: any(named: 'statement'),
+      ),
+    ).thenAnswer((_) async => null);
+    final view = PlannerKnowledgeView(
+      confirmed: [entry(id: 'c', key: 'k', statement: 'old statement')],
+      proposed: const [],
+    );
+
+    await tester.pumpWidget(panel(view, service));
+    await tester.pump();
+
+    // Open the edit dialog from the row action.
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+
+    // Two fields: hook then statement. Rewrite both.
+    final fields = find.byType(TextField);
+    expect(fields, findsNWidgets(2));
+    await tester.enterText(fields.at(0), 'new hook');
+    await tester.enterText(fields.at(1), 'new statement');
+    await tester.tap(find.text('Save'));
+    await tester.pumpAndSettle();
+
+    verify(
+      () => service.editStatement(
+        'c',
+        hook: 'new hook',
+        statement: 'new statement',
+      ),
+    ).called(1);
+  });
+
+  testWidgets('cancelling the edit dialog does not call the service', (
+    tester,
+  ) async {
+    final service = MockDayAgentKnowledgeService();
+    final view = PlannerKnowledgeView(
+      confirmed: [entry(id: 'c', key: 'k', statement: 'keep me')],
+      proposed: const [],
+    );
+
+    await tester.pumpWidget(panel(view, service));
+    await tester.pump();
+
+    await tester.tap(find.text('Edit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    verifyNever(
+      () => service.editStatement(
+        any(),
+        hook: any(named: 'hook'),
+        statement: any(named: 'statement'),
+      ),
+    );
+  });
+
+  testWidgets('renders nothing while the view is still loading (no flash)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidget(
+        const KnowledgePanel(),
+        overrides: [
+          // A provider that never resolves: .value stays null → SizedBox.shrink
+          // rather than a flash of an empty panel.
+          plannerKnowledgeProvider.overrideWith(
+            (ref) => Completer<PlannerKnowledgeView>().future,
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byType(KnowledgePanel), findsOneWidget);
+    expect(find.text("What I've learned"), findsNothing);
   });
 }

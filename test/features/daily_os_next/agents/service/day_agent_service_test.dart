@@ -1042,9 +1042,50 @@ void main() {
                     vectorClock: null,
                   )
                   as ChangeSetEntity;
+          final recentCapture = makeTestCapture(
+            id: 'cap-recent',
+            agentId: 'legacy-day-1',
+            capturedAt: now.subtract(const Duration(days: 1)),
+            createdAt: now.subtract(const Duration(days: 1)),
+          );
+          final oldCapture = makeTestCapture(
+            id: 'cap-old',
+            agentId: 'legacy-day-1',
+            capturedAt: DateTime(2026, 2, 10),
+            createdAt: DateTime(2026, 2, 10),
+          );
+          ParsedItemEntity parsedItem(String id, DateTime createdAt) =>
+              AgentDomainEntity.parsedItem(
+                    id: id,
+                    agentId: 'legacy-day-1',
+                    captureId: 'cap-recent',
+                    kind: ParsedItemKind.newTask,
+                    title: 'parsed',
+                    categoryId: 'cat',
+                    confidence: ParsedItemConfidence.high,
+                    confidenceScore: 0.9,
+                    createdAt: createdAt,
+                    vectorClock: null,
+                  )
+                  as ParsedItemEntity;
+          final recentItem = parsedItem(
+            'pi-recent',
+            now.subtract(const Duration(days: 1)),
+          );
+          final oldItem = parsedItem('pi-old', DateTime(2026, 2, 10));
           when(
             () => repository.getEntitiesByAgentId('legacy-day-1'),
-          ).thenAnswer((_) async => [recentPlan, oldPlan, recentDiff]);
+          ).thenAnswer(
+            (_) async => [
+              recentPlan,
+              oldPlan,
+              recentDiff,
+              recentCapture,
+              oldCapture,
+              recentItem,
+              oldItem,
+            ],
+          );
 
           await withClock(
             Clock.fixed(now),
@@ -1077,6 +1118,18 @@ void main() {
           final reparentedDiff = upserts.whereType<ChangeSetEntity>().single;
           expect(reparentedDiff.id, 'cs-recent');
           expect(reparentedDiff.agentId, dailyOsPlannerAgentId);
+
+          // Recent captures and parsed items are re-parented; old ones aren't.
+          final reparentedCaptures = upserts
+              .whereType<CaptureEntity>()
+              .toList();
+          expect(reparentedCaptures.map((e) => e.id), ['cap-recent']);
+          expect(reparentedCaptures.single.agentId, dailyOsPlannerAgentId);
+          final reparentedItems = upserts
+              .whereType<ParsedItemEntity>()
+              .toList();
+          expect(reparentedItems.map((e) => e.id), ['pi-recent']);
+          expect(reparentedItems.single.agentId, dailyOsPlannerAgentId);
         },
       );
 

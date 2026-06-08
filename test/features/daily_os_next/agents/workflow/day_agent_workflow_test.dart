@@ -681,6 +681,252 @@ void main() {
           'Error: "query" must be a non-empty string.',
         );
       });
+
+      void stubLogReads() {
+        when(() => syncService.repository).thenReturn(repository);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getLinksFrom(agentId),
+        ).thenAnswer((_) async => []);
+      }
+
+      test('reports no match when nothing in the log matches', () async {
+        stubLogReads();
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'cap-1',
+                  agentId: agentId,
+                  transcript: 'buy oat milk',
+                  capturedAt: DateTime.utc(2026, 5, 20, 7),
+                  createdAt: DateTime.utc(2026, 5, 20, 7, 1),
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+          (_) async => [
+            (
+              id: capture.id,
+              createdAt: capture.createdAt,
+              capturedAt: capture.capturedAt,
+            ),
+          ],
+        );
+        when(
+          () => repository.getEntity('cap-1'),
+        ).thenAnswer((_) async => capture);
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {'query': 'zzz nonsense'},
+          ),
+        ];
+
+        final result = await execute(workflow());
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          contains('No memory entries match'),
+        );
+      });
+
+      test(
+        'absorbs a capture-metadata load failure and still answers',
+        () async {
+          stubLogReads();
+          when(
+            () => repository.getCaptureEventMetaByAgentId(agentId),
+          ).thenThrow(StateError('meta down'));
+          conversationRepository.toolCalls = [
+            _toolCall(
+              name: DayAgentToolNames.searchMemory,
+              args: {'query': 'anything'},
+            ),
+          ];
+
+          final result = await execute(workflow());
+          expect(result.success, isTrue);
+          expect(
+            conversationRepository.toolResponses.single,
+            contains('No memory entries match'),
+          );
+        },
+      );
+
+      test('returns a tool error when the log search throws', () async {
+        when(() => syncService.repository).thenReturn(repository);
+        when(
+          () => repository.getCaptureEventMetaByAgentId(agentId),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+        ).thenThrow(StateError('log down'));
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {'query': 'anything'},
+          ),
+        ];
+
+        final result = await execute(workflow());
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          contains('memory search failed'),
+        );
+      });
+    });
+
+    group('propose_knowledge dispatch', () {
+      test('routes propose_knowledge through the knowledge service', () async {
+        final knowledgeService = MockDayAgentKnowledgeService();
+        when(
+          () => knowledgeService.executeTool(
+            agentId: agentId,
+            toolName: DayAgentToolNames.proposeKnowledge,
+            args: any(named: 'args'),
+          ),
+        ).thenAnswer(
+          (_) async => DayAgentDirectToolResult.success(const {
+            'id': 'k1',
+            'key': 'deep-work',
+            'status': 'confirmed',
+          }),
+        );
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.proposeKnowledge,
+            args: {
+              'key': 'deep-work',
+              'hook': 'h',
+              'statement': 's',
+              'source': 'userStated',
+            },
+          ),
+        ];
+
+        final result = await execute(
+          workflow(knowledgeService: knowledgeService),
+        );
+        expect(result.success, isTrue);
+        verify(
+          () => knowledgeService.executeTool(
+            agentId: agentId,
+            toolName: DayAgentToolNames.proposeKnowledge,
+            args: any(named: 'args'),
+          ),
+        ).called(1);
+      });
+
+      test('errors when no knowledge service is configured', () async {
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.proposeKnowledge,
+            args: {'key': 'k', 'hook': 'h', 'statement': 's'},
+          ),
+        ];
+
+        final result = await execute(workflow());
+        expect(result.success, isTrue);
+        expect(
+          conversationRepository.toolResponses.single,
+          contains('durable-knowledge tools are not configured'),
+        );
+      });
+    });
+
+    group('knowledge scope edge paths', () {
+      test(
+        'omits knowledge blocks when the knowledge service throws',
+        () async {
+          final knowledgeService = MockDayAgentKnowledgeService();
+          when(
+            () => knowledgeService.activeFor(agentId),
+          ).thenThrow(StateError('knowledge down'));
+
+          final result = await execute(
+            workflow(knowledgeService: knowledgeService),
+          );
+          expect(result.success, isTrue);
+          final sent =
+              jsonDecode(conversationRepository.lastUserMessage!)
+                  as Map<String, dynamic>;
+          expect(sent.containsKey('knowledgeIndex'), isFalse);
+          expect(sent.containsKey('knowledgeStatements'), isFalse);
+        },
+      );
+
+      test(
+        'injects project-scoped knowledge for a project-targeted claim',
+        () async {
+          final claim =
+              AgentDomainEntity.attentionRequest(
+                    id: 'c-proj',
+                    agentId: 'task-agent',
+                    kind: AttentionRequestKind.project,
+                    title: 'Project X',
+                    categoryId: 'work',
+                    requestedMinutes: 60,
+                    impact: 3,
+                    urgency: 3,
+                    energyFit: AttentionEnergyFit.high,
+                    evidenceRefs: const [],
+                    createdAt: DateTime.utc(2026, 5, 24),
+                    vectorClock: null,
+                    targetKind: 'project',
+                    targetId: 'proj-1',
+                  )
+                  as AttentionRequestEntity;
+          when(
+            () => repository.getAttentionPlanningInputsForWindow(
+              start: any(named: 'start'),
+              end: any(named: 'end'),
+            ),
+          ).thenAnswer(
+            (_) async => AttentionPlanningInputs(
+              claims: [claim],
+              standingAgreements: const [],
+            ),
+          );
+          final knowledgeService = MockDayAgentKnowledgeService();
+          when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+            (_) async => [
+              AgentDomainEntity.plannerKnowledge(
+                    id: 'k-proj',
+                    agentId: agentId,
+                    key: 'proj-pref',
+                    hook: 'project hook',
+                    statementText: 'Protect project X mornings.',
+                    source: KnowledgeSource.userStated,
+                    status: KnowledgeStatus.confirmed,
+                    createdAt: DateTime(2026, 5, 20),
+                    updatedAt: DateTime(2026, 5, 20),
+                    vectorClock: null,
+                    scope: 'project:proj-1',
+                  )
+                  as PlannerKnowledgeEntity,
+            ],
+          );
+
+          final result = await execute(
+            workflow(knowledgeService: knowledgeService),
+          );
+          expect(result.success, isTrue);
+          final sent =
+              jsonDecode(conversationRepository.lastUserMessage!)
+                  as Map<String, dynamic>;
+          // The project-targeted claim put project:proj-1 in touched scopes, so
+          // the project-scoped statement is pulled in.
+          expect(
+            sent['knowledgeStatements'],
+            contains('Protect project X morn'),
+          );
+        },
+      );
     });
 
     test('read-flips to a dayLog of capture transcripts and observations, '

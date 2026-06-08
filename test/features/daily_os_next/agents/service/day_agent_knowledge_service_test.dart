@@ -203,6 +203,58 @@ void main() {
       );
       expect(result.success, isFalse);
     });
+
+    test('rejects an unknown source value instead of downgrading', () async {
+      final result = await service.executeTool(
+        agentId: agentId,
+        toolName: DayAgentToolNames.proposeKnowledge,
+        args: const {
+          'key': 'k',
+          'hook': 'h',
+          'statement': 's',
+          'source': 'guessed',
+        },
+      );
+      expect(result.success, isFalse);
+      expect(result.output, contains('source'));
+      expect(upserts, isEmpty);
+    });
+
+    test('surfaces an unexpected error as a tool failure', () async {
+      when(
+        () => domainLogger.error(
+          any(),
+          any<Object>(),
+          message: any(named: 'message'),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).thenReturn(null);
+      when(
+        () => syncService.upsertEntity(any()),
+      ).thenThrow(StateError('db down'));
+
+      final result = await service.executeTool(
+        agentId: agentId,
+        toolName: DayAgentToolNames.proposeKnowledge,
+        args: const {
+          'key': 'k',
+          'hook': 'h',
+          'statement': 's',
+          'source': 'userStated',
+        },
+      );
+      expect(result.success, isFalse);
+      expect(result.output, contains('db down'));
+    });
+  });
+
+  group('DayAgentKnowledgeException', () {
+    test('toString returns the message', () {
+      expect(
+        const DayAgentKnowledgeException('bad scope').toString(),
+        'bad scope',
+      );
+    });
   });
 
   group('confirm / retract / edit', () {
