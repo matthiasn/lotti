@@ -607,6 +607,33 @@ void main() {
       expect(find.text('No tasks found'), findsOneWidget);
     });
 
+    testWidgets(
+      'transitions from a populated list to the "No tasks found" empty state '
+      'when a search query eliminates every result',
+      (tester) async {
+        stubTasks([buildTask(title: 'Apple Task')]);
+
+        await openModal(tester);
+
+        // Before searching: the task is shown and neither empty-state message
+        // (initial vs. no-match) is present.
+        expect(find.text('Apple Task'), findsOneWidget);
+        expect(find.text('No tasks available to link'), findsNothing);
+        expect(find.text('No tasks found'), findsNothing);
+
+        // A query with no FTS5 match (default stub) and no title-substring
+        // match filters the single task out.
+        await tester.enterText(find.byType(TextField), 'xyz123');
+        await tester.pump();
+
+        // After searching: the list collapses to the *non-empty-query* empty
+        // state (noTasksFound), distinct from the initial noTasksToLink state.
+        expect(find.text('Apple Task'), findsNothing);
+        expect(find.text('No tasks found'), findsOneWidget);
+        expect(find.text('No tasks available to link'), findsNothing);
+      },
+    );
+
     testWidgets('clear button clears search text', (tester) async {
       final testTasks = [
         buildTask(),
