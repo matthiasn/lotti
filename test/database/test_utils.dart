@@ -110,14 +110,31 @@ void unregisterJournalDbTestServices() {
 /// isolation.
 ///
 /// Foreign-key enforcement is toggled off for the sweep so the delete order is
-/// irrelevant, and `db.allTables` guarantees no table is missed (the source of
-/// cross-test contamination that a hand-listed truncation would risk). Callers
-/// that rely on the config flags should re-seed them with `initConfigFlags`
+/// irrelevant. Tables are enumerated from `sqlite_master` (not `db.allTables`)
+/// so any table created via raw migration SQL — not just the Drift-declared
+/// ones — is also cleared, closing a real cross-test contamination source.
+/// Callers that rely on config flags should re-seed them with `initConfigFlags`
 /// after clearing (the flags table is cleared too).
 Future<void> clearAllTables(JournalDb db) async {
   await db.customStatement('PRAGMA foreign_keys = OFF');
-  for (final table in db.allTables) {
-    await db.customStatement('DELETE FROM ${table.actualTableName}');
+  final tables = await db
+      .customSelect(
+        "SELECT name FROM sqlite_master WHERE type = 'table' "
+        "AND name NOT LIKE 'sqlite_%' AND name != 'android_metadata'",
+      )
+      .get();
+  for (final row in tables) {
+    await db.customStatement('DELETE FROM ${row.read<String>('name')}');
+  }
+  // Reset AUTOINCREMENT counters so rowids restart at 1 (matching a fresh DB).
+  final hasSequence = await db
+      .customSelect(
+        'SELECT 1 FROM sqlite_master '
+        "WHERE type = 'table' AND name = 'sqlite_sequence'",
+      )
+      .get();
+  if (hasSequence.isNotEmpty) {
+    await db.customStatement('DELETE FROM sqlite_sequence');
   }
   await db.customStatement('PRAGMA foreign_keys = ON');
   // The DB also caches config flags in memory; drop that cache so a re-seed

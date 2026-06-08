@@ -8,6 +8,8 @@ import 'package:glados/glados.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 
+import 'sync_db_test_utils.dart';
+
 /// A generated scenario for the `getCountersForHostInRange` property: the set
 /// of counters seeded for the queried host, a set seeded for a *different*
 /// host (which must never leak into the result), and the inclusive
@@ -55,10 +57,13 @@ void main() {
   SyncDatabase? db;
 
   group('SyncSequenceLog Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -743,10 +748,13 @@ void main() {
   });
 
   group('HostActivity Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -780,10 +788,13 @@ void main() {
   });
 
   group('Batch Operations Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -893,12 +904,16 @@ void main() {
   group('getNearestCoveringEntry Tests', () {
     late SyncDatabase database;
 
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
       database = db!;
     });
 
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -1091,10 +1106,13 @@ void main() {
   });
 
   group('getPendingEntriesByPayloadId Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -1298,10 +1316,13 @@ void main() {
   });
 
   group('getLastSentCounterForEntry', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -1534,10 +1555,13 @@ void main() {
     // as `received` for watermark purposes.
     late SyncDatabase database;
 
-    setUp(() async {
+    setUpAll(() async {
       database = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(database);
+    });
+    tearDownAll(() async {
       await database.close();
     });
 
@@ -1575,11 +1599,15 @@ void main() {
   group('getCountersForHostInRange', () {
     late SyncDatabase database;
 
-    setUp(() {
+    setUpAll(() async {
       database = SyncDatabase(inMemoryDatabase: true);
     });
 
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(database);
+    });
+
+    tearDownAll(() async {
       await database.close();
     });
 

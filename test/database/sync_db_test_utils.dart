@@ -60,8 +60,30 @@ extension AnyGeneratedOutboxStatus on Any {
 /// irrelevant, and `db.allTables` guarantees no table is missed.
 Future<void> clearAllSyncTables(SyncDatabase db) async {
   await db.customStatement('PRAGMA foreign_keys = OFF');
-  for (final table in db.allTables) {
-    await db.customStatement('DELETE FROM ${table.actualTableName}');
+  // Enumerate from sqlite_master rather than `db.allTables`: some tables (e.g.
+  // sync_sequence_watermarks) are created via raw migration SQL and are NOT in
+  // the Drift-declared set, so allTables would silently leave them uncleared —
+  // a real cross-test contamination source.
+  final tables = await db
+      .customSelect(
+        "SELECT name FROM sqlite_master WHERE type = 'table' "
+        "AND name NOT LIKE 'sqlite_%' AND name != 'android_metadata'",
+      )
+      .get();
+  for (final row in tables) {
+    await db.customStatement('DELETE FROM ${row.read<String>('name')}');
+  }
+  // Reset AUTOINCREMENT counters so rowids restart at 1 (matching a fresh DB),
+  // which id-asserting tests rely on. sqlite_sequence only exists when some
+  // table uses AUTOINCREMENT.
+  final hasSequence = await db
+      .customSelect(
+        'SELECT 1 FROM sqlite_master '
+        "WHERE type = 'table' AND name = 'sqlite_sequence'",
+      )
+      .get();
+  if (hasSequence.isNotEmpty) {
+    await db.customStatement('DELETE FROM sqlite_sequence');
   }
   await db.customStatement('PRAGMA foreign_keys = ON');
 }

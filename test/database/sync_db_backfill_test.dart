@@ -5,6 +5,8 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:glados/glados.dart';
 import 'package:lotti/database/sync_db.dart';
 
+import 'sync_db_test_utils.dart';
+
 class _MissingRowSpec {
   const _MissingRowSpec({
     required this.hostIndex,
@@ -180,10 +182,13 @@ void main() {
   SyncDatabase? db;
 
   group('getBackfillStats Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -376,10 +381,13 @@ void main() {
   });
 
   group('hasActionableEntries Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -554,10 +562,13 @@ void main() {
   });
 
   group('getMissingEntriesWithLimits Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -914,10 +925,13 @@ void main() {
   });
 
   group('getMissingEntries ordering Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -957,10 +971,13 @@ void main() {
   });
 
   group('getRequestedEntries Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -1172,10 +1189,13 @@ void main() {
   });
 
   group('resetRequestCounts Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -1310,10 +1330,13 @@ void main() {
   });
 
   group('batchIncrementRequestCounts Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 

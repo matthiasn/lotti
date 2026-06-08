@@ -18,10 +18,13 @@ void main() {
     // JSON-decoding unrelated pending rows on a million-row outbox.
     const backfillSubject = 'backfillRequest:batch:1';
 
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -416,10 +419,13 @@ void main() {
   });
 
   group('Outbox Deduplication Methods', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -685,10 +691,13 @@ void main() {
   });
 
   group('Payload size tracking -', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -909,10 +918,13 @@ void main() {
   group('Payload size column behavior -', () {
     late SyncDatabase db;
 
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db);
+    });
+    tearDownAll(() async {
       await db.close();
     });
 
@@ -994,10 +1006,13 @@ void main() {
     // branch inside `updateOutboxMessage`.
     late SyncDatabase database;
 
-    setUp(() async {
+    setUpAll(() async {
       database = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(database);
+    });
+    tearDownAll(() async {
       await database.close();
     });
 
@@ -1058,11 +1073,15 @@ void main() {
   group('getDailyOutboxVolume -', () {
     late SyncDatabase database;
 
-    setUp(() {
+    setUpAll(() async {
       database = SyncDatabase(inMemoryDatabase: true);
     });
 
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(database);
+    });
+
+    tearDownAll(() async {
       await database.close();
     });
 
