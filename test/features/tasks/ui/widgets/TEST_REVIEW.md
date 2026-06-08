@@ -72,9 +72,11 @@
 - [x] **[MED]** `test/features/tasks/ui/widgets/task_list_detail_showcase_test.dart` — the test at line 88 asserts `tester.takeException() isNull` which only checks for runtime errors; this is a smoke test. All subsequent assertions only check that specific text widgets appear. No interactions are tested in this test.
   **RESOLVED:** the render test now binds the assertions to controller state — the default `selectedTask` title must match the detail-pane content — and drops the `takeException` smoke check. Interaction coverage (selection + priority filter) lives in the two sibling tests of the same group.
 
-- [ ] **[LOW]** `test/features/tasks/ui/widgets/task_detail_section_card_test.dart` line 67: `pumpAndSettle()` is used after `tester.tap(find.text('body'))` to confirm the tap count incremented. An `InkWell` ripple animation is the only thing that requires settling; using `tester.pump(const Duration(milliseconds: 200))` would be safer and explicit.
+- [x] **[LOW]** `test/features/tasks/ui/widgets/task_detail_section_card_test.dart` line 67: `pumpAndSettle()` is used after `tester.tap(find.text('body'))` to confirm the tap count incremented. An `InkWell` ripple animation is the only thing that requires settling; using `tester.pump(const Duration(milliseconds: 200))` would be safer and explicit.
+  **RESOLVED:** confirmed via source — the only animatable effect on tap is the `InkWell` ripple. Replaced `pumpAndSettle()` with `tester.pump(const Duration(milliseconds: 200))` plus an explanatory comment.
 
-- [ ] **[LOW]** `test/features/tasks/ui/widgets/task_list_detail_showcase_test.dart` lines 138, 149: `pumpAndSettle()` after viewport resize and mock-controller task selection. These are widget rebuild triggers, not animation-based; `tester.pump()` is sufficient.
+- [x] **[LOW]** `test/features/tasks/ui/widgets/task_list_detail_showcase_test.dart` lines 138, 149: `pumpAndSettle()` after viewport resize and mock-controller task selection. These are widget rebuild triggers, not animation-based; `tester.pump()` is sufficient.
+  **RESOLVED (stale):** duplicate of the now-resolved MED item above (line 118). The file no longer contains any `pumpAndSettle()` — the filter-modal sites use `pump()` + bounded `pump(350ms)` and the selection/resize sites use bare `pump()`. Nothing left to change.
 
 ---
 
@@ -106,7 +108,8 @@ No strong Glados candidates exist in this subdir. The widgets are largely presen
 - [x] **[MED]** `task_list_pane.dart` — `task_list_pane_test.dart` (591 ln) appears well-covered; no significant gap.
   **RESOLVED (assessed, no change):** the item records a positive finding — nothing to do.
 
-- [ ] **[LOW]** `task_showcase_filter_modal.dart` (23 ln) has no test. It is a thin orchestrating wrapper around `showDesignSystemFilterModal`. Integration coverage via parent tests is likely sufficient; a dedicated unit test for the function signature wiring would be low-value.
+- [x] **[LOW]** `task_showcase_filter_modal.dart` (23 ln) has no test. It is a thin orchestrating wrapper around `showDesignSystemFilterModal`. Integration coverage via parent tests is likely sufficient; a dedicated unit test for the function signature wiring would be low-value.
+  **RESOLVED (assessed, no change):** confirmed the wrapper has zero logic of its own — it forwards `context`/`initialState`/`onApplied` to `showDesignSystemFilterModal` and a fixed `onFieldPressed` closure to `showDesignSystemTaskFilterFieldSelectionModal`. `showDesignSystemFilterModal` is a top-level (non-injectable) Wolt sheet, so a dedicated unit test could only drive the real modal — which `task_list_detail_showcase_test.dart` ("applies the desktop priority filter": open → select p1 → apply) and `task_mobile_list_detail_showcase_test.dart` already do, including the `onFieldPressed` field-selection path. A standalone test would duplicate that integration coverage for no added value.
 
 ---
 
@@ -118,9 +121,11 @@ No strong Glados candidates exist in this subdir. The widgets are largely presen
 - [x] **[MED]** `test/features/tasks/ui/widgets/task_list_detail_showcase_test.dart` — 2 `pumpAndSettle()` calls (lines 138, 149). Both follow viewport resizes or task selection which trigger widget tree rebuilds, not time-based animations. `tester.pump()` is sufficient.
   **RESOLVED (adapted):** both replaced — but with `pump()` + bounded `pump(350ms)`, not a bare `pump()`: the sites sit on the filter-modal open/apply route transitions, which empirically need the animation frame.
 
-- [ ] **[LOW]** `test/features/tasks/ui/widgets/task_detail_section_card_test.dart` line 67: single `pumpAndSettle()` after an `InkWell` tap. Replacing with `tester.pump(const Duration(milliseconds: 200))` makes the intent explicit and avoids any risk of hanging on an unexpected animation.
+- [x] **[LOW]** `test/features/tasks/ui/widgets/task_detail_section_card_test.dart` line 67: single `pumpAndSettle()` after an `InkWell` tap. Replacing with `tester.pump(const Duration(milliseconds: 200))` makes the intent explicit and avoids any risk of hanging on an unexpected animation.
+  **RESOLVED:** duplicate of the LOW item above (line 75); same fix applied — `pumpAndSettle()` → `tester.pump(const Duration(milliseconds: 200))`.
 
-- [ ] **[LOW]** `test/features/tasks/ui/widgets/task_browse_list_item_test.dart` (1 081 ln): no `pumpAndSettle()` detected — the pump strategy is already good. The main overhead is the repeated `setUp` + `getIt` teardown per test group; a shared `setUpAll`/`tearDownAll` where possible would reduce container setup cycles.
+- [x] **[LOW]** `test/features/tasks/ui/widgets/task_browse_list_item_test.dart` (1 081 ln): no `pumpAndSettle()` detected — the pump strategy is already good. The main overhead is the repeated `setUp` + `getIt` teardown per test group; a shared `setUpAll`/`tearDownAll` where possible would reduce container setup cycles.
+  **RESOLVED (assessed, no change — unsafe):** converting to `setUpAll`/`tearDownAll` would share one mutable `MockTimeService`/`MockEntitiesCacheService` across all tests via GetIt. The "Time recording indicator" group mutates the shared `TimeService` mock in-test (`when(() => mockTimeService.linkedFrom).thenReturn(recordingEntry)` at line 959), and the immediately following "hides recording dot" test relies on the per-test default `linkedFrom == null` from `setUp`. A shared lifecycle would leak the recording stub into that test and break it — exactly the cross-test contamination AGENTS.md warns about for the CI same-thread runner. Per-test `setUpTestGetIt`/`tearDownTestGetIt` is the correct lifecycle here; the modest container-setup overhead is the price of isolation.
 
 ---
 

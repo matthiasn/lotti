@@ -64,7 +64,9 @@ void main() {
     expect(find.byType(InkWell), findsOneWidget);
 
     await tester.tap(find.text('body'));
-    await tester.pumpAndSettle();
+    // Only the InkWell ripple animates here; a bounded pump is sufficient and
+    // avoids pumpAndSettle's 10s timeout risk.
+    await tester.pump(const Duration(milliseconds: 200));
     expect(tapped, 1);
   });
 }
