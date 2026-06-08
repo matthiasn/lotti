@@ -109,6 +109,14 @@ void main() {
 
     expect(find.byType(TasksTabPage), findsOneWidget);
     expect(find.byType(DesktopDetailEmptyState), findsOneWidget);
+    // Content, not just the type: the empty pane shows the localized
+    // "select a task" prompt and its touch glyph.
+    final emptyState = tester.widget<DesktopDetailEmptyState>(
+      find.byType(DesktopDetailEmptyState),
+    );
+    expect(emptyState.message, 'Select a task to view details');
+    expect(emptyState.icon, Icons.touch_app_outlined);
+    expect(find.text('Select a task to view details'), findsOneWidget);
     expect(
       find.byWidgetPredicate(
         (widget) => widget is SizedBox && widget.width == 540,
