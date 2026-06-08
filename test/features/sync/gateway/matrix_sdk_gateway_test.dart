@@ -590,14 +590,14 @@ void main() {
 
   test('sendText returns event id when successful', () async {
     final room = _stubRoom(client, '!room:server');
-    when(() => room.sendEvent(any())).thenAnswer((_) async => 'event');
+    when(() => room.sendEvent(any())).thenAnswer((_) async => 'event');
 
     final eventId = await gateway.sendText(
       roomId: '!room:server',
       message: 'hi',
     );
 
-    expect(eventId, 'event');
+    expect(eventId, 'event');
   });
 
   test('sendText registers event ID in sent registry', () async {
@@ -630,7 +630,7 @@ void main() {
     final room = _stubRoom(client, '!room:server');
     when(
       () => room.sendFileEvent(any(), extraContent: any(named: 'extraContent')),
-    ).thenAnswer((_) async => 'file');
+    ).thenAnswer((_) async => 'file');
 
     final eventId = await gateway.sendFile(
       roomId: '!room:server',
@@ -638,8 +638,35 @@ void main() {
       extraContent: {'foo': 'bar'},
     );
 
-    expect(eventId, 'file');
+    expect(eventId, 'file');
   });
+
+  test(
+    'sendFile omits extraContent and registers id on the default path',
+    () async {
+      final room = _stubRoom(client, '!room:server');
+      // Stub only the no-extraContent overload; the impl must call this form
+      // (and not pass `extraContent:`) when the named param is null.
+      when(() => room.sendFileEvent(any())).thenAnswer((_) async => r'$plain');
+
+      final eventId = await gateway.sendFile(
+        roomId: '!room:server',
+        file: MockMatrixFile(),
+      );
+
+      expect(eventId, r'$plain');
+      verify(() => room.sendFileEvent(any())).called(1);
+      verifyNever(
+        () =>
+            room.sendFileEvent(any(), extraContent: any(named: 'extraContent')),
+      );
+      expect(sentEventRegistry.consume(r'$plain'), isTrue);
+      expect(
+        sentEventRegistry.debugSource(r'$plain'),
+        equals(SentEventSource.file),
+      );
+    },
+  );
 
   test('sendFile registers event ID in sent registry', () async {
     final room = _stubRoom(client, '!room:server');

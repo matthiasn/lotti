@@ -19,7 +19,8 @@
 
 - [x] **[MED]** `lib/features/ai/skills/built_in_skills.dart` — 454 lines. The file is a data-heavy file: most lines are multi-line string literals for `systemInstructions` and `userInstructions`. Splitting the constant data from the registry logic (the `findBuiltInSkill` function and `skillRegistryProvider` at the bottom) into a `built_in_skills_data.dart` companion file would keep each file under 300 lines while making the registry logic more discoverable. This is informational at the current size; priority should rise if new skills are added.
   - **RESOLVED:** (assessed, no change) — as the item itself concludes, this is informational at the current size: the file is curated prompt data with a small registry tail, and the split only pays once new skills push it further.
-- [ ] **[LOW]** `test/features/ai/skills/built_in_skills_test.dart` — 161 lines for 454 lines of impl. Reasonable; no split needed.
+- [x] **[LOW]** `test/features/ai/skills/built_in_skills_test.dart` — 161 lines for 454 lines of impl. Reasonable; no split needed.
+  - **RESOLVED:** (assessed, no change) — confirmed true; the single test file mirrors its single source file (one-test-file-per-source rule) and stays well within readable bounds, so no split is warranted.
 
 ---
 
@@ -29,13 +30,15 @@
   - **RESOLVED:** done — the loop now uses `expect(findBuiltInSkill(s.id), same(s))`, checking non-null and identity in one assertion.
 - [x] **[MED]** `built_in_skills_test.dart` — the design-prompt and research-prompt skill groups (lines 53–128) assert on the presence of specific substring patterns in `systemInstructions` (e.g. `contains('5 functional prototypes')`, `contains('## Summary')`). These are content/behaviour assertions that will break if the instructions are reworded for quality reasons, not logic reasons. Consider whether these specific-string checks are warranted (they do verify the skills ship with the expected content) or whether higher-level structural checks (e.g. "instructions are non-empty and longer than N chars") would be more stable. If the specific-string checks are intentional, document that intent with a comment.
   - **RESOLVED:** done — a comment now documents that the substring checks are intentional content contracts (the pinned phrases are the load-bearing parts of the curated prompts; rewording is a product decision that should touch the tests).
-- [ ] **[LOW]** `built_in_skills_test.dart:146–150` — `'image generation skill requires text modality'` and `'transcription skills still require audio modality'` are duplicate of the structural guarantees already provided by the Dart type system (the field is set at construction time) and by `'every skill has non-empty name and instructions'`. They add minimal value beyond the general property checks already present.
+- [x] **[LOW]** `built_in_skills_test.dart:146–150` — `'image generation skill requires text modality'` and `'transcription skills still require audio modality'` are duplicate of the structural guarantees already provided by the Dart type system (the field is set at construction time) and by `'every skill has non-empty name and instructions'`. They add minimal value beyond the general property checks already present.
+  - **RESOLVED:** done — both tests removed. Their assertions are now fully covered by the per-id `'the registry contains exactly the expected skills'` table, which pins `skillImageGenId` → `[Modality.text]` and both transcription skills → `[Modality.audio]`, so no coverage is lost.
 
 ---
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[LOW]** `builtInSkills` and `findBuiltInSkill` are constant-data accessors. There is no non-trivial pure logic. Glados does not apply.
+- [x] **[LOW]** `builtInSkills` and `findBuiltInSkill` are constant-data accessors. There is no non-trivial pure logic. Glados does not apply.
+  - **RESOLVED:** (assessed, no change) — confirmed true; `findBuiltInSkill` is a linear lookup over a fixed list and `builtInSkills` is a static constant, so there is no input-space to generate over. Example-based tests (unknown id, empty id, exact-match identity) fully cover the function.
 
 ---
 
@@ -61,13 +64,15 @@
   - **RESOLVED:** done — added `'the registry contains exactly the expected skills'`: the id set is pinned exactly (silent deletions fail), and each id's skillType + requiredInputModalities are asserted from a table.
 - [x] **[MED]** The `skillTranscribeContextId`, `skillImageAnalysisContextId`, `skillImageGenId`, and `skillImagePromptGenId` skills have no dedicated deep-dive test groups (only the design-prompt and research-prompt skills have one). While the general loop tests cover all skills, missing targeted tests mean the unique attributes of these skills (e.g. `skillImageGenId` requires text modality) are asserted only inline in the loop. The dedicated group for each skill type would clarify intent.
   - **RESOLVED:** done — the registry table covers the unique attributes (type + modalities) of every skill including transcribe-context, image-analysis-context, image-gen, and image-prompt-gen; the two curated-prompt skills keep their deeper content groups.
-- [ ] **[LOW]** `findBuiltInSkill` with an empty-string ID is not tested. The function iterates all skills; an empty string should return null (no skill has `id: ''`). This is a minor gap.
+- [x] **[LOW]** `findBuiltInSkill` with an empty-string ID is not tested. The function iterates all skills; an empty string should return null (no skill has `id: ''`). This is a minor gap.
+  - **RESOLVED:** done — added `'findBuiltInSkill returns null for an empty ID'`, asserting `findBuiltInSkill('')` is null since no skill uses `''` as its id.
 
 ---
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** All tests in `built_in_skills_test.dart` operate on in-memory constant data with no I/O, no timers, and no widget pumps. No speed improvements needed.
+- [x] **[LOW]** All tests in `built_in_skills_test.dart` operate on in-memory constant data with no I/O, no timers, and no widget pumps. No speed improvements needed.
+  - **RESOLVED:** (assessed, no change) — confirmed true; every test reads constant data or builds a bare `ProviderContainer` (no `pumpAndSettle`, no fake/real time, no async). Nothing to speed up.
 
 ---
 

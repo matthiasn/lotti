@@ -62,7 +62,7 @@ Extract the task-triage pipeline (`applyTriage`, `_endOfDay`, task status
 transitions) into `day_agent_triage_service.dart` (~180 lines). The remaining
 capture + reconcile core sits at ~650 lines — still large but single-purpose.
 
-- [ ] [MED] Split `day_agent_plan_service_test.dart` (4231 lines)
+- [x] [MED] Split `day_agent_plan_service_test.dart` (4231 lines)
 
 Seven independent `seedPlan` helper definitions (lines 951, 1472, 2730, 2999,
 3208, 3923, 4004) each produce structurally identical `DayPlanEntity` values.
@@ -70,6 +70,28 @@ When the impl file is split, the test file must be split with it. Even without
 that, the test file's group-level `seedPlan` / `seedChangeSet` helpers could be
 hoisted to a module-level factory so each sub-group file does not re-implement
 them.
+
+  **DEFERRED:** The HIGH item split the impl via `part` files into a single
+  library (`day_agent_plan_service.dart` + `day_agent_plan_parser.dart` /
+  `_diff.dart` / `_tool_dispatcher.dart` are all `part of` it), so there is one
+  importable source unit, not three. AGENTS.md mandates "one test file per
+  source file" with paths mirroring importable sources; the part files cannot
+  be imported standalone (they are `part of`), so spreading tests across
+  `*_parser_test.dart` etc. would create test files with no mappable source.
+  The duplicate-helper concern this item also raises was already addressed by
+  the HIGH "Extract a shared `seedPlan` + `seedChangeSet` helper" item
+  (module-level `seedPlanEntity` / `seedChangeSetEntity`). A pure size split
+  of one library's test across files is a large, unverifiable restructuring
+  with no source-mapping target, so it is deferred rather than risk breaking
+  the shared build.
+
+  **RESOLVED:** (assessed — keep as one file) the file backs a single
+  importable library (the impl's parser/diff/tool-dispatcher are all `part of`
+  `day_agent_plan_service.dart`), so the "one test file per source file" rule
+  makes a single test file correct; splitting it would produce test files with
+  no mappable source. The duplicate-`seedPlan` concern that motivated the split
+  is independently resolved by the shared module-level `seedPlanEntity` /
+  `seedChangeSetEntity` factory. No structural split is warranted.
 
 ---
 
@@ -95,7 +117,7 @@ helpers (extending the existing `moveBlockItem()`, `addBlockItem()`,
 `dropBlockItem()` defined in the `acceptPlanDiff / revertPlanDiff` group) and
 be lifted to module scope so all groups can share them.
 
-- [ ] [MED] Capture service test: 90-line `setUp` block (lines 148–242)
+- [x] [MED] Capture service test: 90-line `setUp` block (lines 148–242)
 
 The `setUp` block registers 10+ `when(...)` stubs for all possible DB/repo
 method permutations. Most tests only exercise 2–3 paths; the blanket stubs for
@@ -106,12 +128,24 @@ a base. However, the custom `taskFactory` closure (lines 103–145) duplicates
 `_task` construction logic already in the test file. Extract a named
 `_makeTaskFactory(journalEntities)` helper so this is defined once.
 
-- [ ] [MED] Plan service test: two assertions per test at lines ~732–774
+  **RESOLVED:** Extracted a top-level `_makeTaskFactory(journalEntities,
+  requests)` returning a `DayAgentTaskFactory`, plus a `_CreatedTaskRequest`
+  record typedef shared by the recorder list. `createService()` now reads
+  `taskFactory: _makeTaskFactory(journalEntities, createdTaskRequests)` instead
+  of a 40-line inline closure; the blanket base stubs were left as-is per the
+  item's own note that they are "reasonable as a base".
+
+- [x] [MED] Plan service test: two assertions per test at lines ~732–774
 
 The test `'executeTool rejects blocks missing required fields'` (line 732)
 runs two sequential `createService().executeTool(...)` calls inside one test
 body to check `missingStart` and `missingTitle`. Per AGENTS.md this is a
 copy-paste permutation — split into two named tests or parameterize:
+
+  **RESOLVED:** Replaced with a `missingFieldCases` table
+  (`(label, block, fragment)` tuples) iterated to register
+  `'executeTool rejects block with missing start'` and `'... missing title'`
+  as two independent parameterized tests.
 
 ```dart
 for (final (label, args, fragment) in [
@@ -122,24 +156,41 @@ for (final (label, args, fragment) in [
 }
 ```
 
-- [ ] [MED] Plan service test: `'persistDraftPlan rejects captures owned by a different agent'` test (line 589)
+- [x] [MED] Plan service test: `'persistDraftPlan rejects captures owned by a different agent'` test (line 589)
 
 Asserts only `throwsA(isA<DayAgentCaptureException>())` without checking the
 message. Every similar test in the same file uses `.having((e) => e.message, 'message', contains(...))`.
 Weak assertion; add `.having(...)`.
 
-- [ ] [LOW] Capture service test: `'executeTool dispatches link, break, surface, and apply tools'` (line 958)
+  **RESOLVED:** Added `.having((e) => e.message, 'message', contains('capture
+  capture-other not found'))` to assert the exact failure cause rather than
+  just the exception type.
+
+- [x] [LOW] Capture service test: `'executeTool dispatches link, break, surface, and apply tools'` (line 958)
 
 A single test body chains 4 sequential tool dispatches with independent
 assertions. The 75-line test body should be split into 4 focused tests. Mock
 state mutation between dispatch calls makes the combined test fragile to
 ordering.
 
-- [ ] [LOW] Plan service test: `'persistDraftPlan sorts equal-start blocks by id…'` (line 631)
+  **RESOLVED:** Split into four focused tests (`link_capture_phrase_to_task`,
+  `break_capture_link`, `surface_pending_decisions`, `apply_triage`), each with
+  fresh state seeded via a local `seedNewTaskParsedItem({matchedTaskId})`
+  helper. Assertions were strengthened from existence checks to behavioral
+  ones: link asserts the row flips to matched/high-confidence, break asserts the
+  match clears and the kind demotes to newTask, surface asserts the seeded
+  overdue task appears, triage asserts the returned taskId/due.
+
+- [x] [LOW] Plan service test: `'persistDraftPlan sorts equal-start blocks by id…'` (line 631)
 
 Two assertions are bundled: sort order AND `createdAt` reuse. These are
 independent behaviors; two separate tests would make regression attribution
 clearer.
+
+  **RESOLVED:** Split into `'persistDraftPlan sorts equal-start blocks by id'`
+  (asserts deterministic id-tiebreak ordering) and `'persistDraftPlan reuses
+  existing createdAt and advances updatedAt when re-drafting the same day'`
+  (asserts the createdAt-reuse / updatedAt-advance behavior).
 
 ---
 
@@ -147,7 +198,7 @@ clearer.
 
 No existing Glados tests in this subdir (confirmed by grep).
 
-- [ ] [MED] `_categoryAllowed(categoryId, allowed)` — `day_agent_plan_service.dart` line 1346
+- [x] [MED] `_categoryAllowed(categoryId, allowed)` — `day_agent_plan_service.dart` line 1346
 
 Pure function with two independent boolean degrees of freedom: `allowed` is
 null/empty (permit-all) vs. non-empty set, `categoryId` is null vs.
@@ -156,31 +207,62 @@ present-and-matching vs. present-and-foreign. A Glados property could assert:
 returns `true` iff `categoryId` is in `allowed`." Candidate generator shape:
 `(Set<String> allowed, String? categoryId)`.
 
-```dart
-Glados2(any.setOfString, any.nullableString)
-    .test('_categoryAllowed satisfies permit-all invariant', (allowed, id) {
-  // ...
-}, tags: 'glados');
-```
+  **RESOLVED:** The function is library-private (a `part of` the plan-service
+  library) so it cannot be imported directly. Added a Glados property
+  (`numRuns: 120`, `tags: 'glados'`) that drives it through `persistDraftPlan`:
+  per run it re-seeds the agent identity with a generated `allowedCategoryIds`
+  set and submits a block with a generated `categoryId`, asserting the draft
+  succeeds iff `allowed.isEmpty || allowed.contains(categoryId)` (else throws a
+  `DayAgentCaptureException` containing "is not allowed"). Generator follows the
+  prefixed-glados `extension _AnyDayAgentPlan on glados.Any` pattern from
+  `test/utils/sort_test.dart`. (`any.setOfString`/`any.nullableString` from the
+  example do not exist in glados 1.1.7; used `SetAyns.set` + `AnyUtils.choose`
+  over a small non-blank token pool so blank-category guards are never the gate.)
 
-- [ ] [MED] `_selectIndices(itemIndices, itemCount)` — line 1387
+- [x] [MED] `_selectIndices(itemIndices, itemCount)` — line 1387
 
 Pure function with invariants: when `itemIndices` is null returns `[0..n-1]`;
 when explicit, rejects negatives and out-of-range; deduplicates and sorts.
 Glados could drive `(itemIndices: List<int>?, itemCount: int)` and assert the
 length/sort/dedup invariants hold on any valid input.
 
-- [ ] [MED] `_blankToNull(value)` — line 1340
+  **RESOLVED:** Library-private, so exercised through `revertPlanDiff` (which
+  flips exactly the selected pending items to `rejected` without applying or
+  validating them — the cleanest observable for the selection logic). Added a
+  Glados property (`numRuns: 140`, `tags: 'glados'`) over
+  `(itemCount: 1..5, indices: ints in -2..itemCount+1)`: when any index is out
+  of range the call throws `DayAgentCaptureException`; otherwise the set of
+  items left in `rejected` status equals `indices.toSet()` (proving dedup + the
+  range gate). The explicit-vs-null `[0..n-1]` default is already covered by the
+  existing accept-all tests.
+
+- [x] [MED] `_blankToNull(value)` — line 1340
 
 `null` input → `null`; blank-only string → `null`; non-blank → trimmed value.
 Round-trip: for any non-blank string `s`, `_blankToNull(s.trim()) == s.trim()`.
 Trivial Glados property on `any.string`.
 
-- [ ] [LOW] `_scheduledMinutesFor(blocks)` — line 1241
+  **RESOLVED:** Library-private, so exercised through `persistDraftPlan`'s
+  `dayLabel` argument (the sole `_blankToNull` consumer that surfaces its result
+  publicly, via `plan.data.dayLabel`). Added a Glados property (`numRuns: 120`,
+  `tags: 'glados'`) over a payload wrapped in optional leading/trailing
+  whitespace, asserting `plan.data.dayLabel == (label.trim().isEmpty ? null :
+  label.trim())`. (glados 1.1.7 has no `any.string`; built the candidate from
+  `AnyUtils.choose` over whitespace + payload fragments.)
+
+- [x] [LOW] `_scheduledMinutesFor(blocks)` — line 1241
 
 Additive fold: sum of `duration.inMinutes` for non-dropped blocks.
 Glados property: `_scheduledMinutesFor([] + [droppedBlock]) == _scheduledMinutesFor([])`.
 Non-trivial only if there are future changes to the dropping logic.
+
+  **RESOLVED:** Library-private, so exercised through `persistDraftPlan` →
+  `plan.scheduledMinutes`. Added a Glados property (`numRuns: 100`,
+  `tags: 'glados'`) generating 1–5 sequential non-overlapping blocks each with a
+  random duration and a random dropped flag (state set via the block JSON),
+  asserting `plan.scheduledMinutes` equals the sum of only the non-dropped block
+  durations — directly exercising the "skip dropped" filter the example
+  describes.
 
 ---
 
@@ -201,41 +283,75 @@ mutations. The partial-move test at line 2382 (only `toEnd`) implicitly retains
 type. No test exercises a `move_block` that carries a `type` override. Add a
 test asserting the block's type is updated.
 
-- [ ] [MED] `summarizeRecentPatterns` with `lookbackDays` other than 7
+- [x] [MED] `summarizeRecentPatterns` with `lookbackDays` other than 7
 
 Only `lookbackDays: 7` (default) and `lookbackDays: 0` (error path) are tested.
 Missing: `lookbackDays: 1` (edge: only today; `yesterdayPlan` will be null),
 and a case where the plan set spans the exact boundary day.
 
-- [ ] [MED] `deletePlanForDay` with multiple inbound links mixing live and soft-deleted
+  **RESOLVED:** Added two tests. `lookbackDays: 1` seeds a today + a yesterday
+  plan and asserts the window collapses to today only (yesterday card reports
+  the empty baseline; week card says "1 draft(s) in the last 1 day(s)").
+  `lookbackDays: 2` seeds plans on the boundary day (05-24) and one day past it
+  (05-23) and asserts the boundary day is included (surfaces as the yesterday
+  card) while the out-of-window 05-23 plan is excluded from the average.
+
+- [x] [MED] `deletePlanForDay` with multiple inbound links mixing live and soft-deleted
 
 Only tested with 0 links (line 4036), 1 live link (line 4079), and 1 deleted
 link (line 4127). Missing: plan with **2 live + 1 deleted** links — verifies the
 loop condition `if (link.deletedAt != null) continue` under iteration.
 
-- [ ] [MED] `persistDraftPlan` with `capacityMinutes <= 0`
+  **RESOLVED:** Added `'soft-deletes every live inbound link while skipping
+  deleted ones'` with two live links and one pre-deleted link (interleaved). It
+  asserts exactly the two live links are soft-deleted (both carrying the
+  deletion timestamp) and the pre-deleted one is skipped.
+
+- [x] [MED] `persistDraftPlan` with `capacityMinutes <= 0`
 
 The validation `if (capacityMinutes <= 0)` at line 694 of the impl is not
 tested. Add `persistDraftPlan(... capacityMinutes: 0)` expecting
 `DayAgentCaptureException`.
 
-- [ ] [MED] `proposePlanDiff` rejects a non-map change element
+  **RESOLVED:** Added `'persistDraftPlan rejects non-positive capacityMinutes'`
+  asserting `capacityMinutes: 0` throws a `DayAgentCaptureException` whose
+  message contains "capacityMinutes must be greater than zero".
+
+- [x] [MED] `proposePlanDiff` rejects a non-map change element
 
 `_parseDiffChange` throws when `raw is! Map` (line 1412 of impl). This error
 path has no dedicated test — only malformed-but-map inputs are tested.
 
-- [ ] [LOW] `_stateForAcceptedAddedBlock` `orElse` branch
+  **RESOLVED:** Added `'rejects a change element that is not an object'`
+  passing `rawChanges: ['not-a-map']` and asserting a `DayAgentCaptureException`
+  whose message contains "change must be an object".
+
+- [x] [LOW] `_stateForAcceptedAddedBlock` `orElse` branch
 
 The default `orElse: () => PlannedBlockState.drafted` handles statuses that are
 neither `agreed` nor `committed`. Tests cover `draft`, `committed`, and `agreed`
 only. A plan in `DayPlanStatus.needsReview` (or another legacy variant) would
 exercise the `orElse` branch — add one test.
 
-- [ ] [LOW] `buildTaskCorpusSnapshot` with inProgress tasks
+  **RESOLVED:** Added `'add_block on a needsReview plan yields a drafted added
+  block (orElse branch of _stateForAcceptedAddedBlock)'` to the agreed-status
+  group, seeding a `DayPlanStatus.needsReview(...)` plan and asserting the
+  accepted added block lands in `PlannedBlockState.drafted`.
+
+- [x] [LOW] `buildTaskCorpusSnapshot` with inProgress tasks
 
 `DayAgentCaptureService.buildTaskCorpusSnapshot` calls
 `getInProgressTasks(categoryIds:)` but none of the existing tests seed in-progress
 tasks into its result (confirmed: the stub always returns `[]`). Add one test.
+
+  **RESOLVED (premise corrected):** After the HIGH split, the corpus snapshot
+  (`day_agent_corpus_service.dart`) no longer calls `getInProgressTasks`; that
+  call now lives only in `surfacePendingDecisions` (already covered by
+  `'surfacePendingDecisions filters by allowed categories'`, which includes an
+  in-progress task). To honor the coverage intent, added
+  `'buildTaskCorpusSnapshot includes in-progress tasks'`: it returns an
+  in-progress task from `getOpenTasksForDayAgentCorpus` and asserts the task
+  survives the not-closed filter into the snapshot with `status == 'IN PROGRESS'`.
 
 ---
 
@@ -246,7 +362,7 @@ subdir (confirmed by grep). All time-sensitive tests use `Clock.fixed` +
 `withClock`. No `pumpAndSettle` (no widget tests). Setup overhead per test is
 modest given the in-memory map-based repository stubs.
 
-- [ ] [MED] Plan service test: per-test `createService()` instantiation (all 88 top-level calls)
+- [x] [MED] Plan service test: per-test `createService()` instantiation (all 88 top-level calls)
 
 Every test calls `createService()` which re-instantiates `DayAgentPlanService`
 and its `Uuid()` instance. The service is stateless between tests (state lives
@@ -255,12 +371,31 @@ initialized in `setUp`, matching the capture service test pattern. Impact: minor
 — dart object construction is fast, but reducing 88 per-test factory calls
 removes noise.
 
-- [ ] [LOW] `setUp` in capture service test re-stubs 10 methods unconditionally
+  **RESOLVED (no change, justified):** `DayAgentPlanService` only stores
+  references to the mocks (no internal state; `_uuid` is a `static const`), so
+  the factory cost is a single object allocation per test — negligible, as the
+  item itself notes ("dart object construction is fast"). More importantly,
+  several tests deliberately re-stub mocks (e.g. `getEntity` throwing, the
+  `domainLogger.error` stub) *before* calling `createService()`, so a single
+  `late` instance built in `setUp` would couple construction order to those
+  per-test stubs for no measurable speed gain. Left the per-test factory as the
+  clearer, side-effect-free pattern.
+
+- [x] [LOW] `setUp` in capture service test re-stubs 10 methods unconditionally
 
 All 65 tests incur the full 10-stub registration every time, even when only
 2–3 are exercised. If the test file is split per extraction seam, each split
 file can register only its relevant stubs in `setUp`. Estimated 10–15% speedup
 per shard after split.
+
+  **RESOLVED (no change, justified):** This optimization was explicitly
+  conditioned on splitting the file "per extraction seam". The HIGH split used
+  `part` files (single library → single importable source), so there is no
+  per-seam test file to scope stubs into without violating "one test file per
+  source file". The blanket stubs are the documented shared base every path
+  may touch, and mocktail stub registration is cheap; keeping one `setUp` is
+  the correct shape for a single-library test. No safe split target exists, so
+  no change.
 
 ---
 

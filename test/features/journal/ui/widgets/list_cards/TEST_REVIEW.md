@@ -29,7 +29,8 @@ Note: `journal_card_timer_text_test.dart` (38 lines) has no corresponding source
 - [x] **[MED]** `test/.../list_cards/animated_task_card_test.dart` is **441 lines** for a 46-line source file — a 9.6× size ratio. Several tests (`'renders task with different statuses'`, `'handles task with due date'`, `'maintains correct layout structure'`) assert only `findsOneWidget` on type-level finders, providing minimal behavioral value. Removing smoke tests could reduce the file by ~120 lines.
   **RESOLVED:** done — the three pure smoke tests ('renders task with different statuses', 'handles task with due date', 'maintains correct layout structure') were removed/strengthened: the status test now asserts the inner `ModernTaskCard.task.data.status` is `TaskInProgress`, and 'respects theme changes' was deleted. File no longer carries findsOneWidget-only bodies.
 
-- [ ] **[LOW]** All impl files are within 500 lines. `journal_card.dart` at 499 lines is right at the limit; if `_JournalCardLabelsRow` (lines 464–499) grows, splitting it out would be natural.
+- [x] **[LOW]** All impl files are within 500 lines. `journal_card.dart` at 499 lines is right at the limit; if `_JournalCardLabelsRow` (lines 464–499) grows, splitting it out would be natural.
+  **RESOLVED:** non-actionable / forward-looking. All impl files are currently within 500 lines and `_JournalCardLabelsRow` has not grown; the suggested split is conditional on future growth that has not happened. No change made — splitting a 35-line private widget that is not over the limit would be premature.
 
 ---
 
@@ -50,9 +51,11 @@ Note: `journal_card_timer_text_test.dart` (38 lines) has no corresponding source
 - [x] **[MED]** `task_card_test.dart:283–365`: `'status chip + icon reflect task status variants'` iterates over all `TaskStatus` variants within a single test using a shared `pumpWithStatus` closure — this is a correct parameterized pattern. However, each sub-iteration calls `pumpAndSettle()` but never calls `pump()` to settle state between rebuilds; the test relies on accumulated `pumpWidget` re-renders. This is fine but the multiple `pumpAndSettle()` calls could be replaced with `pump()` to reduce risk.
   **RESOLVED:** stale — the file contains zero `pumpAndSettle` calls; `pumpWithStatus` delegates to the shared `pumpTaskCard` helper which uses a bounded `pump(100ms)`.
 
-- [ ] **[LOW]** `card_wrapper_widget_test.dart:381–405`: `'distance badge uses green color for strong matches'` finds the `Container` by traversing the widget tree from the badge key. This is a structural fragility — if `_DistanceBadge` wraps the `Container` in an additional layer, the test breaks. A dedicated `_DistanceBadge` widget test using `makeTestableWidget` would be cleaner.
+- [x] **[LOW]** `card_wrapper_widget_test.dart:381–405`: `'distance badge uses green color for strong matches'` finds the `Container` by traversing the widget tree from the badge key. This is a structural fragility — if `_DistanceBadge` wraps the `Container` in an additional layer, the test breaks. A dedicated `_DistanceBadge` widget test using `makeTestableWidget` would be cleaner.
+  **RESOLVED:** `_DistanceBadge` is private and cannot be instantiated/widget-tested in isolation without a source change, so a dedicated widget test is not feasible. The colour→band mapping is already authoritatively covered by the `colorForVectorDistance` Glados property and the 7-case boundary loop. The remaining structural lookup (which proves the badge actually applies that mapping) was hardened: the descendant-`Container` finder now asserts `findsOneWidget`, so an added wrapper layer surfaces as an explicit failure instead of silently selecting the wrong `Container`.
 
-- [ ] **[LOW]** `journal_image_card_test.dart:129–133`: uses a conditional `if (imageEntry.entryText != null)` inside the test body — if `entryText` is null the test silently passes without any assertion. Test data should guarantee non-null `entryText` or the condition should be removed.
+- [x] **[LOW]** `journal_image_card_test.dart:129–133`: uses a conditional `if (imageEntry.entryText != null)` inside the test body — if `entryText` is null the test silently passes without any assertion. Test data should guarantee non-null `entryText` or the condition should be removed.
+  **RESOLVED:** removed the silent conditional from `'displays entry text when available'`. The test now asserts the fixture's `entryText` is non-null up front and then verifies the rendered `TextViewerWidgetNonScrollable` receives that exact `entryText` (a content assertion, not just `findsOneWidget`).
 
 ---
 
@@ -61,7 +64,8 @@ Note: `journal_card_timer_text_test.dart` (38 lines) has no corresponding source
 - [x] **[MED]** `CardWrapperWidget._DistanceBadge._colorForDistance(double d)` is a **pure function** with 4 threshold-based branches (`< 0.3`, `< 0.6`, `< 0.8`, `>= 0.8`). A Glados property could assert: (a) for any `d in [0, 1]`, the returned color is always one of the 4 expected colors; (b) color values are monotonically "warmer" as `d` increases; (c) the function never throws for any finite double. The current test covers only `d = 0.15` (green branch) — three branches are untested.
   **RESOLVED:** done — `_colorForDistance` now delegates to top-level `@visibleForTesting colorForVectorDistance` in `card_wrapper_widget.dart`; a Glados property (numRuns 120, permille 0–1200) asserts the threshold oracle for all four branches plus membership in the 4-color set.
 
-- [ ] **[LOW]** `ModernJournalCard._formatDate()` branches on `item is JournalEvent` → `dfShort.format` vs `dfShorter.format`. A property test with generated `DateTime` values could assert that both formatters return non-empty strings and that the event formatter uses the longer format (more characters). This is a minor pure-function invariant.
+- [x] **[LOW]** `ModernJournalCard._formatDate()` branches on `item is JournalEvent` → `dfShort.format` vs `dfShorter.format`. A property test with generated `DateTime` values could assert that both formatters return non-empty strings and that the event formatter uses the longer format (more characters). This is a minor pure-function invariant.
+  **RESOLVED (corrected premise):** the item's premise was inverted — `dfShort` (`yyyy-MM-dd`, used for events) is the *shorter* format and `dfShorter` (`yyyy-MM-dd HH:mm`, used for everything else) is the *longer* one. Added a Glados property group `ModernJournalCard._formatDate formatters — properties` to `journal_card_test.dart` (numRuns 150, `tags: 'glados'`) over a seed→DateTime spread that asserts the true invariants `_formatDate` relies on: both formats are non-empty, the event format (`dfShort`) is a strict prefix of the entry format (`dfShorter`), and the entry format is strictly longer.
 
 ---
 
@@ -79,9 +83,11 @@ Note: `journal_card_timer_text_test.dart` (38 lines) has no corresponding source
 - [x] **[MED]** `ModernTaskCard` — `showCoverArt = true` with a `coverArtId` set, but `cover art layout shows progress on separate row` (task_card_test.dart:1146–1201): the `_buildLabelsContent` branch inside `hasCoverArt = true` path is only tested when labels are present. The empty-labels path inside the cover-art layout (returning `[]` from `_buildLabelsContent`) is not explicitly tested.
   **RESOLVED:** done — added 'cover art layout with no labels renders the row without a labels wrap' to task_card_test.dart: coverArtId set, no labelIds → status row present, `LabelChip` absent, covering the empty `_buildLabelsContent` branch.
 
-- [ ] **[LOW]** `AnimatedModernTaskCard` — the `disableShadow: true` property propagates to `AnimatedModalItem`. No test verifies this property is set; the test at line 165 checks `hoverScale`, `tapScale`, `hoverElevation`, and `margin` but omits `disableShadow`.
+- [x] **[LOW]** `AnimatedModernTaskCard` — the `disableShadow: true` property propagates to `AnimatedModalItem`. No test verifies this property is set; the test at line 165 checks `hoverScale`, `tapScale`, `hoverElevation`, and `margin` but omits `disableShadow`.
+  **RESOLVED:** added `expect(animatedItem.disableShadow, isTrue)` to the `'applies correct animation parameters'` test in `animated_task_card_test.dart`, pinning the documented "ModernTaskCard already has its own shadow" behavior.
 
-- [ ] **[LOW]** `journal_image_card.dart` — `_buildTextContent` returns `SizedBox.shrink()` when `entryText == null || plainText.isEmpty` (line 158–160). `journal_image_card_test.dart` only tests images with non-empty `entryText`. An explicit empty/null entryText test is missing.
+- [x] **[LOW]** `journal_image_card.dart` — `_buildTextContent` returns `SizedBox.shrink()` when `entryText == null || plainText.isEmpty` (line 158–160). `journal_image_card_test.dart` only tests images with non-empty `entryText`. An explicit empty/null entryText test is missing.
+  **RESOLVED:** added a parameterised `'omits text viewer for ...'` test covering both `_buildTextContent` collapse branches — `entryText: null` and `EntryText(plainText: '')` — each asserting the card still renders but `TextViewerWidgetNonScrollable` is absent (`findsNothing`).
 
 ---
 
@@ -97,7 +103,8 @@ Note: `journal_card_timer_text_test.dart` (38 lines) has no corresponding source
 - [x] **[MED]** `card_wrapper_widget_test.dart`: 6 `pumpAndSettle` calls plus 2 `pump(const Duration(milliseconds: 100))` calls. The `pump(100ms)` calls for distance-badge tests are acceptable (waiting for a `RepaintBoundary` to settle), but the `pumpAndSettle` calls in static-card routing tests could be `pump()`.
   **RESOLVED:** done — the 6 `pumpAndSettle` calls in card_wrapper_widget_test.dart replaced with bounded pumps; the existing `pump(100ms)` badge waits kept.
 
-- [ ] **[LOW]** `journal_card_test.dart:95–128`: the `setUp` block registers multiple singletons via `getIt` but also calls `Directory.systemTemp.createTempSync(...)` — a real filesystem call — on every test setup. The temp dir is only needed for image-related tests. Moving it to a sub-group `setUp` would skip the filesystem call for ~90% of tests in the file.
+- [x] **[LOW]** `journal_card_test.dart:95–128`: the `setUp` block registers multiple singletons via `getIt` but also calls `Directory.systemTemp.createTempSync(...)` — a real filesystem call — on every test setup. The temp dir is only needed for image-related tests. Moving it to a sub-group `setUp` would skip the filesystem call for ~90% of tests in the file.
+  **RESOLVED (better than suggested):** `ModernJournalCard` renders *text* for image entries and never reads files off disk, so no test in this file actually needs a real temp dir at all. Replaced the per-test `createTempSync(...)` with a plain `Directory(p.join(systemTemp.path, 'journal_card_test'))` reference (kept for the defensive `getIt<Directory>()` registration), eliminating the filesystem call from every `setUp` for the whole file rather than just a sub-group. Also dropped the now-dead `tearDownAll` that listed/cleaned `systemTemp`, since nothing is created.
 
 ---
 

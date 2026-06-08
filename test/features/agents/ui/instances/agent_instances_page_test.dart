@@ -294,4 +294,25 @@ void main() {
       },
     );
   });
+
+  group('AgentInstancesPage — empty dataset', () {
+    testWidgets(
+      'an empty VM list renders the page-supplied localized empty message',
+      (tester) async {
+        await pumpPage(tester, vms: const []);
+
+        final ctx = tester.element(find.byType(AgentInstancesPage));
+
+        // The page wires `messages.agentInstancesEmptyFiltered` into the
+        // shell's emptyMessage; an empty dataset must surface that exact
+        // localized copy rather than a generic placeholder. No rows means
+        // no AgentListRow widgets are built.
+        expect(
+          find.text(ctx.messages.agentInstancesEmptyFiltered),
+          findsOneWidget,
+        );
+        expect(find.byType(AgentListRow), findsNothing);
+      },
+    );
+  });
 }

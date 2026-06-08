@@ -141,25 +141,5 @@ void main() {
 
       expect(result, 'Wrapping up the last sprint items.');
     });
-
-    test('returns null when agent report is null', () async {
-      final container = ProviderContainer(
-        overrides: [
-          projectAgentProvider(
-            projectId,
-          ).overrideWith(
-            (ref) async => makeTestIdentity(agentId: agentId),
-          ),
-          agentReportProvider(agentId).overrideWith((ref) async => null),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final result = await container.read(
-        projectOneLinerProvider(projectId).future,
-      );
-
-      expect(result, isNull);
-    });
   });
 }

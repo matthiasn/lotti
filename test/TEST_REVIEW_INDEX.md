@@ -94,25 +94,31 @@ usually be higher-leverage than file-by-file fixes.
   `image_import.dart` (×6), `label_assignment_processor.dart` (×6), `prompt_builder_helper.dart` (×4),
   `journal_page_controller.dart` (×3), plus many ×2 (`thinking_parser`, `room`/`sync_room_manager`,
   `modern_create_entry_items`, `ai_config_repository`, …). Consolidate. **RESOLVED:** all named violations are consolidated — `image_import` (×6→1), `label_assignment_processor` (×6→1), `prompt_builder_helper` (×4→1), `journal_page_controller` (×3→1, merged), `thinking_parser` (×2→1), `room`/`sync_room_manager` (room_test deleted), `modern_create_entry_items` (merged), `ai_config_repository` (×2→1). Verified by filename sweep.
-- [ ] **[MED] Inline mocks + inline GetIt boilerplate.** Pervasive inline `class Mock… extends Mock`
+- [x] **[MED] Inline mocks + inline GetIt boilerplate.** Pervasive inline `class Mock… extends Mock`
   duplicating `test/mocks/mocks.dart`, and hand-rolled `getIt.isRegistered/unregister/registerSingleton`
   instead of `setUpTestGetIt()`/`tearDownTestGetIt()`. Both a DRY and an in-suite-contamination concern.
-- [ ] **[MED] Fake-time-policy violations.** Real `Future.delayed`/`sleep`/`Timer`/wall-clock
+  - **RESOLVED:** driven down across the per-directory reconciliation passes — inline `Mock…` classes that duplicated a central definition were switched to import from `test/mocks/mocks.dart`, and hand-rolled getIt register/unregister/reset boilerplate was replaced with `setUpTestGetIt()`/`tearDownTestGetIt()` (or, where the test's own scoped getIt registrations are load-bearing, kept intentionally). Two deliberate residual categories remain and are documented in their per-dir reviews: (1) **single-consumer Riverpod `Notifier`/listener fakes** (e.g. `_StaticLinksController`, `Listener<T>`, `FakeEventData`) — these are local test scaffolding, not mocktail mocks, and have no central twin; (2) a small number of mocks **not present** in `test/mocks/mocks.dart` (e.g. `FakeStackTrace`, `MockRecAudioRecorder`, `MockAmplitude`) which can only be centralized by editing that protected file — flagged per-dir for a maintainer to add. The pervasive duplication the item targets is gone.
+- [x] **[MED] Fake-time-policy violations.** Real `Future.delayed`/`sleep`/`Timer`/wall-clock
   `.timeout()` in tests (logging_service ~1s, sync actor ×14 `Future.delayed(Duration.zero)`, real
   poll-interval waits in day-agent tests, …). Convert to `fakeAsync` / the retry-fake-time helpers.
-- [ ] **[MED] Glados generative gaps.** ~250+ genuine candidates: domain-entity JSON round-trips
+  - **RESOLVED:** a repo-wide sweep now reports **zero** non-`Duration.zero` `Future.delayed(...)` and **zero** `sleep(...)` anywhere in `test/`. The only `Timer(` occurrences left are (a) a value returned from a mocked callback for production code to schedule (logging_service_test) and (b) a comment — neither is a real test-time wait. The residual `DateTime.now()` hits are not violations: they are in comments, in deliberate `before/after = DateTime.now()` bracketing assertions that verify the code reads the real clock, or in the explicit real-clock-fallback tests (e.g. day_timeline's "without an injected clock" case). Timer-based logic uses `fakeAsync`/`flushMicrotasks` throughout.
+- [x] **[MED] Glados generative gaps.** ~250+ genuine candidates: domain-entity JSON round-trips
   (`lib/classes/`), stream/SSE parsers & token accumulators (ai repos), comparator/sequence/coalescing
   invariants (sync, database), geohash/duration/format utils, lane-assignment & timeline math (daily_os),
   version comparison (whats_new). `VectorClock.merge`/`mergeUniqueClocks` are untested pure logic, and
   `vector_clock_glados_test.dart` is missing `tags: 'glados'` (running in the wrong CI shard).
-- [ ] **[MED] Glados `numRuns` tuning.** Several properties run >200 (up to 300) on pure functions;
+  - **RESOLVED:** the per-directory passes added Glados coverage broadly — the suite now has **415** `glados`-tagged test files. The specifically-named gaps are all closed: `VectorClock.merge` has a commutative/associative/idempotent property and `mergeUniqueClocks` has a dedicated group (`vector_clock_test.dart:303,337`), and `test/vector_clock_glados_test.dart` now tags every property `tags: 'glados'` (correct CI shard). Where a named candidate is a **private** pure helper with no existing seam (e.g. `_byChrono`, `_interactionPriority`, `_progressRingColor`, `_compareRelatedProjectTasks`, `DraftingParams`/`ReconcileParams` `==`/`hashCode`, `_GapEntriesView[]`), the per-dir review tracks it as a `DEFERRED` "needs a `@visibleForTesting` production seam" item rather than coupling a property test to mock-heavy public paths; those are documented decisions, not omissions.
+- [x] **[MED] Glados `numRuns` tuning.** Several properties run >200 (up to 300) on pure functions;
   trimming toward the README's ≤120–180 guidance recovers a meaningful slice of the ~3,280-run Glados
   budget with negligible coverage loss.
-- [ ] **[LOW] Weak / smoke-only tests.** `findsOneWidget`-only, `isNotNull`, and constructor smoke
+  - **RESOLVED:** capped every `numRuns` in `test/` at 180 (22 files; previously 40×200, plus 220/240/250/260/300/400). Reducing run count cannot make a passing property fail; analyzer clean and a sample of the changed files passes the Glados lane. All properties now sit within the ≤180 band.
+- [x] **[LOW] Weak / smoke-only tests.** `findsOneWidget`-only, `isNotNull`, and constructor smoke
   tests concentrated in widget/design-system layers — upgrade to behavioral assertions.
-- [ ] **[LOW] Completely untested production code.** e.g. `agent_list_toolbar.dart`,
+  - **RESOLVED:** addressed across the per-directory passes — constructor/`isNotNull` smoke tests and bare `findsOneWidget` assertions were either deleted (zero-value tautologies, e.g. `cached_tile_provider`'s constructor checks, the `ChatRepositoryException` `isA<>` pair) or upgraded to assert real behavior (displayed values, state transitions, callback invocations). The Test-Quality rules in AGENTS.md now codify the bar, and the per-dir reviews record each upgrade.
+- [x] **[LOW] Completely untested production code.** e.g. `agent_list_toolbar.dart`,
   `checkbox_visibility_provider.dart`, `category_color.dart`, `get_it.dart` `registerSingletons`,
   several `design_system/components/lists/` widgets, `task_browse_row_interactions.dart`.
+  - **RESOLVED:** verified by filename sweep — every named file now has a mirror test: `agent_list_toolbar_test.dart`, `checkbox_visibility_provider_test.dart`, `category_color_test.dart`, `task_browse_row_interactions_test.dart`, and all five `design_system/components/lists/` widgets (`design_system_grouped_list`, `design_system_list_item`, `design_system_list_palette`, `grouped_card_row_interactions`, `grouped_card_row_surface`). `get_it.dart`'s `registerSingletons` is exercised by `get_it_test.dart` (and the maintenance/helpers part files have their own coverage).
 
 ---
 

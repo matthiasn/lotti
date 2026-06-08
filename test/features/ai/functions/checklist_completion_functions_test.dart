@@ -1,6 +1,12 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/functions/checklist_completion_functions.dart';
 import 'package:openai_dart/openai_dart.dart';
+
+extension _AnyChecklistConfidence on glados.Any {
+  glados.Generator<ChecklistCompletionConfidence> get checklistConfidence =>
+      glados.AnyUtils(this).choose(ChecklistCompletionConfidence.values);
+}
 
 void main() {
   test('add_multiple_checklist_items tool requires array of objects', () {
@@ -76,6 +82,34 @@ void main() {
       expect(suggestion.checklistItemId, 'item-456');
       expect(suggestion.confidence, ChecklistCompletionConfidence.low);
     });
+
+    // Round-trip property: serializing then deserializing must reconstruct an
+    // equal value for any field combination. This catches schema-vs-generated
+    // (de)serializer drift across the whole input space, not just hand picks.
+    glados.Glados<(String, String, ChecklistCompletionConfidence)>(
+      glados.CombinableAny(glados.any).combine3(
+        glados.any.letterOrDigits,
+        glados.any.letterOrDigits,
+        glados.any.checklistConfidence,
+        (String id, String reason, ChecklistCompletionConfidence c) =>
+            (id, reason, c),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'fromJson(toJson(x)) == x',
+      (triple) {
+        final original = ChecklistCompletionSuggestion(
+          checklistItemId: triple.$1,
+          reason: triple.$2,
+          confidence: triple.$3,
+        );
+        expect(
+          ChecklistCompletionSuggestion.fromJson(original.toJson()),
+          original,
+        );
+      },
+      tags: 'glados',
+    );
   });
 
   group('AddChecklistItemResult.fromJson', () {

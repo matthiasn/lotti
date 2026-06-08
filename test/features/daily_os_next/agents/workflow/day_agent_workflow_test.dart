@@ -344,6 +344,64 @@ void main() {
       expect(upsertedEntities, isEmpty);
     });
 
+    test('fails the wake when no inference provider is configured', () async {
+      // The profile resolves but its thinking model has no matching provider
+      // model, so ProfileResolver.resolve() returns null and the wake aborts
+      // before any conversation is started.
+      when(
+        () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+      ).thenAnswer((_) async => const []);
+
+      final result = await execute(workflow());
+
+      expect(result.success, isFalse);
+      expect(result.error, 'No inference provider configured');
+      expect(conversationRepository.createdConversationCount, 0);
+      expect(conversationRepository.lastUserMessage, isNull);
+      expect(upsertedEntities, isEmpty);
+    });
+
+    // A null template context (no template, or no active version) forces the
+    // profile to null, so the wake aborts at the inference-provider guard
+    // BEFORE any conversation is created. The scaffold-only system prompt and
+    // the `templateCtx != null` guard around updateWakeRunTemplate are
+    // therefore unreachable while the profile guard fires first.
+    for (final (name, stub) in [
+      (
+        'no template is assigned',
+        () => when(
+          () => templateService.getTemplateForAgent(agentId),
+        ).thenAnswer((_) async => null),
+      ),
+      (
+        'the active template version is missing',
+        () => when(
+          () => templateService.getActiveVersion(templateId),
+        ).thenAnswer((_) async => null),
+      ),
+    ]) {
+      test('aborts the wake when $name', () async {
+        stub();
+
+        final result = await execute(workflow());
+
+        expect(result.success, isFalse);
+        expect(result.error, 'No inference provider configured');
+        expect(conversationRepository.createdConversationCount, 0);
+        expect(upsertedEntities, isEmpty);
+        verifyNever(
+          () => repository.updateWakeRunTemplate(
+            any(),
+            any(),
+            any(),
+            resolvedModelId: any(named: 'resolvedModelId'),
+            soulId: any(named: 'soulId'),
+            soulVersionId: any(named: 'soulVersionId'),
+          ),
+        );
+      });
+    }
+
     test(
       'resolves the day from a planning_day token without the legacy slot',
       () async {
@@ -1697,6 +1755,61 @@ void main() {
       );
 
       test(
+        'adopts the forced-retry usage when the first call returns none',
+        () async {
+          // Covers the null-left branch of the usage merge: when the initial
+          // sendMessage reports no usage, the forced draft_day_plan retry's
+          // usage is adopted verbatim (no merge against a null left operand).
+          final planService = MockDayAgentPlanService();
+          stubDraftingPlanContext(planService);
+          when(
+            () => planService.executeTool(
+              agentId: agentId,
+              threadId: threadId,
+              runKey: runKey,
+              toolName: DayAgentToolNames.draftDayPlan,
+              args: any(named: 'args'),
+            ),
+          ).thenAnswer(
+            (_) async => DayAgentDirectToolResult.success(
+              const {'planId': 'day_agent_plan:dayplan-2026-05-25'},
+            ),
+          );
+          conversationRepository
+            ..toolCallsByInvocation = [
+              const <ChatCompletionMessageToolCall>[],
+              [
+                _toolCall(
+                  id: 'draft-call',
+                  name: DayAgentToolNames.draftDayPlan,
+                  args: {
+                    'dayId': dayId,
+                    'blocks': <Object?>[],
+                  },
+                ),
+              ],
+            ]
+            ..usageByInvocation = const [
+              null,
+              InferenceUsage(inputTokens: 3, outputTokens: 2),
+            ];
+
+          final result = await execute(
+            workflow(planService: planService),
+            triggerTokens: {dayAgentDraftingToken(dayId), dayId},
+          );
+
+          expect(result.success, isTrue);
+          expect(conversationRepository.sendMessageCalls, hasLength(2));
+          final usage = upsertedEntities
+              .whereType<WakeTokenUsageEntity>()
+              .single;
+          expect(usage.inputTokens, 3);
+          expect(usage.outputTokens, 2);
+        },
+      );
+
+      test(
         'does not force draft_day_plan on reconcile-only capture wakes',
         () async {
           final planService = MockDayAgentPlanService();
@@ -2054,6 +2167,49 @@ void main() {
       );
     });
 
+    test('persists no observation entities when none were recorded', () async {
+      // A wake where the model calls no record_observations leaves
+      // strategy.extractObservations() empty; _persistObservations must then
+      // write nothing while the wake still completes successfully.
+      conversationRepository.finalResponse = 'Nothing notable this wake.';
+
+      final result = await execute(workflow());
+
+      expect(result.success, isTrue);
+      final observationEntities = upsertedEntities
+          .whereType<AgentMessageEntity>()
+          .where((m) => m.kind == AgentMessageKind.observation);
+      expect(observationEntities, isEmpty);
+      // The wake still reached completion (the thought payload is persisted).
+      expect(
+        upsertedEntities.whereType<AgentMessagePayloadEntity>().map(
+          (p) => p.content['text'],
+        ),
+        contains('Nothing notable this wake.'),
+      );
+    });
+
+    test('persists no thought when the model returns no final text', () async {
+      // The harness defaults finalResponse to null, so the conversation ends
+      // with no assistant text. recordFinalResponse(null) leaves the strategy
+      // finalResponse null and _persistThought writes nothing — yet the wake
+      // still completes successfully.
+      expect(conversationRepository.finalResponse, isNull);
+
+      final result = await execute(workflow());
+
+      expect(result.success, isTrue);
+      final thoughtMessages = upsertedEntities
+          .whereType<AgentMessageEntity>()
+          .where((m) => m.kind == AgentMessageKind.thought);
+      expect(thoughtMessages, isEmpty);
+      // The wake still event-sources its completion.
+      expect(
+        upsertedEntities.whereType<AgentStateEntity>().last.lastWakeAt,
+        now,
+      );
+    });
+
     test(
       'includes the newest 20 observations in chronological order',
       () async {
@@ -2239,16 +2395,34 @@ void main() {
       expect(finalState.scheduledWakeAt, futureWakeAt);
     });
 
+    test('clears a scheduled wake landing exactly on now', () async {
+      // The remaining-wake gate keeps a wake only when it is STRICTLY after
+      // now (`isAfter`), so a wake whose time equals the wake instant is
+      // treated as already due and cleared — the boundary between the
+      // past-clears and future-preserves cases above.
+      currentState = state(scheduledWakeAt: now);
+
+      final result = await execute(workflow());
+
+      expect(result.success, isTrue);
+      final finalState = upsertedEntities.whereType<AgentStateEntity>().last;
+      expect(finalState.scheduledWakeAt, isNull);
+    });
+
     test('continues when user message persistence fails', () async {
-      var writeCount = 0;
+      // Match on the entity being written (the `user`-kind message) rather
+      // than a positional write count, so the test keeps targeting the
+      // user-message write even if the wake gains an earlier write.
+      var threwForUserMessage = false;
       when(() => syncService.upsertEntity(any())).thenAnswer((
         invocation,
       ) async {
-        writeCount++;
         final entity =
             invocation.positionalArguments.single as AgentDomainEntity;
-        if (writeCount == 1) {
-          throw StateError('user payload write failed');
+        if (entity is AgentMessageEntity &&
+            entity.kind == AgentMessageKind.user) {
+          threwForUserMessage = true;
+          throw StateError('user message write failed');
         }
         upsertedEntities.add(entity);
         if (entity is AgentStateEntity) {
@@ -2259,6 +2433,8 @@ void main() {
       final result = await execute(workflow());
 
       expect(result.success, isTrue);
+      // The failure was actually injected on the user-message write.
+      expect(threwForUserMessage, isTrue);
       verify(
         () => domainLogger.error(
           any(),

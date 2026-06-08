@@ -32,6 +32,7 @@ import '../helpers/stub_audio_recorder_controller.dart';
 import '../mocks/mocks.dart';
 import '../mocks/sync_config_test_mocks.dart';
 import '../widget_test_utils.dart';
+import '_beamer_test_utils.dart';
 
 void main() {
   group('MyBeamerApp theming', () {
@@ -246,7 +247,7 @@ void main() {
       final delegate = BeamerDelegate(
         setBrowserTabTitle: false,
         initialPath: path,
-        locationBuilder: (routeInformation, _) => _EmptyLocation(
+        locationBuilder: (routeInformation, _) => EmptyTestLocation(
           routeInformation,
         ),
       );
@@ -360,13 +361,13 @@ void main() {
             ProviderScope(
               overrides: [
                 themingControllerProvider.overrideWith(
-                  _ReadyThemingController.new,
+                  ReadyThemingController.new,
                 ),
                 enableTooltipsProvider.overrideWith(
                   (ref) => Stream.value(true),
                 ),
                 zoomControllerProvider.overrideWith(
-                  _TestZoomController.new,
+                  TestZoomController.new,
                 ),
                 agentInitializationProvider.overrideWith((ref) async {}),
                 matrixServiceProvider.overrideWithValue(mockMatrix),
@@ -375,7 +376,7 @@ void main() {
                 ),
                 outboxServiceProvider.overrideWithValue(mockOutboxService),
                 aiSetupPromptServiceProvider.overrideWith(
-                  _MockAiSetupPromptService.new,
+                  MockAiSetupPromptService.new,
                 ),
                 audioRecorderControllerProvider.overrideWith(
                   () => StubAudioRecorderController(
@@ -428,39 +429,7 @@ void main() {
   });
 }
 
-class _EmptyLocation extends BeamLocation<BeamState> {
-  _EmptyLocation(super.routeInformation);
-
-  @override
-  List<BeamPage> buildPages(BuildContext context, BeamState state) {
-    return const [
-      BeamPage(key: ValueKey('empty'), child: SizedBox.shrink()),
-    ];
-  }
-
-  @override
-  List<Pattern> get pathPatterns => ['*'];
-}
-
 class _LoadingThemingController extends ThemingController {
   @override
   ThemingState build() => const ThemingState();
-}
-
-class _ReadyThemingController extends ThemingController {
-  @override
-  ThemingState build() => ThemingState(
-    darkTheme: resolveTestTheme(ThemeData.dark()),
-    lightTheme: resolveTestTheme(ThemeData.light()),
-  );
-}
-
-class _TestZoomController extends ZoomController {
-  @override
-  double build() => defaultZoomScale;
-}
-
-class _MockAiSetupPromptService extends AiSetupPromptService {
-  @override
-  Future<bool> build() async => false;
 }

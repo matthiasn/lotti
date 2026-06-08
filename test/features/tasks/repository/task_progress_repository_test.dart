@@ -15,6 +15,24 @@ import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
+/// Builds a [JournalEntry] whose time span runs from [from] to [to].
+///
+/// Used across the `sumTimeSpentFromEntities` cases so each test only states
+/// the id and the interval it cares about instead of re-spelling a full
+/// [Metadata] block.
+JournalEntry _makeJournalEntry(String id, DateTime from, DateTime to) {
+  return JournalEntry(
+    meta: Metadata(
+      id: id,
+      createdAt: from,
+      dateFrom: from,
+      dateTo: to,
+      updatedAt: to,
+    ),
+    entryText: EntryText(plainText: id),
+  );
+}
+
 void main() {
   late TaskProgressRepository repository;
   late MockJournalDb mockJournalDb;
@@ -271,10 +289,17 @@ void main() {
 
           async.flushMicrotasks();
 
-          expect(resultA?.$1, equals(testTask.data.estimate));
-          expect(resultA?.$2.containsKey(testTextEntry.id), isTrue);
-          expect(resultB?.$1, equals(otherTask.data.estimate));
-          expect(resultB?.$2, isEmpty);
+          // Assert both futures actually resolved before dereferencing record
+          // fields; otherwise the null-safe `?.` access below would silently
+          // pass on an undrained microtask queue.
+          expect(resultA, isNotNull);
+          expect(resultB, isNotNull);
+          final (estimateA, rangesA) = resultA!;
+          final (estimateB, rangesB) = resultB!;
+          expect(estimateA, equals(testTask.data.estimate));
+          expect(rangesA.containsKey(testTextEntry.id), isTrue);
+          expect(estimateB, equals(otherTask.data.estimate));
+          expect(rangesB, isEmpty);
           verify(
             () => mockJournalDb.getTaskEstimatesByIds({
               testTask.id,
@@ -289,6 +314,81 @@ void main() {
           ).called(1);
           verifyNever(() => mockJournalDb.journalEntityById(any()));
           verifyNever(() => mockJournalDb.getLinkedEntities(any()));
+        });
+      },
+    );
+
+    test(
+      'dedups in-flight requests for the same id, hitting the db only once',
+      () {
+        fakeAsync((async) {
+          final taskId = testTask.id;
+          when(
+            () => mockJournalDb.getTaskEstimatesByIds({taskId}),
+          ).thenAnswer((_) async => {taskId: testTask.data.estimate});
+          when(
+            () => mockJournalDb.getBulkLinkedTimeSpans({taskId}),
+          ).thenAnswer(
+            (_) async => {taskId: const <LinkedEntityTimeSpan>[]},
+          );
+
+          // Two synchronous lookups for the same id, before the batch flushes:
+          // the second must reuse the in-flight future of the first.
+          final futureA = repository.getTaskProgressData(id: taskId);
+          final futureB = repository.getTaskProgressData(id: taskId);
+
+          (Duration?, Map<String, TimeRange>)? resultA;
+          (Duration?, Map<String, TimeRange>)? resultB;
+          futureA.then((value) => resultA = value);
+          futureB.then((value) => resultB = value);
+
+          async.flushMicrotasks();
+
+          expect(resultA, isNotNull);
+          expect(resultB, isNotNull);
+          expect(resultA!.$1, equals(testTask.data.estimate));
+          expect(resultB!.$1, equals(testTask.data.estimate));
+          // Same cached future, so the db sees the id only once.
+          verify(
+            () => mockJournalDb.getTaskEstimatesByIds({taskId}),
+          ).called(1);
+          verify(
+            () => mockJournalDb.getBulkLinkedTimeSpans({taskId}),
+          ).called(1);
+        });
+      },
+    );
+
+    test(
+      'propagates the batch error to every pending waiter when the db throws',
+      () {
+        fakeAsync((async) {
+          final taskId = testTask.id;
+          final failure = Exception('estimates lookup failed');
+          when(
+            () => mockJournalDb.getTaskEstimatesByIds({taskId}),
+          ).thenThrow(failure);
+
+          Object? errorA;
+          Object? errorB;
+          repository.getTaskProgressData(id: taskId).catchError((Object e) {
+            errorA = e;
+            return null;
+          });
+          // Second waiter on the same id rides the shared in-flight future and
+          // must observe the same error.
+          repository.getTaskProgressData(id: taskId).catchError((Object e) {
+            errorB = e;
+            return null;
+          });
+
+          async.flushMicrotasks();
+
+          expect(errorA, same(failure));
+          expect(errorB, same(failure));
+          // getBulkLinkedTimeSpans is never reached because the first await
+          // throws before it.
+          verifyNever(() => mockJournalDb.getBulkLinkedTimeSpans(any()));
         });
       },
     );
@@ -437,25 +537,15 @@ void main() {
 
     test('sums multiple non-overlapping text entries correctly', () {
       // Arrange
-      final textEntry1 = JournalEntry(
-        meta: Metadata(
-          id: 'text-entry-1',
-          createdAt: DateTime(2022, 7, 7, 9),
-          dateFrom: DateTime(2022, 7, 7, 9),
-          dateTo: DateTime(2022, 7, 7, 10), // 1 hour
-          updatedAt: DateTime(2022, 7, 7, 10),
-        ),
-        entryText: const EntryText(plainText: 'entry 1'),
+      final textEntry1 = _makeJournalEntry(
+        'text-entry-1',
+        DateTime(2022, 7, 7, 9),
+        DateTime(2022, 7, 7, 10), // 1 hour
       );
-      final textEntry2 = JournalEntry(
-        meta: Metadata(
-          id: 'text-entry-2',
-          createdAt: DateTime(2022, 7, 7, 14),
-          dateFrom: DateTime(2022, 7, 7, 14),
-          dateTo: DateTime(2022, 7, 7, 14, 30), // 30 min
-          updatedAt: DateTime(2022, 7, 7, 14, 30),
-        ),
-        entryText: const EntryText(plainText: 'entry 2'),
+      final textEntry2 = _makeJournalEntry(
+        'text-entry-2',
+        DateTime(2022, 7, 7, 14),
+        DateTime(2022, 7, 7, 14, 30), // 30 min
       );
       final entities = [textEntry1, textEntry2];
 
@@ -468,25 +558,15 @@ void main() {
 
     test('merges overlapping entries to prevent double-counting', () {
       // Arrange - gym trip containing a fitness entry (like the Winter Walk bug)
-      final gymTrip = JournalEntry(
-        meta: Metadata(
-          id: 'gym-trip',
-          createdAt: DateTime(2022, 7, 7, 10),
-          dateFrom: DateTime(2022, 7, 7, 10),
-          dateTo: DateTime(2022, 7, 7, 11, 30), // 1.5 hours
-          updatedAt: DateTime(2022, 7, 7, 11, 30),
-        ),
-        entryText: const EntryText(plainText: 'gym trip'),
+      final gymTrip = _makeJournalEntry(
+        'gym-trip',
+        DateTime(2022, 7, 7, 10),
+        DateTime(2022, 7, 7, 11, 30), // 1.5 hours
       );
-      final fitnessEntry = JournalEntry(
-        meta: Metadata(
-          id: 'fitness-entry',
-          createdAt: DateTime(2022, 7, 7, 10, 30),
-          dateFrom: DateTime(2022, 7, 7, 10, 30),
-          dateTo: DateTime(2022, 7, 7, 11, 15), // 45 min, inside gym trip
-          updatedAt: DateTime(2022, 7, 7, 11, 15),
-        ),
-        entryText: const EntryText(plainText: 'fitness entry'),
+      final fitnessEntry = _makeJournalEntry(
+        'fitness-entry',
+        DateTime(2022, 7, 7, 10, 30),
+        DateTime(2022, 7, 7, 11, 15), // 45 min, inside gym trip
       );
       final entities = [gymTrip, fitnessEntry];
 
@@ -499,25 +579,15 @@ void main() {
 
     test('merges partially overlapping entries correctly', () {
       // Arrange - two entries that partially overlap
-      final entry1 = JournalEntry(
-        meta: Metadata(
-          id: 'entry-1',
-          createdAt: DateTime(2022, 7, 7, 10),
-          dateFrom: DateTime(2022, 7, 7, 10),
-          dateTo: DateTime(2022, 7, 7, 11, 30), // 10:00-11:30
-          updatedAt: DateTime(2022, 7, 7, 11, 30),
-        ),
-        entryText: const EntryText(plainText: 'entry 1'),
+      final entry1 = _makeJournalEntry(
+        'entry-1',
+        DateTime(2022, 7, 7, 10),
+        DateTime(2022, 7, 7, 11, 30), // 10:00-11:30
       );
-      final entry2 = JournalEntry(
-        meta: Metadata(
-          id: 'entry-2',
-          createdAt: DateTime(2022, 7, 7, 11),
-          dateFrom: DateTime(2022, 7, 7, 11),
-          dateTo: DateTime(2022, 7, 7, 12), // 11:00-12:00
-          updatedAt: DateTime(2022, 7, 7, 12),
-        ),
-        entryText: const EntryText(plainText: 'entry 2'),
+      final entry2 = _makeJournalEntry(
+        'entry-2',
+        DateTime(2022, 7, 7, 11),
+        DateTime(2022, 7, 7, 12), // 11:00-12:00
       );
       final entities = [entry1, entry2];
 

@@ -27,15 +27,19 @@
   - Extract private widget implementations into `ai_shader_animation_cases.dart` (or keep private in the widgetbook file — these are UI-only and not tested).
   - Keep `ai_shader_animations_widgetbook.dart` as the public registration surface (~100 lines). **RESOLVED (adapted):** the private config + use-case widget classes moved to a `part` file `ai_shader_animation_cases.dart` (1 144 lines); the library file is the 93-line public registration surface and keeps the `@visibleForTesting` `applyVoiceDbfsEnvelope` + constants (the mirror test covers exactly that pure logic, so a move to `pcm_amplitude.dart` would have forced a test relocation for no gain).
 
-- [ ] **[LOW]** `test/features/ai/widgetbook/ai_shader_animations_widgetbook_test.dart` — 61 lines. No split needed; extend coverage instead.
+- [x] **[LOW]** `test/features/ai/widgetbook/ai_shader_animations_widgetbook_test.dart` — 61 lines. No split needed; extend coverage instead.
+  **RESOLVED:** No split performed (correct — single source file maps to single test file per repo convention). Coverage was extended instead: added the `voiceRecorderReleaseDbPerSecond == 64.0` constant test, the exact-boundary release case, and non-default `elapsed` / `releaseDbPerSecond` cases.
 
 ---
 
 ## Test quality improvements
 
-- [ ] **[MED]** `ai_shader_animations_widgetbook_test.dart:7–20` — the `buildAiWidgetbookFolder` test asserts on the folder name, component name, and use-case names. This is a structural registration check rather than a smoke test — it would catch regressions if a use case were accidentally removed or renamed. However, it casts `folder.children!.single as WidgetbookComponent` with a force-unwrap on `children`. If `children` is ever null (e.g., an empty `WidgetbookFolder`), the test would throw `Null check operator used on a null value`. Use `expect(folder.children, isNotNull)` + `expect(folder.children, hasLength(1))` before casting.
-- [ ] **[MED]** `applyVoiceDbfsEnvelope` tests (lines 23–60) — three cases are tested: loud attack, slow release, and floor clamp. These are the three branches of the function. The branch coverage looks complete. However, the `elapsed` parameter defaults to `voiceRecorderAmplitudeInterval` and `releaseDbPerSecond` defaults to `voiceRecorderReleaseDbPerSecond`. No test exercises non-default `elapsed` or `releaseDbPerSecond` values, which means the formula `releaseDbPerSecond * elapsed.inMicroseconds / Duration.microsecondsPerSecond` is only tested with one concrete input pair.
-- [ ] **[LOW]** `ai_shader_animations_widgetbook_test.dart:27` — `expect(next, -18)` uses an integer literal instead of `closeTo(-18, 0.001)`. Since `applyVoiceDbfsEnvelope` returns a `double` and the attack path returns `target` verbatim (which is `-18.0`, a double), this works today but is fragile if the return type or target value changes to a non-integer. Use `closeTo(-18.0, 0.001)` for consistency with the release-step test at line 48.
+- [x] **[MED]** `ai_shader_animations_widgetbook_test.dart:7–20` — the `buildAiWidgetbookFolder` test asserts on the folder name, component name, and use-case names. This is a structural registration check rather than a smoke test — it would catch regressions if a use case were accidentally removed or renamed. However, it casts `folder.children!.single as WidgetbookComponent` with a force-unwrap on `children`. If `children` is ever null (e.g., an empty `WidgetbookFolder`), the test would throw `Null check operator used on a null value`. Use `expect(folder.children, isNotNull)` + `expect(folder.children, hasLength(1))` before casting.
+  **RESOLVED:** Added `expect(folder.children, isNotNull)` and `expect(folder.children, hasLength(1))` before the `children!.single` cast, so an empty/null folder produces a readable expectation failure instead of an opaque null-check crash.
+- [x] **[MED]** `applyVoiceDbfsEnvelope` tests (lines 23–60) — three cases are tested: loud attack, slow release, and floor clamp. These are the three branches of the function. The branch coverage looks complete. However, the `elapsed` parameter defaults to `voiceRecorderAmplitudeInterval` and `releaseDbPerSecond` defaults to `voiceRecorderReleaseDbPerSecond`. No test exercises non-default `elapsed` or `releaseDbPerSecond` values, which means the formula `releaseDbPerSecond * elapsed.inMicroseconds / Duration.microsecondsPerSecond` is only tested with one concrete input pair.
+  **RESOLVED:** Added two cases that pin the release-step formula at independent input pairs: `elapsed: 10ms` (default rate → 0.64 dB step → -18.64) and `releaseDbPerSecond: 32` (default 20ms interval → 0.64 dB step → -18.64). Each contrasts the default 1.28 dB / -19.28 result, so the multiplication and the microsecond division are both exercised.
+- [x] **[LOW]** `ai_shader_animations_widgetbook_test.dart:27` — `expect(next, -18)` uses an integer literal instead of `closeTo(-18, 0.001)`. Since `applyVoiceDbfsEnvelope` returns a `double` and the attack path returns `target` verbatim (which is `-18.0`, a double), this works today but is fragile if the return type or target value changes to a non-integer. Use `closeTo(-18.0, 0.001)` for consistency with the release-step test at line 48.
+  **RESOLVED:** Switched the fast-attack assertion to `closeTo(-18.0, 0.001)` and likewise the floor-clamp assertion to `closeTo(-80.0, 0.001)`, so all numeric envelope assertions use the same tolerant double comparison.
 
 ---
 
@@ -59,17 +63,23 @@
 ## Coverage / missing-behavior gaps
 
 - [x] **[HIGH]** The vast majority of `ai_shader_animations_widgetbook.dart` (the ~1170 lines of private widget classes) is untested. These are widgetbook-only UI components (`_VoiceInputOrbUseCase`, `_ThinkingLineUseCase`, etc.) and are expected to be exercised interactively in widgetbook rather than by automated tests. This is the correct design for widgetbook use-cases. However, the private state classes (`_VoiceOrbState`, `_ThinkingLineState`, etc.) contain real logic such as the live-recorder subscription, PCM capture callbacks, and timer-based animation updates. If these state classes grow, consider extracting them to separately testable classes. **RESOLVED (assessed, no change):** the item itself concludes the widgetbook-only widgets are correctly exercised interactively and only suggests extraction "if these state classes grow" — a future condition, not a present gap. The one piece of real logic already extracted (`applyVoiceDbfsEnvelope`) is example- and property-tested.
-- [ ] **[MED]** `applyVoiceDbfsEnvelope` — the exact-boundary case (`target == current - releaseStep`, i.e. the step lands exactly on the target) is not tested. The function returns `math.max(target, current - releaseStep)` which covers this case correctly, but it is not exercised.
-- [ ] **[MED]** `voiceRecorderReleaseDbPerSecond` constant (64.0 dB/s) — only implicitly tested through the `closeTo(-19.28, 0.001)` assertion. A direct test of `voiceRecorderReleaseDbPerSecond == 64.0` would make it clear the constant is intentional and flag accidental changes.
-- [ ] **[LOW]** Non-default `elapsed` parameter of `applyVoiceDbfsEnvelope` — never tested. Add one case with `elapsed: const Duration(milliseconds: 10)` to confirm the formula scales correctly with half the default interval.
+- [x] **[MED]** `applyVoiceDbfsEnvelope` — the exact-boundary case (`target == current - releaseStep`, i.e. the step lands exactly on the target) is not tested. The function returns `math.max(target, current - releaseStep)` which covers this case correctly, but it is not exercised.
+  **RESOLVED:** Added a case with `current: -18`, `target: -19.28` (= -18 - the default 1.28 dB step), `floor: -80`, asserting the result is `-19.28` — exercising the `math.max(target, current - releaseStep)` tie where both arguments are equal.
+- [x] **[MED]** `voiceRecorderReleaseDbPerSecond` constant (64.0 dB/s) — only implicitly tested through the `closeTo(-19.28, 0.001)` assertion. A direct test of `voiceRecorderReleaseDbPerSecond == 64.0` would make it clear the constant is intentional and flag accidental changes.
+  **RESOLVED:** Added a direct `expect(voiceRecorderReleaseDbPerSecond, 64.0)` test that documents the intended default release slope and fails loudly on accidental change.
+- [x] **[LOW]** Non-default `elapsed` parameter of `applyVoiceDbfsEnvelope` — never tested. Add one case with `elapsed: const Duration(milliseconds: 10)` to confirm the formula scales correctly with half the default interval.
+  **RESOLVED:** Added a case with `elapsed: const Duration(milliseconds: 10)` asserting `closeTo(-18.64, 0.001)` (half the default interval → half the step), confirming the formula scales with `elapsed`.
 
 ---
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** All existing tests are synchronous pure-function calls or a single structural registry check. No I/O, no Flutter widget pumps, no timers. No speed improvements needed.
-- [ ] **[LOW]** No fake-time violations or `DateTime.now()` usages found.
-- [ ] **[INFO]** If Glados tests are added for `applyVoiceDbfsEnvelope`, use `numRuns: 120` (the default recommendation) since the function is computationally cheap and the input space is continuous.
+- [x] **[LOW]** All existing tests are synchronous pure-function calls or a single structural registry check. No I/O, no Flutter widget pumps, no timers. No speed improvements needed.
+  **RESOLVED (assessed, no change):** Confirmed true — the test file contains only synchronous pure-function calls, one structural registry check, and a cheap Glados property; no I/O, widget pumps, or timers. The newly added coverage cases are also synchronous pure-function calls. Nothing to speed up.
+- [x] **[LOW]** No fake-time violations or `DateTime.now()` usages found.
+  **RESOLVED (assessed, no change):** Confirmed true — no `DateTime.now()`, `Future.delayed`, `sleep`, or real `Timer` usage in the test file before or after this change.
+- [x] **[INFO]** If Glados tests are added for `applyVoiceDbfsEnvelope`, use `numRuns: 120` (the default recommendation) since the function is computationally cheap and the input space is continuous.
+  **RESOLVED (assessed, no change):** The Glados property was added under the [HIGH] item with `numRuns: 160` (within the 80–180, ≠100 policy). No further action; this INFO note is satisfied.
 
 ---
 

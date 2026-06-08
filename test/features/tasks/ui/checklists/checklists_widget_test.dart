@@ -15,6 +15,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
+import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_card_wrapper.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_section_card.dart';
@@ -58,6 +59,20 @@ class MockEntryController extends EntryController {
     updateChecklistOrderCalls.add(checklistIds);
     return;
   }
+}
+
+/// Returns a fixed `Checklist?` for a given checklist id, letting tests drive
+/// the per-card `checklist == null` branch in [ChecklistsWidget] (a deleted /
+/// stale checklist still listed in `checklistIds` collapses to
+/// `SizedBox.shrink`).
+class _StubChecklistController extends ChecklistController {
+  _StubChecklistController(this._checklist, ChecklistParams params)
+    : super(params);
+
+  final Checklist? _checklist;
+
+  @override
+  Future<Checklist?> build() async => _checklist;
 }
 
 void main() {
@@ -282,6 +297,51 @@ void main() {
       expect(find.byType(ChecklistCardWrapper), findsOneWidget);
       expect(find.text('Checklist 1'), findsOneWidget);
     });
+
+    testWidgets(
+      'skips a card whose checklist resolves to null (deleted / stale id still '
+      'listed in checklistIds)',
+      (tester) async {
+        // checklist2 is still referenced by the task but its controller now
+        // resolves to null (deleted). The per-card Consumer must collapse that
+        // card to SizedBox.shrink while still rendering the surviving card.
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              entryControllerProvider(id: 'task1').overrideWith(
+                () => MockEntryController(mockEntry: mockTask),
+              ),
+              checklistRepositoryProvider.overrideWithValue(
+                mockChecklistRepository,
+              ),
+              checklistControllerProvider((
+                id: 'checklist2',
+                taskId: 'task1',
+              )).overrideWith(
+                () => _StubChecklistController(null, const (
+                  id: 'checklist2',
+                  taskId: 'task1',
+                )),
+              ),
+            ],
+            child: WidgetTestBench(
+              child: ChecklistsWidget(
+                entryId: 'task1',
+                task: mockTask,
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 350));
+
+        // Only the surviving checklist1 card is built; checklist2 collapsed.
+        expect(find.byType(ChecklistCardWrapper), findsOneWidget);
+        expect(find.text('Checklist 1'), findsOneWidget);
+        expect(find.text('Checklist 2'), findsNothing);
+      },
+    );
 
     testWidgets('hides the section entirely when there are no checklists', (
       tester,

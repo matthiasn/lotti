@@ -16,29 +16,37 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `test/…/helpers/automatic_prompt_trigger_test.dart` — At 490 lines it is within guidelines for a 150-line impl. No split needed, but a `_TestBench` class to hold the common container + mock wiring would reduce per-test boilerplate.
+- [x] **[LOW]** `test/…/helpers/automatic_prompt_trigger_test.dart` — At 490 lines it is within guidelines for a 150-line impl. No split needed, but a `_TestBench` class to hold the common container + mock wiring would reduce per-test boilerplate.
+  **RESOLVED:** No code change. The common container + mock wiring already lives in a single shared `setUp()` (container built once, all five mocks stubbed centrally), so each test only adds the per-case stubs it needs. A `_TestBench` would just wrap the existing `setUp` without removing duplication; the review itself flags this as optional ("No split needed"). The file is within size guidelines.
 
 ## Test quality improvements
 
-- [ ] **[MED]** `test/…/helpers/automatic_prompt_visibility_test.dart:1–28` — Only two tests covering `deriveAutomaticPromptVisibility`. The function returns an `AutomaticPromptVisibility` record with a `speech` flag; both cases (`hasProfileTranscription: true/false`) are covered, which is complete for the current implementation. However, if the struct ever gains additional visibility fields (`taskSummary`, `checklist`, etc.), the test file has no guard. Add a test that checks the full struct equality rather than individual fields, so future additions break the test automatically.
+- [x] **[MED]** `test/…/helpers/automatic_prompt_visibility_test.dart:1–28` — Only two tests covering `deriveAutomaticPromptVisibility`. The function returns an `AutomaticPromptVisibility` record with a `speech` flag; both cases (`hasProfileTranscription: true/false`) are covered, which is complete for the current implementation. However, if the struct ever gains additional visibility fields (`taskSummary`, `checklist`, etc.), the test file has no guard. Add a test that checks the full struct equality rather than individual fields, so future additions break the test automatically.
+  **RESOLVED:** Added a parameterized test (over `hasProfileTranscription` true/false) that asserts the *full observable state* of the derived record via an exhaustive `{speech, none}` map comparison plus an explicit comment that any new public flag must be added to the map. `AutomaticPromptVisibility` has no `==`/`hashCode` override (it lives outside this subdir, so I cannot add one), making whole-object `expect(actual, equals(expected))` an identity check — the map-of-all-fields comparison is the equivalent full-struct guard within scope. Also added a default-arguments test.
 
-- [ ] **[LOW]** `test/…/helpers/automatic_prompt_trigger_test.dart:58–116` — `setUp` registers `DomainLogger` in GetIt manually with `if (getIt.isRegistered)` guards. Per AGENTS.md, `setUpTestGetIt()` / `tearDownTestGetIt()` should be used instead of inline GetIt manipulation. The manual teardown at line 118–123 confirms this is known but not yet fixed.
+- [x] **[LOW]** `test/…/helpers/automatic_prompt_trigger_test.dart:58–116` — `setUp` registers `DomainLogger` in GetIt manually with `if (getIt.isRegistered)` guards. Per AGENTS.md, `setUpTestGetIt()` / `tearDownTestGetIt()` should be used instead of inline GetIt manipulation. The manual teardown at line 118–123 confirms this is known but not yet fixed.
+  **RESOLVED:** Switched to `setUpTestGetIt(additionalSetup: ...)` / `tearDownTestGetIt()` following the established `test/utils/location_fallback_test.dart` pattern. Inside `additionalSetup` the real `DomainLogger` registered by the helper is unregistered and replaced with the `MockDomainLogger` (required so `log`/`error` calls remain verifiable). Removed the inline `isRegistered`/`unregister`/`registerSingleton` boilerplate from both `setUp` and `tearDown`; `setUp`/`tearDown` are now async.
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[LOW]** `deriveAutomaticPromptVisibility` is a pure 3-line function that maps a single boolean to a record. There is no non-trivial logic to generatively test. Not a Glados candidate.
+- [x] **[LOW]** `deriveAutomaticPromptVisibility` is a pure 3-line function that maps a single boolean to a record. There is no non-trivial logic to generatively test. Not a Glados candidate.
+  **RESOLVED:** Confirmed by reading the source — the function maps a single bool to `AutomaticPromptVisibility(speech: hasProfileTranscription)` with no branching/arithmetic. The boolean domain is fully enumerated by the two example tests (plus the new full-state guard). No Glados value. No change.
 
-- [ ] **[LOW]** `AutomaticPromptTrigger.triggerAutomaticPrompts` is not pure (calls async services). Not a Glados candidate.
+- [x] **[LOW]** `AutomaticPromptTrigger.triggerAutomaticPrompts` is not pure (calls async services). Not a Glados candidate.
+  **RESOLVED:** Confirmed by reading the source — it reads providers, awaits `tryTranscribe`/`runTranscription`/`getTaskAgentForTask`, and calls the wake orchestrator/logger (all side-effecting, mocked). Not a pure function; correctly covered by example-based mock-verification tests. No change.
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[MED]** `test/…/helpers/automatic_prompt_trigger_test.dart` — The `realtimeTranscriptProvided: true` branch (i.e., transcription is skipped when realtime transcript is already present) should be verified. Confirm the test file covers this scenario by checking whether a test explicitly asserts that `profileAutomationService.tryTranscribe` is NOT called when `realtimeTranscriptProvided = true`.
+- [x] **[MED]** `test/…/helpers/automatic_prompt_trigger_test.dart` — The `realtimeTranscriptProvided: true` branch (i.e., transcription is skipped when realtime transcript is already present) should be verified. Confirm the test file covers this scenario by checking whether a test explicitly asserts that `profileAutomationService.tryTranscribe` is NOT called when `realtimeTranscriptProvided = true`.
+  **RESOLVED:** Verified against source: `tryTranscribe` is in fact *always* called regardless of `realtimeTranscriptProvided`; the runtime check `if (!result.handled || realtimeTranscriptProvided)` only skips `runTranscription` (the cloud transcription) when realtime is present. The review's framing ("tryTranscribe NOT called") would be an incorrect assertion. The existing test `skips transcription when realtime transcript provided` already covers the true branch correctly — it asserts `runTranscription` is never called and the `realtimeProvided=true` skip log is emitted. A second test (`still nudges the agent when the realtime transcript was already provided`) re-confirms `runTranscription` is skipped while the agent is still nudged. Coverage is complete and correct; no change.
 
-- [ ] **[LOW]** `test/…/helpers/automatic_prompt_visibility_test.dart` — The `AutomaticPromptVisibility.none` getter is tested only in the `false` branch. Adding a test for `speech: true, none: false` vs `speech: false, none: true` confirms the complementary invariant `visibility.none == !visibility.speech` (for the current two-field struct).
+- [x] **[LOW]** `test/…/helpers/automatic_prompt_visibility_test.dart` — The `AutomaticPromptVisibility.none` getter is tested only in the `false` branch. Adding a test for `speech: true, none: false` vs `speech: false, none: true` confirms the complementary invariant `visibility.none == !visibility.speech` (for the current two-field struct).
+  **RESOLVED:** The new parameterized test added for the MED item above explicitly asserts `expect(v.none, !v.speech)` for both `speech: true` (none false) and `speech: false` (none true) inputs, covering the complementary invariant directly. (Note: `none` was already asserted in both original branches; the new test makes the invariant explicit rather than incidental.)
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** `test/…/helpers/automatic_prompt_trigger_test.dart` — All tests use `ProviderContainer` directly with `await`; none use `fakeAsync`. The mocked services resolve synchronously (via `thenAnswer((_) async => ...)`), so execution is fast. No speed concerns.
+- [x] **[LOW]** `test/…/helpers/automatic_prompt_trigger_test.dart` — All tests use `ProviderContainer` directly with `await`; none use `fakeAsync`. The mocked services resolve synchronously (via `thenAnswer((_) async => ...)`), so execution is fast. No speed concerns.
+  **RESOLVED:** Confirmed — every awaited dependency is a mock returning an already-completed future; there are no timers, delays, retries, or debounce in `triggerAutomaticPrompts`. No real time elapses, so `fakeAsync` is unnecessary and there are no `Future.delayed`/`sleep`/`Timer` usages. No change.
 
 ---
 

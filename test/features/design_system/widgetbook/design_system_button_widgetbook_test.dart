@@ -47,17 +47,13 @@ const _expectedComponentNames = [
 
 void main() {
   group('buildDesignSystemWidgetbookFolder', () {
-    testWidgets('builds the button overview use case and includes components', (
-      tester,
-    ) async {
+    // Catalogue shape is a pure-data property of the folder tree, so it needs
+    // no widget pump — keep it separate from the interactive button test below.
+    test('exposes every component with an Overview-first use case', () {
       final folder = buildDesignSystemWidgetbookFolder();
       final components = folder.children!
           .whereType<WidgetbookComponent>()
           .toList();
-      final buttonComponent = components.singleWhere(
-        (component) => component.name == 'Buttons',
-      );
-      final useCase = buttonComponent.useCases.single;
 
       expect(folder.name, 'Design System');
       expect(
@@ -72,6 +68,17 @@ void main() {
           reason: component.name,
         );
       }
+    });
+
+    testWidgets('renders the interactive button overview use case', (
+      tester,
+    ) async {
+      final folder = buildDesignSystemWidgetbookFolder();
+      final buttonComponent = folder.children!
+          .whereType<WidgetbookComponent>()
+          .singleWhere((component) => component.name == 'Buttons');
+      final useCase = buttonComponent.useCases.single;
+
       expect(useCase.name, 'Overview');
 
       await tester.pumpWidget(

@@ -36,6 +36,17 @@ void _testActorEntrypoint(SendPort readyPort) {
           'data': command['data'],
         });
         replyTo?.send(<String, Object?>{'ok': true});
+      case 'echo':
+        // Reflects the merged command map back to the host so the test can
+        // assert that arbitrary payload fields survived the round-trip and
+        // that `send` injected `command`.
+        replyTo?.send(<String, Object?>{
+          'ok': true,
+          'echoedCommand': cmd,
+          'alpha': command['alpha'],
+          'beta': command['beta'],
+          'nested': command['nested'],
+        });
       case 'slow':
         // Deliberately slow command — never replies.
         // Used to test timeout behavior.
@@ -111,9 +122,50 @@ void main() {
       expect(ping3['ok'], isTrue);
     });
 
+    test('merges non-trivial payload into the command round-trip', () async {
+      host = await SyncActorHost.spawn(entrypoint: _testActorEntrypoint);
+
+      final response = await host.send(
+        'echo',
+        payload: {
+          'alpha': 'a-value',
+          'beta': 42,
+          'nested': {'key': 'value'},
+        },
+      );
+
+      expect(response['ok'], isTrue);
+      // `command` is injected by send() and wins over any payload key.
+      expect(response['echoedCommand'], 'echo');
+      // All payload fields survived the SendPort round-trip intact.
+      expect(response['alpha'], 'a-value');
+      expect(response['beta'], 42);
+      expect(response['nested'], {'key': 'value'});
+    });
+
+    test('command always wins over a colliding payload command key', () async {
+      host = await SyncActorHost.spawn(entrypoint: _testActorEntrypoint);
+
+      // A payload that tries to override `command` must not win: send() spreads
+      // the payload first, then sets `command`, so the explicit command stands.
+      final response = await host.send(
+        'echo',
+        payload: {'command': 'ping', 'alpha': 'kept'},
+      );
+
+      expect(response['ok'], isTrue);
+      expect(response['echoedCommand'], 'echo');
+      expect(response['alpha'], 'kept');
+    });
+
     test('command timeout returns error', () async {
       host = await SyncActorHost.spawn(entrypoint: _testActorEntrypoint);
 
+      // Real wall-clock time is required here, not fakeAsync: the timeout
+      // fires on the host side while a genuine isolate command is in flight
+      // (the actor never replies to `slow`). This crosses the isolate boundary,
+      // so there is no fake clock to advance — 100 ms is the actual budget the
+      // host waits before reporting TIMEOUT.
       final response = await host.send(
         'slow',
         timeout: const Duration(milliseconds: 100),
@@ -156,7 +208,10 @@ void main() {
       await host.send('emitTestEvent', payload: {'data': 'hello'});
 
       final event = await eventCompleter.future.timeout(
-        const Duration(seconds: 2),
+        // Isolate event round-trips resolve in milliseconds; 500 ms is
+        // hang-failure headroom, not a wait. Real time is unavoidable here
+        // because the event crosses the isolate boundary.
+        const Duration(milliseconds: 500),
       );
       expect(event['event'], 'testEvent');
       expect(event['data'], 'hello');

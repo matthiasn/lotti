@@ -166,7 +166,7 @@ void main() {
       expect(operations[1].value, equals('\n'));
     });
 
-    testWidgets('configures embed builders and unknown fallback', (
+    testWidgets('wires the UnknownEmbedBuilder fallback for unknown embeds', (
       WidgetTester tester,
     ) async {
       const entryId = 'embed-config';
@@ -179,17 +179,17 @@ void main() {
       );
 
       await tester.pump();
-
       await tester.pump(const Duration(milliseconds: 300));
 
+      // EditorWidget must wire the project's UnknownEmbedBuilder as the
+      // catch-all for embed types it does not explicitly support — that is the
+      // contract this test pins. The fallback's actual rendering (the warning
+      // glyph + "Unsupported content (<type>)" label) is exercised
+      // behaviourally in embed_builders_test.dart; driving a live custom
+      // BlockEmbed through QuillEditor here is brittle (block-embed insertion
+      // does not reliably lay out via a single pump), so we assert the wiring
+      // of the specific fallback builder type instead of re-rendering it.
       final quillEditor = tester.widget<QuillEditor>(find.byType(QuillEditor));
-      final builders = quillEditor.config.embedBuilders;
-
-      expect(builders, isNotNull);
-      expect(
-        builders!.any((builder) => builder is DividerEmbedBuilder),
-        isTrue,
-      );
       expect(
         quillEditor.config.unknownEmbedBuilder,
         isA<UnknownEmbedBuilder>(),
@@ -285,6 +285,30 @@ void main() {
       // throwing (a double-dispose or use-after-dispose would surface here).
       expect(tester.takeException(), isNull);
     });
+
+    // The optional `margin` constructor parameter is forwarded verbatim to the
+    // outer Card. Default (null) and an explicit value share one flow so the
+    // forwarding contract is asserted without copy-pasted permutations.
+    for (final margin in <EdgeInsets?>[
+      null,
+      const EdgeInsets.all(12),
+    ]) {
+      testWidgets('forwards margin=$margin to the Card', (
+        WidgetTester tester,
+      ) async {
+        await tester.pumpWidget(
+          buildEditorTestWidget(
+            entryId: 'margin-${margin == null ? 'null' : 'set'}',
+            showToolbar: false,
+            margin: margin,
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 450));
+
+        final card = tester.widget<Card>(find.byType(Card));
+        expect(card.margin, margin);
+      });
+    }
   });
 
   group('getSelectedText', () {
@@ -842,6 +866,7 @@ Widget buildEditorTestWidget({
   required String entryId,
   required bool showToolbar,
   SpeechDictionaryService? speechDictionaryServiceOverride,
+  EdgeInsets? margin,
 }) {
   return ProviderScope(
     overrides: [
@@ -873,7 +898,7 @@ Widget buildEditorTestWidget({
                 maxHeight: 800,
                 maxWidth: 800,
               ),
-              child: EditorWidget(entryId: entryId),
+              child: EditorWidget(entryId: entryId, margin: margin),
             ),
           ),
         ),

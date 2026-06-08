@@ -1656,6 +1656,10 @@ void main() {
       );
       expect(find.text(strings.aiSetupWizardRunLabel), findsOneWidget);
       expect(
+        find.text(strings.aiSetupWizardCreatesOptimized),
+        findsOneWidget,
+      );
+      expect(
         find.text(strings.aiSetupWizardSafeToRunMultiple),
         findsOneWidget,
       );
@@ -1964,59 +1968,11 @@ void main() {
       },
     );
 
-    testWidgets('displays all localized strings correctly', (
-      WidgetTester tester,
-    ) async {
-      await _setTestSurface(tester, height: 1600);
-
-      final geminiProvider = AiConfig.inferenceProvider(
-        id: 'gemini-provider-id',
-        name: 'My Gemini',
-        baseUrl: 'https://generativelanguage.googleapis.com/v1beta/openai',
-        apiKey: 'test-key',
-        createdAt: DateTime(2024, 3, 15),
-        inferenceProviderType: InferenceProviderType.gemini,
-      );
-
-      when(
-        () => mockRepository.getConfigById('gemini-provider-id'),
-      ).thenAnswer((_) async => geminiProvider);
-      when(
-        () => mockRepository.watchConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) => Stream.value([]));
-      when(
-        () => mockRepository.getConfigsByType(AiConfigType.inferenceProvider),
-      ).thenAnswer((_) async => [geminiProvider]);
-
-      await tester.pumpWidget(
-        buildTestWidget(
-          configId: 'gemini-provider-id',
-          existingProviders: [geminiProvider],
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-
-      final strings = l10n(tester);
-
-      // Scroll to find AI Setup Wizard section
-      final aiSetupSection = find.text(strings.aiSetupWizardTitle);
-      await tester.ensureVisible(aiSetupSection);
-      await tester.pump();
-
-      // Verify all localized strings are displayed
-      expect(find.text(strings.aiSetupWizardTitle), findsOneWidget);
-      expect(find.text(strings.aiSetupWizardRunLabel), findsOneWidget);
-      expect(
-        find.text(strings.aiSetupWizardCreatesOptimized),
-        findsOneWidget,
-      );
-      expect(
-        find.text(strings.aiSetupWizardSafeToRunMultiple),
-        findsOneWidget,
-      );
-      expect(find.text(strings.aiSetupWizardRunButton), findsOneWidget);
-    });
+    // Note: a separate 'displays all localized strings correctly' test was
+    // removed — it pumped the identical Gemini provider with the same mocks
+    // and asserted the same wizard strings as 'shows AI Setup Wizard section
+    // for existing Gemini provider' above. Its one unique assertion
+    // (aiSetupWizardCreatesOptimized) was folded into that test.
 
     testWidgets('shows Running state while setup is in progress', (
       WidgetTester tester,

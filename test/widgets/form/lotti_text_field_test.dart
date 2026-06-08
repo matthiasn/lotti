@@ -127,7 +127,9 @@ void main() {
       expect(textField.enabled, isFalse);
     });
 
-    testWidgets('respects readOnly state', (tester) async {
+    testWidgets('readOnly propagates to the editable and blocks the keyboard', (
+      tester,
+    ) async {
       controller.text = 'Original text';
 
       await tester.pumpWidget(
@@ -139,17 +141,38 @@ void main() {
         ),
       );
 
-      // Verify the field shows the original text
+      // readOnly must reach the underlying TextField *and* its EditableText —
+      // the wrapper flag alone proves nothing about rejected edits.
+      final textField = tester.widget<TextField>(find.byType(TextField));
+      expect(textField.readOnly, isTrue);
+      final editable = tester.widget<EditableText>(find.byType(EditableText));
+      expect(editable.readOnly, isTrue);
+
+      // Tapping a read-only field must NOT open a software-keyboard input
+      // connection, so no edit can be applied. (A read-only EditableText
+      // returns early from requestKeyboard, leaving the connection closed.)
+      await tester.tap(find.byType(TextFormField));
+      await tester.pump();
+      expect(tester.testTextInput.hasAnyClients, isFalse);
+
+      // The pre-set text is shown and unchanged.
       expect(find.text('Original text'), findsOneWidget);
+      expect(controller.text, 'Original text');
+    });
 
-      // Verify the widget is created with readOnly property
-      final lottiTextField = tester.widget<LottiTextField>(
-        find.byType(LottiTextField),
+    testWidgets('an editable field DOES accept input (readOnly contrast)', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        WidgetTestBench(
+          child: LottiTextField(controller: controller),
+        ),
       );
-      expect(lottiTextField.readOnly, isTrue);
 
-      // The controller text remains as is
-      expect(controller.text, equals('Original text'));
+      await tester.enterText(find.byType(TextFormField), 'typed value');
+      await tester.pump();
+
+      expect(controller.text, 'typed value');
     });
 
     testWidgets('handles text input correctly', (tester) async {

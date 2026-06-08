@@ -139,6 +139,33 @@ void main() {
         expect(harness.spy.uris.length, spyCountBefore);
       },
     );
+
+    testWidgets(
+      'a first-frame deep link that already carries a panel-local UUID '
+      'collapses to the owning tree node and does not beam back',
+      (tester) async {
+        // Distinct from the test above: here the UUID is present on the
+        // *initial* route (mount-time deep link), not appended after a
+        // bare-list seed. The post-frame seed must greedily match
+        // `/settings/categories` and drop the trailing `abc-123`, and
+        // the URL-driven-sync guard must suppress a beam-back that
+        // would otherwise canonicalize the URL and strip the UUID
+        // before the panel dispatcher reads it.
+        final harness = await _pumpBridge(
+          tester,
+          initialRoute: _route('/settings/categories/abc-123'),
+        );
+
+        expect(harness.container.read(settingsTreePathProvider), [
+          'definitions',
+          'definitions/categories',
+        ]);
+        // No beam emitted: the seed is URL-driven, so `_urlDrivenSyncs`
+        // suppresses the path listener from beaming the canonical
+        // `/settings/categories` and erasing the `/abc-123` segment.
+        expect(harness.spy.uris, isEmpty);
+      },
+    );
   });
 
   group('SettingsTreeUrlSync — tree → URL', () {

@@ -91,6 +91,33 @@ class _GeneratedSkipScenario {
   }
 }
 
+/// Scenario for the inner `_locateAll` scan invariant: a list of change sets
+/// (each an ordered list of item kinds, all pending) plus the single query
+/// kind whose fingerprint is retracted. Because every item is pending and the
+/// fingerprint is requested once, `plan().staged` is a faithful 1:1 image of
+/// `_locateAll`'s matches — letting the property pin the scan's invariants
+/// (match count, per-item fingerprint identity) without a private seam.
+class _GeneratedLocateAllScenario {
+  const _GeneratedLocateAllScenario({
+    required this.sets,
+    required this.queryKind,
+  });
+
+  /// Each inner list is one change set's pending item kinds, in order.
+  final List<List<_GeneratedRetractionItemKind>> sets;
+  final _GeneratedRetractionItemKind queryKind;
+
+  /// Total number of items across all sets whose fingerprint matches the query
+  /// — the exact length `_locateAll` must return (all items pending here).
+  int get expectedMatchCount =>
+      sets.expand((set) => set).where((kind) => kind == queryKind).length;
+
+  @override
+  String toString() {
+    return '_GeneratedLocateAllScenario(sets: $sets, queryKind: $queryKind)';
+  }
+}
+
 class _ExpectedRetractionResult {
   const _ExpectedRetractionResult({
     required this.fingerprint,
@@ -257,6 +284,20 @@ extension _AnyGeneratedSuggestionRetractionScenario on glados.Any {
           stagedKinds: stagedKinds,
           skipKinds: skipKinds,
         ),
+      );
+
+  glados.Generator<_GeneratedLocateAllScenario> get locateAllScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.ListAnys(this).listWithLengthInRange(
+          0,
+          4,
+          glados.ListAnys(this).listWithLengthInRange(0, 4, retractionItemKind),
+        ),
+        retractionItemKind,
+        (
+          List<List<_GeneratedRetractionItemKind>> sets,
+          _GeneratedRetractionItemKind queryKind,
+        ) => _GeneratedLocateAllScenario(sets: sets, queryKind: queryKind),
       );
 }
 
@@ -1704,5 +1745,95 @@ void main() {
         );
       }
     }, tags: 'glados');
+
+    // Pins the inner `_locateAll` scan invariants through the public `plan`
+    // surface: with every item pending and the fingerprint requested exactly
+    // once, the sibling sweep stages one retraction per match, so
+    // `plan().staged` is a 1:1 image of `_locateAll`'s output.
+    glados.Glados(
+      glados.any.locateAllScenario,
+      glados.ExploreConfig(numRuns: 140),
+    ).test(
+      'plan stages exactly the items _locateAll matches by fingerprint',
+      (
+        scenario,
+      ) async {
+        final pendingSets = [
+          for (var i = 0; i < scenario.sets.length; i++)
+            setWith(
+              [for (final kind in scenario.sets[i]) kind.item()],
+              id: 'locate-cs-$i',
+            ),
+        ];
+        stubPendingSets(pendingSets);
+
+        final queryItem = scenario.queryKind.item();
+        final queryFingerprint = ChangeItem.fingerprint(queryItem);
+
+        final plan = await withClock(
+          testClock,
+          () => service.plan(
+            agentId: 'agent-locate',
+            taskId: 'task-xyz',
+            requests: [
+              RetractionRequest(
+                fingerprint: queryFingerprint,
+                reason: 'locate-all property',
+              ),
+            ],
+          ),
+        );
+
+        // Length invariant: exactly one staged entry per matching item across
+        // every set (the scan never drops or duplicates a match).
+        expect(
+          plan.staged,
+          hasLength(scenario.expectedMatchCount),
+          reason: '$scenario',
+        );
+
+        // Identity invariant: every returned item carries the queried
+        // fingerprint — the scan never returns a non-matching item.
+        for (final staged in plan.staged) {
+          expect(
+            ChangeItem.fingerprint(staged.item),
+            queryFingerprint,
+            reason: '$scenario',
+          );
+        }
+
+        // Provenance invariant: each staged (changeSet, itemIndex) actually
+        // points at a matching item in the source sets — the scan reports
+        // truthful coordinates, not just a correct count.
+        final setsById = {for (final set in pendingSets) set.id: set};
+        for (final staged in plan.staged) {
+          final source = setsById[staged.changeSet.id];
+          expect(source, isNotNull, reason: '$scenario');
+          expect(
+            staged.itemIndex,
+            inInclusiveRange(0, source!.items.length - 1),
+            reason: '$scenario',
+          );
+          expect(
+            ChangeItem.fingerprint(source.items[staged.itemIndex]),
+            queryFingerprint,
+            reason: '$scenario',
+          );
+        }
+
+        // The single LLM-facing result reflects the match: `retracted` when at
+        // least one sibling was found, `notFound` when the scan came up empty
+        // (no resolved-ledger fallback since the ledger is stubbed empty).
+        expect(plan.results, hasLength(1), reason: '$scenario');
+        expect(
+          plan.results.single.outcome,
+          scenario.expectedMatchCount > 0
+              ? RetractionOutcome.retracted
+              : RetractionOutcome.notFound,
+          reason: '$scenario',
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

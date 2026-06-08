@@ -167,6 +167,8 @@ void main() {
       expect(animatedItem.tapScale, 0.985);
       expect(animatedItem.hoverElevation, 2);
       expect(animatedItem.margin, EdgeInsets.zero);
+      // ModernTaskCard draws its own shadow, so the wrapper disables its own.
+      expect(animatedItem.disableShadow, isTrue);
     });
 
     testWidgets('hover animation triggers on desktop', (

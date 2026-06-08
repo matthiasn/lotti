@@ -3,26 +3,18 @@ import 'dart:async';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
-import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/pipeline/sync_pipeline.dart';
-import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
-import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
-
-class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
-
-class MockSyncRoomManager extends Mock implements SyncRoomManager {}
-
+// MockMatrixSyncGateway / MockMatrixSessionManager / MockSyncRoomManager come
+// from the centralized test/mocks/mocks.dart. SyncPipeline has no centralized
+// mock, so MockPipeline is declared locally.
 class MockPipeline extends Mock implements SyncPipeline {}
-
-class MockClient extends Mock implements Client {}
 
 class _FakeClient extends Fake implements Client {}
 
@@ -225,7 +217,7 @@ void main() {
           client: any<Client>(named: 'client'),
         ),
       ).thenAnswer((_) async {});
-      when(() => sessionManager.client).thenReturn(MockClient());
+      when(() => sessionManager.client).thenReturn(MockMatrixClient());
       when(() => pipeline.initialize()).thenAnswer((_) async {});
       when(() => pipeline.start()).thenAnswer((_) async {});
       when(() => pipeline.dispose()).thenAnswer((_) async {});
@@ -555,7 +547,7 @@ void main() {
               client: any<Client>(named: 'client'),
             ),
           ).thenAnswer((_) async {});
-          when(() => sessionManager.client).thenReturn(MockClient());
+          when(() => sessionManager.client).thenReturn(MockMatrixClient());
           when(sessionManager.isLoggedIn).thenAnswer((_) => loggedIn);
           when(pipeline.initialize).thenAnswer((_) async {});
           when(pipeline.start).thenAnswer((_) async {

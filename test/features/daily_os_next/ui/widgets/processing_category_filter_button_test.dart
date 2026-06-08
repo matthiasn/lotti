@@ -11,6 +11,14 @@ import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../categories/test_utils.dart';
 
+// Exact Wolt modal transition durations for the bottom-sheet modal type the
+// picker resolves to under the phone-sized test surface (width 390 < 560
+// breakpoint): opening the sheet uses the enter duration, closing it (Done /
+// pop) uses the reverse duration. Pumping the precise duration once is enough
+// to drive the transition to completion without resorting to pumpAndSettle.
+const _modalEnterDuration = Duration(milliseconds: 350);
+const _modalReverseDuration = Duration(milliseconds: 250);
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -53,8 +61,10 @@ void main() {
 
   Future<void> openPicker(WidgetTester tester) async {
     await tester.tap(find.byIcon(Icons.filter_alt_outlined));
+    // First pump starts the open transition; the second advances exactly the
+    // enter animation so the sheet is fully presented.
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(_modalEnterDuration);
   }
 
   testWidgets('opens the Wolt multi-select picker with user categories', (
@@ -78,8 +88,11 @@ void main() {
     await tester.tap(find.text('Actual Personal'));
     await tester.pump();
     await tester.tap(find.text('Done'));
+    // First pump starts the close (pop) transition; the second advances exactly
+    // the reverse animation so the modal future resolves and the preference
+    // save runs.
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(_modalReverseDuration);
 
     verify(
       () => mocks.settingsDb.saveSettingsItem(
@@ -112,8 +125,11 @@ void main() {
 
     // Confirm: no exclusions persisted because everything is selected again.
     await tester.tap(find.text('Done'));
+    // First pump starts the close (pop) transition; the second advances exactly
+    // the reverse animation so the modal future resolves and the preference
+    // save runs.
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(_modalReverseDuration);
 
     verify(
       () => mocks.settingsDb.saveSettingsItem(
@@ -142,8 +158,11 @@ void main() {
     expect(find.byIcon(Icons.radio_button_unchecked_rounded), findsNothing);
 
     await tester.tap(find.text('Done'));
+    // First pump starts the close (pop) transition; the second advances exactly
+    // the reverse animation so the modal future resolves and the preference
+    // save runs.
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(_modalReverseDuration);
 
     verify(
       () => mocks.settingsDb.saveSettingsItem(
@@ -219,8 +238,11 @@ void main() {
 
     // Confirming with no categories persists an empty exclusion set.
     await tester.tap(find.text('Done'));
+    // First pump starts the close (pop) transition; the second advances exactly
+    // the reverse animation so the modal future resolves and the preference
+    // save runs.
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 600));
+    await tester.pump(_modalReverseDuration);
 
     verify(
       () => mocks.settingsDb.saveSettingsItem(

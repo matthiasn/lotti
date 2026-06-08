@@ -207,8 +207,14 @@ void main() {
       final emissions = <List<SyncNodeProfile>>[];
       final sub = repo.watchKnownNodes().listen(emissions.add);
 
+      // Settle each upsert's broadcast (a microtask on the broadcast
+      // controller) before issuing the next, so the test asserts on one
+      // emission per upsert deterministically rather than relying on the
+      // controller never coalescing rapid writes.
       await repo.upsertNode(makeProfile(hostId: 'peer-1', updatedAt: t0));
+      await pumpEventQueue();
       await repo.upsertNode(makeProfile(hostId: 'peer-2', updatedAt: t1));
+      await pumpEventQueue();
       await repo.upsertNode(
         makeProfile(
           hostId: 'peer-1',
@@ -216,8 +222,6 @@ void main() {
           displayName: 'Renamed',
         ),
       );
-
-      // Give pending async writes time to settle through SettingsDb.
       await pumpEventQueue();
 
       expect(emissions, hasLength(3));

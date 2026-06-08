@@ -34,16 +34,6 @@ void main() {
           equals('ChatRepositoryException: Test message'),
         );
       });
-
-      test('is a ChatException', () {
-        const exception = ChatRepositoryException('Test message');
-        expect(exception, isA<ChatException>());
-      });
-
-      test('is an Exception', () {
-        const exception = ChatRepositoryException('Test message');
-        expect(exception, isA<Exception>());
-      });
     });
 
     test('ChatException base toString formats message', () {

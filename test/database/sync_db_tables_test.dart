@@ -4,6 +4,8 @@ import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:glados/glados.dart';
 import 'package:lotti/database/sync_db.dart';
 
+import 'sync_db_test_utils.dart';
+
 void main() {
   group('InboundEventQueue and QueueMarkers table schema -', () {
     // These tests directly insert into and query from the InboundEventQueue
@@ -14,10 +16,15 @@ void main() {
     // lightest-weight way to reach those declaration lines.
     late SyncDatabase database;
 
-    setUp(() async {
+    // The migration ladder runs once for the group; each test starts clean
+    // via clearAllSyncTables.
+    setUpAll(() async {
       database = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(database);
+    });
+    tearDownAll(() async {
       await database.close();
     });
 

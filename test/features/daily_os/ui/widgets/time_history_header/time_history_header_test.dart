@@ -162,8 +162,24 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Should show a loading indicator
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // Should show a loading indicator — and specifically the load-more
+      // spinner built by _buildLoadingIndicator (strokeWidth 2), not some
+      // other progress indicator. Asserting the strokeWidth makes the test
+      // resilient against unrelated indicators appearing elsewhere.
+      final spinnerFinder = find.byType(CircularProgressIndicator);
+      expect(spinnerFinder, findsOneWidget);
+      final spinner = tester.widget<CircularProgressIndicator>(spinnerFinder);
+      expect(spinner.strokeWidth, 2);
+
+      // The spinner is the trailing item of the horizontal day-selector
+      // ListView (the scroll area), so it must sit inside a Scrollable.
+      expect(
+        find.ancestor(
+          of: spinnerFinder,
+          matching: find.byType(Scrollable),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('aligns stream chart to day segment centers', (tester) async {

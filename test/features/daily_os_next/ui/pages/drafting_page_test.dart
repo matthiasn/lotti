@@ -262,6 +262,32 @@ void _setSurface(WidgetTester tester, [Size size = const Size(1280, 1200)]) {
   addTearDown(tester.view.reset);
 }
 
+/// Sets the surface, pumps a [DraftingPage] backed by [agent], and runs
+/// one frame so the initial loading shell lands.
+Future<void> _pumpDrafting(
+  WidgetTester tester,
+  _FakeAgent agent, {
+  Size size = const Size(1280, 1200),
+}) async {
+  _setSurface(tester, size);
+  await tester.pumpWidget(
+    _wrap(_page(), agent: agent, size: size),
+  );
+  await tester.pump();
+}
+
+/// Completes the agent's learnings future with [cards] and pumps two
+/// frames so the drafting body (header + skeleton + cards) settles.
+Future<void> _resolveLearnings(
+  WidgetTester tester,
+  _FakeAgent agent, {
+  List<LearningCard>? cards,
+}) async {
+  agent.learnings.complete(cards ?? [_card()]);
+  await tester.pump();
+  await tester.pump();
+}
+
 void main() {
   group('DraftingPage', () {
     testWidgets('initial loading state shows a CircularProgressIndicator', (
@@ -271,20 +297,17 @@ void main() {
       final agent = _FakeAgent();
       await tester.pumpWidget(_wrap(_page(), agent: agent));
       // No pump that runs microtasks → controller's build() still pending.
+      // (Cannot use _pumpDrafting here: its trailing pump() would resolve the
+      // controller and leave the loading shell.)
       expect(find.byType(CircularProgressIndicator), findsWidgets);
     });
 
     testWidgets(
       'once learnings resolve: skeleton + header + learning cards render',
       (tester) async {
-        _setSurface(tester);
         final agent = _FakeAgent();
-        await tester.pumpWidget(_wrap(_page(), agent: agent));
-        await tester.pump();
-
-        agent.learnings.complete([_card()]);
-        await tester.pump();
-        await tester.pump();
+        await _pumpDrafting(tester, agent);
+        await _resolveLearnings(tester, agent);
 
         final messages = tester.element(find.byType(DraftingPage)).messages;
         expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
@@ -297,14 +320,9 @@ void main() {
     testWidgets('keeps drafting body during provider refreshes', (
       tester,
     ) async {
-      _setSurface(tester);
       final agent = _FakeAgent();
-      await tester.pumpWidget(_wrap(_page(), agent: agent));
-      await tester.pump();
-
-      agent.learnings.complete([_card()]);
-      await tester.pump();
-      await tester.pump();
+      await _pumpDrafting(tester, agent);
+      await _resolveLearnings(tester, agent);
 
       final messages = tester.element(find.byType(DraftingPage)).messages;
       expect(find.text(messages.dailyOsNextDraftingHeader), findsOneWidget);
@@ -337,10 +355,8 @@ void main() {
     testWidgets('learnings failure renders an empty cards column gracefully', (
       tester,
     ) async {
-      _setSurface(tester);
       final agent = _FakeAgent();
-      await tester.pumpWidget(_wrap(_page(), agent: agent));
-      await tester.pump();
+      await _pumpDrafting(tester, agent);
 
       agent.learnings.completeError('learnings broke');
       await tester.pump();
@@ -357,9 +373,7 @@ void main() {
     testWidgets('initial controller failure renders localized error copy', (
       tester,
     ) async {
-      _setSurface(tester);
-      await tester.pumpWidget(_wrap(_page(), agent: _ThrowingDraftAgent()));
-      await tester.pump();
+      await _pumpDrafting(tester, _ThrowingDraftAgent());
       await tester.pump();
 
       final messages = tester.element(find.byType(DraftingPage)).messages;
@@ -370,16 +384,9 @@ void main() {
     testWidgets('narrow layout (< 900) stacks left + right in a Column', (
       tester,
     ) async {
-      _setSurface(tester, const Size(600, 1400));
       final agent = _FakeAgent();
-      await tester.pumpWidget(
-        _wrap(_page(), agent: agent, size: const Size(600, 1400)),
-      );
-      await tester.pump();
-
-      agent.learnings.complete([_card()]);
-      await tester.pump();
-      await tester.pump();
+      await _pumpDrafting(tester, agent, size: const Size(600, 1400));
+      await _resolveLearnings(tester, agent);
 
       // Both sections rendered in vertical column.
       expect(find.byType(SkeletonAgenda), findsOneWidget);
@@ -389,14 +396,9 @@ void main() {
     testWidgets(
       'draft resolution (returnToRootOnReady=false) pushReplacements to DayPage',
       (tester) async {
-        _setSurface(tester);
         final agent = _FakeAgent();
-        await tester.pumpWidget(_wrap(_page(), agent: agent));
-        await tester.pump();
-
-        agent.learnings.complete([_card()]);
-        await tester.pump();
-        await tester.pump();
+        await _pumpDrafting(tester, agent);
+        await _resolveLearnings(tester, agent);
 
         agent.draft.complete(_readyPlan());
         // ref.listen + post-frame callback + new route transition.
@@ -447,9 +449,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));
 
-        agent.learnings.complete([_card()]);
-        await tester.pump();
-        await tester.pump();
+        await _resolveLearnings(tester, agent);
 
         agent.draft.complete(_readyPlan());
         await tester.pump();
@@ -467,15 +467,11 @@ void main() {
     testWidgets(
       'draft that resolves before learnings still advances to DayPage',
       (tester) async {
-        _setSurface(tester);
         final draft = Completer<DraftPlan>()..complete(_readyPlan());
         final agent = _FakeAgent(draft: draft);
-        await tester.pumpWidget(_wrap(_page(), agent: agent));
-        await tester.pump();
+        await _pumpDrafting(tester, agent);
 
-        agent.learnings.complete([_card()]);
-        await tester.pump();
-        await tester.pump();
+        await _resolveLearnings(tester, agent);
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 400));
 
@@ -487,14 +483,9 @@ void main() {
     testWidgets(
       'draft failure after the first body keeps stale drafting content mounted',
       (tester) async {
-        _setSurface(tester);
         final agent = _FakeAgent();
-        await tester.pumpWidget(_wrap(_page(), agent: agent));
-        await tester.pump();
-
-        agent.learnings.complete([_card()]);
-        await tester.pump();
-        await tester.pump();
+        await _pumpDrafting(tester, agent);
+        await _resolveLearnings(tester, agent);
 
         agent.draft.completeError('drafting blew up');
         await tester.pump();

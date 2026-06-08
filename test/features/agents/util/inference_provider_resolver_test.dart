@@ -161,21 +161,31 @@ extension _AnyGeneratedProviderResolutionScenario on glados.Any {
 void main() {
   late MockAiConfigRepository mockAiConfig;
 
-  setUpAll(() {
-    registerFallbackValue(AiConfigType.model);
-  });
+  // No registerFallbackValue is needed here: getConfigsByType is always called
+  // and verified with a concrete AiConfigType.model (never any()), and the only
+  // any() matcher is getConfigById(any()) whose argument is a built-in String.
 
   setUp(() {
     mockAiConfig = MockAiConfigRepository();
   });
 
-  void stubResolution({String apiKey = 'test-key'}) {
+  // Stubs the model-type lookup with [models].
+  void stubModels(List<AiConfig> models) {
     when(
       () => mockAiConfig.getConfigsByType(AiConfigType.model),
-    ).thenAnswer((_) async => [testAiModel()]);
+    ).thenAnswer((_) async => models);
+  }
+
+  // Stubs a single getConfigById lookup for [id] to return [config].
+  void stubProvider(String id, AiConfig? config) {
     when(
-      () => mockAiConfig.getConfigById('provider-1'),
-    ).thenAnswer((_) async => testInferenceProvider(apiKey: apiKey));
+      () => mockAiConfig.getConfigById(id),
+    ).thenAnswer((_) async => config);
+  }
+
+  void stubResolution({String apiKey = 'test-key'}) {
+    stubModels([testAiModel()]);
+    stubProvider('provider-1', testInferenceProvider(apiKey: apiKey));
   }
 
   group('resolveInferenceProvider', () {
@@ -192,9 +202,7 @@ void main() {
     });
 
     test('returns null when model is not found', () async {
-      when(
-        () => mockAiConfig.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => []);
+      stubModels([]);
 
       final provider = await resolveInferenceProvider(
         modelId: 'models/nonexistent',
@@ -205,13 +213,9 @@ void main() {
     });
 
     test('returns null when provider is not an inference provider', () async {
-      when(
-        () => mockAiConfig.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => [testAiModel()]);
+      stubModels([testAiModel()]);
       // Return a model config instead of an inference provider.
-      when(
-        () => mockAiConfig.getConfigById('provider-1'),
-      ).thenAnswer((_) async => testAiModel());
+      stubProvider('provider-1', testAiModel());
 
       final provider = await resolveInferenceProvider(
         modelId: 'models/gemini-3-flash-preview',
@@ -247,14 +251,8 @@ void main() {
     );
 
     test('returns provider for local provider with empty API key', () async {
-      when(() => mockAiConfig.getConfigsByType(AiConfigType.model)).thenAnswer(
-        (_) async => [
-          testAiModel(inferenceProviderId: 'provider-local'),
-        ],
-      );
-      when(
-        () => mockAiConfig.getConfigById('provider-local'),
-      ).thenAnswer((_) async => testLocalInferenceProvider());
+      stubModels([testAiModel(inferenceProviderId: 'provider-local')]);
+      stubProvider('provider-local', testLocalInferenceProvider());
 
       final provider = await resolveInferenceProvider(
         modelId: 'models/gemini-3-flash-preview',
@@ -287,12 +285,8 @@ void main() {
         inferenceProviderId: 'provider-b',
       );
 
-      when(
-        () => mockAiConfig.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => [model1, model2]);
-      when(
-        () => mockAiConfig.getConfigById('provider-a'),
-      ).thenAnswer((_) async => testInferenceProvider(id: 'provider-a'));
+      stubModels([model1, model2]);
+      stubProvider('provider-a', testInferenceProvider(id: 'provider-a'));
 
       final provider = await resolveInferenceProvider(
         modelId: 'models/gemini-3-flash-preview',
@@ -316,16 +310,11 @@ void main() {
           inferenceProviderId: 'valid-gemini-provider',
         );
 
-        when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [staleModel, validModel]);
-        when(
-          () => mockAiConfig.getConfigById('deleted-gemini-provider'),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockAiConfig.getConfigById('valid-gemini-provider'),
-        ).thenAnswer(
-          (_) async => testInferenceProvider(id: 'valid-gemini-provider'),
+        stubModels([staleModel, validModel]);
+        stubProvider('deleted-gemini-provider', null);
+        stubProvider(
+          'valid-gemini-provider',
+          testInferenceProvider(id: 'valid-gemini-provider'),
         );
 
         final provider = await resolveInferenceProvider(
@@ -352,13 +341,10 @@ void main() {
           id: 'record-model-row',
           inferenceProviderId: 'record-provider',
         );
-        when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [model]);
-        when(
-          () => mockAiConfig.getConfigById('record-provider'),
-        ).thenAnswer(
-          (_) async => testInferenceProvider(id: 'record-provider'),
+        stubModels([model]);
+        stubProvider(
+          'record-provider',
+          testInferenceProvider(id: 'record-provider'),
         );
 
         final resolved = await resolveInferenceProviderWithModel(
@@ -383,13 +369,10 @@ void main() {
           id: 'fallback-model-row',
           inferenceProviderId: 'mismatched-provider',
         );
-        when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [model]);
-        when(
-          () => mockAiConfig.getConfigById('mismatched-provider'),
-        ).thenAnswer(
-          (_) async => testInferenceProvider(
+        stubModels([model]);
+        stubProvider(
+          'mismatched-provider',
+          testInferenceProvider(
             id: 'mismatched-provider',
             inferenceProviderType: InferenceProviderType.openAi,
           ),
@@ -419,21 +402,14 @@ void main() {
           inferenceProviderId: 'gemini-valid-provider',
         );
 
-        when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [noKeyModel, validModel]);
-        when(
-          () => mockAiConfig.getConfigById('gemini-no-key-provider'),
-        ).thenAnswer(
-          (_) async => testInferenceProvider(
-            id: 'gemini-no-key-provider',
-            apiKey: ' ',
-          ),
+        stubModels([noKeyModel, validModel]);
+        stubProvider(
+          'gemini-no-key-provider',
+          testInferenceProvider(id: 'gemini-no-key-provider', apiKey: ' '),
         );
-        when(
-          () => mockAiConfig.getConfigById('gemini-valid-provider'),
-        ).thenAnswer(
-          (_) async => testInferenceProvider(id: 'gemini-valid-provider'),
+        stubProvider(
+          'gemini-valid-provider',
+          testInferenceProvider(id: 'gemini-valid-provider'),
         );
 
         final provider = await resolveInferenceProvider(
@@ -463,27 +439,17 @@ void main() {
           id: 'gemini-model',
           inferenceProviderId: 'gemini-provider',
         );
-        final openAiProvider = AiConfig.inferenceProvider(
+        final openAiProvider = testInferenceProvider(
           id: 'openai-provider',
-          baseUrl: 'https://api.openai.com/v1',
           apiKey: 'openai-key',
-          name: 'OpenAI',
-          createdAt: DateTime(2024),
           inferenceProviderType: InferenceProviderType.openAi,
         );
 
-        when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer(
-          (_) async => [wrongProviderTypeModel, geminiModel],
-        );
-        when(
-          () => mockAiConfig.getConfigById('openai-provider'),
-        ).thenAnswer((_) async => openAiProvider);
-        when(
-          () => mockAiConfig.getConfigById('gemini-provider'),
-        ).thenAnswer(
-          (_) async => testInferenceProvider(id: 'gemini-provider'),
+        stubModels([wrongProviderTypeModel, geminiModel]);
+        stubProvider('openai-provider', openAiProvider);
+        stubProvider(
+          'gemini-provider',
+          testInferenceProvider(id: 'gemini-provider'),
         );
 
         final provider = await resolveInferenceProvider(
@@ -552,12 +518,8 @@ void main() {
   group('resolveInferenceProviderForModelConfigId', () {
     test('resolves the model row and its usable provider', () async {
       final model = testAiModel(id: 'config-row-1');
-      when(
-        () => mockAiConfig.getConfigById('config-row-1'),
-      ).thenAnswer((_) async => model);
-      when(
-        () => mockAiConfig.getConfigById('provider-1'),
-      ).thenAnswer((_) async => testInferenceProvider());
+      stubProvider('config-row-1', model);
+      stubProvider('provider-1', testInferenceProvider());
 
       final resolved = await resolveInferenceProviderForModelConfigId(
         modelConfigId: 'config-row-1',
@@ -570,9 +532,7 @@ void main() {
     });
 
     test('returns null when the config id does not exist', () async {
-      when(
-        () => mockAiConfig.getConfigById('missing'),
-      ).thenAnswer((_) async => null);
+      stubProvider('missing', null);
 
       final resolved = await resolveInferenceProviderForModelConfigId(
         modelConfigId: 'missing',
@@ -583,9 +543,10 @@ void main() {
     });
 
     test('returns null when the config id is not a model', () async {
-      when(
-        () => mockAiConfig.getConfigById('provider-as-model'),
-      ).thenAnswer((_) async => testInferenceProvider(id: 'provider-as-model'));
+      stubProvider(
+        'provider-as-model',
+        testInferenceProvider(id: 'provider-as-model'),
+      );
 
       final resolved = await resolveInferenceProviderForModelConfigId(
         modelConfigId: 'provider-as-model',
@@ -596,12 +557,8 @@ void main() {
     });
 
     test('returns null when the parent provider is missing', () async {
-      when(
-        () => mockAiConfig.getConfigById('config-row-1'),
-      ).thenAnswer((_) async => testAiModel(id: 'config-row-1'));
-      when(
-        () => mockAiConfig.getConfigById('provider-1'),
-      ).thenAnswer((_) async => null);
+      stubProvider('config-row-1', testAiModel(id: 'config-row-1'));
+      stubProvider('provider-1', null);
 
       final resolved = await resolveInferenceProviderForModelConfigId(
         modelConfigId: 'config-row-1',
@@ -614,12 +571,8 @@ void main() {
     test(
       'returns null when the parent provider has no API key',
       () async {
-        when(
-          () => mockAiConfig.getConfigById('config-row-1'),
-        ).thenAnswer((_) async => testAiModel(id: 'config-row-1'));
-        when(
-          () => mockAiConfig.getConfigById('provider-1'),
-        ).thenAnswer((_) async => testInferenceProvider(apiKey: ''));
+        stubProvider('config-row-1', testAiModel(id: 'config-row-1'));
+        stubProvider('provider-1', testInferenceProvider(apiKey: ''));
 
         final resolved = await resolveInferenceProviderForModelConfigId(
           modelConfigId: 'config-row-1',
@@ -637,12 +590,8 @@ void main() {
       // the second one, which must win over the wire-level fallback.
       final rowA = testAiModel(id: 'row-a', inferenceProviderId: 'provider-a');
       final rowB = testAiModel(id: 'row-b');
-      when(
-        () => mockAiConfig.getConfigsByType(AiConfigType.model),
-      ).thenAnswer((_) async => [rowA, rowB]);
-      when(
-        () => mockAiConfig.getConfigById('provider-1'),
-      ).thenAnswer((_) async => testInferenceProvider());
+      stubModels([rowA, rowB]);
+      stubProvider('provider-1', testInferenceProvider());
 
       final resolved = await resolveInferenceProviderForProfileSlot(
         modelId: 'row-b',
@@ -659,12 +608,8 @@ void main() {
     test(
       'falls back to the legacy providerModelId lookup for old slots',
       () async {
-        when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [testAiModel()]);
-        when(
-          () => mockAiConfig.getConfigById('provider-1'),
-        ).thenAnswer((_) async => testInferenceProvider());
+        stubModels([testAiModel()]);
+        stubProvider('provider-1', testInferenceProvider());
 
         final resolved = await resolveInferenceProviderForProfileSlot(
           modelId: 'models/gemini-3-flash-preview',
@@ -679,12 +624,8 @@ void main() {
     test(
       'returns null when an exact-id match has an unusable provider',
       () async {
-        when(
-          () => mockAiConfig.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [testAiModel()]);
-        when(
-          () => mockAiConfig.getConfigById('provider-1'),
-        ).thenAnswer((_) async => testInferenceProvider(apiKey: ''));
+        stubModels([testAiModel()]);
+        stubProvider('provider-1', testInferenceProvider(apiKey: ''));
 
         final resolved = await resolveInferenceProviderForProfileSlot(
           modelId: 'model-1',

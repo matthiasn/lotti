@@ -217,22 +217,45 @@ void main() {
       expect(strategy.pendingNotes, isEmpty);
     });
 
-    test('all EvolutionNoteKind values are accepted', () async {
-      for (final kind in EvolutionNoteKind.values) {
+    // Property: every EvolutionNoteKind is accepted, and the recorded
+    // PendingNote round-trips both the kind and the content — stronger than
+    // asserting only the count, and it shrinks failures automatically if a
+    // new kind is added that the handler does not map.
+    glados.Glados(
+      glados.AnyUtils(glados.any).choose(EvolutionNoteKind.values),
+      glados.ExploreConfig(numRuns: 80),
+    ).test(
+      'accepts any EvolutionNoteKind and round-trips kind + content',
+      (kind) async {
+        // Fresh strategy/manager per iteration — Glados re-runs the body many
+        // times within one test() and the shared setUp fixtures would
+        // accumulate notes across runs.
+        final localStrategy = EvolutionStrategy();
+        final localManager = ConversationManager(conversationId: 'glados-conv')
+          ..initialize(systemMessage: 'You are an evolution agent.');
+        final content = 'Content for ${kind.name}';
         final toolCall = makeToolCall(
           id: 'call-${kind.name}',
           name: 'record_evolution_note',
-          args: {'kind': kind.name, 'content': 'Content for ${kind.name}'},
+          args: {'kind': kind.name, 'content': content},
         );
-        manager.addAssistantMessage(toolCalls: [toolCall]);
-        await strategy.processToolCalls(
-          toolCalls: [toolCall],
-          manager: manager,
-        );
-      }
+        localManager.addAssistantMessage(toolCalls: [toolCall]);
 
-      expect(strategy.pendingNotes, hasLength(EvolutionNoteKind.values.length));
-    });
+        await localStrategy.processToolCalls(
+          toolCalls: [toolCall],
+          manager: localManager,
+        );
+
+        expect(localStrategy.pendingNotes, hasLength(1), reason: '$kind');
+        expect(localStrategy.pendingNotes.single.kind, kind, reason: '$kind');
+        expect(
+          localStrategy.pendingNotes.single.content,
+          content,
+          reason: '$kind',
+        );
+      },
+      tags: 'glados',
+    );
   });
 
   group('publish_ritual_recap', () {

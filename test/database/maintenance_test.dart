@@ -35,6 +35,7 @@ import 'package:path_provider_platform_interface/path_provider_platform_interfac
 import '../helpers/fallbacks.dart';
 import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
+import 'test_utils.dart' show clearAllTables;
 
 JournalEntry _buildJournalEntry({
   required String id,
@@ -143,13 +144,20 @@ void main() {
     late PathProviderPlatform originalPathProvider;
     late MockPathProviderPlatform mockPathProvider;
 
+    // The journal DB's migration ladder runs once for the group; each test
+    // re-registers the same instance and starts clean via clearAllTables. The
+    // Fts5 DB stays per-test because the maintenance ops under test rebuild it.
+    setUpAll(() async {
+      journalDb = JournalDb(inMemoryDatabase: true);
+    });
+
     setUp(() async {
       await getIt.reset();
 
       tempDir = Directory.systemTemp.createTempSync('maintenance_test_');
       getIt.registerSingleton<Directory>(tempDir);
 
-      journalDb = JournalDb(inMemoryDatabase: true);
+      await clearAllTables(journalDb);
       getIt.registerSingleton<JournalDb>(journalDb);
 
       outboxService = MockOutboxService();
@@ -228,12 +236,15 @@ void main() {
       if (getIt.isRegistered<Fts5Db>()) {
         await getIt<Fts5Db>().close();
       }
-      await journalDb.close();
       await getIt.reset();
       PathProviderPlatform.instance = originalPathProvider;
       if (tempDir.existsSync()) {
         await tempDir.delete(recursive: true);
       }
+    });
+
+    tearDownAll(() async {
+      await journalDb.close();
     });
 
     group('reSyncInterval', () {

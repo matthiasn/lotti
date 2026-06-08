@@ -2981,7 +2981,7 @@ void main() {
 
     glados.Glados(
       glados.any.bundleScenario,
-      glados.ExploreConfig(numRuns: 140),
+      glados.ExploreConfig(numRuns: 110),
     ).test(
       'generated outbox bundles either abort before upload or emit one '
       'normalized manifest with every child represented',

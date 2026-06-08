@@ -89,12 +89,32 @@ void main() {
       expect(updated.selectedSteps, hasLength(2));
     });
 
-    test('copyWith without error clears it', () {
-      final state = const SyncState().copyWith(error: 'some error');
-      final cleared = state.copyWith();
+    test('copyWith always clears error unless explicitly re-supplied', () {
+      // SyncState.copyWith does NOT coalesce `error` with `??` the way the
+      // other fields do — it assigns `error: error` directly. That is
+      // deliberate: every no-arg copyWith resets the error to null so a stale
+      // failure cannot leak into the next state transition. Pin both halves of
+      // that asymmetry so a future refactor to `error ?? this.error` is caught.
+      final withError = const SyncState().copyWith(error: 'some error');
+      expect(
+        withError.error,
+        'some error',
+        reason: 'explicitly supplied error must be retained',
+      );
 
-      // error parameter defaults to null in copyWith, clearing previous error
-      expect(cleared.error, isNull);
+      final cleared = withError.copyWith();
+      expect(
+        cleared.error,
+        isNull,
+        reason: 'no-arg copyWith must drop the previous error, not preserve it',
+      );
+
+      final replaced = withError.copyWith(error: 'new error');
+      expect(
+        replaced.error,
+        'new error',
+        reason: 'a newly supplied error must overwrite the previous one',
+      );
     });
 
     test('copyWith preserves unmodified fields', () {
@@ -107,6 +127,49 @@ void main() {
       expect(updated.isSyncing, isTrue);
       expect(updated.progress, 80);
       expect(updated.currentStep, SyncStep.measurables);
+    });
+
+    test('no-arg copyWith preserves nested stepProgress and selectedSteps', () {
+      // This is the controller's most common transition: it builds a mid-sync
+      // state with a populated stepProgress map and selectedSteps set, then
+      // re-emits via copyWith() to clear the transient error while keeping the
+      // accumulated progress. Verify the nested collections survive by identity
+      // (same instance, not a copy) and by content.
+      final stepProgress = {
+        SyncStep.measurables: const StepProgress(processed: 3, total: 10),
+        SyncStep.labels: const StepProgress(processed: 7, total: 7),
+      };
+      final selectedSteps = {SyncStep.measurables, SyncStep.labels};
+      final state = const SyncState().copyWith(
+        isSyncing: true,
+        currentStep: SyncStep.labels,
+        progress: 40,
+        stepProgress: stepProgress,
+        selectedSteps: selectedSteps,
+      );
+
+      final next = state.copyWith();
+
+      expect(next.isSyncing, isTrue);
+      expect(next.currentStep, SyncStep.labels);
+      expect(next.progress, 40);
+      // Map/Set are passed through unchanged (?? this.field), so the exact
+      // instance is retained — no defensive copy, no content loss.
+      expect(identical(next.stepProgress, stepProgress), isTrue);
+      expect(identical(next.selectedSteps, selectedSteps), isTrue);
+      expect(
+        next.stepProgress[SyncStep.measurables],
+        isA<StepProgress>()
+            .having((p) => p.processed, 'processed', 3)
+            .having((p) => p.total, 'total', 10),
+      );
+      expect(
+        next.stepProgress[SyncStep.labels],
+        isA<StepProgress>()
+            .having((p) => p.processed, 'processed', 7)
+            .having((p) => p.total, 'total', 7),
+      );
+      expect(next.selectedSteps, {SyncStep.measurables, SyncStep.labels});
     });
   });
 }

@@ -14,13 +14,16 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `audio_player_widget_test.dart` at 759 lines is within guidelines for a 411-line impl. No split needed.
+- [x] **[LOW]** `audio_player_widget_test.dart` at 759 lines is within guidelines for a 411-line impl. No split needed.
+  **RESOLVED:** Non-actionable confirmation. After adding parameterized status-display coverage and the full speed-cycle test, the file is 835 lines — still appropriate for a 411-line implementation covering many behaviors. No split needed; the file maps 1:1 to its single source file.
 
 ## Test quality improvements
 
-- [ ] **[MED]** `test/…/ui/widgets/audio_player_widget_test.dart:20–66` — `MockAudioPlayerController` is defined inline as an `AudioPlayerController` subclass overriding all playback methods with flag-tracking. `test/mocks/mocks.dart` (line 499) already has `MockAudioPlayerController extends Mock implements AudioPlayerController`. The inline version is a *state-tracking fake* rather than a Mocktail mock, which is intentional — but it should be noted as a one-off exception. Add a comment explaining why it cannot use the Mocktail mock.
+- [x] **[MED]** `test/…/ui/widgets/audio_player_widget_test.dart:20–66` — `MockAudioPlayerController` is defined inline as an `AudioPlayerController` subclass overriding all playback methods with flag-tracking. `test/mocks/mocks.dart` (line 499) already has `MockAudioPlayerController extends Mock implements AudioPlayerController`. The inline version is a *state-tracking fake* rather than a Mocktail mock, which is intentional — but it should be noted as a one-off exception. Add a comment explaining why it cannot use the Mocktail mock.
+  **RESOLVED:** Renamed the inline fake from `MockAudioPlayerController` to `_FakeAudioPlayerController` to remove the name collision with the centralized mock (the central one is actually at line 624, not 499). Added a doc comment explaining it must subclass the real `AudioPlayerController` (not the Mocktail `Mock`) because `audioPlayerControllerProvider.overrideWith(() => controller)` requires a genuine Riverpod notifier whose lifecycle (`build`, state wiring) runs — a Mocktail mock bypasses the generated notifier machinery. Updated both references (`late` declaration and `pumpPlayer` instantiation).
 
-- [ ] **[LOW]** `test/…/ui/widgets/audio_player_widget_test.dart` — The `_StubAudioWaveformService` (lines 68–93) is a local stub. If `AudioWaveformService` is tested elsewhere with similar stubs, consider whether this should be a named test double in a test utility file.
+- [x] **[LOW]** `test/…/ui/widgets/audio_player_widget_test.dart` — The `_StubAudioWaveformService` (lines 68–93) is a local stub. If `AudioWaveformService` is tested elsewhere with similar stubs, consider whether this should be a named test double in a test utility file.
+  **RESOLVED:** The sibling `test/features/speech/state/audio_waveform_provider_test.dart` already uses the centralized `MockAudioWaveformService` (Mocktail) from `test/mocks/mocks.dart`. Removed the bespoke local `_StubAudioWaveformService` and switched the widget test to the same centralized mock. `pumpPlayer` now stubs `loadWaveform` for the concrete `JournalAudio` under test (returning an optional `waveformData` param), so no `JournalAudio` fallback registration is required. The waveform-ready test passes data through the new `waveformData` parameter instead of mutating a stub field.
 
 ## Generative (Glados) testing opportunities
 
@@ -28,13 +31,16 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[MED]** Verify that the `AudioPlayer` widget correctly handles the `status == AudioPlayerStatus.paused` and `status == AudioPlayerStatus.stopped` display states (button icon, progress bar value, duration label) — not just `playing`. Check that all three status states are exercised in the test file.
+- [x] **[MED]** Verify that the `AudioPlayer` widget correctly handles the `status == AudioPlayerStatus.paused` and `status == AudioPlayerStatus.stopped` display states (button icon, progress bar value, duration label) — not just `playing`. Check that all three status states are exercised in the test file.
+  **RESOLVED:** Existing tests covered semantics labels for all three states but never asserted the actual button icon glyph, and only checked progress-bar values for `playing`/`stopped`. Added a parameterized `group('status display states')` covering `playing`/`paused`/`stopped` that asserts: the actual play/pause `Icon` (`Icons.pause_rounded` only while playing, `Icons.play_arrow_rounded` otherwise, with the opposite icon `findsNothing`), the `AudioProgressBar.progress`/`enabled` values (live progress only while active, zero when inactive), and both rendered duration labels (total + leading position).
 
-- [ ] **[LOW]** The speed control UI (1×, 1.5×, 2×) in `audio_player.dart` should be verified: tapping each option calls `controller.setSpeed(value)`. Confirm this interaction test exists.
+- [x] **[LOW]** The speed control UI (1×, 1.5×, 2×) in `audio_player.dart` should be verified: tapping each option calls `controller.setSpeed(value)`. Confirm this interaction test exists.
+  **RESOLVED:** Interaction tests existed but were duplicated (two identical `1x -> 1.25x` bodies) and one (`displays error color for non-1x speeds`) was misnamed — it never asserted the error color. Consolidated the scattered cycle tests into a single parameterized loop over every transition in `_speedSequence` (0.5x→0.75x→…→2x→0.5x wrap-around), each asserting `controller.lastSpeedSet == expectedNext`. Rewrote the error-color test to actually assert the speed label `Text.style.color` equals `colorScheme.error` for a non-1x speed and is NOT the error color at 1x.
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** Two `pumpWidget` calls per test (initial pump + re-pump for state change). Acceptable given the 759-line total; no bottleneck.
+- [x] **[LOW]** Two `pumpWidget` calls per test (initial pump + re-pump for state change). Acceptable given the 759-line total; no bottleneck.
+  **RESOLVED:** Non-actionable confirmation. Each test does a single `pumpWidget` + a bounded `pump()` inside the shared `pumpPlayer` helper (no `pumpAndSettle`, no real timers/delays). The loop-based tests reset with `pumpWidget(Container())` between iterations. No execution-speed bottleneck; no change needed.
 
 ## Subdir reports
 

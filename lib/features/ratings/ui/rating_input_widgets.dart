@@ -2,6 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:lotti/themes/theme.dart';
 
+/// Finds the index of the segment whose value is within 0.01 of [value],
+/// or -1 when [value] is null or no segment matches.
+///
+/// Shared between the widget's selection rendering and tests so the
+/// tolerance rule has a single source of truth.
+@visibleForTesting
+int selectedSegmentIndex(
+  List<({String label, double value})> segments,
+  double? value,
+) {
+  if (value == null) return -1;
+  for (var i = 0; i < segments.length; i++) {
+    if ((segments[i].value - value).abs() < 0.01) return i;
+  }
+  return -1;
+}
+
 /// A continuous tap-bar with 10 visual tick marks.
 ///
 /// Tapping stores the exact horizontal position as 0.0-1.0.
@@ -155,13 +172,7 @@ class RatingSegmentedInput extends StatelessWidget {
 
   /// Finds the segment index whose value is closest to [v] within
   /// a tolerance of 0.01, or returns -1 if no match.
-  int _selectedIndex(double? v) {
-    if (v == null) return -1;
-    for (var i = 0; i < segments.length; i++) {
-      if ((segments[i].value - v).abs() < 0.01) return i;
-    }
-    return -1;
-  }
+  int _selectedIndex(double? v) => selectedSegmentIndex(segments, v);
 
   @override
   Widget build(BuildContext context) {

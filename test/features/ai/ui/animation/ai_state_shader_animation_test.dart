@@ -549,6 +549,71 @@ void main() {
       expect(changedOpacityPainter.shouldRepaint(painter), isTrue);
     });
 
+    testWidgets('changing only the shader route forces a repaint', (
+      _,
+    ) async {
+      // The route selects a different visual program branch inside the shader,
+      // so two painters that differ in nothing but their route must repaint.
+      AiVoiceInputShaderPainter voice(AiVoiceShaderRoute route) =>
+          AiVoiceInputShaderPainter(
+            program: voiceProgram,
+            dbfs: -18,
+            dbfsFloor: -80,
+            time: 1.4,
+            intensity: 0.9,
+            lineDensity: 24,
+            orbitalMix: 0.55,
+            route: route,
+            primaryColor: const Color(0xFF63D7C7),
+            secondaryColor: const Color(0xFFE9EEF2),
+            backgroundColor: const Color(0x00000000),
+          );
+      AiThinkingLineShaderPainter thinking(AiThinkingShaderRoute route) =>
+          AiThinkingLineShaderPainter(
+            program: thinkingProgram,
+            time: 2,
+            speed: 2.3,
+            amplitude: 0.7,
+            randomness: 0.9,
+            lineCount: 5,
+            pulse: 0.6,
+            route: route,
+            primaryColor: const Color(0xFF63D7C7),
+            secondaryColor: const Color(0xFFE9EEF2),
+            backgroundColor: const Color(0x00000000),
+          );
+
+      for (final route in AiVoiceShaderRoute.values) {
+        final other = AiVoiceShaderRoute
+            .values[(route.index + 1) % AiVoiceShaderRoute.values.length];
+        expect(
+          voice(route).shouldRepaint(voice(other)),
+          isTrue,
+          reason: 'voice $route vs $other must repaint',
+        );
+        expect(
+          voice(route).shouldRepaint(voice(route)),
+          isFalse,
+          reason: 'voice $route vs itself must not repaint',
+        );
+      }
+
+      for (final route in AiThinkingShaderRoute.values) {
+        final other = AiThinkingShaderRoute
+            .values[(route.index + 1) % AiThinkingShaderRoute.values.length];
+        expect(
+          thinking(route).shouldRepaint(thinking(other)),
+          isTrue,
+          reason: 'thinking $route vs $other must repaint',
+        );
+        expect(
+          thinking(route).shouldRepaint(thinking(route)),
+          isFalse,
+          reason: 'thinking $route vs itself must not repaint',
+        );
+      }
+    });
+
     test('paint fallback painters and compare repaint inputs', () {
       final voicePainter = AiVoiceInputFallbackPainter(
         dbfs: -22,

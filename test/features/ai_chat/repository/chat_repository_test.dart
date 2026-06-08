@@ -358,7 +358,7 @@ void main() {
         expect(sessions.last.id, session1.id);
       });
 
-      test('deleteSession removes session and its messages', () async {
+      test('deleteSession removes a session that has messages', () async {
         final session = await repository.createSession(
           categoryId: testCategoryId,
         );
@@ -370,6 +370,10 @@ void main() {
 
         await repository.deleteSession(session.id);
 
+        // Only the session removal is observable through the public API: the
+        // in-memory `_messages` map is write-only (never read back), so the
+        // message cleanup performed by deleteSession has no public observer to
+        // assert on. getSession returning null is the meaningful outcome.
         final retrievedSession = await repository.getSession(session.id);
         expect(retrievedSession, isNull);
       });

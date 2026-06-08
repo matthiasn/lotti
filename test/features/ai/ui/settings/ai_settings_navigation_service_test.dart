@@ -352,6 +352,40 @@ void main() {
           verifyNever(() => mockNavService.beamToNamed(any()));
         },
       );
+
+      testWidgets(
+        'navigateToConfigEdit for a prompt config takes the same legacy '
+        'no-op slide route as the skill arm — prompt rows share the '
+        '`AiConfigPrompt() || AiConfigSkill()` fallback, pushing an empty '
+        'placeholder rather than beaming a URL',
+        (tester) async {
+          await tester.pumpWidget(harness());
+          final initialPushCount = spy.pushed.length;
+          final ctx = tester.element(find.byType(Scaffold));
+          unawaited(
+            service.navigateToConfigEdit(
+              ctx,
+              AiConfig.prompt(
+                id: 'prompt-1',
+                name: 'Prompt 1',
+                systemMessage: 'You are a helpful assistant.',
+                userMessage: 'Summarise this.',
+                defaultModelId: 'model-1',
+                modelIds: const ['model-1'],
+                createdAt: DateTime(2024, 3, 15),
+                useReasoning: false,
+                requiredInputData: const [InputDataType.task],
+                aiResponseType: AiResponseType.imageAnalysis,
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          // Exactly one additional Navigator push (the placeholder route);
+          // the prompt arm must not beam a per-kind URL.
+          expect(spy.pushed.length, initialPushCount + 1);
+          verifyNever(() => mockNavService.beamToNamed(any()));
+        },
+      );
     });
   });
 }

@@ -30,6 +30,9 @@ JournalAudio _audio(
   String? transcript,
   String language = 'en',
   DateTime? dateFrom,
+  // When true, store `transcripts: []` (an explicitly empty list) rather than
+  // `null`, to exercise the renderer's `transcripts.isNotEmpty` guard.
+  bool emptyTranscripts = false,
 }) => JournalAudio(
   meta: _meta(id, dateFrom ?? DateTime(2024, 3, 11)),
   entryText: editedText == null ? null : EntryText(plainText: editedText),
@@ -39,7 +42,9 @@ JournalAudio _audio(
     duration: const Duration(minutes: 1),
     audioFile: 'a.m4a',
     audioDirectory: '/audio',
-    transcripts: transcript == null
+    transcripts: emptyTranscripts
+        ? const []
+        : transcript == null
         ? null
         : [
             AudioTranscript(
@@ -82,6 +87,22 @@ void main() {
         'audioTranscript': 'spoken words',
         'transcriptLanguage': 'de',
       });
+    });
+
+    test('omits audioTranscript for an empty (non-null) transcripts list', () {
+      // The renderer guards on `transcripts.isNotEmpty`, so an entry whose
+      // transcripts list is `[]` (e.g. transcription started but produced
+      // nothing) must render no audioTranscript/transcriptLanguage fields,
+      // exactly like the null case.
+      final sources = renderTaskSources([_audio('e1', emptyTranscripts: true)]);
+
+      expect(sources.single.content, {
+        'entryType': 'audio',
+        'loggedDuration': '00:00',
+        'text': '',
+      });
+      expect(sources.single.content.containsKey('audioTranscript'), isFalse);
+      expect(sources.single.content.containsKey('transcriptLanguage'), isFalse);
     });
 
     test('prefers edited text over the transcript for an audio entry', () {

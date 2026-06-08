@@ -9,12 +9,20 @@ import 'package:sqlite3/sqlite3.dart';
 void main() {
   late EditorDb db;
 
-  setUp(() async {
+  setUpAll(() {
     db = EditorDb(inMemoryDatabase: true);
   });
 
-  tearDown(() async {
+  tearDownAll(() async {
     await db.close();
+  });
+
+  tearDown(() async {
+    // EditorDb keeps no in-memory cache; truncating the single `editor_drafts`
+    // table fully resets state between tests and keeps them order-independent.
+    // The `schema` group's migration test opens its own throwaway file-based
+    // EditorDb and never touches the shared instance.
+    await db.customStatement('DELETE FROM editor_drafts');
   });
 
   group('insertDraftState Tests', () {

@@ -245,7 +245,7 @@ void main() {
         expect(find.byIcon(Icons.clear_rounded), findsOneWidget);
       });
 
-      testWidgets('handles empty hint text', (tester) async {
+      testWidgets('forwards an empty hint into the decoration', (tester) async {
         await tester.pumpWidget(
           createTestWidget(
             child: LottiSearchBar(
@@ -255,8 +255,23 @@ void main() {
           ),
         );
 
-        // With empty hint text, there's the empty text in the TextField and the hint
-        expect(find.text(''), findsAtLeastNWidgets(1));
+        // The configured (empty) hint must reach InputDecoration.hintText
+        // rather than falling back to the default 'Search...'.
+        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(field.decoration?.hintText, '');
+      });
+
+      testWidgets('uses the default hint when none is configured', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          createTestWidget(
+            child: LottiSearchBar(controller: controller),
+          ),
+        );
+
+        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(field.decoration?.hintText, 'Search...');
       });
 
       testWidgets('handles rapid text changes', (tester) async {

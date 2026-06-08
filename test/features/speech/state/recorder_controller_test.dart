@@ -25,7 +25,6 @@ import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:record/record.dart' as rec;
 import 'package:record/record.dart';
@@ -33,8 +32,6 @@ import 'package:record/record.dart';
 import '../../../mocks/mocks.dart';
 
 class MockAmplitude extends Mock implements Amplitude {}
-
-class MockPlayerState extends Mock implements PlayerState {}
 
 class MockRecAudioRecorder extends Mock implements rec.AudioRecorder {}
 
@@ -1012,17 +1009,11 @@ void main() {
   });
 
   group('AudioRecorderController - Integration Tests', () {
-    test(
-      'AudioRecorderController can be instantiated with mocked dependencies',
-      () {
-        // This test verifies that the AudioRecorderController can be created
-        // with our mocked dependencies
-        expect(
-          () => container.read(audioRecorderControllerProvider),
-          returnsNormally,
-        );
-      },
-    );
+    // Note: a former 'can be instantiated with mocked dependencies' smoke test
+    // was removed here. It only asserted `returnsNormally` on provider
+    // creation, which is already (and more meaningfully) covered by the
+    // 'should initialize with correct initial state' test that asserts every
+    // field of the initial AudioRecorderState.
 
     test('AudioRecorderController handles missing permissions', () async {
       // This test verifies that when the AudioRecorder has no permission

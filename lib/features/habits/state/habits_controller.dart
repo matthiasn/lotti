@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:easy_debounce/easy_debounce.dart';
@@ -338,20 +337,12 @@ class HabitsController extends _$HabitsController {
   /// Sets the selected day for info display in the chart.
   void setInfoYmd(String ymd) {
     final newState = state.copyWith(selectedInfoYmd: ymd);
-    final successPercentage = completionRate(
-      newState,
-      newState.successfulByDay,
-    );
-    final skippedPercentage = completionRate(newState, newState.skippedByDay);
-    final failedPercentage = min(
-      completionRate(newState, newState.failedByDay),
-      100 - successPercentage - skippedPercentage,
-    );
+    final percentages = dayPercentages(newState);
 
     state = newState.copyWith(
-      successPercentage: successPercentage,
-      skippedPercentage: skippedPercentage,
-      failedPercentage: failedPercentage,
+      successPercentage: percentages.success,
+      skippedPercentage: percentages.skipped,
+      failedPercentage: percentages.failed,
     );
 
     EasyDebounce.debounce(

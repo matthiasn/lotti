@@ -110,55 +110,77 @@ void main() {
   final mockUpdateNotifications = MockUpdateNotifications();
   final mockEntitiesCacheService = MockEntitiesCacheService();
 
-  group('TaskDetailPage Widget Tests - ', () {
-    setUpAll(() {
-      setFakeDocumentsPath();
-      registerFallbackValue(FakeMeasurementData());
-    });
+  void registerTaskDetailsFallbacks() {
+    setFakeDocumentsPath();
+    registerFallbackValue(FakeMeasurementData());
+  }
 
-    setUp(() async {
-      mockJournalDb = mockJournalDbWithMeasurableTypes([
-        measurableWater,
-        measurableChocolate,
-      ]);
-      mockPersistenceLogic = MockPersistenceLogic();
+  /// Registers the full GetIt service graph the [TaskDetailsPage] needs and
+  /// installs the common Mocktail stubs. Groups share this body; the few
+  /// scenario-specific differences are expressed as parameters:
+  ///
+  /// * [measurables] — measurable types the [MockJournalDb] knows about
+  ///   (defaults to water + chocolate). The null/non-task group registers none.
+  /// * [categories] — value returned by `sortedCategories` (defaults to
+  ///   `[categoryMindfulness]`). The null group returns an empty list.
+  /// * [stubTaskEntity] — when true, `journalEntityById(testTask)` resolves to
+  ///   [testTask] (most groups). The first widget-test group stubs it per test
+  ///   instead, so it passes false.
+  /// * [stubLinkedAndMeasurements] — when true, stubs `getLinkedEntities`,
+  ///   `getMeasurableDataTypeById`, and `getMeasurementsByType`. The null group
+  ///   needs none of these.
+  /// * [watchConfigPrivate] — when true, `watchConfigFlags` emits the `private`
+  ///   flag; the null group emits an empty set.
+  Future<void> registerTaskDetailsServices({
+    List<MeasurableDataType>? measurables,
+    List<CategoryDefinition>? categories,
+    bool stubTaskEntity = true,
+    bool stubLinkedAndMeasurements = true,
+    bool watchConfigPrivate = true,
+  }) async {
+    // `categoryMindfulness` / `measurableWater` are runtime `final`s, so the
+    // defaults are resolved here rather than in the parameter list (which
+    // would require compile-time constants).
+    final resolvedMeasurables =
+        measurables ?? [measurableWater, measurableChocolate];
+    final resolvedCategories = categories ?? [categoryMindfulness];
 
-      final mockTimeService = MockTimeService();
-      final mockEditorStateService = MockEditorStateService();
-      final mockHealthImport = MockHealthImport();
+    mockJournalDb = mockJournalDbWithMeasurableTypes(resolvedMeasurables);
+    mockPersistenceLogic = MockPersistenceLogic();
 
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+    final mockTimeService = MockTimeService();
+    final mockEditorStateService = MockEditorStateService();
+    final mockHealthImport = MockHealthImport();
+    final mockUserActivityService = MockUserActivityService();
+    when(mockUserActivityService.updateActivity).thenReturn(null);
 
-      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
-        (_) => [categoryMindfulness],
-      );
-      when(
-        () => mockEntitiesCacheService.sortedLabels,
-      ).thenReturn(<LabelDefinition>[]);
-      when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
+    getIt
+      ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
+      ..registerSingleton<UserActivityService>(mockUserActivityService)
+      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+      ..registerSingleton<EditorStateService>(mockEditorStateService)
+      ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
+      ..registerSingleton<LinkService>(MockLinkService())
+      ..registerSingleton<HealthImport>(mockHealthImport)
+      ..registerSingleton<TimeService>(mockTimeService)
+      ..registerSingleton<JournalDb>(mockJournalDb)
+      ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
 
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(
-          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer((_) async => measurableWater);
+    when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
+      (_) => resolvedCategories,
+    );
+    when(
+      () => mockEntitiesCacheService.sortedLabels,
+    ).thenReturn(<LabelDefinition>[]);
+    when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
 
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
+    when(() => mockUpdateNotifications.updateStream).thenAnswer(
+      (_) => Stream<Set<String>>.fromIterable([]),
+    );
 
-      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
+    when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
+      (_) => Stream<Set<ConfigFlag>>.fromIterable([
+        if (watchConfigPrivate)
           <ConfigFlag>{
             const ConfigFlag(
               name: 'private',
@@ -166,28 +188,30 @@ void main() {
               status: true,
             ),
           },
-        ]),
-      );
+      ]),
+    );
 
+    when(
+      () => mockEditorStateService.getUnsavedStream(any(), any()),
+    ).thenAnswer(
+      (_) => Stream<bool>.fromIterable([false]),
+    );
+
+    when(
+      mockTimeService.getStream,
+    ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+
+    if (stubLinkedAndMeasurements) {
       when(
-        () => mockEditorStateService.getUnsavedStream(
-          any(),
-          any(),
+        () => mockJournalDb.getMeasurableDataTypeById(
+          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
         ),
-      ).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
-
+      ).thenAnswer((_) async => measurableWater);
       when(
         () => mockJournalDb.getLinkedEntities(testTask.meta.id),
       ).thenAnswer(
         (_) async => [testTextEntry],
       );
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
-
       when(
         () => mockJournalDb.getMeasurementsByType(
           rangeStart: any(named: 'rangeStart'),
@@ -195,10 +219,23 @@ void main() {
           type: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
         ),
       ).thenAnswer((_) async => []);
+    }
 
-      // Ensure ThemingController dependencies are registered
-      ensureThemingServicesRegistered();
-    });
+    if (stubTaskEntity) {
+      when(
+        () => mockJournalDb.journalEntityById(testTask.meta.id),
+      ).thenAnswer((_) async => testTask);
+    }
+
+    // Ensure ThemingController dependencies are registered.
+    ensureThemingServicesRegistered();
+  }
+
+  group('TaskDetailPage Widget Tests - ', () {
+    setUpAll(registerTaskDetailsFallbacks);
+
+    // This group stubs journalEntityById per test, so leave it unstubbed here.
+    setUp(() => registerTaskDetailsServices(stubTaskEntity: false));
     tearDown(getIt.reset);
 
     testWidgets('Task Entry is rendered', (tester) async {
@@ -295,99 +332,9 @@ void main() {
   });
 
   group('TaskDetailsPage Auto-Scroll Tests - ', () {
-    setUpAll(() {
-      setFakeDocumentsPath();
-      registerFallbackValue(FakeMeasurementData());
-    });
+    setUpAll(registerTaskDetailsFallbacks);
 
-    setUp(() async {
-      mockJournalDb = mockJournalDbWithMeasurableTypes([
-        measurableWater,
-        measurableChocolate,
-      ]);
-      mockPersistenceLogic = MockPersistenceLogic();
-
-      final mockTimeService = MockTimeService();
-      final mockEditorStateService = MockEditorStateService();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
-        (_) => [categoryMindfulness],
-      );
-      when(
-        () => mockEntitiesCacheService.sortedLabels,
-      ).thenReturn(<LabelDefinition>[]);
-      when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(
-          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer((_) async => measurableWater);
-
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
-
-      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(
-          any(),
-          any(),
-        ),
-      ).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
-
-      when(
-        () => mockJournalDb.getLinkedEntities(testTask.meta.id),
-      ).thenAnswer(
-        (_) async => [testTextEntry],
-      );
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
-
-      when(
-        () => mockJournalDb.getMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer((_) async => []);
-
-      when(
-        () => mockJournalDb.journalEntityById(testTask.meta.id),
-      ).thenAnswer((_) async => testTask);
-
-      // Ensure ThemingController dependencies are registered
-      ensureThemingServicesRegistered();
-    });
-
+    setUp(registerTaskDetailsServices);
     tearDown(getIt.reset);
 
     testWidgets('focus intent triggers scroll to entry', (tester) async {
@@ -572,98 +519,9 @@ void main() {
   // Group: Scroll offset listener (lines 54-56)
   // ---------------------------------------------------------------------------
   group('TaskDetailsPage Scroll Offset Listener - ', () {
-    setUpAll(() {
-      setFakeDocumentsPath();
-      registerFallbackValue(FakeMeasurementData());
-    });
+    setUpAll(registerTaskDetailsFallbacks);
 
-    setUp(() async {
-      mockJournalDb = mockJournalDbWithMeasurableTypes([
-        measurableWater,
-        measurableChocolate,
-      ]);
-      mockPersistenceLogic = MockPersistenceLogic();
-
-      final mockTimeService = MockTimeService();
-      final mockEditorStateService = MockEditorStateService();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
-        (_) => [categoryMindfulness],
-      );
-      when(
-        () => mockEntitiesCacheService.sortedLabels,
-      ).thenReturn(<LabelDefinition>[]);
-      when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(
-          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer((_) async => measurableWater);
-
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
-
-      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(
-          any(),
-          any(),
-        ),
-      ).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
-
-      when(
-        () => mockJournalDb.getLinkedEntities(testTask.meta.id),
-      ).thenAnswer(
-        (_) async => [testTextEntry],
-      );
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
-
-      when(
-        () => mockJournalDb.getMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer((_) async => []);
-
-      when(
-        () => mockJournalDb.journalEntityById(testTask.meta.id),
-      ).thenAnswer((_) async => testTask);
-
-      ensureThemingServicesRegistered();
-    });
-
+    setUp(registerTaskDetailsServices);
     tearDown(getIt.reset);
 
     testWidgets(
@@ -743,60 +601,19 @@ void main() {
   // Group: Empty-scaffold when task is null (lines 133-135)
   // ---------------------------------------------------------------------------
   group('TaskDetailsPage null/non-task entry - ', () {
-    setUpAll(() {
-      setFakeDocumentsPath();
-      registerFallbackValue(FakeMeasurementData());
-    });
+    setUpAll(registerTaskDetailsFallbacks);
 
-    setUp(() async {
-      mockJournalDb = mockJournalDbWithMeasurableTypes([]);
-      mockPersistenceLogic = MockPersistenceLogic();
-
-      final mockTimeService = MockTimeService();
-      final mockEditorStateService = MockEditorStateService();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
-        (_) => [],
-      );
-      when(
-        () => mockEntitiesCacheService.sortedLabels,
-      ).thenReturn(<LabelDefinition>[]);
-      when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
-
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
-
-      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(any(), any()),
-      ).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
-
-      ensureThemingServicesRegistered();
-    });
-
+    // No measurables/categories, no linked-entity stubs, and the entity is
+    // stubbed per test (null vs. a non-task entry).
+    setUp(
+      () => registerTaskDetailsServices(
+        measurables: const <MeasurableDataType>[],
+        categories: const <CategoryDefinition>[],
+        stubTaskEntity: false,
+        stubLinkedAndMeasurements: false,
+        watchConfigPrivate: false,
+      ),
+    );
     tearDown(getIt.reset);
 
     for (final testCase in [
@@ -832,98 +649,9 @@ void main() {
   // Group: DropTarget onDragDone callback (lines 237-242)
   // ---------------------------------------------------------------------------
   group('TaskDetailsPage DropTarget onDragDone - ', () {
-    setUpAll(() {
-      setFakeDocumentsPath();
-      registerFallbackValue(FakeMeasurementData());
-    });
+    setUpAll(registerTaskDetailsFallbacks);
 
-    setUp(() async {
-      mockJournalDb = mockJournalDbWithMeasurableTypes([
-        measurableWater,
-        measurableChocolate,
-      ]);
-      mockPersistenceLogic = MockPersistenceLogic();
-
-      final mockTimeService = MockTimeService();
-      final mockEditorStateService = MockEditorStateService();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
-        (_) => [categoryMindfulness],
-      );
-      when(
-        () => mockEntitiesCacheService.sortedLabels,
-      ).thenReturn(<LabelDefinition>[]);
-      when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(
-          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer((_) async => measurableWater);
-
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
-
-      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(
-          any(),
-          any(),
-        ),
-      ).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
-
-      when(
-        () => mockJournalDb.getLinkedEntities(testTask.meta.id),
-      ).thenAnswer(
-        (_) async => [testTextEntry],
-      );
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
-
-      when(
-        () => mockJournalDb.getMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer((_) async => []);
-
-      when(
-        () => mockJournalDb.journalEntityById(testTask.meta.id),
-      ).thenAnswer((_) async => testTask);
-
-      ensureThemingServicesRegistered();
-    });
-
+    setUp(registerTaskDetailsServices);
     tearDown(getIt.reset);
 
     testWidgets(
@@ -1080,98 +808,9 @@ void main() {
   // Group: Suggestions scroll finally-block (lines 286, 288)
   // ---------------------------------------------------------------------------
   group('TaskDetailsPage suggestions scroll finally block - ', () {
-    setUpAll(() {
-      setFakeDocumentsPath();
-      registerFallbackValue(FakeMeasurementData());
-    });
+    setUpAll(registerTaskDetailsFallbacks);
 
-    setUp(() async {
-      mockJournalDb = mockJournalDbWithMeasurableTypes([
-        measurableWater,
-        measurableChocolate,
-      ]);
-      mockPersistenceLogic = MockPersistenceLogic();
-
-      final mockTimeService = MockTimeService();
-      final mockEditorStateService = MockEditorStateService();
-      final mockHealthImport = MockHealthImport();
-
-      getIt
-        ..registerSingleton<Directory>(await getApplicationDocumentsDirectory())
-        ..registerSingleton<UserActivityService>(UserActivityService())
-        ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-        ..registerSingleton<EditorStateService>(mockEditorStateService)
-        ..registerSingleton<EntitiesCacheService>(mockEntitiesCacheService)
-        ..registerSingleton<LinkService>(MockLinkService())
-        ..registerSingleton<HealthImport>(mockHealthImport)
-        ..registerSingleton<TimeService>(mockTimeService)
-        ..registerSingleton<JournalDb>(mockJournalDb)
-        ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-
-      when(() => mockEntitiesCacheService.sortedCategories).thenAnswer(
-        (_) => [categoryMindfulness],
-      );
-      when(
-        () => mockEntitiesCacheService.sortedLabels,
-      ).thenReturn(<LabelDefinition>[]);
-      when(() => mockEntitiesCacheService.getLabelById(any())).thenReturn(null);
-
-      when(
-        () => mockJournalDb.getMeasurableDataTypeById(
-          '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer((_) async => measurableWater);
-
-      when(() => mockUpdateNotifications.updateStream).thenAnswer(
-        (_) => Stream<Set<String>>.fromIterable([]),
-      );
-
-      when(() => mockJournalDb.watchConfigFlags()).thenAnswer(
-        (_) => Stream<Set<ConfigFlag>>.fromIterable([
-          <ConfigFlag>{
-            const ConfigFlag(
-              name: 'private',
-              description: 'Show private entries?',
-              status: true,
-            ),
-          },
-        ]),
-      );
-
-      when(
-        () => mockEditorStateService.getUnsavedStream(
-          any(),
-          any(),
-        ),
-      ).thenAnswer(
-        (_) => Stream<bool>.fromIterable([false]),
-      );
-
-      when(
-        () => mockJournalDb.getLinkedEntities(testTask.meta.id),
-      ).thenAnswer(
-        (_) async => [testTextEntry],
-      );
-
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
-
-      when(
-        () => mockJournalDb.getMeasurementsByType(
-          rangeStart: any(named: 'rangeStart'),
-          rangeEnd: any(named: 'rangeEnd'),
-          type: '83ebf58d-9cea-4c15-a034-89c84a8b8178',
-        ),
-      ).thenAnswer((_) async => []);
-
-      when(
-        () => mockJournalDb.journalEntityById(testTask.meta.id),
-      ).thenAnswer((_) async => testTask);
-
-      ensureThemingServicesRegistered();
-    });
-
+    setUp(registerTaskDetailsServices);
     tearDown(getIt.reset);
 
     testWidgets(

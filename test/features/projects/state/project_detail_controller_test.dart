@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/project_data.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_detail_controller.dart';
@@ -211,7 +212,13 @@ void main() {
     test(
       'saveChanges appends original status to history when status changed',
       () async {
-        when(() => mockRepo.updateProject(any())).thenAnswer((_) async => true);
+        ProjectEntry? persisted;
+        when(
+          () => mockRepo.updateProject(any()),
+        ).thenAnswer((invocation) async {
+          persisted = invocation.positionalArguments.first as ProjectEntry;
+          return true;
+        });
 
         final container = await createLoadedContainer();
         final notifier = container.read(
@@ -234,6 +241,44 @@ void main() {
         // The original open status should be in history after save.
         expect(state.project!.data.statusHistory, hasLength(1));
         expect(state.project!.data.statusHistory.first, isA<ProjectOpen>());
+
+        // The entity handed to the repository carries the new status and the
+        // appended history — not just the in-memory state.
+        expect(persisted, isNotNull);
+        expect(persisted!.data.status, isA<ProjectActive>());
+        expect(persisted!.data.statusHistory, hasLength(1));
+        expect(persisted!.data.statusHistory.first, isA<ProjectOpen>());
+      },
+    );
+
+    test(
+      'saveChanges persists the updated category to the repository',
+      () async {
+        ProjectEntry? persisted;
+        when(
+          () => mockRepo.updateProject(any()),
+        ).thenAnswer((invocation) async {
+          persisted = invocation.positionalArguments.first as ProjectEntry;
+          return true;
+        });
+
+        final container = await createLoadedContainer();
+        final notifier = container.read(
+          projectDetailControllerProvider(projectId).notifier,
+        )..updateCategoryId('new-category-id');
+        await notifier.saveChanges();
+
+        final state = container.read(
+          projectDetailControllerProvider(projectId),
+        );
+        expect(state.hasChanges, isFalse);
+        expect(state.project!.meta.categoryId, 'new-category-id');
+
+        // The repository receives the entity with the new category, proving the
+        // pending edit was propagated through saveChanges.
+        verify(() => mockRepo.updateProject(any())).called(1);
+        expect(persisted, isNotNull);
+        expect(persisted!.meta.categoryId, 'new-category-id');
       },
     );
 

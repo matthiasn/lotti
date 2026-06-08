@@ -156,6 +156,7 @@ void main() {
     AiSettingsTab? initialTab,
     bool hideTabBar = false,
     bool hideHeader = false,
+    Widget? home,
   }) {
     return ProviderScope(
       overrides: [
@@ -180,13 +181,15 @@ void main() {
           GlobalCupertinoLocalizations.delegate,
         ],
         supportedLocales: AppLocalizations.supportedLocales,
-        home: initialTab == null
-            ? const AiSettingsPage()
-            : AiSettingsPage(
-                initialTab: initialTab,
-                hideTabBar: hideTabBar,
-                hideHeader: hideHeader,
-              ),
+        home:
+            home ??
+            (initialTab == null
+                ? const AiSettingsPage()
+                : AiSettingsPage(
+                    initialTab: initialTab,
+                    hideTabBar: hideTabBar,
+                    hideHeader: hideHeader,
+                  )),
       ),
     );
   }
@@ -544,27 +547,11 @@ void main() {
         await tester.binding.setSurfaceSize(const Size(900, 1400));
         addTearDown(() => tester.binding.setSurfaceSize(null));
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              aiConfigRepositoryProvider.overrideWithValue(mockRepository),
-            ],
-            child: MaterialApp(
-              theme: ThemeData(
-                useMaterial3: true,
-                extensions: const <ThemeExtension<dynamic>>[dsTokensLight],
-              ),
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              supportedLocales: AppLocalizations.supportedLocales,
-              home: const AiSettingsBody(),
-            ),
-          ),
-        );
+        // Reuses the shared `buildHarness` chrome (ProviderScope + theme +
+        // localization delegates) but substitutes the standalone
+        // `AiSettingsBody` as the home so this test verifies the body
+        // wrapper mounts the full `AiSettingsPage` tree on its own.
+        await tester.pumpWidget(buildHarness(home: const AiSettingsBody()));
         providersController.add(const <AiConfig>[]);
         await tester.pump();
         await tester.pump();

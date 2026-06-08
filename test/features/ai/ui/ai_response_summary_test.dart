@@ -57,6 +57,11 @@ void main() {
       );
 
       expect(find.byType(GptMarkdown), findsOneWidget);
+
+      // The raw response text must be forwarded verbatim to GptMarkdown.data
+      // (no pre-processing for non-prompt-generation responses).
+      final gptMarkdown = tester.widget<GptMarkdown>(find.byType(GptMarkdown));
+      expect(gptMarkdown.data, responseText);
     });
 
     testWidgets('does not filter H1 for non-task summary responses', (

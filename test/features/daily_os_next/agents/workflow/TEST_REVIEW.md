@@ -42,12 +42,22 @@ Concrete extraction seams:
 
 After extraction the core `execute` orchestrator would be ~450 lines.
 
-- [ ] [MED] Mirror-split `day_agent_workflow_test.dart` (1839 lines) after impl split
+- [x] [MED] Mirror-split `day_agent_workflow_test.dart` (1839 lines) after impl split
 
 When the context builders are extracted, the 5–6 context-related tests should
 move to `day_agent_context_builder_test.dart`. The 4 `'drafting wake final plan
 enforcement'` group tests would move to a scheduling/enforcement test file.
 This keeps the orchestrator test file under 800 lines.
+
+  **DEFERRED:** The HIGH split (line 19) was resolved by keeping the impl as
+  `part`-file extensions of the single `day_agent_workflow.dart` library
+  (`day_agent_context_builder.dart`, `day_agent_persistence.dart`), NOT as
+  separate public source files. Under the one-test-file-per-source-file rule
+  (AGENTS.md), the single mirror is `day_agent_workflow_test.dart`; there are
+  no new source files to mirror, and splitting the test would create orphan
+  test files with no matching source. The `part`-file private members are not
+  reachable from a separate test file anyway. Re-open only if the context
+  builder/persistence clusters are promoted to their own public source files.
 
 ---
 
@@ -73,7 +83,15 @@ stub the same pair `{draftPlanForDay, hydrateDecidedTasks}`. Extract a
 `_stubPlanContext(planService, {baselinePlan, decidedTasks})` helper matching
 the existing `stubDraftingPlanContext` pattern already in the file (line 187).
 
-- [ ] [MED] Strategy test: 3 near-identical persistence-failure tests (lines 293–386)
+- [x] [MED] Strategy test: 3 near-identical persistence-failure tests (lines 293–386)
+
+  **RESOLVED:** Extracted `stubWritesFailingAt(failAt, sync)` (returns a write
+  counter) and a `_PersistenceFailureScenario` value class, then folded the
+  three tests into one parameterized loop over `(failAt: 1/2/4)`. The loop now
+  asserts the failed write is attempted, the observation is still accumulated
+  (or none, for the unknown-tool case), the exact tool response reaches the
+  manager, and the failure is logged from the correct branch — stronger than
+  the originals while removing ~35 lines of duplicated harness per test.
 
 The three tests `'continues tool processing when assistant message persistence fails'`,
 `'…action message…'`, and `'…tool-result…'` share 35+ lines of identical setup:
@@ -93,7 +111,7 @@ for (final (failAt, toolName, expectedMessage) in [
 }
 ```
 
-- [ ] [MED] Workflow test: `for` loop over `_ToolValidationScenario` (lines 1470–1511)
+- [x] [MED] Workflow test: `for` loop over `_ToolValidationScenario` (lines 1470–1511)
 
 This is the one well-parameterized loop in the file — good pattern. However
 the 4 validation scenarios exercise `setNextWake` only. The 3 non-validation
@@ -103,7 +121,20 @@ promoting them into the loop with a distinguishing `expectScheduledWakeAt` flag,
 which would let the shared `conversationRepository.toolCalls` setup be a single
 helper.
 
-- [ ] [LOW] Workflow test: `'continues when user message persistence fails'` (line 1435)
+  **RESOLVED (confirmed observation, no change):** The 3 non-validation tests
+  are NOT structural mirrors of the validation loop. The loop tests pure arg
+  validation (each: same single set_next_wake call, differing `args` →
+  differing rejection string). The other three each need a distinct, mutually
+  exclusive setup: `cap reached` seeds a `(dayId, date)`-scoped tool counter on
+  state; `state disappears` re-stubs `getAgentState` to return null on the
+  second read; `clears/preserves` seed `scheduledWakeAt` on state and assert
+  the persisted state rather than the tool response (they don't even call
+  set_next_wake). Folding them in would require ≥3 mutually exclusive optional
+  flags + branching inside the loop body, which is less readable than the
+  separate, self-describing tests. Leaving them separate is the better DRY
+  trade-off here.
+
+- [x] [LOW] Workflow test: `'continues when user message persistence fails'` (line 1435)
 
 The `writeCount` counter approach (overrides the global `syncService.upsertEntity`
 stub at line 1437) is fragile: it depends on the exact number of entity writes
@@ -112,11 +143,23 @@ it, the test silently tests the wrong failure. Prefer matching on entity type:
 throw when the entity is `AgentMessagePayloadEntity` containing a `userMessage`
 key, or use a dedicated seam/callback instead.
 
-- [ ] [LOW] Strategy test: `'uses the conversation manager continuation policy'` (line 282)
+  **RESOLVED:** Replaced the positional `writeCount` with an entity-type match —
+  the stub now throws only when the written entity is an `AgentMessageEntity`
+  with `kind == AgentMessageKind.user` (the user-message write), so it keeps
+  targeting the right write regardless of how many writes precede it. Added a
+  `threwForUserMessage` flag asserted `isTrue` so the test fails loudly if the
+  injection point ever stops being reached.
+
+- [x] [LOW] Strategy test: `'uses the conversation manager continuation policy'` (line 282)
 
 Only asserts `shouldContinue == true` when `manager.canContinue()` returns
 `true`. The `false` branch is not tested. Add a symmetric test for
 `canContinue() = false`.
+
+  **RESOLVED:** The existing test now asserts both directions in one body —
+  `shouldContinue` is `true` when `canContinue()` is `true` and `false` when it
+  is `false` — proving the strategy mirrors the manager verdict rather than
+  hard-coding `true`.
 
 ---
 
@@ -124,7 +167,7 @@ Only asserts `shouldContinue == true` when `manager.canContinue()` returns
 
 No existing Glados tests in this subdir (confirmed by grep).
 
-- [ ] [MED] `_remainingScheduledWakeAt` (in `day_agent_workflow.dart`)
+- [x] [MED] `_remainingScheduledWakeAt` (in `day_agent_workflow.dart`)
 
 This private helper decides whether to keep or clear a persisted `scheduledWakeAt`.
 The invariant is: "if `scheduledWakeAt` is null or in the past relative to `now`,
@@ -140,12 +183,34 @@ Glados2(any.nullableDateTime, any.dateTime)
 }, tags: 'glados');
 ```
 
-- [ ] [LOW] `DayAgentStrategy.extractObservations` deduplification
+  **DEFERRED (Glados) + RESOLVED (boundary example):** `_remainingScheduledWakeAt`
+  is a `static` PRIVATE method on `DayAgentWorkflow`; it cannot be reached from
+  a test without a lib change (exposing it / a `@visibleForTesting` wrapper),
+  which is out of scope for this test-only pass. A Glados property routed
+  through `execute()` would spin up the full conversation harness 80+ times per
+  property — the antithesis of a pure-logic property test and far too heavy.
+  Instead, the one untested temporal ordering — `scheduledWakeAt == now`, which
+  clears because the gate uses strict `isAfter` — is now covered by a new
+  example test (`'clears a scheduled wake landing exactly on now'`), alongside
+  the existing past-clears and future-preserves tests. Re-open the Glados part
+  only if the helper is promoted to a testable visibility.
+
+- [x] [LOW] `DayAgentStrategy.extractObservations` deduplification
 
 `extractObservations` is a pure projection from the internal observation list.
 Its invariant (returns all observations in insertion order, no duplicates) could
 be verified with a Glados list-of-string generator. Low value given it is
 already well-covered by example tests.
+
+  **RESOLVED (with correction):** Added a `tags: 'glados'` property test using a
+  `nonEmptyObservationStrings` generator (1–6 letter/digit strings, so `trim()`
+  is a no-op). It asserts `extractObservations()` returns exactly the input
+  strings in input order, each with default priority/category. NOTE: the
+  reviewer's "no duplicates" invariant is FALSE against the source —
+  `_handleRecordObservations` performs no de-duplication, so identical strings
+  each produce an observation. The property deliberately pins the TRUE
+  behavior (order-preserving, duplicate-keeping projection) rather than the
+  mis-stated one.
 
 ---
 
@@ -172,17 +237,29 @@ direct test.
 
 Similarly the `dayId == null || dayId.isEmpty` guard at line 124 is not tested.
 
-- [ ] [MED] `execute()` with `resolvedProfile == null` (no inference provider)
+- [x] [MED] `execute()` with `resolvedProfile == null` (no inference provider)
 
 The early return at line 153 `'No inference provider configured'` has no test.
 
-- [ ] [MED] `_persistObservations` with empty observation list
+  **RESOLVED:** New test `'fails the wake when no inference provider is
+  configured'` stubs `getConfigsByType(model)` to `[]` so the thinking slot
+  cannot resolve and `ProfileResolver.resolve()` returns null. Asserts the wake
+  fails with `'No inference provider configured'`, no conversation is created,
+  and nothing is persisted.
+
+- [x] [MED] `_persistObservations` with empty observation list
 
 `DayAgentStrategy.extractObservations()` can return an empty list when the
 model makes no `record_observations` call. The `_persistObservations` helper
 (line ~844 of impl) iterates over it — zero-length case has no coverage.
 
-- [ ] [MED] `_resolveTemplate` returning `null` when no template is assigned
+  **RESOLVED:** New test `'persists no observation entities when none were
+  recorded'` runs a wake with no `record_observations` call and asserts no
+  `AgentMessageEntity` of `kind == observation` is upserted, while the wake
+  still completes (the final-response thought is persisted). This exercises the
+  zero-length `_persistObservations` loop.
+
+- [x] [MED] `_resolveTemplate` returning `null` when no template is assigned
 
 `_resolveTemplate` returns `null` when `templateService.getTemplateForAgent`
 returns null. This does NOT abort the wake (unlike `resolvedProfile == null`),
@@ -190,7 +267,19 @@ but a null `templateCtx` means the system prompt and `updateWakeRunTemplate`
 call are skipped. No test verifies the wake continues successfully with a null
 template context.
 
-- [ ] [MED] `_forceDraftDayPlanIfMissing` merges usage from two `sendMessage` calls
+  **RESOLVED (premise corrected):** The reviewer's premise is FALSE against the
+  source. In `execute()`, `resolvedProfile = templateCtx != null ? resolve()
+  : null`, and the very next line aborts when `resolvedProfile == null`. So a
+  null `templateCtx` (no template OR no active version) ALWAYS forces a null
+  profile and the wake aborts with `'No inference provider configured'` — the
+  scaffold-only `_buildSystemPrompt(null)` path and the `templateCtx != null`
+  guard around `updateWakeRunTemplate` are unreachable while the profile guard
+  fires first. Added a parameterized test (`'aborts the wake when no template
+  is assigned'` / `'… the active template version is missing'`) pinning that
+  both null paths abort with that error, create no conversation, persist
+  nothing, and never call `updateWakeRunTemplate`.
+
+- [x] [MED] `_forceDraftDayPlanIfMissing` merges usage from two `sendMessage` calls
 
 The test at line 810 (`'forces draft_day_plan…'`) sets `usageByInvocation` to
 `[InferenceUsage(10,5), InferenceUsage(3,2)]` and asserts `inputTokens == 13,
@@ -199,11 +288,25 @@ However the `usage == null` initial case (first call returns no usage) is not
 tested — the merge `usage == null ? retryUsage : usage.merge(retryUsage)` at
 line 261 has a null-left branch untested.
 
-- [ ] [LOW] `DayAgentStrategy.recordFinalResponse` with null/empty string
+  **RESOLVED:** New test in the drafting-enforcement group, `'adopts the
+  forced-retry usage when the first call returns none'`, sets `usageByInvocation
+  = [null, InferenceUsage(3,2)]` so the first sendMessage reports no usage and
+  the forced draft_day_plan retry supplies it. Asserts the persisted
+  `WakeTokenUsageEntity` is exactly 3/2 (the retry usage adopted verbatim,
+  covering the null-left branch).
+
+- [x] [LOW] `DayAgentStrategy.recordFinalResponse` with null/empty string
 
 `recordFinalResponse` (called from `execute` line 281) is tested implicitly via
 `conversationRepository.finalResponse`. A null or empty string case is not
 tested.
+
+  **RESOLVED:** New test `'persists no thought when the model returns no final
+  text'` runs a wake whose conversation ends with no assistant text (the
+  harness defaults `finalResponse` to null). `recordFinalResponse(null)` leaves
+  the strategy's `finalResponse` null, so `_persistThought` writes nothing —
+  asserted by no `AgentMessageEntity` of `kind == thought` being upserted —
+  while the wake still completes and event-sources `lastWakeAt`.
 
 ---
 
@@ -212,7 +315,7 @@ tested.
 No `Future.delayed`, `sleep`, or real `Timer` found (confirmed by grep). No
 `pumpAndSettle` (no widget tests). All time-sensitive paths use `Clock.fixed`.
 
-- [ ] [MED] `_ConversationHarness` is instantiated fresh per `setUp()` but carries mutable state
+- [x] [MED] `_ConversationHarness` is instantiated fresh per `setUp()` but carries mutable state
 
 `_ConversationHarness` accumulates `toolResponses`, `sendMessageCalls`,
 `lastSystemMessage`, `lastUserMessage` across the test lifecycle. Because
@@ -222,11 +325,30 @@ stateful override logic. If the workflow test file grows, consider extracting
 it to a shared test utility in `test/features/daily_os_next/agents/` so it
 can be reused when context-builder and scheduling tests are split out.
 
-- [ ] [LOW] `stubDomainLogger()` and `stubInferenceProfile()` are called unconditionally in `setUp` for all 25 tests
+  **RESOLVED (confirmed observation, no change):** The reviewer already confirms
+  the per-`setUp` lifecycle is correct (each test gets a fresh harness). The
+  extraction is explicitly conditioned on the test-file split ("so it can be
+  reused when context-builder and scheduling tests are split out"), which is
+  DEFERRED above under the one-test-file-per-source rule. `_ConversationHarness`
+  has exactly one consumer today; lifting it to a shared util now (a) would have
+  to live OUTSIDE this subdir — a shared file this pass must not touch — and
+  (b) gives zero DRY benefit with a single caller. Re-open together with the
+  split if the impl ever grows separate public source files.
+
+- [x] [LOW] `stubDomainLogger()` and `stubInferenceProfile()` are called unconditionally in `setUp` for all 25 tests
 
 8 of the 25 tests do not interact with inference at all (they fail before
 `resolvedProfile` is used). Moving `stubInferenceProfile()` into an explicit
 call site for the tests that need it would reduce setUp overhead marginally.
+
+  **RESOLVED (confirmed observation, no change):** The reviewer states the
+  benefit is "marginal" and it is — `stubInferenceProfile()` registers three
+  `when()` stubs that do no real work and are never invoked in the early-exit
+  tests, so the runtime cost is negligible. Inlining it at ~17 call sites would
+  trade that negligible saving for repeated boilerplate and a real risk of a
+  forgotten call producing null-stub failures in CI (per the JournalDb/Sync
+  mixin caveat). Centralizing both stubs in `setUp` is the better readability/
+  robustness trade-off.
 
 ---
 

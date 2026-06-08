@@ -32,10 +32,9 @@ class _InMemoryAiConfigRepo extends AiConfigRepository {
   _InMemoryAiConfigRepo() : super(AiConfigDb(inMemoryDatabase: true));
 }
 
-class _ThrowingCancelSubscription
-    implements StreamSubscription<record.Amplitude> {
-  _ThrowingCancelSubscription();
-
+/// A [StreamSubscription] whose [cancel] fails, used to exercise the
+/// controller's error handling when tearing down an amplitude subscription.
+class _ThrowingCancelSubscription<T> implements StreamSubscription<T> {
   @override
   Future<void> cancel() => Future.error(Exception('amp cancel fail'));
 
@@ -43,7 +42,7 @@ class _ThrowingCancelSubscription
   bool get isPaused => false;
 
   @override
-  void onData(void Function(record.Amplitude data)? handleData) {}
+  void onData(void Function(T data)? handleData) {}
 
   @override
   void onDone(void Function()? handleDone) {}
@@ -61,59 +60,25 @@ class _ThrowingCancelSubscription
   Future<E> asFuture<E>([E? futureValue]) => Future.value(futureValue as E);
 }
 
-class _ThrowOnCancelStream extends Stream<record.Amplitude> {
+/// A [Stream] that emits a single [sample] then completes, but whose
+/// subscription throws on [StreamSubscription.cancel]. Generic over the element
+/// type so the same helper covers both the `record.Amplitude` amplitude stream
+/// and the realtime `double` amplitude stream.
+class _ThrowOnCancelStream<T> extends Stream<T> {
+  _ThrowOnCancelStream(this.sample);
+
+  final T sample;
+
   @override
-  StreamSubscription<record.Amplitude> listen(
-    void Function(record.Amplitude event)? onData, {
+  StreamSubscription<T> listen(
+    void Function(T event)? onData, {
     Function? onError,
     void Function()? onDone,
     bool? cancelOnError,
   }) {
-    final sub = _ThrowingCancelSubscription();
+    final sub = _ThrowingCancelSubscription<T>();
     // simulate immediate data then done
-    onData?.call(record.Amplitude(current: -40, max: -30));
-    onDone?.call();
-    return sub;
-  }
-}
-
-class _ThrowingDoubleCancelSubscription implements StreamSubscription<double> {
-  @override
-  Future<void> cancel() => Future.error(Exception('amp cancel fail'));
-
-  @override
-  bool get isPaused => false;
-
-  @override
-  void onData(void Function(double data)? handleData) {}
-
-  @override
-  void onDone(void Function()? handleDone) {}
-
-  @override
-  void onError(Function? handleError) {}
-
-  @override
-  void pause([Future<void>? resumeSignal]) {}
-
-  @override
-  void resume() {}
-
-  @override
-  Future<E> asFuture<E>([E? futureValue]) => Future.value(futureValue as E);
-}
-
-class _ThrowOnCancelDoubleStream extends Stream<double> {
-  @override
-  StreamSubscription<double> listen(
-    void Function(double event)? onData, {
-    Function? onError,
-    void Function()? onDone,
-    bool? cancelOnError,
-  }) {
-    final sub = _ThrowingDoubleCancelSubscription();
-    // simulate immediate data then done
-    onData?.call(-40);
+    onData?.call(sample);
     onDone?.call();
     return sub;
   }
@@ -278,6 +243,92 @@ void main() {
       container.dispose();
     });
   });
+
+  test(
+    'non-default ChatRecorderConfig values flow into the recorder',
+    () async {
+      final baseTemp = await Directory.systemTemp.createTemp('rec_test_');
+      addTearDown(() async {
+        if (baseTemp.existsSync()) {
+          await baseTemp.delete(recursive: true);
+        }
+      });
+
+      final mockRecorder = MockAudioRecorder();
+      when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
+      when(() => mockRecorder.dispose()).thenAnswer((_) async {});
+      when(
+        () => mockRecorder.start(
+          any<record.RecordConfig>(),
+          path: any(named: 'path'),
+        ),
+      ).thenAnswer((_) async {});
+      when(() => mockRecorder.stop()).thenAnswer((_) async => null);
+      when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
+        (_) => const Stream<record.Amplitude>.empty(),
+      );
+
+      // A large maxSeconds keeps the safety timer pending so it cannot fire
+      // during the test — proving the non-default value (not the 0 default
+      // tested elsewhere) is what drives the Timer.
+      const config = ChatRecorderConfig(
+        sampleRate: 16000,
+        maxSeconds: 3600,
+        amplitudeIntervalMs: 250,
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          chatRecorderControllerProvider.overrideWith(
+            () => ChatRecorderController(
+              recorderFactory: () => mockRecorder,
+              tempDirectoryProvider: () async => baseTemp,
+              config: config,
+            ),
+          ),
+          audioTranscriptionServiceProvider.overrideWithValue(
+            MockAudioTranscriptionService(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      final sub = container.listen(chatRecorderControllerProvider, (_, _) {});
+      addTearDown(sub.close);
+      final controller = container.read(
+        chatRecorderControllerProvider.notifier,
+      );
+
+      await controller.start();
+
+      // sampleRate flows into the RecordConfig passed to recorder.start().
+      final recordConfig =
+          verify(
+                () => mockRecorder.start(
+                  captureAny<record.RecordConfig>(),
+                  path: any(named: 'path'),
+                ),
+              ).captured.single
+              as record.RecordConfig;
+      expect(recordConfig.sampleRate, config.sampleRate);
+
+      // amplitudeIntervalMs flows into recorder.onAmplitudeChanged().
+      final interval =
+          verify(
+                () => mockRecorder.onAmplitudeChanged(captureAny()),
+              ).captured.single
+              as Duration;
+      expect(interval, Duration(milliseconds: config.amplitudeIntervalMs));
+
+      // The 1-hour safety timer is still pending, so stop() has not been
+      // triggered automatically (it would have for the maxSeconds: 0 case).
+      await pumpEventQueue();
+      verifyNever(() => mockRecorder.stop());
+      expect(
+        container.read(chatRecorderControllerProvider).status,
+        ChatRecorderStatus.recording,
+      );
+    },
+  );
 
   test('transcription failures surface friendly error', () async {
     // Prepare minimal AI configs
@@ -734,9 +785,9 @@ void main() {
     when(() => mockRecorder.hasPermission()).thenAnswer((_) async => true);
     when(() => mockRecorder.dispose()).thenAnswer((_) async {});
     // Stream that returns a subscription whose cancel throws
-    when(
-      () => mockRecorder.onAmplitudeChanged(any()),
-    ).thenAnswer((_) => _ThrowOnCancelStream());
+    when(() => mockRecorder.onAmplitudeChanged(any())).thenAnswer(
+      (_) => _ThrowOnCancelStream(record.Amplitude(current: -40, max: -30)),
+    );
     when(
       () => mockRecorder.start(
         any<record.RecordConfig>(),
@@ -2075,7 +2126,7 @@ void main() {
       final mockRealtime = MockRealtimeTranscriptionService();
       when(
         () => mockRealtime.amplitudeStream,
-      ).thenAnswer((_) => _ThrowOnCancelDoubleStream());
+      ).thenAnswer((_) => _ThrowOnCancelStream<double>(-40));
       when(
         () => mockRealtime.startRealtimeTranscription(
           pcmStream: any(named: 'pcmStream'),
@@ -2167,7 +2218,7 @@ void main() {
         // amplitudeStream returns a subscription whose cancel() throws
         when(
           () => mockRealtime.amplitudeStream,
-        ).thenAnswer((_) => _ThrowOnCancelDoubleStream());
+        ).thenAnswer((_) => _ThrowOnCancelStream<double>(-40));
         when(
           () => mockRealtime.startRealtimeTranscription(
             pcmStream: any(named: 'pcmStream'),

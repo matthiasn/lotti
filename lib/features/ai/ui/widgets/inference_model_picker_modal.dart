@@ -78,21 +78,32 @@ class InferenceModelPickerModal extends StatelessWidget {
   /// Splits the list so the default appears first when it exists in
   /// [models]. When the default is missing (stale id / no profile
   /// slot) the list renders as-is, with no row marked.
-  List<AiConfigModel> _orderedModels() {
-    final defaultId = defaultModelId;
-    if (defaultId == null) return models;
-    final defaultModel = models.where((m) => m.id == defaultId).firstOrNull;
+  ///
+  /// Pure ordering function (no `BuildContext`, no instance state) so it
+  /// can be property-tested directly. Invariants: the multiset of
+  /// elements is preserved; if [defaultModelId] matches an element, that
+  /// element is at index 0 and the rest keep their original relative
+  /// order; otherwise the list is returned unchanged.
+  @visibleForTesting
+  static List<AiConfigModel> orderModels(
+    List<AiConfigModel> models,
+    String? defaultModelId,
+  ) {
+    if (defaultModelId == null) return models;
+    final defaultModel = models
+        .where((m) => m.id == defaultModelId)
+        .firstOrNull;
     if (defaultModel == null) return models;
     return [
       defaultModel,
-      ...models.where((m) => m.id != defaultId),
+      ...models.where((m) => m.id != defaultModelId),
     ];
   }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final ordered = _orderedModels();
+    final ordered = orderModels(models, defaultModelId);
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step5),
       child: Column(

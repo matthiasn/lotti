@@ -25,10 +25,14 @@ void main() {
       // Find the icon
       expect(find.byIcon(testIcon), findsOneWidget);
 
-      // Check icon properties
+      // Check icon properties: the default icon color is the theme's primary
+      // (see ModernIconContainer.effectiveIconColor), not just "non-null".
+      final iconColor = Theme.of(
+        tester.element(find.byIcon(testIcon)),
+      ).colorScheme.primary;
       final icon = tester.widget<Icon>(find.byIcon(testIcon));
       expect(icon.size, AppTheme.iconSize);
-      expect(icon.color, isNotNull);
+      expect(icon.color, iconColor);
     });
 
     testWidgets('custom icon color is applied', (tester) async {

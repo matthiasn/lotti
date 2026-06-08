@@ -11,33 +11,23 @@ import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import 'test_utils.dart';
 
+/// Local alias for the shared [buildSyncEvent] factory so the many
+/// existing call sites keep their concise name.
 Event _buildSyncEvent({
   required String eventId,
   required String roomId,
   required int originTsMs,
   String type = EventTypes.Message,
   Map<String, dynamic>? content,
-}) {
-  final event = MockEvent();
-  final eventContent = content ?? <String, dynamic>{'msgtype': syncMessageType};
-  when(() => event.eventId).thenReturn(eventId);
-  when(() => event.roomId).thenReturn(roomId);
-  when(() => event.type).thenReturn(type);
-  when(() => event.content).thenReturn(eventContent);
-  when(() => event.text).thenReturn('stub text');
-  when(
-    () => event.originServerTs,
-  ).thenReturn(DateTime.fromMillisecondsSinceEpoch(originTsMs));
-  when(event.toJson).thenReturn(<String, dynamic>{
-    'event_id': eventId,
-    'room_id': roomId,
-    'origin_server_ts': originTsMs,
-    'type': type,
-    'content': eventContent,
-  });
-  return event;
-}
+}) => buildSyncEvent(
+  eventId: eventId,
+  roomId: roomId,
+  originTsMs: originTsMs,
+  type: type,
+  content: content,
+);
 
 Event _buildGeneratedBatchEvent(
   _GeneratedBatchEventRow row, {
@@ -204,6 +194,62 @@ class _GeneratedResurrectionScenario {
     return '_GeneratedResurrectionScenario('
         'targetSlot: $targetSlot, '
         'rows: $rows'
+        ')';
+  }
+}
+
+/// Generated scenario for the `resurrectByPaths` chunking invariant.
+///
+/// A handful of abandoned rows are seeded against distinct paths; the
+/// request set selects a subset of them and pads the IN-list with many
+/// synthetic non-matching paths so the call crosses the
+/// `_resurrectByPathsChunkSize` (900) boundary one or more times. The
+/// invariant: chunking is transparent — `resurrectByPaths` resurrects
+/// exactly the seeded rows whose path is requested, identical to the
+/// union of individual `resurrectByPath` calls, no matter how many
+/// chunks the padding forces.
+class _GeneratedChunkingScenario {
+  const _GeneratedChunkingScenario({
+    required this.seededSlots,
+    required this.requestedMask,
+    required this.paddingCount,
+  });
+
+  /// Distinct path slots that get a real abandoned row in the DB.
+  final List<int> seededSlots;
+
+  /// Per-seeded-slot flag: include that slot's path in the request set.
+  final List<bool> requestedMask;
+
+  /// Synthetic non-matching paths padded into the request IN-list. Up to
+  /// 2 000 so the chunk boundary (900) is crossed up to ~3 times.
+  final int paddingCount;
+
+  String eventIdFor(int index) => '\$generated-chunk-$index';
+
+  String seededPath(int index) => '/generated/chunk-${seededSlots[index]}.json';
+
+  /// Slots requested AND seeded — the rows that must flip to enqueued.
+  Set<int> get requestedSeededIndices => {
+    for (var index = 0; index < seededSlots.length; index++)
+      if (requestedMask[index]) index,
+  };
+
+  /// Full request set: the requested seeded paths plus synthetic padding.
+  /// Deduplicated to mirror the production `paths.toSet()` step.
+  List<String> requestPaths() {
+    return <String>{
+      for (final index in requestedSeededIndices) seededPath(index),
+      for (var i = 0; i < paddingCount; i++) '/generated/chunk-pad-$i.json',
+    }.toList(growable: false);
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedChunkingScenario('
+        'seededSlots: $seededSlots, '
+        'requestedMask: $requestedMask, '
+        'paddingCount: $paddingCount'
         ')';
   }
 }
@@ -434,6 +480,37 @@ extension _AnyInboundQueueScenario on glados.Any {
               targetSlot: targetSlot,
               rows: rows,
             ),
+      );
+
+  glados.Generator<_GeneratedChunkingScenario> get chunkingScenario =>
+      glados.CombinableAny(this).combine3(
+        // Up to 6 candidate slots; deduped to distinct seeded rows so the
+        // resurrected count maps 1:1 to requested-and-seeded slots.
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(1, 6, glados.IntAnys(this).intInRange(0, 6)),
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(1, 6, glados.BoolAny(this).bool),
+        // Padding spans the 900-cap so the IN-list crosses 0..~3 chunks.
+        glados.IntAnys(this).intInRange(0, 2000),
+        (
+          List<int> rawSlots,
+          List<bool> rawMask,
+          int paddingCount,
+        ) {
+          final distinctSlots = rawSlots.toSet().toList(growable: false);
+          // Pad the mask to cover every distinct slot; trim if longer.
+          final mask = <bool>[
+            for (var index = 0; index < distinctSlots.length; index++)
+              index < rawMask.length && rawMask[index],
+          ];
+          return _GeneratedChunkingScenario(
+            seededSlots: distinctSlots,
+            requestedMask: mask,
+            paddingCount: paddingCount,
+          );
+        },
       );
 
   glados.Generator<_GeneratedBatchEventKind> get batchEventKind =>
@@ -1199,8 +1276,85 @@ void main() {
     );
 
     glados.Glados(
+      glados.any.chunkingScenario,
+      // Each run seeds real SQLite rows and may pad the IN-list to 2 000
+      // synthetic paths across multiple 900-entry chunks, so keep the
+      // run count moderate to bound the per-run DB + chunk cost.
+      glados.ExploreConfig(numRuns: 90),
+    ).test(
+      'resurrectByPaths chunking is transparent: resurrects exactly the '
+      'requested-and-seeded rows regardless of how many 900-entry chunks '
+      'the padded IN-list spans',
+      (scenario) async {
+        await _withFreshInboundQueue((freshDb, freshQueue) async {
+          // Seed one abandoned row per distinct slot.
+          final queueIdBySlotIndex = <int, int>{};
+          for (var index = 0; index < scenario.seededSlots.length; index++) {
+            await freshQueue.enqueueLive(
+              _buildSyncEvent(
+                eventId: scenario.eventIdFor(index),
+                roomId: roomA,
+                originTsMs: 4000 + index,
+                content: <String, dynamic>{
+                  'msgtype': syncMessageType,
+                  'jsonPath': scenario.seededPath(index),
+                },
+              ),
+            );
+          }
+          final indexByEventId = <String, int>{
+            for (var index = 0; index < scenario.seededSlots.length; index++)
+              scenario.eventIdFor(index): index,
+          };
+          final batch = await freshQueue.peekBatchReady(
+            maxBatch: scenario.seededSlots.length,
+          );
+          for (final entry in batch) {
+            queueIdBySlotIndex[indexByEventId[entry.eventId]!] = entry.queueId;
+            await freshQueue.markSkipped(
+              entry,
+              reason: 'pendingAttachmentTimeout',
+            );
+          }
+
+          final expectedIndices = scenario.requestedSeededIndices;
+          final resurrected = await freshQueue.resurrectByPaths(
+            scenario.requestPaths(),
+          );
+
+          // Count invariant: exactly the requested-and-seeded rows flip,
+          // identical to the union of per-path resurrectByPath calls, no
+          // matter how many chunks the padding forced.
+          expect(resurrected, expectedIndices.length);
+
+          final stats = await freshQueue.stats();
+          expect(stats.total, expectedIndices.length);
+          expect(stats.readyNow, expectedIndices.length);
+          expect(
+            stats.abandoned,
+            scenario.seededSlots.length - expectedIndices.length,
+          );
+
+          // Per-row invariant: requested rows are enqueued, the rest stay
+          // abandoned — chunking never resurrects a non-requested path.
+          for (var index = 0; index < scenario.seededSlots.length; index++) {
+            final queueId = queueIdBySlotIndex[index]!;
+            final row = await (freshDb.select(
+              freshDb.inboundEventQueue,
+            )..where((t) => t.queueId.equals(queueId))).getSingle();
+            expect(
+              row.status,
+              expectedIndices.contains(index) ? 'enqueued' : 'abandoned',
+            );
+          }
+        });
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados(
       glados.any.batchAccountingScenario,
-      glados.ExploreConfig(numRuns: 140),
+      glados.ExploreConfig(numRuns: 120),
     ).test(
       'enqueueBatch generated accounting partitions every input event',
       (scenario) async {

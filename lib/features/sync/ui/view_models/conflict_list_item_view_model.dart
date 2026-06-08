@@ -43,7 +43,7 @@ class ConflictListItemViewModel {
         : ConflictStatusTone.unresolved;
 
     final entity = fromSerialized(conflict.serialized);
-    final entityLabel = _entityLabel(
+    final entityTypeLabel = labelForType(
       context: context,
       type: entity.runtimeType.toString(),
     );
@@ -54,7 +54,7 @@ class ConflictListItemViewModel {
     final semantics = messages.conflictListItemSemanticsLabel(
       statusLabel,
       timestamp,
-      entityLabel,
+      entityTypeLabel,
       conflictIdFull,
     );
 
@@ -62,7 +62,7 @@ class ConflictListItemViewModel {
       timestampLabel: timestamp,
       statusLabel: statusLabel,
       statusTone: statusTone,
-      entityLabel: entityLabel,
+      entityLabel: entityTypeLabel,
       conflictIdFull: conflictIdFull,
       conflictIdShort: conflictIdShort,
       semanticsLabel: semantics,
@@ -83,7 +83,14 @@ class ConflictListItemViewModel {
   static String shortenConflictId(String id) =>
       id.length > 8 ? id.substring(0, 8) : id;
 
-  static String _entityLabel({
+  /// Maps a `JournalEntity` runtime type name to its localized label. Unknown
+  /// type names fall back to the raw [type] string — a defensive path for
+  /// entity subtypes that have not (yet) been added to the map. Visible for
+  /// direct testing of the fallback, which is unreachable through
+  /// [ConflictListItemViewModel.fromConflict] (every deserialized entity is a
+  /// known `JournalEntity` subtype).
+  @visibleForTesting
+  static String labelForType({
     required BuildContext context,
     required String type,
   }) {

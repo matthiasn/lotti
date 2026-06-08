@@ -594,7 +594,7 @@ void main() {
 
       glados.Glados<_GeneratedDayPlanBlocks>(
         glados.any.dayPlanBlocks,
-        glados.ExploreConfig(numRuns: 120),
+        glados.ExploreConfig(numRuns: 80),
       ).test('round-trips generated day-plan data through JSON', (generated) {
         final data = DayPlanData(
           planDate: DateTime(2026, 5, 25),

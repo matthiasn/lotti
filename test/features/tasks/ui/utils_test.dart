@@ -200,6 +200,18 @@ void main() {
         );
       });
     }
+
+    // Exhaustiveness oracle: a string maps to the fallback icon if and only if
+    // its normalized form is not one of the known statuses. This pins the
+    // switch's default arm to exactly the unknown-input case.
+    glados.Glados(
+      glados.any.statusString,
+      glados.ExploreConfig(numRuns: 150),
+    ).test('fallback icon iff normalized status is unknown', (s) {
+      final isKnown = _knownNormalized.contains(normalizeTaskStatusString(s));
+      final usesFallback = taskIconFromStatusString(s) == Icons.help_outline;
+      expect(usesFallback, equals(!isKnown));
+    }, tags: 'glados');
   });
 
   // ---------------------------------------------------------------------------
@@ -258,6 +270,26 @@ void main() {
         () => taskColorFromStatusString(s, brightness: Brightness.light),
         returnsNormally,
       );
+    }, tags: 'glados');
+
+    // Exhaustiveness oracle: any string whose normalized form is unknown falls
+    // through to the default arm, which uses the same grey as OPEN. We assert
+    // unknown inputs match the OPEN colour (the documented fallback) for both
+    // brightnesses. (We cannot use a strict iff here because OPEN itself shares
+    // the grey fallback colour.)
+    glados.Glados(
+      glados.any.statusString,
+      glados.ExploreConfig(numRuns: 150),
+    ).test('unknown status maps to the OPEN/grey fallback colour', (s) {
+      if (_knownNormalized.contains(normalizeTaskStatusString(s))) {
+        return; // only assert on genuinely unknown inputs
+      }
+      for (final brightness in [Brightness.light, Brightness.dark]) {
+        expect(
+          taskColorFromStatusString(s, brightness: brightness),
+          equals(taskColorFromStatusString('OPEN', brightness: brightness)),
+        );
+      }
     }, tags: 'glados');
   });
 }

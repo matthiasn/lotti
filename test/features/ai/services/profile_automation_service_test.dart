@@ -155,6 +155,63 @@ class _GeneratedAutomationServiceScenario {
   }
 }
 
+/// A generated set of direct-transcription fallback candidates plus the host
+/// platform flag, used to property-test `_fallbackCandidateRank` ordering
+/// through the public `tryTranscribe` fallback path.
+class _GeneratedFallbackRankScenario {
+  const _GeneratedFallbackRankScenario({
+    required this.providerTypes,
+    required this.isMacOS,
+  });
+
+  final List<InferenceProviderType> providerTypes;
+  final bool isMacOS;
+
+  bool get hasMlx => providerTypes.contains(InferenceProviderType.mlxAudio);
+
+  bool get hasNonMlx =>
+      providerTypes.any((type) => type != InferenceProviderType.mlxAudio);
+
+  String providerIdAt(int index) => 'rank-provider-$index';
+
+  String modelIdAt(int index) => 'rank-model-$index';
+
+  /// MLX rows use the recommended STT model id so the macOS ranker scores
+  /// them rank 0 (best). Cloud / other rows get distinct synthetic ids so
+  /// they never collide with the MLX discriminator constants.
+  String providerModelIdAt(int index) {
+    return providerTypes[index] == InferenceProviderType.mlxAudio
+        ? mlxAudioRecommendedSttModelId
+        : 'synthetic-stt-model-$index';
+  }
+
+  @override
+  String toString() {
+    return '_GeneratedFallbackRankScenario('
+        'isMacOS: $isMacOS, providerTypes: $providerTypes)';
+  }
+}
+
+extension _AnyGeneratedFallbackRankScenario on glados.Any {
+  glados.Generator<InferenceProviderType> get inferenceProviderType =>
+      glados.AnyUtils(this).choose(InferenceProviderType.values);
+
+  glados.Generator<_GeneratedFallbackRankScenario> get fallbackRankScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.ListAnys(
+          this,
+        ).listWithLengthInRange(1, 5, inferenceProviderType),
+        glados.AnyUtils(this).choose([false, true]),
+        (
+          List<InferenceProviderType> providerTypes,
+          bool isMacOS,
+        ) => _GeneratedFallbackRankScenario(
+          providerTypes: providerTypes,
+          isMacOS: isMacOS,
+        ),
+      );
+}
+
 extension _AnyGeneratedAutomationServiceScenario on glados.Any {
   glados.Generator<_GeneratedAutomationOperation> get automationOperation =>
       glados.AnyUtils(this).choose(_GeneratedAutomationOperation.values);
@@ -1038,6 +1095,103 @@ void main() {
       tags: 'glados',
     );
 
+    glados.Glados(
+      glados.any.fallbackRankScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'direct transcription fallback ranking honours the platform-aware order',
+      (scenario) async {
+        platform.isMacOS = scenario.isMacOS;
+
+        final localResolver = MockProfileAutomationResolver();
+        final localAiConfig = MockAiConfigRepository();
+        final localService = ProfileAutomationService(
+          resolver: localResolver,
+          aiConfigRepository: localAiConfig,
+        );
+
+        final providers = <AiConfigInferenceProvider>[];
+        final models = <AiConfigModel>[];
+        for (var index = 0; index < scenario.providerTypes.length; index++) {
+          // A non-empty API key keeps every candidate past the missing-key
+          // filter regardless of provider type, so the surviving set equals
+          // the generated set and the test exercises pure ranking.
+          providers.add(
+            makeProvider(
+              id: scenario.providerIdAt(index),
+              name: 'Provider $index',
+              type: scenario.providerTypes[index],
+              apiKey: 'sk-key-$index',
+            ),
+          );
+          models.add(
+            makeModel(
+              id: scenario.modelIdAt(index),
+              name: 'Model $index',
+              providerModelId: scenario.providerModelIdAt(index),
+              providerId: scenario.providerIdAt(index),
+            ),
+          );
+        }
+
+        when(
+          () => localResolver.resolveForTask('rank-task'),
+        ).thenAnswer((_) async => null);
+        when(
+          () => localAiConfig.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => models);
+        for (final provider in providers) {
+          when(
+            () => localAiConfig.getConfigById(provider.id),
+          ).thenAnswer((_) async => provider);
+        }
+
+        final result = await localService.tryTranscribe(taskId: 'rank-task');
+
+        // At least one valid STT candidate always exists, so a model is always
+        // selected.
+        expect(result.handled, isTrue, reason: '$scenario');
+        final winnerProvider = result.resolvedProfile!.transcriptionProvider!;
+        final winnerType = winnerProvider.inferenceProviderType;
+
+        if (scenario.hasMlx && scenario.isMacOS) {
+          // MLX recommended STT scores rank 0 on macOS — it must win whenever
+          // present, beating every cloud and other-local candidate.
+          expect(
+            winnerType,
+            InferenceProviderType.mlxAudio,
+            reason:
+                'On macOS the recommended MLX STT must top the ranking. '
+                '$scenario',
+          );
+        }
+
+        if (scenario.hasMlx && scenario.hasNonMlx && !scenario.isMacOS) {
+          // Off macOS the native MLX bridge is unavailable, so MLX rows are
+          // demoted past every other candidate and must never win.
+          expect(
+            winnerType,
+            isNot(InferenceProviderType.mlxAudio),
+            reason:
+                'Off macOS the MLX row must lose to any non-MLX candidate. '
+                '$scenario',
+          );
+        }
+
+        // The ranking is deterministic: a second resolution selects the same
+        // model id for the identical candidate set.
+        final secondResult = await localService.tryTranscribe(
+          taskId: 'rank-task',
+        );
+        expect(
+          secondResult.resolvedProfile!.transcriptionModelId,
+          result.resolvedProfile!.transcriptionModelId,
+          reason: 'Fallback selection must be deterministic. $scenario',
+        );
+      },
+      tags: 'glados',
+    );
+
     group('hasAutomatedSkillType', () {
       test('returns true when skill type is available', () async {
         const assignment = SkillAssignment(
@@ -1161,6 +1315,49 @@ void main() {
 
             expect(result, isTrue, reason: skillType.name);
           }
+        },
+      );
+
+      test(
+        'imagePromptGeneration does not require an image-generation provider',
+        () async {
+          // imagePromptGeneration is thinking-model-backed (it produces the
+          // text prompt, not the image). It must resolve as handled even when
+          // the profile has no image-generation slot — the contrast with the
+          // imageGeneration case in the next test.
+          const assignment = SkillAssignment(
+            skillId: 'skill-image-prompt',
+            automate: true,
+          );
+          final profile = makeProfile(
+            skillAssignments: [assignment],
+            // Deliberately no withImageGeneration: true.
+          );
+          final skill = makeSkill(
+            id: 'skill-image-prompt',
+            skillType: SkillType.imagePromptGeneration,
+          );
+
+          when(
+            () => mockResolver.resolveForTask('task-image-prompt'),
+          ).thenAnswer((_) async => profile);
+          when(
+            () => mockAiConfig.getConfigById('skill-image-prompt'),
+          ).thenAnswer((_) async => skill);
+
+          final result = await service.hasAutomatedSkillType(
+            taskId: 'task-image-prompt',
+            skillType: SkillType.imagePromptGeneration,
+          );
+
+          expect(
+            result,
+            isTrue,
+            reason:
+                'imagePromptGeneration uses the thinking model and must not '
+                'require an image-generation provider slot.',
+          );
+          expect(profile.imageGenerationProvider, isNull);
         },
       );
 

@@ -137,10 +137,13 @@ void main() {
   SyncDatabase? db;
 
   group('pruneSentOutboxItems - ', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -557,10 +560,13 @@ void main() {
   group('pruneSentOutboxItems - default now -', () {
     late SyncDatabase database;
 
-    setUp(() async {
+    setUpAll(() async {
       database = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(database);
+    });
+    tearDownAll(() async {
       await database.close();
     });
 

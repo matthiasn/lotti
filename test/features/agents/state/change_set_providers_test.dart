@@ -393,6 +393,74 @@ void main() {
       },
     );
 
+    test(
+      'leaves notification bridge unset when repository is unregistered',
+      () async {
+        // setUpTestGetIt does not register a NotificationRepository, so the
+        // provider must take the null branch: onChangeSetResolved is null and
+        // resolution must never reach into a notification repository.
+        expect(getIt.isRegistered<NotificationRepository>(), isFalse);
+
+        final mockSyncService = MockAgentSyncService();
+        final mockJournalDb = MockJournalDb();
+        final mockJournalRepository = MockJournalRepository();
+        final mockChecklistRepository = MockChecklistRepository();
+        final mockLabelsRepository = MockLabelsRepository();
+        // Held but deliberately NOT registered in GetIt; if the provider wired
+        // a bridge anyway, resolution would invoke it and verifyNever fails.
+        final unregisteredNotificationRepo = MockNotificationRepository();
+        when(
+          () => unregisteredNotificationRepo.markTaskSuggestionsActedOn(any()),
+        ).thenAnswer((_) async => const []);
+        final changeSet = makeTestChangeSet(
+          taskId: 'task-no-notifications',
+          items: const [
+            ChangeItem(
+              toolName: 'update_task_estimate',
+              args: {'minutes': 15},
+              humanSummary: 'Set estimate',
+            ),
+          ],
+        );
+
+        when(() => mockSyncService.repository).thenReturn(mockRepository);
+        when(
+          () => mockRepository.getEntity(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockSyncService.upsertEntity(any()),
+        ).thenAnswer((_) async {});
+
+        final container = ProviderContainer(
+          overrides: [
+            agentSyncServiceProvider.overrideWithValue(mockSyncService),
+            journalDbProvider.overrideWithValue(mockJournalDb),
+            journalRepositoryProvider.overrideWithValue(mockJournalRepository),
+            checklistRepositoryProvider.overrideWithValue(
+              mockChecklistRepository,
+            ),
+            labelsRepositoryProvider.overrideWithValue(mockLabelsRepository),
+            domainLoggerProvider.overrideWithValue(MockDomainLogger()),
+            taskAgentServiceProvider.overrideWithValue(MockTaskAgentService()),
+            agentRepositoryProvider.overrideWithValue(mockRepository),
+            projectRepositoryProvider.overrideWithValue(
+              MockProjectRepository(),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        final service = container.read(changeSetConfirmationServiceProvider);
+        final applied = await service.rejectItem(changeSet, 0);
+
+        // Resolution still succeeds without a notification bridge.
+        expect(applied, isTrue);
+        verifyNever(
+          () => unregisteredNotificationRepo.markTaskSuggestionsActedOn(any()),
+        );
+      },
+    );
+
     test('creates project-scoped service with resolved dependencies', () {
       final mockSyncService = MockAgentSyncService();
       final mockJournalDb = MockJournalDb();

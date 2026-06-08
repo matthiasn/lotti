@@ -1818,12 +1818,6 @@ void main() {
         container.dispose();
       });
 
-      test('publishJournalFocus is not called when linked entry is null', () {
-        // When linked entry is null, the auto-scroll logic is skipped
-        // This test verifies no exception is thrown in that scenario
-        ProviderContainer().dispose();
-      });
-
       test('publishJournalFocus uses kDefaultScrollAlignment', () {
         final container = ProviderContainer();
         const linkedId = 'parent-entry-id';
@@ -2095,6 +2089,55 @@ void main() {
         // Assert: Item now visible
         expect(find.byType(CreateMenuListItem), findsOneWidget);
         expect(find.byIcon(Icons.event_rounded), findsOneWidget);
+
+        await flagController.close();
+      });
+
+      testWidgets('transitions from enabled to disabled', (tester) async {
+        final flagController = StreamController<Set<ConfigFlag>>();
+
+        when(() => mockDb.watchConfigFlags()).thenAnswer(
+          (_) => flagController.stream,
+        );
+
+        getIt.registerSingleton<JournalDb>(mockDb);
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const CreateEventItem(
+              'linked-id',
+              categoryId: 'category-id',
+            ),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockDb),
+            ],
+          ),
+        );
+
+        // Emit flag enabled: item becomes visible.
+        flagController.add({
+          const ConfigFlag(
+            name: enableEventsFlag,
+            description: 'Enable Events?',
+            status: true,
+          ),
+        });
+        await tester.pumpAndSettle();
+        expect(find.byType(CreateMenuListItem), findsOneWidget);
+
+        // Emit flag disabled: item is removed from the tree.
+        flagController.add({
+          const ConfigFlag(
+            name: enableEventsFlag,
+            description: 'Enable Events?',
+            status: false,
+          ),
+        });
+        await tester.pumpAndSettle();
+
+        // Assert: item disappears once the flag concretely resolves to false.
+        expect(find.byType(CreateMenuListItem), findsNothing);
+        expect(tester.takeException(), isNull);
 
         await flagController.close();
       });

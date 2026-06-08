@@ -47,27 +47,21 @@ void main() {
   });
 
   group('InferenceErrorType', () {
-    test('has all expected enum values', () {
-      expect(InferenceErrorType.values.length, 7);
-      expect(
-        InferenceErrorType.values,
-        contains(InferenceErrorType.networkConnection),
-      );
-      expect(InferenceErrorType.values, contains(InferenceErrorType.timeout));
-      expect(
-        InferenceErrorType.values,
-        contains(InferenceErrorType.authentication),
-      );
-      expect(InferenceErrorType.values, contains(InferenceErrorType.rateLimit));
-      expect(
-        InferenceErrorType.values,
-        contains(InferenceErrorType.invalidRequest),
-      );
-      expect(
-        InferenceErrorType.values,
-        contains(InferenceErrorType.serverError),
-      );
-      expect(InferenceErrorType.values, contains(InferenceErrorType.unknown));
+    test('exposes exactly the known error types', () {
+      // Assert membership both ways: every expected value is present and no
+      // unexpected value has crept in. This fails with a useful message
+      // (which value was added/removed) instead of a bare count mismatch.
+      const expected = {
+        InferenceErrorType.networkConnection,
+        InferenceErrorType.timeout,
+        InferenceErrorType.authentication,
+        InferenceErrorType.rateLimit,
+        InferenceErrorType.invalidRequest,
+        InferenceErrorType.serverError,
+        InferenceErrorType.unknown,
+      };
+
+      expect(InferenceErrorType.values.toSet(), expected);
     });
   });
 

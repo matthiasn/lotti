@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -735,5 +736,79 @@ void main() {
         () => repository.sumTokenUsageForTemplate(kTestTemplateId),
       ).called(1);
     });
+  });
+
+  group('debugBuildDailyWakeCounts (pure day-bucket property)', () {
+    glados.Glados2(
+      // chartSpanDays: number of days in the inclusive [chartStart, today]
+      // window minus one (so span 0 == single day, span 29 == 30 buckets).
+      glados.IntAnys(glados.any).intInRange(0, 30),
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        0,
+        16,
+        // Each run is placed dayOffset days before `today` at minuteOfDay.
+        glados.CombinableAny(glados.any).combine2(
+          glados.IntAnys(glados.any).intInRange(0, 40),
+          glados.IntAnys(glados.any).intInRange(0, 24 * 60),
+          (int dayOffset, int minuteOfDay) => (
+            dayOffset: dayOffset,
+            minuteOfDay: minuteOfDay,
+          ),
+        ),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('span and date-range invariants hold for generated windows', (
+      chartSpanDays,
+      specs,
+    ) {
+      // January window on purpose: a multi-week span must not cross a DST
+      // transition, or Duration-based day arithmetic shifts calendar days
+      // (the same trap that bit debugBuildDailyUsage with a March base date).
+      final today = DateTime(2024, 1, 31);
+      final chartStart = today.subtract(Duration(days: chartSpanDays));
+      final expectedBuckets = chartSpanDays + 1;
+
+      final runs = <WakeRunLogData>[];
+      var inWindowRuns = 0;
+      for (final (i, spec) in specs.indexed) {
+        final day = today.subtract(Duration(days: spec.dayOffset));
+        final createdAt = day.add(Duration(minutes: spec.minuteOfDay));
+        runs.add(
+          makeTestWakeRun(
+            runKey: 'run-$i',
+            createdAt: createdAt,
+          ),
+        );
+        if (spec.dayOffset <= chartSpanDays) inWindowRuns++;
+      }
+
+      final result = debugBuildDailyWakeCounts(
+        recentWakeRuns: runs,
+        chartStart: chartStart,
+        today: today,
+      );
+
+      // (1) output spans exactly (today - chartStart).inDays + 1 days.
+      expect(result, hasLength(expectedBuckets));
+      // (2) every bucket date is day-truncated and falls within the window,
+      //     ascending oldest -> newest with no gaps or duplicates.
+      for (final (i, bucket) in result.indexed) {
+        final expectedDate = chartStart.add(Duration(days: i));
+        expect(bucket.date, expectedDate);
+        expect(bucket.date.hour, 0);
+        expect(bucket.date.minute, 0);
+        expect(bucket.date.isBefore(chartStart), isFalse);
+        expect(bucket.date.isAfter(today), isFalse);
+      }
+      expect(result.first.date, chartStart);
+      expect(result.last.date, today);
+      // (3) total counted wakes equal exactly the runs inside the window;
+      //     out-of-window runs are dropped, none are double-counted.
+      expect(
+        result.fold<int>(0, (sum, b) => sum + b.wakeCount),
+        inWindowRuns,
+        reason: 'chartSpanDays=$chartSpanDays specs=$specs',
+      );
+    }, tags: 'glados');
   });
 }

@@ -10,6 +10,12 @@ import 'package:lotti/services/nav_service.dart';
 
 import '../../../widget_test_utils.dart';
 
+/// A roomy logical surface used by the chart hit-testing tests so the bars
+/// are fully laid out and tappable. Scoped to the widget tree via
+/// [MediaQuery] (instead of mutating `tester.view.physicalSize` globally),
+/// which is lighter and needs no `addTearDown(tester.view.reset)`.
+const _largeChartMediaQueryData = MediaQueryData(size: Size(1200, 2400));
+
 Widget _buildSubject({
   List<DailyTokenUsage> dailyUsage = const [],
   TokenUsageComparison comparison = const TokenUsageComparison(
@@ -19,9 +25,11 @@ Widget _buildSubject({
   List<TokenSourceBreakdown> breakdown = const [],
   Map<String, List<DailyTokenUsage>> byModel = const {},
   List<Override> extraOverrides = const [],
+  MediaQueryData? mediaQueryData,
 }) {
   return makeTestableWidgetNoScroll(
     const Scaffold(body: TokenStatsTab()),
+    mediaQueryData: mediaQueryData,
     overrides: [
       hourlyWakeActivityProvider.overrideWith((ref) async => const []),
       dailyTokenUsageProvider.overrideWith(
@@ -783,11 +791,9 @@ void main() {
     testWidgets(
       'tapping a daily-chart bar directly selects it and shows detail',
       (tester) async {
-        // Give the screen room so the chart bars are fully laid out and
-        // hit-testable when tapped directly (exercises _DayBar.onTap, line 466).
-        tester.view.physicalSize = const Size(1200, 2400);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
+        // Give the chart room (via a scoped MediaQuery) so the bars are
+        // fully laid out and hit-testable when tapped directly (exercises
+        // _DayBar.onTap).
 
         // 7 days, each with distinct totals so each bar has a measurable
         // height. Today (index 6) is pre-selected by the section.
@@ -806,6 +812,7 @@ void main() {
 
         await tester.pumpWidget(
           _buildSubject(
+            mediaQueryData: _largeChartMediaQueryData,
             dailyUsage: days,
             comparison: const TokenUsageComparison(
               averageTokensByTimeOfDay: 2500,
@@ -840,13 +847,10 @@ void main() {
     testWidgets(
       'non-today bar with full by-time portion renders rounded top',
       (tester) async {
-        tester.view.physicalSize = const Size(1200, 2400);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
-
         // Non-today days where tokensByTimeOfDay == totalTokens force
         // byTimeIsFullBar == true (line 625). Index 6 (today) is small so a
-        // past day owns the max height.
+        // past day owns the max height. A scoped large MediaQuery keeps the
+        // bars laid out and hit-testable.
         final days = [
           for (var i = 6; i >= 0; i--)
             DailyTokenUsage(
@@ -863,6 +867,7 @@ void main() {
 
         await tester.pumpWidget(
           _buildSubject(
+            mediaQueryData: _largeChartMediaQueryData,
             dailyUsage: days,
             comparison: const TokenUsageComparison(
               averageTokensByTimeOfDay: 10000,
@@ -898,10 +903,6 @@ void main() {
     testWidgets(
       'per-model chart bar tap selects day and toggles detail panel',
       (tester) async {
-        tester.view.physicalSize = const Size(1200, 2400);
-        tester.view.devicePixelRatio = 1.0;
-        addTearDown(tester.view.reset);
-
         final modelDays = [
           for (var i = 6; i >= 0; i--)
             DailyTokenUsage(
@@ -917,9 +918,11 @@ void main() {
 
         // Empty main daily usage → the top section shows the "no usage" chart
         // with NO bars, so the only _DayBar widgets on screen belong to the
-        // per-model cards. Two models → per-model section renders.
+        // per-model cards. Two models → per-model section renders. The scoped
+        // large MediaQuery keeps the per-model bars laid out and tappable.
         await tester.pumpWidget(
           _buildSubject(
+            mediaQueryData: _largeChartMediaQueryData,
             byModel: {
               'models/gemma4:test': modelDays,
               'models/gemma4:other': modelDays,

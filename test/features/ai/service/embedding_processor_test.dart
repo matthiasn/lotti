@@ -421,21 +421,37 @@ void main() {
     _stubEmbed(mockEmbeddingRepo);
   });
 
+  /// Runs [EmbeddingProcessor.processEntity] against the shared mocks,
+  /// removing the repeated `journalDb:/embeddingStore:/embeddingRepository:/
+  /// baseUrl:` boilerplate from every test. When [entity] is supplied it is
+  /// also stubbed on [mockJournalDb] and used as the entity ID, so most tests
+  /// collapse to a single call.
+  Future<bool> processEntity({
+    JournalEntity? entity,
+    String? entityId,
+    LabelNameResolver? labelNameResolver,
+  }) {
+    if (entity != null) {
+      _stubEntity(mockJournalDb, entity);
+    }
+    return EmbeddingProcessor.processEntity(
+      entityId: entityId ?? entity!.id,
+      journalDb: mockJournalDb,
+      embeddingStore: mockEmbeddingStore,
+      embeddingRepository: mockEmbeddingRepo,
+      baseUrl: _baseUrl,
+      labelNameResolver: labelNameResolver,
+    );
+  }
+
   group('EmbeddingProcessor.processEntity', () {
     test('embeds a journal entry and returns true', () async {
       final entry = JournalEntry(
         meta: _meta(categoryId: 'cat-1'),
         entryText: const EntryText(plainText: _longText),
       );
-      _stubEntity(mockJournalDb, entry);
 
-      final result = await EmbeddingProcessor.processEntity(
-        entityId: entry.id,
-        journalDb: mockJournalDb,
-        embeddingStore: mockEmbeddingStore,
-        embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
-      );
+      final result = await processEntity(entity: entry);
 
       expect(result, isTrue);
       verify(
@@ -457,13 +473,7 @@ void main() {
         () => mockJournalDb.journalEntityById('missing'),
       ).thenAnswer((_) async => null);
 
-      final result = await EmbeddingProcessor.processEntity(
-        entityId: 'missing',
-        journalDb: mockJournalDb,
-        embeddingStore: mockEmbeddingStore,
-        embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
-      );
+      final result = await processEntity(entityId: 'missing');
 
       expect(result, isFalse);
     });
@@ -478,15 +488,8 @@ void main() {
           capturedAt: _fixedDate,
         ),
       );
-      _stubEntity(mockJournalDb, image);
 
-      final result = await EmbeddingProcessor.processEntity(
-        entityId: image.id,
-        journalDb: mockJournalDb,
-        embeddingStore: mockEmbeddingStore,
-        embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
-      );
+      final result = await processEntity(entity: image);
 
       expect(result, isFalse);
     });
@@ -496,15 +499,8 @@ void main() {
         meta: _meta(),
         entryText: const EntryText(plainText: 'Too short'),
       );
-      _stubEntity(mockJournalDb, entry);
 
-      final result = await EmbeddingProcessor.processEntity(
-        entityId: entry.id,
-        journalDb: mockJournalDb,
-        embeddingStore: mockEmbeddingStore,
-        embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
-      );
+      final result = await processEntity(entity: entry);
 
       expect(result, isFalse);
     });
@@ -522,13 +518,7 @@ void main() {
         () => mockEmbeddingStore.getCategoryId(entry.id),
       ).thenReturn('');
 
-      final result = await EmbeddingProcessor.processEntity(
-        entityId: entry.id,
-        journalDb: mockJournalDb,
-        embeddingStore: mockEmbeddingStore,
-        embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
-      );
+      final result = await processEntity(entityId: entry.id);
 
       expect(result, isFalse);
       verifyNever(
@@ -548,15 +538,8 @@ void main() {
           data: _taskData('My task title that is long enough'),
           entryText: const EntryText(plainText: _longText),
         );
-        _stubEntity(mockJournalDb, task);
 
-        await EmbeddingProcessor.processEntity(
-          entityId: task.id,
-          journalDb: mockJournalDb,
-          embeddingStore: mockEmbeddingStore,
-          embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
-        );
+        await processEntity(entity: task);
 
         // Without label resolver, uses the default extractText format
         const expectedText = 'My task title that is long enough\n$_longText';
@@ -577,21 +560,13 @@ void main() {
           data: _taskData('Fix auth bug'),
           entryText: const EntryText(plainText: _longText),
         );
-        _stubEntity(mockJournalDb, task);
 
         Future<List<String>> labelResolver(List<String> ids) async => [
           'security',
           'backend',
         ];
 
-        await EmbeddingProcessor.processEntity(
-          entityId: task.id,
-          journalDb: mockJournalDb,
-          embeddingStore: mockEmbeddingStore,
-          embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
-          labelNameResolver: labelResolver,
-        );
+        await processEntity(entity: task, labelNameResolver: labelResolver);
 
         const expectedText =
             'Fix auth bug\nLabels: security, backend\n$_longText';
@@ -609,18 +584,10 @@ void main() {
         meta: _meta(), // no labelIds
         data: _taskData('A task title that is long enough for embedding'),
       );
-      _stubEntity(mockJournalDb, task);
 
       Future<List<String>> labelResolver(List<String> ids) async => [];
 
-      await EmbeddingProcessor.processEntity(
-        entityId: task.id,
-        journalDb: mockJournalDb,
-        embeddingStore: mockEmbeddingStore,
-        embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
-        labelNameResolver: labelResolver,
-      );
+      await processEntity(entity: task, labelNameResolver: labelResolver);
 
       verify(
         () => mockEmbeddingRepo.embed(
@@ -635,7 +602,6 @@ void main() {
         meta: _meta(),
         entryText: const EntryText(plainText: _longText),
       );
-      _stubEntity(mockJournalDb, entry);
 
       var resolverCalled = false;
       Future<List<String>> labelResolver(List<String> ids) async {
@@ -643,14 +609,7 @@ void main() {
         return [];
       }
 
-      await EmbeddingProcessor.processEntity(
-        entityId: entry.id,
-        journalDb: mockJournalDb,
-        embeddingStore: mockEmbeddingStore,
-        embeddingRepository: mockEmbeddingRepo,
-        baseUrl: _baseUrl,
-        labelNameResolver: labelResolver,
-      );
+      await processEntity(entity: entry, labelNameResolver: labelResolver);
 
       expect(resolverCalled, isFalse);
       verify(
@@ -812,7 +771,6 @@ void main() {
           meta: _meta(categoryId: 'cat-new'),
           entryText: const EntryText(plainText: _longText),
         );
-        _stubEntity(mockJournalDb, entry);
         // Content hash matches — no re-embedding needed.
         when(
           () => mockEmbeddingStore.getContentHash(entry.id),
@@ -825,13 +783,7 @@ void main() {
           () => mockEmbeddingStore.moveEntityToShard(any(), any()),
         ).thenReturn(null);
 
-        final result = await EmbeddingProcessor.processEntity(
-          entityId: entry.id,
-          journalDb: mockJournalDb,
-          embeddingStore: mockEmbeddingStore,
-          embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
-        );
+        final result = await processEntity(entity: entry);
 
         expect(result, isTrue);
         verify(
@@ -852,7 +804,6 @@ void main() {
           data: _taskData('A task title that is long enough for embedding'),
           entryText: const EntryText(plainText: _longText),
         );
-        _stubEntity(mockJournalDb, task);
         const taskText =
             'A task title that is long enough for embedding'
             '\n$_longText';
@@ -869,13 +820,7 @@ void main() {
           () => mockEmbeddingStore.moveRelatedReportEmbeddings(any(), any()),
         ).thenReturn(null);
 
-        final result = await EmbeddingProcessor.processEntity(
-          entityId: task.id,
-          journalDb: mockJournalDb,
-          embeddingStore: mockEmbeddingStore,
-          embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
-        );
+        final result = await processEntity(entity: task);
 
         expect(result, isTrue);
         verify(
@@ -897,7 +842,6 @@ void main() {
             data: _taskData('Updated task title that is long enough'),
             entryText: const EntryText(plainText: _longText),
           );
-          _stubEntity(mockJournalDb, task);
           // Content hash differs — task will be re-embedded.
           when(
             () => mockEmbeddingStore.getContentHash(task.id),
@@ -910,13 +854,7 @@ void main() {
             () => mockEmbeddingStore.moveRelatedReportEmbeddings(any(), any()),
           ).thenReturn(null);
 
-          final result = await EmbeddingProcessor.processEntity(
-            entityId: task.id,
-            journalDb: mockJournalDb,
-            embeddingStore: mockEmbeddingStore,
-            embeddingRepository: mockEmbeddingRepo,
-            baseUrl: _baseUrl,
-          );
+          final result = await processEntity(entity: task);
 
           expect(result, isTrue);
           // Task itself is re-embedded to the correct shard via _embedChunks.
@@ -947,7 +885,6 @@ void main() {
           meta: _meta(categoryId: 'cat-same'),
           entryText: const EntryText(plainText: _longText),
         );
-        _stubEntity(mockJournalDb, entry);
         when(
           () => mockEmbeddingStore.getContentHash(entry.id),
         ).thenReturn(_hashOf(_longText));
@@ -955,13 +892,7 @@ void main() {
           () => mockEmbeddingStore.getCategoryId(entry.id),
         ).thenReturn('cat-same');
 
-        final result = await EmbeddingProcessor.processEntity(
-          entityId: entry.id,
-          journalDb: mockJournalDb,
-          embeddingStore: mockEmbeddingStore,
-          embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
-        );
+        final result = await processEntity(entity: entry);
 
         expect(result, isFalse);
         verifyNever(
@@ -976,7 +907,6 @@ void main() {
             meta: _meta(categoryId: 'cat-1'),
             entryText: const EntryText(plainText: _longText),
           );
-          _stubEntity(mockJournalDb, entry);
           when(
             () => mockEmbeddingStore.getContentHash(entry.id),
           ).thenReturn(_hashOf(_longText));
@@ -984,13 +914,7 @@ void main() {
             () => mockEmbeddingStore.getCategoryId(entry.id),
           ).thenReturn(null);
 
-          final result = await EmbeddingProcessor.processEntity(
-            entityId: entry.id,
-            journalDb: mockJournalDb,
-            embeddingStore: mockEmbeddingStore,
-            embeddingRepository: mockEmbeddingRepo,
-            baseUrl: _baseUrl,
-          );
+          final result = await processEntity(entity: entry);
 
           expect(result, isFalse);
         },
@@ -1002,7 +926,6 @@ void main() {
           meta: _meta(),
           entryText: const EntryText(plainText: _longText),
         );
-        _stubEntity(mockJournalDb, entry);
         when(
           () => mockEmbeddingStore.getContentHash(entry.id),
         ).thenReturn(_hashOf(_longText));
@@ -1013,13 +936,7 @@ void main() {
           () => mockEmbeddingStore.moveEntityToShard(any(), any()),
         ).thenReturn(null);
 
-        final result = await EmbeddingProcessor.processEntity(
-          entityId: entry.id,
-          journalDb: mockJournalDb,
-          embeddingStore: mockEmbeddingStore,
-          embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
-        );
+        final result = await processEntity(entity: entry);
 
         expect(result, isTrue);
         // Should move to empty string categoryId (default).
@@ -1033,7 +950,6 @@ void main() {
           meta: _meta(categoryId: 'cat-new'),
           entryText: const EntryText(plainText: _longText),
         );
-        _stubEntity(mockJournalDb, entry);
         when(
           () => mockEmbeddingStore.getContentHash(entry.id),
         ).thenReturn(_hashOf(_longText));
@@ -1045,13 +961,7 @@ void main() {
           () => mockEmbeddingStore.moveEntityToShard(any(), any()),
         ).thenReturn(null);
 
-        final result = await EmbeddingProcessor.processEntity(
-          entityId: entry.id,
-          journalDb: mockJournalDb,
-          embeddingStore: mockEmbeddingStore,
-          embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
-        );
+        final result = await processEntity(entity: entry);
 
         expect(result, isTrue);
         verify(
@@ -1075,13 +985,7 @@ void main() {
       ).thenThrow(Exception('Ollama down'));
 
       expect(
-        () => EmbeddingProcessor.processEntity(
-          entityId: entry.id,
-          journalDb: mockJournalDb,
-          embeddingStore: mockEmbeddingStore,
-          embeddingRepository: mockEmbeddingRepo,
-          baseUrl: _baseUrl,
-        ),
+        () => processEntity(entityId: entry.id),
         throwsException,
       );
     });

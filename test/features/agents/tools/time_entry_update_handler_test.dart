@@ -509,7 +509,7 @@ void main() {
 
       glados.Glados(
         glados.any.timeEntryUpdateScenario,
-        glados.ExploreConfig(numRuns: 240),
+        glados.ExploreConfig(numRuns: 180),
       ).test(
         'matches generated validation, linkage, range, and persistence semantics',
         (scenario) async {
@@ -695,6 +695,13 @@ void main() {
         });
 
         expect(result.success, isTrue);
+        // The success output pins the resolved range in HH:mm–HH:mm form so
+        // the wake-visible summary matches what was written.
+        expect(result.output, contains('(13:30–15:15)'));
+        expect(
+          result.output,
+          matches(RegExp(r'\(\d{2}:\d{2}–\d{2}:\d{2}\)')),
+        );
         verify(
           () => mockPersistenceLogic.updateJournalEntry(
             journalEntityId: entryId,

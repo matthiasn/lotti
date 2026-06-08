@@ -434,6 +434,147 @@ void main() {
         expect(cleared.appliedCount, 0);
       },
     );
+
+    group('selectAgentFilter', () {
+      // Worked examples mirroring the property invariants in
+      // design_system_task_filter_sheet_state_test.dart, but pinned to a
+      // concrete seed so a regression points at the exact transition.
+      DesignSystemTaskFilterState seed({String selected = 'agent-all'}) {
+        return DesignSystemTaskFilterState(
+          title: 't',
+          clearAllLabel: 'c',
+          applyLabel: 'a',
+          agentFilterLabel: 'Agent',
+          agentFilterOptions: const [
+            DesignSystemTaskFilterOption(id: 'agent-all', label: 'All agents'),
+            DesignSystemTaskFilterOption(id: 'agent-1', label: 'Agent 1'),
+          ],
+          selectedAgentFilterId: selected,
+        );
+      }
+
+      test('returns the same instance when no agent filter is configured', () {
+        final state = DesignSystemTaskFilterState(
+          title: 't',
+          clearAllLabel: 'c',
+          applyLabel: 'a',
+        );
+        expect(state.selectAgentFilter('agent-1'), same(state));
+      });
+
+      test('returns the same instance when selecting the current id', () {
+        final state = seed(selected: 'agent-1');
+        expect(state.selectAgentFilter('agent-1'), same(state));
+      });
+
+      test('switches selection and counts a non-first option in appliedCount',
+          () {
+        final state = seed();
+        // The first option is the neutral default → appliedCount stays 0.
+        expect(state.appliedCount, 0);
+
+        final switched = state.selectAgentFilter('agent-1');
+        expect(switched.selectedAgentFilterId, 'agent-1');
+        // Selecting a non-first agent option adds exactly one to the count.
+        expect(switched.appliedCount, 1);
+
+        // Switching back to the first (default) option drops the count again.
+        final backToDefault = switched.selectAgentFilter('agent-all');
+        expect(backToDefault.selectedAgentFilterId, 'agent-all');
+        expect(backToDefault.appliedCount, 0);
+      });
+    });
+
+    group('selectSearchMode', () {
+      DesignSystemTaskFilterState seed({String selected = 'mode-0'}) {
+        return DesignSystemTaskFilterState(
+          title: 't',
+          clearAllLabel: 'c',
+          applyLabel: 'a',
+          searchModeLabel: 'Search mode',
+          searchModeOptions: const [
+            DesignSystemTaskFilterOption(id: 'mode-0', label: 'Tasks'),
+            DesignSystemTaskFilterOption(id: 'mode-1', label: 'Everything'),
+          ],
+          selectedSearchModeId: selected,
+        );
+      }
+
+      test('returns the same instance when no search mode is configured', () {
+        final state = DesignSystemTaskFilterState(
+          title: 't',
+          clearAllLabel: 'c',
+          applyLabel: 'a',
+        );
+        expect(state.selectSearchMode('mode-1'), same(state));
+      });
+
+      test('returns the same instance when selecting the current id', () {
+        final state = seed();
+        expect(state.selectSearchMode('mode-0'), same(state));
+      });
+
+      test('switches the mode without affecting appliedCount', () {
+        final state = seed();
+        expect(state.appliedCount, 0);
+
+        final switched = state.selectSearchMode('mode-1');
+        expect(switched.selectedSearchModeId, 'mode-1');
+        // Search mode is not a filter: it never contributes to appliedCount.
+        expect(switched.appliedCount, 0);
+      });
+    });
+
+    group('toggleValue', () {
+      DesignSystemTaskFilterState seed() {
+        return DesignSystemTaskFilterState(
+          title: 't',
+          clearAllLabel: 'c',
+          applyLabel: 'a',
+          toggles: const [
+            DesignSystemTaskFilterToggle(
+              id: 'show-date',
+              label: 'Show date',
+              value: false,
+            ),
+            DesignSystemTaskFilterToggle(
+              id: 'show-due',
+              label: 'Show due date',
+              value: true,
+            ),
+          ],
+        );
+      }
+
+      test('returns the same instance for an unknown toggle id', () {
+        final state = seed();
+        expect(state.toggleValue('missing'), same(state));
+      });
+
+      test('flips only the targeted toggle and leaves siblings untouched', () {
+        final state = seed();
+
+        final flipped = state.toggleValue('show-date');
+        expect(
+          flipped.toggles.singleWhere((t) => t.id == 'show-date').value,
+          isTrue,
+        );
+        // The sibling toggle keeps its original value.
+        expect(
+          flipped.toggles.singleWhere((t) => t.id == 'show-due').value,
+          isTrue,
+        );
+      });
+
+      test('toggling the same id twice restores the original value', () {
+        final state = seed();
+        final back = state.toggleValue('show-due').toggleValue('show-due');
+        expect(
+          back.toggles.singleWhere((t) => t.id == 'show-due').value,
+          isTrue,
+        );
+      });
+    });
   });
 
   group('DesignSystemTaskFilterSheet', () {

@@ -49,9 +49,11 @@
 - [x] **[MED]** `test/features/ai/conversation/conversation_manager_test.dart` lines 452–462: the `'export'` group contains a single test `'should handle max turns'` that adds 10 user messages and asserts `canContinue() == true`. The group name `'export'` is misleading (there is no export concept in `ConversationManager`), and the assertion only checks that `canContinue()` returns `true` at 10/20 turns — it never verifies the `false` case, which is already tested separately in `'canContinue respects maxTurns'`. Consider removing the `'export'` group entirely as its content is redundant.
   **RESOLVED:** done — the misleading 'export' group was removed; its single test only re-asserted `canContinue() == true` at 10/20 turns, which 'canContinue respects maxTurns' already covers including the false case.
 
-- [ ] **[LOW]** `test/features/ai/conversation/conversation_manager_test.dart` lines 800–808: `'ConversationAction enum values'` checks `values.length == 3` and specific ordinal indices. This is a fragile enumeration test that will fail if a new action is added without updating the test. Replace with behavioral tests on each case or drop the ordinal index assertions.
+- [x] **[LOW]** `test/features/ai/conversation/conversation_manager_test.dart` lines 800–808: `'ConversationAction enum values'` checks `values.length == 3` and specific ordinal indices. This is a fragile enumeration test that will fail if a new action is added without updating the test. Replace with behavioral tests on each case or drop the ordinal index assertions.
+  **RESOLVED:** the brittle `length == 3` + ordinal-`.index` assertions were dropped. The test now asserts the set of action *names* (`{'continueConversation', 'complete', 'wait'}`), which documents the contract the repository's `sendMessage` switch relies on and is robust to reordering. The per-action runtime behavior (continue-with-prompt, continue-without-prompt, complete, wait) is already covered behaviorally in `conversation_repository_test.dart` (the strategy-driven sendMessage tests at the `ConversationAction.continueConversation/.complete/.wait` stubs).
 
-- [ ] **[LOW]** `test/features/ai/conversation/conversation_repository_test.dart` line 670 — `'handles errors during API call'`: the `when` stub at lines 670–681 uses 7 named arguments but omits `turnIndex: any(named: 'turnIndex')`, unlike all other stubs. This means the stub will not match a call that includes `turnIndex`, causing the test to miss the actual call. Verify the mock matches correctly and add the missing named argument for consistency.
+- [x] **[LOW]** `test/features/ai/conversation/conversation_repository_test.dart` line 670 — `'handles errors during API call'`: the `when` stub at lines 670–681 uses 7 named arguments but omits `turnIndex: any(named: 'turnIndex')`, unlike all other stubs. This means the stub will not match a call that includes `turnIndex`, causing the test to miss the actual call. Verify the mock matches correctly and add the missing named argument for consistency.
+  **RESOLVED:** the inline 7-argument stub was replaced with the shared `_stubGenerateText(mockOllamaRepo).thenThrow(...)` helper, which includes `turnIndex: any(named: 'turnIndex')` so it actually matches the `sendMessage` call (which always passes `turnIndex`). The assertion was also strengthened to verify the emitted `ConversationErrorEvent.message` contains `'API Error'`, proving the thrown exception (not an unmatched-mock error) is what propagates.
 
 ---
 
@@ -72,7 +74,8 @@
   
   Since `_stripThinkBlocks` is private, the property would be written against the `sendMessage` path (as the existing tests already do), or the function could be package-internal.
 
-- [ ] **[LOW]** `lib/features/ai/conversation/conversation_manager.dart` — `turnCount` property (line 41) and `canContinue` (line 145) are covered by the existing Glados lifecycle property (lines 902–989). ✓
+- [x] **[LOW]** `lib/features/ai/conversation/conversation_manager.dart` — `turnCount` property (line 41) and `canContinue` (line 145) are covered by the existing Glados lifecycle property (lines 902–989). ✓
+  **RESOLVED (assessed, no change):** confirmed accurate. The 'Generated lifecycle sequences' Glados property asserts both `generatedManager.turnCount == model.turnCount` and `generatedManager.canContinue() == model.canContinue` against an independent reference model across 180 randomized operation sequences (varying maxTurns 0–8). `turnCount` is also directly tested in 'turnCount counts only user messages' and `canContinue` in 'canContinue respects maxTurns' (both true and false cases). No gap.
 
 ---
 
@@ -95,7 +98,8 @@
 - [x] **[MED]** `lib/features/ai/conversation/conversation_manager.dart` — `initialize()` clears `_thoughtSignatures` (line 47). The test at line 686 verifies messages are cleared but does **not** verify signatures are cleared. Add an assertion to the `'initialize clears existing messages'` test that checks `manager.thoughtSignatures.isEmpty` after re-initialization.
   **RESOLVED:** done — the initialize test now also seeds a thought signature via `addAssistantMessage(signatures: …)` and asserts `manager.thoughtSignatures` is empty after re-initialization (renamed to 'initialize clears existing messages and thought signatures').
 
-- [ ] **[LOW]** `lib/features/ai/conversation/conversation_repository.dart` — `conversationEvents` provider (lines 391–405) returns `Stream.error(...)` when the conversation is not found. This is tested by the problematic real-timeout test at lines 1760–1789. The test itself should be refactored (see Test quality section) but the behavior is covered.
+- [x] **[LOW]** `lib/features/ai/conversation/conversation_repository.dart` — `conversationEvents` provider (lines 391–405) returns `Stream.error(...)` when the conversation is not found. This is tested by the problematic real-timeout test at lines 1760–1789. The test itself should be refactored (see Test quality section) but the behavior is covered.
+  **RESOLVED (assessed, no change):** confirmed. The behavior is now covered by the refactored deterministic test `'conversationEvents provider handles non-existent conversation'` (the real-timeout was already removed under the MED items): it keeps the autoDispose provider alive via `container.listen`, flushes with `pumpEventQueue()`, and asserts `state.hasError` with `state.error.toString()` containing `'not found'`. No further change needed.
 
 ---
 
@@ -109,7 +113,8 @@
 - [x] **[MED]** `test/features/ai/conversation/conversation_manager_test.dart` — two Glados properties at `numRuns: 180` (lines 903, 991) are well-calibrated. The history scenario at numRuns=180 generates lists of up to 60 user messages per scenario; each iteration constructs a `ConversationManager` and adds N messages with O(N) trim logic. At 180 runs this is acceptable; do not reduce.
   **RESOLVED:** verified, no change — the item itself concludes the calibration is correct ('do not reduce'); numRuns stays at 180 for both properties.
 
-- [ ] **[LOW]** `test/features/ai/conversation/conversation_manager_test.dart` lines 427–462: several tests use `fakeAsync` + `flushMicrotasks` correctly for event delivery. One test (lines 452–462 under `'export'`) does not use `fakeAsync` at all — this is safe since `canContinue()` is synchronous, but the pattern is inconsistent with the rest of the group.
+- [x] **[LOW]** `test/features/ai/conversation/conversation_manager_test.dart` lines 427–462: several tests use `fakeAsync` + `flushMicrotasks` correctly for event delivery. One test (lines 452–462 under `'export'`) does not use `fakeAsync` at all — this is safe since `canContinue()` is synchronous, but the pattern is inconsistent with the rest of the group.
+  **RESOLVED (no change needed):** the offending `'export'` group (and its single non-`fakeAsync` test) was already deleted under the MED item above, so the inconsistency no longer exists. The remaining tests that emit events (`addUserMessage`, `Event Emission`, `Tool Response Handling`, `Assistant Message Handling`) all wrap event-stream assertions in `fakeAsync` + `flushMicrotasks`, while the purely-synchronous tests (`turnCount`, `canContinue`, trimming, `getMessagesForRequest`) correctly omit it. The pattern is now consistent.
 
 ---
 

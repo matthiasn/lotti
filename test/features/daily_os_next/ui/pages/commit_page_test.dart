@@ -66,6 +66,11 @@ void _setSurface(WidgetTester tester, Size size) {
   addTearDown(tester.view.reset);
 }
 
+/// Builds the recording agent the commit tests drive. [commitGate], when
+/// provided, suspends `commitDay` so a test can observe the in-flight beat.
+RecordingDayAgent _makeAgent({Completer<void>? commitGate}) =>
+    RecordingDayAgent(commitGate: commitGate);
+
 /// Holds the gesture long enough for the [HoldToConfirm] animation to
 /// complete with the provided duration.
 Future<void> _completeHold(
@@ -178,7 +183,7 @@ void main() {
       'completing the hold calls agent.commitDay and reveals LockInScene',
       (tester) async {
         _setSurface(tester, const Size(1280, 1200));
-        final agent = RecordingDayAgent();
+        final agent = _makeAgent();
         final draft = _planWithItems();
         await tester.pumpWidget(
           _wrap(
@@ -201,7 +206,7 @@ void main() {
       'LockInScene completion pops the navigator with the committed plan',
       (tester) async {
         _setSurface(tester, const Size(1280, 1200));
-        final agent = RecordingDayAgent();
+        final agent = _makeAgent();
         final draft = _planWithItems();
 
         DraftPlan? popped;
@@ -248,7 +253,7 @@ void main() {
       (tester) async {
         _setSurface(tester, const Size(1280, 1200));
         final gate = Completer<void>();
-        final agent = RecordingDayAgent(commitGate: gate);
+        final agent = _makeAgent(commitGate: gate);
         await tester.pumpWidget(
           _wrap(
             CommitPage(draft: _planWithItems()),
@@ -276,7 +281,7 @@ void main() {
       tester,
     ) async {
       _setSurface(tester, const Size(1280, 1200));
-      final agent = RecordingDayAgent();
+      final agent = _makeAgent();
       final draft = _planWithItems();
 
       DraftPlan? popped;

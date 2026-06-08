@@ -48,6 +48,20 @@ bool aGtB(VectorClock a, VectorClock b) {
 void main() {
   Any.setDefault<VectorClock>(any.vc);
 
+  Glados<VectorClock>(any.vc3).test(
+    'fromJson(toJson(vc)) round-trips to an equal clock',
+    (vc) {
+      final restored = VectorClock.fromJson(vc.toJson());
+      // Equatable value equality + the underlying map must match exactly.
+      expect(restored, vc);
+      expect(
+        const DeepCollectionEquality().equals(restored.vclock, vc.vclock),
+        isTrue,
+      );
+    },
+    tags: 'glados',
+  );
+
   Glados2<VectorClock, VectorClock>().test('compare two vector clocks', (
     vc1,
     vc2,

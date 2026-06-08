@@ -71,7 +71,7 @@ void main() {
 
       // Scroll the minute column (second one)
       await tester.drag(scrollViews.at(1), const Offset(0, -31));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(changedTime, isNotNull);
     });
@@ -96,7 +96,7 @@ void main() {
       // extent (31px) advances the selected hour index from 9 to 10.
       final scrollViews = find.byType(ListWheelScrollView);
       await tester.drag(scrollViews.first, const Offset(0, -31));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(changedTime, isNotNull);
       // 24h mode: selected hour index maps directly to the hour.
@@ -128,7 +128,7 @@ void main() {
       final scrollViews = find.byType(ListWheelScrollView);
       expect(scrollViews, findsNWidgets(3));
       await tester.drag(scrollViews.at(2), const Offset(0, -31));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 350));
 
       expect(changedTime, isNotNull);
       // Flipping AM -> PM keeps the hour-of-period (9) but adds 12 hours.
@@ -136,6 +136,43 @@ void main() {
       // Minute is untouched by the period-column scroll.
       expect(changedTime!.minute, 41);
     });
+
+    // The 12-hour wrapping rule: hourOfPeriod 12 maps to 0 within the period,
+    // so 12:xx AM is reported as 00:xx and 12:xx PM as 12:xx. Scrolling the
+    // minute column by one item extent triggers onTimeChanged without moving
+    // the hour, so the reported hour reflects the midnight/noon mapping.
+    const twelveHourBoundaryCases = <(String, TimeOfDay, int)>[
+      ('12 AM (midnight) reports hour 0', TimeOfDay(hour: 0, minute: 0), 0),
+      ('12 PM (noon) reports hour 12', TimeOfDay(hour: 12, minute: 0), 12),
+    ];
+
+    for (final (description, initialTime, expectedHour)
+        in twelveHourBoundaryCases) {
+      testWidgets('12h $description', (tester) async {
+        TimeOfDay? changedTime;
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            DesignSystemTimePicker(
+              format: DesignSystemTimeFormat.twelveHour,
+              initialTime: initialTime,
+              onTimeChanged: (time) => changedTime = time,
+              semanticsLabel: 'Select time',
+            ),
+            theme: DesignSystemTheme.light(),
+          ),
+        );
+
+        // Scroll the minute column (second wheel) one item to fire a change.
+        final scrollViews = find.byType(ListWheelScrollView);
+        await tester.drag(scrollViews.at(1), const Offset(0, -31));
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(changedTime, isNotNull);
+        // The hour stays at the midnight/noon mapping; only the minute moved.
+        expect(changedTime!.hour, expectedHour);
+      });
+    }
 
     testWidgets('provides semantics label', (tester) async {
       const pickerKey = Key('semantics-picker');
@@ -205,7 +242,7 @@ void main() {
       // Scroll minute slightly to trigger callback
       final scrollViews = find.byType(ListWheelScrollView);
       await tester.drag(scrollViews.at(1), const Offset(0, -31));
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 350));
 
       // Should report a PM time (hour >= 12)
       expect(changedTime, isNotNull);

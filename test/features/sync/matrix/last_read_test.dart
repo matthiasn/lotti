@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -20,6 +21,30 @@ void main() {
       expect(isServerAssignedMatrixEventId(''), isFalse);
       expect(isServerAssignedMatrixEventId(null), isFalse);
     });
+
+    glados.Glados(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'acceptance is exactly equivalent to a leading dollar sign',
+      (value) {
+        // A dollar-prefixed variant must always be accepted; the bare value
+        // (which the generator never starts with `$`) must always be rejected.
+        expect(
+          isServerAssignedMatrixEventId('\$$value'),
+          isTrue,
+          reason: value,
+        );
+        expect(isServerAssignedMatrixEventId(value), isFalse, reason: value);
+        // Property holds against the implementation contract for any string.
+        expect(
+          isServerAssignedMatrixEventId(value),
+          value.startsWith(r'$'),
+          reason: value,
+        );
+      },
+      tags: 'glados',
+    );
   });
 
   group('setLastReadMatrixEventId', () {

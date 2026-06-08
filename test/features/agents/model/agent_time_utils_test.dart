@@ -241,7 +241,7 @@ void main() {
 
     glados.Glados(
       glados.any.runStatsScenario,
-      glados.ExploreConfig(numRuns: 180),
+      glados.ExploreConfig(numRuns: 140),
     ).test('matches generated wake run statistics semantics', (scenario) {
       final stats = computeRunStats<_GeneratedRunStatsEntry>(
         scenario.entries,

@@ -11,6 +11,48 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
+/// Stubs the persistence + time-service collaborators for the happy path of
+/// `TimeEntryHandler.handle`: `createMetadata` echoes the requested range under
+/// the given `entryId`, `createDbEntity` reports success, and no timer is
+/// currently running.
+///
+/// `createdAt`/`updatedAt` are stamped onto the returned `Metadata` so callers
+/// can keep their assertions deterministic.
+void stubSuccessfulCreation(
+  MockPersistenceLogic persistenceLogic,
+  MockTimeService timeService, {
+  required String entryId,
+  required DateTime stampedAt,
+}) {
+  when(
+    () => persistenceLogic.createMetadata(
+      dateFrom: any(named: 'dateFrom'),
+      dateTo: any(named: 'dateTo'),
+      categoryId: any(named: 'categoryId'),
+    ),
+  ).thenAnswer(
+    (inv) async => Metadata(
+      id: entryId,
+      dateFrom: inv.namedArguments[#dateFrom] as DateTime,
+      dateTo:
+          (inv.namedArguments[#dateTo] as DateTime?) ??
+          (inv.namedArguments[#dateFrom] as DateTime),
+      createdAt: stampedAt,
+      updatedAt: stampedAt,
+      categoryId: inv.namedArguments[#categoryId] as String?,
+    ),
+  );
+
+  when(
+    () => persistenceLogic.createDbEntity(
+      any(),
+      linkedId: any(named: 'linkedId'),
+    ),
+  ).thenAnswer((_) async => true);
+
+  when(() => timeService.getCurrent()).thenReturn(null);
+}
+
 void main() {
   setUpAll(registerAllFallbackValues);
 
@@ -341,33 +383,12 @@ void main() {
           () => mockJournalDb.journalEntityById(sourceTaskId),
         ).thenAnswer((_) async => makeSourceTask());
 
-        when(
-          () => mockPersistenceLogic.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer(
-          (inv) async => Metadata(
-            id: 'new-entry-001',
-            dateFrom: inv.namedArguments[#dateFrom] as DateTime,
-            dateTo:
-                (inv.namedArguments[#dateTo] as DateTime?) ??
-                (inv.namedArguments[#dateFrom] as DateTime),
-            createdAt: testNow,
-            updatedAt: testNow,
-            categoryId: inv.namedArguments[#categoryId] as String?,
-          ),
+        stubSuccessfulCreation(
+          mockPersistenceLogic,
+          mockTimeService,
+          entryId: 'new-entry-001',
+          stampedAt: testNow,
         );
-
-        when(
-          () => mockPersistenceLogic.createDbEntity(
-            any(),
-            linkedId: any(named: 'linkedId'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        when(() => mockTimeService.getCurrent()).thenReturn(null);
       });
 
       test('returns failure when createDbEntity returns false', () async {
@@ -626,33 +647,13 @@ void main() {
           () => mockJournalDb.journalEntityById(sourceTaskId),
         ).thenAnswer((_) async => makeSourceTask());
 
-        when(
-          () => mockPersistenceLogic.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer(
-          (inv) async => Metadata(
-            id: 'timer-entry-001',
-            dateFrom: inv.namedArguments[#dateFrom] as DateTime,
-            dateTo:
-                (inv.namedArguments[#dateTo] as DateTime?) ??
-                (inv.namedArguments[#dateFrom] as DateTime),
-            createdAt: testNow,
-            updatedAt: testNow,
-            categoryId: inv.namedArguments[#categoryId] as String?,
-          ),
+        stubSuccessfulCreation(
+          mockPersistenceLogic,
+          mockTimeService,
+          entryId: 'timer-entry-001',
+          stampedAt: testNow,
         );
 
-        when(
-          () => mockPersistenceLogic.createDbEntity(
-            any(),
-            linkedId: any(named: 'linkedId'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        when(() => mockTimeService.getCurrent()).thenReturn(null);
         when(
           () => mockTimeService.start(any(), any()),
         ).thenAnswer((_) async {});
@@ -774,33 +775,12 @@ void main() {
           () => mockJournalDb.journalEntityById(sourceTaskId),
         ).thenAnswer((_) async => makeSourceTask());
 
-        when(
-          () => mockPersistenceLogic.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer(
-          (inv) async => Metadata(
-            id: 'log-entry-001',
-            dateFrom: inv.namedArguments[#dateFrom] as DateTime,
-            dateTo:
-                (inv.namedArguments[#dateTo] as DateTime?) ??
-                (inv.namedArguments[#dateFrom] as DateTime),
-            createdAt: testNow,
-            updatedAt: testNow,
-            categoryId: categoryId,
-          ),
+        stubSuccessfulCreation(
+          mockPersistenceLogic,
+          mockTimeService,
+          entryId: 'log-entry-001',
+          stampedAt: testNow,
         );
-
-        when(
-          () => mockPersistenceLogic.createDbEntity(
-            any(),
-            linkedId: any(named: 'linkedId'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        when(() => mockTimeService.getCurrent()).thenReturn(null);
       });
 
       test('logs completed session creation', () async {
@@ -855,32 +835,12 @@ void main() {
           () => mockJournalDb.journalEntityById(sourceTaskId),
         ).thenAnswer((_) async => makeSourceTask(taskCategoryId: null));
 
-        when(
-          () => mockPersistenceLogic.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer(
-          (inv) async => Metadata(
-            id: 'no-cat-entry',
-            dateFrom: inv.namedArguments[#dateFrom] as DateTime,
-            dateTo:
-                (inv.namedArguments[#dateTo] as DateTime?) ??
-                (inv.namedArguments[#dateFrom] as DateTime),
-            createdAt: testNow,
-            updatedAt: testNow,
-          ),
+        stubSuccessfulCreation(
+          mockPersistenceLogic,
+          mockTimeService,
+          entryId: 'no-cat-entry',
+          stampedAt: testNow,
         );
-
-        when(
-          () => mockPersistenceLogic.createDbEntity(
-            any(),
-            linkedId: any(named: 'linkedId'),
-          ),
-        ).thenAnswer((_) async => true);
-
-        when(() => mockTimeService.getCurrent()).thenReturn(null);
 
         await withClock(Clock.fixed(testNow), () async {
           final result = await handler.handle(

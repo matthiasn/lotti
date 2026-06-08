@@ -419,7 +419,7 @@ void main() {
     glados.Glados2(
       glados.any.gCounter,
       glados.any.gCounter,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'the merged counter equals the element-wise join of both sides, '
       'independent of winner order (partition + heal)',

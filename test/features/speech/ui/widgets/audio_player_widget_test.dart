@@ -17,8 +17,20 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-class MockAudioPlayerController extends AudioPlayerController {
-  MockAudioPlayerController(this._state);
+/// State-tracking fake used to drive [AudioPlayerWidget] through Riverpod.
+///
+/// This intentionally does NOT use the centralized
+/// `MockAudioPlayerController` from `test/mocks/mocks.dart` (which is a
+/// Mocktail `Mock implements AudioPlayerController`). The widget overrides the
+/// provider via `audioPlayerControllerProvider.overrideWith(() => controller)`,
+/// which requires a real [AudioPlayerController] subclass so Riverpod can run
+/// its notifier lifecycle (`build`, state wiring, etc.). A Mocktail mock would
+/// not satisfy that contract because it bypasses the generated notifier
+/// machinery. Hence this local fake subclasses the controller and records the
+/// playback calls the widget makes (`play`/`pause`/`seek`/`setSpeed`/
+/// `setAudioNote`) so each interaction test can assert on them.
+class _FakeAudioPlayerController extends AudioPlayerController {
+  _FakeAudioPlayerController(this._state);
 
   AudioPlayerState _state;
 
@@ -65,45 +77,22 @@ class MockAudioPlayerController extends AudioPlayerController {
   }
 }
 
-class _StubAudioWaveformService extends AudioWaveformService {
-  _StubAudioWaveformService()
-    : super(
-        extractor:
-            ({
-              required audioFile,
-              required waveOutFile,
-              required zoom,
-            }) async {
-              throw UnimplementedError();
-            },
-      );
-
-  AudioWaveformData? data;
-
-  @override
-  Future<AudioWaveformData?> loadWaveform(
-    JournalAudio audio, {
-    required int targetBuckets,
-  }) async {
-    if (data != null) {
-      return data;
-    }
-    return null;
-  }
-}
-
 void main() {
   setUpAll(() {
     registerFallbackValue(Duration.zero);
   });
 
-  late MockAudioPlayerController controller;
-  late _StubAudioWaveformService waveformService;
+  late _FakeAudioPlayerController controller;
+  // Centralized Mocktail mock from test/mocks/mocks.dart; the widget reads it
+  // out of getIt through `audioWaveformProvider`. Each `pumpPlayer` call stubs
+  // `loadWaveform` for the concrete [JournalAudio] instance under test, so no
+  // `any()`/`JournalAudio` fallback registration is required.
+  late MockAudioWaveformService waveformService;
 
   setUp(() async {
     await getIt.reset();
     getIt.registerSingleton<LoggingService>(MockLoggingService());
-    waveformService = _StubAudioWaveformService();
+    waveformService = MockAudioWaveformService();
     getIt.registerSingleton<AudioWaveformService>(waveformService);
   });
 
@@ -158,8 +147,16 @@ void main() {
     required AudioPlayerState state,
     double width = 420,
     Brightness brightness = Brightness.light,
+    AudioWaveformData? waveformData,
   }) async {
-    controller = MockAudioPlayerController(state);
+    controller = _FakeAudioPlayerController(state);
+
+    when(
+      () => waveformService.loadWaveform(
+        journalAudio,
+        targetBuckets: any(named: 'targetBuckets'),
+      ),
+    ).thenAnswer((_) async => waveformData);
 
     await tester.pumpWidget(
       ProviderScope(
@@ -261,29 +258,6 @@ void main() {
     );
   });
 
-  testWidgets('tapping speed cycles playback rate', (
-    WidgetTester tester,
-  ) async {
-    final journalAudio = buildJournalAudio();
-    final state = buildState(
-      status: AudioPlayerStatus.playing,
-      totalDuration: journalAudio.data.duration,
-      progress: const Duration(seconds: 5),
-      pausedAt: Duration.zero,
-      speed: 1,
-      showTranscriptsList: false,
-      buffered: const Duration(seconds: 5),
-      audioNote: journalAudio,
-    );
-
-    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
-
-    await tester.tap(find.text('1x'));
-    await tester.pump();
-
-    expect(controller.lastSpeedSet, 1.25);
-  });
-
   testWidgets('renders waveform scrubber when waveform ready', (
     WidgetTester tester,
   ) async {
@@ -299,13 +273,16 @@ void main() {
       audioNote: journalAudio,
     );
 
-    waveformService.data = AudioWaveformData(
-      amplitudes: const <double>[0.3, 0.6, 0.9],
-      bucketDuration: const Duration(milliseconds: 20),
-      audioDuration: journalAudio.data.duration,
+    await pumpPlayer(
+      tester,
+      journalAudio: journalAudio,
+      state: state,
+      waveformData: AudioWaveformData(
+        amplitudes: const <double>[0.3, 0.6, 0.9],
+        bucketDuration: const Duration(milliseconds: 20),
+        audioDuration: journalAudio.data.duration,
+      ),
     );
-
-    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
 
     expect(find.byType(AudioWaveformScrubber), findsOneWidget);
     expect(find.byType(AudioProgressBar), findsNothing);
@@ -452,47 +429,44 @@ void main() {
     expect(opacity.opacity, 0.5);
   });
 
-  testWidgets('speed cycles from 1x to 1.25x', (WidgetTester tester) async {
-    final journalAudio = buildJournalAudio();
-    final state = buildState(
-      status: AudioPlayerStatus.playing,
-      totalDuration: journalAudio.data.duration,
-      progress: const Duration(seconds: 5),
-      pausedAt: Duration.zero,
-      speed: 1,
-      showTranscriptsList: false,
-      audioNote: journalAudio,
+  // Every transition in the speed sequence is exercised here, including the
+  // 2x -> 0.5x wrap-around, instead of duplicating near-identical test bodies
+  // for individual rates. Each entry asserts that tapping the speed badge
+  // forwards the expected next rate to `controller.setSpeed`.
+  final speedTransitions = <({double current, String label, double next})>[
+    (current: 0.5, label: '0.5x', next: 0.75),
+    (current: 0.75, label: '0.75x', next: 1),
+    (current: 1, label: '1x', next: 1.25),
+    (current: 1.25, label: '1.25x', next: 1.5),
+    (current: 1.5, label: '1.5x', next: 1.75),
+    (current: 1.75, label: '1.75x', next: 2),
+    (current: 2, label: '2x', next: 0.5),
+  ];
+
+  for (final transition in speedTransitions) {
+    testWidgets(
+      'tapping ${transition.label} cycles to ${transition.next}x',
+      (WidgetTester tester) async {
+        final journalAudio = buildJournalAudio();
+        final state = buildState(
+          status: AudioPlayerStatus.playing,
+          totalDuration: journalAudio.data.duration,
+          progress: const Duration(seconds: 5),
+          pausedAt: Duration.zero,
+          speed: transition.current,
+          showTranscriptsList: false,
+          audioNote: journalAudio,
+        );
+
+        await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+        await tester.tap(find.text(transition.label));
+        await tester.pump();
+
+        expect(controller.lastSpeedSet, transition.next);
+      },
     );
-
-    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
-
-    await tester.tap(find.text('1x'));
-    await tester.pump();
-
-    expect(controller.lastSpeedSet, 1.25);
-  });
-
-  testWidgets('speed cycles from 2x to 0.5x (wraps around)', (
-    WidgetTester tester,
-  ) async {
-    final journalAudio = buildJournalAudio();
-    final state = buildState(
-      status: AudioPlayerStatus.playing,
-      totalDuration: journalAudio.data.duration,
-      progress: const Duration(seconds: 5),
-      pausedAt: Duration.zero,
-      speed: 2,
-      showTranscriptsList: false,
-      audioNote: journalAudio,
-    );
-
-    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
-
-    await tester.tap(find.text('2x'));
-    await tester.pump();
-
-    expect(controller.lastSpeedSet, 0.5);
-  });
+  }
 
   testWidgets('displays all speed values correctly', (
     WidgetTester tester,
@@ -582,26 +556,45 @@ void main() {
     expect(find.byType(AudioProgressBar), findsOneWidget);
   });
 
-  testWidgets('displays error color for non-1x speeds', (
+  testWidgets('speed label uses error color for non-1x speeds only', (
     WidgetTester tester,
   ) async {
     final journalAudio = buildJournalAudio();
-    final state = buildState(
+
+    AudioPlayerState stateForSpeed(double speed) => buildState(
       status: AudioPlayerStatus.playing,
       totalDuration: journalAudio.data.duration,
       progress: const Duration(seconds: 5),
       pausedAt: Duration.zero,
-      speed: 1.5,
+      speed: speed,
       showTranscriptsList: false,
       audioNote: journalAudio,
     );
 
-    await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+    // Non-1x speed: label text is painted with the theme error color.
+    await pumpPlayer(
+      tester,
+      journalAudio: journalAudio,
+      state: stateForSpeed(1.5),
+    );
+    final fastFinder = find.text('1.5x');
+    final errorColor = Theme.of(
+      tester.element(fastFinder),
+    ).colorScheme.error;
+    expect(tester.widget<Text>(fastFinder).style?.color, errorColor);
 
-    expect(find.text('1.5x'), findsOneWidget);
-    // The speed button should be visible and tappable
-    await tester.tap(find.text('1.5x'));
-    expect(controller.lastSpeedSet, 1.75);
+    // 1x speed: label text is NOT painted with the error color.
+    await tester.pumpWidget(Container());
+    await pumpPlayer(
+      tester,
+      journalAudio: journalAudio,
+      state: stateForSpeed(1),
+    );
+    final normalFinder = find.text('1x');
+    expect(
+      tester.widget<Text>(normalFinder).style?.color,
+      isNot(errorColor),
+    );
   });
 
   testWidgets('shows correct buffered progress', (WidgetTester tester) async {
@@ -648,6 +641,92 @@ void main() {
     // When not active, progress and buffered should be zero
     expect(progressBar.progress, Duration.zero);
     expect(progressBar.buffered, Duration.zero);
+  });
+
+  group('status display states', () {
+    // Drives the play button icon, progress-bar value, and duration labels
+    // across the playing / paused / stopped statuses so each branch of
+    // `_PlayButton` / `_PlayerBody` is exercised, not just `playing`.
+    const activeProgress = Duration(seconds: 90);
+    const totalDuration = Duration(minutes: 5);
+
+    final cases =
+        <
+          ({
+            String name,
+            AudioPlayerStatus status,
+            bool active,
+            IconData expectedIcon,
+            Duration expectedProgress,
+          })
+        >[
+          (
+            name: 'playing shows pause icon and live progress',
+            status: AudioPlayerStatus.playing,
+            active: true,
+            expectedIcon: Icons.pause_rounded,
+            expectedProgress: activeProgress,
+          ),
+          (
+            name: 'paused shows play icon and retains progress',
+            status: AudioPlayerStatus.paused,
+            active: true,
+            expectedIcon: Icons.play_arrow_rounded,
+            expectedProgress: activeProgress,
+          ),
+          (
+            name: 'stopped shows play icon and resets progress to zero',
+            status: AudioPlayerStatus.stopped,
+            active: false,
+            expectedIcon: Icons.play_arrow_rounded,
+            expectedProgress: Duration.zero,
+          ),
+        ];
+
+    for (final c in cases) {
+      testWidgets(c.name, (WidgetTester tester) async {
+        final journalAudio = buildJournalAudio();
+        final state = buildState(
+          status: c.status,
+          totalDuration: totalDuration,
+          progress: activeProgress,
+          pausedAt: c.status == AudioPlayerStatus.paused
+              ? activeProgress
+              : Duration.zero,
+          speed: 1,
+          showTranscriptsList: false,
+          audioNote: c.active ? journalAudio : null,
+        );
+
+        await pumpPlayer(tester, journalAudio: journalAudio, state: state);
+
+        // Button icon reflects the playing/non-playing distinction.
+        expect(find.byIcon(c.expectedIcon), findsOneWidget);
+        expect(
+          find.byIcon(
+            c.expectedIcon == Icons.pause_rounded
+                ? Icons.play_arrow_rounded
+                : Icons.pause_rounded,
+          ),
+          findsNothing,
+        );
+
+        // Progress bar value is the live progress only while active.
+        final progressBar = tester.widget<AudioProgressBar>(
+          find.byType(AudioProgressBar),
+        );
+        expect(progressBar.progress, c.expectedProgress);
+        expect(progressBar.enabled, c.active);
+
+        // The total-duration label is always rendered from totalDuration.
+        expect(find.text(formatAudioDuration(totalDuration)), findsOneWidget);
+        // The leading label shows the current playback position.
+        expect(
+          find.text(formatAudioDuration(c.expectedProgress)),
+          findsWidgets,
+        );
+      });
+    }
   });
 
   group('Figma restyle', () {

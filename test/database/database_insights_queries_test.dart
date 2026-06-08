@@ -9,11 +9,22 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 
+import 'test_utils.dart';
+
 void main() {
   late JournalDb db;
   Directory? previousDirectory;
 
-  setUp(() {
+  // The migration ladder runs once; each test starts clean via clearAllTables.
+  // Note: this file deliberately does NOT seed config flags — clearAllTables
+  // also resets the in-memory flag cache, so `getConfigFlag('private')`
+  // returns the "no flag row" default (false → private hidden), which several
+  // tests assert as their precondition.
+  setUpAll(() async {
+    db = JournalDb(inMemoryDatabase: true);
+  });
+
+  setUp(() async {
     if (getIt.isRegistered<Directory>()) {
       previousDirectory = getIt<Directory>();
       getIt.unregister<Directory>();
@@ -21,15 +32,18 @@ void main() {
       previousDirectory = null;
     }
     getIt.registerSingleton<Directory>(Directory.systemTemp);
-    db = JournalDb(inMemoryDatabase: true);
+    await clearAllTables(db);
   });
 
   tearDown(() async {
-    await db.close();
     getIt.unregister<Directory>();
     if (previousDirectory != null) {
       getIt.registerSingleton<Directory>(previousDirectory!);
     }
+  });
+
+  tearDownAll(() async {
+    await db.close();
   });
 
   JournalEntity buildTimeEntry({

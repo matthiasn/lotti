@@ -4539,6 +4539,59 @@ void main() {
 
       expect(populated, 1);
     });
+
+    test(
+      'breaks a tied max counter deterministically by lexicographically '
+      'smallest host id, regardless of vector-clock insertion order',
+      () async {
+        // bob and alice share the max counter (5). The originating host is the
+        // one with the highest counter; on a tie `_populateFromStream` sorts VC
+        // entries by host id and keeps the first to reach the max via a strict
+        // `>`, so the lexicographically smallest host id wins. bob is listed
+        // first in the VC to prove the choice comes from the sort, not from map
+        // insertion order.
+        final entityStream = Stream.fromIterable([
+          [
+            (
+              id: 'tie-entity',
+              vectorClock: <String, int>{bobHostId: 5, aliceHostId: 5},
+            ),
+          ],
+        ]);
+
+        when(
+          () => mockDb.getCountersForHost(any()),
+        ).thenAnswer((_) async => <int>{});
+        when(
+          () => mockDb.batchInsertSequenceEntries(any()),
+        ).thenAnswer((_) async {});
+
+        final populated = await service.populateFromAgentEntities(
+          entityStream: entityStream,
+          getTotalCount: () async => 1,
+        );
+
+        expect(populated, 2);
+
+        final entries =
+            verify(
+                  () => mockDb.batchInsertSequenceEntries(captureAny()),
+                ).captured.single
+                as List<SyncSequenceLogCompanion>;
+
+        // Both rows attribute the same originating host: alice ('alice-...' <
+        // 'bob-...'), even though bob was iterated first in the source VC.
+        expect(
+          entries.map((e) => e.originatingHostId.value).toSet(),
+          {aliceHostId},
+        );
+        // Sanity: both hosts' counters are still recorded as separate rows.
+        expect(
+          entries.map((e) => e.hostId.value).toSet(),
+          {aliceHostId, bobHostId},
+        );
+      },
+    );
   });
 
   group('populateFromAgentLinks', () {

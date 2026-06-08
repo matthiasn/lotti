@@ -146,5 +146,48 @@ void main() {
         },
       );
     }
+
+    testWidgets(
+      'an unrecognised tool name falls through to the Update kind chip',
+      (tester) async {
+        // `_resolveKind` has a `default → _ProposalKind.update` arm for any
+        // tool name not in its dispatch table. A made-up tool name exercises
+        // exactly that fallback, which is otherwise unreached by the known
+        // tool-name cases above.
+        final bench = AgentTestBench(
+          suggestions: UnifiedSuggestionList(
+            open: [_pending('totally_unknown_future_tool')],
+            activity: const [],
+          ),
+        );
+
+        await tester.pumpWidget(bench.build());
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The fallback resolves to the Update kind, so the chip reads
+        // "Update" and carries the Update token colors — identical to the
+        // explicit `update_checklist_items` case, proving the default arm
+        // routes through the same `_kindMeta(_ProposalKind.update)` path.
+        final labelFinder = find.text('Update');
+        expect(labelFinder, findsOneWidget);
+
+        final updateTokens = _selectUpdate(
+          tester.element(labelFinder).designTokens.colors.proposalKind,
+        );
+        final labelText = tester.widget<Text>(labelFinder);
+        expect(labelText.style?.color, updateTokens.color);
+
+        final chip = tester.widget<Container>(
+          find
+              .ancestor(of: labelFinder, matching: find.byType(Container))
+              .first,
+        );
+        expect(
+          (chip.decoration! as BoxDecoration).color,
+          updateTokens.surface,
+        );
+      },
+    );
   });
 }

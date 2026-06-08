@@ -42,7 +42,8 @@
 
 - [x] **[MED]** `test/features/agents/tools/running_timer_update_handler_test.dart` — 683 lines for a 157-line impl. Static tests individually stub `_timeService.getCurrent()` and `_timeService.linkedFrom` in every test body; extract `_stubActiveTimer()` / `_stubNoTimer()` helpers. **RESOLVED:** (stale) `stubActiveTimer({timer, linkedFrom})` and the no-timer default stub already exist and are used by the static tests.
 
-- [ ] **[LOW]** `test/features/agents/tools/time_entry_handler_test.dart` — 878 lines for a 240-line impl. Multiple test bodies repeat `createMetadata`+`createDbEntity` stub blocks; extract `_stubSuccessfulCreation(tester, {DateTime? endTime})`.
+- [x] **[LOW]** `test/features/agents/tools/time_entry_handler_test.dart` — 878 lines for a 240-line impl. Multiple test bodies repeat `createMetadata`+`createDbEntity` stub blocks; extract `_stubSuccessfulCreation(tester, {DateTime? endTime})`.
+  **RESOLVED:** extracted a file-level `stubSuccessfulCreation(persistenceLogic, timeService, {entryId, stampedAt})` helper that stubs `createMetadata` (echoing the requested range + categoryId under the given id), `createDbEntity` (success), and `getCurrent` (no active timer). It replaces the four duplicated stub blocks across the `completed session`, `running timer`, `domain logging`, and `category inheritance` groups (the category test's null-categoryId assertion still passes because the helper echoes the input categoryId).
 
 ---
 
@@ -62,9 +63,11 @@
 
 - [x] **[MED]** `project_tool_definitions_test.dart` — `projectDeferredTools` (the `const Set<String>` listing deferred project tools) has no test at all. Add: verify it contains exactly `recommendNextSteps`, `updateProjectStatus`, `createTask`. **RESOLVED:** done — exact-set test added.
 
-- [ ] **[LOW]** `correction_examples_builder_test.dart` — `buildContext` is tested for "returns empty when category is null" and "returns empty when category has no examples", but the `catch (_) { return ''; }` branch (when `getCategoryById` throws) has no explicit test. Add a test that stubs `mockJournalDb.getCategoryById` to throw and asserts the result is `''` (not a rethrown exception).
+- [x] **[LOW]** `correction_examples_builder_test.dart` — `buildContext` is tested for "returns empty when category is null" and "returns empty when category has no examples", but the `catch (_) { return ''; }` branch (when `getCategoryById` throws) has no explicit test. Add a test that stubs `mockJournalDb.getCategoryById` to throw and asserts the result is `''` (not a rethrown exception).
+  **RESOLVED:** (stale) the test `'returns empty string when getCategoryById throws'` already exists — it stubs `mockDb.getCategoryById('cat-1')` to throw `Exception('DB error')` and asserts `result` is empty (the call does not rethrow). No change needed.
 
-- [ ] **[LOW]** `time_entry_update_handler_test.dart` — `_formatUpdatedRange` is a private method called only via the `handle` success path. The Glados property checks `output.contains('Updated')` but never pins the `HH:mm–HH:mm` format shape. Add an assertion on `result.output` that matches the exact format regex `r'\d{2}:\d{2}–\d{2}:\d{2}'` in at least one static success test.
+- [x] **[LOW]** `time_entry_update_handler_test.dart` — `_formatUpdatedRange` is a private method called only via the `handle` success path. The Glados property checks `output.contains('Updated')` but never pins the `HH:mm–HH:mm` format shape. Add an assertion on `result.output` that matches the exact format regex `r'\d{2}:\d{2}–\d{2}:\d{2}'` in at least one static success test.
+  **RESOLVED:** the `'updates text, dateFrom, and dateTo together'` test now asserts `result.output` contains the literal `(13:30–15:15)` and matches `RegExp(r'\(\d{2}:\d{2}–\d{2}:\d{2}\)')`, pinning the parenthesized `HH:mm–HH:mm` shape produced by `_formatUpdatedRange`.
 
 ---
 
@@ -74,9 +77,11 @@
 
 - [x] **[MED]** `time_entry_handler_test.dart` — `TimeEntryHandler` uses `parseTimeEntryLocalDateTime` (from `features/agents/time_entry_datetime.dart`) and `_isSameDay` for boundary-sensitive temporal validation. The tests are entirely example-based (no Glados). The `_isSameDay` check (same year/month/day in local time) is a pure function with clear algebraic properties (reflexive, symmetric over same-day pairs, asymmetric for cross-day pairs). A Glados property over `(DateTime a, DateTime b)` pairs would catch off-by-one bugs. Note: `time_entry_datetime_test.dart` already exists in the parent `agents/` directory and has Glados; verify the impl methods tested there before adding new properties, to avoid duplication. **RESOLVED:** done — `time_entry_datetime_test.dart` covers the parser, not the handler-local `_isSameDay`; a `debugIsSameDay` seam + property now pins reflexivity, symmetry, time-of-day insensitivity, and the day-boundary break.
 
-- [ ] **[LOW]** `agent_tool_registry_test.dart` — `AgentToolRegistry.taskAgentTools` is a const list of 18 data objects. A Glados property is not appropriate here (it is fixture data, not parametric logic). **No action needed.**
+- [x] **[LOW]** `agent_tool_registry_test.dart` — `AgentToolRegistry.taskAgentTools` is a const list of 18 data objects. A Glados property is not appropriate here (it is fixture data, not parametric logic). **No action needed.**
+  **RESOLVED:** confirmed non-actionable — `taskAgentTools` is a `const` list of fixed `AgentToolDefinition` literals with no parametric logic to generate over, so Glados would only re-assert hardcoded fixtures. No change.
 
-- [ ] **[LOW]** `agent_tool_executor_test.dart` — `AgentToolExecutor.execute` is async and depends on I/O callbacks; Glados is a poor fit. The existing example-based tests are appropriate. **No action needed.**
+- [x] **[LOW]** `agent_tool_executor_test.dart` — `AgentToolExecutor.execute` is async and depends on I/O callbacks; Glados is a poor fit. The existing example-based tests are appropriate. **No action needed.**
+  **RESOLVED:** confirmed non-actionable — `execute` is an async orchestration method whose behavior is dictated by injected handler/persistence callbacks rather than a parametric pure input, so example-based tests are the right tool and Glados adds no coverage. No change.
 
 ---
 
@@ -94,9 +99,11 @@
 
 - [x] **[MED]** `task_status_handler_test.dart` — `TaskStatusHandler._buildStatus` is called for every allowed status. The `BLOCKED` and `ON HOLD` branches pass `reason ?? 'No reason provided'` to the `TaskStatus` constructor. No test verifies that the `reason` field lands on the persisted `TaskStatus` object. Add a test that asserts the captured `updatedTask.data.status` carries the trimmed reason string for a BLOCKED transition. **RESOLVED:** done — the BLOCKED test now captures the persisted entity from `updateJournalEntity` and asserts its `TaskBlocked.reason` alongside the returned copy.
 
-- [ ] **[LOW]** `running_timer_update_handler_test.dart` — `RunningTimerUpdateFailure` constants class (lines 9–16 in impl) is not directly asserted in any test. The Glados property implicitly exercises the values via `errorMessage` string matching, but adding one assertion per constant (e.g. `expect(result.errorMessage, RunningTimerUpdateFailure.invalidSummary)`) would future-proof the string values.
+- [x] **[LOW]** `running_timer_update_handler_test.dart` — `RunningTimerUpdateFailure` constants class (lines 9–16 in impl) is not directly asserted in any test. The Glados property implicitly exercises the values via `errorMessage` string matching, but adding one assertion per constant (e.g. `expect(result.errorMessage, RunningTimerUpdateFailure.invalidSummary)`) would future-proof the string values.
+  **RESOLVED:** all six `RunningTimerUpdateFailure` constants are now asserted by name in the static failure tests — `invalidSummary` (missing/empty/too-long summary), `invalidTimerId`, `noActiveTimer`, `timerIdMismatch`, `sourceTaskMismatch` (both the different-task and ownership-before-id tests), and `unsupportedEntityType` — replacing the raw string literals, so a literal drift now fails at the constant rather than silently.
 
-- [ ] **[LOW]** `project_tool_definitions_test.dart` — The `recordObservations` tool in `projectAgentTools` uses `oneOf` in its `items` schema (line 88 in impl) — a schema construct not used anywhere else in either agent tool set. No test verifies the `oneOf` structure. Add a test that checks `itemSchema['oneOf']` is a `List` with two elements (string schema and object schema).
+- [x] **[LOW]** `project_tool_definitions_test.dart` — The `recordObservations` tool in `projectAgentTools` uses `oneOf` in its `items` schema (line 88 in impl) — a schema construct not used anywhere else in either agent tool set. No test verifies the `oneOf` structure. Add a test that checks `itemSchema['oneOf']` is a `List` with two elements (string schema and object schema).
+  **RESOLVED:** (stale) the test `'requires observations array with oneOf (string or object)'` already asserts `items['oneOf']` is a `List` with `hasLength(2)`, that variant 0 is `{type: string}` and variant 1 is a `type: object` schema (with `text`/`priority`/`category` props and `required: [text]`). No change needed.
 
 ---
 
@@ -112,7 +119,8 @@
 
 - [x] **[MED]** `test/features/agents/tools/task_label_handler_test.dart:607`, `task_language_handler_test.dart:395`, `task_status_handler_test.dart:585,662`, `task_title_handler_test.dart:314` — Glados properties at `numRuns: 180`, `180`, `180/120`, and `180` respectively. Each of these files rebuilds mock objects in `setUp`. Collectively the five files run ~940 mock-rebuild iterations; the shared `setUpAll` + `reset` pattern would reduce this to ~5 constructions. **RESOLVED:** (assessed, no change) same factual correction; additionally `setUpAll`-scoped mocks shared across tests is the in-suite-contamination pattern the project explicitly avoids.
 
-- [ ] **[LOW]** `test/features/agents/tools/correction_examples_builder_test.dart:363` — Glados property at `numRuns: 140`. The service under test has a single `MockJournalDb` stub; construction is cheap. Low impact.
+- [x] **[LOW]** `test/features/agents/tools/correction_examples_builder_test.dart:363` — Glados property at `numRuns: 140`. The service under test has a single `MockJournalDb` stub; construction is cheap. Low impact.
+  **RESOLVED:** (assessed, no change) the property tests `formatExamples`, a pure static function with no mock or DB interaction inside the property body, so there is no per-iteration setup cost to cut. `numRuns: 140` is within the policy band (80–180, ≠100). No change.
 
 ---
 

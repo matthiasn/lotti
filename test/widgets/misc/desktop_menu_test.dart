@@ -5,37 +5,33 @@ import 'package:lotti/widgets/misc/desktop_menu.dart';
 
 void main() {
   group('DesktopMenuWrapper', () {
-    test('stores zoom callbacks', () {
-      var zoomInCalled = false;
-      var zoomOutCalled = false;
-      var zoomResetCalled = false;
+    // The zoom callbacks the wrapper holds are the closures that get wired
+    // into the macOS View-menu `onSelected` handlers. PlatformMenuBar items
+    // are dispatched to the platform channel and are not tappable widgets in
+    // tests, so we verify the wiring by exercising the closures the widget
+    // exposes — invoking each one fires its distinct side effect, proving the
+    // wrapper forwards the exact callbacks it was given (not a shared/dropped
+    // reference).
+    test('exposes the three zoom callbacks and invokes each independently', () {
+      var zoomInCalled = 0;
+      var zoomOutCalled = 0;
+      var zoomResetCalled = 0;
 
       final wrapper = DesktopMenuWrapper(
-        onZoomIn: () => zoomInCalled = true,
-        onZoomOut: () => zoomOutCalled = true,
-        onZoomReset: () => zoomResetCalled = true,
+        onZoomIn: () => zoomInCalled++,
+        onZoomOut: () => zoomOutCalled++,
+        onZoomReset: () => zoomResetCalled++,
         child: const SizedBox.shrink(),
       );
 
-      expect(wrapper.onZoomIn, isNotNull);
-      expect(wrapper.onZoomOut, isNotNull);
-      expect(wrapper.onZoomReset, isNotNull);
-
       wrapper.onZoomIn!();
+      expect((zoomInCalled, zoomOutCalled, zoomResetCalled), (1, 0, 0));
+
       wrapper.onZoomOut!();
+      expect((zoomInCalled, zoomOutCalled, zoomResetCalled), (1, 1, 0));
+
       wrapper.onZoomReset!();
-
-      expect(zoomInCalled, isTrue);
-      expect(zoomOutCalled, isTrue);
-      expect(zoomResetCalled, isTrue);
-    });
-
-    test('zoom callbacks default to null', () {
-      const wrapper = DesktopMenuWrapper(child: SizedBox.shrink());
-
-      expect(wrapper.onZoomIn, isNull);
-      expect(wrapper.onZoomOut, isNull);
-      expect(wrapper.onZoomReset, isNull);
+      expect((zoomInCalled, zoomOutCalled, zoomResetCalled), (1, 1, 1));
     });
 
     // The wrapper gates on `defaultTargetPlatform`, not the host OS, so both

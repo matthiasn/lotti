@@ -1470,6 +1470,45 @@ void main() {
       // Flag should be reset even if auth fails
       expect(mobileImport.workoutImportRunning, false);
     });
+
+    test(
+      'leaves workoutImportRunning true and rethrows when fetch throws',
+      () async {
+        // Documents the current (unguarded) behaviour: there is no
+        // try/finally around the fetch, so a thrown error propagates out of
+        // getWorkoutsHealthDataDelta and the guard flag is never cleared,
+        // which would deadlock all future workout imports. This test pins
+        // that behaviour so any future fix (resetting the flag) is a visible,
+        // intentional change rather than a silent regression.
+        final mobileImport = createMobileHealthImport();
+
+        when(
+          () => mockJournalDb.latestWorkout(),
+        ).thenAnswer((_) async => null);
+
+        when(
+          () => mockHealthService.requestAuthorization(any()),
+        ).thenAnswer((_) async => true);
+
+        final failure = Exception('health fetch failed');
+        when(
+          () => mockHealthService.getHealthDataFromTypes(
+            types: any(named: 'types'),
+            startTime: any(named: 'startTime'),
+            endTime: any(named: 'endTime'),
+          ),
+        ).thenThrow(failure);
+
+        await expectLater(
+          mobileImport.getWorkoutsHealthDataDelta(),
+          throwsA(same(failure)),
+        );
+
+        // The guard flag is left set because the reset line is unreachable
+        // after the throw.
+        expect(mobileImport.workoutImportRunning, true);
+      },
+    );
   });
 
   group('default permission request', () {
@@ -1744,6 +1783,124 @@ void main() {
         );
       },
       tags: 'glados',
+    );
+  });
+
+  group('addActivityEntries — Glados day-boundary properties', () {
+    // `addActivityEntries` derives each entry's [dateTo] as
+    // `dayStart + 1 day - 1 ms`, then caps it to `clock.now()` when that end
+    // overruns the present. These are pure time-boundary invariants over the
+    // realistic input domain: `getActivityHealthData` only ever feeds days at
+    // or before the present (`fetchAndProcessActivityDataForDay` skips days
+    // that are not `dateFrom.isBefore(now)`), so offsets span `[-10, 0]` —
+    // completed past days (no cap) plus the in-progress current day (cap to
+    // now), exercising both branches of the `isAfter(now)` conditional.
+    glados.Glados<int>(
+      glados.IntAnys(glados.any).intInRange(-10, 1),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'persisted dateTo stays within [dayStart, dayStart + 1 day) and never '
+      'exceeds now',
+      (dayOffsetFromNow) async {
+        // Pin "now" to a deterministic, non-midnight instant so the cap branch
+        // is reachable for the current day.
+        final now = DateTime(2024, 3, 15, 14, 30, 45, 123);
+
+        await withClock(Clock.fixed(now), () async {
+          final mobileImport = createMobileHealthImport();
+          final dayStart = DateTime(2024, 3, 15 + dayOffsetFromNow);
+          final data = {dayStart: 42.0};
+
+          final captured = <CumulativeQuantityData>[];
+          when(
+            () => mockPersistenceLogic.createQuantitativeEntry(any()),
+          ).thenAnswer((invocation) async {
+            captured.add(
+              invocation.positionalArguments.first as CumulativeQuantityData,
+            );
+            return null;
+          });
+
+          await mobileImport.addActivityEntries(
+            data,
+            'cumulative_step_count',
+            'count',
+          );
+
+          expect(captured, hasLength(1), reason: 'offset=$dayOffsetFromNow');
+          final entry = captured.single;
+          final nextMidnight = dayStart.add(const Duration(days: 1));
+
+          // dateFrom is always the start of the day, untouched by the cap.
+          expect(entry.dateFrom, dayStart, reason: 'offset=$dayOffsetFromNow');
+          // dateTo never reaches the next midnight (strict upper bound).
+          expect(
+            entry.dateTo.isBefore(nextMidnight),
+            isTrue,
+            reason: 'dateTo=${entry.dateTo} offset=$dayOffsetFromNow',
+          );
+          // dateTo never precedes the day it belongs to.
+          expect(
+            entry.dateTo.isBefore(dayStart),
+            isFalse,
+            reason: 'dateTo=${entry.dateTo} offset=$dayOffsetFromNow',
+          );
+          // The cap is honoured: dateTo never overruns the present.
+          expect(
+            entry.dateTo.isAfter(now),
+            isFalse,
+            reason: 'dateTo=${entry.dateTo} now=$now',
+          );
+          // The value is passed through verbatim, regardless of the cap.
+          expect(entry.value, 42.0, reason: 'offset=$dayOffsetFromNow');
+        });
+      },
+      tags: 'glados',
+    );
+
+    test(
+      'caps dateTo to now for the in-progress day, leaves past days full',
+      () async {
+        final now = DateTime(2024, 3, 15, 14, 30, 45, 123);
+
+        await withClock(Clock.fixed(now), () async {
+          final mobileImport = createMobileHealthImport();
+          final today = DateTime(2024, 3, 15);
+          final yesterday = DateTime(2024, 3, 14);
+          final data = {yesterday: 10.0, today: 20.0};
+
+          final captured = <CumulativeQuantityData>[];
+          when(
+            () => mockPersistenceLogic.createQuantitativeEntry(any()),
+          ).thenAnswer((invocation) async {
+            captured.add(
+              invocation.positionalArguments.first as CumulativeQuantityData,
+            );
+            return null;
+          });
+
+          await mobileImport.addActivityEntries(
+            data,
+            'cumulative_step_count',
+            'count',
+          );
+
+          // Entries are sorted ascending by day, so yesterday comes first.
+          expect(
+            captured.map((e) => e.dateFrom).toList(),
+            [yesterday, today],
+          );
+          // The completed day keeps its full end-of-day boundary.
+          expect(
+            captured[0].dateTo,
+            yesterday
+                .add(const Duration(days: 1))
+                .subtract(const Duration(milliseconds: 1)),
+          );
+          // The in-progress day is capped to the current instant.
+          expect(captured[1].dateTo, now);
+        });
+      },
     );
   });
 

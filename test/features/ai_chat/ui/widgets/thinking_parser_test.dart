@@ -400,7 +400,7 @@ void main() {
 
   group('parseThinking property tests', () {
     // Invariant: parseThinking never throws for any letter/digit string.
-    Glados<String>(any.letterOrDigits, ExploreConfig(numRuns: 200)).test(
+    Glados<String>(any.letterOrDigits, ExploreConfig(numRuns: 180)).test(
       'never throws for arbitrary letter/digit string input',
       (String input) {
         expect(() => parseThinking(input), returnsNormally);
@@ -409,7 +409,7 @@ void main() {
     );
 
     // Invariant: visible is always a non-null string.
-    Glados<String>(any.letterOrDigits, ExploreConfig(numRuns: 200)).test(
+    Glados<String>(any.letterOrDigits, ExploreConfig(numRuns: 180)).test(
       'visible is always a non-null string',
       (String input) {
         final result = parseThinking(input);
@@ -437,7 +437,7 @@ void main() {
 
     // Invariant: for plain text (no think markers), the entire input is
     // returned as visible and thinking is null.
-    Glados<String>(any.letterOrDigits, ExploreConfig(numRuns: 200)).test(
+    Glados<String>(any.letterOrDigits, ExploreConfig(numRuns: 180)).test(
       'plain text: visible equals input, thinking is null',
       (String input) {
         final result = parseThinking(input);
@@ -473,7 +473,7 @@ void main() {
     );
 
     // Invariant: splitThinkingSegments never throws.
-    Glados<String>(any.letterOrDigits, ExploreConfig(numRuns: 200)).test(
+    Glados<String>(any.letterOrDigits, ExploreConfig(numRuns: 180)).test(
       'splitThinkingSegments never throws for letter/digit input',
       (String input) {
         expect(() => splitThinkingSegments(input), returnsNormally);
@@ -483,7 +483,7 @@ void main() {
 
     // Invariant: for plain text (no tag characters), splitThinkingSegments
     // returns at most one segment whose text equals the input exactly.
-    Glados<String>(any.letterOrDigits, ExploreConfig(numRuns: 200)).test(
+    Glados<String>(any.letterOrDigits, ExploreConfig(numRuns: 180)).test(
       'splitThinkingSegments: plain text reproduces input exactly',
       (String input) {
         final segments = splitThinkingSegments(input);

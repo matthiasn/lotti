@@ -61,26 +61,7 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
 
       // Create a v28-style journal table without priority columns
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          category TEXT,
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0
-        )
-      ''');
+      createJournalTable(sqlite, version: 28);
 
       createLinkedEntriesTableWithBuggyIndex(sqlite);
 
@@ -142,33 +123,7 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          task_priority TEXT,
-          task_priority_rank INTEGER,
-          category TEXT NOT NULL DEFAULT '',
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0,
-          plain_text TEXT,
-          latitude REAL,
-          longitude REAL,
-          geohash_string TEXT,
-          geohash_int INTEGER
-        )
-      ''');
+        createJournalTable(sqlite, version: 32);
 
         sqlite.execute('''
         CREATE TABLE IF NOT EXISTS config_flags (
@@ -210,33 +165,7 @@ void main() {
       );
       final sqlite = sqlite3.open(dbFile.path);
 
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          task_priority TEXT,
-          task_priority_rank INTEGER,
-          category TEXT NOT NULL DEFAULT '',
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0,
-          plain_text TEXT,
-          latitude REAL,
-          longitude REAL,
-          geohash_string TEXT,
-          geohash_int INTEGER
-        )
-      ''');
+      createJournalTable(sqlite, version: 34);
 
       sqlite.execute('PRAGMA user_version = 34');
       sqlite.dispose();
@@ -270,33 +199,7 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          task_priority TEXT,
-          task_priority_rank INTEGER,
-          category TEXT NOT NULL DEFAULT '',
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0,
-          plain_text TEXT,
-          latitude REAL,
-          longitude REAL,
-          geohash_string TEXT,
-          geohash_int INTEGER
-        )
-      ''');
+        createJournalTable(sqlite, version: 34);
 
         sqlite.execute('''
         CREATE INDEX idx_journal_tasks_date
@@ -340,33 +243,7 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          task_priority TEXT,
-          task_priority_rank INTEGER,
-          category TEXT NOT NULL DEFAULT '',
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0,
-          plain_text TEXT,
-          latitude REAL,
-          longitude REAL,
-          geohash_string TEXT,
-          geohash_int INTEGER
-        )
-      ''');
+        createJournalTable(sqlite, version: 35);
 
         sqlite.execute('PRAGMA user_version = 35');
         sqlite.dispose();
@@ -405,33 +282,7 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          task_priority TEXT,
-          task_priority_rank INTEGER,
-          category TEXT NOT NULL DEFAULT '',
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0,
-          plain_text TEXT,
-          latitude REAL,
-          longitude REAL,
-          geohash_string TEXT,
-          geohash_int INTEGER
-        )
-      ''');
+        createJournalTable(sqlite, version: 35);
 
         sqlite.execute('''
         CREATE INDEX idx_journal_browse
@@ -473,33 +324,7 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          task_priority TEXT,
-          task_priority_rank INTEGER,
-          category TEXT NOT NULL DEFAULT '',
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0,
-          plain_text TEXT,
-          latitude REAL,
-          longitude REAL,
-          geohash_string TEXT,
-          geohash_int INTEGER
-        )
-      ''');
+        createJournalTable(sqlite, version: 36);
 
         sqlite.execute('''
         CREATE TABLE IF NOT EXISTS labeled (
@@ -585,33 +410,7 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS journal (
-          id TEXT PRIMARY KEY,
-          serialized TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          date_from INTEGER NOT NULL,
-          date_to INTEGER NOT NULL,
-          type TEXT NOT NULL,
-          subtype TEXT,
-          starred BOOLEAN DEFAULT FALSE,
-          private BOOLEAN DEFAULT FALSE,
-          deleted BOOLEAN DEFAULT FALSE,
-          task BOOLEAN DEFAULT FALSE,
-          task_status TEXT,
-          task_priority TEXT,
-          task_priority_rank INTEGER,
-          category TEXT NOT NULL DEFAULT '',
-          flag INTEGER DEFAULT 0,
-          schema_version INTEGER DEFAULT 0,
-          plain_text TEXT,
-          latitude REAL,
-          longitude REAL,
-          geohash_string TEXT,
-          geohash_int INTEGER
-        )
-      ''');
+        createJournalTable(sqlite, version: 36);
 
         sqlite.execute('''
         CREATE TABLE IF NOT EXISTS labeled (

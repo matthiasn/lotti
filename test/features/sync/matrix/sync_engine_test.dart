@@ -1,23 +1,14 @@
+import 'dart:async';
+
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/sync/matrix/session_manager.dart';
 import 'package:lotti/features/sync/matrix/sync_engine.dart';
-import 'package:lotti/features/sync/matrix/sync_lifecycle_coordinator.dart';
-import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 // No internal SDK controllers in tests
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockMatrixSessionManager extends Mock implements MatrixSessionManager {}
-
-class MockSyncRoomManager extends Mock implements SyncRoomManager {}
-
-class MockSyncLifecycleCoordinator extends Mock
-    implements SyncLifecycleCoordinator {}
-
-class MockClient extends Mock implements Client {}
 
 class MockRoomSummary extends Mock implements RoomSummary {}
 
@@ -36,6 +27,8 @@ void main() {
     sessionManager = MockMatrixSessionManager();
     roomManager = MockSyncRoomManager();
     lifecycleCoordinator = MockSyncLifecycleCoordinator();
+    // Mocks above (MatrixSessionManager / SyncRoomManager /
+    // SyncLifecycleCoordinator) come from the centralized test/mocks/mocks.dart.
     loggingService = MockDomainLogger();
 
     engine = SyncEngine(
@@ -128,7 +121,7 @@ void main() {
   });
 
   test('diagnostics aggregates engine state and logs when requested', () async {
-    final client = MockClient();
+    final client = MockMatrixClient();
     final room = MockRoom();
     final summary = MockRoomSummary();
 
@@ -186,7 +179,7 @@ void main() {
 
   test(
     'connectWithLifecycleOption background lifecycle logs errors',
-    () async {
+    () {
       when(
         () => sessionManager.connect(
           shouldAttemptLogin: any(named: 'shouldAttemptLogin'),
@@ -206,24 +199,32 @@ void main() {
         ),
       ).thenAnswer((_) async {});
 
-      final result = await engine.connectWithLifecycleOption(
-        shouldAttemptLogin: true,
-        waitForLifecycle: false,
-      );
+      fakeAsync((async) {
+        bool? result;
+        unawaited(
+          engine
+              .connectWithLifecycleOption(
+                shouldAttemptLogin: true,
+                waitForLifecycle: false,
+              )
+              .then((value) => result = value),
+        );
 
-      expect(result, isTrue);
+        // Drain the connect future and the fire-and-forget background lifecycle
+        // closure, both of which complete via microtasks.
+        async.flushMicrotasks();
 
-      // Allow the background future to complete
-      await Future<void>.delayed(Duration.zero);
+        expect(result, isTrue);
 
-      verify(
-        () => loggingService.error(
-          LogDomain.sync,
-          any<Object>(),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          subDomain: 'connect.backgroundLifecycle',
-        ),
-      ).called(1);
+        verify(
+          () => loggingService.error(
+            LogDomain.sync,
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'connect.backgroundLifecycle',
+          ),
+        ).called(1);
+      });
     },
   );
 

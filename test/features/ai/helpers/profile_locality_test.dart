@@ -1,9 +1,164 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/helpers/profile_locality.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+
+/// The local-only provider types, mirroring
+/// `PromptCapabilityFilter.isLocalOnlyProviderType`. Used by the Glados
+/// scenario to decide the expected `profileIsLocal` result independently of
+/// the implementation under test.
+const _localProviderTypes = <InferenceProviderType>{
+  InferenceProviderType.whisper,
+  InferenceProviderType.ollama,
+  InferenceProviderType.voxtral,
+  InferenceProviderType.mlxAudio,
+};
+
+/// One generated profile slot. Drives both how the repo snapshots are stubbed
+/// and how the expected `profileIsLocal` result is computed, so the property
+/// never re-derives expectations from the implementation.
+enum _SlotShape {
+  /// Slot is left null (skipped entirely; never looked up).
+  unset,
+
+  /// Slot resolves model + provider, provider type is local → stays local.
+  localResolved,
+
+  /// Slot resolves model + provider, provider type is cloud → flips to false.
+  cloudResolved,
+
+  /// Slot references a model id with no model row → fail closed (false).
+  missingModel,
+
+  /// Slot resolves a model but its provider config is absent → false.
+  missingProvider,
+}
+
+/// A generated [profileIsLocal] scenario: one shape per slot plus the concrete
+/// provider type chosen for resolved slots. The thinking slot is mandatory and
+/// is never [_SlotShape.unset].
+class _ProfileLocalityScenario {
+  const _ProfileLocalityScenario({
+    required this.shapes,
+    required this.providerTypes,
+  });
+
+  /// One entry per slot index, in the fixed order:
+  /// thinking, thinkingHighEnd, imageRecognition, transcription, imageGeneration.
+  final List<_SlotShape> shapes;
+
+  /// Provider type chosen for each slot when its shape resolves a provider.
+  /// Ignored for unset / missingModel / missingProvider slots.
+  final List<InferenceProviderType> providerTypes;
+
+  static const slotCount = 5;
+
+  /// Model id assigned to a populated slot at [index].
+  String _modelIdFor(int index) => 'model-$index';
+
+  /// Provider id assigned to a populated slot at [index].
+  String _providerIdFor(int index) => 'provider-$index';
+
+  /// The model id stored in each profile slot (null for unset slots).
+  List<String?> get slotModelIds => [
+    for (var i = 0; i < slotCount; i++)
+      shapes[i] == _SlotShape.unset ? null : _modelIdFor(i),
+  ];
+
+  /// Model rows the repo should return for this scenario. A `missingModel`
+  /// slot contributes no row, so the lookup fails closed.
+  List<AiConfigModel> get modelRows => [
+    for (var i = 0; i < slotCount; i++)
+      if (shapes[i] != _SlotShape.unset && shapes[i] != _SlotShape.missingModel)
+        _model(
+          id: _modelIdFor(i),
+          providerModelId: _modelIdFor(i),
+          inferenceProviderId: _providerIdFor(i),
+        ),
+  ];
+
+  /// Provider rows the repo should return. A `missingProvider` slot contributes
+  /// no provider row even though its model resolves.
+  List<AiConfigInferenceProvider> get providerRows => [
+    for (var i = 0; i < slotCount; i++)
+      if (shapes[i] == _SlotShape.localResolved ||
+          shapes[i] == _SlotShape.cloudResolved)
+        _provider(id: _providerIdFor(i), type: providerTypes[i]),
+  ];
+
+  /// The expected `profileIsLocal` result, derived purely from the shapes:
+  /// every populated slot must be a locally-resolved local-type provider.
+  bool get expectedIsLocal {
+    for (var i = 0; i < slotCount; i++) {
+      switch (shapes[i]) {
+        case _SlotShape.unset:
+          continue;
+        case _SlotShape.cloudResolved:
+        case _SlotShape.missingModel:
+        case _SlotShape.missingProvider:
+          return false;
+        case _SlotShape.localResolved:
+          if (!_localProviderTypes.contains(providerTypes[i])) return false;
+      }
+    }
+    return true;
+  }
+
+  AiConfigInferenceProfile get profile {
+    final ids = slotModelIds;
+    return _profile(
+      thinkingModelId: ids[0]!,
+      thinkingHighEndModelId: ids[1],
+      imageRecognitionModelId: ids[2],
+      transcriptionModelId: ids[3],
+      imageGenerationModelId: ids[4],
+    );
+  }
+
+  @override
+  String toString() =>
+      '_ProfileLocalityScenario(shapes: $shapes, providerTypes: $providerTypes)';
+}
+
+extension _AnyProfileLocalityScenario on glados.Any {
+  glados.Generator<_SlotShape> get slotShape =>
+      glados.AnyUtils(this).choose(_SlotShape.values);
+
+  glados.Generator<InferenceProviderType> get inferenceProviderType =>
+      glados.AnyUtils(this).choose(InferenceProviderType.values);
+
+  glados.Generator<_ProfileLocalityScenario> get profileLocalityScenario {
+    final shapesGen = glados.ListAnys(this).listWithLength(
+      _ProfileLocalityScenario.slotCount,
+      slotShape,
+    );
+    final typesGen = glados.ListAnys(this).listWithLength(
+      _ProfileLocalityScenario.slotCount,
+      inferenceProviderType,
+    );
+    return glados.CombinableAny(this).combine2(
+      shapesGen,
+      typesGen,
+      (List<_SlotShape> shapes, List<InferenceProviderType> types) {
+        // The thinking slot is mandatory; never leave it unset.
+        final fixedShapes = [
+          if (shapes[0] == _SlotShape.unset)
+            _SlotShape.localResolved
+          else
+            shapes[0],
+          ...shapes.skip(1),
+        ];
+        return _ProfileLocalityScenario(
+          shapes: fixedShapes,
+          providerTypes: types,
+        );
+      },
+    );
+  }
+}
 
 AiConfigInferenceProfile _profile({
   String id = 'profile-1',
@@ -372,6 +527,39 @@ void main() {
 
         expect(await profileIsLocal(_profile(), repo), isFalse);
       },
+    );
+  });
+
+  group('profileIsLocal — Glados property', () {
+    glados.Glados(
+      glados.any.profileLocalityScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'is local iff every populated slot resolves to a local-type provider; '
+      'any unresolved model or provider fails closed',
+      (scenario) async {
+        final scopedRepo = MockAiConfigRepository();
+        final modelRows = scenario.modelRows;
+        final providerRows = scenario.providerRows;
+        when(
+          () => scopedRepo.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => modelRows);
+        when(
+          () => scopedRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => providerRows);
+
+        final result = await profileIsLocal(scenario.profile, scopedRepo);
+
+        expect(
+          result,
+          scenario.expectedIsLocal,
+          reason: 'scenario=$scenario',
+        );
+        // Lookups are always batch-fetched (deduped via Set internally),
+        // never per-slot via getConfigById.
+        verifyNever(() => scopedRepo.getConfigById(any()));
+      },
+      tags: 'glados',
     );
   });
 }

@@ -2,18 +2,12 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/config.dart';
-import 'package:lotti/features/sync/gateway/matrix_sync_gateway.dart';
 import 'package:lotti/features/sync/matrix/config.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/session_manager.dart';
-import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockMatrixSyncGateway extends Mock implements MatrixSyncGateway {}
-
-class MockSyncRoomManager extends Mock implements SyncRoomManager {}
 
 void main() {
   late MockSecureStorage mockSecureStorage;

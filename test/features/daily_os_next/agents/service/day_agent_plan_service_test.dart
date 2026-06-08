@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -596,6 +597,123 @@ void main() {
       },
     );
 
+    test(
+      'summarizeRecentPatterns with lookbackDays 1 only counts today and '
+      'reports no yesterday plan',
+      () async {
+        // Today is in-window, yesterday falls outside the single-day window.
+        seedPlanEntity(
+          blocks: [
+            PlannedBlock(
+              id: 'block-today',
+              categoryId: 'work',
+              startTime: DateTime(2026, 5, 25, 9),
+              endTime: DateTime(2026, 5, 25, 11),
+              title: 'Today work',
+              reason: 'Focus.',
+            ),
+          ],
+          capacityMinutes: 480,
+        );
+        final yesterday = AgentDomainEntity.dayPlan(
+          id: 'day_agent_plan:dayplan-2026-05-24',
+          agentId: _agentId,
+          dayId: 'dayplan-2026-05-24',
+          planDate: DateTime(2026, 5, 24),
+          data: DayPlanData(
+            planDate: DateTime(2026, 5, 24),
+            status: const DayPlanStatus.draft(),
+          ),
+          createdAt: DateTime(2026, 5, 24, 8),
+          updatedAt: DateTime(2026, 5, 24, 8),
+          vectorClock: null,
+        );
+        agentEntities[yesterday.id] = yesterday;
+
+        final cards = await createService().summarizeRecentPatterns(
+          agentId: _agentId,
+          asOf: DateTime(2026, 5, 25),
+          lookbackDays: 1,
+        );
+
+        // Yesterday's plan is outside the 1-day window, so the yesterday card
+        // reports the empty-baseline copy.
+        expect(cards.first.id, 'yesterday');
+        expect(
+          cards.first.summary,
+          contains('No drafted day plan was recorded yesterday'),
+        );
+        // Only today's single draft is inside the window.
+        expect(cards[1].summary, contains('1 draft(s) in the last 1 day(s)'));
+      },
+    );
+
+    test(
+      'summarizeRecentPatterns includes the plan on the exact window boundary',
+      () async {
+        // With lookbackDays 2 the window is [2026-05-24, 2026-05-25]; the
+        // boundary day (05-24) must be inside the window and surface as the
+        // yesterday card.
+        final boundary = AgentDomainEntity.dayPlan(
+          id: 'day_agent_plan:dayplan-2026-05-24',
+          agentId: _agentId,
+          dayId: 'dayplan-2026-05-24',
+          planDate: DateTime(2026, 5, 24),
+          data: DayPlanData(
+            planDate: DateTime(2026, 5, 24),
+            status: const DayPlanStatus.draft(),
+            plannedBlocks: [
+              PlannedBlock(
+                id: 'block-boundary',
+                categoryId: 'work',
+                startTime: DateTime(2026, 5, 24, 9),
+                endTime: DateTime(2026, 5, 24, 10),
+                title: 'Boundary work',
+                reason: 'Edge case.',
+              ),
+            ],
+          ),
+          scheduledMinutes: 60,
+          createdAt: DateTime(2026, 5, 24, 8),
+          updatedAt: DateTime(2026, 5, 24, 8),
+          vectorClock: null,
+        );
+        agentEntities[boundary.id] = boundary;
+        // A plan one day before the boundary must be excluded.
+        final outsideWindow = AgentDomainEntity.dayPlan(
+          id: 'day_agent_plan:dayplan-2026-05-23',
+          agentId: _agentId,
+          dayId: 'dayplan-2026-05-23',
+          planDate: DateTime(2026, 5, 23),
+          data: DayPlanData(
+            planDate: DateTime(2026, 5, 23),
+            status: const DayPlanStatus.draft(),
+          ),
+          scheduledMinutes: 999,
+          createdAt: DateTime(2026, 5, 23, 8),
+          updatedAt: DateTime(2026, 5, 23, 8),
+          vectorClock: null,
+        );
+        agentEntities[outsideWindow.id] = outsideWindow;
+
+        final cards = await createService().summarizeRecentPatterns(
+          agentId: _agentId,
+          asOf: DateTime(2026, 5, 25),
+          lookbackDays: 2,
+        );
+
+        // The boundary day is yesterday and is in-window.
+        expect(
+          cards.first.summary,
+          contains('1 planned block'),
+        );
+        // Exactly one draft in the window (boundary); the 05-23 plan with
+        // 999 minutes is excluded, so the average reflects only the boundary.
+        expect(cards[1].summary, contains('1 draft(s) in the last 2 day(s)'));
+        expect(cards[1].summary, contains('60 scheduled minute(s)'));
+      },
+    );
+
     test('executeTool rejects fractional integer arguments', () async {
       final result = await createService().executeTool(
         agentId: _agentId,
@@ -727,7 +845,13 @@ void main() {
             captureId: 'capture-other',
             rawBlocks: [_aiBlock()],
           ),
-          throwsA(isA<DayAgentCaptureException>()),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('capture capture-other not found'),
+            ),
+          ),
         );
       },
     );
@@ -750,17 +874,70 @@ void main() {
       );
     });
 
+    test('persistDraftPlan rejects non-positive capacityMinutes', () async {
+      await expectLater(
+        createService().persistDraftPlan(
+          agentId: _agentId,
+          dayId: _dayId,
+          planDate: DateTime(2026, 5, 25),
+          capacityMinutes: 0,
+          rawBlocks: [_aiBlock()],
+        ),
+        throwsA(
+          isA<DayAgentCaptureException>().having(
+            (e) => e.message,
+            'message',
+            contains('capacityMinutes must be greater than zero'),
+          ),
+        ),
+      );
+    });
+
+    test('persistDraftPlan sorts equal-start blocks by id', () async {
+      final plan = await withClock(Clock.fixed(_now), () {
+        return createService().persistDraftPlan(
+          agentId: _agentId,
+          dayId: _dayId,
+          planDate: DateTime(2026, 5, 25),
+          rawBlocks: [
+            _aiBlock(
+              id: 'block-b',
+              start: DateTime(2026, 5, 25, 11),
+              end: DateTime(2026, 5, 25, 12),
+            ),
+            _aiBlock(
+              id: 'block-a',
+              start: DateTime(2026, 5, 25, 11),
+              end: DateTime(2026, 5, 25, 12),
+            ),
+          ],
+        );
+      });
+
+      expect(
+        plan.data.plannedBlocks.map((b) => b.id),
+        ['block-a', 'block-b'],
+      );
+    });
+
     test(
-      'persistDraftPlan sorts equal-start blocks by id and reuses '
-      'existing createdAt',
+      'persistDraftPlan reuses existing createdAt and advances updatedAt '
+      'when re-drafting the same day',
       () async {
         final service = createService();
+        // The block starts well after both clocks below so the re-draft at
+        // `later` doesn't trip the "today's drafted blocks must not start
+        // before current time" guard — this test is about createdAt/updatedAt.
+        Map<String, Object?> lateBlock() => _aiBlock(
+          start: DateTime(2026, 5, 25, 14),
+          end: DateTime(2026, 5, 25, 15),
+        );
         final firstPlan = await withClock(Clock.fixed(_now), () {
           return service.persistDraftPlan(
             agentId: _agentId,
             dayId: _dayId,
             planDate: DateTime(2026, 5, 25),
-            rawBlocks: [_aiBlock()],
+            rawBlocks: [lateBlock()],
           );
         });
 
@@ -770,25 +947,10 @@ void main() {
             agentId: _agentId,
             dayId: _dayId,
             planDate: DateTime(2026, 5, 25),
-            rawBlocks: [
-              _aiBlock(
-                id: 'block-b',
-                start: DateTime(2026, 5, 25, 11),
-                end: DateTime(2026, 5, 25, 12),
-              ),
-              _aiBlock(
-                id: 'block-a',
-                start: DateTime(2026, 5, 25, 11),
-                end: DateTime(2026, 5, 25, 12),
-              ),
-            ],
+            rawBlocks: [lateBlock()],
           );
         });
 
-        expect(
-          secondPlan.data.plannedBlocks.map((b) => b.id),
-          ['block-a', 'block-b'],
-        );
         expect(secondPlan.createdAt, firstPlan.createdAt);
         expect(secondPlan.updatedAt, later);
       },
@@ -851,49 +1013,47 @@ void main() {
       expect(result.output, contains('blocks must be an array'));
     });
 
-    test('executeTool rejects blocks missing required fields', () async {
-      final missingStart = await createService().executeTool(
-        agentId: _agentId,
-        threadId: _threadId,
-        runKey: _runKey,
-        toolName: DayAgentToolNames.draftDayPlan,
-        args: {
-          'dayId': _dayId,
-          'blocks': [
-            {
-              'title': 'No start',
-              'categoryId': 'work',
-              'end': DateTime(2026, 5, 25, 10).toIso8601String(),
-              'type': 'ai',
-              'reason': 'reason',
-            },
-          ],
+    final missingFieldCases = <(String, Map<String, Object?>, String)>[
+      (
+        'missing start',
+        {
+          'title': 'No start',
+          'categoryId': 'work',
+          'end': DateTime(2026, 5, 25, 10).toIso8601String(),
+          'type': 'ai',
+          'reason': 'reason',
         },
-      );
-      expect(missingStart.success, isFalse);
-      expect(missingStart.output, contains('start must be a valid ISO-8601'));
+        'start must be a valid ISO-8601',
+      ),
+      (
+        'missing title',
+        {
+          'categoryId': 'work',
+          'start': DateTime(2026, 5, 25, 9).toIso8601String(),
+          'end': DateTime(2026, 5, 25, 10).toIso8601String(),
+          'type': 'ai',
+          'reason': 'reason',
+        },
+        'title must not be empty',
+      ),
+    ];
+    for (final (label, block, fragment) in missingFieldCases) {
+      test('executeTool rejects block with $label', () async {
+        final result = await createService().executeTool(
+          agentId: _agentId,
+          threadId: _threadId,
+          runKey: _runKey,
+          toolName: DayAgentToolNames.draftDayPlan,
+          args: {
+            'dayId': _dayId,
+            'blocks': [block],
+          },
+        );
 
-      final missingTitle = await createService().executeTool(
-        agentId: _agentId,
-        threadId: _threadId,
-        runKey: _runKey,
-        toolName: DayAgentToolNames.draftDayPlan,
-        args: {
-          'dayId': _dayId,
-          'blocks': [
-            {
-              'categoryId': 'work',
-              'start': DateTime(2026, 5, 25, 9).toIso8601String(),
-              'end': DateTime(2026, 5, 25, 10).toIso8601String(),
-              'type': 'ai',
-              'reason': 'reason',
-            },
-          ],
-        },
-      );
-      expect(missingTitle.success, isFalse);
-      expect(missingTitle.output, contains('title must not be empty'));
-    });
+        expect(result.success, isFalse);
+        expect(result.output, contains(fragment));
+      });
+    }
 
     test('executeTool returns JSON for summarize_recent_patterns', () async {
       final result = await withClock(Clock.fixed(_now), () {
@@ -1507,6 +1667,26 @@ void main() {
               (e) => e.message,
               'message',
               contains('`to` must be an object'),
+            ),
+          ),
+        );
+      });
+
+      test('rejects a change element that is not an object', () async {
+        seedPlan();
+        await expectLater(
+          createService().proposePlanDiff(
+            agentId: _agentId,
+            threadId: _threadId,
+            runKey: _runKey,
+            dayId: _dayId,
+            rawChanges: const ['not-a-map'],
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('change must be an object'),
             ),
           ),
         );
@@ -4085,6 +4265,40 @@ void main() {
         // The agreed branch maps to PlannedBlockState.committed.
         expect(addedBlock.state, PlannedBlockState.committed);
       });
+
+      test(
+        'add_block on a needsReview plan yields a drafted added block '
+        '(orElse branch of _stateForAcceptedAddedBlock)',
+        () async {
+          seedPlanWithStatus(
+            DayPlanStatus.needsReview(
+              triggeredAt: DateTime(2026, 5, 25, 8),
+              reason: DayPlanReviewReason.manualReset,
+            ),
+          );
+          final changeSet = seedChangeSetEntity(
+            id: 'plan_diff:needs-review-test',
+            items: [addBlockItem()],
+          );
+
+          final updated = await withClock(Clock.fixed(_now), () {
+            return createService().acceptPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+            );
+          });
+
+          expect(updated.status, ChangeSetStatus.resolved);
+          final updatedPlan = upsertedEntities
+              .whereType<DayPlanEntity>()
+              .single;
+          final addedBlock = updatedPlan.data.plannedBlocks.singleWhere(
+            (b) => b.title == 'Walk',
+          );
+          // Neither agreed nor committed → orElse maps to drafted.
+          expect(addedBlock.state, PlannedBlockState.drafted);
+        },
+      );
     });
 
     group('deletePlanForDay', () {
@@ -4222,6 +4436,231 @@ void main() {
         expect(upsertedLinks, hasLength(1));
         expect(upsertedLinks.single.fromId, 'capture-live');
       });
+
+      test(
+        'soft-deletes every live inbound link while skipping deleted ones',
+        () async {
+          seedPlan();
+          final liveA = captureLink(captureId: 'capture-live-a');
+          final liveB = captureLink(captureId: 'capture-live-b');
+          final dead = captureLink(
+            captureId: 'capture-dead',
+          ).copyWith(deletedAt: _now);
+          when(
+            () => agentRepository.getLinksTo(
+              any(),
+              type: any(named: 'type'),
+            ),
+          ).thenAnswer((_) async => [liveA, dead, liveB]);
+
+          final removed = await withClock(Clock.fixed(_now), () {
+            return createService().deletePlanForDay(
+              agentId: _agentId,
+              dayId: _dayId,
+            );
+          });
+
+          expect(removed, isTrue);
+          // Both live links are soft-deleted; the pre-deleted one is skipped.
+          expect(
+            upsertedLinks.map((l) => l.fromId),
+            containsAll(<String>['capture-live-a', 'capture-live-b']),
+          );
+          expect(upsertedLinks, hasLength(2));
+          expect(
+            upsertedLinks.map((l) => l.fromId),
+            isNot(contains('capture-dead')),
+          );
+          expect(
+            upsertedLinks.every((l) => l.deletedAt == _now),
+            isTrue,
+          );
+        },
+      );
+    });
+
+    // ── Glados property tests for the pure plan-service helpers ──────────────
+    // These pure functions are library-private (they live in the
+    // `day_agent_plan_*.dart` part files), so the properties are exercised
+    // through the public API where each invariant is observable. Glados runs
+    // the body many times within a single `test(...)`, so each body re-seeds
+    // the state it depends on instead of relying on the shared `setUp`.
+    group('Glados', () {
+      glados.Glados<_LabelScenario>(
+        glados.any.labelScenario,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        '_blankToNull: dayLabel is trimmed, blank-only collapses to null',
+        (scenario) async {
+          final plan = await withClock(Clock.fixed(_now), () {
+            return createService().persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              dayLabel: scenario.label,
+              rawBlocks: [_aiBlock()],
+            );
+          });
+
+          final trimmed = scenario.label.trim();
+          expect(
+            plan.data.dayLabel,
+            trimmed.isEmpty ? isNull : trimmed,
+            reason: '$scenario',
+          );
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados<_CategoryScenario>(
+        glados.any.categoryScenario,
+        glados.ExploreConfig(numRuns: 120),
+      ).test(
+        '_categoryAllowed: empty allow-set permits all, else membership gates',
+        (scenario) async {
+          // Re-seed the identity with this run's allowed-category set.
+          agentEntities[_agentId] = makeTestIdentity(
+            id: _agentId,
+            agentId: _agentId,
+            kind: AgentKinds.dayAgent,
+            allowedCategoryIds: scenario.allowed,
+          );
+
+          Future<DayPlanEntity> attempt() => withClock(Clock.fixed(_now), () {
+            return createService().persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              rawBlocks: [
+                // Use a manual block so the category check is the only gate
+                // (AI blocks additionally require a reason).
+                _aiBlock(categoryId: scenario.categoryId, type: 'manual'),
+              ],
+            );
+          });
+
+          final shouldSucceed =
+              scenario.allowed.isEmpty ||
+              scenario.allowed.contains(scenario.categoryId);
+
+          if (shouldSucceed) {
+            final plan = await attempt();
+            expect(
+              plan.data.plannedBlocks.single.categoryId,
+              scenario.categoryId,
+              reason: '$scenario',
+            );
+          } else {
+            await expectLater(
+              attempt(),
+              throwsA(
+                isA<DayAgentCaptureException>().having(
+                  (e) => e.message,
+                  'message',
+                  contains('is not allowed'),
+                ),
+              ),
+              reason: '$scenario',
+            );
+          }
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados<_SelectScenario>(
+        glados.any.selectScenario,
+        glados.ExploreConfig(numRuns: 140),
+      ).test(
+        '_selectIndices: dedup + range gate revert selection',
+        (scenario) async {
+          seedPlanEntity(blocks: defaultSeedBlocks());
+          final changeSet = seedChangeSetEntity(
+            id: 'plan_diff:glados-select',
+            items: [
+              for (var i = 0; i < scenario.itemCount; i++) dropBlockItem(),
+            ],
+          );
+
+          final inRange = scenario.indices.every(
+            (i) => i >= 0 && i < scenario.itemCount,
+          );
+
+          if (!inRange) {
+            await expectLater(
+              createService().revertPlanDiff(
+                agentId: _agentId,
+                changeSetId: changeSet.id,
+                itemIndices: scenario.indices,
+              ),
+              throwsA(isA<DayAgentCaptureException>()),
+              reason: '$scenario',
+            );
+            return;
+          }
+
+          final updated = await withClock(Clock.fixed(_now), () {
+            return createService().revertPlanDiff(
+              agentId: _agentId,
+              changeSetId: changeSet.id,
+              itemIndices: scenario.indices,
+            );
+          });
+
+          // The dedup'd selection is exactly the set of items flipped to
+          // rejected; everything else stays pending.
+          final expectedRejected = scenario.indices.toSet();
+          final actualRejected = <int>{
+            for (var i = 0; i < updated.items.length; i++)
+              if (updated.items[i].status == ChangeItemStatus.rejected) i,
+          };
+          expect(actualRejected, expectedRejected, reason: '$scenario');
+        },
+        tags: 'glados',
+      );
+
+      glados.Glados<_DurationScenario>(
+        glados.any.durationScenario,
+      ).test(
+        '_scheduledMinutesFor: equals the sum of non-dropped block durations',
+        (scenario) async {
+          // Build sequential non-overlapping blocks within the plan day so
+          // every block is valid. Start at the fixed clock (09:00) so the
+          // today-drafting guard (which rejects drafted blocks starting before
+          // "now") never trips. Dropped blocks must be excluded from the sum.
+          var cursor = _now;
+          final rawBlocks = <Map<String, Object?>>[];
+          for (var i = 0; i < scenario.blocks.length; i++) {
+            final block = scenario.blocks[i];
+            final end = cursor.add(Duration(minutes: block.minutes));
+            final raw = _aiBlock(
+              id: 'block-$i',
+              type: 'manual',
+              start: cursor,
+              end: end,
+            );
+            if (block.dropped) {
+              raw['state'] = PlannedBlockState.dropped.name;
+            }
+            rawBlocks.add(raw);
+            cursor = end;
+          }
+
+          final plan = await withClock(Clock.fixed(_now), () {
+            return createService().persistDraftPlan(
+              agentId: _agentId,
+              dayId: _dayId,
+              planDate: DateTime(2026, 5, 25),
+              rawBlocks: rawBlocks,
+            );
+          });
+
+          final expected = scenario.blocks
+              .where((b) => !b.dropped)
+              .fold<int>(0, (sum, b) => sum + b.minutes);
+          expect(plan.scheduledMinutes, expected, reason: '$scenario');
+        },
+        tags: 'glados',
+      );
     });
   });
 }
@@ -4302,4 +4741,115 @@ Map<String, Object?> _aiBlock({
     block['reason'] = reason;
   }
   return block;
+}
+
+// ── Glados scenarios + generators ──────────────────────────────────────────
+
+/// A `dayLabel` candidate: a payload (possibly empty) wrapped in optional
+/// leading/trailing whitespace, used to drive `_blankToNull` through
+/// `persistDraftPlan`.
+class _LabelScenario {
+  const _LabelScenario(this.label);
+
+  final String label;
+
+  @override
+  String toString() => '_LabelScenario(${jsonEncode(label)})';
+}
+
+/// An `(allowedCategoryIds, categoryId)` pair used to drive `_categoryAllowed`
+/// through `persistDraftPlan`. Tokens are drawn from a small non-blank pool so
+/// overlap and foreign-category cases are both common.
+class _CategoryScenario {
+  const _CategoryScenario(this.allowed, this.categoryId);
+
+  final Set<String> allowed;
+  final String categoryId;
+
+  @override
+  String toString() =>
+      '_CategoryScenario(allowed: $allowed, categoryId: $categoryId)';
+}
+
+/// An `(itemCount, indices)` pair used to drive `_selectIndices` through
+/// `revertPlanDiff`. `indices` may contain duplicates, negatives, and
+/// out-of-range values.
+class _SelectScenario {
+  const _SelectScenario(this.itemCount, this.indices);
+
+  final int itemCount;
+  final List<int> indices;
+
+  @override
+  String toString() =>
+      '_SelectScenario(itemCount: $itemCount, indices: $indices)';
+}
+
+/// A single block spec: its duration in minutes and whether it is dropped.
+class _BlockSpec {
+  const _BlockSpec(this.minutes, {required this.dropped});
+
+  final int minutes;
+  final bool dropped;
+
+  @override
+  String toString() => '${dropped ? 'dropped' : 'live'}($minutes)';
+}
+
+/// A list of block specs used to drive `_scheduledMinutesFor` through
+/// `persistDraftPlan`. Dropped blocks must not contribute to the total.
+class _DurationScenario {
+  const _DurationScenario(this.blocks);
+
+  final List<_BlockSpec> blocks;
+
+  @override
+  String toString() => '_DurationScenario($blocks)';
+}
+
+// Glados is imported with a prefix, so its `Any` extension members must be
+// invoked through their explicit extension classes (mirrors the pattern in
+// `test/utils/sort_test.dart`). `.map`/`.bind` on the resulting `Generator`
+// resolve directly.
+extension _AnyDayAgentPlan on glados.Any {
+  glados.Generator<_LabelScenario> get labelScenario =>
+      glados.CombinableAny(this).combine3(
+        glados.AnyUtils(this).choose(const ['', ' ', '  ', '\n']),
+        glados.AnyUtils(this).choose(const ['', 'Plan', 'Focus day', 'a']),
+        glados.AnyUtils(this).choose(const ['', ' ', '\t']),
+        (String lead, String body, String trail) =>
+            _LabelScenario('$lead$body$trail'),
+      );
+
+  glados.Generator<_CategoryScenario> get categoryScenario =>
+      glados.CombinableAny(this).combine2(
+        glados.SetAyns(
+          this,
+        ).set(glados.AnyUtils(this).choose(const ['cat-a', 'cat-b', 'cat-c'])),
+        glados.AnyUtils(
+          this,
+        ).choose(const ['cat-a', 'cat-b', 'cat-c', 'cat-d']),
+        _CategoryScenario.new,
+      );
+
+  glados.Generator<_SelectScenario> get selectScenario => glados.IntAnys(this)
+      .intInRange(1, 6)
+      .bind(
+        (int itemCount) => glados.ListAnys(this)
+            .list(glados.IntAnys(this).intInRange(-2, itemCount + 2))
+            .map(
+              (List<int> indices) => _SelectScenario(itemCount, indices),
+            ),
+      );
+
+  glados.Generator<_BlockSpec> get blockSpec =>
+      glados.CombinableAny(this).combine2(
+        glados.IntAnys(this).intInRange(1, 121),
+        glados.BoolAny(this).bool,
+        (int minutes, bool dropped) => _BlockSpec(minutes, dropped: dropped),
+      );
+
+  glados.Generator<_DurationScenario> get durationScenario => glados.ListAnys(
+    this,
+  ).listWithLengthInRange(1, 6, blockSpec).map(_DurationScenario.new);
 }

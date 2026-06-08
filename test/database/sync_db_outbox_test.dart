@@ -133,10 +133,13 @@ void main() {
   SyncDatabase? db;
 
   group('Outbox queue - ', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -1313,11 +1316,13 @@ void main() {
   group('markOutboxItemsSent edge cases - ', () {
     late SyncDatabase database;
 
-    setUp(() {
+    setUpAll(() async {
       database = SyncDatabase(inMemoryDatabase: true);
     });
-
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(database);
+    });
+    tearDownAll(() async {
       await database.close();
     });
 
@@ -1370,11 +1375,13 @@ void main() {
   group('Outbox Polling Ordering - ', () {
     late SyncDatabase database;
 
-    setUp(() async {
+    setUpAll(() async {
       database = SyncDatabase(inMemoryDatabase: true);
     });
-
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(database);
+    });
+    tearDownAll(() async {
       await database.close();
     });
 
@@ -1619,10 +1626,13 @@ void main() {
   group('getOutboxItems -', () {
     late SyncDatabase database;
 
-    setUp(() async {
+    setUpAll(() async {
       database = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(database);
+    });
+    tearDownAll(() async {
       await database.close();
     });
 

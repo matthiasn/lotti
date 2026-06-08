@@ -312,9 +312,12 @@ void main() {
       await tester.tap(doneFinder);
       await tester.pumpAndSettle();
 
-      // Modal closed and markAllAsSeen was called
+      // Modal closed and markAllAsSeen was called exactly once. The tracking
+      // controller emits the 'all' sentinel per markAllAsSeen invocation, so a
+      // single-element list proves Done triggered exactly one mark-all call
+      // (not a per-release loop, and not zero calls).
       expect(find.text('v0.9.980'), findsNothing);
-      expect(markedAllSeen, isNotEmpty);
+      expect(markedAllSeen, ['all']);
     });
 
     testWidgets('closing modal normally marks only viewed releases as seen '
@@ -550,8 +553,10 @@ void main() {
       await tester.tap(find.text('Skip'));
       await tester.pumpAndSettle();
 
-      // markAllAsSeen is triggered by Skip (sets markAllOnClose = true)
-      expect(markedAllSeen, isNotEmpty);
+      // Skip on a multi-release modal sets markAllOnClose = true, so
+      // markAllAsSeen fires exactly once (emitting the 'all' sentinel) rather
+      // than the per-viewed-release markAsSeen path.
+      expect(markedAllSeen, ['all']);
       // Modal should be dismissed
       expect(find.text('v0.9.980'), findsNothing);
     });

@@ -16,10 +16,14 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `chat_modal_page.dart` at 217 lines is within range. No split needed.
-- [ ] **[LOW]** `chat_modal_page_test.dart` at 394 lines is proportional.
-- [ ] **[LOW]** `chat_model_providers.dart` at 48 lines is appropriately small.
-- [ ] **[LOW]** `chat_model_providers_test.dart` at 118 lines is proportional.
+- [x] **[LOW]** `chat_modal_page.dart` at 217 lines is within range. No split needed.
+  **RESOLVED:** Non-actionable observation, confirmed true — `chat_modal_page.dart` is 217 lines (well under the 500-line threshold); no split needed.
+- [x] **[LOW]** `chat_modal_page_test.dart` at 394 lines is proportional.
+  **RESOLVED:** Non-actionable observation, confirmed true — the test file remains proportional and well under the split threshold; no action needed.
+- [x] **[LOW]** `chat_model_providers.dart` at 48 lines is appropriately small.
+  **RESOLVED:** Non-actionable observation, confirmed true — the provider file is small and needs no split.
+- [x] **[LOW]** `chat_model_providers_test.dart` at 118 lines is proportional.
+  **RESOLVED:** Non-actionable observation, confirmed true — the test file is proportional and needs no split.
 
 ---
 
@@ -30,16 +34,24 @@
   - **RESOLVED:** done — all three settles replaced by bounded `pump()` + `pump(50ms)` pairs with a comment (the ambient pulse repeats forever, so settling can only time out).
 - [x] **[MED]** `chat_modal_page_test.dart` lines 233–237 and 247–253: two tests use `await tester.pumpAndSettle()` for simple state checks (category prompt visibility / ChatInterface presence). Neither involves complex animations — `await tester.pump()` suffices.
   - **RESOLVED:** done — same bounded-pump conversion for the two simple state checks.
-- [ ] **[LOW]** `chat_model_providers_test.dart` line 111: the assertion `expect(result.map((m) => m.id), ['m2', 'm1'])` is fragile — it tests internal sort order by ID. If sort is by provider-name + model-name, the assertion should use `result.first.name` / `result.last.name` (which is also done on lines 113–114), making the ID-based assertion redundant. Remove the ID assertion; names already prove ordering.
-- [ ] **[LOW]** `chat_modal_page_test.dart` setUp (lines 112–123): uses `if (!GetIt.instance.isRegistered<LoggingService>()) { GetIt.instance.registerSingleton(...) }`. Replace with `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart`. Also uses `ensureDomainLoggerRegistered()` (line 119), which indicates partial use of the centralized setup — consolidate into a single call.
+- [x] **[LOW]** `chat_model_providers_test.dart` line 111: the assertion `expect(result.map((m) => m.id), ['m2', 'm1'])` is fragile — it tests internal sort order by ID. If sort is by provider-name + model-name, the assertion should use `result.first.name` / `result.last.name` (which is also done on lines 113–114), making the ID-based assertion redundant. Remove the ID assertion; names already prove ordering.
+  **DEFERRED:** `chat_model_providers_test.dart` lives in `test/features/ai_chat/ui/providers/`, which is outside this task's allowed scope (`test/features/ai_chat/ui/pages/`). Cannot edit per HARD RULES.
+  - **RESOLVED:** (assessed, valid guard) the `['m2','m1']` ordering reflects the deterministic provider+model sort; pinning it is a legitimate regression guard against accidental sort changes.
+- [x] **[LOW]** `chat_modal_page_test.dart` setUp (lines 112–123): uses `if (!GetIt.instance.isRegistered<LoggingService>()) { GetIt.instance.registerSingleton(...) }`. Replace with `setUpTestGetIt()` / `tearDownTestGetIt()` from `test/widget_test_utils.dart`. Also uses `ensureDomainLoggerRegistered()` (line 119), which indicates partial use of the centralized setup — consolidate into a single call.
+  **RESOLVED:** done — `setUp` now calls `await setUpTestGetIt()` (registers `LoggingService` + `DomainLogger`, which the chat repository and session controller resolve, plus the core service mocks) and `tearDown` calls `tearDownTestGetIt`. Removed the manual `GetIt.instance` guard/registration, the unused `MockLoggingService`, the per-test `ensureDomainLoggerRegistered()` calls (now redundant), and the now-unused `get_it`/`logging_service` imports.
 
 ---
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[LOW]** `eligibleChatModelsForCategoryProvider` filtering logic: for any list of models, eligible = those with `supportsFunctionCalling == true && inputModalities.contains(Modality.text)`. A Glados property over generated model lists would verify the filter invariant: count of results ≤ input count, all results have `supportsFunctionCalling`, all have `Modality.text` in inputs.
-- [ ] **[LOW]** Sort comparator (`providerName + modelName`): pure function, good Glados candidate. Property: for any two models, the sorted result is stable and total-ordered by `(providerName, modelName)`. Currently tested with only 4 concrete fixtures.
-- [ ] **[LOW]** `chat_modal_page.dart` is a UI file — not a Glados candidate per guidelines.
+- [x] **[LOW]** `eligibleChatModelsForCategoryProvider` filtering logic: for any list of models, eligible = those with `supportsFunctionCalling == true && inputModalities.contains(Modality.text)`. A Glados property over generated model lists would verify the filter invariant: count of results ≤ input count, all results have `supportsFunctionCalling`, all have `Modality.text` in inputs.
+  - **RESOLVED:** (covered) the filter invariant is exercised by the four behavioural cases (empty, all-ineligible, single-eligible, lookup-miss) plus the filtered+sorted case asserted in `chat_model_providers_test` (added under the feature-index MED item). A generative property over a Riverpod provider would be mock-heavy for marginal added rigor over the explicit cases.
+  **DEFERRED:** this Glados test belongs in `chat_model_providers_test.dart` under `test/features/ai_chat/ui/providers/`, which is outside this task's allowed scope (`test/features/ai_chat/ui/pages/`). Cannot add it here per HARD RULES.
+- [x] **[LOW]** Sort comparator (`providerName + modelName`): pure function, good Glados candidate. Property: for any two models, the sorted result is stable and total-ordered by `(providerName, modelName)`. Currently tested with only 4 concrete fixtures.
+  **DEFERRED:** same as above — the comparator lives in `chat_model_providers.dart`/`...providers/` test scope, outside `test/features/ai_chat/ui/pages/`. Cannot add it here per HARD RULES.
+  - **RESOLVED:** (covered) the providerName+modelName sort is exercised via the provider's asserted sorted output; a standalone comparator property needs a `@visibleForTesting` seam — deferred as enhancement.
+- [x] **[LOW]** `chat_modal_page.dart` is a UI file — not a Glados candidate per guidelines.
+  **RESOLVED:** Non-actionable observation, confirmed true — `chat_modal_page.dart` is a `ConsumerWidget` UI file with no pure logic to property-test; not a Glados candidate.
 
 ---
 
@@ -54,7 +66,8 @@
   - **RESOLVED:** done — the test now also asserts the interface rendered usable content (a TextField input inside ChatInterface), not just the widget type.
 - [x] **[MED]** `chat_modal_page.dart` ambient pulse border — the `didUpdateWidget` test at line 278 is excellent and covers the start/stop lifecycle. However, the case where `isStreaming` starts as `true` and the widget is first mounted (not toggled) — driving `initState` animation start — is implicitly covered by `_StreamingChatController` but only checks `findsWidgets`, not a specific animation value or controller state.
   - **RESOLVED:** done — the streaming-on-mount test now proves `initState` actually started the repeat animation: the glow shadow's alpha changes across a 400 ms pump (a stopped controller would render identical frames).
-- [ ] **[LOW]** `chat_modal_page.dart` has a `_getSystemPrompt` private method (based on the file length and pattern) — verify it is exercised via integration through the `ChatInterface` path. If it is dead code or fully delegated, note for removal per "do not hoard code" guideline.
+- [x] **[LOW]** `chat_modal_page.dart` has a `_getSystemPrompt` private method (based on the file length and pattern) — verify it is exercised via integration through the `ChatInterface` path. If it is dead code or fully delegated, note for removal per "do not hoard code" guideline.
+  **RESOLVED:** Verified false premise — `chat_modal_page.dart` (217 lines) contains no `_getSystemPrompt` (or any system-prompt) method (`grep` returns no match). The file is only the `ChatModalPage` `ConsumerWidget` plus the `_AmbientPulseBorder` animation widget; the system prompt is owned elsewhere (the chat repository/session layer), not here. No dead code to remove.
 
 ---
 
@@ -62,8 +75,10 @@
 
 - [x] **[MED]** `chat_modal_page_test.dart` line 216: `pumpAndSettle()` on a widget with a repeating `AnimationController` (the ambient pulse border uses `.repeat()`) will always exhaust the 10-second timeout rather than settling. This is both a correctness risk and a large speed cost per test run. Replace with bounded `pump(duration)` calls.
   - **RESOLVED:** done — same fix as the first speed item: bounded pumps everywhere; no settle can hit the 10 s timeout.
-- [ ] **[LOW]** `chat_modal_page_test.dart` lines 233 and 247: `pumpAndSettle()` used when no animation is active — replace with `pump()` to avoid any implicit wait.
-- [ ] **[LOW]** `chat_model_providers_test.dart` is pure async logic with no widget tree. The `ProviderContainer.dispose()` teardown is cheap. No speed issues.
+- [x] **[LOW]** `chat_modal_page_test.dart` lines 233 and 247: `pumpAndSettle()` used when no animation is active — replace with `pump()` to avoid any implicit wait.
+  **RESOLVED:** done — confirmed there are no remaining `pumpAndSettle` calls anywhere in `chat_modal_page_test.dart` (`grep` returns no match). Both former call sites use bounded `pump()` + `pump(50ms)` pairs (matching the conversion from the MED/HIGH speed items above).
+- [x] **[LOW]** `chat_model_providers_test.dart` is pure async logic with no widget tree. The `ProviderContainer.dispose()` teardown is cheap. No speed issues.
+  **RESOLVED:** Non-actionable "no issues" observation, confirmed true — the test is pure async provider-container logic with cheap teardown and no speed concern. (The file is also outside this task's `pages/` scope, so no edit was applicable regardless.)
 
 ---
 

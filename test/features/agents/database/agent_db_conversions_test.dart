@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:drift/drift.dart';
+import 'package:drift/drift.dart' hide isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
@@ -1119,9 +1119,45 @@ void main() {
 
       final result = AgentDbConversions.fromEntityRow(row);
       expect(result, isA<AgentTemplateHeadEntity>());
+      // Assert the full field set, not just versionId/agentId — id, updatedAt
+      // and the (here-absent) deletedAt must all survive the round-trip.
+      expect(result, equals(entity));
       final head = result as AgentTemplateHeadEntity;
+      expect(head.id, 'head-002');
       expect(head.versionId, 'ver-003');
       expect(head.agentId, 'tpl-001');
+      expect(head.updatedAt, updatedAt);
+      expect(head.deletedAt, isNull);
+    });
+
+    test('fromEntityRow roundtrips a soft-deleted agentTemplateHead', () {
+      // deletedAt lives inside the serialized JSON blob (not the row column),
+      // so a head tombstone must survive companion serialisation + decode.
+      final deletedAt = updatedAt.add(const Duration(hours: 2));
+      final entity = AgentDomainEntity.agentTemplateHead(
+        id: 'head-003',
+        agentId: 'tpl-001',
+        versionId: 'ver-004',
+        updatedAt: updatedAt,
+        vectorClock: null,
+        deletedAt: deletedAt,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'head-003',
+        agentId: 'tpl-001',
+        type: 'agentTemplateHead',
+        createdAt: updatedAt,
+        updatedAt: updatedAt,
+        deletedAt: deletedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, equals(entity));
+      expect((result as AgentTemplateHeadEntity).deletedAt, deletedAt);
     });
   });
 
@@ -1603,9 +1639,42 @@ void main() {
 
       final result = AgentDbConversions.fromEntityRow(row);
       expect(result, isA<SoulDocumentHeadEntity>());
+      // Full field set, not just versionId/agentId.
+      expect(result, equals(entity));
       final head = result as SoulDocumentHeadEntity;
+      expect(head.id, 'sh-002');
       expect(head.versionId, 'sv-003');
       expect(head.agentId, 'soul-001');
+      expect(head.updatedAt, updatedAt);
+      expect(head.deletedAt, isNull);
+    });
+
+    test('fromEntityRow roundtrips a soft-deleted soulDocumentHead', () {
+      final deletedAt = updatedAt.add(const Duration(hours: 2));
+      final entity = AgentDomainEntity.soulDocumentHead(
+        id: 'sh-003',
+        agentId: 'soul-001',
+        versionId: 'sv-004',
+        updatedAt: updatedAt,
+        vectorClock: null,
+        deletedAt: deletedAt,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+
+      final row = AgentEntity(
+        id: 'sh-003',
+        agentId: 'soul-001',
+        type: 'soulDocumentHead',
+        createdAt: updatedAt,
+        updatedAt: updatedAt,
+        deletedAt: deletedAt,
+        serialized: companion.serialized.value,
+        schemaVersion: 1,
+      );
+
+      final result = AgentDbConversions.fromEntityRow(row);
+      expect(result, equals(entity));
+      expect((result as SoulDocumentHeadEntity).deletedAt, deletedAt);
     });
   });
 

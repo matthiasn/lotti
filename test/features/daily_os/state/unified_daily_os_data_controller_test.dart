@@ -12,6 +12,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/daily_os/repository/day_plan_repository.dart';
 import 'package:lotti/features/daily_os/state/time_budget_progress_controller.dart';
+import 'package:lotti/features/daily_os/state/timeline_data_controller.dart';
 import 'package:lotti/features/daily_os/state/unified_daily_os_data_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -80,30 +81,36 @@ void main() {
   JournalEntity createTestTask({
     required String id,
     required String? categoryId,
-    required DateTime dateFrom,
-    required DateTime dateTo,
+    DateTime? dateFrom,
+    DateTime? dateTo,
     String title = 'Test Task',
     TaskStatus? status,
+    DateTime? due,
+    TaskPriority priority = TaskPriority.p2Medium,
   }) {
+    final from = dateFrom ?? testDate;
+    final to = dateTo ?? testDate;
     return JournalEntity.task(
       meta: Metadata(
         id: id,
-        createdAt: dateFrom,
-        updatedAt: dateFrom,
-        dateFrom: dateFrom,
-        dateTo: dateTo,
+        createdAt: from,
+        updatedAt: from,
+        dateFrom: from,
+        dateTo: to,
         categoryId: categoryId,
       ),
       data: TaskData(
         title: title,
-        dateFrom: dateFrom,
-        dateTo: dateTo,
+        dateFrom: from,
+        dateTo: to,
+        due: due,
+        priority: priority,
         statusHistory: [],
         status:
             status ??
             TaskStatus.inProgress(
               id: 'status-1',
-              createdAt: dateFrom,
+              createdAt: from,
               utcOffset: 0,
             ),
       ),
@@ -467,6 +474,71 @@ void main() {
       );
       expect(progress.contributingEntries.length, equals(2));
     });
+
+    test(
+      'deduplicates overlapping entries via union, not naive sum',
+      () async {
+        // Two entries in the same category whose ranges overlap. A naive sum
+        // would double-count the overlap; the union must only count the
+        // covered wall-clock span once. This exercises the `_sumDurations`
+        // overlap path (entries.length > 1 -> calculateUnionDuration).
+        final plan = createTestPlan(
+          plannedBlocks: [
+            PlannedBlock(
+              id: 'block-1',
+              categoryId: 'cat-work',
+              startTime: testDate.add(const Duration(hours: 9)),
+              endTime: testDate.add(const Duration(hours: 12)), // 3 hours
+            ),
+          ],
+        );
+        when(
+          () => mockDayPlanRepository.getDayPlan(testDate),
+        ).thenAnswer((_) async => plan);
+
+        // Outer 10:00-11:30 (1.5h) fully contains inner 10:30-11:15 (45m).
+        // Naive sum = 2h15m; union = 1h30m (10:00-11:30).
+        final entries = [
+          createTestEntry(
+            id: 'entry-outer',
+            categoryId: 'cat-work',
+            dateFrom: testDate.add(const Duration(hours: 10)),
+            dateTo: testDate.add(const Duration(hours: 11, minutes: 30)),
+          ),
+          createTestEntry(
+            id: 'entry-inner',
+            categoryId: 'cat-work',
+            dateFrom: testDate.add(const Duration(hours: 10, minutes: 30)),
+            dateTo: testDate.add(const Duration(hours: 11, minutes: 15)),
+          ),
+        ];
+
+        when(
+          () => mockDb.sortedCalendarEntries(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer((_) async => entries);
+
+        final result = await container.read(
+          unifiedDailyOsDataControllerProvider(date: testDate).future,
+        );
+
+        final progress = result.budgetProgress.first;
+        // Union of the two ranges: 10:00 - 11:30 = 90 minutes.
+        expect(
+          progress.recordedDuration,
+          equals(const Duration(hours: 1, minutes: 30)),
+        );
+        // Both entries are still attributed to the category...
+        expect(progress.contributingEntries.length, equals(2));
+        // ...but the overlap is not double-counted (naive sum would be 2h15m).
+        expect(
+          progress.recordedDuration,
+          lessThan(const Duration(hours: 2, minutes: 15)),
+        );
+      },
+    );
 
     test('aggregates multiple blocks for same category', () async {
       final plan = createTestPlan(
@@ -1914,41 +1986,6 @@ void main() {
   });
 
   group('UnifiedDailyOsDataController - Due Task Visibility', () {
-    JournalEntity createDueTask({
-      required String id,
-      required String? categoryId,
-      required DateTime? dueDate,
-      String title = 'Due Task',
-      TaskStatus? status,
-      TaskPriority priority = TaskPriority.p2Medium,
-    }) {
-      return JournalEntity.task(
-        meta: Metadata(
-          id: id,
-          createdAt: testDate,
-          updatedAt: testDate,
-          dateFrom: testDate,
-          dateTo: testDate,
-          categoryId: categoryId,
-        ),
-        data: TaskData(
-          title: title,
-          dateFrom: testDate,
-          dateTo: testDate,
-          due: dueDate,
-          priority: priority,
-          statusHistory: [],
-          status:
-              status ??
-              TaskStatus.open(
-                id: 'status-1',
-                createdAt: testDate,
-                utcOffset: 0,
-              ),
-        ),
-      );
-    }
-
     test('includes due tasks in budget even without tracked time', () async {
       final plan = createTestPlan(
         plannedBlocks: [
@@ -1963,10 +2000,10 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       // Task due today with no tracked time
-      final dueTask = createDueTask(
+      final dueTask = createTestTask(
         id: 'task-due',
         categoryId: 'cat-work',
-        dueDate: testDate,
+        due: testDate,
         title: 'Task Due Today',
       );
 
@@ -2015,10 +2052,10 @@ void main() {
       );
 
       // Task with due date AND tracked time
-      final taskWithDue = createDueTask(
+      final taskWithDue = createTestTask(
         id: 'task-1',
         categoryId: 'cat-work',
-        dueDate: testDate,
+        due: testDate,
         title: 'Task With Both',
       );
 
@@ -2083,10 +2120,10 @@ void main() {
         stubPlanAndEmptyEntries(plan);
 
         // Due task in a category WITHOUT a budget
-        final dueTask = createDueTask(
+        final dueTask = createTestTask(
           id: 'task-unplanned',
           categoryId: 'cat-unplanned',
-          dueDate: testDate,
+          due: testDate,
           title: 'Unplanned Due Task',
         );
 
@@ -2128,18 +2165,18 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       // Task due today
-      final dueTodayTask = createDueTask(
+      final dueTodayTask = createTestTask(
         id: 'task-today',
         categoryId: 'cat-work',
-        dueDate: testDate,
+        due: testDate,
         title: 'Due Today',
       );
 
       // Overdue task (due yesterday)
-      final overdueTask = createDueTask(
+      final overdueTask = createTestTask(
         id: 'task-overdue',
         categoryId: 'cat-work',
-        dueDate: testDate.subtract(const Duration(days: 1)),
+        due: testDate.subtract(const Duration(days: 1)),
         title: 'Overdue',
       );
 
@@ -2163,10 +2200,10 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       // Due task with NULL category
-      final dueTask = createDueTask(
+      final dueTask = createTestTask(
         id: 'task-no-cat',
         categoryId: null,
-        dueDate: testDate,
+        due: testDate,
         title: 'Task Without Category',
       );
 
@@ -2314,33 +2351,33 @@ void main() {
         stubPlanAndEmptyEntries(plan);
 
         // Create tasks with different priorities
-        final p3Task = createDueTask(
+        final p3Task = createTestTask(
           id: 'task-p3',
           categoryId: 'cat-work',
-          dueDate: testDate,
+          due: testDate,
           title: 'Low Priority',
           priority: TaskPriority.p3Low,
         );
 
-        final p0Task = createDueTask(
+        final p0Task = createTestTask(
           id: 'task-p0',
           categoryId: 'cat-work',
-          dueDate: testDate,
+          due: testDate,
           title: 'Urgent Priority',
           priority: TaskPriority.p0Urgent,
         );
 
-        final p2Task = createDueTask(
+        final p2Task = createTestTask(
           id: 'task-p2',
           categoryId: 'cat-work',
-          dueDate: testDate,
+          due: testDate,
           title: 'Medium Priority',
         );
 
-        final p1Task = createDueTask(
+        final p1Task = createTestTask(
           id: 'task-p1',
           categoryId: 'cat-work',
-          dueDate: testDate,
+          due: testDate,
           title: 'High Priority',
           priority: TaskPriority.p1High,
         );
@@ -2391,18 +2428,18 @@ void main() {
       stubPlanAndEmptyEntries(plan);
 
       // P0 due today vs P3 overdue
-      final p0DueToday = createDueTask(
+      final p0DueToday = createTestTask(
         id: 'task-p0-today',
         categoryId: 'cat-work',
-        dueDate: testDate,
+        due: testDate,
         title: 'P0 Due Today',
         priority: TaskPriority.p0Urgent,
       );
 
-      final p3Overdue = createDueTask(
+      final p3Overdue = createTestTask(
         id: 'task-p3-overdue',
         categoryId: 'cat-work',
-        dueDate: testDate.subtract(const Duration(days: 1)),
+        due: testDate.subtract(const Duration(days: 1)),
         title: 'P3 Overdue',
         priority: TaskPriority.p3Low,
       );
@@ -4889,6 +4926,97 @@ void main() {
           expected,
           reason: 'planned=${scenario.planned}s recorded=${scenario.recorded}s',
         );
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('calculateDayStartHour / calculateDayEndHour', () {
+    PlannedTimeSlot plannedAt(int startHour, int endHour) {
+      final start = testDate.add(Duration(hours: startHour));
+      final end = testDate.add(Duration(hours: endHour));
+      return PlannedTimeSlot(
+        startTime: start,
+        endTime: end,
+        categoryId: 'cat',
+        block: PlannedBlock(
+          id: 'b-$startHour-$endHour',
+          categoryId: 'cat',
+          startTime: start,
+          endTime: end,
+        ),
+      );
+    }
+
+    ActualTimeSlot actualAt(int startHour, int endHour) {
+      final start = testDate.add(Duration(hours: startHour));
+      final end = testDate.add(Duration(hours: endHour));
+      return ActualTimeSlot(
+        startTime: start,
+        endTime: end,
+        categoryId: 'cat',
+        entry: createTestEntry(
+          id: 'e-$startHour-$endHour',
+          categoryId: 'cat',
+          dateFrom: start,
+          dateTo: end,
+        ),
+      );
+    }
+
+    test('defaults to 8 / 18 when there are no slots', () {
+      expect(calculateDayStartHour(const [], const []), 8);
+      expect(calculateDayEndHour(const [], const [], testDate), 18);
+    });
+
+    test('start hour subtracts a one-hour lead-in buffer', () {
+      expect(calculateDayStartHour([plannedAt(9, 11)], const []), 8);
+    });
+
+    test('start hour takes the earliest across planned and actual', () {
+      // earliest start = min(10, 7) = 7, minus the 1h buffer.
+      expect(
+        calculateDayStartHour([plannedAt(10, 11)], [actualAt(7, 8)]),
+        6,
+      );
+    });
+
+    test('start-hour buffer clamps at midnight (never below 0)', () {
+      expect(calculateDayStartHour([plannedAt(0, 1)], const []), 0);
+    });
+
+    test('end hour buffers past the latest end (endHour+1, then +1)', () {
+      // slot ends at 11:00 -> endHour 12 -> +1 buffer -> 13.
+      expect(calculateDayEndHour([plannedAt(9, 11)], const [], testDate), 13);
+    });
+
+    test('end hour treats a slot ending at next midnight as hour 24', () {
+      expect(calculateDayEndHour([plannedAt(22, 24)], const [], testDate), 24);
+    });
+
+    test('end hour takes the max across planned and actual', () {
+      // latest end = 15:00 -> endHour 16 -> +1 buffer -> 17.
+      expect(
+        calculateDayEndHour([plannedAt(9, 10)], [actualAt(12, 15)], testDate),
+        17,
+      );
+    });
+
+    glados.Glados(
+      glados.any.listWithLengthInRange(0, 8, glados.any.intInRange(0, 24)),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'derived render window always stays within a valid 0..24 hour grid',
+      (startHours) {
+        final slots = [for (final h in startHours) plannedAt(h, h + 1)];
+
+        final start = calculateDayStartHour(slots, const []);
+        final end = calculateDayEndHour(slots, const [], testDate);
+
+        expect(start, inInclusiveRange(0, 23), reason: 'starts=$startHours');
+        expect(end, inInclusiveRange(1, 24), reason: 'starts=$startHours');
+        // The window is always non-empty so the timeline never collapses.
+        expect(start, lessThan(end), reason: 'starts=$startHours');
       },
       tags: 'glados',
     );

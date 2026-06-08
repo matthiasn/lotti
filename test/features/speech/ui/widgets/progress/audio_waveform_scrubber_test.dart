@@ -104,7 +104,10 @@ Future<void> _pumpScrubber(
       constrained: constrained,
     ),
   );
-  await tester.pumpAndSettle();
+  // The scrubber has no animations or async providers — its tree builds
+  // synchronously (LayoutBuilder + CustomPaint + GestureDetector), so a single
+  // frame is sufficient. Using pump() avoids pumpAndSettle()'s 10s timeout risk.
+  await tester.pump();
 }
 
 Future<CustomPainter> _pumpAndGetPainter(

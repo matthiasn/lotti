@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ratings/ui/rating_input_widgets.dart';
 
 import '../../../widget_test_utils.dart';
+
+/// Builds `count` segments whose values are spaced 0.1 apart, so every value
+/// is well outside the 0.01 selection tolerance of any other and the selected
+/// index is unambiguous.
+List<({String label, double value})> _segmentsOfLength(int count) => [
+  for (var i = 0; i < count; i++) (label: 'Opt $i', value: i * 0.1),
+];
 
 void main() {
   group('RatingTapBar', () {
@@ -173,5 +181,74 @@ void main() {
       );
       expect(segmented.selected, isEmpty);
     });
+
+    testWidgets('selecting a segment value highlights the matching index', (
+      tester,
+    ) async {
+      final segments = _segmentsOfLength(4);
+      // Drive the widget with the 3rd segment's value and confirm the
+      // round-trip surfaces through the public SegmentedButton selection.
+      await tester.pumpWidget(
+        makeTestableWidget(
+          RatingSegmentedInput(
+            label: 'Question',
+            segments: segments,
+            value: segments[2].value,
+            onChanged: (_) {},
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final segmented = tester.widget<SegmentedButton<int>>(
+        find.byType(SegmentedButton<int>),
+      );
+      expect(segmented.selected, equals({2}));
+    });
+  });
+
+  group('selectedSegmentIndex', () {
+    test('returns -1 for a null value', () {
+      expect(selectedSegmentIndex(_segmentsOfLength(3), null), -1);
+    });
+
+    test('returns -1 when no segment is within tolerance', () {
+      // 0.25 sits 0.05 from both 0.2 and 0.3, outside the 0.01 band.
+      expect(selectedSegmentIndex(_segmentsOfLength(4), 0.25), -1);
+    });
+
+    test('matches within the 0.01 tolerance band', () {
+      final segments = _segmentsOfLength(4);
+      // 0.205 is within 0.01 of segment 2 (value 0.2), but no other.
+      expect(selectedSegmentIndex(segments, 0.205), 2);
+    });
+
+    test('does not match a value beyond the tolerance band', () {
+      final segments = _segmentsOfLength(4);
+      // 0.02 away is clearly outside the strict `< 0.01` band → no match.
+      // (Exactly 0.01 is avoided here: 0.1 + 0.01 lands at 0.00999…998 in IEEE
+      // double, which is < 0.01 and would match — the band edge is not a stable
+      // contract to assert.)
+      expect(selectedSegmentIndex(segments, segments[1].value + 0.02), -1);
+    });
+
+    // Round-trip property: feeding any segment's own value back into the
+    // lookup must return that segment's index. Confirms the index<->value
+    // mapping stays in sync if the tolerance is ever adjusted.
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(2, 9),
+      glados.IntAnys(glados.any).intInRange(0, 9),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('round-trips every segment value to its index', (count, rawIndex) {
+      final segments = _segmentsOfLength(count);
+      final index = rawIndex % count;
+      expect(
+        selectedSegmentIndex(segments, segments[index].value),
+        index,
+        reason:
+            'value ${segments[index].value} should map back to index $index '
+            'in a $count-segment list',
+      );
+    }, tags: 'glados');
   });
 }

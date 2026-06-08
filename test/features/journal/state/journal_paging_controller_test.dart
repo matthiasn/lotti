@@ -315,6 +315,54 @@ void main() {
       );
 
       test(
+        'sequential refresh exits early when isMounted() flips to false '
+        'mid-loop',
+        () async {
+          // Two loaded pages so the sequential loop runs more than one
+          // iteration; isMounted() returns false after the first query so the
+          // loop must bail before replacing pages or reporting callbacks.
+          final originalPage1 = [_makeEntry('orig-1'), _makeEntry('orig-2')];
+          final originalPage2 = [_makeEntry('orig-3'), _makeEntry('orig-4')];
+          controller.replacePages(
+            [originalPage1, originalPage2],
+            keys: [0, 2],
+            hasNextPage: true,
+          );
+
+          final refreshToken = Object();
+          controller.startRetainedRefresh(refreshToken);
+
+          var mounted = true;
+          var leadingItemsCalls = 0;
+          var postFilterOffsetCalls = 0;
+          final queriedKeys = <int>[];
+
+          await controller.refreshLoadedPages(
+            runQuery: (pageKey, {setPostFilterNextRawOffset}) async {
+              queriedKeys.add(pageKey);
+              // Simulate disposal happening during the first DB round-trip.
+              mounted = false;
+              return [_makeEntry('refreshed-$pageKey')];
+            },
+            requiresSequential: true,
+            pageSize: 2,
+            isMounted: () => mounted,
+            onPostFilterOffset: (_) => postFilterOffsetCalls++,
+            onLeadingItems: (_) => leadingItemsCalls++,
+          );
+
+          // Only the first page was queried before the early exit.
+          expect(queriedKeys, [0]);
+          // Neither completion callback ran — the loop returned at the
+          // isMounted() guard.
+          expect(leadingItemsCalls, 0);
+          expect(postFilterOffsetCalls, 0);
+          // State was not replaced: the original pages are still present.
+          expect(controller.value.pages, [originalPage1, originalPage2]);
+        },
+      );
+
+      test(
         'only refreshes non-empty pages (skips empty pages in keys)',
         () async {
           final entry = _makeEntry('p1');

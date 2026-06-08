@@ -27,9 +27,12 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `test/features/ai/model/inference_model_form_state_test.dart` — 367 lines for 138 lines of impl is a large ratio but not itself problematic. No split needed; the structure (validators → form state → toAiConfig) is clean.
-- [ ] **[LOW]** `test/features/ai/model/inference_usage_test.dart` — 387 lines; most length comes from the thorough manual + Glados tests. No split needed; the file is well-structured.
-- [ ] **[LOW]** `lib/features/ai/model/ai_config.dart` — 193 lines holding 5 distinct union variants plus 2 enums. Consider whether `AiConfigInferenceProfile` and `AiConfigSkill` warrant their own focused files as the model continues to grow; at the current size this is informational only.
+- [x] **[LOW]** `test/features/ai/model/inference_model_form_state_test.dart` — 367 lines for 138 lines of impl is a large ratio but not itself problematic. No split needed; the structure (validators → form state → toAiConfig) is clean.
+  **RESOLVED:** Confirmed informational. The file is one test file per source file (per convention) and the size is driven by thorough validator + Glados coverage, not duplication. No split made.
+- [x] **[LOW]** `test/features/ai/model/inference_usage_test.dart` — 387 lines; most length comes from the thorough manual + Glados tests. No split needed; the file is well-structured.
+  **RESOLVED:** Confirmed informational. Length comes from the private generator value classes and the merge/round-trip Glados property, not from copy-paste. Splitting would violate the one-test-file-per-source rule. No change.
+- [x] **[LOW]** `lib/features/ai/model/ai_config.dart` — 193 lines holding 5 distinct union variants plus 2 enums. Consider whether `AiConfigInferenceProfile` and `AiConfigSkill` warrant their own focused files as the model continues to grow; at the current size this is informational only.
+  **RESOLVED:** Informational and a production-code (lib/) restructuring suggestion, out of scope for test-quality work. Splitting a Freezed union across files would also break the single-`@freezed` generation unit. No change.
 
 ---
 
@@ -41,8 +44,10 @@
   - **RESOLVED:** done — the loop now pins every `InferenceErrorType` to its exact localized message via a map asserted exhaustive over the enum, and additionally asserts all seven titles are pairwise distinct.
 - [x] **[MED]** `test/features/ai/model/inference_provider_extensions_test.dart` — the `icon` test table at lines 11–33 omits `InferenceProviderType.mlxAudio` (which returns `Icons.memory_rounded`) and the `requiresDataUriForAudio` extension property (line 98 of impl) is not tested at all. Add both.
   - **RESOLVED:** done (half stale) — `mlxAudio: Icons.memory_rounded` added to the icon table plus a new exhaustiveness guard pinning the table's key set to the full enum; `requiresDataUriForAudio` was already covered by its own group (alibaba → true, all others → false).
-- [ ] **[LOW]** `test/features/ai/model/realtime_transcription_event_test.dart` — `RealtimeTranscriptionDone` and `RealtimeTranscriptionError` are plain Dart classes with no JSON serialisation; the tests are constructor/getter checks. This is acceptable for non-serialised event types. Consider noting that if `fromJson`/`toJson` is ever added these should be round-trip tested.
-- [ ] **[LOW]** `test/features/ai/model/resolved_profile_test.dart` — the `skillAssignments` field is never checked: none of the equality tests includes profiles with non-empty `skillAssignments`. Since equality uses `ListEquality`, a profile with `skillAssignments: [a]` and one with `skillAssignments: []` should be unequal; this case is missing.
+- [x] **[LOW]** `test/features/ai/model/realtime_transcription_event_test.dart` — `RealtimeTranscriptionDone` and `RealtimeTranscriptionError` are plain Dart classes with no JSON serialisation; the tests are constructor/getter checks. This is acceptable for non-serialised event types. Consider noting that if `fromJson`/`toJson` is ever added these should be round-trip tested.
+  **RESOLVED:** Confirmed the three event types have no `fromJson`/`toJson`, so constructor/getter checks are appropriate; no round-trip applicable. Also closed a real coverage gap noticed while verifying: `RealtimeStopResult.detectedLanguage` was untested — added a null-default assertion and a populated-value assertion (`detectedLanguage: 'de'`).
+- [x] **[LOW]** `test/features/ai/model/resolved_profile_test.dart` — the `skillAssignments` field is never checked: none of the equality tests includes profiles with non-empty `skillAssignments`. Since equality uses `ListEquality`, a profile with `skillAssignments: [a]` and one with `skillAssignments: []` should be unequal; this case is missing.
+  **RESOLVED:** Stale — already addressed by the existing `'skillAssignments participate in equality'` test (value-equal lists equal; differing content/order/length break equality via `ListEquality`). No change.
 
 ---
 
@@ -53,8 +58,10 @@
   - **RESOLVED:** (stale) — `inference_model_form_state_test.dart` already carries `_AnyMaxTokens` generators (positive/non-positive int strings) with Glados properties over the validator boundaries.
 - [x] **[MED]** `lib/features/ai/model/inference_provider_form_state.dart` — `BaseUrl` validator (lines in impl) accepts empty or valid http/https URLs and rejects others. A Glados property over arbitrary strings would ensure no unexpected panics and that the invariants hold at scale.
   - **RESOLVED:** (stale) — `inference_provider_form_state_test.dart` already carries `_AnyBaseUrl` generators with Glados properties for valid http(s) URLs (accepted) and non-http inputs (rejected) at numRuns 120.
-- [ ] **[LOW]** `lib/features/ai/model/inference_usage.dart` — already has an excellent Glados merge test (line 261 of test, `numRuns: 180`). The JSON round-trip is also embedded inside that property (`InferenceUsage.fromJson(merged.toJson()) == merged`). No additional Glados coverage needed.
-- [ ] **[LOW]** `lib/features/ai/model/skill_assignment.dart` — tiny model; existing static round-trip tests are sufficient. Glados would add negligible value.
+- [x] **[LOW]** `lib/features/ai/model/inference_usage.dart` — already has an excellent Glados merge test (line 261 of test, `numRuns: 180`). The JSON round-trip is also embedded inside that property (`InferenceUsage.fromJson(merged.toJson()) == merged`). No additional Glados coverage needed.
+  **RESOLVED:** Confirmed accurate — the test file carries private generator value classes and a Glados merge property at `numRuns: 180` that embeds the JSON round-trip. No additional Glados coverage needed; no change.
+- [x] **[LOW]** `lib/features/ai/model/skill_assignment.dart` — tiny model; existing static round-trip tests are sufficient. Glados would add negligible value.
+  **RESOLVED:** Confirmed — `skill_assignment_test.dart` already round-trips both `automate` states plus the legacy-without-`automate` default, equality, and `copyWith`. The model has two fields (a `String` id and a `bool`); a Glados property would only re-exercise these trivially. No change.
 
 ---
 
@@ -66,15 +73,19 @@
   - **RESOLVED:** (stale) — the `requiresDataUriForAudio` group exists: alibaba returns true and every other provider type returns false.
 - [x] **[MED]** `lib/features/ai/model/resolved_profile.dart` — `skillAssignments` field equality is not exercised. Also, `thinkingModel`, `imageRecognitionModel`, `transcriptionModel`, and `imageGenerationModel` are all optional `AiConfigModel?` fields; no test verifies equality when these differ.
   - **RESOLVED:** done — added `'skillAssignments participate in equality'` (value-equal lists equal; content/order/length differences break equality) and `'optional resolved model slots participate in equality'` (each of thinkingModel/imageRecognitionModel/transcriptionModel/imageGenerationModel flips equality when populated).
-- [ ] **[LOW]** `lib/features/ai/model/inference_error.dart` — `InferenceErrorType` enum count check at line 49 (`values.length == 7`) is a fragile count assertion. If a new error type is added, the test fails with an unhelpful message. Replace with `containsAll(InferenceErrorType.values)` or an exhaustive switch coverage check.
+- [x] **[LOW]** `lib/features/ai/model/inference_error.dart` — `InferenceErrorType` enum count check at line 49 (`values.length == 7`) is a fragile count assertion. If a new error type is added, the test fails with an unhelpful message. Replace with `containsAll(InferenceErrorType.values)` or an exhaustive switch coverage check.
+  **RESOLVED:** done — replaced the `length == 7` + seven `contains(...)` calls with a single set-equality assertion (`InferenceErrorType.values.toSet()` equals the expected set). This fails with a useful diff naming the added/removed value instead of a bare count mismatch.
 
 ---
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** `test/features/ai/model/inference_provider_extensions_test.dart` — uses `testWidgets` for both `displayName` and `description` methods because they need a `BuildContext`. These are short widget tests but they run the full Flutter test harness. No improvement possible without changing the production API to accept a message bundle rather than a `BuildContext` directly.
-- [ ] **[LOW]** `test/features/ai/model/inference_error_test.dart` — the `getTitle` test pumps a full widget tree just to get a `BuildContext`. Consider refactoring alongside similar tests (e.g. `inference_provider_extensions_test.dart`) so all localisation tests share a single `makeTestableWidget` pump and collect all results in one pass, rather than pumping once per file.
-- [ ] **[LOW]** No `Future.delayed`, `sleep`, or real timers found in any model test file. Fake-time policy is not violated.
+- [x] **[LOW]** `test/features/ai/model/inference_provider_extensions_test.dart` — uses `testWidgets` for both `displayName` and `description` methods because they need a `BuildContext`. These are short widget tests but they run the full Flutter test harness. No improvement possible without changing the production API to accept a message bundle rather than a `BuildContext` directly.
+  **RESOLVED:** Confirmed non-actionable as stated — both methods take a `BuildContext`, so a widget pump is required. Changing the production signature is a lib/ API change out of scope here. No change.
+- [x] **[LOW]** `test/features/ai/model/inference_error_test.dart` — the `getTitle` test pumps a full widget tree just to get a `BuildContext`. Consider refactoring alongside similar tests (e.g. `inference_provider_extensions_test.dart`) so all localisation tests share a single `makeTestableWidget` pump and collect all results in one pass, rather than pumping once per file.
+  **DEFERRED:** Sharing a single pump across files would require a cross-file shared harness, which means touching shared/central test infrastructure (e.g. `test/widget_test_utils.dart` or a new shared file) — out of scope per the hard rules. Within `inference_error_test.dart` the `getTitle` test already does a single pump and iterates all enum values in one pass, so the per-file cost is already minimal.
+- [x] **[LOW]** No `Future.delayed`, `sleep`, or real timers found in any model test file. Fake-time policy is not violated.
+  **RESOLVED:** Confirmed informational — no fake-time policy violations in the model test files. No change.
 
 ---
 

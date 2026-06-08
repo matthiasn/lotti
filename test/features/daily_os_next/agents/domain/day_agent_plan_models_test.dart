@@ -38,19 +38,27 @@ void main() {
   });
 
   group('DayAgentLearningBullet', () {
-    test('roundtrips through JSON', () {
-      const bullet = DayAgentLearningBullet(
-        text: 'Heavy planned days ran over capacity.',
-        tone: DayAgentLearningBulletTone.warning,
-      );
+    for (final tone in DayAgentLearningBulletTone.values) {
+      test('roundtrips through JSON for the $tone tone', () {
+        final bullet = DayAgentLearningBullet(
+          text: 'Heavy planned days ran over capacity.',
+          tone: tone,
+        );
 
-      final decoded = DayAgentLearningBullet.fromJson(
-        jsonDecode(jsonEncode(bullet.toJson())) as Map<String, dynamic>,
-      );
+        final json = bullet.toJson();
+        // Lock the serialized tone name so every enum value is verified
+        // explicitly, not only through the indirect card tests.
+        expect(json['tone'], tone.name);
 
-      expect(decoded, bullet);
-      expect(decoded.hashCode, bullet.hashCode);
-    });
+        final decoded = DayAgentLearningBullet.fromJson(
+          jsonDecode(jsonEncode(json)) as Map<String, dynamic>,
+        );
+
+        expect(decoded, bullet);
+        expect(decoded.tone, tone);
+        expect(decoded.hashCode, bullet.hashCode);
+      });
+    }
   });
 
   group('DayAgentLearningCard', () {
@@ -78,6 +86,58 @@ void main() {
       expect(decoded, card);
       expect(decoded.kind, 'standard');
       expect(decoded.hashCode, card.hashCode);
+    });
+
+    test('roundtrips the non-default kind and an empty bullet list', () {
+      final card = DayAgentLearningCard(
+        id: 'nudge_card',
+        overline: 'Heads up',
+        summary: 'Consider a lighter afternoon.',
+        bullets: const [],
+        kind: 'nudge',
+      );
+
+      final json = card.toJson();
+      expect(json['kind'], 'nudge');
+      expect(json['bullets'], isEmpty);
+
+      final decoded = DayAgentLearningCard.fromJson(
+        jsonDecode(jsonEncode(json)) as Map<String, dynamic>,
+      );
+
+      expect(decoded, card);
+      expect(decoded.kind, 'nudge');
+      expect(decoded.bullets, isEmpty);
+      expect(decoded.hashCode, card.hashCode);
+    });
+
+    test('distinct kinds with identical content are not equal', () {
+      final standard = DayAgentLearningCard(
+        id: 'card',
+        overline: 'Overline',
+        summary: 'Summary',
+        bullets: const [
+          DayAgentLearningBullet(
+            text: 'A',
+            tone: DayAgentLearningBulletTone.info,
+          ),
+        ],
+      );
+      final nudge = DayAgentLearningCard(
+        id: 'card',
+        overline: 'Overline',
+        summary: 'Summary',
+        bullets: const [
+          DayAgentLearningBullet(
+            text: 'A',
+            tone: DayAgentLearningBulletTone.info,
+          ),
+        ],
+        kind: 'nudge',
+      );
+
+      expect(standard, isNot(nudge));
+      expect(standard.hashCode, isNot(nudge.hashCode));
     });
 
     test('defensively freezes bullets passed at construction', () {

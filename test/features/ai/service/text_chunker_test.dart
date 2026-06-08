@@ -323,10 +323,11 @@ void main() {
       });
 
       test('consecutive chunks have overlapping content', () {
-        // Build text with clear, distinct sentences
+        // Each sentence starts with a unique marker (alpha$i) so the first
+        // word of a chunk pins exactly which sentence it begins with.
         final sentences = List.generate(
           60,
-          (i) => 'Unique sentence alpha$i about beta$i.',
+          (i) => 'alpha$i is a unique sentence about beta$i.',
         );
         final text = sentences.join(' ');
         final chunks = TextChunker.chunk(text);
@@ -337,32 +338,25 @@ void main() {
           reason: 'Need multiple chunks to test overlap',
         );
 
-        // Check that consecutive chunks share some words
+        // The chunk builder rewinds by whole sentences to create overlap, so
+        // the (unique) first word of each chunk must reappear inside the
+        // previous chunk. This is a direct consequence of the production
+        // overlap logic and avoids the fragile fractional-window heuristic
+        // that could pick a single-word slice and yield a false negative on
+        // short content.
         for (var i = 0; i < chunks.length - 1; i++) {
-          final currentWords = chunks[i].split(RegExp(r'\s+'));
-          final nextWords = chunks[i + 1].split(RegExp(r'\s+'));
-
-          // The start of the next chunk should contain words from the
-          // end of the current chunk (the overlap)
-          final currentEnd = currentWords.sublist(
-            (currentWords.length * 0.7).floor(),
-          );
-          final nextStart = nextWords.sublist(
-            0,
-            (nextWords.length * 0.4).floor().clamp(1, nextWords.length),
-          );
-
-          final currentEndSet = currentEnd.toSet();
-          final nextStartSet = nextStart.toSet();
-          final overlap = currentEndSet.intersection(nextStartSet);
-
+          final nextFirstWord = chunks[i + 1].split(RegExp(r'\s+')).first;
           expect(
-            overlap,
-            isNotEmpty,
+            nextFirstWord,
+            startsWith('alpha'),
+            reason: 'Each chunk should begin at a sentence marker',
+          );
+          expect(
+            chunks[i].split(RegExp(r'\s+')),
+            contains(nextFirstWord),
             reason:
-                'Chunks $i and ${i + 1} should overlap. '
-                'End of chunk $i: "${currentEnd.take(10).join(' ')}..." '
-                'Start of chunk ${i + 1}: "${nextStart.take(10).join(' ')}..."',
+                'The first word of chunk ${i + 1} ("$nextFirstWord") must '
+                'reappear in chunk $i to prove the overlap.',
           );
         }
       });
@@ -385,14 +379,18 @@ void main() {
           final chunks = TextChunker.chunk(longSentence);
           // Should produce multiple chunks via word-boundary fallback
           expect(chunks.length, greaterThan(1));
-          // Every word should appear in at least one chunk (use word-boundary
-          // matching to avoid false positives like 'word1' matching 'word10').
+          // Every word should appear in at least one chunk. Collect all chunk
+          // tokens into a single set once (O(words)) instead of scanning every
+          // chunk per word (O(words × chunks)). Splitting on whitespace yields
+          // exact tokens, so 'word1' cannot be confused with 'word10'.
+          final coveredWords = {
+            for (final chunk in chunks) ...chunk.split(RegExp(r'\s+')),
+          };
           for (var i = 0; i < 500; i++) {
             final marker = 'word$i';
-            final pattern = RegExp('(^|\\s)${RegExp.escape(marker)}(\\s|\$)');
             expect(
-              chunks.any(pattern.hasMatch),
-              isTrue,
+              coveredWords,
+              contains(marker),
               reason: 'Word "$marker" not found in any chunk',
             );
           }
@@ -478,6 +476,58 @@ void main() {
         final rejoined = chunks.join();
         expect(rejoined.runes.length, greaterThanOrEqualTo(500));
       });
+
+      test(
+        'splits a long CJK-only sentence into overlapping rune-bounded chunks',
+        () {
+          // 600 distinct CJK characters with no whitespace exercises the
+          // rune-stride branch of _splitOnWordBoundaries (window 256, stride
+          // 208). Use a 600-character window of the CJK Unified Ideographs
+          // block so every position is a unique, recoverable marker.
+          const cjkBlockStart = 0x4e00; // 一
+          final runes = List.generate(600, (i) => cjkBlockStart + i);
+          final cjkText = String.fromCharCodes(runes);
+
+          final chunks = TextChunker.chunk(cjkText);
+
+          // Stride logic must produce more than one chunk.
+          expect(chunks.length, greaterThan(1));
+
+          // Every chunk must stay within the rune-based token budget and be a
+          // contiguous, non-empty CJK slice of the source.
+          for (final chunk in chunks) {
+            expect(chunk.runes, isNotEmpty);
+            expect(
+              TextChunker.estimateTokens(chunk),
+              lessThanOrEqualTo(kChunkTargetTokens),
+            );
+            expect(cjkText.contains(chunk), isTrue);
+          }
+
+          // Every source rune survives somewhere in the output.
+          final coveredRunes = {
+            for (final chunk in chunks) ...chunk.runes,
+          };
+          for (final rune in runes) {
+            expect(
+              coveredRunes,
+              contains(rune),
+              reason: 'CJK rune ${String.fromCharCode(rune)} was lost',
+            );
+          }
+
+          // Consecutive chunks overlap: the first rune of chunk[i+1] reappears
+          // in chunk[i] (the stride window is smaller than the chunk window).
+          for (var i = 0; i < chunks.length - 1; i++) {
+            final nextFirstRune = chunks[i + 1].runes.first;
+            expect(
+              chunks[i].runes,
+              contains(nextFirstRune),
+              reason: 'Chunks $i and ${i + 1} should overlap for CJK input',
+            );
+          }
+        },
+      );
 
       test('estimates CJK tokens by character count', () {
         // A single "word" of 100 CJK characters

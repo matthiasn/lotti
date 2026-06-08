@@ -597,6 +597,29 @@ void main() {
       expect(result, isFalse);
       verifyNever(() => mockNotifications.notify(any()));
     });
+
+    test('returns false when persistence returns null', () async {
+      // Exercises the `result ?? false` coalescing branch: a null result
+      // must be treated as failure — no notification is emitted.
+      final updatedMeta = projectMeta.copyWith(
+        updatedAt: DateTime(2024, 3, 16),
+        vectorClock: const VectorClock({'device-1': 2}),
+      );
+
+      when(
+        () => mockPersistence.updateMetadata(projectMeta),
+      ).thenAnswer((_) async => updatedMeta);
+      when(
+        () => mockPersistence.updateDbEntity(
+          projectEntry.copyWith(meta: updatedMeta),
+        ),
+      ).thenAnswer((_) async => null);
+
+      final result = await repository.updateProject(projectEntry);
+
+      expect(result, isFalse);
+      verifyNever(() => mockNotifications.notify(any()));
+    });
   });
 
   group('linkTaskToProject', () {
@@ -960,6 +983,11 @@ void main() {
     late MockSyncSequenceLogService mockSequenceLog;
     late MockDomainLogger mockDomainLogger;
 
+    // These mocks are swapped into getIt via `reRegister` (unregister-if-
+    // present + registerSingleton). No inner tearDown is needed: the outer
+    // `tearDownTestGetIt()` performs a full `getIt.reset()` after every test,
+    // so these registrations never outlive the test that created them. The
+    // central helper owns cleanup; per-key teardown here would be redundant.
     setUp(() {
       mockSequenceLog = MockSyncSequenceLogService();
       mockDomainLogger = MockDomainLogger();
@@ -1523,22 +1551,59 @@ void main() {
 
   group('projectRepositoryProvider', () {
     // Line 593: exercises the Riverpod provider factory that reads all
-    // five dependencies from getIt.
-    test('creates a ProjectRepository from getIt registrations', () async {
-      // Register all five dependencies the factory reads from getIt.
-      reRegister<JournalDb>(mockDb);
-      reRegister<EntitiesCacheService>(mockEntitiesCacheService);
-      reRegister<PersistenceLogic>(mockPersistence);
-      reRegister<UpdateNotifications>(mockNotifications);
-      reRegister<VectorClockService>(mockVectorClockService);
+    // five dependencies from getIt. Rather than a constructor smoke test, we
+    // assert the factory actually wires each getIt registration into the
+    // repository by exercising methods that route through them.
+    test(
+      'wires getIt dependencies into the constructed repository',
+      () async {
+        // Register all five dependencies the factory reads from getIt.
+        reRegister<JournalDb>(mockDb);
+        reRegister<EntitiesCacheService>(mockEntitiesCacheService);
+        reRegister<PersistenceLogic>(mockPersistence);
+        reRegister<UpdateNotifications>(mockNotifications);
+        reRegister<VectorClockService>(mockVectorClockService);
 
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
 
-      final repo = container.read(projectRepositoryProvider);
+        final repo = container.read(projectRepositoryProvider);
 
-      expect(repo, isA<ProjectRepository>());
-    });
+        // The provider must cache the same instance across reads (keepAlive).
+        expect(
+          identical(repo, container.read(projectRepositoryProvider)),
+          isTrue,
+        );
+
+        // The wired JournalDb is reachable: getProjectById routes through it.
+        final project = await repo.getProjectById('project-001');
+        expect(project?.data.title, 'Test Project');
+        verify(() => mockDb.journalEntityById('project-001')).called(1);
+
+        // The wired PersistenceLogic + UpdateNotifications are reachable:
+        // updateProject bumps metadata, persists, and notifies.
+        final updatedMeta = projectMeta.copyWith(
+          updatedAt: DateTime(2024, 3, 16),
+          vectorClock: const VectorClock({'device-1': 2}),
+        );
+        when(
+          () => mockPersistence.updateMetadata(projectMeta),
+        ).thenAnswer((_) async => updatedMeta);
+        when(
+          () => mockPersistence.updateDbEntity(
+            projectEntry.copyWith(meta: updatedMeta),
+          ),
+        ).thenAnswer((_) async => true);
+
+        final updated = await repo.updateProject(projectEntry);
+        expect(updated, isTrue);
+        verify(
+          () => mockNotifications.notify({
+            projectEntityUpdateNotification(projectEntry.id),
+          }),
+        ).called(1);
+      },
+    );
   });
 
   group('watchProjectsOverview — cancellation', () {

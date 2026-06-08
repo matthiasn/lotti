@@ -92,7 +92,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // onSkip fires from a single addPostFrameCallback; one extra pump after
+      // the initial build is enough to run it (no animations to settle).
+      await tester.pump();
 
       expect(skipCalled, isTrue);
     });
@@ -390,7 +392,11 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // Drive several explicit frames: the _hasAutoSkipped guard must keep
+      // onSkip at exactly one call regardless of how many frames are pumped.
+      await tester.pump();
+      await tester.pump();
+      await tester.pump();
 
       // Skip should only be called once even after multiple frames
       expect(skipCallCount, 1);

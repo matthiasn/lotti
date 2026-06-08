@@ -71,18 +71,7 @@ void main() {
         final sqlite = sqlite3.open(dbFile.path);
 
         // Create the v1 schema (only outbox table)
-        sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS outbox (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          status INTEGER NOT NULL DEFAULT 0,
-          retries INTEGER NOT NULL DEFAULT 0,
-          message TEXT NOT NULL,
-          subject TEXT NOT NULL,
-          file_path TEXT
-        )
-      ''');
+        _createOutboxV1(sqlite);
 
         // Insert some test data to verify it survives migration
         sqlite.execute('''
@@ -237,18 +226,7 @@ void main() {
       final dbFile = File(path.join(testDirectory!.path, 'test_usage.db'));
       final sqlite = sqlite3.open(dbFile.path);
 
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS outbox (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          status INTEGER NOT NULL DEFAULT 0,
-          retries INTEGER NOT NULL DEFAULT 0,
-          message TEXT NOT NULL,
-          subject TEXT NOT NULL,
-          file_path TEXT
-        )
-      ''');
+      _createOutboxV1(sqlite);
       sqlite.execute('PRAGMA user_version = 1');
       sqlite.dispose();
 
@@ -293,39 +271,10 @@ void main() {
         final dbFile = File(path.join(testDirectory!.path, 'test_sync_v3.db'));
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS outbox (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            status INTEGER NOT NULL DEFAULT 0,
-            retries INTEGER NOT NULL DEFAULT 0,
-            message TEXT NOT NULL,
-            subject TEXT NOT NULL,
-            file_path TEXT
-          )
-        ''');
+        _createOutboxV1(sqlite);
         // v2 sync_sequence_log: no payload_type, no json_path.
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS sync_sequence_log (
-            host_id TEXT NOT NULL,
-            counter INTEGER NOT NULL,
-            entry_id TEXT,
-            originating_host_id TEXT,
-            status INTEGER NOT NULL DEFAULT 0,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            request_count INTEGER NOT NULL DEFAULT 0,
-            last_requested_at INTEGER,
-            PRIMARY KEY (host_id, counter)
-          )
-        ''');
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS host_activity (
-            host_id TEXT NOT NULL PRIMARY KEY,
-            last_seen_at INTEGER NOT NULL
-          )
-        ''');
+        _createSyncSequenceLogV2(sqlite);
+        _createHostActivity(sqlite);
 
         // Insert a v2 row so we can prove it survives and defaults its
         // freshly-added payload_type to the journalEntity sentinel (0).
@@ -401,39 +350,9 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
 
       // v4 schema: outbox with outbox_entry_id but no payload_size
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS outbox (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          status INTEGER NOT NULL DEFAULT 0,
-          retries INTEGER NOT NULL DEFAULT 0,
-          message TEXT NOT NULL,
-          subject TEXT NOT NULL,
-          file_path TEXT,
-          outbox_entry_id TEXT
-        )
-      ''');
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS sync_sequence_log (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          host_id TEXT NOT NULL,
-          counter INTEGER NOT NULL,
-          entry_id TEXT NOT NULL,
-          status INTEGER NOT NULL DEFAULT 0,
-          request_count INTEGER NOT NULL DEFAULT 0,
-          last_requested_at INTEGER,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          payload_type TEXT
-        )
-      ''');
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS host_activity (
-          host_id TEXT NOT NULL PRIMARY KEY,
-          last_seen_at INTEGER NOT NULL
-        )
-      ''');
+      _createOutboxV4(sqlite);
+      _createSyncSequenceLogV4(sqlite);
+      _createHostActivity(sqlite);
 
       // Insert a v4 row (no payload_size column)
       final createdAtSeconds =
@@ -478,41 +397,9 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
 
       // v5 schema: outbox with payload_size but no priority
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS outbox (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          status INTEGER NOT NULL DEFAULT 0,
-          retries INTEGER NOT NULL DEFAULT 0,
-          message TEXT NOT NULL,
-          subject TEXT NOT NULL,
-          file_path TEXT,
-          outbox_entry_id TEXT,
-          payload_size INTEGER
-        )
-      ''');
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS sync_sequence_log (
-          host_id TEXT NOT NULL,
-          counter INTEGER NOT NULL,
-          entry_id TEXT,
-          payload_type INTEGER NOT NULL DEFAULT 0,
-          originating_host_id TEXT,
-          status INTEGER NOT NULL DEFAULT 0,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          request_count INTEGER NOT NULL DEFAULT 0,
-          last_requested_at INTEGER,
-          PRIMARY KEY (host_id, counter)
-        )
-      ''');
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS host_activity (
-          host_id TEXT NOT NULL PRIMARY KEY,
-          last_seen_at INTEGER NOT NULL
-        )
-      ''');
+      _createOutboxV5(sqlite);
+      _createSyncSequenceLogV3(sqlite);
+      _createHostActivity(sqlite);
 
       // Insert a v5 row (no priority column)
       final createdAtSeconds =
@@ -568,43 +455,9 @@ void main() {
       final dbFile = File(path.join(testDirectory!.path, 'test_sync_v8.db'));
       final sqlite = sqlite3.open(dbFile.path);
 
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS outbox (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          status INTEGER NOT NULL DEFAULT 0,
-          retries INTEGER NOT NULL DEFAULT 0,
-          message TEXT NOT NULL,
-          subject TEXT NOT NULL,
-          file_path TEXT,
-          outbox_entry_id TEXT,
-          payload_size INTEGER,
-          priority INTEGER NOT NULL DEFAULT 2
-        )
-      ''');
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS sync_sequence_log (
-          host_id TEXT NOT NULL,
-          counter INTEGER NOT NULL,
-          entry_id TEXT,
-          payload_type INTEGER NOT NULL DEFAULT 0,
-          originating_host_id TEXT,
-          status INTEGER NOT NULL DEFAULT 0,
-          created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          request_count INTEGER NOT NULL DEFAULT 0,
-          last_requested_at INTEGER,
-          json_path TEXT,
-          PRIMARY KEY (host_id, counter)
-        )
-      ''');
-      sqlite.execute('''
-        CREATE TABLE IF NOT EXISTS host_activity (
-          host_id TEXT NOT NULL PRIMARY KEY,
-          last_seen_at INTEGER NOT NULL
-        )
-      ''');
+      _createOutboxV6(sqlite);
+      _createSyncSequenceLogV3(sqlite, withJsonPath: true);
+      _createHostActivity(sqlite);
       sqlite.execute('PRAGMA user_version = 7');
       sqlite.dispose();
 
@@ -884,43 +737,9 @@ void main() {
         final dbFile = File(path.join(testDirectory!.path, 'test_sync_v10.db'));
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS outbox (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            status INTEGER NOT NULL DEFAULT 0,
-            retries INTEGER NOT NULL DEFAULT 0,
-            message TEXT NOT NULL,
-            subject TEXT NOT NULL,
-            file_path TEXT,
-            outbox_entry_id TEXT,
-            payload_size INTEGER,
-            priority INTEGER NOT NULL DEFAULT 2
-          )
-        ''');
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS sync_sequence_log (
-            host_id TEXT NOT NULL,
-            counter INTEGER NOT NULL,
-            entry_id TEXT,
-            payload_type INTEGER NOT NULL DEFAULT 0,
-            originating_host_id TEXT,
-            status INTEGER NOT NULL DEFAULT 0,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            request_count INTEGER NOT NULL DEFAULT 0,
-            last_requested_at INTEGER,
-            json_path TEXT,
-            PRIMARY KEY (host_id, counter)
-          )
-        ''');
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS host_activity (
-            host_id TEXT NOT NULL PRIMARY KEY,
-            last_seen_at INTEGER NOT NULL
-          )
-        ''');
+        _createOutboxV6(sqlite);
+        _createSyncSequenceLogV3(sqlite, withJsonPath: true);
+        _createHostActivity(sqlite);
         // Pre-existing indices from v8/v9
         sqlite.execute(
           'CREATE INDEX idx_sync_sequence_log_actionable_status_created_at '
@@ -991,43 +810,9 @@ void main() {
         final dbFile = File(path.join(testDirectory!.path, 'test_sync_v11.db'));
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS outbox (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            status INTEGER NOT NULL DEFAULT 0,
-            retries INTEGER NOT NULL DEFAULT 0,
-            message TEXT NOT NULL,
-            subject TEXT NOT NULL,
-            file_path TEXT,
-            outbox_entry_id TEXT,
-            payload_size INTEGER,
-            priority INTEGER NOT NULL DEFAULT 2
-          )
-        ''');
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS sync_sequence_log (
-            host_id TEXT NOT NULL,
-            counter INTEGER NOT NULL,
-            entry_id TEXT,
-            payload_type INTEGER NOT NULL DEFAULT 0,
-            originating_host_id TEXT,
-            status INTEGER NOT NULL DEFAULT 0,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            request_count INTEGER NOT NULL DEFAULT 0,
-            last_requested_at INTEGER,
-            json_path TEXT,
-            PRIMARY KEY (host_id, counter)
-          )
-        ''');
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS host_activity (
-            host_id TEXT NOT NULL PRIMARY KEY,
-            last_seen_at INTEGER NOT NULL
-          )
-        ''');
+        _createOutboxV6(sqlite);
+        _createSyncSequenceLogV3(sqlite, withJsonPath: true);
+        _createHostActivity(sqlite);
         // Full v10 index set
         sqlite.execute(
           'CREATE INDEX idx_sync_sequence_log_actionable_status_created_at '
@@ -1101,73 +886,19 @@ void main() {
         final dbFile = File(path.join(testDirectory!.path, 'test_sync_v13.db'));
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS outbox (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            status INTEGER NOT NULL DEFAULT 0,
-            retries INTEGER NOT NULL DEFAULT 0,
-            message TEXT NOT NULL,
-            subject TEXT NOT NULL,
-            file_path TEXT,
-            outbox_entry_id TEXT,
-            payload_size INTEGER,
-            priority INTEGER NOT NULL DEFAULT 2
-          )
-        ''');
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS sync_sequence_log (
-            host_id TEXT NOT NULL,
-            counter INTEGER NOT NULL,
-            entry_id TEXT,
-            payload_type INTEGER NOT NULL DEFAULT 0,
-            originating_host_id TEXT,
-            status INTEGER NOT NULL DEFAULT 0,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            request_count INTEGER NOT NULL DEFAULT 0,
-            last_requested_at INTEGER,
-            json_path TEXT,
-            PRIMARY KEY (host_id, counter)
-          )
-        ''');
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS host_activity (
-            host_id TEXT NOT NULL PRIMARY KEY,
-            last_seen_at INTEGER NOT NULL
-          )
-        ''');
+        _createOutboxV6(sqlite);
+        _createSyncSequenceLogV3(sqlite, withJsonPath: true);
+        _createHostActivity(sqlite);
         // v12 inbound_event_queue: the Phase-1 shape, WITHOUT the Phase-3
         // ledger columns that the v13 migration adds.
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS inbound_event_queue (
-            queue_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            event_id TEXT NOT NULL UNIQUE,
-            room_id TEXT NOT NULL,
-            origin_ts INTEGER NOT NULL,
-            producer TEXT NOT NULL,
-            raw_json TEXT NOT NULL,
-            enqueued_at INTEGER NOT NULL,
-            attempts INTEGER NOT NULL DEFAULT 0,
-            next_due_at INTEGER NOT NULL DEFAULT 0,
-            lease_until INTEGER NOT NULL DEFAULT 0
-          )
-        ''');
+        _createInboundEventQueueV12(sqlite);
         // v12 drain index that the migration must DROP and recreate as a
         // status-partial index.
         sqlite.execute(
           'CREATE INDEX idx_inbound_event_queue_ready '
           'ON inbound_event_queue (next_due_at, origin_ts, queue_id)',
         );
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS queue_markers (
-            room_id TEXT NOT NULL PRIMARY KEY,
-            last_applied_event_id TEXT,
-            last_applied_ts INTEGER NOT NULL DEFAULT 0,
-            last_applied_commit_seq INTEGER NOT NULL DEFAULT 0
-          )
-        ''');
+        _createQueueMarkers(sqlite);
 
         // Insert a v12 queue row to prove it survives and the new status
         // column backfills to the 'enqueued' default.
@@ -1256,71 +987,11 @@ void main() {
         final dbFile = File(path.join(testDirectory!.path, 'test_sync_v14.db'));
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS outbox (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            status INTEGER NOT NULL DEFAULT 0,
-            retries INTEGER NOT NULL DEFAULT 0,
-            message TEXT NOT NULL,
-            subject TEXT NOT NULL,
-            file_path TEXT,
-            outbox_entry_id TEXT,
-            payload_size INTEGER,
-            priority INTEGER NOT NULL DEFAULT 2
-          )
-        ''');
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS sync_sequence_log (
-            host_id TEXT NOT NULL,
-            counter INTEGER NOT NULL,
-            entry_id TEXT,
-            payload_type INTEGER NOT NULL DEFAULT 0,
-            originating_host_id TEXT,
-            status INTEGER NOT NULL DEFAULT 0,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            request_count INTEGER NOT NULL DEFAULT 0,
-            last_requested_at INTEGER,
-            json_path TEXT,
-            PRIMARY KEY (host_id, counter)
-          )
-        ''');
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS host_activity (
-            host_id TEXT NOT NULL PRIMARY KEY,
-            last_seen_at INTEGER NOT NULL
-          )
-        ''');
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS inbound_event_queue (
-            queue_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            event_id TEXT NOT NULL UNIQUE,
-            room_id TEXT NOT NULL,
-            origin_ts INTEGER NOT NULL,
-            producer TEXT NOT NULL,
-            raw_json TEXT NOT NULL,
-            enqueued_at INTEGER NOT NULL,
-            attempts INTEGER NOT NULL DEFAULT 0,
-            next_due_at INTEGER NOT NULL DEFAULT 0,
-            lease_until INTEGER NOT NULL DEFAULT 0,
-            status TEXT NOT NULL DEFAULT 'enqueued',
-            committed_at INTEGER,
-            abandoned_at INTEGER,
-            last_error_reason TEXT,
-            resurrection_count INTEGER NOT NULL DEFAULT 0,
-            json_path TEXT
-          )
-        ''');
-        sqlite.execute('''
-          CREATE TABLE IF NOT EXISTS queue_markers (
-            room_id TEXT NOT NULL PRIMARY KEY,
-            last_applied_event_id TEXT,
-            last_applied_ts INTEGER NOT NULL DEFAULT 0,
-            last_applied_commit_seq INTEGER NOT NULL DEFAULT 0
-          )
-        ''');
+        _createOutboxV6(sqlite);
+        _createSyncSequenceLogV3(sqlite, withJsonPath: true);
+        _createHostActivity(sqlite);
+        _createInboundEventQueueV13(sqlite);
+        _createQueueMarkers(sqlite);
         sqlite.execute('PRAGMA user_version = 13');
         sqlite.dispose();
 
@@ -1366,21 +1037,7 @@ void main() {
 
         // Seed a v20 schema: outbox table + the pre-v21 indices, so the
         // migration's CREATE-INDEX-IF-NOT-EXISTS only adds what is new.
-        sqlite.execute('''
-          CREATE TABLE outbox (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            status INTEGER NOT NULL DEFAULT 0,
-            retries INTEGER NOT NULL DEFAULT 0,
-            message TEXT NOT NULL,
-            subject TEXT NOT NULL,
-            file_path TEXT,
-            outbox_entry_id TEXT,
-            payload_size INTEGER,
-            priority INTEGER NOT NULL DEFAULT 2
-          )
-        ''');
+        _createOutboxV6(sqlite);
         sqlite.execute(
           'CREATE INDEX idx_outbox_status_priority_created_at '
           'ON outbox (status, priority, created_at)',
@@ -1395,22 +1052,7 @@ void main() {
           'ON outbox (outbox_entry_id, created_at) '
           'WHERE status = 0 AND outbox_entry_id IS NOT NULL',
         );
-        sqlite.execute('''
-          CREATE TABLE sync_sequence_log (
-            host_id TEXT NOT NULL,
-            counter INTEGER NOT NULL,
-            entry_id TEXT,
-            payload_type INTEGER NOT NULL DEFAULT 0,
-            originating_host_id TEXT,
-            status INTEGER NOT NULL DEFAULT 0,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            request_count INTEGER NOT NULL DEFAULT 0,
-            last_requested_at INTEGER,
-            json_path TEXT,
-            PRIMARY KEY (host_id, counter)
-          )
-        ''');
+        _createSyncSequenceLogV3(sqlite, withJsonPath: true);
         sqlite.execute('PRAGMA user_version = 20');
         sqlite.dispose();
 
@@ -1476,21 +1118,7 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
-        sqlite.execute('''
-          CREATE TABLE outbox (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            status INTEGER NOT NULL DEFAULT 0,
-            retries INTEGER NOT NULL DEFAULT 0,
-            message TEXT NOT NULL,
-            subject TEXT NOT NULL,
-            file_path TEXT,
-            outbox_entry_id TEXT,
-            payload_size INTEGER,
-            priority INTEGER NOT NULL DEFAULT 2
-          )
-        ''');
+        _createOutboxV6(sqlite);
         sqlite.execute(
           'CREATE INDEX idx_outbox_status_priority_created_at '
           'ON outbox (status, priority, created_at)',
@@ -1515,22 +1143,7 @@ void main() {
           'ON outbox (updated_at, created_at, id) '
           'WHERE status = 3',
         );
-        sqlite.execute('''
-          CREATE TABLE sync_sequence_log (
-            host_id TEXT NOT NULL,
-            counter INTEGER NOT NULL,
-            entry_id TEXT,
-            payload_type INTEGER NOT NULL DEFAULT 0,
-            originating_host_id TEXT,
-            status INTEGER NOT NULL DEFAULT 0,
-            created_at INTEGER NOT NULL,
-            updated_at INTEGER NOT NULL,
-            request_count INTEGER NOT NULL DEFAULT 0,
-            last_requested_at INTEGER,
-            json_path TEXT,
-            PRIMARY KEY (host_id, counter)
-          )
-        ''');
+        _createSyncSequenceLogV3(sqlite, withJsonPath: true);
         sqlite.execute('PRAGMA user_version = 21');
         sqlite.dispose();
 
@@ -1592,38 +1205,9 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
+        _createOutboxV6(sqlite);
+        _createSyncSequenceLogV3(sqlite, withJsonPath: true);
         sqlite
-          ..execute('''
-            CREATE TABLE outbox (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              created_at INTEGER NOT NULL,
-              updated_at INTEGER NOT NULL,
-              status INTEGER NOT NULL DEFAULT 0,
-              retries INTEGER NOT NULL DEFAULT 0,
-              message TEXT NOT NULL,
-              subject TEXT NOT NULL,
-              file_path TEXT,
-              outbox_entry_id TEXT,
-              payload_size INTEGER,
-              priority INTEGER NOT NULL DEFAULT 2
-            )
-          ''')
-          ..execute('''
-            CREATE TABLE sync_sequence_log (
-              host_id TEXT NOT NULL,
-              counter INTEGER NOT NULL,
-              entry_id TEXT,
-              payload_type INTEGER NOT NULL DEFAULT 0,
-              originating_host_id TEXT,
-              status INTEGER NOT NULL DEFAULT 0,
-              created_at INTEGER NOT NULL,
-              updated_at INTEGER NOT NULL,
-              request_count INTEGER NOT NULL DEFAULT 0,
-              last_requested_at INTEGER,
-              json_path TEXT,
-              PRIMARY KEY (host_id, counter)
-            )
-          ''')
           ..execute(
             'CREATE INDEX idx_outbox_sending_expiry '
             'ON outbox (updated_at, created_at, id) '
@@ -1666,23 +1250,8 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
+        _createSyncSequenceLogV3(sqlite, withJsonPath: true);
         sqlite
-          ..execute('''
-            CREATE TABLE sync_sequence_log (
-              host_id TEXT NOT NULL,
-              counter INTEGER NOT NULL,
-              entry_id TEXT,
-              payload_type INTEGER NOT NULL DEFAULT 0,
-              originating_host_id TEXT,
-              status INTEGER NOT NULL DEFAULT 0,
-              created_at INTEGER NOT NULL,
-              updated_at INTEGER NOT NULL,
-              request_count INTEGER NOT NULL DEFAULT 0,
-              last_requested_at INTEGER,
-              json_path TEXT,
-              PRIMARY KEY (host_id, counter)
-            )
-          ''')
           ..execute('PRAGMA user_version = 22')
           ..dispose();
 
@@ -1721,23 +1290,8 @@ void main() {
         );
         final sqlite = sqlite3.open(dbFile.path);
 
+        _createSyncSequenceLogV3(sqlite, withJsonPath: true);
         sqlite
-          ..execute('''
-            CREATE TABLE sync_sequence_log (
-              host_id TEXT NOT NULL,
-              counter INTEGER NOT NULL,
-              entry_id TEXT,
-              payload_type INTEGER NOT NULL DEFAULT 0,
-              originating_host_id TEXT,
-              status INTEGER NOT NULL DEFAULT 0,
-              created_at INTEGER NOT NULL,
-              updated_at INTEGER NOT NULL,
-              request_count INTEGER NOT NULL DEFAULT 0,
-              last_requested_at INTEGER,
-              json_path TEXT,
-              PRIMARY KEY (host_id, counter)
-            )
-          ''')
           // The pre-v24 resolved index: burned (8) is absent from the WHERE.
           ..execute(
             'CREATE INDEX idx_sync_sequence_log_resolved_host_counter '
@@ -1813,6 +1367,43 @@ void _createOutboxV1(Database sqlite) {
   ''');
 }
 
+/// Seeds the `outbox` table as of v4 (dedup `outbox_entry_id` column present,
+/// but before the v5 `payload_size` and v6 `priority` columns).
+void _createOutboxV4(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS outbox (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      status INTEGER NOT NULL DEFAULT 0,
+      retries INTEGER NOT NULL DEFAULT 0,
+      message TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      file_path TEXT,
+      outbox_entry_id TEXT
+    )
+  ''');
+}
+
+/// Seeds the `outbox` table as of v5 (`payload_size` column present, but before
+/// the v6 `priority` column).
+void _createOutboxV5(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS outbox (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      status INTEGER NOT NULL DEFAULT 0,
+      retries INTEGER NOT NULL DEFAULT 0,
+      message TEXT NOT NULL,
+      subject TEXT NOT NULL,
+      file_path TEXT,
+      outbox_entry_id TEXT,
+      payload_size INTEGER
+    )
+  ''');
+}
+
 /// Seeds the `outbox` table as of v6 (dedup, payload-size, and priority
 /// columns present).
 void _createOutboxV6(Database sqlite) {
@@ -1855,12 +1446,73 @@ void _createSyncSequenceLogV3(Database sqlite, {bool withJsonPath = false}) {
   ''');
 }
 
+/// Seeds the `sync_sequence_log` table as of v2 (before the v3 `payload_type`
+/// and v7 `json_path` columns). This is the only baseline shape that drives the
+/// `else if (from < 3)` `addColumn(payloadType)` branch.
+void _createSyncSequenceLogV2(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS sync_sequence_log (
+      host_id TEXT NOT NULL,
+      counter INTEGER NOT NULL,
+      entry_id TEXT,
+      originating_host_id TEXT,
+      status INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      request_count INTEGER NOT NULL DEFAULT 0,
+      last_requested_at INTEGER,
+      PRIMARY KEY (host_id, counter)
+    )
+  ''');
+}
+
+/// Seeds the early `sync_sequence_log` shape used by the v4→v5 baseline: a
+/// surrogate `id` primary key, a `NOT NULL` `entry_id`, and a `payload_type
+/// TEXT` column (rather than the integer column the later schema adopts).
+void _createSyncSequenceLogV4(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS sync_sequence_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      host_id TEXT NOT NULL,
+      counter INTEGER NOT NULL,
+      entry_id TEXT NOT NULL,
+      status INTEGER NOT NULL DEFAULT 0,
+      request_count INTEGER NOT NULL DEFAULT 0,
+      last_requested_at INTEGER,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      payload_type TEXT
+    )
+  ''');
+}
+
 /// Seeds the `host_activity` table (unchanged since v2).
 void _createHostActivity(Database sqlite) {
   sqlite.execute('''
     CREATE TABLE IF NOT EXISTS host_activity (
       host_id TEXT NOT NULL PRIMARY KEY,
       last_seen_at INTEGER NOT NULL
+    )
+  ''');
+}
+
+/// Seeds the `inbound_event_queue` table as of v12 (Phase-1 shape, WITHOUT the
+/// Phase-3 ledger columns that the v13 migration adds:
+/// status/committed_at/abandoned_at/last_error_reason/resurrection_count/
+/// json_path).
+void _createInboundEventQueueV12(Database sqlite) {
+  sqlite.execute('''
+    CREATE TABLE IF NOT EXISTS inbound_event_queue (
+      queue_id INTEGER PRIMARY KEY AUTOINCREMENT,
+      event_id TEXT NOT NULL UNIQUE,
+      room_id TEXT NOT NULL,
+      origin_ts INTEGER NOT NULL,
+      producer TEXT NOT NULL,
+      raw_json TEXT NOT NULL,
+      enqueued_at INTEGER NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      next_due_at INTEGER NOT NULL DEFAULT 0,
+      lease_until INTEGER NOT NULL DEFAULT 0
     )
   ''');
 }

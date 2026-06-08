@@ -51,7 +51,8 @@
 
 - [x] **[MED]** `tabs/design_system_tab.dart` (539 lines) — same pattern: `_TabSizeSpec`, `_TabContentMetrics`, and `_TabPainter` could move to a `design_system_tab_internals.dart` private file. **RESOLVED:** Assessed, no change — same rationale: 539 lines is at the soft limit; the three privates are tightly coupled to the tab widget and a part-split adds indirection only. Revisit when the file next grows.
 
-- [ ] **[LOW]** `search/design_system_search.dart` (395 lines) / test (536 lines) — close to limit but manageable. The test's first `testWidgets` block is ~130 lines; splitting at the "placeholder style checks" vs "clear/callback" boundary would make each test sharper.
+- [x] **[LOW]** `search/design_system_search.dart` (395 lines) / test (536 lines) — close to limit but manageable. The test's first `testWidgets` block is ~130 lines; splitting at the "placeholder style checks" vs "clear/callback" boundary would make each test sharper.
+  **RESOLVED:** the oversized first block was split at the clear/callback seam — `renders placeholder styles and reveals the clear affordance` keeps the style/geometry assertions; the new `tapping the clear icon empties the field and fires onClear` test owns the clear path (asserts the field empties, the clear icon disappears, and `onClear` fires).
 
 ---
 
@@ -74,9 +75,11 @@
 
 - [x] **[MED]** `toggles/design_system_toggle_test.dart` lines 14–158: `renders the small off state from tokens` and `renders the default on state from tokens` both perform near-identical `AnimatedContainer` dimension/colour extraction. Extract a shared `_findTrack(tester, key)` / `_findThumb(tester, key)` helper and parameterise the two tests over `(size, value, expectedTrackW, expectedTrackH, expectedThumbSize, expectedTrackColor)`. **RESOLVED:** Done — `_findTrack(tester, key, {width, height})` / `_findThumb(tester, key, size)` extracted and both token-state tests now use them; the differing state assertions stay explicit since they genuinely differ (off-state border/thumb vs on-state fill).
 
-- [ ] **[LOW]** `radio_buttons/design_system_radio_button_test.dart` — `renders the default off radio` (line 14) and `renders the large selected radio` (line 93) repeat the full token-extraction pattern. Consider a shared `_buildRadioWidget` + size/token helper.
+- [x] **[LOW]** `radio_buttons/design_system_radio_button_test.dart` — `renders the default off radio` (line 14) and `renders the large selected radio` (line 93) repeat the full token-extraction pattern. Consider a shared `_buildRadioWidget` + size/token helper.
+  **RESOLVED (no change):** the DRY goal is already met by the file-level helpers `_pumpRadio`, `_radioDecoration`, `_radioControlSize`, `_radioSquareCount`, and `_findTextNode` — these ARE the shared token/size extraction. The two tests are not copy-paste permutations: the off test additionally asserts the tooltip message + tooltip `IconTheme` size/color and `bodySmall` typography, while the large-selected test asserts the selected dot count, `selected` semantics, and `bodyMedium` typography. Collapsing them into one parameterised body would erase those distinct, meaningful assertions rather than reduce noise.
 
-- [ ] **[LOW]** `task_filters/design_system_filter_modal_test.dart` — `openModal()` helper calls `tester.binding.setSurfaceSize()` but does not register `addTearDown(() => tester.binding.setSurfaceSize(null))` via a helper variable; it does so inline. Confirm teardown is always reached (it is, at line 46). Style nit only.
+- [x] **[LOW]** `task_filters/design_system_filter_modal_test.dart` — `openModal()` helper calls `tester.binding.setSurfaceSize()` but does not register `addTearDown(() => tester.binding.setSurfaceSize(null))` via a helper variable; it does so inline. Confirm teardown is always reached (it is, at line 46). Style nit only.
+  **RESOLVED (no change):** confirmed correct by reading the code — `addTearDown(() => tester.binding.setSurfaceSize(null))` is registered (line 46) immediately after `setSurfaceSize(size)` (line 45), before any pump or interaction that could throw, so the reset always runs. Pure style nit, no behavioral defect; no change warranted.
 
 ---
 
@@ -90,7 +93,8 @@
 
 - [x] **[MED]** `stripTrailingColon` in `design_system_filter_shared.dart` (line 25) — a pure string function with clear algebraic properties: idempotence (`stripTrailingColon(stripTrailingColon(s)) == stripTrailingColon(s)`), and "non-colon strings are unchanged". Currently only tested via side-effect in `projects_filter_sheet_state_test.dart`; a Glados test with `any.string` generators would cover whitespace/unicode edge cases. **RESOLVED:** Stale — `design_system_filter_shared_test.dart` already has the Glados property (idempotence, never reintroduces a trailing colon, non-colon strings pass through) plus worked examples.
 
-- [ ] **[LOW]** `DesignSystemTaskFilterOption.fromJson/toJson` round-trip over all `DesignSystemTaskFilterGlyph` values — currently only `priorityP1` and default are hand-tested.
+- [x] **[LOW]** `DesignSystemTaskFilterOption.fromJson/toJson` round-trip over all `DesignSystemTaskFilterGlyph` values — currently only `priorityP1` and default are hand-tested.
+  **RESOLVED:** added a `Glados3<int, String, String>` property in `design_system_task_filter_sheet_state_test.dart` (the mirror for the part-file that owns the type) that round-trips `DesignSystemTaskFilterOption` over every `DesignSystemTaskFilterGlyph` value with generated id/label, asserting id/label/glyph survive `fromJson(toJson())`. (The existing state-level round-trip only checked option ids and never exercised a non-default glyph since the scenario builder always uses `none`.)
 
 Glados does **not** apply to the widget/UI tests in this group.
 
@@ -110,9 +114,11 @@ Glados does **not** apply to the widget/UI tests in this group.
 
 - [x] **[MED]** `navigation/design_system_navigation_tab_bar.dart` (186 lines, test 67 lines) — only 2 tests: one renders labels, one checks active indicator. Missing: tap callback (`onTabChanged`), multi-tab selection cycling, disabled-tab handling if any. **RESOLVED:** Done — added three tests: per-item onTap isolation across two tabs, a null-onTap tab absorbing the tap without throwing, and active/inactive activeIcon swapping. (The API is per-item `onTap`, not a bar-level `onTabChanged`.)
 
-- [ ] **[LOW]** `time_pickers/design_system_time_picker.dart` — 12-hour format wrapping at midnight/noon boundary (hour 12 in 12h mode = 0 in 24h) is not explicitly tested; the existing scroll tests use 9:41 only.
+- [x] **[LOW]** `time_pickers/design_system_time_picker.dart` — 12-hour format wrapping at midnight/noon boundary (hour 12 in 12h mode = 0 in 24h) is not explicitly tested; the existing scroll tests use 9:41 only.
+  **RESOLVED:** added a parameterised pair pumping the picker at 12 AM and 12 PM in twelveHour mode, then scrolling the minute wheel to fire `onTimeChanged` without moving the hour — asserting midnight reports hour 0 and noon reports hour 12 (the `((_selectedHour + 1) % 12) + period*12` wrap).
 
-- [ ] **[LOW]** `toasts/design_system_toast.dart` — countdown progress animation: `countdownDuration` and `initialCountdownProgress` parameters are accepted by the widget but there is no test asserting that a `LinearProgressIndicator` or similar is rendered when `countdownDuration != null`. Verify from the impl that the parameter is wired up and add a test.
+- [x] **[LOW]** `toasts/design_system_toast.dart` — countdown progress animation: `countdownDuration` and `initialCountdownProgress` parameters are accepted by the widget but there is no test asserting that a `LinearProgressIndicator` or similar is rendered when `countdownDuration != null`. Verify from the impl that the parameter is wired up and add a test.
+  **RESOLVED (no change, already done):** stale observation — `design_system_toast_test.dart` already has a `countdown bar` group covering exactly this: `LinearProgressIndicator` rendered when `countdownDuration` is set and absent when null, draining from initial toward zero, honoring `initialCountdownProgress < 1.0`, and using the tone color for the fill. Confirmed against the impl, where `_maybeStartCountdown` drives a `_ToastCountdownBar` wrapping a `LinearProgressIndicator`.
 
 ---
 
@@ -126,7 +132,8 @@ Glados does **not** apply to the widget/UI tests in this group.
 
 - [x] **[MED]** `task_filters/design_system_filter_modal_test.dart` — 2 `pumpAndSettle()` calls. Line 84 (Wolt entry) is necessary. Line 132 (modal close after tap) could be `pump(duration)`. **Impact: modest, ~1–2 s**. **RESOLVED:** Done — both settles (including the Wolt entry, verified empirically) replaced with bounded pumps; file green.
 
-- [ ] **[LOW]** `time_pickers/design_system_time_picker_test.dart` — 4 `pumpAndSettle()` calls after `ListWheelScrollView` drags. `ListWheelScrollView` uses a `FixedExtentScrollController` with a snap animation of known duration. Replace with `tester.pump(const Duration(milliseconds: 350))` (slightly over the default 300 ms snap duration). **Impact: ~4 × 0.5 s savings in typical runs**.
+- [x] **[LOW]** `time_pickers/design_system_time_picker_test.dart` — 4 `pumpAndSettle()` calls after `ListWheelScrollView` drags. `ListWheelScrollView` uses a `FixedExtentScrollController` with a snap animation of known duration. Replace with `tester.pump(const Duration(milliseconds: 350))` (slightly over the default 300 ms snap duration). **Impact: ~4 × 0.5 s savings in typical runs**.
+  **RESOLVED:** all four post-drag `pumpAndSettle()` calls (minute / hour / AM-PM / 12h-PM scroll tests) are now bounded `tester.pump(const Duration(milliseconds: 350))`; the new 12h boundary tests use the same bounded pump.
 
 ---
 

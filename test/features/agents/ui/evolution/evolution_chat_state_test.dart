@@ -1704,6 +1704,102 @@ void main() {
       expect(updated.messages, isEmpty);
       expect(updated.isWaiting, isTrue);
     });
+
+    test(
+      'copyWith preserves the three nullable fields when their function '
+      'params are omitted',
+      () {
+        final processor = MockSurfaceController();
+        final data = EvolutionChatData(
+          sessionId: 'session-1',
+          messages: const [],
+          processor: processor,
+          lastSurfacedProposalKey: 'key-1',
+        );
+
+        // Only isWaiting is changed; the Function()? params are untouched.
+        final updated = data.copyWith(isWaiting: true);
+
+        expect(updated.sessionId, 'session-1');
+        expect(updated.processor, same(processor));
+        expect(updated.lastSurfacedProposalKey, 'key-1');
+      },
+    );
+
+    test(
+      'copyWith erases each nullable field to null when given a () => null '
+      'function',
+      () {
+        final data = EvolutionChatData(
+          sessionId: 'session-1',
+          messages: const [],
+          processor: MockSurfaceController(),
+          lastSurfacedProposalKey: 'key-1',
+        );
+
+        final cleared = data.copyWith(
+          sessionId: () => null,
+          processor: () => null,
+          lastSurfacedProposalKey: () => null,
+        );
+
+        // The Function()? erasure pattern must distinguish "not provided"
+        // (preserve) from "provided a null-returning function" (erase).
+        expect(cleared.sessionId, isNull);
+        expect(cleared.processor, isNull);
+        expect(cleared.lastSurfacedProposalKey, isNull);
+      },
+    );
+
+    test(
+      'copyWith sets each nullable field to a new non-null value when given a '
+      'value-returning function',
+      () {
+        const data = EvolutionChatData(
+          sessionId: 'session-1',
+          messages: [],
+          lastSurfacedProposalKey: 'key-1',
+        );
+        final newProcessor = MockSurfaceController();
+
+        final updated = data.copyWith(
+          sessionId: () => 'session-2',
+          processor: () => newProcessor,
+          lastSurfacedProposalKey: () => 'key-2',
+        );
+
+        expect(updated.sessionId, 'session-2');
+        expect(updated.processor, same(newProcessor));
+        expect(updated.lastSurfacedProposalKey, 'key-2');
+      },
+    );
+
+    test('copyWith replaces messages and categoryRatings list/map fields', () {
+      final original = EvolutionChatMessage.system(
+        text: 'starting_session',
+        timestamp: DateTime(2024, 3, 15, 10, 30),
+      );
+      final replacement = EvolutionChatMessage.user(
+        text: 'hello',
+        timestamp: DateTime(2024, 3, 15, 10, 31),
+      );
+      final data = EvolutionChatData(
+        sessionId: 'session-1',
+        messages: [original],
+        categoryRatings: const {'cat-1': 3},
+      );
+
+      final updated = data.copyWith(
+        messages: [replacement],
+        categoryRatings: const {'cat-2': 5},
+      );
+
+      expect(updated.messages, [replacement]);
+      expect(updated.categoryRatings, {'cat-2': 5});
+      // Original is untouched (value-style copy).
+      expect(data.messages, [original]);
+      expect(data.categoryRatings, {'cat-1': 3});
+    });
   });
 
   group('approveSoulProposal', () {
@@ -2004,5 +2100,52 @@ void main() {
         [general.trim(), report.trim(), rationale.trim()],
       );
     }, tags: 'glados');
+  });
+
+  group('debugHasNonEmptyText — properties', () {
+    // Whitespace-only (and null) inputs are the *only* values that must be
+    // treated as empty; any payload containing a non-whitespace character
+    // must be considered non-empty regardless of its surrounding whitespace.
+    const whitespacePadding = ['', ' ', '  ', '\t', '\n', ' \t\n '];
+
+    test('null is treated as empty', () {
+      expect(EvolutionChatState.debugHasNonEmptyText(null), isFalse);
+    });
+
+    glados.Glados(
+      glados.AnyUtils(glados.any).choose(whitespacePadding),
+      glados.ExploreConfig(numRuns: 60),
+    ).test(
+      'strings consisting only of whitespace are treated as empty',
+      (whitespace) {
+        expect(
+          EvolutionChatState.debugHasNonEmptyText(whitespace),
+          isFalse,
+          reason: 'whitespace-only: ${whitespace.codeUnits}',
+        );
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados3(
+      glados.AnyUtils(glados.any).choose(whitespacePadding),
+      glados.any.letterOrDigits,
+      glados.AnyUtils(glados.any).choose(whitespacePadding),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'any non-whitespace payload makes the text non-empty, even when '
+      'surrounded by whitespace',
+      (prefix, core, suffix) {
+        // letterOrDigits can itself produce an empty string; guard so the
+        // payload always carries at least one non-whitespace character.
+        final payload = core.isEmpty ? 'x' : core;
+        expect(
+          EvolutionChatState.debugHasNonEmptyText('$prefix$payload$suffix'),
+          isTrue,
+          reason: '"$prefix$payload$suffix"',
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

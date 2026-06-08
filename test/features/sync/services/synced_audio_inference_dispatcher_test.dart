@@ -593,6 +593,64 @@ void main() {
         expectRunNotCalled();
       },
     );
+
+    test(
+      'proceeds when the profile has one automated transcription skill '
+      'alongside an automated non-transcription skill — the non-matching '
+      'skill type is skipped, not counted toward ambiguity',
+      () async {
+        bench.stubHappyPath();
+        // Override the profile to add a second automated skill of a DIFFERENT
+        // type (promptGeneration). The dispatcher's loop must `continue` past
+        // it (skillType != transcription) and still match exactly one
+        // transcription skill — so this is unambiguous and must run.
+        const otherSkillId = 'skill-prompt';
+        final profile =
+            AiConfig.inferenceProfile(
+                  id: _kProfileId,
+                  name: 'Mixed automation',
+                  createdAt: _kCreatedAt,
+                  thinkingModelId: 'm-thinking',
+                  transcriptionModelId: 'm-transcribe',
+                  pinnedHostId: _kLocalHost,
+                  skillAssignments: const [
+                    SkillAssignment(skillId: _kSkillId, automate: true),
+                    SkillAssignment(skillId: otherSkillId, automate: true),
+                  ],
+                )
+                as AiConfigInferenceProfile;
+        when(
+          () => bench.aiConfigRepository.getConfigById(_kProfileId),
+        ).thenAnswer((_) async => profile);
+
+        // The transcription skill (_kSkillId) is already stubbed by
+        // stubHappyPath; stub the prompt-generation skill it sits next to.
+        final promptSkill =
+            AiConfig.skill(
+                  id: otherSkillId,
+                  name: 'Summarize',
+                  createdAt: _kCreatedAt,
+                  skillType: SkillType.promptGeneration,
+                  requiredInputModalities: const [Modality.text],
+                  systemInstructions: 'sys',
+                  userInstructions: 'usr',
+                )
+                as AiConfigSkill;
+        when(
+          () => bench.aiConfigRepository.getConfigById(otherSkillId),
+        ).thenAnswer((_) async => promptSkill);
+
+        await bench.dispatcher.maybeDispatch(_kAudioId);
+
+        verify(
+          () => bench.skillInferenceRunner.runTranscription(
+            audioEntryId: _kAudioId,
+            automationResult: any(named: 'automationResult'),
+            linkedTaskId: _kTaskId,
+          ),
+        ).called(1);
+      },
+    );
   });
 
   group('post-transcription verification', () {

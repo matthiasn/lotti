@@ -1,25 +1,16 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_search_widgetbook.dart';
 
-import '../../../widget_test_utils.dart';
+import 'widgetbook_test_helpers.dart';
 
 void main() {
   group('buildDesignSystemSearchWidgetbookComponent', () {
     testWidgets('builds the search overview use case', (tester) async {
-      final component = buildDesignSystemSearchWidgetbookComponent();
-      final useCase = component.useCases.single;
-
-      expect(component.name, 'Search');
-      expect(useCase.name, 'Overview');
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
+      await pumpWidgetbookOverview(
+        tester,
+        buildDesignSystemSearchWidgetbookComponent(),
+        expectedName: 'Search',
       );
 
       expect(find.text('Size Scale'), findsOneWidget);

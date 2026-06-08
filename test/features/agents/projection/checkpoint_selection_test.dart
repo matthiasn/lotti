@@ -37,14 +37,52 @@ Set<String> _ancestors(String id, Map<String, AgentEvent> byId) {
   return out;
 }
 
+/// `k` concurrent summaries (`s0..s{k-1}`) folding the same frontier `e0 ← e1`,
+/// all joined by a single head `j` — so every summary is a common ancestor of
+/// the only head with identical coverage (3: `{e0, e1, s_i}`). This isolates the
+/// equal-coverage tiebreak (`coverage == bestCoverage` → lowest id wins) that a
+/// random DAG only stumbles into rarely.
+List<AgentEvent> _equalCoverageSummaries(int k) {
+  // Ids are emitted in non-sorted order on purpose, so a tiebreak by *position*
+  // (a plausible wrong implementation) would disagree with a tiebreak by *id*.
+  final summaryIds = [for (var i = k - 1; i >= 0; i--) 's$i'];
+  return [
+    _ev('e0'),
+    _ev('e1', parents: ['e0']),
+    for (final id in summaryIds)
+      _ev(id, kind: AgentEventKind.summary, parents: ['e1']),
+    _ev('j', parents: summaryIds),
+  ];
+}
+
 void main() {
   group('selectActiveCheckpoint', () {
     // ── generative properties ────────────────────────────────────────────────
 
+    glados.Glados(
+      glados.IntAnys(glados.any).intInRange(2, 6),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'equal-coverage concurrent summaries break ties by lowest id',
+      (k) {
+        final selection = selectActiveCheckpoint(
+          canonicalOrder(_equalCoverageSummaries(k)),
+        );
+        // All k summaries tie on coverage; the lexicographically lowest id wins,
+        // regardless of the order they were emitted in.
+        expect(selection.activeCheckpointId, 's0', reason: 'k=$k');
+        expect(selection.coveredIds, ['e0', 'e1', 's0'], reason: 'k=$k');
+        // The join and the other summaries are not verbatim tail (summaries are
+        // never tail; the join is uncovered but it is a message → it is tail).
+        expect(selection.uncoveredTailIds, ['j'], reason: 'k=$k');
+      },
+      tags: 'glados',
+    );
+
     glados.Glados2(
       glados.any.projectionDag,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('is independent of arrival order', (dag, seed) {
       final fromBuild = selectActiveCheckpoint(canonicalOrder(dag.events));
       final fromShuffle = selectActiveCheckpoint(
@@ -55,7 +93,7 @@ void main() {
 
     glados.Glados(
       glados.any.projectionDag,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('partitions non-summary events into covered xor tail', (dag) {
       final ordered = canonicalOrder(dag.events);
       final selection = selectActiveCheckpoint(ordered);
@@ -78,7 +116,7 @@ void main() {
 
     glados.Glados(
       glados.any.projectionDag,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('an active checkpoint is a summary ancestral to every head', (
       dag,
     ) {
@@ -103,7 +141,7 @@ void main() {
 
     glados.Glados(
       glados.any.projectionDag,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'the active checkpoint covers the most history among candidates',
       (

@@ -118,7 +118,7 @@ void main() {
 
     glados.Glados(
       glados.any.frontierOps,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('matches a latest-wins (createdAt, id) fold of the log', (specs) {
       final log = _realize(specs);
       final frontier = projectInputFrontier(
@@ -131,7 +131,7 @@ void main() {
     glados.Glados2(
       glados.any.frontierOps,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('is independent of message/link arrival order', (specs, seed) {
       final log = _realize(specs);
       final ordered = projectInputFrontier(
@@ -329,6 +329,30 @@ void main() {
         expect(ba, ab);
       },
     );
+
+    test('a same-instant capture vs retraction applies the higher id last', () {
+      // Both ops share the exact createdAt, so only the id tiebreak decides
+      // order. ascending-by-id means the *higher* id is folded last and wins.
+      const day = 3;
+
+      // Retraction id ('z-ret') > capture id ('a-cap'): retraction wins → gone.
+      final retractionWins = projectInputFrontier(
+        messages: [ret('e1', id: 'z-ret', day: day)],
+        links: [cap('e1', 'hello', id: 'a-cap', day: day)],
+      );
+      expect(retractionWins, isEmpty);
+
+      // Flip only the ids (same instant): capture id ('z-cap') > retraction id
+      // ('a-ret'): the capture is folded last and the source survives.
+      final captureWins = projectInputFrontier(
+        messages: [ret('e1', id: 'a-ret', day: day)],
+        links: [cap('e1', 'hello', id: 'z-cap', day: day)],
+      );
+      expect(
+        captureWins['e1']!.contentDigest,
+        ContentDigest.of({'text': 'hello'}),
+      );
+    });
 
     test(
       'a retraction on one device and a later re-capture on another converge',

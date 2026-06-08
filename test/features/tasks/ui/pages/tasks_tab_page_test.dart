@@ -93,6 +93,9 @@ void main() {
     when(() => mockEntitiesCacheService.sortedLabels).thenReturn([focusLabel]);
     when(() => mockEntitiesCacheService.showPrivateEntries).thenReturn(true);
 
+    final mockUserActivityService = MockUserActivityService();
+    when(mockUserActivityService.updateActivity).thenReturn(null);
+
     getItMocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt
@@ -100,7 +103,7 @@ void main() {
           ..registerSingleton<NavService>(mockNavService)
           ..registerSingleton<TimeService>(mockTimeService)
           ..registerSingleton<PersistenceLogic>(mockPersistenceLogic)
-          ..registerSingleton<UserActivityService>(UserActivityService());
+          ..registerSingleton<UserActivityService>(mockUserActivityService);
       },
     );
     when(

@@ -141,6 +141,12 @@ void main() {
         title: 'Renamed from task detail',
       );
       updates.add({'t1'});
+      // Two idle/pump cycles are required, not padding. `updateStream` is a
+      // broadcast `StreamController`: the first idle lets the broadcast event
+      // reach the watching provider's subscription and schedule a refetch, the
+      // first pump runs that microtask and the async `journalEntityById` lookup
+      // resolves the new task; the second idle/pump then flushes the resulting
+      // provider state change into a rebuild so the renamed title is rendered.
       await tester.idle();
       await tester.pump();
       await tester.idle();

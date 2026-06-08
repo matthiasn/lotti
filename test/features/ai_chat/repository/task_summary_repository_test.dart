@@ -2,6 +2,7 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -1382,5 +1383,124 @@ void main() {
         );
       },
     );
+  });
+
+  // Property-based coverage of the date validation in getTaskSummaries
+  // (the private parseLocalStartOfDay / parseLocalEndOfDay closures). The
+  // closures are only reachable through getTaskSummaries, so each property
+  // drives them via a repository whose work-entry query returns empty — valid
+  // dates therefore short-circuit to [] right after parsing, while invalid
+  // dates throw before any DB access.
+  group('date validation — Glados properties', () {
+    // Local to this sibling group (the other group's testCategoryId is private
+    // to its own closure).
+    const testCategoryId = 'test-category-123';
+    String pad2(int v) => v.toString().padLeft(2, '0');
+    String pad4(int v) => v.toString().padLeft(4, '0');
+
+    /// A repository whose work-entry query always returns empty, so a request
+    /// with valid dates resolves to [] and an invalid one throws on parse.
+    TaskSummaryRepository emptyRepo() {
+      final db = MockJournalDb();
+      when(
+        () => db.workEntriesInDateRange(any(), any(), any(), any()),
+      ).thenReturn(MockSelectable<JournalDbEntity>(const []));
+      return TaskSummaryRepository(
+        journalDb: db,
+        taskSummaryResolver: _NoAgentResolver(),
+      );
+    }
+
+    // Any well-formed calendar date (day capped at 28 so it is valid in every
+    // month) must parse and resolve to an empty result — never a parse error.
+    glados.Glados3<int, int, int>(
+      glados.IntAnys(glados.any).intInRange(2000, 2100),
+      glados.IntAnys(glados.any).intInRange(1, 13),
+      glados.IntAnys(glados.any).intInRange(1, 29),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('valid YYYY-MM-DD dates parse and yield an empty result', (
+      year,
+      month,
+      day,
+    ) async {
+      final date = '${pad4(year)}-${pad2(month)}-${pad2(day)}';
+      final result = await emptyRepo().getTaskSummaries(
+        categoryId: testCategoryId,
+        request: TaskSummaryRequest(startDate: date, endDate: date),
+      );
+      expect(result, isEmpty, reason: date);
+    }, tags: 'glados');
+
+    // Strings that violate the strict YYYY-MM-DD regex (wrong field widths)
+    // must throw a FormatException before any DB access. Seeds drive the
+    // padding width of each field so at least one field is mis-sized.
+    glados.Glados3<int, int, int>(
+      glados.IntAnys(glados.any).intInRange(0, 3), // which field is malformed
+      glados.IntAnys(glados.any).intInRange(2000, 2100),
+      // Single-digit month so `'$month'` (unpadded) reliably fails \d{2}.
+      glados.IntAnys(glados.any).intInRange(1, 10),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('regex-violating date strings throw FormatException', (
+      malformedField,
+      year,
+      month,
+    ) async {
+      // Build a date that is well-formed except for one mis-sized field. Each
+      // branch guarantees exactly one field has the wrong digit width:
+      //   0 → 5-digit year, 1 → 1-digit month, 2 → 1-digit day.
+      final start = switch (malformedField) {
+        0 => '${year}0-${pad2(month)}-01', // 5-digit year → fails \d{4}
+        1 => '${pad4(year)}-$month-01', //    1-digit month → fails \d{2}
+        _ => '${pad4(year)}-${pad2(month)}-1', // 1-digit day → fails \d{2}
+      };
+
+      await expectLater(
+        emptyRepo().getTaskSummaries(
+          categoryId: testCategoryId,
+          request: TaskSummaryRequest(startDate: start, endDate: '2024-12-31'),
+        ),
+        throwsA(isA<FormatException>()),
+        reason: start,
+      );
+    }, tags: 'glados');
+
+    // Regex-passing strings that are impossible calendar dates (month or day
+    // out of range) must throw a FormatException via the round-trip check.
+    glados.Glados2<int, int>(
+      glados.IntAnys(glados.any).intInRange(13, 100), // impossible month 13-99
+      glados.IntAnys(glados.any).intInRange(32, 100), // impossible day 32-99
+      glados.ExploreConfig(numRuns: 120),
+    ).test('impossible calendar dates throw FormatException', (
+      badMonth,
+      badDay,
+    ) async {
+      // Two-digit fields keep the regex happy; the values are out of range
+      // (month 13-99, day 32-99), so the DateTime round-trip check rejects them.
+      final badMonthDate = '2024-${pad2(badMonth)}-15';
+      final badDayDate = '2024-06-${pad2(badDay)}';
+
+      await expectLater(
+        emptyRepo().getTaskSummaries(
+          categoryId: testCategoryId,
+          request: TaskSummaryRequest(
+            startDate: badMonthDate,
+            endDate: '2024-12-31',
+          ),
+        ),
+        throwsA(isA<FormatException>()),
+        reason: badMonthDate,
+      );
+      await expectLater(
+        emptyRepo().getTaskSummaries(
+          categoryId: testCategoryId,
+          request: TaskSummaryRequest(
+            startDate: '2024-01-01',
+            endDate: badDayDate,
+          ),
+        ),
+        throwsA(isA<FormatException>()),
+        reason: badDayDate,
+      );
+    }, tags: 'glados');
   });
 }

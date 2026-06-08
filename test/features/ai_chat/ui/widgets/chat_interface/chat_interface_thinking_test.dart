@@ -184,7 +184,8 @@ void main() {
       expect(find.textContaining('Internal reasoning'), findsNothing);
 
       await tester.tap(find.text('Show reasoning'));
-      await tester.pumpAndSettle();
+      // Expanding only animates the 170ms chevron rotation; bound the pump.
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.textContaining('Internal reasoning'), findsOneWidget);
     });
@@ -236,7 +237,10 @@ void main() {
       );
 
       await streamController.close();
-      await tester.pumpAndSettle();
+      // Flush the stream `onDone` (stops streaming) and rebuild; bounded so the
+      // now-finished streaming spinner/typing animation cannot hang a settle.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(
         find.textContaining(
@@ -250,7 +254,7 @@ void main() {
 
       if (showReasoningFinder.evaluate().isNotEmpty) {
         await tester.tap(showReasoningFinder);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 200));
         expect(find.text('Hide reasoning'), findsOneWidget);
         expect(
           find.textContaining('Processing the request...'),
@@ -258,7 +262,7 @@ void main() {
         );
 
         await tester.tap(find.text('Hide reasoning'));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 200));
         expect(find.text('Show reasoning'), findsOneWidget);
         expect(find.textContaining('Processing the request...'), findsNothing);
       } else if (hideReasoningFinder.evaluate().isNotEmpty) {
@@ -268,7 +272,7 @@ void main() {
         );
 
         await tester.tap(hideReasoningFinder);
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 200));
         expect(find.text('Show reasoning'), findsOneWidget);
         expect(find.textContaining('Processing the request...'), findsNothing);
       }
@@ -307,7 +311,10 @@ void main() {
       expect(find.textContaining('Second thought'), findsOneWidget);
 
       await streamController.close();
-      await tester.pumpAndSettle();
+      // Drain the stream `onDone`; bounded pump avoids hanging on the
+      // now-stopped streaming animation.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
     });
 
     testWidgets('handles open-ended thinking block during streaming', (
@@ -347,7 +354,10 @@ void main() {
       );
 
       await streamController.close();
-      await tester.pumpAndSettle();
+      // Drain the stream `onDone`; bounded pump avoids hanging on the
+      // now-stopped streaming animation.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
     });
 
     testWidgets('reasoning uses the same Markdown renderer', (tester) async {
@@ -364,7 +374,8 @@ void main() {
 
       await _pumpChatInterface(tester, repository: mockRepo);
       await tester.tap(find.text('Show reasoning'));
-      await tester.pumpAndSettle();
+      // Expanding only animates the 170ms chevron rotation; bound the pump.
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.byType(GptMarkdown), findsAtLeastNWidgets(2));
     });

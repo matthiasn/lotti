@@ -17,37 +17,47 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** All files are well within size guidelines (impl: 42 lines; tests: 193 and 64 lines). No splits needed.
-- [ ] **[MED]** The "one test file per source file" rule (AGENTS.md) is violated. `checklist_markdown_exporter.dart` exports both `checklistItemsToMarkdown` and `checklistItemsToEmojiList` from a single file. Currently their tests are split across `checklist_markdown_exporter_test.dart` and `checklist_emoji_exporter_test.dart`. Both test files should be consolidated into `checklist_markdown_exporter_test.dart` (since both functions live in `checklist_markdown_exporter.dart`).
+- [x] **[LOW]** All files are well within size guidelines (impl: 42 lines; tests: 193 and 64 lines). No splits needed.
+  **RESOLVED:** Confirmed by reading the files; after consolidation the single test file is ~210 lines, still well within guidelines. No code change beyond the consolidation done below.
+- [x] **[MED]** The "one test file per source file" rule (AGENTS.md) is violated. `checklist_markdown_exporter.dart` exports both `checklistItemsToMarkdown` and `checklistItemsToEmojiList` from a single file. Currently their tests are split across `checklist_markdown_exporter_test.dart` and `checklist_emoji_exporter_test.dart`. Both test files should be consolidated into `checklist_markdown_exporter_test.dart` (since both functions live in `checklist_markdown_exporter.dart`).
+  **RESOLVED:** Merged the unique emoji tests into the `checklistItemsToEmojiList` group inside `checklist_markdown_exporter_test.dart` and deleted `checklist_emoji_exporter_test.dart`. One source file is now covered by exactly one test file, with a single shared `makeItem` factory and shared Glados generator infrastructure.
 
 ---
 
 ## Test quality improvements
 
-- [ ] **[MED]** `checklist_emoji_exporter_test.dart` has only 4 static test cases covering the `checklistItemsToEmojiList` function and **no Glados property**. Meanwhile the structurally identical `checklistItemsToMarkdown` has a 160-run Glados property that already defines the shared generator infrastructure (`_AnyChecklistRows`, `_GeneratedChecklistRow`). The emoji exporter exercises the same `_exportChecklistItems` / `_sanitizeTitle` private helpers. Not adding a parallel Glados property for the emoji path leaves an asymmetric gap.
-- [ ] **[LOW]** `checklist_emoji_exporter_test.dart:7–28` — `makeItem(...)` factory is duplicated verbatim from `checklist_markdown_exporter_test.dart:85–106`. After consolidation into a single test file, the factory should be extracted once at file scope.
-- [ ] **[LOW]** `checklist_emoji_exporter_test.dart` — the test `'uses emoji and preserves order'` only checks two items. The analogous Markdown test `'preserves order and checked state'` uses three items and verifies ordering is not reversed. The emoji test should match this level of coverage.
+- [x] **[MED]** `checklist_emoji_exporter_test.dart` has only 4 static test cases covering the `checklistItemsToEmojiList` function and **no Glados property**. Meanwhile the structurally identical `checklistItemsToMarkdown` has a 160-run Glados property that already defines the shared generator infrastructure (`_AnyChecklistRows`, `_GeneratedChecklistRow`). The emoji exporter exercises the same `_exportChecklistItems` / `_sanitizeTitle` private helpers. Not adding a parallel Glados property for the emoji path leaves an asymmetric gap.
+  **RESOLVED:** The consolidated `checklistItemsToEmojiList` group now carries the 160-run `Glados(any.checklistRows, ...)` property (matching the Markdown path) plus the full set of static cases, reusing `_AnyChecklistRows`/`_GeneratedChecklistRow`. The asymmetry is closed.
+- [x] **[LOW]** `checklist_emoji_exporter_test.dart:7–28` — `makeItem(...)` factory is duplicated verbatim from `checklist_markdown_exporter_test.dart:85–106`. After consolidation into a single test file, the factory should be extracted once at file scope.
+  **RESOLVED:** The duplicate file was deleted; the single `makeItem` factory defined once in `checklist_markdown_exporter_test.dart`'s `main()` is now shared by both groups.
+- [x] **[LOW]** `checklist_emoji_exporter_test.dart` — the test `'uses emoji and preserves order'` only checks two items. The analogous Markdown test `'preserves order and checked state'` uses three items and verifies ordering is not reversed. The emoji test should match this level of coverage.
+  **RESOLVED:** The consolidated `'uses emoji checkboxes and preserves order'` test now uses three items (`⬜ First\n✅ Second\n⬜ Third`), matching the Markdown test's ordering coverage.
 
 ---
 
 ## Generative (Glados) testing opportunities
 
 - [x] **[HIGH]** `checklistItemsToEmojiList` (`checklist_markdown_exporter.dart:25–30`) — a pure function with the same filter/sanitize/format structure as `checklistItemsToMarkdown`. The existing `_AnyChecklistRows` generator and `_GeneratedChecklistRow` model in `checklist_markdown_exporter_test.dart` can be reused directly. A property confirming that (a) null items and deleted items are excluded, (b) unchecked items use `⬜` and checked items use `✅`, and (c) title sanitization matches the Markdown path's `sanitizedTitle` invariant would provide equivalent Glados coverage. Target `numRuns: 160` to match the Markdown property. **RESOLVED:** added an example test plus a `Glados(any.checklistRows, numRuns: 160)` property mirroring the Markdown one — null/deleted exclusion, ⬜/✅ mapping, and the shared `sanitizedTitle` invariant, asserted against the generated model.
-- [ ] **[LOW]** `_sanitizeTitle` (impl line 15–18) is shared private logic exercised by both export functions. The Glados property on `checklistItemsToMarkdown` already stress-tests it indirectly via `_GeneratedChecklistRow.sanitizedTitle`. No additional dedicated property is needed.
+- [x] **[LOW]** `_sanitizeTitle` (impl line 15–18) is shared private logic exercised by both export functions. The Glados property on `checklistItemsToMarkdown` already stress-tests it indirectly via `_GeneratedChecklistRow.sanitizedTitle`. No additional dedicated property is needed.
+  **RESOLVED:** Confirmed by reading the impl and tests — `_sanitizeTitle` is a private helper covered transitively by both 160-run Glados properties (Markdown and emoji) via `sanitizedTitle`. A dedicated property would be redundant; no code change.
 
 ---
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[MED]** `checklistItemsToEmojiList` — the `'replaces carriage returns and filters nulls'` static test covers CR replacement and null filtering together. There is no dedicated test for a list that is *entirely nulls* (returns empty string), which is an edge case tested for the Markdown function. Add a `'returns empty for all-null input'` case.
-- [ ] **[LOW]** `_exportChecklistItems` (impl line 32–41) — the `trimRight()` call at line 41 ensures no trailing newline. This invariant is implicitly verified in the Glados property via `expectedLines.join('\n')` (no trailing newline). The emoji exporter currently has no equivalent coverage.
+- [x] **[MED]** `checklistItemsToEmojiList` — the `'replaces carriage returns and filters nulls'` static test covers CR replacement and null filtering together. There is no dedicated test for a list that is *entirely nulls* (returns empty string), which is an edge case tested for the Markdown function. Add a `'returns empty for all-null input'` case.
+  **RESOLVED:** Added `'returns empty for all-null input'` asserting `checklistItemsToEmojiList(const [null, null, null]) == ''`, plus retained the CR/null-filtering case.
+- [x] **[LOW]** `_exportChecklistItems` (impl line 32–41) — the `trimRight()` call at line 41 ensures no trailing newline. This invariant is implicitly verified in the Glados property via `expectedLines.join('\n')` (no trailing newline). The emoji exporter currently has no equivalent coverage.
+  **RESOLVED:** The consolidated emoji 160-run Glados property asserts against `expectedLines.join('\n')` (no trailing newline), giving the emoji path equivalent `trimRight()` coverage to the Markdown path.
 
 ---
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** `checklist_emoji_exporter_test.dart` currently lives as a separate test file, so the test runner loads two files, two `main()` functions, and two passes of the localization/metadata setup for what is effectively one function. After consolidation, it becomes one file and one load.
-- [ ] **[LOW]** The `makeItem` factory is duplicated in both files; after consolidation it is created once per test run instead of twice.
+- [x] **[LOW]** `checklist_emoji_exporter_test.dart` currently lives as a separate test file, so the test runner loads two files, two `main()` functions, and two passes of the localization/metadata setup for what is effectively one function. After consolidation, it becomes one file and one load.
+  **RESOLVED:** `checklist_emoji_exporter_test.dart` was deleted; the runner now loads one file with one `main()` for both functions.
+- [x] **[LOW]** The `makeItem` factory is duplicated in both files; after consolidation it is created once per test run instead of twice.
+  **RESOLVED:** With the duplicate file removed, `makeItem` is defined once and shared by both groups.
 
 ---
 

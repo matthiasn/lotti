@@ -30,7 +30,8 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `lib/features/tasks/ui/title_text_field.dart` (224 ln) is moderate but its tests are illegally split across three files: `title_text_field_test.dart`, `title_text_field_shortcuts_test.dart` (48 ln), and `title_text_field_tap_outside_test.dart` (42 ln). These should be consolidated into a single `title_text_field_test.dart` per AGENTS rule "One test file per source file." Lines: `test/features/tasks/ui/title_text_field_shortcuts_test.dart:1` and `test/features/tasks/ui/title_text_field_tap_outside_test.dart:1`.
+- [x] **[LOW]** `lib/features/tasks/ui/title_text_field.dart` (224 ln) is moderate but its tests are illegally split across three files: `title_text_field_test.dart`, `title_text_field_shortcuts_test.dart` (48 ln), and `title_text_field_tap_outside_test.dart` (42 ln). These should be consolidated into a single `title_text_field_test.dart` per AGENTS rule "One test file per source file." Lines: `test/features/tasks/ui/title_text_field_shortcuts_test.dart:1` and `test/features/tasks/ui/title_text_field_tap_outside_test.dart:1`.
+  **RESOLVED (stale):** the two split files no longer exist; their cases are already consolidated into `title_text_field_test.dart` as the `TitleTextField - Keyboard Shortcuts` and `TitleTextField - Tap Outside` groups. Only `title_text_field_test.dart` remains on disk.
 
 - [x] **[LOW]** `test/features/tasks/ui/compact_task_progress_timer_text_test.dart` (81 ln) and `test/features/tasks/ui/linked_duration_timer_text_test.dart` (83 ln) are orphan test files with no matching impl files. Both test behaviour of `compact_task_progress.dart` / `linked_duration.dart` respectively and should be merged into the primary test file for each. Lines: `compact_task_progress_timer_text_test.dart:1`, `linked_duration_timer_text_test.dart:1`.
   - **RESOLVED:** done — both orphan timer-text files merged into `compact_task_progress_test.dart` / `linked_duration_test.dart` (helper controller renamed where it collided) and deleted.
@@ -58,7 +59,8 @@
 - [x] **[MED]** `test/features/tasks/ui/due_date_text_test.dart` uses `WidgetTestBench` (from `test_helper.dart`) correctly but calls `pumpAndSettle()` after every single widget render even for stateless assertions that need no animation to settle. See speed section below.
   **RESOLVED (stale):** the file has zero `pumpAndSettle` calls.
 
-- [ ] **[LOW]** `test/features/tasks/ui/title_text_field_shortcuts_test.dart` builds a custom `MaterialApp` + `AppLocalizations` wrapper (lines 12–27) instead of using `makeTestableWidget()`. This should be standardized.
+- [x] **[LOW]** `test/features/tasks/ui/title_text_field_shortcuts_test.dart` builds a custom `MaterialApp` + `AppLocalizations` wrapper (lines 12–27) instead of using `makeTestableWidget()`. This should be standardized.
+  **RESOLVED:** the shortcuts test now lives in the consolidated `title_text_field_test.dart` and its custom `MaterialApp`/`AppLocalizations` wrapper was replaced with the file's shared `WidgetTestBench` (the bench the rest of the file already uses); the now-unused `app_localizations.dart` import was dropped.
 
 ---
 
@@ -67,7 +69,8 @@
 - [x] **[MED]** `lib/features/tasks/ui/utils.dart` — `normalizeTaskStatusString()` (line 49) is a pure string normalization function with switch/case logic over status aliases. It is only tested with three concrete inputs (`task_status_test.dart:440-442`). A Glados property test could assert round-trip idempotence: `normalizeTaskStatusString(normalizeTaskStatusString(s))` == `normalizeTaskStatusString(s)` for any string `s`, and that no known alias (OPENING, OPENED, INPROGRESS, IN_PROGRESS) produces a variant not in `allTaskStatuses`.
   **RESOLVED:** added a Glados property over alias/whitespace/garbage inputs — idempotence (`normalize(normalize(s)) == normalize(s)`) plus the canonical-set membership oracle (known aliases land in `allTaskStatuses`; unknown strings never collide).
 
-- [ ] **[LOW]** `lib/features/tasks/ui/utils.dart` — `taskColorFromStatusString` and `taskIconFromStatusString` (lines 9–32) are pure switch functions. A Glados property could assert that every status string returns a non-null result (exhaustiveness), and that any string outside the known list maps to the default fallback icon / color.
+- [x] **[LOW]** `lib/features/tasks/ui/utils.dart` — `taskColorFromStatusString` and `taskIconFromStatusString` (lines 9–32) are pure switch functions. A Glados property could assert that every status string returns a non-null result (exhaustiveness), and that any string outside the known list maps to the default fallback icon / color.
+  **RESOLVED:** `utils_test.dart` already had no-throw/non-null exhaustiveness properties; added (a) an iff oracle for the icon switch — `taskIconFromStatusString(s) == help_outline` exactly when `normalizeTaskStatusString(s)` is not a known status, and (b) a colour fallback property — any unknown-normalized input maps to the OPEN/grey fallback colour for both brightnesses (a strict iff is impossible for colour because OPEN itself uses the grey fallback).
 
 ---
 
@@ -102,7 +105,8 @@
 - [x] **[MED]** `test/features/tasks/ui/task_app_bar_test.dart` — 7 `pumpAndSettle()` calls (lines 120, 134, 148, 159, 179, 201, 225). Savings: ~70s.
   **RESOLVED (assessed, no change):** a bounded-pump conversion was attempted and reverted — this file's `FakeEntryController` resolution is order-dependent (assertions that pass in full-file runs fail under `--plain-name` isolation), so the settles are load-bearing here.
 
-- [ ] **[LOW]** `test/features/tasks/ui/linked_duration_timer_text_test.dart` (line 47) and `compact_task_progress_timer_text_test.dart` (line 49) each have a `pumpAndSettle()` followed by an extra `pump()`. The double-settle pattern is redundant if the animation truly settles; the comment "Ensure AsyncNotifier completes and rebuilds" suggests `tester.pump()` alone would be sufficient.
+- [x] **[LOW]** `test/features/tasks/ui/linked_duration_timer_text_test.dart` (line 47) and `compact_task_progress_timer_text_test.dart` (line 49) each have a `pumpAndSettle()` followed by an extra `pump()`. The double-settle pattern is redundant if the animation truly settles; the comment "Ensure AsyncNotifier completes and rebuilds" suggests `tester.pump()` alone would be sufficient.
+  **RESOLVED:** the two orphan files were merged into `linked_duration_test.dart` / `compact_task_progress_test.dart`, but the redundant `pumpAndSettle()` + `pump()` pattern carried over into the merged sections. Replaced both with the bounded `pump()` + `pump(<short>)` pattern the rest of each file already uses (no real animations to settle), removing the 10 s `pumpAndSettle` timeout ceiling.
 
 ---
 

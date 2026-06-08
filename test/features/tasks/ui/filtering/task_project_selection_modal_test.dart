@@ -255,5 +255,58 @@ void main() {
 
       expect(result, isNull);
     });
+
+    testWidgets(
+      'discards an in-progress selection when popped via back navigation',
+      (tester) async {
+        await tester.binding.setSurfaceSize(const Size(500, 800));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+
+        Set<String>? result = const {'sentinel'};
+        late BuildContext hostContext;
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Builder(
+              builder: (context) {
+                hostContext = context;
+                return ElevatedButton(
+                  onPressed: () async {
+                    result = await showProjectSelectionModal(
+                      context: context,
+                      projects: projects,
+                      categories: categories,
+                      initialSelectedIds: const {'proj-1'},
+                    );
+                  },
+                  child: const Text('Open'),
+                );
+              },
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Open'));
+        await tester.pumpAndSettle();
+
+        // Make a selection change without applying it.
+        await tester.tap(
+          find.byKey(
+            const ValueKey('design-system-project-selection-option-proj-2'),
+          ),
+        );
+        await tester.pump();
+
+        // Simulate the system/hardware back button, which pops the topmost
+        // route (the modal) without ever reaching the apply button.
+        await Navigator.of(hostContext).maybePop();
+        await tester.pumpAndSettle();
+
+        // The pending {proj-1, proj-2} selection is discarded entirely; back
+        // navigation resolves the modal future to null rather than the
+        // initial or in-progress selection.
+        expect(result, isNull);
+      },
+    );
   });
 }

@@ -124,6 +124,9 @@ void main() {
       expect(restored, equals(data), reason: '$scenario');
       expect(json['checkedBy'], data.checkedBy.name, reason: '$scenario');
       expect(json['checkedAt'], data.checkedAt?.toIso8601String());
+      // Assert the decoded object's field, not only the pre-encode value.
+      expect(restored.checkedAt, data.checkedAt, reason: '$scenario');
+      expect(restored.checkedBy, data.checkedBy, reason: '$scenario');
     }, tags: 'glados');
   });
 }

@@ -77,8 +77,15 @@ void main() {
               (project) => project.project.data.title,
             ),
         ['CI/CD Pipeline', 'Design System Book'],
+        reason: 'the two completed projects in mock data, in group order',
       );
-      expect(state.selectedProject?.project.data.title, 'CI/CD Pipeline');
+      expect(
+        state.selectedProject?.project.data.title,
+        'CI/CD Pipeline',
+        reason:
+            'first completed project in mock data is auto-selected '
+            'after the previously selected Device Sync is filtered out',
+      );
     });
   });
 }

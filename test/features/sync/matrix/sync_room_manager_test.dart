@@ -86,6 +86,39 @@ extension _AnyGeneratedHydrateScenario on glados.Any {
       );
 }
 
+/// Builds a [SyncRoomManager] wired to a *synchronous* broadcast invite stream
+/// so invite delivery to the manager's handler is deterministic under
+/// [fakeAsync] (no real event-loop yield needed). Returns the manager and the
+/// controller the test drives. [getRoomById] backs `gateway.getRoomById`.
+(SyncRoomManager, StreamController<RoomInviteEvent>) _buildSyncInviteManager({
+  required MockSettingsDb settingsDb,
+  required MockDomainLogger loggingService,
+  Room? Function(String roomId)? getRoomById,
+}) {
+  final gateway = MockMatrixGateway();
+  final invites = StreamController<RoomInviteEvent>.broadcast(sync: true);
+  when(() => gateway.invites).thenAnswer((_) => invites.stream);
+  when(
+    () => gateway.getRoomById(any<String>()),
+  ).thenAnswer((invocation) {
+    final id = invocation.positionalArguments.first as String;
+    return getRoomById?.call(id);
+  });
+  when(
+    () => loggingService.log(
+      any<LogDomain>(),
+      any<String>(),
+      subDomain: any<String?>(named: 'subDomain'),
+    ),
+  ).thenReturn(null);
+  final manager = SyncRoomManager(
+    gateway: gateway,
+    settingsDb: settingsDb,
+    loggingService: loggingService,
+  );
+  return (manager, invites);
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(FakeRoom());
@@ -285,29 +318,53 @@ void main() {
     verify(() => room.invite('@user:server')).called(1);
   });
 
-  test('invite stream filters invalid room ids', () async {
-    final invites = <SyncRoomInvite>[];
-    final sub = manager.inviteRequests.listen(invites.add);
+  test('invite stream filters invalid room ids', () {
+    fakeAsync((async) {
+      // Build a fresh manager inside the fake zone with a synchronous gateway
+      // invite stream so delivery to the manager's invite handler is
+      // deterministic and microtasks flush within this zone.
+      final localGateway = MockMatrixGateway();
+      final localInvites = StreamController<RoomInviteEvent>.broadcast(
+        sync: true,
+      );
+      when(() => localGateway.invites).thenAnswer((_) => localInvites.stream);
+      when(
+        () => loggingService.log(
+          any<LogDomain>(),
+          any<String>(),
+          subDomain: any<String?>(named: 'subDomain'),
+        ),
+      ).thenReturn(null);
+      final localManager = SyncRoomManager(
+        gateway: localGateway,
+        settingsDb: settingsDb,
+        loggingService: loggingService,
+      );
 
-    final invalidInvite = MockRoomInviteEvent();
-    when(() => invalidInvite.roomId).thenReturn('room');
-    when(() => invalidInvite.senderId).thenReturn('@alice:server');
+      final invites = <SyncRoomInvite>[];
+      final sub = localManager.inviteRequests.listen(invites.add);
 
-    inviteController.add(invalidInvite);
-    // Yield an event-loop turn, then flush microtasks deterministically
-    await Future<void>.delayed(Duration.zero);
-    fakeAsync((async) => async.flushMicrotasks());
+      final invalidInvite = MockRoomInviteEvent();
+      when(() => invalidInvite.roomId).thenReturn('room');
+      when(() => invalidInvite.senderId).thenReturn('@alice:server');
 
-    expect(invites, isEmpty);
-    verify(
-      () => loggingService.log(
-        LogDomain.sync,
-        any<String>(that: contains('Discarding invite')),
-        subDomain: 'inviteFiltered',
-      ),
-    ).called(1);
+      localInvites.add(invalidInvite);
+      async.flushMicrotasks();
 
-    await sub.cancel();
+      expect(invites, isEmpty);
+      verify(
+        () => loggingService.log(
+          LogDomain.sync,
+          any<String>(that: contains('Discarding invite')),
+          subDomain: 'inviteFiltered',
+        ),
+      ).called(1);
+
+      unawaited(sub.cancel());
+      unawaited(localManager.dispose());
+      unawaited(localInvites.close());
+      async.flushMicrotasks();
+    });
   });
 
   test('invite stream emits validated invites', () async {
@@ -617,64 +674,99 @@ void main() {
       expect(manager.currentRoom, mockRoom);
     });
 
-    test('emits invite requests for valid room ids', () async {
-      await manager.initialize();
-      final invites = <SyncRoomInvite>[];
-      final sub = manager.inviteRequests.listen(invites.add);
+    test('emits invite requests for valid room ids', () {
+      fakeAsync((async) {
+        final (localManager, localInvites) = _buildSyncInviteManager(
+          settingsDb: mockSettingsDb,
+          loggingService: mockLoggingService,
+        );
+        unawaited(localManager.initialize());
+        async.flushMicrotasks();
 
-      inviteController.add(
-        const RoomInviteEvent(
-          roomId: '!room:server',
-          senderId: '@user:server',
-        ),
-      );
-      await Future<void>.delayed(Duration.zero);
+        final invites = <SyncRoomInvite>[];
+        final sub = localManager.inviteRequests.listen(invites.add);
 
-      expect(invites, hasLength(1));
-      expect(invites.first.roomId, '!room:server');
-      expect(invites.first.senderId, '@user:server');
-      expect(invites.first.matchesExistingRoom, isFalse);
-      await sub.cancel();
+        localInvites.add(
+          const RoomInviteEvent(
+            roomId: '!room:server',
+            senderId: '@user:server',
+          ),
+        );
+        async.flushMicrotasks();
+
+        expect(invites, hasLength(1));
+        expect(invites.first.roomId, '!room:server');
+        expect(invites.first.senderId, '@user:server');
+        expect(invites.first.matchesExistingRoom, isFalse);
+
+        unawaited(sub.cancel());
+        unawaited(localManager.dispose());
+        unawaited(localInvites.close());
+        async.flushMicrotasks();
+      });
     });
 
-    test('ignores invites with invalid room id', () async {
-      await manager.initialize();
-      final invites = <SyncRoomInvite>[];
-      final sub = manager.inviteRequests.listen(invites.add);
+    test('ignores invites with invalid room id', () {
+      fakeAsync((async) {
+        final (localManager, localInvites) = _buildSyncInviteManager(
+          settingsDb: mockSettingsDb,
+          loggingService: mockLoggingService,
+        );
+        unawaited(localManager.initialize());
+        async.flushMicrotasks();
 
-      inviteController.add(
-        const RoomInviteEvent(
-          roomId: 'not-a-room',
-          senderId: '@user:server',
-        ),
-      );
-      await Future<void>.delayed(Duration.zero);
+        final invites = <SyncRoomInvite>[];
+        final sub = localManager.inviteRequests.listen(invites.add);
 
-      expect(invites, isEmpty);
-      await sub.cancel();
+        localInvites.add(
+          const RoomInviteEvent(
+            roomId: 'not-a-room',
+            senderId: '@user:server',
+          ),
+        );
+        async.flushMicrotasks();
+
+        expect(invites, isEmpty);
+
+        unawaited(sub.cancel());
+        unawaited(localManager.dispose());
+        unawaited(localInvites.close());
+        async.flushMicrotasks();
+      });
     });
 
-    test('marks invite as matching when ids align', () async {
-      when(
-        () => mockSettingsDb.itemByKey(matrixRoomKey),
-      ).thenAnswer((_) async => '!room:server');
-      when(() => mockGateway.getRoomById('!room:server')).thenReturn(mockRoom);
+    test('marks invite as matching when ids align', () {
+      fakeAsync((async) {
+        final (localManager, localInvites) = _buildSyncInviteManager(
+          settingsDb: mockSettingsDb,
+          loggingService: mockLoggingService,
+          getRoomById: (id) => id == '!room:server' ? mockRoom : null,
+        );
+        when(
+          () => mockSettingsDb.itemByKey(matrixRoomKey),
+        ).thenAnswer((_) async => '!room:server');
 
-      await manager.initialize();
+        unawaited(localManager.initialize());
+        async.flushMicrotasks();
 
-      final invites = <SyncRoomInvite>[];
-      final sub = manager.inviteRequests.listen(invites.add);
+        final invites = <SyncRoomInvite>[];
+        final sub = localManager.inviteRequests.listen(invites.add);
 
-      inviteController.add(
-        const RoomInviteEvent(
-          roomId: '!room:server',
-          senderId: '@user:server',
-        ),
-      );
-      await Future<void>.delayed(Duration.zero);
+        localInvites.add(
+          const RoomInviteEvent(
+            roomId: '!room:server',
+            senderId: '@user:server',
+          ),
+        );
+        async.flushMicrotasks();
 
-      expect(invites.single.matchesExistingRoom, isTrue);
-      await sub.cancel();
+        expect(invites.single.matchesExistingRoom, isTrue);
+
+        unawaited(sub.cancel());
+        unawaited(localManager.dispose());
+        unawaited(localInvites.close());
+        async.flushMicrotasks();
+      });
     });
 
     test('acceptInvite joins room and persists id', () async {

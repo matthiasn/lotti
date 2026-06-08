@@ -1,5 +1,9 @@
+// glados re-exports package:test, which provides test/group/expect and the
+// matchers used below; importing flutter_test alongside it would make those
+// names ambiguous. The `Color` API used by the LightModeSurfaces checks comes
+// in via flex_color_scheme's re-export of Flutter material.
 import 'package:flex_color_scheme/flex_color_scheme.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart';
 import 'package:lotti/features/theming/model/theme_definitions.dart';
 
 void main() {
@@ -19,6 +23,18 @@ void main() {
         expect(isValidThemeName('NonExistent'), isFalse);
         expect(isValidThemeName(''), isFalse);
       });
+
+      // Property: validity is exactly membership in the themes map. For any
+      // arbitrary string, isValidThemeName must agree with themes.containsKey,
+      // guarding against accidental containsKey-true collisions for strings
+      // that are not real theme names.
+      Glados<String>(any.letterOrDigits).test(
+        'agrees with themes.containsKey for any string',
+        (input) {
+          expect(isValidThemeName(input), equals(themes.containsKey(input)));
+        },
+        tags: 'glados',
+      );
     });
 
     group('allThemeNames getter', () {
@@ -42,13 +58,19 @@ void main() {
         expect(themes.containsKey(defaultThemeName), isTrue);
       });
 
-      test('has non-null FlexScheme value', () {
-        expect(themes[defaultThemeName], isNotNull);
+      test('maps to the expected FlexScheme value', () {
+        // Pin the concrete scheme so an accidental remap of the default
+        // theme entry is caught (a bare isNotNull would not notice).
+        expect(themes[defaultThemeName], equals(FlexScheme.greyLaw));
       });
     });
 
     group('themes map', () {
       test('contains expected number of standard themes', () {
+        // Intentionally a pinned count, not derived from `themes.length`
+        // (that would be tautological). When a theme is added or removed,
+        // update this number deliberately and confirm the new selection set
+        // is correct.
         expect(themes.length, equals(21));
       });
 

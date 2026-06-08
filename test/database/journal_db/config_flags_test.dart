@@ -13,7 +13,7 @@ void main() {
   late JournalDb db;
   late Directory tempDir;
 
-  setUp(() async {
+  setUpAll(() async {
     tempDir = Directory.systemTemp.createTempSync('lotti_config_flags_');
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
@@ -24,6 +24,23 @@ void main() {
   });
 
   tearDown(() async {
+    // Reset to a clean, fully-defaulted flag set so each test is
+    // order-independent. The only flag any test mutates is [enableMatrixFlag]
+    // ("preserves existing flag status when re-run"); restoring it to its
+    // default `false` via [upsertConfigFlag] keeps both the DB row and the
+    // in-memory flag cache in sync.
+    if (await db.getConfigFlagByName(enableMatrixFlag) != null) {
+      await db.upsertConfigFlag(
+        const ConfigFlag(
+          name: enableMatrixFlag,
+          description: 'Enable Matrix Sync',
+          status: false,
+        ),
+      );
+    }
+  });
+
+  tearDownAll(() async {
     await db.close();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(

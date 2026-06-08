@@ -203,6 +203,41 @@ void main() {
     expect(metrics.staleAttachmentPurges, 0);
   });
 
+  test(
+    'fromMap defaults queue ledger counters to zero when keys are absent',
+    () {
+      // The queue ledger keys are the most recently added scalar group and the
+      // round-trip Glados property omits them via includePattern, so guard the
+      // missing-key default for each one explicitly here.
+      final metrics = SyncMetrics.fromMap(const <String, dynamic>{});
+
+      expect(metrics.queueActive, 0);
+      expect(metrics.queueApplied, 0);
+      expect(metrics.queueAbandoned, 0);
+      expect(metrics.queueRetrying, 0);
+    },
+  );
+
+  test('fromMap reads queue ledger counters and toMap round-trips them', () {
+    final metrics = SyncMetrics.fromMap(const <String, dynamic>{
+      'queueActive': 3,
+      'queueApplied': 7,
+      'queueAbandoned': 1,
+      'queueRetrying': 2,
+    });
+
+    expect(metrics.queueActive, 3);
+    expect(metrics.queueApplied, 7);
+    expect(metrics.queueAbandoned, 1);
+    expect(metrics.queueRetrying, 2);
+
+    final map = metrics.toMap();
+    expect(map['queueActive'], 3);
+    expect(map['queueApplied'], 7);
+    expect(map['queueAbandoned'], 1);
+    expect(map['queueRetrying'], 2);
+  });
+
   test('fromMap deserializes processedByType and droppedByType entries', () {
     final metrics = SyncMetrics.fromMap(const <String, dynamic>{
       'processed.journalEntity': 5,

@@ -171,5 +171,58 @@ void main() {
       expect(subtitleDy, greaterThan(titleDy));
       expect(find.text('pill'), findsOneWidget);
     });
+
+    // Pill-rendering invariant: every label in `pills` must appear in the
+    // rendered output, regardless of list length, tone mix, or layout. The
+    // repo keeps Glados `.test()` bodies for pure (synchronous) logic only —
+    // widget rendering needs a `WidgetTester`, which Glados doesn't drive —
+    // so the invariant is expressed as a parameterised widget test over a
+    // representative set of pill-list shapes (varying length, tones, and the
+    // wide/compact layout) rather than a Glados property.
+    final pillCases =
+        <({String name, List<AgentListPill> pills, double width})>[
+          (name: 'empty pill list (wide)', pills: const [], width: 800),
+          (
+            name: 'single neutral pill (wide)',
+            pills: const [AgentListPill(label: 'one')],
+            width: 800,
+          ),
+          (
+            name: 'mixed tones, several pills (wide)',
+            pills: const [
+              AgentListPill(
+                label: 'p-active',
+                tone: AgentListPillTone.interactive,
+              ),
+              AgentListPill(label: 'p-warn', tone: AgentListPillTone.warning),
+              AgentListPill(label: 'p-info', tone: AgentListPillTone.info),
+              AgentListPill(label: 'p-muted', tone: AgentListPillTone.muted),
+            ],
+            width: 1000,
+          ),
+          (
+            name: 'mixed tones, several pills (compact)',
+            pills: const [
+              AgentListPill(label: 'c-one'),
+              AgentListPill(label: 'c-two', tone: AgentListPillTone.error),
+              AgentListPill(label: 'c-three', tone: AgentListPillTone.info),
+            ],
+            width: 420,
+          ),
+        ];
+
+    for (final c in pillCases) {
+      testWidgets('every pill label renders — ${c.name}', (tester) async {
+        await _pumpRow(tester, _row(pills: c.pills), width: c.width);
+
+        for (final pill in c.pills) {
+          expect(
+            find.text(pill.label),
+            findsOneWidget,
+            reason: 'pill "${pill.label}" missing in ${c.name}',
+          );
+        }
+      });
+    }
   });
 }

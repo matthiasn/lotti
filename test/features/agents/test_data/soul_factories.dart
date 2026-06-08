@@ -5,9 +5,6 @@ import 'package:lotti/features/sync/vector_clock.dart';
 
 import 'constants.dart';
 
-/// Default soul ID used across tests.
-const kTestSoulId = 'soul-001';
-
 // ── Soul document factories ─────────────────────────────────────────────────
 
 SoulDocumentEntity makeTestSoulDocument({

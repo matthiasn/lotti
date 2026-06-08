@@ -74,6 +74,56 @@ TaskStatus _doneStatus() => TaskStatus.done(
   utcOffset: 120,
 );
 
+/// Shape of a single `taskFactory` invocation captured by the test bench.
+typedef _CreatedTaskRequest = ({
+  String title,
+  String categoryId,
+  int? estimateMinutes,
+  DateTime? due,
+  String? profileId,
+});
+
+/// Builds a [DayAgentTaskFactory] that records each invocation into
+/// [requests] and stores the synthesized task into [journalEntities] so the
+/// rest of the service can read it back. Defined once instead of inline in
+/// `createService` so the construction logic lives in one place.
+DayAgentTaskFactory _makeTaskFactory(
+  Map<String, JournalEntity> journalEntities,
+  List<_CreatedTaskRequest> requests,
+) {
+  return ({
+    required String title,
+    required String categoryId,
+    required DateTime now,
+    int? estimateMinutes,
+    DateTime? due,
+    String? profileId,
+  }) async {
+    requests.add((
+      title: title,
+      categoryId: categoryId,
+      estimateMinutes: estimateMinutes,
+      due: due,
+      profileId: profileId,
+    ));
+    final baseTask = _task(
+      id: 'created-task-${requests.length}',
+      title: title,
+      status: _openStatus(),
+      categoryId: categoryId,
+    );
+    final task = baseTask.copyWith(
+      data: baseTask.data.copyWith(
+        estimate: Duration(minutes: estimateMinutes ?? 0),
+        due: due,
+        profileId: profileId,
+      ),
+    );
+    journalEntities[task.id] = task;
+    return task;
+  };
+}
+
 void main() {
   setUpAll(registerAllFallbackValues);
 
@@ -90,16 +140,7 @@ void main() {
   late List<AgentDomainEntity> upsertedEntities;
   late List<AgentLink> upsertedLinks;
   late List<String> notifications;
-  late List<
-    ({
-      String title,
-      String categoryId,
-      int? estimateMinutes,
-      DateTime? due,
-      String? profileId,
-    })
-  >
-  createdTaskRequests;
+  late List<_CreatedTaskRequest> createdTaskRequests;
 
   DayAgentCaptureService createService() {
     return DayAgentCaptureService(
@@ -110,38 +151,7 @@ void main() {
       fts5Db: fts5Db,
       orchestrator: orchestrator,
       domainLogger: domainLogger,
-      taskFactory:
-          ({
-            required String title,
-            required String categoryId,
-            required DateTime now,
-            int? estimateMinutes,
-            DateTime? due,
-            String? profileId,
-          }) async {
-            createdTaskRequests.add((
-              title: title,
-              categoryId: categoryId,
-              estimateMinutes: estimateMinutes,
-              due: due,
-              profileId: profileId,
-            ));
-            final baseTask = _task(
-              id: 'created-task-${createdTaskRequests.length}',
-              title: title,
-              status: _openStatus(),
-              categoryId: categoryId,
-            );
-            final task = baseTask.copyWith(
-              data: baseTask.data.copyWith(
-                estimate: Duration(minutes: estimateMinutes ?? 0),
-                due: due,
-                profileId: profileId,
-              ),
-            );
-            journalEntities[task.id] = task;
-            return task;
-          },
+      taskFactory: _makeTaskFactory(journalEntities, createdTaskRequests),
       onPersistedStateChanged: notifications.add,
     );
   }
@@ -960,82 +970,132 @@ void main() {
       expect(decoded['best'], isNotNull);
     });
 
-    test(
-      'executeTool dispatches link, break, surface, and apply tools',
-      () async {
-        final parsedItem =
-            AgentDomainEntity.parsedItem(
-                  id: 'parsed-1',
-                  agentId: _agentId,
-                  captureId: 'capture-1',
-                  kind: ParsedItemKind.newTask,
-                  title: 'Prep demo',
-                  categoryId: 'work',
-                  confidence: ParsedItemConfidence.low,
-                  confidenceScore: 0.2,
-                  createdAt: _now,
-                  vectorClock: null,
-                )
-                as ParsedItemEntity;
-        agentEntities[parsedItem.id] = parsedItem;
-        journalEntities['task-1'] = _task(
-          id: 'task-1',
-          title: 'Prep demo',
-          status: _openStatus(),
-        );
+    ParsedItemEntity seedNewTaskParsedItem({String? matchedTaskId}) {
+      final parsedItem =
+          AgentDomainEntity.parsedItem(
+                id: 'parsed-1',
+                agentId: _agentId,
+                captureId: 'capture-1',
+                kind: matchedTaskId == null
+                    ? ParsedItemKind.newTask
+                    : ParsedItemKind.matched,
+                title: 'Prep demo',
+                categoryId: 'work',
+                confidence: matchedTaskId == null
+                    ? ParsedItemConfidence.low
+                    : ParsedItemConfidence.high,
+                confidenceScore: 0.2,
+                createdAt: _now,
+                vectorClock: null,
+                matchedTaskId: matchedTaskId,
+              )
+              as ParsedItemEntity;
+      agentEntities[parsedItem.id] = parsedItem;
+      return parsedItem;
+    }
 
-        final service = createService();
+    test('executeTool dispatches link_capture_phrase_to_task', () async {
+      seedNewTaskParsedItem();
+      journalEntities['task-1'] = _task(
+        id: 'task-1',
+        title: 'Prep demo',
+        status: _openStatus(),
+      );
 
-        final linkResult = await service.executeTool(
+      final linkResult = await createService().executeTool(
+        agentId: _agentId,
+        threadId: _threadId,
+        runKey: _runKey,
+        toolName: DayAgentToolNames.linkCapturePhraseToTask,
+        args: const {'captureItemId': 'parsed-1', 'taskId': 'task-1'},
+      );
+
+      expect(linkResult.success, isTrue);
+      final item =
+          (jsonDecode(linkResult.output) as Map<String, dynamic>)['item']
+              as Map<String, dynamic>;
+      // Linking flips the parsed item to a matched, high-confidence row.
+      expect(item['matchedTaskId'], 'task-1');
+      expect(item['kind'], ParsedItemKind.matched.name);
+    });
+
+    test('executeTool dispatches break_capture_link', () async {
+      seedNewTaskParsedItem(matchedTaskId: 'task-1');
+      journalEntities['task-1'] = _task(
+        id: 'task-1',
+        title: 'Prep demo',
+        status: _openStatus(),
+      );
+
+      final breakResult = await createService().executeTool(
+        agentId: _agentId,
+        threadId: _threadId,
+        runKey: _runKey,
+        toolName: DayAgentToolNames.breakCaptureLink,
+        args: const {'captureItemId': 'parsed-1'},
+      );
+
+      expect(breakResult.success, isTrue);
+      final item =
+          (jsonDecode(breakResult.output) as Map<String, dynamic>)['item']
+              as Map<String, dynamic>;
+      // Breaking clears the match and demotes the row back to a new task.
+      expect(item['matchedTaskId'], isNull);
+      expect(item['kind'], ParsedItemKind.newTask.name);
+    });
+
+    test('executeTool dispatches surface_pending_decisions', () async {
+      final overdue = _task(
+        id: 'task-overdue',
+        title: 'Overdue',
+        status: _openStatus(),
+        due: DateTime(2026, 5, 24),
+      );
+      when(() => journalDb.getTasksDueOnOrBefore(any())).thenAnswer(
+        (_) async => [overdue],
+      );
+
+      final surfaceResult = await createService().executeTool(
+        agentId: _agentId,
+        threadId: _threadId,
+        runKey: _runKey,
+        toolName: DayAgentToolNames.surfacePendingDecisions,
+        args: const {'dayId': 'dayplan-2026-05-25'},
+      );
+
+      expect(surfaceResult.success, isTrue);
+      final items =
+          (jsonDecode(surfaceResult.output) as Map<String, dynamic>)['items']
+              as List<dynamic>;
+      expect(
+        items.map((item) => (item as Map<String, dynamic>)['taskId']),
+        contains('task-overdue'),
+      );
+    });
+
+    test('executeTool dispatches apply_triage', () async {
+      journalEntities['task-1'] = _task(
+        id: 'task-1',
+        title: 'Prep demo',
+        status: _openStatus(),
+      );
+
+      final triageResult = await withClock(Clock.fixed(_now), () {
+        return createService().executeTool(
           agentId: _agentId,
           threadId: _threadId,
           runKey: _runKey,
-          toolName: DayAgentToolNames.linkCapturePhraseToTask,
-          args: const {'captureItemId': 'parsed-1', 'taskId': 'task-1'},
+          toolName: DayAgentToolNames.applyTriage,
+          args: const {'taskId': 'task-1', 'action': 'today'},
         );
-        expect(linkResult.success, isTrue);
-        expect(
-          jsonDecode(linkResult.output) as Map<String, dynamic>,
-          containsPair('item', isA<Map<String, dynamic>>()),
-        );
+      });
 
-        final breakResult = await service.executeTool(
-          agentId: _agentId,
-          threadId: _threadId,
-          runKey: _runKey,
-          toolName: DayAgentToolNames.breakCaptureLink,
-          args: const {'captureItemId': 'parsed-1'},
-        );
-        expect(breakResult.success, isTrue);
-
-        final surfaceResult = await service.executeTool(
-          agentId: _agentId,
-          threadId: _threadId,
-          runKey: _runKey,
-          toolName: DayAgentToolNames.surfacePendingDecisions,
-          args: const {'dayId': 'dayplan-2026-05-25'},
-        );
-        expect(surfaceResult.success, isTrue);
-        final surfaceJson =
-            jsonDecode(surfaceResult.output) as Map<String, dynamic>;
-        expect(surfaceJson['items'], isA<List<dynamic>>());
-
-        final triageResult = await withClock(Clock.fixed(_now), () {
-          return service.executeTool(
-            agentId: _agentId,
-            threadId: _threadId,
-            runKey: _runKey,
-            toolName: DayAgentToolNames.applyTriage,
-            args: const {'taskId': 'task-1', 'action': 'today'},
-          );
-        });
-        expect(triageResult.success, isTrue);
-        final triageJson =
-            jsonDecode(triageResult.output) as Map<String, dynamic>;
-        expect(triageJson['taskId'], 'task-1');
-        expect(triageJson['due'], isNotNull);
-      },
-    );
+      expect(triageResult.success, isTrue);
+      final triageJson =
+          jsonDecode(triageResult.output) as Map<String, dynamic>;
+      expect(triageJson['taskId'], 'task-1');
+      expect(triageJson['due'], isNotNull);
+    });
 
     test('getCapture returns null for non-capture entities', () async {
       final identity = makeTestIdentity(
@@ -1444,6 +1504,30 @@ void main() {
       );
 
       expect(snapshot.map((item) => item['taskId']), ['task-open']);
+    });
+
+    test('buildTaskCorpusSnapshot includes in-progress tasks', () async {
+      final inProgress = _task(
+        id: 'task-progress',
+        title: 'Active work',
+        status: _inProgressStatus(),
+      );
+      when(
+        () => journalDb.getOpenTasksForDayAgentCorpus(
+          categoryIds: any(named: 'categoryIds'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => [inProgress]);
+
+      final snapshot = await createService().buildTaskCorpusSnapshot(
+        allowedCategoryIds: {'work'},
+        day: DateTime(2026, 5, 25, 8),
+      );
+
+      // In-progress tasks are not "closed" so they survive into the corpus
+      // and carry their live status string through to the snapshot.
+      expect(snapshot.map((item) => item['taskId']), ['task-progress']);
+      expect(snapshot.single['status'], 'IN PROGRESS');
     });
 
     test(

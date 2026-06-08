@@ -102,6 +102,47 @@ void unregisterJournalDbTestServices() {
     ..unregister<Directory>();
 }
 
+/// Deletes every row from every table in [db] **without** recreating the
+/// schema, so a single `setUpAll`-opened in-memory [JournalDb] can be reused
+/// across all tests in a file while each test still starts from an empty
+/// database. This makes per-test setup cheap (the expensive ~40-step migration
+/// ladder runs once per file instead of once per test) while preserving full
+/// isolation.
+///
+/// Foreign-key enforcement is toggled off for the sweep so the delete order is
+/// irrelevant. Tables are enumerated from `sqlite_master` (not `db.allTables`)
+/// so any table created via raw migration SQL — not just the Drift-declared
+/// ones — is also cleared, closing a real cross-test contamination source.
+/// Callers that rely on config flags should re-seed them with `initConfigFlags`
+/// after clearing (the flags table is cleared too).
+Future<void> clearAllTables(JournalDb db) async {
+  await db.customStatement('PRAGMA foreign_keys = OFF');
+  final tables = await db
+      .customSelect(
+        "SELECT name FROM sqlite_master WHERE type = 'table' "
+        "AND name NOT LIKE 'sqlite_%' AND name != 'android_metadata'",
+      )
+      .get();
+  for (final row in tables) {
+    await db.customStatement('DELETE FROM ${row.read<String>('name')}');
+  }
+  // Reset AUTOINCREMENT counters so rowids restart at 1 (matching a fresh DB).
+  final hasSequence = await db
+      .customSelect(
+        'SELECT 1 FROM sqlite_master '
+        "WHERE type = 'table' AND name = 'sqlite_sequence'",
+      )
+      .get();
+  if (hasSequence.isNotEmpty) {
+    await db.customStatement('DELETE FROM sqlite_sequence');
+  }
+  await db.customStatement('PRAGMA foreign_keys = ON');
+  // The DB also caches config flags in memory; drop that cache so a re-seed
+  // (initConfigFlags) actually re-writes defaults and reads return fresh
+  // values rather than the previous test's mutated flags.
+  db.resetConfigFlagCacheForTesting();
+}
+
 /// Deterministic timestamp shared by the entry builders below.
 final testDate = DateTime(2024, 3, 15, 10, 30);
 

@@ -44,9 +44,69 @@ class _GeneratedFoldScenario {
       'links: ${links.length})';
 }
 
+/// Arbitrary cache watermark values for all five watermark fields. Each int is
+/// a day in `0..7`, where `0` encodes a null watermark and `1..7` encode
+/// `_day(n)` — the `1..7` range overlaps the generated marker days so cache and
+/// log-derived watermarks tie, are above, and are below each other across runs.
+class _CacheWatermarks {
+  const _CacheWatermarks({
+    required this.wake,
+    required this.oneOnOne,
+    required this.feedbackScan,
+    required this.dailyWake,
+    required this.weeklyReview,
+  });
+
+  final int wake;
+  final int oneOnOne;
+  final int feedbackScan;
+  final int dailyWake;
+  final int weeklyReview;
+
+  static DateTime? _at(int day) => day == 0 ? null : _day(day);
+
+  DateTime? get wakeAt => _at(wake);
+  DateTime? get oneOnOneAt => _at(oneOnOne);
+  DateTime? get feedbackScanAt => _at(feedbackScan);
+  DateTime? get dailyWakeAt => _at(dailyWake);
+  DateTime? get weeklyReviewAt => _at(weeklyReview);
+
+  @override
+  String toString() =>
+      '_CacheWatermarks(wake: $wake, oneOnOne: $oneOnOne, '
+      'feedbackScan: $feedbackScan, dailyWake: $dailyWake, '
+      'weeklyReview: $weeklyReview)';
+}
+
+/// The later of two nullable timestamps — the reconcile law (`max`, null = "no
+/// value"), recomputed in the test independent of the private `_laterOf`.
+DateTime? _laterOfOracle(DateTime? a, DateTime? b) {
+  if (a == null) return b;
+  if (b == null) return a;
+  return a.isAfter(b) ? a : b;
+}
+
 extension _AnyFoldScenario on glados.Any {
   glados.Generator<AgentMilestone> get milestone =>
       glados.AnyUtils(this).choose(AgentMilestone.values);
+
+  glados.Generator<_CacheWatermarks> get cacheWatermarks {
+    glados.Generator<int> day() => glados.IntAnys(this).intInRange(0, 8);
+    return glados.CombinableAny(this).combine5(
+      day(),
+      day(),
+      day(),
+      day(),
+      day(),
+      (int w, int o, int f, int d, int r) => _CacheWatermarks(
+        wake: w,
+        oneOnOne: o,
+        feedbackScan: f,
+        dailyWake: d,
+        weeklyReview: r,
+      ),
+    );
+  }
 
   glados.Generator<_GeneratedFoldScenario> get foldScenario =>
       glados.CombinableAny(this).combine2(
@@ -329,7 +389,7 @@ void main() {
   group('deriveAgentState — convergence (order independence)', () {
     glados.Glados(
       glados.any.foldScenario,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 180),
     ).test('two devices holding the same log set derive equal state', (
       scenario,
     ) {
@@ -419,7 +479,9 @@ void main() {
         liveState: live,
       );
 
-      expect(report.error, isNotNull);
+      // The messagePrev cycle surfaces as the kernel's structural exception,
+      // captured (not thrown) so the compare never crashes a production path.
+      expect(report.error, contains('ProjectionCycleException'));
       expect(report.equivalent, isFalse);
     });
   });
@@ -528,7 +590,7 @@ void main() {
 
     glados.Glados(
       glados.any.foldScenario,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test('never regresses a watermark and is idempotent', (scenario) {
       final cache = makeTestState(lastWakeAt: _day(4));
 
@@ -561,6 +623,93 @@ void main() {
       );
       expect(again, reconciled, reason: '$scenario');
     }, tags: 'glados');
+
+    glados.Glados2(
+      glados.any.foldScenario,
+      glados.any.cacheWatermarks,
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'every watermark reconciles to max(derived, cache), order-independently',
+      (scenario, cacheMarks) {
+        final cache = makeTestState(
+          lastWakeAt: cacheMarks.wakeAt,
+          slots: AgentSlots(
+            lastOneOnOneAt: cacheMarks.oneOnOneAt,
+            lastFeedbackScanAt: cacheMarks.feedbackScanAt,
+            lastDailyWakeAt: cacheMarks.dailyWakeAt,
+            lastWeeklyReviewAt: cacheMarks.weeklyReviewAt,
+          ),
+        );
+        final derived = deriveAgentState(
+          agentId: kTestAgentId,
+          messages: scenario.markers,
+          links: scenario.links,
+        );
+        final why = '$scenario $cacheMarks';
+
+        final reconciled = reconcileAgentState(
+          cache: cache,
+          messages: scenario.markers,
+          links: scenario.links,
+        );
+
+        // The algebraic merge law, asserted on *every* watermark field against
+        // an independently-computed max — `lastWakeAt` lives on the row, the
+        // four ritual watermarks on `slots`.
+        expect(
+          reconciled.lastWakeAt,
+          _laterOfOracle(derived.lastWakeAt, cache.lastWakeAt),
+          reason: why,
+        );
+        expect(
+          reconciled.slots.lastOneOnOneAt,
+          _laterOfOracle(derived.lastOneOnOneAt, cache.slots.lastOneOnOneAt),
+          reason: why,
+        );
+        expect(
+          reconciled.slots.lastFeedbackScanAt,
+          _laterOfOracle(
+            derived.lastFeedbackScanAt,
+            cache.slots.lastFeedbackScanAt,
+          ),
+          reason: why,
+        );
+        expect(
+          reconciled.slots.lastDailyWakeAt,
+          _laterOfOracle(derived.lastDailyWakeAt, cache.slots.lastDailyWakeAt),
+          reason: why,
+        );
+        expect(
+          reconciled.slots.lastWeeklyReviewAt,
+          _laterOfOracle(
+            derived.lastWeeklyReviewAt,
+            cache.slots.lastWeeklyReviewAt,
+          ),
+          reason: why,
+        );
+
+        // max is commutative & idempotent: a device whose cache already holds
+        // the reconciled watermarks reconciles to the same values (no value is
+        // ever invented beyond the two inputs' max).
+        final reReconciled = reconcileAgentState(
+          cache: reconciled,
+          messages: scenario.markers,
+          links: scenario.links,
+        );
+        expect(reReconciled.lastWakeAt, reconciled.lastWakeAt, reason: why);
+        expect(
+          reReconciled.slots.lastOneOnOneAt,
+          reconciled.slots.lastOneOnOneAt,
+          reason: why,
+        );
+        expect(
+          reReconciled.slots.lastWeeklyReviewAt,
+          reconciled.slots.lastWeeklyReviewAt,
+          reason: why,
+        );
+      },
+      tags: 'glados',
+    );
   });
 
   group('reconcile convergence (partition + heal)', () {

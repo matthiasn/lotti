@@ -76,16 +76,20 @@ void main() {
     InsightsWindow window, {
     List<AsyncValue<InsightsDayBuckets>>? into,
   }) {
-    final sub = container.listen(
-      insightsBucketsProvider(window),
-      (_, next) => into?.add(next),
-      fireImmediately: into != null,
-    );
-    addTearDown(sub.close);
-    return withClock(
-      Clock.fixed(fixedNow),
-      () => container.read(insightsBucketsProvider(window).future),
-    );
+    // The listen() eagerly builds the StreamProvider, which synchronously runs
+    // fetch()'s prefix — including the `clock.now()` that sets the moving end.
+    // Wrap the whole thing (not just the .future read) so that read happens
+    // under the fixed clock; otherwise the moving end tracks real wall time
+    // and the captured end drifts a day once "today" passes fixedNow.
+    return withClock(Clock.fixed(fixedNow), () {
+      final sub = container.listen(
+        insightsBucketsProvider(window),
+        (_, next) => into?.add(next),
+        fireImmediately: into != null,
+      );
+      addTearDown(sub.close);
+      return container.read(insightsBucketsProvider(window).future);
+    });
   }
 
   group('insightsBucketsProvider', () {

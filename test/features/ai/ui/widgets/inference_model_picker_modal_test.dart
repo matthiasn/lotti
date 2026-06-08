@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_model_picker_modal.dart';
 
@@ -92,20 +93,23 @@ void main() {
       },
     );
 
-    testWidgets(
-      "tapping a row pops the picker with that row's AiConfigModel.id "
-      '— covers both the default row (the seam where the override '
-      'should be cleared to null at the caller) and an alternative '
-      'row',
-      (tester) async {
-        const targets = <String>['m-default', 'm-alt-1', 'm-alt-2'];
-        const labels = <String, String>{
-          'm-default': 'Voxtral',
-          'm-alt-1': 'Mistral Cloud',
-          'm-alt-2': 'Whisper Local',
-        };
+    // Each row taps to its own id. Run as independent test cases (not a
+    // shared-state loop in one body) so a failure points at exactly one
+    // row and no `captured` value can leak across iterations. The default
+    // row ('m-default') is the seam where the caller clears the override
+    // to null; the alternatives ('m-alt-1', 'm-alt-2') pop their own id.
+    const rowTaps = <String, String>{
+      'm-default': 'Voxtral',
+      'm-alt-1': 'Mistral Cloud',
+      'm-alt-2': 'Whisper Local',
+    };
 
-        for (final tapTarget in targets) {
+    for (final entry in rowTaps.entries) {
+      final tapTarget = entry.key;
+      final rowLabel = entry.value;
+      testWidgets(
+        "tapping '$rowLabel' pops the picker with id '$tapTarget'",
+        (tester) async {
           String? captured;
           await tester.pumpWidget(
             makeTestableWidget(
@@ -136,12 +140,12 @@ void main() {
           await tester.tap(find.text('open'));
           await tester.pumpAndSettle();
 
-          await tester.tap(find.text(labels[tapTarget]!));
+          await tester.tap(find.text(rowLabel));
           await tester.pumpAndSettle();
           expect(captured, tapTarget);
-        }
-      },
-    );
+        },
+      );
+    }
   });
 
   group('InferenceModelPickerModal.show — modal chrome', () {
@@ -252,6 +256,62 @@ void main() {
         expect(find.byType(InferenceModelPickerModal), findsNothing);
         expect(returned, isNull);
       },
+    );
+  });
+
+  group('InferenceModelPickerModal.orderModels — ordering property', () {
+    // The first generator drives the list length (0..8). Models get distinct
+    // ids by index ('m-0', 'm-1', …) to match production, where each model
+    // config has a unique id. The second generator selects the default: an
+    // in-range index picks an id from the list; an out-of-range value (>=
+    // length) yields a guaranteed-absent default, exercising the "stale
+    // pointer renders as-is" branch.
+    glados.Glados2<int, int>(
+      glados.IntAnys(glados.any).intInRange(0, 9),
+      glados.IntAnys(glados.any).intInRange(0, 12),
+      glados.ExploreConfig(numRuns: 140),
+    ).test(
+      'puts the default first, preserves the rest in order, and never '
+      'adds, drops, or duplicates an element',
+      (length, defaultSelector) {
+        final models = [
+          for (var i = 0; i < length; i++) _model(id: 'm-$i', name: 'Model $i'),
+        ];
+        // In-range selector → a present default id; otherwise an absent one.
+        final defaultId = defaultSelector < length
+            ? 'm-$defaultSelector'
+            : 'm-absent';
+
+        final ordered = InferenceModelPickerModal.orderModels(
+          models,
+          defaultId,
+        );
+
+        // 1) The multiset of ids is preserved (no add/drop/dup).
+        List<String> sortedIds(List<AiConfigModel> ms) =>
+            ms.map((m) => m.id).toList()..sort();
+        expect(sortedIds(ordered), sortedIds(models));
+
+        final defaultPresent = models.any((m) => m.id == defaultId);
+        if (!defaultPresent) {
+          // Stale / absent default → the original list is returned unchanged
+          // (same instance — no reordering work done).
+          expect(identical(ordered, models), isTrue);
+          return;
+        }
+
+        // 2) The default id is at index 0.
+        expect(ordered.first.id, defaultId);
+
+        // 3) Every non-default element keeps its original relative order.
+        final restAfter = ordered.skip(1).map((m) => m.id).toList();
+        final restBefore = models
+            .where((m) => m.id != defaultId)
+            .map((m) => m.id)
+            .toList();
+        expect(restAfter, restBefore);
+      },
+      tags: 'glados',
     );
   });
 }

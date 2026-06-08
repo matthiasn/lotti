@@ -3,12 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_orb.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
 import 'package:mocktail/mocktail.dart';
@@ -323,15 +321,15 @@ void main() {
   group('linked entry provider + modal tap', () {
     late MockJournalDb mockJournalDb;
 
+    // Use the centralized GetIt harness instead of inline register/reset
+    // boilerplate; it guarantees paired cleanup via tearDownTestGetIt and
+    // provides the JournalDb mock the FutureProvider resolves through get_it.
     setUp(() async {
-      await getIt.reset();
-      mockJournalDb = MockJournalDb();
-      getIt.registerSingleton<JournalDb>(mockJournalDb);
+      final mocks = await setUpTestGetIt();
+      mockJournalDb = mocks.journalDb;
     });
 
-    tearDown(() async {
-      await getIt.reset();
-    });
+    tearDown(tearDownTestGetIt);
 
     Future<void> pumpWithRealProvider(
       WidgetTester tester,

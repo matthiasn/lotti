@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -480,5 +481,79 @@ void main() {
 
       expect(readRate(container), closeTo(0.5, 1e-9));
     });
+  });
+
+  group('ChecklistCompletionController.aggregateCompletion (pure)', () {
+    // Each int 0..7 encodes a 3-bit item state:
+    //   bit 0 -> isChecked, bit 1 -> isArchived, bit 2 -> isDeleted.
+    ChecklistItem itemFromCode(int code, int index) => ChecklistItem(
+      meta: Metadata(
+        id: 'item-$index',
+        createdAt: DateTime(2025),
+        updatedAt: DateTime(2025),
+        dateFrom: DateTime(2025),
+        dateTo: DateTime(2025),
+        deletedAt: (code & 4) != 0 ? DateTime(2025) : null,
+      ),
+      data: ChecklistItemData(
+        title: 'item-$index',
+        isChecked: (code & 1) != 0,
+        linkedChecklists: const [],
+        isArchived: (code & 2) != 0,
+      ),
+    );
+
+    glados.Glados<List<int>>(
+      glados.any.list(glados.IntAnys(glados.any).intInRange(0, 8)),
+      glados.ExploreConfig(numRuns: 160),
+    ).test('counting/filtering invariants hold for any item mix', (codes) {
+      final items = <ChecklistItem>[
+        for (var i = 0; i < codes.length; i++) itemFromCode(codes[i], i),
+      ];
+
+      final result = ChecklistCompletionController.aggregateCompletion(items);
+
+      // Reference counts computed independently of the implementation.
+      final activeCount = codes
+          .where((c) => (c & 2) == 0 && (c & 4) == 0)
+          .length;
+      final activeCheckedCount = codes
+          .where((c) => (c & 2) == 0 && (c & 4) == 0 && (c & 1) != 0)
+          .length;
+
+      final reason = 'codes=$codes';
+
+      // totalCount counts exactly the active (non-archived, non-deleted) items.
+      expect(result.totalCount, activeCount, reason: reason);
+      // completedCount counts exactly the active AND checked items.
+      expect(result.completedCount, activeCheckedCount, reason: reason);
+      // completedCount never exceeds totalCount (rate stays in [0, 1]).
+      expect(
+        result.completedCount,
+        lessThanOrEqualTo(result.totalCount),
+        reason: reason,
+      );
+      expect(result.completedCount, greaterThanOrEqualTo(0), reason: reason);
+    }, tags: 'glados');
+
+    glados.Glados<List<int>>(
+      glados.any.list(glados.IntAnys(glados.any).intInRange(0, 8)),
+      glados.ExploreConfig(numRuns: 120),
+    ).test('totalCount is 0 when every item is archived or deleted', (codes) {
+      // Force every item to be archived or deleted (set bit 1 and/or bit 2),
+      // so none remain active regardless of the checked bit.
+      final inactiveCodes = codes
+          .map((c) => (c & 1) | (c.isEven ? 2 : 4))
+          .toList();
+      final items = <ChecklistItem>[
+        for (var i = 0; i < inactiveCodes.length; i++)
+          itemFromCode(inactiveCodes[i], i),
+      ];
+
+      final result = ChecklistCompletionController.aggregateCompletion(items);
+
+      expect(result.totalCount, 0, reason: 'codes=$inactiveCodes');
+      expect(result.completedCount, 0, reason: 'codes=$inactiveCodes');
+    }, tags: 'glados');
   });
 }

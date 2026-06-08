@@ -320,6 +320,30 @@ void verifyDeferredToolResponse(
   ).called(1);
 }
 
+/// Captures the exact `response` string the strategy fed back to the LLM via
+/// [ConversationManager.addToolResponse] for [toolCallId].
+///
+/// Lets callers assert on the *content* of the LLM-facing tool response (e.g.
+/// that a deferral was reported as "proposal recorded" with the correct tool
+/// name) rather than only that a response of some kind was sent.
+String captureDeferredToolResponse(
+  MockConversationManager mockConversationManager, {
+  String toolCallId = 'tc-1',
+}) {
+  final captured = verify(
+    () => mockConversationManager.addToolResponse(
+      toolCallId: toolCallId,
+      response: captureAny(named: 'response'),
+    ),
+  ).captured;
+  expect(
+    captured,
+    hasLength(1),
+    reason: 'expected exactly one tool response for $toolCallId',
+  );
+  return captured.single as String;
+}
+
 /// Verifies that a deferred tool call was NOT executed immediately (no
 /// journal update).
 void verifyNotExecutedImmediately(

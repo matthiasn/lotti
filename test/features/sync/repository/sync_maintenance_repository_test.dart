@@ -21,6 +21,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   late MockJournalDb mockJournalDb;
@@ -688,6 +689,78 @@ void main() {
         () => mockAiConfigRepository.getConfigsByType(AiConfigType.prompt),
       ).called(1);
     });
+
+    // Stubs every fetcher so any generated subset of steps resolves without
+    // hitting an unstubbed mock; values are arbitrary since the property only
+    // asserts the *key set*, not the counts.
+    void stubAllTotalsFetchers() {
+      when(
+        () => mockJournalDb.getAllMeasurableDataTypes(),
+      ).thenAnswer((_) async => [FakeMeasurableDataType(id: 'm')]);
+      when(
+        () => mockJournalDb.getAllLabelDefinitions(),
+      ).thenAnswer((_) async => []);
+      when(
+        () => mockJournalDb.getAllCategories(),
+      ).thenAnswer((_) async => [FakeCategoryDefinition(id: 'c')]);
+      when(
+        () => mockJournalDb.getAllDashboards(),
+      ).thenAnswer((_) async => [FakeDashboardDefinition(id: 'd')]);
+      when(
+        () => mockJournalDb.getAllHabitDefinitions(),
+      ).thenAnswer((_) async => [FakeHabitDefinition(id: 'h')]);
+      for (final type in AiConfigType.values) {
+        when(
+          () => mockAiConfigRepository.getConfigsByType(type),
+        ).thenAnswer((_) async => []);
+      }
+      when(
+        () => mockAgentRepository.getAllEntities(),
+      ).thenAnswer((_) async => []);
+      when(() => mockAgentRepository.getAllLinks()).thenAnswer((_) async => []);
+      when(
+        () => mockAgentRepository.countEntitiesWithNullVectorClock(),
+      ).thenAnswer((_) async => 0);
+      when(
+        () => mockAgentRepository.countLinksWithNullVectorClock(),
+      ).thenAnswer((_) async => 0);
+    }
+
+    glados.Glados<List<SyncStep>>(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        0,
+        SyncStep.values.length,
+        glados.AnyUtils(glados.any).choose(SyncStep.values),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'returned map key set equals the requested step set exactly '
+      '(SyncStep.complete included with a 0 total, no spurious keys)',
+      (stepList) async {
+        // Convert to a set so duplicates collapse — mirrors the API surface,
+        // which takes a Set<SyncStep>. Empty, complete-only, and full sets are
+        // all reachable by the generator.
+        final steps = stepList.toSet();
+        stubAllTotalsFetchers();
+
+        final totals = await syncMaintenanceRepository.fetchTotalsForSteps(
+          steps,
+        );
+
+        // Property 1: no spurious or missing keys — the routing logic maps
+        // every requested step to exactly one entry and invents none.
+        expect(totals.keys.toSet(), steps, reason: 'steps=$steps');
+        // Property 2: every total is a non-negative count.
+        for (final value in totals.values) {
+          expect(value, greaterThanOrEqualTo(0), reason: 'steps=$steps');
+        }
+        // Property 3: SyncStep.complete, when requested, always contributes 0.
+        if (steps.contains(SyncStep.complete)) {
+          expect(totals[SyncStep.complete], 0, reason: 'steps=$steps');
+        }
+      },
+      tags: 'glados',
+    );
   });
 
   group('syncAgentEntities', () {
@@ -858,11 +931,16 @@ void main() {
 
   group('syncMaintenanceRepositoryProvider', () {
     test('constructs repository from shared service providers', () async {
-      await getIt.reset();
-      getIt
-        ..registerSingleton<VectorClockService>(mockVectorClockService)
-        ..registerSingleton<DomainLogger>(mockLoggingService);
-      addTearDown(getIt.reset);
+      // The provider resolves DomainLogger + VectorClockService from get_it.
+      // setUpTestGetIt registers the former (a real DomainLogger, fine here
+      // since the test only asserts construction); register the mock
+      // VectorClockService via additionalSetup so both lookups succeed.
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt.registerSingleton<VectorClockService>(mockVectorClockService);
+        },
+      );
+      addTearDown(tearDownTestGetIt);
 
       final container = ProviderContainer(
         overrides: [

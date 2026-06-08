@@ -1,9 +1,117 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/sync/g_counter.dart';
+
+/// Anchors generated `DateTime?` slot fields to a fixed base so the round-trip
+/// is deterministic; the per-field day offset varies which calendar day each
+/// set field lands on without ever using `DateTime.now()`.
+final _slotsBase = DateTime(2026);
+
+/// One generated [AgentSlots] shape exercising the freezed `toJson`/`fromJson`
+/// codec (including the `@JsonKey`-renamed counter keys and ISO-8601 `DateTime`
+/// encoding). Each nullable field uses a negative day-offset / count sentinel
+/// to encode "absent", so the optional-present cross-product and the underlying
+/// values both vary, and each input dimension shrinks independently.
+class _GeneratedSlotsScenario {
+  const _GeneratedSlotsScenario({
+    required this.oneOnOneOffset,
+    required this.feedbackScanOffset,
+    required this.dailyWakeOffset,
+    required this.weeklyReviewOffset,
+    required this.pendingActivityOffset,
+    required this.feedbackWindowDays,
+    required this.recursionDepth,
+    required this.sessionsByHost,
+    required this.weeklyByHost,
+  });
+
+  // A negative offset means the corresponding nullable DateTime is absent.
+  final int oneOnOneOffset;
+  final int feedbackScanOffset;
+  final int dailyWakeOffset;
+  final int weeklyReviewOffset;
+  final int pendingActivityOffset;
+  // A negative value means the corresponding nullable int is absent.
+  final int feedbackWindowDays;
+  final int recursionDepth;
+  // Zero means the counter stays empty; positive means a single-host total.
+  final int sessionsByHost;
+  final int weeklyByHost;
+
+  DateTime? _at(int offset) =>
+      offset < 0 ? null : _slotsBase.add(Duration(days: offset));
+
+  AgentSlots get slots => AgentSlots(
+    lastOneOnOneAt: _at(oneOnOneOffset),
+    lastFeedbackScanAt: _at(feedbackScanOffset),
+    feedbackWindowDays: feedbackWindowDays < 0 ? null : feedbackWindowDays,
+    totalSessionsCompleted: sessionsByHost > 0
+        ? GCounter({'host-a': sessionsByHost})
+        : const GCounter.empty(),
+    recursionDepth: recursionDepth < 0 ? null : recursionDepth,
+    lastDailyWakeAt: _at(dailyWakeOffset),
+    lastWeeklyReviewAt: _at(weeklyReviewOffset),
+    weeklyReviewCount: weeklyByHost > 0
+        ? GCounter({'host-b': weeklyByHost})
+        : const GCounter.empty(),
+    pendingProjectActivityAt: _at(pendingActivityOffset),
+  );
+
+  @override
+  String toString() {
+    return '_GeneratedSlotsScenario('
+        'oneOnOneOffset: $oneOnOneOffset, '
+        'feedbackScanOffset: $feedbackScanOffset, '
+        'dailyWakeOffset: $dailyWakeOffset, '
+        'weeklyReviewOffset: $weeklyReviewOffset, '
+        'pendingActivityOffset: $pendingActivityOffset, '
+        'feedbackWindowDays: $feedbackWindowDays, '
+        'recursionDepth: $recursionDepth, sessionsByHost: $sessionsByHost, '
+        'weeklyByHost: $weeklyByHost)';
+  }
+}
+
+extension _AnyGeneratedSlots on glados.Any {
+  glados.Generator<_GeneratedSlotsScenario> get slotsScenario =>
+      glados.CombinableAny(this).combine9(
+        // Day-offset ranges start at -1 so ~ one run in ~30 omits the field,
+        // giving the shrinker a clean "absent" boundary per DateTime slot.
+        glados.IntAnys(this).intInRange(-1, 30),
+        glados.IntAnys(this).intInRange(-1, 30),
+        glados.IntAnys(this).intInRange(-1, 30),
+        glados.IntAnys(this).intInRange(-1, 30),
+        glados.IntAnys(this).intInRange(-1, 30),
+        glados.IntAnys(this).intInRange(-1, 60),
+        glados.IntAnys(this).intInRange(-1, 1),
+        glados.IntAnys(this).intInRange(0, 1000),
+        glados.IntAnys(this).intInRange(0, 1000),
+        (
+          int oneOnOneOffset,
+          int feedbackScanOffset,
+          int dailyWakeOffset,
+          int weeklyReviewOffset,
+          int pendingActivityOffset,
+          int feedbackWindowDays,
+          int recursionDepth,
+          int sessionsByHost,
+          int weeklyByHost,
+        ) => _GeneratedSlotsScenario(
+          oneOnOneOffset: oneOnOneOffset,
+          feedbackScanOffset: feedbackScanOffset,
+          dailyWakeOffset: dailyWakeOffset,
+          weeklyReviewOffset: weeklyReviewOffset,
+          pendingActivityOffset: pendingActivityOffset,
+          feedbackWindowDays: feedbackWindowDays,
+          recursionDepth: recursionDepth,
+          sessionsByHost: sessionsByHost,
+          weeklyByHost: weeklyByHost,
+        ),
+      );
+}
 
 void main() {
   group('AgentMessageMetadata.milestone', () {
@@ -155,5 +263,36 @@ void main() {
       expect(fresh.weeklyReviewCount, const GCounter.empty());
       expect(fresh.activeTaskId, isNull);
     });
+
+    glados.Glados(
+      glados.any.slotsScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'survives a JSON round-trip across optional-field combinations',
+      (
+        scenario,
+      ) {
+        final original = scenario.slots;
+
+        // Encode through a real JSON pass so DateTime/ISO-8601 and the
+        // @JsonKey-renamed counter keys are exercised exactly as on the wire.
+        final json =
+            jsonDecode(jsonEncode(original.toJson())) as Map<String, dynamic>;
+        final restored = AgentSlots.fromJson(json);
+
+        expect(restored, equals(original), reason: '$scenario');
+
+        // Spot-check that the renamed counter keys are the ones actually written,
+        // so a future rename of either key is caught even though the round-trip
+        // would still pass symmetrically.
+        if (original.totalSessionsCompleted.value > 0) {
+          expect(json.containsKey('totalSessionsCompletedByHost'), isTrue);
+        }
+        if (original.weeklyReviewCount.value > 0) {
+          expect(json.containsKey('weeklyReviewCountByHost'), isTrue);
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

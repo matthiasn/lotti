@@ -16,7 +16,7 @@
 | `test/features/sync/outbox/outbox_daily_volume_test.dart` | 212 | — | Minor: five static inequality tests duplicated; Glados already covers them |
 | `test/features/sync/outbox/outbox_processor_test.dart` | **1716** | — | Oversized; `_stubSilentLogging` / `_captureEvents` / `_stubClaimSequence` helpers are good; inline mock classes violate central-mock rule |
 | `test/features/sync/outbox/outbox_repository_test.dart` | 694 | — | `insertRow` helper good; Glados scenario excellent; minor: per-test `realDb` recreation when `setUp`/`tearDown` already handle it |
-| `test/features/sync/outbox/outbox_retry_cap_db_test.dart` | 141 | — | Orphaned: tests for `outbox_processor.dart` + `outbox_repository.dart` (DB layer), not a separate source file — violates one-test-file-per-source-file rule |
+| ~~`test/features/sync/outbox/outbox_retry_cap_db_test.dart`~~ | ~~141~~ | — | DELETED (orphan) — cap test merged into `outbox_processor_test.dart`, merge-race test into `outbox_repository_test.dart` |
 | `test/features/sync/outbox/outbox_service_test.dart` | **7743** | — | **The single largest test file in the codebase;** 82 service constructions (48 `TestableOutboxService` + 34 `OutboxService`); inline mocks; real-wall-time wait; inline GetIt boilerplate |
 
 ---
@@ -35,7 +35,8 @@
 - [x] **[MED]** `test/features/sync/outbox/outbox_processor_test.dart` at **1716 lines** is over the 500-line soft ceiling. Natural seams: (1) single-row path tests (lines 370–880), (2) bundle path tests (lines 1120–1716), (3) Glados property test (lines 481–601). The bundle group could move to `outbox_processor_bundle_test.dart`; however the one-file-per-source-file rule means all tests for one source file stay together — so the right fix is to trim boilerplate via `_TestBench` rather than splitting files.
   **RESOLVED (assessed, no change):** as the item itself concludes, the one-test-file-per-source rule keeps the file together; the boilerplate-trim route is what landed (see the helpers added under the service-test items) and the Glados scenario already owns its generators.
 
-- [ ] **[LOW]** `test/features/sync/outbox/outbox_retry_cap_db_test.dart` at 141 lines violates the one-test-file-per-source-file rule: it is an orphan (no matching source file named `outbox_retry_cap_db.dart`). Its two tests target `OutboxProcessor` (cap behavior, merge-race guard). They should be merged into `outbox_processor_test.dart` (the cap test) and `outbox_repository_test.dart` (the merge-race DB test), then the orphan file deleted.
+- [x] **[LOW]** `test/features/sync/outbox/outbox_retry_cap_db_test.dart` at 141 lines violates the one-test-file-per-source-file rule: it is an orphan (no matching source file named `outbox_retry_cap_db.dart`). Its two tests target `OutboxProcessor` (cap behavior, merge-race guard). They should be merged into `outbox_processor_test.dart` (the cap test) and `outbox_repository_test.dart` (the merge-race DB test), then the orphan file deleted.
+  **RESOLVED:** orphan file deleted. The real-DB cap test moved into `outbox_processor_test.dart`'s `'retry cap'` group (local `_SenderFalse` swapped for the central `MockOutboxMessageSender` + a `send → false` stub); the merge-race DB test moved into a new `'claim/merge race (real SyncDatabase)'` group in `outbox_repository_test.dart`. Both target files gained the needed imports (`drift` `Value`/`outbox_repository.dart` in the processor test; `dart:convert`/`sync_message.dart` in the repository test).
 
 ---
 
@@ -59,7 +60,8 @@
 - [x] **[MED]** **Copy-paste permutation tests** in `outbox_service_test.dart` groups `'Message preparation'` (lines 5328–6306), `'Agent sequence log recording'` (lines 4830–5060), `'EntryLink sequence log recording'` (lines 4638–4828). Each group has 4–6 nearly-identical tests differing only in payload type (`SyncAgentEntity` vs `SyncAgentLink`, `recordSentEntry` vs `recordSentEntryLink`). These should use parameterized helpers or loops instead of duplicating the full test body.
   **RESOLVED (adapted):** the duplication driver was the 11-arg `OutboxService` construction repeated inside every test body — now a shared `buildSequenceLogService(...)` helper (8 call sites folded across the EntryLink/Agent sequence groups). The per-payload-type test bodies stay separate: they assert different recorder methods with different argument shapes, which a loop would obscure.
 
-- [ ] **[LOW]** `outbox_processor_test.dart` line 803 test `'send completing at exact timeout boundary doesnt race'` wraps `fakeAsync` in an `async` test but never `await`s the `fakeAsync` block — `fakeAsync` returns synchronously; the outer `async/await` is misleading. The pattern works (the inner lambda runs synchronously) but could confuse readers; the `async` keyword should be removed from the outer test signature.
+- [x] **[LOW]** `outbox_processor_test.dart` line 803 test `'send completing at exact timeout boundary doesnt race'` wraps `fakeAsync` in an `async` test but never `await`s the `fakeAsync` block — `fakeAsync` returns synchronously; the outer `async/await` is misleading. The pattern works (the inner lambda runs synchronously) but could confuse readers; the `async` keyword should be removed from the outer test signature.
+  **RESOLVED:** the misleading `() async` on the test callback is now `()`; the body is fully synchronous (`fakeAsync` drives time, `unawaited` schedules the in-flight `processQueue`), so dropping `async` removes the false impression that the test awaits anything.
 
 ---
 
@@ -74,7 +76,9 @@ All four Glados tests in scope carry `tags: 'glados'` and cover the key invarian
 
 One genuine gap:
 
-- [ ] **[LOW]** **`VectorClock.mergeUniqueClocks` deduplication invariant** — the merge logic in `_enqueueJournalEntity`, `_enqueueEntryLink`, and `_enqueueAgentPayload` relies on `mergeUniqueClocks` being idempotent (applying the same VC twice leaves the list unchanged). This is pure logic with a clear algebraic property (`merge(merge(X, Y), Y) == merge(X, Y)`). A Glados test parameterized over arbitrary lists of `VectorClock` values would catch any regression in the merge implementation. This does NOT belong in the outbox service test — it belongs in the `VectorClock` unit tests.
+- [x] **[LOW]** **`VectorClock.mergeUniqueClocks` deduplication invariant** — the merge logic in `_enqueueJournalEntity`, `_enqueueEntryLink`, and `_enqueueAgentPayload` relies on `mergeUniqueClocks` being idempotent (applying the same VC twice leaves the list unchanged). This is pure logic with a clear algebraic property (`merge(merge(X, Y), Y) == merge(X, Y)`). A Glados test parameterized over arbitrary lists of `VectorClock` values would catch any regression in the merge implementation. This does NOT belong in the outbox service test — it belongs in the `VectorClock` unit tests.
+  **DEFERRED:** confirmed the gap is real — `test/vector_clock_glados_test.dart`'s `'VectorClock.mergeUniqueClocks'` group has only two example tests (`returns null when there are no non-null clocks`, `deduplicates value-equal clocks and drops nulls`) and no Glados idempotence property. But, as the item itself states, the proper home is the `VectorClock` unit tests, and both VC test files (`test/vector_clock_glados_test.dart`, `test/features/sync/vector_clock_test.dart`) live OUTSIDE the `test/features/sync/outbox/` area dir this pass is scoped to. Adding it inside the outbox tests would be wrong (the item explicitly says so), so it is deferred to a VectorClock-scoped pass.
+  - **RESOLVED:** (covered) `VectorClock.mergeUniqueClocks` already has a dedicated group + merge-algebra property in `vector_clock_test`; the `_enqueue*` dedup usage is integration behavior covered by the outbox enqueue tests.
 
 No Glados candidates inside the outbox scope itself are missing: queue ordering / dedup / retry-backoff decisions are already covered by the processor's `_GeneratedProcessorScenario` test; the repository batch semantics are covered by `_GeneratedRepositoryBatchScenario`. Adding Glados to the service's enqueue dispatch would not add value because correctness there depends on DB I/O, not pure logic.
 
@@ -95,7 +99,8 @@ No Glados candidates inside the outbox scope itself are missing: queue ordering 
 - [x] **[MED]** **`computeEnqueueDelay` with `delay < Duration.zero`** — `outbox_service.dart` line 603: negative delay is clamped to `Duration.zero`. There is no test passing a negative duration to `computeEnqueueDelay`. It is `@visibleForTesting` so it can be tested directly.
   **RESOLVED:** direct tests assert negative input clamps to zero (no gate), a past gate yields the plain delay, and a future gate dominates shorter delays.
 
-- [ ] **[LOW]** **`_startRunner` prune path — `_startupPruneTimer` null-out** — `outbox_service.dart` line 300: `_startupPruneTimer = null` inside the timer callback is not observable in tests; covered only implicitly by the prune-fires-once test.
+- [x] **[LOW]** **`_startRunner` prune path — `_startupPruneTimer` null-out** — `outbox_service.dart` line 300: `_startupPruneTimer = null` inside the timer callback is not observable in tests; covered only implicitly by the prune-fires-once test.
+  **RESOLVED:** the field null-out is internal cleanup; its only observable effect is that the startup prune is a strict one-shot. The `'startup prune fires after the 30-second grace…'` test now asserts that effect directly: after the prune fires once (existing `.called(1)`), advancing 5 more minutes (well under the 24h `outboxPruneInterval`) fires no second prune (`verifyNever`). That makes the non-re-arming behavior the null-out guarantees observable without adding a lib-side debug seam (out of area for this pass).
 
 ---
 
@@ -111,7 +116,8 @@ No Glados candidates inside the outbox scope itself are missing: queue ordering 
 - [x] **[MED]** **Watchdog tests elapse 10 seconds of fake time** across 6+ tests in the `'watchdog'` group. Each `async.elapse(const Duration(seconds: 10))` is instant for `fakeAsync` itself, but the test still schedules microtasks for every timer tick in between. With `SyncTuning.outboxWatchdogInterval = 10s`, each elapse fires the watchdog once. These tests are correctly using `fakeAsync` so there is no real-time cost — but the watchdog group at lines 3368–3715 constructs 6 fresh `OutboxService` instances per test without any sharing. If `SyncTuning.outboxWatchdogInterval` ever changes, all 6 tests break silently. Extract a constant `_watchdogInterval` at the top of the test group and use it in all `async.elapse` calls. **Impact: maintainability.**
   **RESOLVED:** a file-level `watchdogInterval` constant sourced from `SyncTuning.outboxWatchdogInterval` now drives all 6 `async.elapse` calls — a tuning change moves one line.
 
-- [ ] **[LOW]** **`outbox_repository_test.dart` inner `'batch mark helpers'` group re-creates `realDb` in its own `setUp`/`tearDown` (lines 442–449) which shadows the outer `setUp` mock. Each real-DB test creates an in-memory SQLite database.** This is correct and necessary but could be documented with a comment so future authors don't merge the mock-level and real-DB tests.
+- [x] **[LOW]** **`outbox_repository_test.dart` inner `'batch mark helpers'` group re-creates `realDb` in its own `setUp`/`tearDown` (lines 442–449) which shadows the outer `setUp` mock. Each real-DB test creates an in-memory SQLite database.** This is correct and necessary but could be documented with a comment so future authors don't merge the mock-level and real-DB tests.
+  **RESOLVED:** added a NOTE comment above the `'batch mark helpers (real SyncDatabase)'` group documenting that it deliberately runs against a real `SyncDatabase` with its own `realDb`/`realRepo` `setUp`/`tearDown` shadowing the outer `MockSyncDatabase`, and that these tests must NOT be folded back into the mock-level tests; also annotated the `setUp` to explain the fresh-per-test in-memory DB.
 
 ---
 

@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/features/sync/tuning.dart';
@@ -418,6 +421,12 @@ void main() {
     // exercise them against a real in-memory SyncDatabase so the
     // transaction semantics get hit for free instead of fighting
     // mocktail's generic-method matching for `transaction<T>`.
+    //
+    // NOTE: this group intentionally runs against a real SyncDatabase and has
+    // its own setUp/tearDown for `realDb`/`realRepo`, deliberately shadowing
+    // the outer group's `MockSyncDatabase`/`repository`. Do NOT fold these
+    // tests back into the mock-level tests above — the transaction round-trip
+    // and the per-row cap semantics only have meaning against a real DB.
     group('batch mark helpers (real SyncDatabase)', () {
       late SyncDatabase realDb;
       late DatabaseOutboxRepository realRepo;
@@ -439,6 +448,8 @@ void main() {
         );
       }
 
+      // Each test gets a fresh in-memory DB so rows from a prior test never
+      // leak into the next assertion.
       setUp(() {
         realDb = SyncDatabase(inMemoryDatabase: true);
         realRepo = DatabaseOutboxRepository(realDb, maxRetries: 2);
@@ -618,6 +629,95 @@ void main() {
           }
         },
         tags: 'glados',
+      );
+    });
+
+    // The claim → merge interaction is enforced at the DB layer (the
+    // status=pending WHERE clause on updateOutboxMessage), so it is exercised
+    // against a real in-memory SyncDatabase rather than a mock.
+    group('claim/merge race (real SyncDatabase)', () {
+      late SyncDatabase realDb;
+
+      setUp(() {
+        realDb = SyncDatabase(inMemoryDatabase: true);
+      });
+      tearDown(() async {
+        await realDb.close();
+      });
+
+      // Regression: closes the merge-send race where a concurrent merge
+      // silently overwrote the in-flight outbox row's message after the
+      // processor had already serialized it for Matrix, abandoning the merged
+      // covered-VCs list. With the atomic claim, the row is `sending` during
+      // send, so `updateOutboxMessage` no longer matches and the merged
+      // content is forced into a fresh pending row that still rides its own
+      // Matrix event.
+      test(
+        'merge during send spills into a fresh pending row, never overwrites '
+        'the in-flight one',
+        () async {
+          final originalJson = jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'original').toJson(),
+          );
+          final itemId = await realDb.addOutboxItem(
+            OutboxCompanion.insert(
+              message: originalJson,
+              subject: 'merge-race',
+              outboxEntryId: const Value('entity-1'),
+            ),
+          );
+
+          // Processor claims the row: pending → sending.
+          final claimed = await realDb.claimNextOutboxItem();
+          expect(claimed, isNotNull);
+          expect(claimed!.id, itemId);
+
+          // Concurrent merge attempts to update the now-sending row. With the
+          // fix in place the WHERE status=pending clause no longer matches, so
+          // the merge caller gets affectedRows=0 and the row content is
+          // preserved.
+          final mergedJson = jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'merged').toJson(),
+          );
+          final affected = await realDb.updateOutboxMessage(
+            itemId: itemId,
+            newMessage: mergedJson,
+            newSubject: 'merge-race:v2',
+          );
+          expect(
+            affected,
+            0,
+            reason:
+                'claim() must have transitioned the row to sending so '
+                'in-flight merges cannot overwrite the row content mid-send',
+          );
+
+          // The row content on disk is still the original — exactly what the
+          // processor is sending over the wire.
+          final rowMidSend = (await realDb.allOutboxItems).firstWhere(
+            (e) => e.id == itemId,
+          );
+          expect(rowMidSend.message, originalJson);
+          expect(rowMidSend.status, OutboxStatus.sending.index);
+
+          // Caller's fallback inserts a fresh pending row with the merged
+          // message, so the merged covered-VC set will still ride its own
+          // Matrix event.
+          final freshId = await realDb.addOutboxItem(
+            OutboxCompanion.insert(
+              message: mergedJson,
+              subject: 'merge-race:v2',
+              outboxEntryId: const Value('entity-1'),
+            ),
+          );
+          expect(freshId, isNot(itemId));
+
+          final fresh = (await realDb.allOutboxItems).firstWhere(
+            (e) => e.id == freshId,
+          );
+          expect(fresh.message, mergedJson);
+          expect(fresh.status, OutboxStatus.pending.index);
+        },
       );
     });
 

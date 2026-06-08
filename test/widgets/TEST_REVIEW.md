@@ -41,12 +41,16 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `lib/widgets/app_bar/settings_header_dimensions.dart` (252 lines) — pure data class with constants and 3 static math helpers; well within limit but could separate constants from helpers if it grows further. No immediate action needed.
-- [ ] **[LOW]** `lib/widgets/app_bar/settings_page_header.dart` (317 lines) — borderline; the `FlexibleSpace` inner builder and the `collapseProgress` rendering logic are candidates for extraction if the file grows.
-- [ ] **[LOW]** `lib/widgets/charts/habits/habit_completion_rate_chart.dart` (302 lines) — the `barData` pure function and `leftTitleWidgets`/`getTooltipItems` callbacks are already well-exercised via extracted tests; no split urgently needed.
+- [x] **[LOW]** `lib/widgets/app_bar/settings_header_dimensions.dart` (252 lines) — pure data class with constants and 3 static math helpers; well within limit but could separate constants from helpers if it grows further. No immediate action needed.
+  **RESOLVED:** (no change) confirmed 252 lines, well within limits; the item itself states "no immediate action needed" and is a conditional ("if it grows"). No split warranted, and the file is `lib/` source outside the test/widgets/ edit scope.
+- [x] **[LOW]** `lib/widgets/app_bar/settings_page_header.dart` (317 lines) — borderline; the `FlexibleSpace` inner builder and the `collapseProgress` rendering logic are candidates for extraction if the file grows.
+  **RESOLVED:** (no change) confirmed 317 lines, still borderline-acceptable; extraction is explicitly conditional on future growth. The file is `lib/` source outside the test/widgets/ edit scope, so no change here.
+- [x] **[LOW]** `lib/widgets/charts/habits/habit_completion_rate_chart.dart` (302 lines) — the `barData` pure function and `leftTitleWidgets`/`getTooltipItems` callbacks are already well-exercised via extracted tests; no split urgently needed.
+  **RESOLVED:** (no change) confirmed 302 lines; item itself concludes "no split urgently needed" and the pure helpers are already covered. File is `lib/` source outside the test/widgets/ edit scope.
 - [x] **[MED]** `test/widgets/app_bar/settings_page_header_test.dart` (417 lines) — test file growing toward 500; the `pumpWithScale`, `pumpWithWidth`, `pumpWithTheme` helpers are already good extractions, but 10 repeated full-scroll tests could share a single `_pumpHeader(tester, {title, subtitle, scale, width})` top-level helper to cut ~100 lines. **RESOLVED:** done — a single `_pumpHeader(tester, {title, subtitle, scale, width, theme, pinned, bottom, ...})` helper replaced all inline scaffolding; the file shrank to ~260 lines.
 - [x] **[MED]** `test/widgets/charts/habits/habit_completion_rate_chart_test.dart` (560 lines) — largest test file in the group; the 5 inline `_*Controller` subclasses and duplicate `ProviderScope/MaterialApp/Scaffold` scaffolding could be collapsed to a `_pumpChart(tester, {controller})` helper, removing ~80 lines. **RESOLVED:** done — the five controller subclasses collapsed into one `_FixedStateController(state)` plus a `pumpChart(tester, {state})` helper; the three bounds-check variants are now a parameterized loop.
-- [ ] **[LOW]** `test/widgets/date_time/datetime_field_test.dart` (398 lines) — same `makeTestableWidgetWithScaffold` call repeated ~15 times; extracting a `_pumpField(tester, {dateTime, labelText, mode, clear})` helper would be a clean DRY improvement.
+- [x] **[LOW]** `test/widgets/date_time/datetime_field_test.dart` (398 lines) — same `makeTestableWidgetWithScaffold` call repeated ~15 times; extracting a `_pumpField(tester, {dateTime, labelText, mode, clear})` helper would be a clean DRY improvement.
+  **RESOLVED:** done — added a file-level `_pumpField(tester, {dateTime, labelText, setDateTime, clear, mode})` helper; all 8 `DateTimeField` pumps (the widget group plus the three modal-integration tests) now call it instead of repeating the scaffold/constructor boilerplate. The `DateTimeStickyActionBar`/`DateTimeBottomSheet` groups pump different widgets and keep their own inline construction.
 
 ---
 
@@ -70,7 +74,8 @@
 
 - [x] **[MED]** `test/widgets/flags/language_flag_test.dart` — the `tw`→`gh` (Akan/Twi → Ghana) override in `lib/widgets/flags/language_flag.dart:14` has no test case. Add a `test('returns Ghana flag override for tw', ...)` analogous to the `zh` case. **RESOLVED:** added.
 
-- [ ] **[LOW]** `test/widgets/cards/modern_card_content_test.dart` and `modern_icon_container_test.dart` — both have 9 and 5 `isNotNull` assertions respectively. While some are on nullable style properties (valid defensive checks), several (`expect(icon.color, isNotNull)` at line 31 of icon_container_test) do not verify the specific token-aligned value.
+- [x] **[LOW]** `test/widgets/cards/modern_card_content_test.dart` and `modern_icon_container_test.dart` — both have 9 and 5 `isNotNull` assertions respectively. While some are on nullable style properties (valid defensive checks), several (`expect(icon.color, isNotNull)` at line 31 of icon_container_test) do not verify the specific token-aligned value.
+  **RESOLVED:** done — the cited `expect(icon.color, isNotNull)` now asserts the resolved token value (`Theme.of(...).colorScheme.primary`, the widget's `effectiveIconColor` default). `modern_card_content_test.dart` no longer contains any `isNotNull` (already refactored to value/style assertions). The two remaining `isNotNull` in icon_container (lines 170, 230) are guards immediately followed by stronger assertions (`(border! as Border).top.color == customBorderColor`; `gradient isA<LinearGradient>`) — kept as-is.
 
 ---
 
@@ -82,9 +87,11 @@ Per the README: Glados is for pure functions with structured input. Widget tests
 
 - [x] **[MED]** `lib/widgets/charts/utils.dart` — `aggregateAvgByDay` is the one aggregate function not yet covered by a Glados test (`aggregateSumByDay` has one at line 381 of utils_test.dart, tagged correctly). The same scenario class `_SumByDayScenario` can be reused (or adapted) to add a property: "output length equals number of distinct days in range that have at least one measurement, values equal per-day arithmetic mean". **RESOLVED:** (stale) `aggregateAvgByDay — Glados properties` already exists in utils_test.dart asserting exactly these invariants via `any.avgByDayScenario`.
 
-- [ ] **[LOW]** `lib/widgets/charts/habits/dashboard_habits_data.dart` — `habitResultsByDay` contains deduplication logic (latest-write wins for same day). A Glados test checking "output contains at most one entry per `(habitId, dayString)` pair for any shuffled input list" would guard against regressions more cheaply than maintaining exhaustive example cases.
+- [x] **[LOW]** `lib/widgets/charts/habits/dashboard_habits_data.dart` — `habitResultsByDay` contains deduplication logic (latest-write wins for same day). A Glados test checking "output contains at most one entry per `(habitId, dayString)` pair for any shuffled input list" would guard against regressions more cheaply than maintaining exhaustive example cases.
+  **RESOLVED:** (stale) `dashboard_habits_data_test.dart` already contains the `habitResultsByDay — Glados deduplication property` group (numRuns 120, tagged 'glados') asserting at-most-one HabitResult per dayString plus that output length equals the range span, over generated multi-completion scenarios.
 
-- [ ] **[LOW]** `lib/widgets/flags/language_flag.dart` — `buildLanguageFlag` is a pure function; however, its input space is just `String languageCode` plus a few constants, and there are no algebraic invariants beyond "returns a `Widget`". Not a strong candidate.
+- [x] **[LOW]** `lib/widgets/flags/language_flag.dart` — `buildLanguageFlag` is a pure function; however, its input space is just `String languageCode` plus a few constants, and there are no algebraic invariants beyond "returns a `Widget`". Not a strong candidate.
+  **RESOLVED:** (no change) confirmed — `buildLanguageFlag` returns an opaque `CountryFlag` widget with no observable algebraic invariant; the override branches (ng/zh/tw) are already covered by example tests in `language_flag_test.dart`. The item itself rules it out as a Glados candidate.
 
 ---
 
@@ -106,7 +113,8 @@ Per the README: Glados is for pure functions with structured input. Widget tests
 
 - [x] **[MED]** `lib/widgets/date_time/datetime_field.dart` line 77 — the `onNow` path calls `DateTime.now()` inside the widget. The test "complete flow: open modal, tap now button" (line 337 of `datetime_field_test.dart`) then asserts `capturedDate isA<DateTime>()` without verifying the value is recent or reasonable. This is effectively a smoke test for the live-clock path. **RESOLVED:** done — the tap is bracketed with wall-clock readings and the captured value asserted inside `[before, after]` (the live clock is the production contract here, so the deterministic-dates rule yields to a bounded sandwich).
 
-- [ ] **[LOW]** `lib/widgets/buttons/lotti_secondary_button.dart` — the `style` parameter and its theming (border, text style) are not tested; only `fullWidth`, `enabled`, and `icon` presence are covered.
+- [x] **[LOW]** `lib/widgets/buttons/lotti_secondary_button.dart` — the `style` parameter and its theming (border, text style) are not tested; only `fullWidth`, `enabled`, and `icon` presence are covered.
+  **RESOLVED:** done (item slightly misdescribed — the widget has no `style` parameter). Added a `theming` group asserting the real token-derived styling: enabled label color = `colorScheme.primary` (w600/16px), disabled label = `onSurfaceVariant @0.5`, icon shares the label color (size 20), the resolved `OutlinedButton` border side = `primary @0.5` enabled / `primaryContainer @0.2` disabled, and the resolved shape (12px radius) + padding (h20/v12). Border/padding/shape are read off the resolved `ButtonStyle`.
 
 ---
 
@@ -124,9 +132,11 @@ Per the README: Glados is for pure functions with structured input. Widget tests
 
 - [x] **[MED]** `test/widgets/app_bar/settings_page_header_test.dart` — **14× `pumpAndSettle`**, many inside nested `pumpWithScale`/`pumpWithWidth` loop bodies. For `SettingsPageHeader` layout-only checks (no animations expected), `tester.pump()` is sufficient. Keep `pumpAndSettle` only for scroll-gesture tests (lines 170–215 where real scroll animation occurs). **RESOLVED:** done — `_pumpHeader` uses bounded pumps (one frame + 1s for the BackWidget flutter_animate fade-in, which otherwise leaves a pending timer); `pumpAndSettle` remains only after drag gestures and the theme-transition assert.
 
-- [ ] **[LOW]** `test/widgets/app_bar/glass_action_button_test.dart` — 1× `pumpAndSettle` after tap (line 40). An `InkWell` ink-splash animation is the only candidate; `tester.pump(const Duration(milliseconds: 50))` would settle it without the 10s default.
+- [x] **[LOW]** `test/widgets/app_bar/glass_action_button_test.dart` — 1× `pumpAndSettle` after tap (line 40). An `InkWell` ink-splash animation is the only candidate; `tester.pump(const Duration(milliseconds: 50))` would settle it without the 10s default.
+  **RESOLVED:** (stale) the file no longer contains any `pumpAndSettle`; the tap test at line 39 already uses a bounded `tester.pump()`.
 
-- [ ] **[LOW]** `test/widgets/app_bar/glass_back_button_test.dart` — 2× `pumpAndSettle` (lines 153, 171). Same splash-animation concern.
+- [x] **[LOW]** `test/widgets/app_bar/glass_back_button_test.dart` — 2× `pumpAndSettle` (lines 153, 171). Same splash-animation concern.
+  **RESOLVED:** (no change) the two remaining `pumpAndSettle` calls (lines 126, 130) await real `MaterialPageRoute` push/pop transitions in the "pops the current route" test, not InkWell splashes; bounded pumps would race the route animation. The original splash-tap sites at lines 153/171 no longer exist.
 
 ---
 

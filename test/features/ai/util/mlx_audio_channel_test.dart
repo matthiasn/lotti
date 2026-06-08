@@ -579,6 +579,36 @@ void main() {
         expect(event.peakMemoryGB, 4.25);
       }
     });
+
+    // The _typeFromString switch has a `_` catch-all mapping every unrecognized
+    // type string to .error. The canonical type strings all contain a dot
+    // (e.g. 'transcription.provisional'), so letterOrDigits can never produce
+    // one; the guard below keeps the property correct even if that ever changes.
+    glados.Glados<String>(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'maps any non-canonical type string to error',
+      (value) {
+        const canonical = {
+          'transcription.provisional',
+          'transcription.confirmed',
+          'transcription.display',
+          'transcription.stats',
+          'transcription.done',
+          'transcription.error',
+        };
+        if (canonical.contains(value)) return;
+
+        final event = MlxAudioRealtimeEvent.fromMap({'type': value});
+        expect(
+          event.type,
+          MlxAudioRealtimeEventType.error,
+          reason: 'unrecognized type "$value" should fall through to error',
+        );
+      },
+      tags: 'glados',
+    );
   });
 
   group('MlxAudioModelDownloadProgress', () {

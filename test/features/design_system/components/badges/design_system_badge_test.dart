@@ -57,6 +57,12 @@ void main() {
       );
 
       expect(find.bySemanticsLabel('Unread notifications'), findsOneWidget);
+      expect(
+        tester
+            .getSemantics(find.bySemanticsLabel('Unread notifications'))
+            .label,
+        'Unread notifications',
+      );
       semantics.dispose();
     });
 
@@ -281,6 +287,10 @@ void main() {
       );
 
       expect(find.bySemanticsLabel('5 unread messages'), findsOneWidget);
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('5 unread messages')).label,
+        '5 unread messages',
+      );
       semantics.dispose();
     });
 
@@ -296,6 +306,10 @@ void main() {
       );
 
       expect(find.bySemanticsLabel('New items available'), findsOneWidget);
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('New items available')).label,
+        'New items available',
+      );
       semantics.dispose();
     });
 
@@ -311,6 +325,10 @@ void main() {
       );
 
       expect(find.bySemanticsLabel('Beta feature'), findsOneWidget);
+      expect(
+        tester.getSemantics(find.bySemanticsLabel('Beta feature')).label,
+        'Beta feature',
+      );
       semantics.dispose();
     });
 

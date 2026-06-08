@@ -33,4 +33,25 @@ void main() {
       );
     });
   }
+
+  test(
+    'outboxLoginGateStreamProvider surfaces an error when not overridden',
+    () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // This StreamProvider delegates to outboxServiceProvider, which throws
+      // UnimplementedError when not overridden. Reading the StreamProvider does
+      // not throw on read; instead the dependency failure is captured into the
+      // AsyncValue's error state. In Riverpod 3 the watched dependency's error
+      // surfaces wrapped in a ProviderException whose message carries the
+      // originating UnimplementedError.
+      final state = container.read(outboxLoginGateStreamProvider);
+
+      expect(state.hasError, isTrue);
+      expect(state.hasValue, isFalse);
+      expect(state.error, isA<ProviderException>());
+      expect(state.error.toString(), contains('UnimplementedError'));
+    },
+  );
 }

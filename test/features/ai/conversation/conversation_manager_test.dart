@@ -764,11 +764,15 @@ void main() {
     });
 
     group('ConversationStrategy', () {
-      test('ConversationAction enum values', () {
-        expect(ConversationAction.values.length, 3);
-        expect(ConversationAction.continueConversation.index, 0);
-        expect(ConversationAction.complete.index, 1);
-        expect(ConversationAction.wait.index, 2);
+      test('ConversationAction exposes the actions callers switch on', () {
+        // Assert the contract by name, not by ordinal: the repository's
+        // sendMessage loop switches on these three actions, so the set of
+        // names is the meaningful invariant. Ordinal indices are an
+        // implementation detail and reordering must not break this test.
+        expect(
+          ConversationAction.values.map((action) => action.name).toSet(),
+          {'continueConversation', 'complete', 'wait'},
+        );
       });
     });
 

@@ -102,6 +102,21 @@ void main() {
       expect(id, 'surface-unknown');
     });
 
+    test('falls back to surface-unknown for an empty-string surfaceId', () {
+      // Distinct from the missing-key case: surfaceId is present but blank,
+      // which the isNotEmpty guard must also reject.
+      final id = bridge.handleToolCall({
+        'surfaceId': '',
+        'rootType': 'MetricsSummary',
+        'data': {'totalWakes': 1, 'successRate': 1.0, 'failureCount': 0},
+      });
+
+      expect(id, 'surface-unknown');
+      // The surface is actually created under the fallback id, not dropped.
+      expect(bridge.drainPendingSurfaceIds(), ['surface-unknown']);
+      expect(processor.registry.getSurface('surface-unknown'), isNotNull);
+    });
+
     test('falls back to EvolutionProposal for unsupported root types', () {
       final id = bridge.handleToolCall({
         'surfaceId': 'surf-unknown-root',

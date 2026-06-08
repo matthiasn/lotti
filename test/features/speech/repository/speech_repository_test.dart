@@ -2,7 +2,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -10,6 +9,50 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
+
+/// Stubs [MockPersistenceLogic.createMetadata] for the `createAudioEntry`
+/// tests. Pass [returns] to resolve with a [Metadata], or [throws] to throw.
+void _stubCreateMetadata(
+  MockPersistenceLogic logic, {
+  Metadata? returns,
+  Object? throws,
+}) {
+  final stub = when(
+    () => logic.createMetadata(
+      dateFrom: any(named: 'dateFrom'),
+      dateTo: any(named: 'dateTo'),
+      uuidV5Input: any(named: 'uuidV5Input'),
+      flag: any(named: 'flag'),
+      categoryId: any(named: 'categoryId'),
+    ),
+  );
+  if (throws != null) {
+    stub.thenThrow(throws);
+  } else {
+    stub.thenAnswer((_) async => returns!);
+  }
+}
+
+/// Stubs [MockPersistenceLogic.createDbEntity] for the `createAudioEntry`
+/// tests. Resolves with [returns] (default true), or throws [throws].
+void _stubCreateDbEntity(
+  MockPersistenceLogic logic, {
+  bool returns = true,
+  Object? throws,
+}) {
+  final stub = when(
+    () => logic.createDbEntity(
+      any(that: isA<JournalAudio>()),
+      linkedId: any(named: 'linkedId'),
+    ),
+  );
+  if (throws != null) {
+    stub.thenThrow(throws);
+  } else {
+    stub.thenAnswer((_) async => returns);
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -25,28 +68,21 @@ void main() {
     registerFallbackValue(DateTime(2024, 3, 15)); // For date matching
   });
 
-  setUp(() {
+  setUp(() async {
     mockPersistenceLogic = MockPersistenceLogic();
-    mockJournalDb = MockJournalDb();
     mockDomainLogger = MockDomainLogger();
 
-    // Unregister specific services before re-registering for the test
-    if (getIt.isRegistered<PersistenceLogic>()) {
-      getIt.unregister<PersistenceLogic>();
-    }
-    if (getIt.isRegistered<JournalDb>()) {
-      getIt.unregister<JournalDb>();
-    }
-
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-
-    // Register mocks with getIt
-    getIt.registerSingleton<PersistenceLogic>(mockPersistenceLogic);
-    // ignore_for_file: cascade_invocations
-    getIt.registerSingleton<JournalDb>(mockJournalDb);
-    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+    final mocks = await setUpTestGetIt(
+      additionalSetup: () {
+        // setUpTestGetIt registers a real DomainLogger; swap it for a
+        // verifiable mock and add the PersistenceLogic mock these tests need.
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockDomainLogger)
+          ..registerSingleton<PersistenceLogic>(mockPersistenceLogic);
+      },
+    );
+    mockJournalDb = mocks.journalDb;
 
     // Default stub for logging to avoid errors in tests not focused on logging
     when(
@@ -58,6 +94,8 @@ void main() {
       ),
     ).thenAnswer((_) async {});
   });
+
+  tearDown(tearDownTestGetIt);
 
   group('SpeechRepository', () {
     group('createAudioEntry', () {
@@ -89,21 +127,8 @@ void main() {
 
       test('successfully creates audio entry', () async {
         // Arrange
-        when(
-          () => mockPersistenceLogic.createMetadata(
-            dateFrom: any(named: 'dateFrom'),
-            dateTo: any(named: 'dateTo'),
-            uuidV5Input: any(named: 'uuidV5Input'),
-            flag: any(named: 'flag'),
-            categoryId: any(named: 'categoryId'),
-          ),
-        ).thenAnswer((_) async => testMetadata);
-        when(
-          () => mockPersistenceLogic.createDbEntity(
-            any(that: isA<JournalAudio>()),
-            linkedId: any(named: 'linkedId'),
-          ),
-        ).thenAnswer((_) async => true);
+        _stubCreateMetadata(mockPersistenceLogic, returns: testMetadata);
+        _stubCreateDbEntity(mockPersistenceLogic);
 
         // Act
         final result = await SpeechRepository.createAudioEntry(testAudioNote);
@@ -117,23 +142,11 @@ void main() {
         'successfully creates audio entry with linkedId and categoryId',
         () async {
           // Arrange
-          when(
-            () => mockPersistenceLogic.createMetadata(
-              dateFrom: any(named: 'dateFrom'),
-              dateTo: any(named: 'dateTo'),
-              uuidV5Input: any(named: 'uuidV5Input'),
-              flag: any(named: 'flag'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer(
-            (_) async => testMetadata.copyWith(categoryId: testCategoryId),
+          _stubCreateMetadata(
+            mockPersistenceLogic,
+            returns: testMetadata.copyWith(categoryId: testCategoryId),
           );
-          when(
-            () => mockPersistenceLogic.createDbEntity(
-              any(that: isA<JournalAudio>()),
-              linkedId: any(named: 'linkedId'),
-            ),
-          ).thenAnswer((_) async => true);
+          _stubCreateDbEntity(mockPersistenceLogic);
 
           // Act
           final result = await SpeechRepository.createAudioEntry(
@@ -173,15 +186,7 @@ void main() {
         () async {
           // Arrange
           final exception = Exception('Metadata creation error');
-          when(
-            () => mockPersistenceLogic.createMetadata(
-              dateFrom: any(named: 'dateFrom'),
-              dateTo: any(named: 'dateTo'),
-              uuidV5Input: any(named: 'uuidV5Input'),
-              flag: any(named: 'flag'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenThrow(exception);
+          _stubCreateMetadata(mockPersistenceLogic, throws: exception);
 
           // Act
           final result = await SpeechRepository.createAudioEntry(testAudioNote);
@@ -210,21 +215,8 @@ void main() {
         () async {
           // Arrange
           final exception = Exception('DB entity creation error');
-          when(
-            () => mockPersistenceLogic.createMetadata(
-              dateFrom: any(named: 'dateFrom'),
-              dateTo: any(named: 'dateTo'),
-              uuidV5Input: any(named: 'uuidV5Input'),
-              flag: any(named: 'flag'),
-              categoryId: any(named: 'categoryId'),
-            ),
-          ).thenAnswer((_) async => testMetadata);
-          when(
-            () => mockPersistenceLogic.createDbEntity(
-              any(that: isA<JournalAudio>()),
-              linkedId: any(named: 'linkedId'),
-            ),
-          ).thenThrow(exception);
+          _stubCreateMetadata(mockPersistenceLogic, returns: testMetadata);
+          _stubCreateDbEntity(mockPersistenceLogic, throws: exception);
 
           // Act
           final result = await SpeechRepository.createAudioEntry(testAudioNote);

@@ -379,9 +379,10 @@ void main() {
         ),
       );
 
-      // Tap to expand
+      // Tap to expand. The chevron icon flips immediately via setState; the
+      // 200ms AnimatedCrossFade is settled by a single bounded pump.
       await tester.tap(find.byType(GestureDetector).first);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
 
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
       expect(find.byIcon(Icons.chevron_right), findsNothing);
@@ -397,14 +398,14 @@ void main() {
         ),
       );
 
-      // Tap to expand
+      // Tap to expand (bounded pump settles the 200ms cross-fade).
       await tester.tap(find.byType(GestureDetector).first);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
       expect(find.byIcon(Icons.keyboard_arrow_down), findsOneWidget);
 
-      // Tap again to collapse
+      // Tap again to collapse.
       await tester.tap(find.byType(GestureDetector).first);
-      await tester.pumpAndSettle();
+      await tester.pump(const Duration(milliseconds: 200));
       expect(find.byIcon(Icons.chevron_right), findsOneWidget);
     });
   });
@@ -443,7 +444,8 @@ void main() {
       expect(find.text('100%'), findsOneWidget);
       expect(find.text('0'), findsOneWidget);
       expect(find.text('13s'), findsOneWidget);
-      expect(find.text('3'), findsWidgets);
+      // Only the activeInstances chip renders the literal '3' value.
+      expect(find.text('3'), findsOneWidget);
     });
 
     testWidgets('hides optional metrics when absent', (tester) async {
@@ -760,6 +762,77 @@ void main() {
         expect(find.text('3'), findsOneWidget);
       },
     );
+
+    testWidgets('proportion bar width factor equals count / totalCount', (
+      tester,
+    ) async {
+      // totalCount = 4 + 6 = 10, so the per-category fractions are 0.4 and 0.6.
+      await tester.pumpWidget(
+        makeTestableWidget(
+          _buildCatalogWidget(feedbackCategoryBreakdownItem, {
+            'categories': <Map<String, Object?>>[
+              {'name': 'accuracy', 'count': 4, 'positiveCount': 2},
+              {'name': 'communication', 'count': 6, 'negativeCount': 1},
+            ],
+          }),
+        ),
+      );
+
+      final widthFactors = tester
+          .widgetList<FractionallySizedBox>(find.byType(FractionallySizedBox))
+          .map((w) => w.widthFactor!)
+          .toList();
+
+      expect(widthFactors, hasLength(2));
+      // fraction = count / totalCount, and every fraction stays within [0, 1].
+      expect(widthFactors[0], closeTo(0.4, 1e-9));
+      expect(widthFactors[1], closeTo(0.6, 1e-9));
+      for (final f in widthFactors) {
+        expect(f, inInclusiveRange(0.0, 1.0));
+      }
+    });
+
+    testWidgets(
+      'neutral segment is clamped to zero when positive+negative exceed count',
+      (tester) async {
+        // count = 5 but positive + negative = 8, so neutralCount must clamp to
+        // 0 (no orange Expanded) rather than going negative and throwing.
+        await tester.pumpWidget(
+          makeTestableWidget(
+            _buildCatalogWidget(feedbackCategoryBreakdownItem, {
+              'categories': <Map<String, Object?>>[
+                {
+                  'name': 'overcounted',
+                  'count': 5,
+                  'positiveCount': 5,
+                  'negativeCount': 3,
+                },
+              ],
+            }),
+          ),
+        );
+
+        // The colored segments live inside the FractionallySizedBox; the
+        // header's name Expanded is excluded by scoping the search there.
+        final flexes = tester
+            .widgetList<Expanded>(
+              find.descendant(
+                of: find.byType(FractionallySizedBox),
+                matching: find.byType(Expanded),
+              ),
+            )
+            .map((w) => w.flex)
+            .toList();
+        // Only the negative (3) and positive (5) segments render; the clamped
+        // neutral segment (0) is omitted, so exactly two segments exist and
+        // every flex stays positive (never negative).
+        expect(flexes, hasLength(2));
+        expect(flexes, containsAll(<int>[3, 5]));
+        for (final flex in flexes) {
+          expect(flex, greaterThan(0));
+        }
+      },
+    );
   });
 
   group('SessionProgress', () {
@@ -949,7 +1022,8 @@ void main() {
         await tester.tap(
           find.text(localizedContext.messages.agentCategoryRatingsSubmit),
         );
-        await tester.pumpAndSettle();
+        // Submit only flips `_submitted` via setState — no animation to settle.
+        await tester.pump();
 
         expect(events, hasLength(1));
         final event = events.first as UserActionEvent;
@@ -1048,7 +1122,8 @@ void main() {
       await tester.tap(
         find.text(localizedContext.messages.agentCategoryRatingsSubmit),
       );
-      await tester.pumpAndSettle();
+      // Submit only flips `_submitted` via setState — no animation to settle.
+      await tester.pump();
 
       final event = events.single as UserActionEvent;
       final ratings =
@@ -1132,7 +1207,8 @@ void main() {
       );
 
       await tester.tap(find.text('Yes'));
-      await tester.pumpAndSettle();
+      // Choosing an option only flips `_submitted` via setState — no animation.
+      await tester.pump();
 
       final event = events.single as UserActionEvent;
       expect(event.name, 'binary_choice_submitted');
@@ -1735,10 +1811,11 @@ void main() {
       );
 
       await tester.pumpWidget(makeTestableWidget(widget));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
+      // ABComparisonCard has no animations; selection only flips state.
       await tester.tap(find.text('Choose A'));
-      await tester.pumpAndSettle();
+      await tester.pump();
 
       expect(events, hasLength(1));
       final event = events.first as UserActionEvent;

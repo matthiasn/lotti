@@ -10,6 +10,7 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/journal/state/journal_focus_controller.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
@@ -195,6 +196,11 @@ void main() {
 
       // test text entry is starred
       expect(find.byIcon(Icons.star_rounded), findsOneWidget);
+
+      // The AI running animation card is mounted at the bottom of the page
+      // Stack (source lines 171-183); a regression in its placement would
+      // remove it from the tree.
+      expect(find.byType(AiRunningAnimationWrapperCard), findsOneWidget);
     });
 
     testWidgets('Weight Entry is rendered properly', (tester) async {
@@ -357,6 +363,17 @@ void main() {
         );
 
         await tester.pump();
+
+        // An empty file list must not reach the media-import persistence
+        // seam: no JournalImage entity is created for a drop with no files.
+        verifyNever(
+          () => mockPersistenceLogic.createDbEntity(
+            any(),
+            linkedId: any(named: 'linkedId'),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+            enqueueSync: any(named: 'enqueueSync'),
+          ),
+        );
       },
     );
 

@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_map/flutter_map.dart';
-import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart';
 import 'package:lotti/map/cached_tile_provider.dart';
 
 void main() {
@@ -47,21 +47,9 @@ void main() {
           provider.getImage(coordinates, tileLayer)
               as CachedNetworkImageProvider;
 
-      // CachedNetworkImageProvider stores headers internally
-      // We can't directly access them, but we can verify the provider was created
-      expect(imageProvider, isNotNull);
-      expect(imageProvider.url, contains('tile.openstreetmap.org'));
-    });
-
-    test('getImage without headers creates provider with null headers', () {
-      provider = CachedTileProvider();
-      const coordinates = TileCoordinates(0, 0, 1);
-
-      final imageProvider =
-          provider.getImage(coordinates, tileLayer)
-              as CachedNetworkImageProvider;
-
-      expect(imageProvider, isNotNull);
+      // headers is a public field on CachedNetworkImageProvider, so assert the
+      // actual forwarded map rather than using the URL as a proxy.
+      expect(imageProvider.headers, equals(headers));
     });
 
     test('getTileUrl generates correct URL format', () {
@@ -101,17 +89,6 @@ void main() {
       );
     });
 
-    test('multiple instances with different headers', () {
-      final provider1 = CachedTileProvider(headers: {'User-Agent': 'app1'});
-      final provider2 = CachedTileProvider(headers: {'User-Agent': 'app2'});
-      final provider3 = CachedTileProvider();
-
-      // All providers should be independent instances
-      expect(provider1, isNot(equals(provider2)));
-      expect(provider1, isNot(equals(provider3)));
-      expect(provider2, isNot(equals(provider3)));
-    });
-
     test('omitted headers yield a provider with empty headers', () {
       provider = CachedTileProvider();
       const coordinates = TileCoordinates(0, 0, 1);
@@ -131,5 +108,24 @@ void main() {
 
       expect(imageProvider, isA<CachedNetworkImageProvider>());
     });
+
+    // getTileUrl is inherited from flutter_map's TileProvider; this pins the
+    // {z}/{x}/{y} substitution contract the wrapper relies on for any
+    // coordinate triple, not just the hand-picked examples above.
+    Glados3(any.int, any.int, any.int).test(
+      'getTileUrl substitutes z/x/y into the template for any coordinates',
+      (x, y, z) {
+        final provider = CachedTileProvider();
+        final layer = TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        );
+        final url = provider.getTileUrl(TileCoordinates(x, y, z), layer);
+        expect(
+          url,
+          equals('https://tile.openstreetmap.org/$z/$x/$y.png'),
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

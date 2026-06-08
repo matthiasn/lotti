@@ -16,6 +16,10 @@ void main() {
       final names = dayAgentTools.map((tool) => tool.name).toList();
 
       expect(names.toSet(), hasLength(names.length));
+      // Pin the exact tool count so a tool added to dayAgentTools but missing
+      // from the expected list below (or vice versa) is caught: containsAll
+      // alone tolerates extras, hasLength closes that gap.
+      expect(names, hasLength(17));
       expect(
         names,
         containsAll(const [
@@ -217,6 +221,18 @@ void main() {
         expect(description, contains('to'));
       },
     );
+
+    test('set_next_wake requires at and reason as ISO-8601 string fields', () {
+      final params = parametersFor(DayAgentToolNames.setNextWake);
+      expect(params['type'], 'object');
+      expect(params['additionalProperties'], isFalse);
+      expect(params['required'], ['at', 'reason']);
+
+      final properties = params['properties'] as Map<String, dynamic>;
+      expect(properties.keys, containsAll(['at', 'reason']));
+      expect((properties['at'] as Map<String, dynamic>)['type'], 'string');
+      expect((properties['reason'] as Map<String, dynamic>)['type'], 'string');
+    });
 
     test('commit_day and uncommit_day require dayId only', () {
       for (final name in const [

@@ -740,7 +740,7 @@ class _SharedHourRail extends StatelessWidget {
                       hourLabelCenterOffset,
                   right: tokens.spacing.step6,
                   child: Text(
-                    _formatHour(hour),
+                    formatTimelineHourLabel(hour),
                     style: hourLabelStyle,
                   ),
                 ),
@@ -779,11 +779,6 @@ class _SharedHourRail extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatHour(int hour24) {
-    final displayHour = hour24 == 24 ? 24 : hour24 % 24;
-    return '${displayHour.toString().padLeft(2, '0')}:00';
   }
 
   String _formatNow(DateTime now) {

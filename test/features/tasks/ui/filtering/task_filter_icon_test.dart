@@ -135,7 +135,6 @@ void main() {
       await tester.pumpWidget(buildSubject());
       await tester.pump();
 
-      expect(find.byType(TaskFilterIcon), findsOneWidget);
       expect(find.byIcon(MdiIcons.filterVariant), findsOneWidget);
     });
 

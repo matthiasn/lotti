@@ -747,27 +747,27 @@ void main() {
       });
 
       test('handles errors during API call', () async {
-        when(
-          () => mockOllamaRepo.generateTextWithMessages(
-            messages: any(named: 'messages'),
-            model: any(named: 'model'),
-            provider: any(named: 'provider'),
-            tools: any(named: 'tools'),
-            temperature: any(named: 'temperature'),
-            thoughtSignatures: any(named: 'thoughtSignatures'),
-            signatureCollector: any(named: 'signatureCollector'),
-          ),
-        ).thenThrow(Exception('API Error'));
+        // Use the shared 8-argument stub so the matcher includes `turnIndex`
+        // (which `sendMessage` always supplies). An inline stub that omits
+        // `turnIndex` would fail to match the real call, so the resulting
+        // error would come from an unmatched mock rather than the thrown
+        // exception under test.
+        _stubGenerateText(mockOllamaRepo).thenThrow(Exception('API Error'));
 
         final manager = repository.getConversation(conversationId)!;
 
-        // Expect UserMessageEvent followed by ThinkingEvent and then ConversationErrorEvent
+        // Expect UserMessageEvent followed by ThinkingEvent and then a
+        // ConversationErrorEvent carrying the thrown exception's message.
         final errorExpectation = expectLater(
           manager.events,
           emitsInOrder([
             isA<UserMessageEvent>(),
             isA<ThinkingEvent>(),
-            isA<ConversationErrorEvent>(),
+            isA<ConversationErrorEvent>().having(
+              (e) => e.message,
+              'message',
+              contains('API Error'),
+            ),
           ]),
         );
 

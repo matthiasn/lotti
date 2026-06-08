@@ -32,6 +32,49 @@ void main() {
     test('handles empty input', () {
       expect(ChatStreamUtils.computeOpenTagCarry(''), isEmpty);
     });
+
+    glados.Glados(
+      glados.any.generatedOpenCarryScenario,
+      glados.ExploreConfig(numRuns: 140),
+    ).test(
+      'carry is a suffix of the input, never longer, and never a full opener',
+      (scenario) {
+        final input = scenario.input;
+        final carry = ChatStreamUtils.computeOpenTagCarry(input);
+
+        // Invariant 1: carry length never exceeds the input length.
+        expect(
+          carry.length,
+          lessThanOrEqualTo(input.length),
+          reason: '$scenario',
+        );
+
+        // Invariant 2: carry is always a (possibly empty) suffix of the input.
+        expect(input.endsWith(carry), isTrue, reason: '$scenario');
+
+        // Invariant 3: a non-empty carry is always a case-insensitive prefix of
+        // one of the partial opener candidates (which deliberately exclude the
+        // closing character), so it can never itself be a complete opener.
+        if (carry.isNotEmpty) {
+          final lowerCarry = carry.toLowerCase();
+          final matchesCandidatePrefix = _openTagCandidates.any(
+            (candidate) => candidate.startsWith(lowerCarry),
+          );
+          expect(matchesCandidatePrefix, isTrue, reason: '$scenario');
+
+          // It also never matches a full-opener regex.
+          for (final re in _fullOpenerRegexes) {
+            expect(re.hasMatch(carry), isFalse, reason: '$scenario');
+          }
+        }
+
+        // Invariant 4: a complete opener at the tail produces no carry.
+        if (scenario.tailIsCompleteOpener) {
+          expect(carry, isEmpty, reason: '$scenario');
+        }
+      },
+      tags: 'glados',
+    );
   });
 
   group('ChatStreamUtils.shouldUpgradeSoftBreak', () {
@@ -240,6 +283,98 @@ void main() {
   });
 }
 
+/// Partial opener candidates mirrored from
+/// `ChatStreamUtils.computeOpenTagCarry` (lowercase, closing char excluded).
+const _openTagCandidates = <String>[
+  '<thinking',
+  '<think',
+  '[thinking',
+  '[think',
+  '```thinking',
+  '```think',
+];
+
+/// Full-opener regexes mirrored from `ChatStreamUtils.computeOpenTagCarry`.
+final _fullOpenerRegexes = <RegExp>[
+  RegExp(r'<think(?:ing)?\s*>\s*$', caseSensitive: false),
+  RegExp(r'\[(?:think|thinking)\s*\]\s*$', caseSensitive: false),
+  RegExp(r'```[ \t]*(?:think|thinking)[ \t]*\n\s*$', caseSensitive: false),
+];
+
+/// Shape of the tail appended to the generated body for open-carry scenarios.
+enum _GeneratedOpenCarryTail {
+  /// No special tail — exercises the "no carry" path with plain text.
+  none,
+
+  /// A partial opener prefix (closing char excluded), e.g. `<thin`.
+  partialOpener,
+
+  /// A complete opener, e.g. `<thinking>` / `[thinking]` / ```` ```thinking\n````.
+  completeOpener,
+}
+
+enum _GeneratedOpenTokenKind { html, bracket, fence }
+
+class _GeneratedOpenCarryScenario {
+  const _GeneratedOpenCarryScenario({
+    required this.body,
+    required this.tail,
+    required this.kind,
+    required this.prefixLength,
+  });
+
+  final List<_GeneratedStreamUtilsTextToken> body;
+  final _GeneratedOpenCarryTail tail;
+  final _GeneratedOpenTokenKind kind;
+
+  /// How much of the partial opener to keep (clamped to candidate length).
+  final int prefixLength;
+
+  String get _partialOpenerCandidate => switch (kind) {
+    _GeneratedOpenTokenKind.html => '<thinking',
+    _GeneratedOpenTokenKind.bracket => '[thinking',
+    _GeneratedOpenTokenKind.fence => '```thinking',
+  };
+
+  String get _completeOpener => switch (kind) {
+    _GeneratedOpenTokenKind.html => '<thinking>',
+    _GeneratedOpenTokenKind.bracket => '[thinking]',
+    _GeneratedOpenTokenKind.fence => '```thinking\n',
+  };
+
+  bool get tailIsCompleteOpener =>
+      tail == _GeneratedOpenCarryTail.completeOpener;
+
+  /// Number of leading chars of the partial opener to keep, kept within
+  /// `[1, candidate length]` without relying on `num`-typed `clamp`.
+  int get _partialLength {
+    final maxLen = _partialOpenerCandidate.length;
+    if (prefixLength < 1) return 1;
+    if (prefixLength > maxLen) return maxLen;
+    return prefixLength;
+  }
+
+  String get _tailText => switch (tail) {
+    _GeneratedOpenCarryTail.none => '',
+    _GeneratedOpenCarryTail.partialOpener => _partialOpenerCandidate.substring(
+      0,
+      _partialLength,
+    ),
+    _GeneratedOpenCarryTail.completeOpener => _completeOpener,
+  };
+
+  String get input => '${body.text}$_tailText';
+
+  @override
+  String toString() {
+    return '_GeneratedOpenCarryScenario('
+        'input: $input, '
+        'tail: $tail, '
+        'kind: $kind, '
+        'prefixLength: $prefixLength)';
+  }
+}
+
 enum _GeneratedCloseTokenKind { html, bracket, fence }
 
 enum _GeneratedStreamUtilsTextToken {
@@ -390,6 +525,12 @@ extension _AnyChatStreamUtils on glados.Any {
   glados.Generator<_GeneratedVisibleChunkShape> get _visibleChunkShape =>
       glados.AnyUtils(this).choose(_GeneratedVisibleChunkShape.values);
 
+  glados.Generator<_GeneratedOpenCarryTail> get _openCarryTail =>
+      glados.AnyUtils(this).choose(_GeneratedOpenCarryTail.values);
+
+  glados.Generator<_GeneratedOpenTokenKind> get _openTokenKind =>
+      glados.AnyUtils(this).choose(_GeneratedOpenTokenKind.values);
+
   glados.Generator<bool> get _boolean =>
       glados.AnyUtils(this).choose(const [true, false]);
 
@@ -408,6 +549,25 @@ extension _AnyChatStreamUtils on glados.Any {
           ? kind.maxPrefixLength
           : prefixLength,
       body: body,
+    ),
+  );
+
+  glados.Generator<_GeneratedOpenCarryScenario>
+  get generatedOpenCarryScenario => glados.CombinableAny(this).combine4(
+    _textTokens,
+    _openCarryTail,
+    _openTokenKind,
+    glados.IntAnys(this).intInRange(1, 12),
+    (
+      List<_GeneratedStreamUtilsTextToken> body,
+      _GeneratedOpenCarryTail tail,
+      _GeneratedOpenTokenKind kind,
+      int prefixLength,
+    ) => _GeneratedOpenCarryScenario(
+      body: body,
+      tail: tail,
+      kind: kind,
+      prefixLength: prefixLength,
     ),
   );
 

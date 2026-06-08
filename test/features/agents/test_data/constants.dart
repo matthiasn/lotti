@@ -9,6 +9,9 @@ final kAgentTestDate = DateTime(2024, 3, 15, 10, 30);
 /// Default agent ID used across tests.
 const kTestAgentId = 'agent-001';
 
+/// Default soul ID used across tests.
+const kTestSoulId = 'soul-001';
+
 /// Default task metadata snapshot for redundancy-filter tests.
 const kTestTaskMetadataSnapshot =
     (

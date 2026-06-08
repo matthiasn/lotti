@@ -19,8 +19,14 @@ void main() {
         params['required'],
         containsAll(<String>['start_date', 'end_date']),
       );
-      final limit = (params['properties'] as Map)['limit'] as Map;
+      final properties = params['properties'] as Map;
+      final limit = properties['limit'] as Map;
       expect(limit['default'], 100);
+      // Pin the property types so an accidental field-type change (which would
+      // break the OpenAI function-calling schema) fails this test.
+      expect((properties['start_date'] as Map)['type'], 'string');
+      expect((properties['end_date'] as Map)['type'], 'string');
+      expect(limit['type'], 'integer');
     });
 
     test(
@@ -90,6 +96,10 @@ void main() {
       final json = res.toJson();
       final back = TaskSummaryResult.fromJson(json);
       expect(back.taskId, 't1');
+      expect(back.taskTitle, 'Task');
+      expect(back.summary, 'S');
+      expect(back.status, 'completed');
+      expect(back.taskDate, DateTime(2024));
       expect(back.metadata?['m'], 'v');
     });
 

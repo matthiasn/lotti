@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_material_design_icons/flutter_material_design_icons.dart';
 import 'package:flutter_rating/flutter_rating.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/checklist_data.dart';
@@ -24,6 +25,7 @@ import 'package:lotti/features/journal/ui/widgets/entry_details/survey_summary.d
 import 'package:lotti/features/journal/ui/widgets/entry_details/workout_summary.dart';
 import 'package:lotti/features/journal/ui/widgets/list_cards/journal_card.dart';
 import 'package:lotti/features/journal/ui/widgets/text_viewer_widget_non_scrollable.dart';
+import 'package:lotti/features/journal/util/entry_tools.dart' as entry_tools;
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/labels/ui/widgets/label_chip.dart';
 import 'package:lotti/features/tasks/ui/linked_duration.dart';
@@ -38,6 +40,7 @@ import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
 import 'package:lotti/widgets/events/event_status.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:path/path.dart' as p;
 import 'package:research_package/model.dart';
 
 import '../../../../../mocks/mocks.dart'
@@ -60,8 +63,12 @@ void main() {
     mockEntitiesCacheService = MockEntitiesCacheService();
     mockTimeService = MockTimeService();
 
-    // Create temp directory for tests
-    final tempDir = Directory.systemTemp.createTempSync('journal_card_test');
+    // ModernJournalCard renders text for image entries (it never reads files
+    // off disk), so a plain Directory reference is enough for the defensive
+    // getIt<Directory>() registration — no real filesystem call needed.
+    final tempDir = Directory(
+      p.join(Directory.systemTemp.path, 'journal_card_test'),
+    );
 
     final mockJournalDb = MockJournalDb();
     when(
@@ -107,15 +114,6 @@ void main() {
     await getIt.reset();
   });
 
-  tearDownAll(() {
-    // Clean up temp directories
-    try {
-      Directory.systemTemp
-          .listSync()
-          .where((entity) => entity.path.contains('journal_card_test'))
-          .forEach((entity) => entity.deleteSync(recursive: true));
-    } catch (_) {}
-  });
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ModernJournalCard', () {
@@ -1213,5 +1211,48 @@ void main() {
         expect(find.text('Known'), findsOneWidget);
       });
     });
+  });
+
+  // ModernJournalCard._formatDate() is private, but its only behavioural
+  // choice is which formatter it picks: dfShort (date only) for JournalEvent,
+  // dfShorter (date + time) for everything else. These properties pin the
+  // invariants that branch relies on across the whole DateTime input space.
+  group('ModernJournalCard._formatDate formatters — properties', () {
+    // Map an int seed to a deterministic DateTime spread over ~30 years so we
+    // exercise different months, days, hours and minutes.
+    DateTime dateForSeed(int seed) {
+      final s = seed.abs();
+      return DateTime(
+        2000,
+      ).add(Duration(minutes: s)).add(Duration(days: s % 11000));
+    }
+
+    glados.Glados<int>(
+      glados.any.intInRange(0, 2000000),
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'event format (dfShort) is a non-empty prefix of the entry format '
+      '(dfShorter) and never longer',
+      (seed) {
+        final d = dateForSeed(seed);
+        final eventFormat = entry_tools.dfShort.format(d);
+        final entryFormat = entry_tools.dfShorter.format(d);
+
+        // Both branches must produce something to render.
+        expect(eventFormat, isNotEmpty, reason: 'd=$d');
+        expect(entryFormat, isNotEmpty, reason: 'd=$d');
+
+        // dfShorter ('yyyy-MM-dd HH:mm') extends dfShort ('yyyy-MM-dd') with
+        // a time suffix, so the event format is a strict prefix of the entry
+        // format and the entry format carries strictly more characters.
+        expect(entryFormat.startsWith(eventFormat), isTrue, reason: 'd=$d');
+        expect(
+          entryFormat.length,
+          greaterThan(eventFormat.length),
+          reason: 'd=$d',
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

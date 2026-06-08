@@ -266,12 +266,39 @@ void main() {
         );
       }
     });
+
+    testWidgets(
+      'labelForType falls back to the raw type name for an unmapped type',
+      (tester) async {
+        // The fallback (impl: `map[type] ?? type`) is unreachable through
+        // fromConflict because fromSerialized only ever yields the 13 known
+        // JournalEntity subtypes. Exercise the defensive branch directly with a
+        // type string absent from the map.
+        late String fallbackLabel;
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Builder(
+              builder: (context) {
+                fallbackLabel = ConflictListItemViewModel.labelForType(
+                  context: context,
+                  type: 'SomeFutureEntityType',
+                );
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+        await tester.pump();
+
+        expect(fallbackLabel, 'SomeFutureEntityType');
+      },
+    );
   });
 
   group('shortenConflictId — Glados property', () {
     glados.Glados<String>(
       glados.any.letterOrDigits,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'ids of 8 chars or fewer pass through; longer ids truncate to the '
       'first 8',

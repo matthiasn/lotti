@@ -33,6 +33,14 @@ class _GeneratedDueDateScenario {
   );
 
   DateTime get dueDate {
+    // `referenceDay + dayOffset` can overflow the month (e.g. day 40 or a
+    // negative day). Dart's DateTime constructor normalises any out-of-range
+    // day into a valid calendar date that is exactly `dayOffset` days away
+    // from (referenceYear, referenceMonth, referenceDay). The impl computes
+    // daysUntilDue the same way (DateTime.utc day difference), so the
+    // `daysUntilDue == dayOffset` invariant asserted below holds across month
+    // and year boundaries — it is a property of calendar arithmetic, not an
+    // accident of staying within one month.
     final dueMidnight = DateTime(
       referenceYear,
       referenceMonth,
@@ -101,10 +109,11 @@ void main() {
         referenceDate: referenceDate,
       );
 
+      // isUrgent / urgentColor of the none() result are asserted directly by
+      // the 'none factory' test in the DueDateStatus group; here we only check
+      // the integration behaviour of routing a null dueDate to none().
       expect(status.urgency, DueDateUrgency.normal);
       expect(status.daysUntilDue, isNull);
-      expect(status.isUrgent, isFalse);
-      expect(status.urgentColor, isNull);
     });
 
     test('returns overdue status when dueDate is before reference', () {
@@ -164,28 +173,22 @@ void main() {
       expect(status.daysUntilDue, 0);
     });
 
-    test('returns overdue for yesterday', () {
-      final dueDate = DateTime(2025, 6, 14);
+    test('classifies a local reference and a UTC due date on the same '
+        'calendar day as dueToday', () {
+      // The impl reads only the year/month/day components of each argument
+      // (impl normalises via DateTime.utc(year, month, day)), so a local
+      // reference time and a UTC due time on the same calendar day must be
+      // treated as the same day regardless of the timezone flag.
+      final localReference = DateTime(2025, 6, 15, 9, 30);
+      final utcDueDate = DateTime.utc(2025, 6, 15, 22);
 
       final status = getDueDateStatus(
-        dueDate: dueDate,
-        referenceDate: referenceDate,
+        dueDate: utcDueDate,
+        referenceDate: localReference,
       );
 
-      expect(status.urgency, DueDateUrgency.overdue);
-      expect(status.daysUntilDue, -1);
-    });
-
-    test('returns normal for tomorrow', () {
-      final dueDate = DateTime(2025, 6, 16);
-
-      final status = getDueDateStatus(
-        dueDate: dueDate,
-        referenceDate: referenceDate,
-      );
-
-      expect(status.urgency, DueDateUrgency.normal);
-      expect(status.daysUntilDue, 1);
+      expect(status.urgency, DueDateUrgency.dueToday);
+      expect(status.daysUntilDue, 0);
     });
 
     glados.Glados(

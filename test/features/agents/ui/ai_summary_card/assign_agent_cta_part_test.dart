@@ -250,68 +250,10 @@ void main() {
     testWidgets(
       'success path: category lookup, modal, then createTaskAgent + invalidate',
       (tester) async {
-        // A task that carries a categoryId so `_createTaskAgent` takes the
-        // `categoryId != null` branches: it queries the category-scoped
-        // template list and threads the category into `allowedCategoryIds`.
         const categoryId = 'cat-123';
-        final task = testTask.copyWith(
-          meta: testTask.meta.copyWith(categoryId: categoryId),
-        );
+        final harness = _SuccessPathHarness.create(categoryId: categoryId);
 
-        final template = makeTestTemplate(
-          id: 'tpl-success',
-          agentId: 'tpl-success',
-          displayName: 'Single Task Template',
-        );
-
-        final templateService = MockAgentTemplateService();
-        when(
-          () => templateService.listTemplatesForCategory(categoryId),
-        ).thenAnswer((_) async => [template]);
-
-        final taskAgentService = MockTaskAgentService();
-        when(
-          () => taskAgentService.createTaskAgent(
-            taskId: any(named: 'taskId'),
-            templateId: any(named: 'templateId'),
-            profileId: any(named: 'profileId'),
-            allowedCategoryIds: any(named: 'allowedCategoryIds'),
-          ),
-        ).thenAnswer((_) async => makeTestIdentity());
-
-        final profile = testInferenceProfile(id: 'prof-success', name: 'Solo');
-
-        // taskAgentProvider must flip from null (CTA shown) to a real
-        // identity after creation so the invalidate at the end of the
-        // success path can re-resolve without throwing.
-        var agentAttached = false;
-
-        await tester.pumpWidget(
-          RiverpodWidgetTestBench(
-            mediaQueryData: const MediaQueryData(size: Size(900, 1000)),
-            overrides: [
-              configFlagProvider.overrideWith(
-                (ref, flagName) => Stream.value(true),
-              ),
-              taskAgentProvider.overrideWith(
-                (ref, id) async => agentAttached ? makeTestIdentity() : null,
-              ),
-              entryControllerProvider(
-                id: task.meta.id,
-              ).overrideWith(() => _TaskEntryController(task)),
-              agentTemplateServiceProvider.overrideWith(
-                (ref) => templateService,
-              ),
-              taskAgentServiceProvider.overrideWith(
-                (ref) => taskAgentService,
-              ),
-              inferenceProfileControllerProvider.overrideWith(
-                () => _FakeInferenceProfileController([profile]),
-              ),
-            ],
-            child: AiSummaryCard(taskId: task.meta.id),
-          ),
-        );
+        await tester.pumpWidget(harness.build());
         await tester.pumpAndSettle();
 
         await tester.tap(find.text('Assign Agent'));
@@ -324,25 +266,25 @@ void main() {
 
         // Selecting the profile pops the modal with a result, driving
         // `service.createTaskAgent(...)` and the subsequent invalidate.
-        agentAttached = true;
+        harness.attachAgent();
         await tester.tap(find.text('Solo'));
         await tester.pumpAndSettle();
 
         // The category-scoped lookup ran (categoryId != null branch); the
         // global fallback was never needed.
         verify(
-          () => templateService.listTemplatesForCategory(categoryId),
+          () => harness.templateService.listTemplatesForCategory(categoryId),
         ).called(1);
         // ignore: unnecessary_lambdas
-        verifyNever(() => templateService.listTemplates());
+        verifyNever(() => harness.templateService.listTemplates());
 
         // createTaskAgent is dispatched with the picked template/profile and
         // the task's category folded into allowedCategoryIds. mocktail returns
         // captured args in the order the captureAny matchers appear in the
         // verify call: allowedCategoryIds, then templateId, then profileId.
         final captured = verify(
-          () => taskAgentService.createTaskAgent(
-            taskId: task.meta.id,
+          () => harness.taskAgentService.createTaskAgent(
+            taskId: harness.task.meta.id,
             allowedCategoryIds: captureAny(named: 'allowedCategoryIds'),
             templateId: captureAny(named: 'templateId'),
             profileId: captureAny(named: 'profileId'),
@@ -361,4 +303,87 @@ void main() {
       },
     );
   });
+}
+
+/// Bundles the ~50 lines of mock + provider wiring for the CTA success
+/// path so the test body reads as action + assertion. Holds the two
+/// services (for verification) and the `task`, and exposes
+/// [attachAgent] to flip `taskAgentProvider` from null (CTA shown) to a
+/// real identity after creation — without it, the post-create
+/// `invalidate(taskAgentProvider)` would re-resolve to null and the CTA
+/// would never disappear.
+class _SuccessPathHarness {
+  _SuccessPathHarness._({
+    required this.task,
+    required this.templateService,
+    required this.taskAgentService,
+    required this.profile,
+  });
+
+  /// Wires a [task] carrying a [categoryId] so `_createTaskAgent` takes
+  /// the `categoryId != null` branches: it queries the category-scoped
+  /// template list and threads the category into `allowedCategoryIds`.
+  factory _SuccessPathHarness.create({required String categoryId}) {
+    final task = testTask.copyWith(
+      meta: testTask.meta.copyWith(categoryId: categoryId),
+    );
+    final template = makeTestTemplate(
+      id: 'tpl-success',
+      agentId: 'tpl-success',
+      displayName: 'Single Task Template',
+    );
+    final templateService = MockAgentTemplateService();
+    when(
+      () => templateService.listTemplatesForCategory(categoryId),
+    ).thenAnswer((_) async => [template]);
+
+    final taskAgentService = MockTaskAgentService();
+    when(
+      () => taskAgentService.createTaskAgent(
+        taskId: any(named: 'taskId'),
+        templateId: any(named: 'templateId'),
+        profileId: any(named: 'profileId'),
+        allowedCategoryIds: any(named: 'allowedCategoryIds'),
+      ),
+    ).thenAnswer((_) async => makeTestIdentity());
+
+    return _SuccessPathHarness._(
+      task: task,
+      templateService: templateService,
+      taskAgentService: taskAgentService,
+      profile: testInferenceProfile(id: 'prof-success', name: 'Solo'),
+    );
+  }
+
+  final Task task;
+  final MockAgentTemplateService templateService;
+  final MockTaskAgentService taskAgentService;
+  final AiConfig profile;
+
+  bool _agentAttached = false;
+
+  /// Flip `taskAgentProvider` so the post-create invalidate re-resolves
+  /// to a real identity instead of null.
+  void attachAgent() => _agentAttached = true;
+
+  Widget build() {
+    return RiverpodWidgetTestBench(
+      mediaQueryData: const MediaQueryData(size: Size(900, 1000)),
+      overrides: [
+        configFlagProvider.overrideWith((ref, flagName) => Stream.value(true)),
+        taskAgentProvider.overrideWith(
+          (ref, id) async => _agentAttached ? makeTestIdentity() : null,
+        ),
+        entryControllerProvider(
+          id: task.meta.id,
+        ).overrideWith(() => _TaskEntryController(task)),
+        agentTemplateServiceProvider.overrideWith((ref) => templateService),
+        taskAgentServiceProvider.overrideWith((ref) => taskAgentService),
+        inferenceProfileControllerProvider.overrideWith(
+          () => _FakeInferenceProfileController([profile]),
+        ),
+      ],
+      child: AiSummaryCard(taskId: task.meta.id),
+    );
+  }
 }

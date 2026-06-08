@@ -99,7 +99,9 @@ void main() {
         ),
       );
 
-      await tester.pumpAndSettle();
+      // The QuillEditor renders the embed synchronously; a single bounded
+      // pump is sufficient (no entrance animation to settle).
+      await tester.pump();
 
       // Builder contract: registered as the unknown fallback, expanded.
       const builder = UnknownEmbedBuilder();

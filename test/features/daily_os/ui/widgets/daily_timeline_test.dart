@@ -2688,6 +2688,81 @@ void main() {
         );
       });
     });
+
+    // The clock is frozen at 04:00 on 2026-06-01. A single noon entry compresses
+    // the morning (0-12) into a collapsed region, so hour 4 falls inside it.
+    // _CurrentTimeIndicator.build then hits its isHourInCompressedRegion guard
+    // and returns SizedBox.shrink(), hiding the red dot even though it is today.
+    testWidgets('hides indicator when current hour is in a compressed region', (
+      tester,
+    ) async {
+      await withClock(Clock.fixed(DateTime(2026, 6, 1, 4)), () async {
+        when(
+          () => mockCacheService.getCategoryById('cat-1'),
+        ).thenReturn(testCategory);
+
+        final today = DateTime(2026, 6);
+        final unifiedData = DailyOsData(
+          date: today,
+          dayPlan: createEmptyDayPlan(today),
+          timelineData: DailyTimelineData(
+            date: today,
+            // Single planned block at noon -> morning (0-12) compresses, so the
+            // frozen current hour (4) falls inside the collapsed region.
+            plannedSlots: [
+              PlannedTimeSlot(
+                block: PlannedBlock(
+                  id: 'block-noon',
+                  categoryId: testCategory.id,
+                  startTime: today.add(const Duration(hours: 12)),
+                  endTime: today.add(const Duration(hours: 13)),
+                ),
+                startTime: today.add(const Duration(hours: 12)),
+                endTime: today.add(const Duration(hours: 13)),
+                categoryId: testCategory.id,
+              ),
+            ],
+            actualSlots: const [],
+            dayStartHour: 0,
+            dayEndHour: 24,
+          ),
+          budgetProgress: const [],
+        );
+
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              dailyOsSelectedDateProvider.overrideWithValue(today),
+              unifiedDailyOsDataControllerProvider(date: today).overrideWith(
+                () => _TestUnifiedController(unifiedData),
+              ),
+              highlightedCategoryIdProvider.overrideWith((ref) => null),
+              runningTimerCategoryIdProvider.overrideWithValue(null),
+            ],
+            child: const SingleChildScrollView(child: DailyTimeline()),
+          ),
+        );
+        await tester.pump();
+
+        // The compressed region exists (proves the folding setup is correct)...
+        expect(find.byType(CompressedTimelineRegion), findsWidgets);
+        // ...and the red current-time dot is suppressed because hour 4 sits
+        // inside that collapsed region.
+        expect(
+          find.byWidgetPredicate((w) {
+            if (w is Container) {
+              final decoration = w.decoration;
+              if (decoration is BoxDecoration) {
+                return decoration.color == Colors.redAccent &&
+                    decoration.shape == BoxShape.circle;
+              }
+            }
+            return false;
+          }),
+          findsNothing,
+        );
+      });
+    });
   });
 
   group('DailyTimeline - Long Press on Actual Block', () {

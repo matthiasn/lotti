@@ -149,6 +149,25 @@ void _setSurface(WidgetTester tester) {
   _setSurfaceSize(tester, const Size(1400, 1200));
 }
 
+/// Sets the standard surface, pumps a [DayPage] for [draft] with [agent]
+/// wired through `dayAgentProvider`, and runs one frame so the page
+/// settles. Covers the common "RecordingDayAgent override + initial pump"
+/// boilerplate shared by the menu / footer / refine tests.
+Future<void> _pumpDayPage(
+  WidgetTester tester, {
+  required DraftPlan draft,
+  required RecordingDayAgent agent,
+}) async {
+  _setSurface(tester);
+  await tester.pumpWidget(
+    _wrap(
+      DayPage(draft: draft),
+      overrides: [dayAgentProvider.overrideWithValue(agent)],
+    ),
+  );
+  await tester.pump();
+}
+
 void main() {
   tearDown(() {
     nav_service.beamToNamedOverride = null;
@@ -228,7 +247,6 @@ void main() {
       'a failing inline rename surfaces the error toast instead of an '
       'unhandled exception',
       (tester) async {
-        _setSurface(tester);
         final agent = RecordingDayAgent(renameError: StateError('db down'));
         // One standalone agenda item (no taskId) -> editable title.
         final draft = DraftPlan(
@@ -246,13 +264,7 @@ void main() {
             ),
           ],
         );
-        await tester.pumpWidget(
-          _wrap(
-            DayPage(draft: draft),
-            overrides: [dayAgentProvider.overrideWithValue(agent)],
-          ),
-        );
-        await tester.pump();
+        await _pumpDayPage(tester, draft: draft, agent: agent);
 
         await tester.tap(find.text('Standalone block'));
         await tester.pump();
@@ -639,16 +651,9 @@ void main() {
     testWidgets(
       'Delete plan flow: confirm dialog → confirm calls agent with day date',
       (tester) async {
-        _setSurface(tester);
         final agent = RecordingDayAgent();
         final draft = _drafted();
-        await tester.pumpWidget(
-          _wrap(
-            DayPage(draft: draft),
-            overrides: [dayAgentProvider.overrideWithValue(agent)],
-          ),
-        );
-        await tester.pump();
+        await _pumpDayPage(tester, draft: draft, agent: agent);
 
         await tester.tap(find.byIcon(Icons.more_vert_rounded));
         await tester.pump();
@@ -720,16 +725,9 @@ void main() {
     testWidgets(
       'tapping Refine opens the modal over the current day page',
       (tester) async {
-        _setSurface(tester);
         final agent = RecordingDayAgent();
         final draft = _drafted();
-        await tester.pumpWidget(
-          _wrap(
-            DayPage(draft: draft),
-            overrides: [dayAgentProvider.overrideWithValue(agent)],
-          ),
-        );
-        await tester.pump();
+        await _pumpDayPage(tester, draft: draft, agent: agent);
 
         final messages = tester.element(find.byType(DayPage)).messages;
         await tester.tap(find.text(messages.dailyOsNextDayRefineCta));
@@ -764,13 +762,7 @@ void main() {
           updatedPlan: acceptedPlan,
         );
         final agent = RecordingDayAgent(diff: diff, acceptedPlan: acceptedPlan);
-        await tester.pumpWidget(
-          _wrap(
-            DayPage(draft: draft),
-            overrides: [dayAgentProvider.overrideWithValue(agent)],
-          ),
-        );
-        await tester.pump();
+        await _pumpDayPage(tester, draft: draft, agent: agent);
 
         final messages = tester.element(find.byType(DayPage)).messages;
         await tester.tap(find.text(messages.dailyOsNextDayRefineCta));
@@ -797,18 +789,11 @@ void main() {
     testWidgets(
       'tapping Lock In beams to the DailyOS commit route',
       (tester) async {
-        _setSurface(tester);
         final agent = RecordingDayAgent();
         String? route;
         nav_service.beamToNamedOverride = (path) => route = path;
         final draft = _drafted();
-        await tester.pumpWidget(
-          _wrap(
-            DayPage(draft: draft),
-            overrides: [dayAgentProvider.overrideWithValue(agent)],
-          ),
-        );
-        await tester.pump();
+        await _pumpDayPage(tester, draft: draft, agent: agent);
 
         final messages = tester.element(find.byType(DayPage)).messages;
         await tester.tap(find.text(messages.dailyOsNextDayLockInCta));
@@ -825,18 +810,11 @@ void main() {
     testWidgets(
       'tapping Wrap up beams to the DailyOS shutdown route',
       (tester) async {
-        _setSurface(tester);
         final agent = RecordingDayAgent();
         String? route;
         nav_service.beamToNamedOverride = (path) => route = path;
         final draft = _drafted(state: DayState.committed);
-        await tester.pumpWidget(
-          _wrap(
-            DayPage(draft: draft),
-            overrides: [dayAgentProvider.overrideWithValue(agent)],
-          ),
-        );
-        await tester.pump();
+        await _pumpDayPage(tester, draft: draft, agent: agent);
 
         final messages = tester.element(find.byType(DayPage)).messages;
         await tester.tap(find.text(messages.dailyOsNextDayWrapUpCta));
@@ -853,15 +831,8 @@ void main() {
     testWidgets('Delete plan dialog Cancel does not call the agent', (
       tester,
     ) async {
-      _setSurface(tester);
       final agent = RecordingDayAgent();
-      await tester.pumpWidget(
-        _wrap(
-          DayPage(draft: _drafted()),
-          overrides: [dayAgentProvider.overrideWithValue(agent)],
-        ),
-      );
-      await tester.pump();
+      await _pumpDayPage(tester, draft: _drafted(), agent: agent);
 
       await tester.tap(find.byIcon(Icons.more_vert_rounded));
       await tester.pump();

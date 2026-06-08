@@ -12,6 +12,27 @@ import 'package:mocktail/mocktail.dart';
 
 import '../mocks/mocks.dart';
 
+/// Stubs the standard `log`/`error` calls on a [MockDomainLogger] so the DB
+/// can write through it without throwing on un-stubbed invocations.
+void _stubDomainLogger(MockDomainLogger mock) {
+  when(
+    () => mock.log(
+      any<LogDomain>(),
+      any<String>(),
+      subDomain: any<String?>(named: 'subDomain'),
+    ),
+  ).thenAnswer((_) async {});
+
+  when(
+    () => mock.error(
+      any<LogDomain>(),
+      any<Object>(),
+      stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      subDomain: any<String?>(named: 'subDomain'),
+    ),
+  ).thenAnswer((_) async {});
+}
+
 void main() {
   setUpAll(() async {
     await getIt.reset();
@@ -32,22 +53,7 @@ void main() {
         'journaldb_actor_isolated_',
       );
 
-      when(
-        () => mockLoggingService.log(
-          any<LogDomain>(),
-          any<String>(),
-          subDomain: any<String?>(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async {});
-
-      when(
-        () => mockLoggingService.error(
-          any<LogDomain>(),
-          any<Object>(),
-          stackTrace: any<StackTrace?>(named: 'stackTrace'),
-          subDomain: any<String?>(named: 'subDomain'),
-        ),
-      ).thenAnswer((_) async {});
+      _stubDomainLogger(mockLoggingService);
 
       db = JournalDb(
         inMemoryDatabase: true,

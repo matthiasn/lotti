@@ -98,6 +98,14 @@ void main() {
       late Fts5Db db;
       late MockEntitiesCacheService entitiesCacheService;
 
+      setUpAll(() {
+        db = Fts5Db(inMemoryDatabase: true);
+      });
+
+      tearDownAll(() async {
+        await db.close();
+      });
+
       setUp(() async {
         await getIt.reset();
 
@@ -108,12 +116,14 @@ void main() {
         ).thenReturn(null);
 
         getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);
-
-        db = Fts5Db(inMemoryDatabase: true);
       });
 
       tearDown(() async {
-        await db.close();
+        // Fts5Db keeps no in-memory cache; truncating the single `journal_fts`
+        // virtual table fully resets state between tests. The per-test getIt
+        // registration is reset here (it is never registered in setUpAll, so
+        // nothing leaks).
+        await db.customStatement('DELETE FROM journal_fts');
         await getIt.reset();
       });
 
@@ -292,6 +302,14 @@ void main() {
       late Fts5Db db;
       late MockEntitiesCacheService entitiesCacheService;
 
+      setUpAll(() {
+        db = Fts5Db(inMemoryDatabase: true);
+      });
+
+      tearDownAll(() async {
+        await db.close();
+      });
+
       setUp(() async {
         await getIt.reset();
 
@@ -302,12 +320,14 @@ void main() {
         ).thenReturn(null);
 
         getIt.registerSingleton<EntitiesCacheService>(entitiesCacheService);
-
-        db = Fts5Db(inMemoryDatabase: true);
       });
 
       tearDown(() async {
-        await db.close();
+        // Fts5Db keeps no in-memory cache; truncating the single `journal_fts`
+        // virtual table fully resets state between tests. The per-test getIt
+        // registration is reset here (it is never registered in setUpAll, so
+        // nothing leaks).
+        await db.customStatement('DELETE FROM journal_fts');
         await getIt.reset();
       });
 

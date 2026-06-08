@@ -15,6 +15,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 // This matches the signature of the getter linkedFrom in TimeService
 // Create a fake TaskProgressState for registerFallbackValue
@@ -69,9 +70,7 @@ void main() {
     registerFallbackValue(<String, TimeRange>{});
   });
 
-  setUp(() {
-    getIt.reset();
-
+  setUp(() async {
     mockRepository = MockTaskProgressRepository();
     mockTimeService = MockTimeService();
     mockUpdateNotifications = MockUpdateNotifications();
@@ -87,9 +86,17 @@ void main() {
       () => mockTimeService.getStream(),
     ).thenAnswer((_) => timeServiceStreamController.stream);
 
-    getIt
-      ..registerSingleton<TimeService>(mockTimeService)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications);
+    // setUpTestGetIt resets GetIt and registers the common mocks (including a
+    // no-op UpdateNotifications). Swap in our stream-backed UpdateNotifications
+    // and register the TimeService the controller resolves via GetIt.
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..unregister<UpdateNotifications>()
+          ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
+          ..registerSingleton<TimeService>(mockTimeService);
+      },
+    );
 
     container = ProviderContainer(
       overrides: [
@@ -110,10 +117,11 @@ void main() {
     ).thenReturn(testProgress);
   });
 
-  tearDown(() {
+  tearDown(() async {
     container.dispose();
-    updateStreamController.close();
-    timeServiceStreamController.close();
+    await updateStreamController.close();
+    await timeServiceStreamController.close();
+    await tearDownTestGetIt();
   });
 
   test('initial state loads task progress data', () async {

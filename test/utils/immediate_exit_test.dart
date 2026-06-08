@@ -15,11 +15,5 @@ void main() {
       final second = canResolveImmediateExit();
       expect(first, second);
     });
-
-    test('immediateExit is a callable function', () {
-      // Verify the function exists and has the correct type signature.
-      // We cannot actually call it as it would terminate the process.
-      expect(immediateExit, isA<Function>());
-    });
   });
 }

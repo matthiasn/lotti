@@ -2539,6 +2539,81 @@ void main() {
           );
         },
       );
+
+      test(
+        'skips notificationStateUpdate entries with no derived path '
+        '(no deletion, no crash)',
+        () {
+          fakeAsync((async) {
+            final tmp = Directory.systemTemp.createTempSync(
+              'backfill_sweep_notif_state',
+            );
+            addTearDown(() => tmp.deleteSync(recursive: true));
+
+            // Pre-create a file at the path a *notification* would derive to,
+            // so that if the sweep ever (incorrectly) derived a path for the
+            // notificationStateUpdate type, this file would be deleted. It must
+            // survive: notificationStateUpdate has no jsonPath fallback, so the
+            // sweep falls through to `continue` and never touches disk.
+            final survivor =
+                File('${tmp.path}/notifications/notif-state-7.json')
+                  ..createSync(recursive: true)
+                  ..writeAsStringSync('{"stale":"notif-state"}');
+
+            final service = buildService(
+              documentsDirectory: tmp,
+              requestInterval: const Duration(minutes: 5),
+              maxBatchSize: 50,
+            );
+
+            final requestedEntries = [
+              // entryId is set but payloadType is notificationStateUpdate with
+              // no jsonPath, so _sweepLocalFiles has no path to resolve.
+              _createRequestedLogItemWithPayload(
+                aliceHostId,
+                25,
+                entryId: 'notif-state-7',
+                payloadType: SyncSequencePayloadType.notificationStateUpdate,
+              ),
+            ];
+
+            when(
+              () => mockSequenceService.getRequestedEntries(
+                limit: 50,
+                offset: any(named: 'offset'),
+              ),
+            ).thenAnswer((inv) async {
+              final offset = inv.namedArguments[#offset] as int;
+              return offset == 0 ? requestedEntries : [];
+            });
+            when(
+              () => mockSequenceService.resetRequestCounts(any()),
+            ).thenAnswer((_) async {});
+            when(
+              () => mockOutboxService.enqueueMessage(any()),
+            ).thenAnswer((_) async {});
+            when(
+              () => mockSequenceService.markAsRequested(any()),
+            ).thenAnswer((_) async {});
+
+            service.processReRequest();
+            async.flushMicrotasks();
+
+            expect(
+              survivor.existsSync(),
+              isTrue,
+              reason:
+                  'notificationStateUpdate has no derived path; the sweep must '
+                  'leave unrelated files on disk untouched',
+            );
+            // The re-request must still complete normally despite the
+            // un-sweepable payload type — i.e. it is silently skipped.
+            verify(() => mockSequenceService.markAsRequested(any())).called(1);
+
+            service.dispose();
+          });
+        },
+      );
     });
   });
 }

@@ -17,6 +17,29 @@ void main() {
       final questions = ratingCatalogRegistry['session']!(messages);
       expect(questions, isNotEmpty);
     });
+
+    test('dynamically registered catalog becomes retrievable', () {
+      const customId = 'custom_review_test';
+      addTearDown(() => ratingCatalogRegistry.remove(customId));
+
+      expect(
+        ratingCatalogRegistry.containsKey(customId),
+        isFalse,
+        reason: 'precondition: custom catalog not yet registered',
+      );
+
+      const customQuestion = RatingQuestion(
+        key: 'custom_dimension',
+        question: 'How was it?',
+        description: 'Custom dimension for registry test.',
+      );
+      ratingCatalogRegistry[customId] = (_) => const [customQuestion];
+
+      final factory = ratingCatalogRegistry[customId];
+      expect(factory, isNotNull);
+      final questions = factory!(messages);
+      expect(questions, [customQuestion]);
+    });
   });
 
   group('sessionRatingCatalog', () {
@@ -166,5 +189,39 @@ void main() {
         );
       }
     });
+
+    // Earlier coverage only exercised `en` and `de`. Build the catalog for
+    // every supported locale (cs, en, en_GB, es, fr, ro included) and assert
+    // it neither throws nor produces empty user-visible strings.
+    for (final locale in AppLocalizations.supportedLocales) {
+      test('builds non-empty localized questions for $locale', () {
+        final localized = sessionRatingCatalog(
+          lookupAppLocalizations(locale),
+        );
+
+        expect(
+          localized,
+          hasLength(4),
+          reason: '$locale catalog should preserve all questions',
+        );
+
+        for (final q in localized) {
+          expect(
+            q.question,
+            isNotEmpty,
+            reason: '${q.key} question is empty for $locale',
+          );
+          // Localized option labels must also be present (segmented input).
+          for (final option in q.options ?? <RatingQuestionOption>[]) {
+            expect(
+              option.label,
+              isNotEmpty,
+              reason:
+                  '${q.key} option ${option.value} label is empty for $locale',
+            );
+          }
+        }
+      });
+    }
   });
 }

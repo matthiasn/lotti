@@ -1,6 +1,9 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/genui/evolution_catalog_helpers.dart';
+
+import '../../../widget_test_utils.dart';
 
 // ── Generators ────────────────────────────────────────────────────────────────
 
@@ -383,7 +386,7 @@ void main() {
     glados.Glados2(
       glados.any.mixedJsonValue,
       glados.any.jsonKey,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'every reader applies exactly its own type gate over arbitrary values',
       (value, key) {
@@ -425,5 +428,106 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+
+  // ── Shared widget helpers ─────────────────────────────────────────────────
+
+  group('metricChip', () {
+    testWidgets('renders both the value and the label', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(metricChip('Wakes', '42')),
+      );
+
+      expect(find.text('42'), findsOneWidget);
+      expect(find.text('Wakes'), findsOneWidget);
+    });
+
+    testWidgets('styles the value as bold white and the label as faded', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(metricChip('Failures', '7')),
+      );
+
+      final valueStyle = tester.widget<Text>(find.text('7')).style!;
+      expect(valueStyle.color, Colors.white);
+      expect(valueStyle.fontWeight, FontWeight.w700);
+
+      // The label is rendered at reduced opacity (alpha 0.5), distinguishing
+      // it from the prominent value above it.
+      final labelStyle = tester.widget<Text>(find.text('Failures')).style!;
+      expect(labelStyle.color, Colors.white.withValues(alpha: 0.5));
+      expect(labelStyle.fontWeight, isNot(FontWeight.w700));
+    });
+  });
+
+  group('sectionLabel', () {
+    testWidgets('renders the provided text with an emphasized weight', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) => sectionLabel(context, 'Current Directives'),
+          ),
+        ),
+      );
+
+      expect(find.text('Current Directives'), findsOneWidget);
+      final style = tester.widget<Text>(find.text('Current Directives')).style!;
+      expect(style.fontWeight, FontWeight.w700);
+      expect(style.letterSpacing, 0.2);
+    });
+  });
+
+  group('directiveBox', () {
+    testWidgets('renders the directive text', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) =>
+                directiveBox(context: context, text: 'Be concise'),
+          ),
+        ),
+      );
+
+      expect(find.text('Be concise'), findsOneWidget);
+    });
+
+    testWidgets('uses a different background when highlighted', (tester) async {
+      // Render the plain and highlighted variants side by side so their
+      // decorations can be compared within one pump.
+      await tester.pumpWidget(
+        makeTestableWidget(
+          Builder(
+            builder: (context) => Column(
+              children: [
+                directiveBox(context: context, text: 'plain'),
+                directiveBox(
+                  context: context,
+                  text: 'highlighted',
+                  isHighlighted: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      // The outer directiveBox Containers are the only ones with the helper's
+      // signature padding (EdgeInsets.all(14)); GptMarkdown internals do not
+      // use it. Collect their decoration colors in render order.
+      final boxColors = tester
+          .widgetList<Container>(find.byType(Container))
+          .where((c) => c.padding == const EdgeInsets.all(14))
+          .map((c) => (c.decoration! as BoxDecoration).color)
+          .toList();
+
+      expect(boxColors, hasLength(2));
+      // The highlighted variant derives its fill from the primary container,
+      // while the plain variant derives it from a neutral surface; the two
+      // must not be equal.
+      expect(boxColors[0], isNot(boxColors[1]));
+    });
   });
 }

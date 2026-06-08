@@ -904,18 +904,28 @@ class _ReconcileCtaState extends ConsumerState<_ReconcileCta> {
     }
   }
 
-  DateTime _capturedAtForSelectedDate(DateTime? selectedDate) {
-    final now = clock.now();
-    if (selectedDate == null) return now;
-    return DateTime(
-      selectedDate.year,
-      selectedDate.month,
-      selectedDate.day,
-      now.hour,
-      now.minute,
-      now.second,
-      now.millisecond,
-      now.microsecond,
-    );
-  }
+  DateTime _capturedAtForSelectedDate(DateTime? selectedDate) =>
+      capturedAtForSelectedDate(clock.now(), selectedDate);
+}
+
+/// Resolves the `capturedAt` timestamp for a submitted capture: the
+/// calendar day of [selectedDate] combined with the current time-of-day
+/// from [now]. When [selectedDate] is null (the route mounts for today),
+/// [now] is returned unchanged.
+///
+/// Pure and clock-injected so the year/month/day-vs-time-of-day invariant
+/// can be property-tested at month/year boundaries without widget setup.
+@visibleForTesting
+DateTime capturedAtForSelectedDate(DateTime now, DateTime? selectedDate) {
+  if (selectedDate == null) return now;
+  return DateTime(
+    selectedDate.year,
+    selectedDate.month,
+    selectedDate.day,
+    now.hour,
+    now.minute,
+    now.second,
+    now.millisecond,
+    now.microsecond,
+  );
 }

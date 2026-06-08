@@ -22,7 +22,8 @@
 
 - [x] **[HIGH]** `test/features/journal/ui/widgets/create/create_entry_items_test.dart` is **1133 lines** and already covers `create_entry_items.dart`. The existence of `modern_create_entry_items_test.dart` as a **second test file for the same source file** (`create_entry_items.dart`) violates the one-test-file-per-source rule. The two files should be merged; tests that overlap should be deduplicated.
 
-- [ ] **[LOW]** All four implementation files are well within 500-line guidance. No impl splits needed.
+- [x] **[LOW]** All four implementation files are well within 500-line guidance. No impl splits needed.
+  **RESOLVED:** confirmed true (non-actionable) — current line counts are 31/95/395/77, all well under the 500-line guidance; no impl splits needed.
 
 ---
 
@@ -45,9 +46,11 @@
 - [x] **[MED]** `create_menu_list_item_test.dart:255–279`: `'Row contains exactly 4 children'` — this tests widget-tree structure, not behavior. If the implementation is refactored to wrap the icon in another widget, the test breaks without any user-visible regression. Replace with a behavioral assertion (e.g., that icon, title, and trailing plus are all visible at specific positions).
   - **RESOLVED:** done — replaced child-count with a positional behavioral contract: leading icon dx < title dx < trailing plus dx, all visible.
 
-- [ ] **[LOW]** `create_entry_action_button_test.dart`: Only one test — it verifies the design-system FAB type and size but never verifies that tapping the button calls `CreateEntryModal.show`. A second test covering the `onPressed` callback (by checking that a modal title appears after tap) would complete behavioral coverage.
+- [x] **[LOW]** `create_entry_action_button_test.dart`: Only one test — it verifies the design-system FAB type and size but never verifies that tapping the button calls `CreateEntryModal.show`. A second test covering the `onPressed` callback (by checking that a modal title appears after tap) would complete behavioral coverage.
+  **RESOLVED:** stale — the file now has a second test (`'tapping the FAB opens CreateEntryModal with the wired ids'`) that taps the FAB and asserts the modal opens with `CreateMenuListItem`s including the Timer item, proving `linkedFromId` was wired through to `CreateEntryModal.show`.
 
-- [ ] **[LOW]** `modern_create_entry_items_test.dart:736–740`: The test `'publishJournalFocus is not called when linked entry is null'` does nothing except create and immediately dispose a `ProviderContainer`. This is a zero-assertion test with a misleadingly informative title — it should be deleted.
+- [x] **[LOW]** `modern_create_entry_items_test.dart:736–740`: The test `'publishJournalFocus is not called when linked entry is null'` does nothing except create and immediately dispose a `ProviderContainer`. This is a zero-assertion test with a misleadingly informative title — it should be deleted.
+  **RESOLVED:** the zero-assertion test survived the merge into `create_entry_items_test.dart` (in the `CreateTimerItem Auto-Scroll Logic Tests` group) and has now been deleted; the remaining tests in that group all assert on published focus state.
 
 ---
 
@@ -67,7 +70,8 @@ No genuine candidates in this subdir. All public logic is widget `build` methods
 - [x] **[MED]** `FloatingAddActionButton` (`create_entry_action_button_test.dart`) — the `onPressed` path (which triggers `CreateEntryModal.show`) is not tested. Only widget type and size are checked.
   - **RESOLVED:** done — added a test that taps the `DesignSystemFloatingActionButton` with NavService/PersistenceLogic/JournalDb registered (events flag on) and asserts the modal opens with `CreateMenuListItem`s including the Timer item, proving `linkedFromId` was wired through to `CreateEntryModal.show`.
 
-- [ ] **[LOW]** `CreateEventItem` with `enableEventsFlag` transitioning from `true → false` (flag toggled off after being on). Only `false → true` transition is tested (line 1115–1156 of `modern_create_entry_items_test.dart`).
+- [x] **[LOW]** `CreateEventItem` with `enableEventsFlag` transitioning from `true → false` (flag toggled off after being on). Only `false → true` transition is tested (line 1115–1156 of `modern_create_entry_items_test.dart`).
+  **RESOLVED:** added `'transitions from enabled to disabled'` in `create_entry_items_test.dart` — drives a `StreamController` to emit `true` (item visible) then `false`, asserting the item disappears and no exception is thrown. The controller is closed inside the test body per `test/README.md`.
 
 ---
 
@@ -83,7 +87,8 @@ No genuine candidates in this subdir. All public logic is widget `build` methods
 - [x] **[MED]** `create_menu_list_item_test.dart`: 16 `pumpAndSettle` calls for a fully stateless widget with no animations. Every call should be `await tester.pump()` — `pumpAndSettle` provides zero benefit here and risks hanging on framework animation if test environment changes.
   - **RESOLVED:** (stale) — the file contains zero `pumpAndSettle` calls; all renders use bounded `pump(Duration(milliseconds: 300))`.
 
-- [ ] **[LOW]** `modern_create_entry_items_test.dart:1149`, `1206`: two `pumpAndSettle` calls inside flag-toggle tests that involve `StreamController` events. These are legitimate (waiting for stream → provider rebuild), but the `StreamController` is not closed inside the test body in some variants — it is closed at `tearDown`. Per `test/README.md`, the controller should be closed inside the test body to avoid stream-adding-while-closed races.
+- [x] **[LOW]** `modern_create_entry_items_test.dart:1149`, `1206`: two `pumpAndSettle` calls inside flag-toggle tests that involve `StreamController` events. These are legitimate (waiting for stream → provider rebuild), but the `StreamController` is not closed inside the test body in some variants — it is closed at `tearDown`. Per `test/README.md`, the controller should be closed inside the test body to avoid stream-adding-while-closed races.
+  **RESOLVED:** stale — in the merged `create_entry_items_test.dart` every `flagController` (and the new `'transitions from enabled to disabled'` test) calls `await flagController.close()` inside the test body before returning; none defer closing to `tearDown`. The remaining `pumpAndSettle` calls are the legitimate stream→provider-rebuild waits the item itself acknowledges.
 
 ---
 

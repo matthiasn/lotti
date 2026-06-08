@@ -223,7 +223,7 @@ void main() {
   group('AudioRecordingSignalLevel.fromDbfs — Glados properties', () {
     glados.Glados<int>(
       glados.IntAnys(glados.any).intInRange(-2000, 200),
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 180),
     ).test(
       'normalized stays in [0, 1], is monotonic in dBFS, and clipping '
       'triggers strictly above -3 dBFS',

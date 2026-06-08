@@ -5,7 +5,6 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:lotti/features/ai_chat/models/chat_message.dart';
 import 'package:lotti/features/ai_chat/models/chat_session.dart';
 import 'package:lotti/features/ai_chat/repository/chat_repository.dart';
@@ -17,7 +16,6 @@ import 'package:lotti/features/journal/state/journal_page_controller.dart';
 import 'package:lotti/features/journal/state/journal_page_scope.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/l10n/app_localizations.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -106,21 +104,15 @@ void _stubCreateSession(
 void main() {
   group('ChatModalPage', () {
     late MockChatRepository mockChatRepository;
-    late MockLoggingService mockLoggingService;
 
-    setUp(() {
+    setUp(() async {
       mockChatRepository = MockChatRepository();
-      mockLoggingService = MockLoggingService();
-
-      if (!GetIt.instance.isRegistered<LoggingService>()) {
-        GetIt.instance.registerSingleton<LoggingService>(mockLoggingService);
-      }
-      ensureDomainLoggerRegistered();
+      // Registers LoggingService + DomainLogger (resolved by the chat
+      // repository / session controller) plus the core service mocks.
+      await setUpTestGetIt();
     });
 
-    tearDown(() {
-      GetIt.instance.reset();
-    });
+    tearDown(tearDownTestGetIt);
 
     testWidgets(
       'displays category selection prompt when no category selected',
@@ -273,8 +265,6 @@ void main() {
     testWidgets('ambient pulse overlay activates when streaming is true', (
       tester,
     ) async {
-      ensureDomainLoggerRegistered();
-
       await _pumpChatModalPage(
         tester,
         selectedCategoryIds: {'cat'},
@@ -310,8 +300,6 @@ void main() {
       'didUpdateWidget starts the pulse when streaming turns on '
       'and stops it when streaming turns off',
       (tester) async {
-        ensureDomainLoggerRegistered();
-
         // Start with streaming OFF so the animation controller is idle and the
         // _AmbientPulseBorder State exists. Toggling the provider afterwards
         // keeps the SAME widget mounted, driving didUpdateWidget.

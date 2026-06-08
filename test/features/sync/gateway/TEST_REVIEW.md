@@ -18,7 +18,8 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `matrix_sdk_gateway_test.dart` is 681 lines. It is below the 1000-line ceiling and covers a single concrete class, so a split is not strictly required. However the file could be split along logical seams (connection/auth, room lifecycle, event streaming, sent-registry) if it grows further.
+- [x] **[LOW]** `matrix_sdk_gateway_test.dart` is 681 lines. It is below the 1000-line ceiling and covers a single concrete class, so a split is not strictly required. However the file could be split along logical seams (connection/auth, room lifecycle, event streaming, sent-registry) if it grows further.
+  - **RESOLVED:** no change — the file (~745 lines after this pass) is still well under the 1000-line ceiling and the "one test file per source file" rule binds it to a single concrete class (`MatrixSdkGateway`). Splitting it would violate that rule for a cosmetic gain, so the observation is confirmed and no split is warranted.
 
 ---
 
@@ -41,7 +42,8 @@
 - [x] **[MED]** `MatrixSdkGateway.sendText` / `sendFile`: the event-registration path in `SentEventRegistry` (`sentEventRegistry.consume(id)`, `debugSource(id)`) is pure and deterministic. A small Glados property could verify that: for any generated event ID string, `consume` returns `true` exactly once and `false` on a second call, across both `SentEventSource.text` and `SentEventSource.file`. This is a genuine round-trip property that example-based tests cannot exhaustively cover.
   - **RESOLVED:** (stale, premise corrected) — `consume` is intentionally repeatable within the TTL (suppressed IDs stay registered so retries short-circuit), so a consume-once property would pin the wrong contract. The registry already has a Glados model property in `sent_event_registry_test.dart` ('generated operation sequences preserve TTL, FIFO cap, and sources') covering register/consume/expiry round-trips.
 
-- [ ] **[LOW]** `RoomInviteEvent` value equality: a Glados round-trip over generated `(roomId, senderId)` string pairs would replace the smoke test with a real property.
+- [x] **[LOW]** `RoomInviteEvent` value equality: a Glados round-trip over generated `(roomId, senderId)` string pairs would replace the smoke test with a real property.
+  - **RESOLVED:** no change (premise corrected) — `RoomInviteEvent` (lib/features/sync/gateway/matrix_sync_gateway.dart:85) is a plain const class with two `final String` fields and **no `==`/`hashCode` override and no freezed/equatable mixin**, so it has identity equality. A "value equality" property would assert a contract that does not exist (two distinct instances with equal fields are not `==`). The only true generative property left is "constructor stores the fields", which is exactly the forbidden constructor smoke test. The real behavior of `RoomInviteEvent` — that the gateway emits one with the correct `roomId`/`senderId` for invites targeted at this user — is already covered by the `'invite stream emits only invite membership events'` and `'invite stream ignores invites targeted at other users'` tests in `matrix_sdk_gateway_test.dart`.
 
 ---
 
@@ -55,7 +57,8 @@
 - [x] **[MED]** `keyVerificationRequests` stream: the `keyVerificationController` is wired in `setUp` but no test actually emits on it or asserts the `keyVerificationRequests` stream is forwarded. Add a test mirroring the `loginStateChanges` stream test.
   - **RESOLVED:** done — added `'keyVerificationRequests forwards the injected stream'` mirroring the loginStateChanges pattern (emit on the controller, assert delivery).
 
-- [ ] **[LOW]** `sendFile` with `extraContent: null` (no extra payload) is not tested. The overload that omits the named parameter is the common path.
+- [x] **[LOW]** `sendFile` with `extraContent: null` (no extra payload) is not tested. The overload that omits the named parameter is the common path.
+  - **RESOLVED:** done — added `'sendFile omits extraContent and registers id on the default path'`. It stubs only the no-`extraContent` overload (`room.sendFileEvent(any())`), asserts the impl calls that form (and `verifyNever` on the `extraContent:` overload), returns the id, and registers it with `SentEventSource.file`. This covers the `extraContent == null` branch of `sendFile` that was previously unexercised.
 
 ---
 
@@ -64,7 +67,8 @@
 - [x] **[MED]** Lines 400, 419: `await Future<void>.delayed(Duration.zero)` introduces a real microtask-queue flush delay. Replacing with `await pumpEventQueue()` removes the real-time dependency entirely and eliminates any CI flakiness window.
   - **RESOLVED:** (stale) — the file contains no `Future<void>.delayed(Duration.zero)` calls; the flush sites already use `pumpEventQueue()`.
 
-- [ ] **[LOW]** `setUp` constructs three `StreamController.broadcast()` instances per test. These are cheap, but the stream-based tests are scattered; grouping stream-related tests together and sharing a single controller-close `tearDown` could halve controller allocations for the stream-only subset.
+- [x] **[LOW]** `setUp` constructs three `StreamController.broadcast()` instances per test. These are cheap, but the stream-based tests are scattered; grouping stream-related tests together and sharing a single controller-close `tearDown` could halve controller allocations for the stream-only subset.
+  - **RESOLVED:** no change — the three controllers are not optional stream-test fixtures; all three are injected into the single `MatrixSdkGateway` built in `setUp` (and `roomStateController` drives the invite/dispose tests, `loginStateController`/`keyVerificationController` back the forwarding tests). Splitting into a stream-only group would require a second `gateway` construction path and a second `tearDown`, fragmenting the file's single fixture for a few microsecond-scale `StreamController.broadcast()` allocations the review itself calls "cheap". The cost/clarity trade-off does not justify the change.
 
 ---
 

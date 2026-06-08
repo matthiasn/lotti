@@ -15,8 +15,10 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `chat_ui_models.dart` at 166 lines is well within range. No split needed.
-- [ ] **[LOW]** `chat_ui_models_test.dart` at 769 lines is large for a 166-line model. The test growth is explained by the Glados scaffolding (~300 lines of generator infrastructure at the bottom). Acceptable; the generator classes could be extracted to a shared test-utils file if reused elsewhere.
+- [x] **[LOW]** `chat_ui_models.dart` at 166 lines is well within range. No split needed.
+  **RESOLVED:** Confirmed non-actionable. The source is 168 lines (two simple data classes); no split warranted.
+- [x] **[LOW]** `chat_ui_models_test.dart` at 769 lines is large for a 166-line model. The test growth is explained by the Glados scaffolding (~300 lines of generator infrastructure at the bottom). Acceptable; the generator classes could be extracted to a shared test-utils file if reused elsewhere.
+  **RESOLVED:** Confirmed non-actionable. The generator classes (`_GeneratedChat*`) are private and used only by this file; extracting them to a shared util would require making them public for a single consumer, which is not justified. Left in place.
 
 ---
 
@@ -26,8 +28,10 @@
   - **RESOLVED:** done — root-cause fix: `toDomain()` reads `clock.now()` for empty sessions and the test pins both timestamps exactly under `withClock(Clock.fixed(...))`.
 - [x] **[MED]** `chat_ui_models_test.dart` lines 256–300 ("canSendMessage returns correct boolean"): this test has five sequential `expect` calls covering `!isLoading`, `!isStreaming`, no-model, both-flags combinations. It reads like a parameterised test written as a single body. Per AGENTS.md: "If you need to test the same widget with different flag combinations, use a loop or parameterized helper, not N nearly-identical test bodies." A `for` loop over a list of `(isLoading, isStreaming, selectedModelId, expected)` tuples would reduce duplication and make it trivially extensible.
   - **RESOLVED:** done — the five sequential expects became a `(hasModel, isLoading, isStreaming) → canSend` table loop with per-case reasons.
-- [ ] **[LOW]** `chat_ui_models_test.dart` line 164: `toDomain` test at line 165 asserts `domainSession.metadata, equals({})`. This relies on the `selectedModelId == null` path of `toDomain`. The Glados test does cover `toDomain` more broadly, but the static test is fragile: if any extra key is added to `updatedMetadata` in production, this assertion breaks. Consider using `containsKey` / `doesNotContain` or matching only `selectedModelId`.
-- [ ] **[LOW]** `_GeneratedChatSessionUiModel` and `_GeneratedChatStateUiModel` Glados value classes define `toString()` correctly — good. No issues.
+- [x] **[LOW]** `chat_ui_models_test.dart` line 164: `toDomain` test at line 165 asserts `domainSession.metadata, equals({})`. This relies on the `selectedModelId == null` path of `toDomain`. The Glados test does cover `toDomain` more broadly, but the static test is fragile: if any extra key is added to `updatedMetadata` in production, this assertion breaks. Consider using `containsKey` / `doesNotContain` or matching only `selectedModelId`.
+  **RESOLVED:** done — replaced the brittle `equals({})` with `isNot(contains('selectedModelId'))`, which asserts the load-bearing property (no model key injected when none is set) without coupling to the exact map contents.
+- [x] **[LOW]** `_GeneratedChatSessionUiModel` and `_GeneratedChatStateUiModel` Glados value classes define `toString()` correctly — good. No issues.
+  **RESOLVED:** Confirmed non-actionable. Both value classes (and `_GeneratedChatMessage`) override `toString()` with all slots, satisfying the Glados shrinking-output requirement. No change needed.
 
 ---
 
@@ -35,8 +39,10 @@
 
 - [x] **[MED]** `copyWith` for both `ChatSessionUiModel` and `ChatStateUiModel` is not covered by Glados. The `Object()` sentinel pattern for nullable fields (`selectedModelId`, `error`, `streamingMessageId`) is a non-trivial null-pass-through mechanism. A Glados property — for any model, `copyWith()` with no arguments returns a model equal to the original in all fields — would verify the sentinel logic. The existing static tests cover only specific fields.
   - **RESOLVED:** done — added a no-argument `copyWith` preservation test sweeping all 8 set/unset combinations of the three sentinel-guarded nullable fields plus every non-nullable field.
-- [ ] **[LOW]** `ChatStateUiModel.isAnySessionLoading` is covered by Glados (`generatedChatStateUiModel`), which includes it in the aggregate model test. No gap.
-- [ ] **[LOW]** `displayTitle` fallback (`title.isEmpty ? 'New Chat' : title`) — a two-value Glados property (empty string → 'New Chat', non-empty string → identity) would make this invariant explicit. Currently only two static tests cover it.
+- [x] **[LOW]** `ChatStateUiModel.isAnySessionLoading` is covered by Glados (`generatedChatStateUiModel`), which includes it in the aggregate model test. No gap.
+  **RESOLVED:** Confirmed non-actionable. The `generatedChatStateUiModel` Glados test asserts `isAnySessionLoading` against an independently-computed `expectedIsAnySessionLoading` across the current-session-present/absent matrix. No gap.
+- [x] **[LOW]** `displayTitle` fallback (`title.isEmpty ? 'New Chat' : title`) — a two-value Glados property (empty string → 'New Chat', non-empty string → identity) would make this invariant explicit. Currently only two static tests cover it.
+  **RESOLVED:** done — added a dedicated `glados.Glados<String>` property over `any.chatTitle` (`StringAnys.letterOrDigits`, which yields empty and non-empty strings) asserting empty → 'New Chat' and non-empty → identity.
 
 ---
 
@@ -47,14 +53,17 @@
   - **RESOLVED:** done — added `'fromDomain ignores a non-String selectedModelId in metadata'`: the int 42 coerces to null through the type guard instead of crashing.
 - [x] **[MED]** `ChatStateUiModel.copyWith` with `error: null` explicitly passed: because `error` uses the `Object()` sentinel, passing `null` explicitly should clear the error. The static test at line 395–403 only tests updating `recentSessions` and adding an error, not clearing it. The `clearError()` test covers clearing via the method, but not via `copyWith(error: null)`.
   - **RESOLVED:** done — added `'ChatStateUiModel.copyWith(error: null) clears the error'`: explicit null beats the sentinel and the other fields survive.
-- [ ] **[LOW]** `ChatSessionUiModel.streamingMessage` when multiple messages are streaming simultaneously: `firstOrNull` returns only the first. The behaviour for multi-streaming is implicitly defined but never tested.
+- [x] **[LOW]** `ChatSessionUiModel.streamingMessage` when multiple messages are streaming simultaneously: `firstOrNull` returns only the first. The behaviour for multi-streaming is implicitly defined but never tested.
+  **RESOLVED:** done — added `'streamingMessage returns the first when several are streaming'`: with two streaming messages the earliest in document order is returned and the later one is not.
 
 ---
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** The Glados tests run at `numRuns: 160` / `numRuns: 120`. The model is pure data with no I/O. These are already well-sized. No speed issue.
-- [ ] **[LOW]** Static tests all construct in-memory objects with no real I/O or timers. The file is fast.
+- [x] **[LOW]** The Glados tests run at `numRuns: 160` / `numRuns: 120`. The model is pure data with no I/O. These are already well-sized. No speed issue.
+  **RESOLVED:** Confirmed non-actionable. All Glados configs use numRuns in the 80–180 band (160, 120, plus the new 120 displayTitle property), all ≠100. Pure-data, no I/O. No change.
+- [x] **[LOW]** Static tests all construct in-memory objects with no real I/O or timers. The file is fast.
+  **RESOLVED:** Confirmed non-actionable. No `Future.delayed`/`sleep`/real `Timer`; the only clock use is `withClock(Clock.fixed(...))` in the empty-messages test. No change.
 
 ---
 

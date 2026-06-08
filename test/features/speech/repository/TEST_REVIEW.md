@@ -16,15 +16,19 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `test/…/repository/speech_repository_test.dart` — 689 lines for a 142-line impl (4.8× ratio) suggests extensive happy/error/edge coverage, which is good. No structural split needed, but extracting `_mockPersistenceLogic()` and `_mockDb()` stub helpers would shorten individual tests.
+- [x] **[LOW]** `test/…/repository/speech_repository_test.dart` — 689 lines for a 142-line impl (4.8× ratio) suggests extensive happy/error/edge coverage, which is good. No structural split needed, but extracting `_mockPersistenceLogic()` and `_mockDb()` stub helpers would shorten individual tests.
+  **RESOLVED:** Added file-level helpers `_stubCreateMetadata(logic, {returns, throws})` and `_stubCreateDbEntity(logic, {returns, throws})` that collapse the repeated 7-line `createMetadata`/`createDbEntity` `when(...)` blocks (4× and 3× respectively) in the `createAudioEntry` group. No structural split. The `journalEntityById` stubs in `updateLanguage`/`removeAudioTranscript` vary per test (distinct return/throw), so a `_mockDb()` helper would only add indirection and was intentionally not extracted.
 
 ## Test quality improvements
 
-- [ ] **[MED]** `test/…/repository/audio_recorder_repository_test.dart:14` — Defines `MockAudioRecorder` inline. `MockAudioRecorderRepository` already exists in `test/mocks/mocks.dart` (line 501). Check whether `MockAudioRecorder` (the underlying `AudioRecorder` platform class, not the repository) is also centralizable; if it's used in multiple test files, add it to `test/mocks/mocks.dart`.
+- [x] **[MED]** `test/…/repository/audio_recorder_repository_test.dart:14` — Defines `MockAudioRecorder` inline. `MockAudioRecorderRepository` already exists in `test/mocks/mocks.dart` (line 501). Check whether `MockAudioRecorder` (the underlying `AudioRecorder` platform class, not the repository) is also centralizable; if it's used in multiple test files, add it to `test/mocks/mocks.dart`.
+  **RESOLVED:** `MockAudioRecorder extends Mock implements record.AudioRecorder` already exists centrally at `test/mocks/mocks.dart:631` and is used by `chat_recorder_controller_test.dart` (40+ usages). Removed the redundant inline definition; the test now uses the central mock via the existing `import '../../../mocks/mocks.dart';`. No change to the central file (already present).
 
-- [ ] **[MED]** `test/…/repository/speech_repository_test.dart:34–59` — `setUp` uses inline `if (getIt.isRegistered<X>()) { getIt.unregister<X>(); } getIt.registerSingleton<X>(...)` for three services, and `tearDown` calls `getIt.reset()` (not shown here but confirmed by the 689-line structure). Per AGENTS.md, `setUpTestGetIt()` should be used instead. The manual approach risks unregistering the wrong instance if tests run in parallel.
+- [x] **[MED]** `test/…/repository/speech_repository_test.dart:34–59` — `setUp` uses inline `if (getIt.isRegistered<X>()) { getIt.unregister<X>(); } getIt.registerSingleton<X>(...)` for three services, and `tearDown` calls `getIt.reset()` (not shown here but confirmed by the 689-line structure). Per AGENTS.md, `setUpTestGetIt()` should be used instead. The manual approach risks unregistering the wrong instance if tests run in parallel.
+  **RESOLVED:** `setUp` now calls `await setUpTestGetIt(additionalSetup: ...)`, taking `JournalDb` from the returned `mocks.journalDb`. `setUpTestGetIt` registers a *real* `DomainLogger`, so `additionalSetup` unregisters it and swaps in `MockDomainLogger` (so `.error(...)` stays verifiable) and registers `MockPersistenceLogic` (which `setUpTestGetIt` does not provide) — the established pattern from `voxtral_inference_repository_test.dart` / `prompt_builder_helper_test.dart`. Added the previously-missing `tearDown(tearDownTestGetIt)`. Removed the inline `getIt.isRegistered`/`unregister`/`registerSingleton` boilerplate and the now-unused `database.dart` import (`JournalDb` is no longer referenced as a bare type).
 
-- [ ] **[LOW]** `test/…/repository/audio_recorder_repository_test.dart:67–84` — `hasPermission returns false and logs exception` test: the `verifyNever` on successful path (lines 58–65) and the `verify` on error path are good. Minor: the `verifyNever` test is checking the wrong overload signature (missing `stackTrace` named arg for the error mock call) — confirm the no-error branch truly calls no error method at all.
+- [x] **[LOW]** `test/…/repository/audio_recorder_repository_test.dart:67–84` — `hasPermission returns false and logs exception` test: the `verifyNever` on successful path (lines 58–65) and the `verify` on error path are good. Minor: the `verifyNever` test is checking the wrong overload signature (missing `stackTrace` named arg for the error mock call) — confirm the no-error branch truly calls no error method at all.
+  **RESOLVED:** The `hasPermission`-success `verifyNever` (the no-error branch) now includes `stackTrace: any(named: 'stackTrace')` so it matches ANY `error(...)` invocation, not only those without a stackTrace. This proves the success branch logs no error at all. (The source `hasPermission` error path does pass `stackTrace:`, so the prior matcher could have under-matched.)
 
 ## Generative (Glados) testing opportunities
 
@@ -32,13 +36,16 @@
 
 ## Coverage / missing-behavior gaps
 
-- [ ] **[MED]** `test/…/repository/speech_repository_test.dart` — Verify that the `updateAudioEntry` (or equivalent transcript-update method, if present) error path is covered: i.e., when `mockPersistenceLogic.updateDbEntity` throws, the repository logs the error and re-throws (or returns null, depending on the contract).
+- [x] **[MED]** `test/…/repository/speech_repository_test.dart` — Verify that the `updateAudioEntry` (or equivalent transcript-update method, if present) error path is covered: i.e., when `mockPersistenceLogic.updateDbEntity` throws, the repository logs the error and re-throws (or returns null, depending on the contract).
+  **RESOLVED:** No `updateAudioEntry` exists; the repository's three methods are `createAudioEntry`, `updateLanguage`, `removeAudioTranscript`. The `updateDbEntity`-throws path is already covered for both methods that call it: `updateLanguage` → "logs exception if updateDbEntity throws" (asserts `error(LogDomain.persistence, exception, stackTrace, subDomain:'updateLanguage')`), and `removeAudioTranscript` → "logs exception if updateDbEntity throws" (asserts the same log AND `result == true`). The actual contract is log-and-swallow (no re-throw): `updateLanguage` returns `void`, `removeAudioTranscript` returns `true` even on failure — both verified. No change needed.
 
-- [ ] **[LOW]** `test/…/repository/audio_recorder_repository_test.dart` — The `amplitudeStream` getter (which returns `_audioRecorder.onAmplitudeChanged(interval: ...)`) is not explicitly tested. Verify it returns a non-null stream and that the interval is passed through.
+- [x] **[LOW]** `test/…/repository/audio_recorder_repository_test.dart` — The `amplitudeStream` getter (which returns `_audioRecorder.onAmplitudeChanged(interval: ...)`) is not explicitly tested. Verify it returns a non-null stream and that the interval is passed through.
+  **RESOLVED:** Already covered by two tests: "amplitudeStream returns a stream" (asserts `isA<Stream<Amplitude>>()` and that `onAmplitudeChanged` was called once) and "amplitudeStream passes 20ms interval to onAmplitudeChanged" (captures the `Duration` arg and asserts it equals `const Duration(milliseconds: 20)`, matching the source's `intervalMs = 20`). No change needed.
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** Both test files use `await`-based service calls without `fakeAsync`. All stubs resolve with `thenAnswer((_) async => ...)`, which is negligible. No speed concerns.
+- [x] **[LOW]** Both test files use `await`-based service calls without `fakeAsync`. All stubs resolve with `thenAnswer((_) async => ...)`, which is negligible. No speed concerns.
+  **RESOLVED:** Confirmed — all mock stubs resolve synchronously-completing futures (`thenAnswer((_) async => ...)`); there are no real timers, delays, or I/O on the hot path. No `fakeAsync` needed, no speed concern. No change.
 
 ---
 

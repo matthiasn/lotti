@@ -192,13 +192,55 @@ void main() {
   });
 
   group('checklistItemsToEmojiList', () {
+    test('returns empty for empty input', () {
+      expect(checklistItemsToEmojiList(const []), '');
+    });
+
     test('uses emoji checkboxes and preserves order', () {
       final list = checklistItemsToEmojiList([
         makeItem(id: '1', title: 'First', isChecked: false),
         makeItem(id: '2', title: 'Second', isChecked: true),
+        makeItem(id: '3', title: 'Third', isChecked: false),
       ]);
 
-      expect(list, '⬜ First\n✅ Second');
+      expect(list, '⬜ First\n✅ Second\n⬜ Third');
+    });
+
+    test('filters deleted items and sanitizes title', () {
+      final list = checklistItemsToEmojiList([
+        makeItem(id: '1', title: '  Keep\tThis  ', isChecked: false),
+        makeItem(
+          id: '2',
+          title: 'Remove',
+          isChecked: true,
+          deletedAt: DateTime(2024),
+        ),
+      ]);
+
+      expect(list, '⬜ Keep This');
+    });
+
+    test('collapses newlines and tabs', () {
+      final list = checklistItemsToEmojiList([
+        makeItem(id: '1', title: 'Line1\nLine2\tTab', isChecked: false),
+        makeItem(id: '2', title: '\t\n Spaced ', isChecked: true),
+      ]);
+
+      expect(list, '⬜ Line1 Line2 Tab\n✅ Spaced');
+    });
+
+    test('replaces carriage returns and filters nulls', () {
+      final list = checklistItemsToEmojiList([
+        null,
+        makeItem(id: '1', title: 'CR\rSeparated', isChecked: true),
+        null,
+      ]);
+
+      expect(list, '✅ CR Separated');
+    });
+
+    test('returns empty for all-null input', () {
+      expect(checklistItemsToEmojiList(const [null, null, null]), '');
     });
 
     Glados(any.checklistRows, ExploreConfig(numRuns: 160)).test(

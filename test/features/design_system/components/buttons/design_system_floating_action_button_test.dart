@@ -8,7 +8,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 import '../../../../widget_test_utils.dart';
 
-Future<void> pumpFab(
+Future<void> _pumpFab(
   WidgetTester tester, {
   VoidCallback? onPressed,
 }) {
@@ -36,7 +36,7 @@ BoxDecoration _fabDecoration(WidgetTester tester) {
 void main() {
   group('DesignSystemFloatingActionButton', () {
     testWidgets('renders the primary jumbo icon-only button', (tester) async {
-      await pumpFab(tester);
+      await _pumpFab(tester);
 
       expect(find.byType(DesignSystemFloatingActionButton), findsOneWidget);
       expect(find.bySemanticsLabel('Create'), findsOneWidget);
@@ -51,7 +51,7 @@ void main() {
     testWidgets('invokes onPressed when tapped', (tester) async {
       var tapped = false;
 
-      await pumpFab(tester, onPressed: () => tapped = true);
+      await _pumpFab(tester, onPressed: () => tapped = true);
 
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pump();
@@ -62,7 +62,7 @@ void main() {
     testWidgets('centers the icon horizontally inside the button', (
       tester,
     ) async {
-      await pumpFab(tester);
+      await _pumpFab(tester);
 
       final buttonCenter = tester.getCenter(
         find.byType(DesignSystemFloatingActionButton),
@@ -75,7 +75,7 @@ void main() {
     testWidgets('uses rounded-xl (24) corners matching the Figma FAB', (
       tester,
     ) async {
-      await pumpFab(tester);
+      await _pumpFab(tester);
 
       final ink = tester.widget<Ink>(
         find.descendant(
@@ -103,7 +103,7 @@ void main() {
     testWidgets(
       'applies the hover background token while the pointer is over it',
       (tester) async {
-        await pumpFab(tester, onPressed: () {});
+        await _pumpFab(tester, onPressed: () {});
 
         expect(
           _fabDecoration(tester).color,
@@ -142,7 +142,7 @@ void main() {
     testWidgets('applies the pressed background token while held down', (
       tester,
     ) async {
-      await pumpFab(tester, onPressed: () {});
+      await _pumpFab(tester, onPressed: () {});
 
       final gesture = await tester.startGesture(
         tester.getCenter(find.byType(DesignSystemFloatingActionButton)),
@@ -215,12 +215,24 @@ void main() {
     testWidgets(
       'does not react to hover/press while disabled (onPressed null)',
       (tester) async {
-        await pumpFab(tester);
+        await _pumpFab(tester);
 
+        // The disabled FAB wraps the whole button in the component's own
+        // Opacity dimmed to the low-emphasis text alpha. Target the one that
+        // is an ancestor of the FAB's Ink to skip unrelated framework
+        // Opacity layers and assert the actual dim value, not mere presence.
+        final opacity = tester.widget<Opacity>(
+          find
+              .ancestor(
+                of: find.byType(Ink),
+                matching: find.byType(Opacity),
+              )
+              .first,
+        );
         expect(
-          find.byType(Opacity),
-          findsWidgets,
-          reason: 'disabled FAB is wrapped in an Opacity',
+          opacity.opacity,
+          dsTokensLight.colors.text.lowEmphasis.a,
+          reason: 'disabled FAB dims to the low-emphasis text alpha',
         );
 
         final gesture = await tester.createGesture(

@@ -28,7 +28,9 @@
 - [x] **[MED]** `test/…/state/audio_waveform_provider_test.dart:11` — Defines `_MockAudioWaveformService` locally; `MockAudioWaveformService` (or equivalent) does not yet exist in `test/mocks/mocks.dart`. If this service is used in other test files, promote it.
   **RESOLVED:** done — `MockAudioWaveformService` promoted to `test/mocks/mocks.dart` per the central-mocks rule; the test file imports it from there.
 
-- [ ] **[LOW]** `lib/…/state/recorder_controller.dart:1` — At 734 lines the impl file is approaching threshold; consider extracting `_RealtimeRecordingMixin` or a `RealtimeRecorderController` subclass once tests are stable.
+- [x] **[LOW]** `lib/…/state/recorder_controller.dart:1` — At 734 lines the impl file is approaching threshold; consider extracting `_RealtimeRecordingMixin` or a `RealtimeRecorderController` subclass once tests are stable.
+  - **RESOLVED:** (assessed — keep as-is) the item itself says "once tests are stable" — a future production refactor, not a test gap. The controller is fully test-covered today; extracting a realtime mixin is optional impl cleanup.
+  **DEFERRED:** This is a production-code refactor in `lib/` (now 740 lines), outside the `test/features/speech/state/` area this pass is scoped to. Extracting a realtime mixin/subclass would change the public/private surface the existing tests exercise and is best done as a focused source-side change with its own review, not from inside the test-quality pass.
 
 ## Test quality improvements
 
@@ -49,14 +51,16 @@
 - [x] **[MED]** `test/…/state/audio_checkbox_settings_test.dart:18–28` — Defines `MockAudioRecorderRepository`, `MockPlayer`, `MockPlayerState`, `MockPlayerStream`, `FakePlayable` inline — all of these already exist in `test/mocks/mocks.dart` (lines 501, 832, 836). Use the centralized copies.
   **RESOLVED:** done (mostly stale) — the file already imported the central `MockAudioRecorderRepository`/`MockPlayer`/`MockPlayerStream`/`FakePlayable`; the one remaining inline `MockPlayerState` was removed in favor of the central copy.
 
-- [ ] **[LOW]** `test/…/state/recorder_controller_test.dart:979–989` — Integration test "can be instantiated" asserts only `returnsNormally` on provider creation. This is pure smoke; the provider initialization state is already verified in the "should initialize with correct initial state" test.
+- [x] **[LOW]** `test/…/state/recorder_controller_test.dart:979–989` — Integration test "can be instantiated" asserts only `returnsNormally` on provider creation. This is pure smoke; the provider initialization state is already verified in the "should initialize with correct initial state" test.
+  **RESOLVED:** done — removed the smoke-only 'can be instantiated with mocked dependencies' test from the Integration Tests group and left a pointer comment; the 'should initialize with correct initial state' test already asserts every field of the initial `AudioRecorderState`.
 
 ## Generative (Glados) testing opportunities
 
 - [x] **[MED]** `_calculateVu(double dBFS)` in `lib/…/state/recorder_controller.dart:153–187` is a pure math function (converts dBFS through linear RMS, then back to dB, clamps to [-20, 3]). The invariants are testable: output ∈ [-20.0, 3.0] for any finite input; output(-∞) == -20; output(0) == 18 - 18 == 0 (modulo the reference level). A Glados test over `any.double` (filtered to finite values) would exercise the clamp and formula.
   **RESOLVED:** done — `_calculateVu` got a `@visibleForTesting debugCalculateVu` seam; a Glados property (numRuns 120) feeds random dBFS sequences and asserts every output stays in [-20, 3], plus two boundary tests: a silence-only buffer clamps to the -20 floor and a 0 dBFS buffer clamps to the +3 ceiling.
 
-- [ ] **[LOW]** `formatAudioDuration` in `lib/…/ui/widgets/progress/audio_progress_bar.dart` (see UI review) — a round-trip property (`parse(format(d)) == clamp(d)`) is a Glados candidate; flagged there.
+- [x] **[LOW]** `formatAudioDuration` in `lib/…/ui/widgets/progress/audio_progress_bar.dart` (see UI review) — a round-trip property (`parse(format(d)) == clamp(d)`) is a Glados candidate; flagged there.
+  **RESOLVED (out of area, cross-referenced):** `formatAudioDuration` lives in the `ui/widgets/progress/` layer, not the state layer, and the item explicitly defers ownership to that review (`test/features/speech/ui/widgets/progress/TEST_REVIEW.md`). It is tracked there; no state-layer action is warranted.
 
 No other non-trivial pure-logic functions are present in the state layer that aren't already exercised by the extensive unit tests.
 
@@ -70,7 +74,8 @@ No other non-trivial pure-logic functions are present in the state layer that ar
 - [x] **[MED]** `test/…/state/audio_player_controller_test.dart:796–816` — Completion-handling group: the test "handles completion event with delay" (line 797) only asserts `completedSubscription isNotNull` — no behavioral assertion about what the subscription does. The actual timer/progress-update behavior is covered by the "completion timer fires" test at line 1011, but the two groups are separate and the first adds no new information.
   **RESOLVED:** done — the vacuous 'handles completion event with delay' test (isNotNull-only, duplicating the lazy-ensure test) was removed; a comment points to the behavioral 'completion timer fires and updates progress to duration' coverage.
 
-- [ ] **[LOW]** `lib/…/state/audio_waveform_provider.dart` — The `debounce` / `keepAlive` family parameter code-paths (provider family key equality, stale-while-revalidate) are not explicitly exercised in `audio_waveform_provider_test.dart`. The existing 323-line test file covers happy-path and service-failure paths well but misses the "same audio, second call returns cached value from provider cache" case.
+- [x] **[LOW]** `lib/…/state/audio_waveform_provider.dart` — The `debounce` / `keepAlive` family parameter code-paths (provider family key equality, stale-while-revalidate) are not explicitly exercised in `audio_waveform_provider_test.dart`. The existing 323-line test file covers happy-path and service-failure paths well but misses the "same audio, second call returns cached value from provider cache" case.
+  **RESOLVED (stale):** the cache-hit path is already covered. 'provider caches identical requests within keep-alive window' reads the same request twice and asserts `callCount == 1`; 'provider caches responses using request equality' uses two equal-but-distinct `AudioWaveformRequest` objects and asserts `identical(first, second)` with `loadWaveform` called once — i.e. the second call returns the provider-cached value. Family key equality is additionally exercised by 'different bucket count creates new cache entry'.
 
 ## Test execution speed opportunities
 
@@ -79,7 +84,9 @@ No other non-trivial pure-logic functions are present in the state layer that ar
 - [x] **[MED]** `test/…/state/recorder_controller_test.dart:858–944` — "build() amplitude subscription" group: uses `fakeAsync` correctly but the inner `for (var i = 0; i < 20; i++)` loop (line 890) manually replays 20 mock amplitude events inline — this is fine with fakeAsync but the comment ("fill the RMS buffer") suggests a helper like `_fillVuBuffer(amplitudeController, mockAmplitude, count: 20, async: async)` would make the intent clearer and enable reuse in any future VU meter tests.
   **RESOLVED:** done — the inline 20-iteration loop is now a documented file-level `fillVuBuffer(amplitudeController, amplitude, async, {count})` helper, reusable by future VU tests.
 
-- [ ] **[LOW]** `test/…/state/recorder_controller_test.dart:1540–1683` — `stopRealtime happy path` test creates a real temp directory via `Directory.systemTemp.createTemp` and spawns file I/O. These are unavoidable given the current architecture, but consider an injectable `AudioDirectoryFactory` to allow deterministic injection in tests.
+- [x] **[LOW]** `test/…/state/recorder_controller_test.dart:1540–1683` — `stopRealtime happy path` test creates a real temp directory via `Directory.systemTemp.createTemp` and spawns file I/O. These are unavoidable given the current architecture, but consider an injectable `AudioDirectoryFactory` to allow deterministic injection in tests.
+  **DEFERRED:** The only actionable fix is a production-side `AudioDirectoryFactory` (or equivalent) injected in place of the current `getIt<Directory>()` document-dir lookup in `lib/.../state/recorder_controller.dart` + the asset-directory helper — a source-layer refactor outside this `test/features/speech/state/` pass, which the item itself notes is "unavoidable given the current architecture." The test already mitigates the I/O safely: the temp dir uses `Directory.systemTemp.createTemp` and is cleaned up via `addTearDown(() => tempDir.delete(recursive: true))`, and there is no fake-time/async-policy violation. Defer until the DI seam is added source-side.
+  - **RESOLVED:** (assessed, adequate) `stopRealtime` finalizes a real recording file, so a real temp dir is the realistic harness; cleaned in tearDown — acceptable real-IO for a file-finalizing path.
 
 ---
 

@@ -8,14 +8,62 @@ import 'package:glados/glados.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 
+import 'sync_db_test_utils.dart';
+
+/// A generated scenario for the `getCountersForHostInRange` property: the set
+/// of counters seeded for the queried host, a set seeded for a *different*
+/// host (which must never leak into the result), and the inclusive
+/// `[rangeStart, rangeEnd]` bounds (which may be inverted to exercise the
+/// `endCounter < startCounter` short-circuit).
+class _RangeScenario {
+  const _RangeScenario({
+    required this.hostCounters,
+    required this.otherHostCounters,
+    required this.rangeStart,
+    required this.rangeEnd,
+  });
+
+  final List<int> hostCounters;
+  final List<int> otherHostCounters;
+  final int rangeStart;
+  final int rangeEnd;
+}
+
+extension _AnyRangeScenario on Any {
+  Generator<_RangeScenario> get rangeScenario => combine4(
+    // Counters for the host under test (deduped at use site). Bounded so the
+    // intersection is non-trivially exercised against the range below.
+    listWithLengthInRange(0, 12, intInRange(0, 12)),
+    // Decoy counters for a sibling host; same value space so the host filter
+    // is the only thing keeping them out of the result.
+    listWithLengthInRange(0, 8, intInRange(0, 12)),
+    intInRange(0, 12),
+    intInRange(0, 12),
+    (
+      List<int> hostCounters,
+      List<int> otherHostCounters,
+      int rangeStart,
+      int rangeEnd,
+    ) => _RangeScenario(
+      hostCounters: hostCounters,
+      otherHostCounters: otherHostCounters,
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd,
+    ),
+  );
+}
+
 void main() {
   SyncDatabase? db;
 
   group('SyncSequenceLog Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -700,10 +748,13 @@ void main() {
   });
 
   group('HostActivity Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -737,10 +788,13 @@ void main() {
   });
 
   group('Batch Operations Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -850,12 +904,16 @@ void main() {
   group('getNearestCoveringEntry Tests', () {
     late SyncDatabase database;
 
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
       database = db!;
     });
 
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -1048,10 +1106,13 @@ void main() {
   });
 
   group('getPendingEntriesByPayloadId Tests', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -1255,10 +1316,13 @@ void main() {
   });
 
   group('getLastSentCounterForEntry', () {
-    setUp(() async {
+    setUpAll(() async {
       db = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(db!);
+    });
+    tearDownAll(() async {
       await db?.close();
     });
 
@@ -1491,10 +1555,13 @@ void main() {
     // as `received` for watermark purposes.
     late SyncDatabase database;
 
-    setUp(() async {
+    setUpAll(() async {
       database = SyncDatabase(inMemoryDatabase: true);
     });
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(database);
+    });
+    tearDownAll(() async {
       await database.close();
     });
 
@@ -1532,11 +1599,15 @@ void main() {
   group('getCountersForHostInRange', () {
     late SyncDatabase database;
 
-    setUp(() {
+    setUpAll(() async {
       database = SyncDatabase(inMemoryDatabase: true);
     });
 
-    tearDown(() async {
+    setUp(() async {
+      await clearAllSyncTables(database);
+    });
+
+    tearDownAll(() async {
       await database.close();
     });
 
@@ -1586,5 +1657,86 @@ void main() {
         isEmpty,
       );
     });
+  });
+
+  // Property: `getCountersForHostInRange(host, start, end)` returns exactly
+  // the set of counters seeded for `host` that fall inside the *inclusive*
+  // range `[start, end]` — the SQL filters with
+  // `counter >= start AND counter <= end` (both bounds inclusive) — and
+  // returns the empty set when `end < start`. Counters seeded for any other
+  // host are never returned, regardless of their value.
+  //
+  // One in-memory DB is opened in this group's setUp and `sync_sequence_log`
+  // is truncated at the start of each generated run.
+  group('getCountersForHostInRange property', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await database.close();
+    });
+
+    Glados(any.rangeScenario, ExploreConfig(numRuns: 120)).test(
+      'returns the inclusive [start, end] intersection of the host counters, '
+      'never leaking other hosts and short-circuiting on inverted ranges',
+      (scenario) async {
+        // Start every run from an empty table (shared-DB pattern).
+        await database.customStatement('DELETE FROM sync_sequence_log');
+        await database.customStatement('DELETE FROM sync_sequence_watermarks');
+
+        const hostId = 'host-under-test';
+        const otherHost = 'other-host';
+        final hostCounters = scenario.hostCounters.toSet();
+        final otherCounters = scenario.otherHostCounters.toSet();
+        final base = DateTime(2024, 3, 15, 10);
+
+        await database.batchInsertSequenceEntries([
+          for (final counter in hostCounters)
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: Value(counter),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(base),
+              updatedAt: Value(base),
+            ),
+          for (final counter in otherCounters)
+            SyncSequenceLogCompanion(
+              hostId: const Value(otherHost),
+              counter: Value(counter),
+              status: Value(SyncSequenceStatus.received.index),
+              createdAt: Value(base),
+              updatedAt: Value(base),
+            ),
+        ]);
+
+        final result = await database.getCountersForHostInRange(
+          hostId,
+          scenario.rangeStart,
+          scenario.rangeEnd,
+        );
+
+        // Oracle: inclusive on both ends; empty when the range is inverted.
+        final expected = scenario.rangeEnd < scenario.rangeStart
+            ? <int>{}
+            : hostCounters
+                  .where(
+                    (c) => c >= scenario.rangeStart && c <= scenario.rangeEnd,
+                  )
+                  .toSet();
+
+        expect(result, expected);
+
+        // The decoy host's counters must never appear in the result, even
+        // when they fall inside the range.
+        expect(
+          result.intersection(otherCounters.difference(hostCounters)),
+          isEmpty,
+          reason: 'counters from $otherHost must not leak into the result',
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

@@ -39,15 +39,18 @@
 - [x] **[MED]** `sync_node_capability_probe_test.dart` lines 116–136: the `'returns a SyncNodeProfile with the host id'` test calls `defaultSyncNodeCapabilityProbe(...)` which makes a real HTTP request to `127.0.0.1:11434` (the Ollama endpoint). This is a real-I/O test that violates the fake-time / deterministic policy in test/README.md ("Exception: Tests validating real I/O…may use real time when necessary"). The test should be annotated with `@Skip('requires local Ollama')` or moved to `integration_test/` so it does not slow or break CI on machines without Ollama installed. The existing unit-level tests already cover the logic via the injectable `ollamaProbe` parameter.
   - **RESOLVED:** (stale) — the real-I/O test calling `defaultSyncNodeCapabilityProbe` no longer exists; every test in the file goes through `makeDefaultSyncNodeCapabilityProbe` with an injected `ollamaProbe` stub.
 
-- [ ] **[LOW]** `sync_node_profile_broadcaster_test.dart` line 64: `clock: () => tick++ == 0 ? t0 : t1` is a stateful counter closure shared across all tests via the `setUp`. This means every test that calls `broadcastIfChanged` more than twice will hit `t1` regardless of semantic intent. The tests are currently correct because each is scoped to one or two calls, but it is fragile. Consider making the `clock` injectable per-test or using a `List<DateTime>` queue approach.
+- [x] **[LOW]** `sync_node_profile_broadcaster_test.dart` line 64: `clock: () => tick++ == 0 ? t0 : t1` is a stateful counter closure shared across all tests via the `setUp`. This means every test that calls `broadcastIfChanged` more than twice will hit `t1` regardless of semantic intent. The tests are currently correct because each is scoped to one or two calls, but it is fragile. Consider making the `clock` injectable per-test or using a `List<DateTime>` queue approach.
+  - **RESOLVED:** done — replaced the `tick++` closure with a per-test `clockQueue` (`List<DateTime>`) dispensed by `nextClock()`, which pops successive timestamps and pins on the last entry. Both in-test logging broadcasters now share `nextClock` too, so a test that probes more than twice just seeds more entries instead of silently saturating at `t1`.
 
 ---
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[LOW]** `synced_audio_inference_dispatcher_test.dart` already has an excellent Glados property at line 824 covering the full eligibility state space with `numRuns: 120` and `tags: 'glados'`. No additional Glados work is needed here.
+- [x] **[LOW]** `synced_audio_inference_dispatcher_test.dart` already has an excellent Glados property at line 824 covering the full eligibility state space with `numRuns: 120` and `tags: 'glados'`. No additional Glados work is needed here.
+  - **RESOLVED:** (assessed, no change) — confirmed: the existing `combine8`-driven property exhausts the dispatcher's full guard cartesian product (vector-clock shape, prior/post transcript counts, pin shape, locality, transcription slot, automated skill, task agent) with `numRuns: 120`, correctly tagged `'glados'`. No additional generative coverage is warranted.
 
-- [ ] **[LOW]** `sync_node_profile_broadcaster_test.dart`: `broadcastIfChanged` returns a `bool` based on whether the probe output differed from the last persisted state. A Glados property over sequences of `(platform, List<NodeCapability>)` pairs could verify the invariant: `broadcastIfChanged` returns `true` iff any field differs from the last persisted profile, and `false` on an identical re-probe. This is a genuine pure-logic property that example-based tests cannot exhaust.
+- [x] **[LOW]** `sync_node_profile_broadcaster_test.dart`: `broadcastIfChanged` returns a `bool` based on whether the probe output differed from the last persisted state. A Glados property over sequences of `(platform, List<NodeCapability>)` pairs could verify the invariant: `broadcastIfChanged` returns `true` iff any field differs from the last persisted profile, and `false` on an identical re-probe. This is a genuine pure-logic property that example-based tests cannot exhaust.
+  - **RESOLVED:** done — added a `glados: broadcastIfChanged diff invariant` group (`tags: 'glados'`, `numRuns: 120`) that generates non-empty sequences of `_ProbeShape(platform, List<NodeCapability>)` via `combine2(choose([macos,linux,ios]), list(choose(NodeCapability.values)))`. Each run owns a fresh in-memory `SettingsDb` and asserts the step-by-step invariant: `broadcastIfChanged` is `true` iff the probed content differs from the last persisted baseline and `false` on identical re-probe, with a final cross-check against the persisted self row. A monotonic clock keeps `updatedAt` distinct so content equality is the sole driver of the diff.
 
 ---
 
@@ -62,7 +65,8 @@
 - [x] **[MED]** `synced_audio_inference_listener_test.dart`: the `start()` idempotency test (line 112) verifies double-`start()` produces one delivery, but there is no test for: `start()` → `dispose()` → `start()` (re-start after dispose). If the listener allows restart, this path should be tested; if not, a test should assert it throws or no-ops.
   - **RESOLVED:** done — added a restart test: start → deliver → dispose (emissions dropped) → start re-subscribes and delivers again. Written as real async with a manual broadcast controller (broadcast cancel() does not resolve under fakeAsync — the same documented exception as the wake orchestrator).
 
-- [ ] **[LOW]** `synced_audio_inference_dispatcher_test.dart`: the `'multiple automated transcription skills'` test (line 693) verifies that an ambiguous profile (2 automated transcription skills) causes a skip. There is no test for a profile with one automated `transcription` skill AND one automated skill of a different type (e.g., `summarization`). The current code's loop should handle this correctly — a targeted test would document the expectation.
+- [x] **[LOW]** `synced_audio_inference_dispatcher_test.dart`: the `'multiple automated transcription skills'` test (line 693) verifies that an ambiguous profile (2 automated transcription skills) causes a skip. There is no test for a profile with one automated `transcription` skill AND one automated skill of a different type (e.g., `summarization`). The current code's loop should handle this correctly — a targeted test would document the expectation.
+  - **RESOLVED:** done — added `'proceeds when the profile has one automated transcription skill alongside an automated non-transcription skill'`: the profile carries an automated `transcription` skill plus an automated `promptGeneration` skill; the dispatcher's loop `continue`s past the non-transcription type (does NOT count it toward ambiguity), matches exactly one transcription skill, and `runTranscription` fires once.
 
 ---
 
@@ -73,7 +77,8 @@
 - [x] **[MED]** `synced_audio_inference_dispatcher_test.dart` Glados at line 824: `numRuns: 120` at ~8 mock-stub interactions per run = ~960 mock interactions. This is already in the CI Glados lane (correctly tagged `'glados'`), so it does not slow the standard lane. No change needed.
   - **RESOLVED:** (assessed, no change) — as the item itself concludes: the property is correctly tagged into the Glados CI lane; no change needed.
 
-- [ ] **[LOW]** `sync_node_profile_broadcaster_test.dart`: each test constructs a real in-memory `SettingsDb` in `setUp` and tears it down in `tearDown`. This is correct practice for isolation but costs a Drift DB open/close per test. Since the tests are serial and the in-memory DB is cheap, this is acceptable. No change needed.
+- [x] **[LOW]** `sync_node_profile_broadcaster_test.dart`: each test constructs a real in-memory `SettingsDb` in `setUp` and tears it down in `tearDown`. This is correct practice for isolation but costs a Drift DB open/close per test. Since the tests are serial and the in-memory DB is cheap, this is acceptable. No change needed.
+  - **RESOLVED:** (assessed, no change) — confirmed acceptable: a per-test in-memory `SettingsDb` open/close is the isolation boundary that keeps persisted self-profile state from leaking between tests, and an in-memory Drift open is cheap. Sharing one DB across tests would couple them and is not worth the marginal speed. The new Glados run likewise owns and disposes its own DB per iteration for the same reason.
 
 ---
 

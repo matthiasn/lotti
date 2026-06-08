@@ -69,24 +69,41 @@ void main() {
     final element = tester.element(find.byType(LinkedEntriesActivityFilterBar));
     final container = ProviderScope.containerOf(element);
 
+    // The audio pill's Semantics node reflects its active state via `toggled`.
+    // Find the explicit toggle Semantics (the only one with `toggled` set and
+    // the audio label) wrapping the pill.
+    final audioLabel = messages.journalLinkedEntriesActivityFilterAudio;
+    final audioPillSemantics = find.byWidgetPredicate(
+      (widget) =>
+          widget is Semantics &&
+          widget.properties.toggled != null &&
+          widget.properties.label == audioLabel,
+    );
+    bool? audioPillToggled() =>
+        tester.widget<Semantics>(audioPillSemantics).properties.toggled;
+
+    // Audio starts active, both in the controller and in the rendered pill.
     expect(
       container.read(
         linkedEntriesActivityFilterControllerProvider(id: entryId),
       ),
       contains(LinkedEntryActivityFilter.audio),
     );
+    expect(audioPillToggled(), isTrue);
 
     await tester.tap(
       find.text(messages.journalLinkedEntriesActivityFilterAudio),
     );
     await tester.pumpAndSettle();
 
+    // After the tap the controller drops audio and the pill re-renders as off.
     expect(
       container.read(
         linkedEntriesActivityFilterControllerProvider(id: entryId),
       ),
       isNot(contains(LinkedEntryActivityFilter.audio)),
     );
+    expect(audioPillToggled(), isFalse);
   });
 
   testWidgets('tapping the sort trigger opens the filter modal', (

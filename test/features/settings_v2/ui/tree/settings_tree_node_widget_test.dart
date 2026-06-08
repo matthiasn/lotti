@@ -112,7 +112,13 @@ void main() {
     testWidgets('tapping a re-tapped open branch collapses it', (tester) async {
       await _pumpNode(tester, node: _syncBranch());
       await tester.tap(find.byType(SettingsTreeRow).first, warnIfMissed: false);
-      await tester.pumpAndSettle(const Duration(milliseconds: 400));
+      // Apply the open state, then advance a fixed 400 ms (longer than
+      // every branch animation in SettingsV2Constants) so the implicit
+      // AnimatedSize/AnimatedOpacity tickers settle deterministically —
+      // a bounded `pump(duration)` replaces `pumpAndSettle` so there is
+      // no 10 s settle-loop and no leaked animation timer.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
       await tester.tap(find.byType(SettingsTreeRow).first);
       await tester.pump();
       final path = _containerOf(tester).read(settingsTreePathProvider);
@@ -133,7 +139,11 @@ void main() {
           find.byType(SettingsTreeRow).first,
           warnIfMissed: false,
         );
-        await tester.pumpAndSettle(const Duration(milliseconds: 400));
+        // Apply the open state, then advance a fixed 400 ms so the
+        // branch reveal animations settle deterministically without a
+        // `pumpAndSettle` settle-loop or a leaked ticker.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text('Backfill'), findsOneWidget);
         // Two node widgets: the branch + the leaf child.

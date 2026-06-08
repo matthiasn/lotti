@@ -48,3 +48,42 @@ extension AnyGeneratedOutboxStatus on Any {
   Generator<GeneratedOutboxStatus> get generatedOutboxStatus =>
       choose(GeneratedOutboxStatus.values);
 }
+
+/// Deletes every row from every table in [db] **without** recreating the
+/// schema, so a single `setUpAll`-opened in-memory [SyncDatabase] can be reused
+/// across all tests in a group/file while each test still starts from an empty
+/// database. The 24-step migration ladder then runs once per file instead of
+/// once per test. (Unlike `JournalDb`, `SyncDatabase` keeps no in-memory cache,
+/// so a table wipe fully resets its state.)
+///
+/// Foreign-key enforcement is toggled off for the sweep so delete order is
+/// irrelevant, and `db.allTables` guarantees no table is missed.
+Future<void> clearAllSyncTables(SyncDatabase db) async {
+  await db.customStatement('PRAGMA foreign_keys = OFF');
+  // Enumerate from sqlite_master rather than `db.allTables`: some tables (e.g.
+  // sync_sequence_watermarks) are created via raw migration SQL and are NOT in
+  // the Drift-declared set, so allTables would silently leave them uncleared —
+  // a real cross-test contamination source.
+  final tables = await db
+      .customSelect(
+        "SELECT name FROM sqlite_master WHERE type = 'table' "
+        "AND name NOT LIKE 'sqlite_%' AND name != 'android_metadata'",
+      )
+      .get();
+  for (final row in tables) {
+    await db.customStatement('DELETE FROM ${row.read<String>('name')}');
+  }
+  // Reset AUTOINCREMENT counters so rowids restart at 1 (matching a fresh DB),
+  // which id-asserting tests rely on. sqlite_sequence only exists when some
+  // table uses AUTOINCREMENT.
+  final hasSequence = await db
+      .customSelect(
+        'SELECT 1 FROM sqlite_master '
+        "WHERE type = 'table' AND name = 'sqlite_sequence'",
+      )
+      .get();
+  if (hasSequence.isNotEmpty) {
+    await db.customStatement('DELETE FROM sqlite_sequence');
+  }
+  await db.customStatement('PRAGMA foreign_keys = ON');
+}

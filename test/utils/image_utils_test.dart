@@ -63,6 +63,24 @@ void main() {
       },
       tags: 'glados',
     );
+
+    // The two concrete null tests above pin both platform branches; this
+    // property proves the `absolutePath?.split(...)` null-safety guard holds
+    // for *either* value of isAndroid, so neither branch can dereference null.
+    glados.Glados(
+      glados.AnyUtils(glados.any).choose(const [true, false]),
+      glados.ExploreConfig(numRuns: 96),
+    ).test(
+      'returns null for a null absolutePath regardless of platform',
+      (isAndroid) {
+        expect(
+          getRelativeAssetPath(null, isAndroid: isAndroid),
+          isNull,
+          reason: 'isAndroid=$isAndroid',
+        );
+      },
+      tags: 'glados',
+    );
   });
 
   group('getRelativeImagePath', () {

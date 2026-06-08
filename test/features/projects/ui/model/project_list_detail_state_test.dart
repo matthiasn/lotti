@@ -183,6 +183,22 @@ void main() {
     });
 
     group('copyWith', () {
+      test('with no arguments preserves every field value', () {
+        // ProjectListDetailState has no value equality, so assert each field
+        // individually to confirm no default-argument drift.
+        final copy = state.copyWith();
+
+        expect(copy.data, same(state.data));
+        expect(copy.filter, same(state.filter));
+        expect(copy.selectedProjectId, state.selectedProjectId);
+        // Derived getters reflect the same underlying values.
+        expect(copy.searchQuery, state.searchQuery);
+        expect(
+          copy.selectedProject?.project.meta.id,
+          state.selectedProject?.project.meta.id,
+        );
+      });
+
       test('preserves unchanged fields', () {
         final nextFilter = state.filter.copyWith(textQuery: 'test');
         final copy = state.copyWith(filter: nextFilter);

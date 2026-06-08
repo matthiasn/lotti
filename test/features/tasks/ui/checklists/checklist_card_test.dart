@@ -8,6 +8,7 @@ import 'package:lotti/features/tasks/ui/checklists/checklist_card.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklist_item_row.dart';
 import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
+import 'package:lotti/themes/colors.dart';
 import 'package:lotti/utils/platform.dart' as platform_utils;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -153,15 +154,17 @@ void main() {
         expect(readBorderColor(), tokens.colors.decorative.level01);
 
         // Tap into the field → focus → border fades to the interactive
-        // accent.
+        // accent. The cross-fade is a fixed 200 ms AnimatedContainer, so a
+        // bounded pump past that duration is enough — no open-ended
+        // pumpAndSettle (which risks the 10 s timeout) is needed.
         await tester.tap(find.byKey(_addFieldKey));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 250));
         expect(readBorderColor(), tokens.colors.interactive.enabled);
 
         // Defocus by tapping the header title area; the border should
         // fade back to the decorative hairline.
         FocusManager.instance.primaryFocus?.unfocus();
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 250));
         expect(readBorderColor(), tokens.colors.decorative.level01);
       },
     );
@@ -233,12 +236,14 @@ void main() {
 
         expect(readBorderWidth(), 1.0);
 
+        // Bounded pumps past the 200 ms focus cross-fade make the timing
+        // intent explicit and avoid the pumpAndSettle 10 s timeout risk.
         await tester.tap(find.byKey(_addFieldKey));
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 250));
         expect(readBorderWidth(), 1.0);
 
         FocusManager.instance.primaryFocus?.unfocus();
-        await tester.pumpAndSettle();
+        await tester.pump(const Duration(milliseconds: 250));
         expect(readBorderWidth(), 1.0);
       },
     );
@@ -1145,6 +1150,46 @@ void main() {
           ),
           0,
         );
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('buildChecklistProgressRing — properties', () {
+    // The helper is a pure widget factory: no BuildContext is needed, so it
+    // can be invoked directly and the returned tree inspected without pumping.
+    //
+    // NOTE on "clamping": the `CircularProgressIndicator.value` field stores
+    // the raw input verbatim — Flutter only clamps to [0, 1] internally via its
+    // private `_effectiveValue`/painter when rendering. Asserting that private
+    // render-time clamp would be testing a third-party implementation detail.
+    // The invariant that belongs to *our* code is that the helper forwards
+    // `completionRate` to the indicator unmodified for ANY input (including
+    // out-of-range / NaN-adjacent extremes); a future provider arithmetic bug
+    // that mangles the rate before it reaches the ring would break this.
+    glados.Glados<int>(
+      // ‰ steps spanning well past both ends of [0, 1] to cover negative and
+      // > 1 inputs the provider could theoretically emit.
+      glados.any.intInRange(-500, 2001),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'forwards completionRate verbatim to the indicator value and always '
+      'paints the success color',
+      (ratePermille) {
+        final rate = ratePermille / 1000;
+
+        final ring = buildChecklistProgressRing(
+          completionRate: rate,
+          lowEmphasisColor: dsTokensLight.colors.text.lowEmphasis,
+          semanticsLabel: 'progress',
+        );
+
+        final sizedBox = ring as SizedBox;
+        final indicator = sizedBox.child! as CircularProgressIndicator;
+
+        expect(indicator.value, rate, reason: 'rate=$rate was not forwarded');
+        expect(indicator.color, successColor);
+        expect(indicator.semanticsLabel, 'progress');
       },
       tags: 'glados',
     );

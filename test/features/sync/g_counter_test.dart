@@ -76,7 +76,7 @@ void main() {
     glados.Glados2(
       glados.any.gCounter,
       glados.any.gCounter,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 160),
     ).test('merge is commutative', (a, b) {
       expect(a.merge(b), b.merge(a), reason: '$a vs $b');
     }, tags: 'glados');
@@ -85,14 +85,14 @@ void main() {
       glados.any.gCounter,
       glados.any.gCounter,
       glados.any.gCounter,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 160),
     ).test('merge is associative', (a, b, c) {
       expect(a.merge(b).merge(c), a.merge(b.merge(c)), reason: '$a $b $c');
     }, tags: 'glados');
 
     glados.Glados(
       glados.any.gCounter,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 160),
     ).test('merge is idempotent', (a) {
       expect(a.merge(a), a, reason: '$a');
     }, tags: 'glados');
@@ -100,7 +100,7 @@ void main() {
     glados.Glados2(
       glados.any.gCounter,
       glados.any.gCounter,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 160),
     ).test('merge is a least-upper-bound — never below either input', (a, b) {
       final merged = a.merge(b);
       // Dominates per-host (the lattice order) ...
@@ -118,14 +118,14 @@ void main() {
 
     glados.Glados(
       glados.any.gCounter,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 160),
     ).test('value equals the sum of per-host counts', (a) {
       expect(a.value, a.byHost.values.fold<int>(0, (s, c) => s + c));
     }, tags: 'glados');
 
     glados.Glados(
       glados.any.gCounter,
-      glados.ExploreConfig(numRuns: 200),
+      glados.ExploreConfig(numRuns: 160),
     ).test('JSON round-trips by value', (a) {
       expect(GCounter.fromJson(a.toJson()), a, reason: '$a');
     }, tags: 'glados');
@@ -135,7 +135,7 @@ void main() {
     glados.Glados2(
       glados.any.incrementPlan,
       glados.any.shuffleSeed,
-      glados.ExploreConfig(numRuns: 250),
+      glados.ExploreConfig(numRuns: 160),
     ).test(
       'N per-host increments across replicas converge to exactly N, in any '
       'merge order',

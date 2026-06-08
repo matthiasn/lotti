@@ -6,12 +6,19 @@ import 'package:lotti/features/sync/vector_clock.dart';
 void main() {
   late NotificationsDb db;
 
-  setUp(() {
+  setUpAll(() {
     db = NotificationsDb(inMemoryDatabase: true, background: false);
   });
 
-  tearDown(() async {
+  tearDownAll(() async {
     await db.close();
+  });
+
+  tearDown(() async {
+    // NotificationsDb keeps no in-memory row cache, so truncating the single
+    // `notifications` table fully resets state and keeps tests
+    // order-independent.
+    await db.customStatement('DELETE FROM notifications');
   });
 
   group('NotificationsDb', () {

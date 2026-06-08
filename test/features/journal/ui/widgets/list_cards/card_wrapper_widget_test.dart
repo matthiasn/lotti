@@ -386,12 +386,17 @@ void main() {
         final badgeFinder = find.byKey(const Key('distanceBadge'));
         expect(badgeFinder, findsOneWidget);
         expect(find.text(distance.toStringAsFixed(2)), findsOneWidget);
-        final container = tester.widget<Container>(
-          find.descendant(
-            of: badgeFinder,
-            matching: find.byType(Container),
-          ),
+        // The colored Container is the badge's single decorated descendant.
+        // Asserting exactly one guards the finder against silently picking the
+        // wrong Container if _DistanceBadge ever gains a wrapper layer; the
+        // colour→band mapping itself is exhaustively pinned by the
+        // colorForVectorDistance property test below.
+        final containerFinder = find.descendant(
+          of: badgeFinder,
+          matching: find.byType(Container),
         );
+        expect(containerFinder, findsOneWidget, reason: 'd=$distance');
+        final container = tester.widget<Container>(containerFinder);
         final decoration = container.decoration! as BoxDecoration;
         expect(decoration.color, expectedColor, reason: 'd=$distance');
       });

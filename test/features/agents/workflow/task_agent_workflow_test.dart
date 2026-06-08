@@ -2821,8 +2821,32 @@ void main() {
     });
 
     group('_buildUserMessage context', () {
-      /// Helper that sets up the common stubs for a successful execute, and
-      /// captures the user message string sent to the conversation.
+      // The stubs that never vary between tests in this group are applied once
+      // per test here (the file-level setUp creates fresh mocks first), so the
+      // executeAndCaptureMessage helper only sets up the parameter-dependent
+      // stubs each call.
+      setUp(() {
+        when(
+          () => mockAgentRepository.getAgentState(agentId),
+        ).thenAnswer((_) async => testAgentState);
+        when(
+          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
+        ).thenAnswer((_) async => '{"title":"Test Task"}');
+        when(
+          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
+        ).thenAnswer((_) async => [geminiModel]);
+        when(
+          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
+        ).thenAnswer((_) async => geminiProvider);
+        when(
+          () => mockAgentRepository.getReportHead(agentId, 'current'),
+        ).thenAnswer((_) async => null);
+        when(() => mockConversationManager.messages).thenReturn([]);
+      });
+
+      /// Helper that sets up the per-test (parameter-dependent) stubs for a
+      /// successful execute, and captures the user message string sent to the
+      /// conversation. Invariant stubs live in the group's [setUp] above.
       Future<String?> executeAndCaptureMessage({
         AgentReportEntity? lastReport,
         List<AgentMessageEntity> observations = const [],
@@ -2864,9 +2888,6 @@ void main() {
         ];
 
         when(
-          () => mockAgentRepository.getAgentState(agentId),
-        ).thenAnswer((_) async => testAgentState);
-        when(
           () => mockAgentRepository.getLatestReport(agentId, 'current'),
         ).thenAnswer((_) async => lastReport);
         when(
@@ -2875,9 +2896,6 @@ void main() {
             AgentMessageKind.observation,
           ),
         ).thenAnswer((_) async => observations);
-        when(
-          () => mockAiInputRepository.buildTaskDetailsJson(id: taskId),
-        ).thenAnswer((_) async => '{"title":"Test Task"}');
         when(
           () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
         ).thenAnswer((_) async => projectContextJson);
@@ -2910,17 +2928,6 @@ void main() {
             ),
           ).thenAnswer((_) async => attentionClaims);
         }
-        when(
-          () => mockAiConfigRepository.getConfigsByType(AiConfigType.model),
-        ).thenAnswer((_) async => [geminiModel]);
-        when(
-          () => mockAiConfigRepository.getConfigById('gemini-provider-001'),
-        ).thenAnswer((_) async => geminiProvider);
-        when(
-          () => mockAgentRepository.getReportHead(agentId, 'current'),
-        ).thenAnswer((_) async => null);
-        when(() => mockConversationManager.messages).thenReturn([]);
-
         String? capturedMessage;
         mockConversationRepository.sendMessageDelegate =
             ({
@@ -4937,41 +4944,42 @@ void main() {
       // queued for user review." and the actual validation/execution
       // happens when the user confirms the change set.
 
-      test('set_task_title with missing title arg is deferred', () async {
-        final result = await executeWithToolCallOnRealTask(
-          'set_task_title',
-          '{}',
-        );
-        expect(result.success, isTrue);
-        verifyDeferredToolResponse(mockConversationManager);
-      });
-
-      test('update_task_estimate with null minutes is deferred', () async {
-        final result = await executeWithToolCallOnRealTask(
+      // Deferred-tool invalid/empty-arg cases: validation happens at
+      // confirmation time, so the wake itself only records the proposal. Each
+      // test asserts the concrete LLM-facing tool response — that the named
+      // tool was reported as recorded with the "do not repeat" guidance —
+      // rather than only that the wake didn't crash.
+      for (final (label, toolName, arguments) in <(String, String, String)>[
+        ('set_task_title with missing title arg', 'set_task_title', '{}'),
+        (
+          'update_task_estimate with null minutes',
           'update_task_estimate',
           '{}',
-        );
-        expect(result.success, isTrue);
-        verifyDeferredToolResponse(mockConversationManager);
-      });
-
-      test('update_task_due_date with empty dueDate is deferred', () async {
-        final result = await executeWithToolCallOnRealTask(
+        ),
+        (
+          'update_task_due_date with empty dueDate',
           'update_task_due_date',
           '{"dueDate":""}',
-        );
-        expect(result.success, isTrue);
-        verifyDeferredToolResponse(mockConversationManager);
-      });
-
-      test('update_task_priority with empty priority is deferred', () async {
-        final result = await executeWithToolCallOnRealTask(
+        ),
+        (
+          'update_task_priority with empty priority',
           'update_task_priority',
           '{"priority":""}',
-        );
-        expect(result.success, isTrue);
-        verifyDeferredToolResponse(mockConversationManager);
-      });
+        ),
+      ]) {
+        test('$label is deferred with a recorded-proposal response', () async {
+          final result = await executeWithToolCallOnRealTask(
+            toolName,
+            arguments,
+          );
+          expect(result.success, isTrue);
+
+          final response = captureDeferredToolResponse(mockConversationManager);
+          expect(response, contains(toolName));
+          expect(response, contains('proposal recorded successfully'));
+          expect(response, contains('Do NOT call $toolName again'));
+        });
+      }
 
       test('assign_task_labels with non-array labels is deferred', () async {
         final result = await executeWithToolCallOnRealTask(

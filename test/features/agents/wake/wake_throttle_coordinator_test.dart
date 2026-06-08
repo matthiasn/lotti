@@ -497,6 +497,108 @@ void main() {
       });
     });
 
+    test(
+      'clearThrottle does not clobber a deadline re-armed during the '
+      'persisted-clear getAgentState gap (second containsKey guard)',
+      () {
+        // Drives the precise race the two `containsKey` guards in
+        // `_clearPersistedThrottle` defend against: a stale clear write must
+        // not null out `nextWakeAt` when a fresh `setDeadline` lands while the
+        // clear is still awaiting `getAgentState`. Guard 1 passes (the
+        // deadline was just removed by clearThrottle); the new deadline is
+        // injected during the await; guard 2 must catch it and skip the write.
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final getStateGate = Completer<AgentStateEntity?>();
+        final upserts = <AgentStateEntity>[];
+
+        // The clear path's getAgentState is the only call that must suspend on
+        // the gate; the initial and re-arming setDeadline reads resolve
+        // immediately. `gateClearRead` is flipped on only for the window
+        // bracketing clearThrottle, so the right call is the one that hangs.
+        var gateClearRead = false;
+        when(() => repository.getAgentState('agent-1')).thenAnswer((_) async {
+          if (gateClearRead) {
+            return getStateGate.future;
+          }
+          return makeTestState(
+            agentId: 'agent-1',
+            nextWakeAt: now.add(_generatedThrottleWindow),
+          );
+        });
+        when(() => repository.upsertEntity(any())).thenAnswer((
+          invocation,
+        ) async {
+          upserts.add(
+            invocation.positionalArguments.single as AgentStateEntity,
+          );
+        });
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            final coordinator = createCoordinator(
+              onDrainRequested: () async {},
+            );
+
+            try {
+              // Arm an initial deadline so the agent has a live throttle, then
+              // isolate the write log to just the clear/re-arm interleaving.
+              unawaited(coordinator.setDeadline('agent-1'));
+              async.flushMicrotasks();
+              upserts.clear();
+
+              // clearThrottle removes the in-memory deadline (guard 1 will
+              // pass) and starts _clearPersistedThrottle, which suspends inside
+              // the gated getAgentState. Gate only this read.
+              gateClearRead = true;
+              coordinator.clearThrottle('agent-1');
+              async.flushMicrotasks();
+              gateClearRead = false;
+              expect(coordinator.deadlineFor('agent-1'), isNull);
+
+              // Race: a fresh wake re-arms the deadline before the clear's
+              // getAgentState resolves.
+              unawaited(coordinator.setDeadline('agent-1'));
+              async.flushMicrotasks();
+              expect(
+                coordinator.deadlineFor('agent-1'),
+                now.add(_generatedThrottleWindow),
+              );
+
+              // Now let the stale clear resume — guard 2 must observe the
+              // re-armed deadline and bail out without writing nextWakeAt=null.
+              getStateGate.complete(
+                makeTestState(
+                  agentId: 'agent-1',
+                  nextWakeAt: now.add(_generatedThrottleWindow),
+                ),
+              );
+              async.flushMicrotasks();
+
+              expect(
+                upserts.where((s) => s.nextWakeAt == null),
+                isEmpty,
+                reason:
+                    'the stale clear must not null out a deadline that was '
+                    're-armed during the getAgentState gap',
+              );
+              expect(
+                upserts.single.nextWakeAt,
+                now.add(_generatedThrottleWindow),
+                reason: 'only the re-arming setDeadline should have persisted',
+              );
+              expect(
+                coordinator.deadlineFor('agent-1'),
+                now.add(_generatedThrottleWindow),
+                reason: 'the re-armed in-memory deadline survives the race',
+              );
+            } finally {
+              coordinator.dispose();
+            }
+          });
+        });
+      },
+    );
+
     glados.Glados(
       glados.any.throttleScenario,
       glados.ExploreConfig(numRuns: 180),

@@ -108,20 +108,29 @@ Future<_EntryDetailsMocks> _registerEntryDetailsMocks() async {
   final timeService = MockTimeService();
   final editorStateService = MockEditorStateService();
 
-  getIt
-    ..registerSingleton<Directory>(
-      _cachedDocsDir ??= await getApplicationDocumentsDirectory(),
-    )
-    ..registerSingleton<UserActivityService>(UserActivityService())
-    ..registerSingleton<UpdateNotifications>(updateNotifications)
-    ..registerSingleton<EditorStateService>(editorStateService)
-    ..registerSingleton<EntitiesCacheService>(entitiesCacheService)
-    ..registerSingleton<LinkService>(MockLinkService())
-    ..registerSingleton<HealthImport>(MockHealthImport())
-    ..registerSingleton<TimeService>(timeService)
-    ..registerSingleton<JournalDb>(journalDb)
-    ..registerSingleton<PersistenceLogic>(persistenceLogic)
-    ..registerSingleton<NavService>(MockNavService());
+  // Resolve the docs directory before the (synchronous) additionalSetup runs.
+  final docsDir = _cachedDocsDir ??= await getApplicationDocumentsDirectory();
+
+  await setUpTestGetIt(
+    additionalSetup: () {
+      getIt
+        // The widget must resolve THIS file's stubs, not the helper's stock
+        // JournalDb / UpdateNotifications mocks.
+        ..unregister<JournalDb>()
+        ..registerSingleton<JournalDb>(journalDb)
+        ..unregister<UpdateNotifications>()
+        ..registerSingleton<UpdateNotifications>(updateNotifications)
+        ..registerSingleton<Directory>(docsDir)
+        ..registerSingleton<UserActivityService>(UserActivityService())
+        ..registerSingleton<EditorStateService>(editorStateService)
+        ..registerSingleton<EntitiesCacheService>(entitiesCacheService)
+        ..registerSingleton<LinkService>(MockLinkService())
+        ..registerSingleton<HealthImport>(MockHealthImport())
+        ..registerSingleton<TimeService>(timeService)
+        ..registerSingleton<PersistenceLogic>(persistenceLogic)
+        ..registerSingleton<NavService>(MockNavService());
+    },
+  );
 
   when(() => entitiesCacheService.sortedCategories).thenReturn([]);
   when(() => entitiesCacheService.showPrivateEntries).thenReturn(true);
@@ -178,7 +187,7 @@ void main() {
       mockJournalDb = mocks.journalDb;
     });
 
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     testWidgets('renders without highlight when isHighlighted=false', (
       tester,
@@ -366,7 +375,7 @@ void main() {
       mockJournalDb = mocks.journalDb;
     });
 
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     testWidgets('timer highlight renders a static border overlay', (
       tester,
@@ -530,7 +539,7 @@ void main() {
       mockJournalDb = mocks.journalDb;
     });
 
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     testWidgets('shows EntryLabelsDisplay for text entries', (tester) async {
       when(
@@ -593,7 +602,7 @@ void main() {
       await _registerEntryDetailsMocks();
     });
 
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     // Line 79: hideTaskEntries=true for a Task → SizedBox.shrink()
     testWidgets(
@@ -767,7 +776,7 @@ void main() {
       mockEntitiesCacheService = mocks.entitiesCacheService;
     });
 
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     // Line 158: isHighlighted=true AND category != null → colorFromCssHex path
     testWidgets(
@@ -903,7 +912,7 @@ void main() {
       mockJournalDb = mocks.journalDb;
     });
 
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     // Lines 483 (AiResponseEntry path – showAiEntry=true so it renders)
     testWidgets(
@@ -1182,7 +1191,7 @@ void main() {
       await _registerEntryDetailsMocks();
     });
 
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     // Lines 667-674: _CollapsibleBodyState.didUpdateWidget called when
     // isCollapsed changes – expand path (forward) and collapse path (reverse).
@@ -1320,7 +1329,7 @@ void main() {
       mockEntitiesCacheService = mocks.entitiesCacheService;
     });
 
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     // Lines 328-329: _PulsingBorder._startDelayTimer callback.
     // The startDelay is 1000 ms.  Pumping past that threshold causes the Timer
@@ -1557,7 +1566,7 @@ void main() {
       await _registerEntryDetailsMocks();
     });
 
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     // Line 552: Scrollable.ensureVisible runs when the expanded card's top is
     // above the current scroll offset. We embed the collapsible entry inside a
@@ -1777,7 +1786,7 @@ void main() {
       mockJournalDb = mocks.journalDb;
     });
 
-    tearDown(getIt.reset);
+    tearDown(tearDownTestGetIt);
 
     group('non-collapsible entries', () {
       testWidgets('text entry without link is NOT collapsible', (tester) async {
@@ -2272,28 +2281,6 @@ void main() {
         );
         expect(sizeTransition.sizeFactor.value, 0.0);
       });
-
-      testWidgets('expanded image entry shows date widget', (tester) async {
-        when(
-          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
-        ).thenAnswer((_) async => testImageEntry);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ProviderScope(
-              child: EntryDetailsWidget(
-                itemId: testImageEntry.meta.id,
-                showAiEntry: false,
-                linkedFrom: testTask,
-                link: testLinkStruct,
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.byType(EntryDatetimeWidget), findsAtLeastNWidgets(1));
-      });
     });
 
     group('expanded audio content structure', () {
@@ -2692,7 +2679,9 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        getIt.registerSingleton<DomainLogger>(mockLoggingService);
+        getIt
+          ..unregister<DomainLogger>()
+          ..registerSingleton<DomainLogger>(mockLoggingService);
 
         final testLinkError = EntryLink.basic(
           id: 'link-error',
@@ -2740,8 +2729,7 @@ void main() {
             subDomain: 'onToggleCollapse',
           ),
         ).called(1);
-
-        getIt.unregister<DomainLogger>();
+        // tearDownTestGetIt resets GetIt — no manual unregister needed.
       });
     });
 

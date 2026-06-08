@@ -165,6 +165,32 @@ extension _AnyGeneratedPromptStreamScenario on glados.Any {
   );
 }
 
+/// Stubs the [MockDomainLogger.error] sink so error-path code can log without
+/// throwing on an unstubbed call. Shared by the file-level tests and the
+/// [_GeneratedSkillRunnerBench] so the stub shape lives in one place.
+void _stubLoggingExceptionFor(MockDomainLogger logger) {
+  when(
+    () => logger.error(
+      any<LogDomain>(),
+      any<Object>(),
+      stackTrace: any<StackTrace?>(named: 'stackTrace'),
+      subDomain: any<String>(named: 'subDomain'),
+    ),
+  ).thenReturn(null);
+}
+
+/// Stubs the [MockDomainLogger.log] sink for event-path code. Shared by the
+/// file-level tests and the [_GeneratedSkillRunnerBench].
+void _stubLoggingEventFor(MockDomainLogger logger) {
+  when(
+    () => logger.log(
+      any<LogDomain>(),
+      any<String>(),
+      subDomain: any<String>(named: 'subDomain'),
+    ),
+  ).thenReturn(null);
+}
+
 class _GeneratedSkillRunnerBench {
   _GeneratedSkillRunnerBench._({
     required this.cloudRepository,
@@ -232,26 +258,9 @@ class _GeneratedSkillRunnerBench {
     );
   }
 
-  void stubLoggingException() {
-    when(
-      () => loggingService.error(
-        any<LogDomain>(),
-        any<Object>(),
-        stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        subDomain: any<String>(named: 'subDomain'),
-      ),
-    ).thenReturn(null);
-  }
+  void stubLoggingException() => _stubLoggingExceptionFor(loggingService);
 
-  void stubLoggingEvent() {
-    when(
-      () => loggingService.log(
-        any<LogDomain>(),
-        any<String>(),
-        subDomain: any<String>(named: 'subDomain'),
-      ),
-    ).thenReturn(null);
-  }
+  void stubLoggingEvent() => _stubLoggingEventFor(loggingService);
 
   void dispose() {
     container.dispose();
@@ -478,26 +487,9 @@ void main() {
     );
   }
 
-  void stubLoggingException() {
-    when(
-      () => mockLoggingService.error(
-        any<LogDomain>(),
-        any<Object>(),
-        stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        subDomain: any<String>(named: 'subDomain'),
-      ),
-    ).thenReturn(null);
-  }
+  void stubLoggingException() => _stubLoggingExceptionFor(mockLoggingService);
 
-  void stubLoggingEvent() {
-    when(
-      () => mockLoggingService.log(
-        any<LogDomain>(),
-        any<String>(),
-        subDomain: any<String>(named: 'subDomain'),
-      ),
-    ).thenReturn(null);
-  }
+  void stubLoggingEvent() => _stubLoggingEventFor(mockLoggingService);
 
   setUpAll(registerAllFallbackValues);
 

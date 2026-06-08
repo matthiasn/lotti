@@ -687,11 +687,11 @@ void main() {
       );
     });
 
-    /// Sizes the surface tall enough for bottom sheets, pumps the page in
-    /// its default loaded state, and returns the mounted content widget.
-    Future<ProjectMobileDetailContent> pumpForModal(
-      WidgetTester tester,
-    ) async {
+    /// Sizes the test surface tall enough for bottom-sheet / modal content to
+    /// lay out without overflow, and registers the reset teardown. Shared by
+    /// `pumpForModal` and the category-modal tests that build their own
+    /// overrides.
+    void sizeViewForModal(WidgetTester tester) {
       tester.view
         ..physicalSize = const Size(430, 1200)
         ..devicePixelRatio = 1.0;
@@ -699,6 +699,14 @@ void main() {
         tester.view.resetPhysicalSize();
         tester.view.resetDevicePixelRatio();
       });
+    }
+
+    /// Sizes the surface tall enough for bottom sheets, pumps the page in
+    /// its default loaded state, and returns the mounted content widget.
+    Future<ProjectMobileDetailContent> pumpForModal(
+      WidgetTester tester,
+    ) async {
+      sizeViewForModal(tester);
 
       await pumpPageWithData(
         tester,
@@ -842,13 +850,7 @@ void main() {
       testWidgets(
         'tapping onCategoryTap opens the category selection modal',
         (tester) async {
-          tester.view
-            ..physicalSize = const Size(430, 1200)
-            ..devicePixelRatio = 1.0;
-          addTearDown(() {
-            tester.view.resetPhysicalSize();
-            tester.view.resetDevicePixelRatio();
-          });
+          sizeViewForModal(tester);
 
           // CategorySelectionModalContent requires EntitiesCacheService
           // from GetIt.
@@ -1085,13 +1087,7 @@ void main() {
         'selecting a category from the modal calls updateCategoryId and '
         'saveChanges on the controller',
         (tester) async {
-          tester.view
-            ..physicalSize = const Size(430, 1200)
-            ..devicePixelRatio = 1.0;
-          addTearDown(() {
-            tester.view.resetPhysicalSize();
-            tester.view.resetDevicePixelRatio();
-          });
+          sizeViewForModal(tester);
 
           final testCategory = CategoryTestUtils.createTestCategory(
             id: 'cat-select-1',

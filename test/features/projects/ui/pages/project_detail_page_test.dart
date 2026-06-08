@@ -22,6 +22,7 @@ import 'package:lotti/features/projects/ui/widgets/project_status_picker.dart';
 import 'package:lotti/features/projects/ui/widgets/project_target_date_field.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/ui/error_state_widget.dart';
 import 'package:mocktail/mocktail.dart';
@@ -116,12 +117,16 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  /// Pumps the [ProjectDetailPage] with the given [controllerState] and
-  /// optional [agentOverride].
+  /// Pumps the [ProjectDetailPage] with the given [controllerState].
+  ///
+  /// By default the `projectAgentProvider` resolves to [projectAgent]. Pass
+  /// [agentError] to make it complete with an error instead — used to assert
+  /// that the agent card silently hides on a provider failure.
   Future<_TestProjectDetailController> pumpPage(
     WidgetTester tester, {
     required ProjectDetailState controllerState,
     AgentDomainEntity? projectAgent,
+    Exception? agentError,
     String? categoryId,
     List<Override> extraOverrides = const [],
   }) async {
@@ -147,7 +152,10 @@ void main() {
             () => controller,
           ),
           projectAgentProvider('test-project-id').overrideWith(
-            (ref) async => projectAgent,
+            (ref) async {
+              if (agentError != null) throw agentError;
+              return projectAgent;
+            },
           ),
           ...extraOverrides,
         ],
@@ -287,6 +295,37 @@ void main() {
 
         expect(find.byType(ProjectAgentReportCard), findsOneWidget);
       });
+
+      testWidgets(
+        'agent card silently hides when projectAgentProvider errors',
+        (tester) async {
+          await pumpPage(
+            tester,
+            controllerState: defaultState(),
+            agentError: Exception('agent load failed'),
+          );
+
+          final context = tester.element(find.byType(ProjectDetailPage));
+
+          // The card widget is always built, but on a provider error it
+          // collapses to SizedBox.shrink(): neither the section title nor
+          // the "not provisioned" affordance should render, and the error
+          // must not surface to the user.
+          expect(find.byType(ProjectAgentReportCard), findsOneWidget);
+          expect(
+            find.descendant(
+              of: find.byType(ProjectAgentReportCard),
+              matching: find.byType(SizedBox),
+            ),
+            findsOneWidget,
+          );
+          expect(
+            find.text(context.messages.projectAgentNotProvisioned),
+            findsNothing,
+          );
+          expect(tester.takeException(), isNull);
+        },
+      );
 
       testWidgets('shows project health indicator near the top', (
         tester,

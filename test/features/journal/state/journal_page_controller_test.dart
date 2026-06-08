@@ -6,6 +6,7 @@ import 'package:fake_async/fake_async.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -191,6 +192,95 @@ void main() {
           expect(controller.debugPostFilterNextRawOffset, 555);
         });
       });
+
+      // -------------------------------------------------------------------
+      // Glados: pagination boundary arithmetic.
+      //
+      // For a chain of consecutively-keyed pages, the next page key is the
+      // exclusive end offset of the last page (`lastKey + lastPage.length`)
+      // when every loaded page is full, and `null` the moment the last page
+      // comes back short (the data is exhausted). These properties pin that
+      // arithmetic across arbitrary page counts and last-page sizes.
+      // -------------------------------------------------------------------
+      glados.Glados2(
+        glados.IntAnys(glados.any).intInRange(1, 7),
+        // [0, pageSize] inclusive — the upper bound exercises the full-last-page
+        // branch (intInRange's max is exclusive, hence the +1).
+        glados.IntAnys(
+          glados.any,
+        ).intInRange(0, JournalPageController.pageSize + 1),
+        glados.ExploreConfig(numRuns: 120),
+      ).test('next key is the cumulative end offset for full-page chains', (
+        numFullPages,
+        lastPageLen,
+      ) {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(false).notifier,
+          );
+          settle(async);
+          controller.debugPostFilterNextRawOffset = null;
+
+          const pageSize = JournalPageController.pageSize;
+
+          // Build a chain of [numFullPages] full pages followed by one page
+          // of [lastPageLen] items, with keys = cumulative start offsets.
+          final pages = <List<JournalEntity>>[
+            for (var i = 0; i < numFullPages; i++) page(pageSize),
+            page(lastPageLen),
+          ];
+          final keys = <int>[];
+          var offset = 0;
+          for (final p in pages) {
+            keys.add(offset);
+            offset += p.length;
+          }
+
+          final state = PagingState<int, JournalEntity>(
+            keys: keys,
+            pages: pages,
+          );
+          final next = controller.debugGetNextPageKey(state);
+
+          if (lastPageLen < pageSize) {
+            // Short last page -> data exhausted -> no further page.
+            expect(next, isNull, reason: 'len=$lastPageLen pages=$numFullPages');
+          } else {
+            // Every page full -> next key is the exclusive end offset, which
+            // equals lastKey + lastPage.length and the total item count.
+            final totalItems = pages.fold<int>(0, (sum, p) => sum + p.length);
+            expect(next, totalItems, reason: 'pages=${numFullPages + 1}');
+            expect(next, keys.last + pages.last.length);
+          }
+        });
+      }, tags: 'glados');
+
+      glados.Glados(
+        glados.IntAnys(glados.any).intInRange(0, 100000),
+        glados.ExploreConfig(numRuns: 120),
+      ).test('a pending post-filter offset wins and is consumed exactly once', (
+        rawOffset,
+      ) {
+        fakeAsync((async) {
+          final controller = container.read(
+            journalPageControllerProvider(false).notifier,
+          );
+          settle(async);
+
+          const pageSize = JournalPageController.pageSize;
+          final fullState = PagingState<int, JournalEntity>(
+            keys: const [0],
+            pages: [page(pageSize)],
+          );
+
+          controller.debugPostFilterNextRawOffset = rawOffset;
+          // First call returns the override and consumes it.
+          expect(controller.debugGetNextPageKey(fullState), rawOffset);
+          expect(controller.debugPostFilterNextRawOffset, isNull);
+          // Second call falls back to the computed cumulative key.
+          expect(controller.debugGetNextPageKey(fullState), pageSize);
+        });
+      }, tags: 'glados');
     });
 
     group('Initialization', () {
@@ -636,7 +726,7 @@ void main() {
     });
 
     group('Getters for Testing', () {
-      test('selectedEntryTypesInternal returns internal set', () {
+      test('selectedEntryTypesInternal exposes the full default set', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(false).notifier,
@@ -644,11 +734,21 @@ void main() {
 
           settle(async);
 
-          expect(controller.selectedEntryTypesInternal, isNotEmpty);
+          // No config-flag event has been emitted, so the controller keeps the
+          // full default selection (`entryTypes`) it was constructed with.
+          expect(
+            controller.selectedEntryTypesInternal,
+            equals(entryTypes.toSet()),
+          );
+          // The getter exposes the same set the controller publishes in state.
+          expect(
+            controller.selectedEntryTypesInternal,
+            equals(controller.state.selectedEntryTypes.toSet()),
+          );
         });
       });
 
-      test('filtersInternal returns internal filters set', () {
+      test('filtersInternal reflects the exact set passed to setFilters', () {
         fakeAsync((async) {
           final controller = container.read(
             journalPageControllerProvider(false).notifier,
@@ -656,13 +756,28 @@ void main() {
 
           settle(async);
 
-          controller.setFilters({DisplayFilter.starredEntriesOnly});
+          // Initial filters set is empty.
+          expect(controller.filtersInternal, isEmpty);
+
+          controller.setFilters({
+            DisplayFilter.starredEntriesOnly,
+            DisplayFilter.flaggedEntriesOnly,
+          });
 
           settle(async);
 
+          // The getter returns exactly what was set — no more, no less — and
+          // mirrors the published state.
           expect(
             controller.filtersInternal,
-            contains(DisplayFilter.starredEntriesOnly),
+            equals({
+              DisplayFilter.starredEntriesOnly,
+              DisplayFilter.flaggedEntriesOnly,
+            }),
+          );
+          expect(
+            controller.filtersInternal,
+            equals(controller.state.filters),
           );
         });
       });

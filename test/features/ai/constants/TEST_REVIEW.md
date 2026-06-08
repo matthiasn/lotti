@@ -17,13 +17,14 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `test/features/ai/constants/provider_config_test.dart` — 241 lines for 110 lines of impl. Reasonable ratio; no split needed.
+- [x] **[LOW]** `test/features/ai/constants/provider_config_test.dart` — 241 lines for 110 lines of impl. Reasonable ratio; no split needed.
+  **RESOLVED:** Confirmed by reading the file — ratio is reasonable and the single source file maps to a single test file per the one-test-file-per-source rule. No split.
 
 ---
 
 ## Test quality improvements
 
-- [ ] **[MED]** `provider_config_test.dart` — the `requiresApiKey` group (lines 197–238) lists each provider type individually in separate `expect` calls. This is a copy-paste permutation pattern: two groups (`should return false` and `should return true`) each enumerate several providers with identical structure. Replace with a table-driven loop over `ProviderConfig.noApiKeyRequired` and its complement:
+- [x] **[MED]** `provider_config_test.dart` — the `requiresApiKey` group (lines 197–238) lists each provider type individually in separate `expect` calls. This is a copy-paste permutation pattern: two groups (`should return false` and `should return true`) each enumerate several providers with identical structure. Replace with a table-driven loop over `ProviderConfig.noApiKeyRequired` and its complement:
   ```dart
   for (final type in ProviderConfig.noApiKeyRequired) {
     expect(ProviderConfig.requiresApiKey(type), isFalse, reason: '$type');
@@ -35,15 +36,20 @@
   }
   ```
   This removes ~20 lines and automatically stays correct when a new provider type is added.
-- [ ] **[MED]** `provider_config_test.dart` — `'genericOpenAi should require API key'` (line 144) is a duplicate of the individual assertion already inside `'should not include cloud providers or genericOpenAi'` (lines 120–141). One of the two should be removed.
-- [ ] **[LOW]** `provider_config_test.dart` — the `'should return empty string for unknown provider'` tests at lines 166–173 and 188–193 test `ProviderConfig.defaultBaseUrls[null] ?? ''` and `ProviderConfig.defaultNames[null] ?? ''` respectively. This tests `Map[null]` lookup (always null in Dart typed maps) rather than the `getDefaultBaseUrl`/`getDefaultName` methods. The `null` key cannot be passed to the typed `getDefaultBaseUrl(InferenceProviderType type)` method; the tests are testing the wrong thing. They should either be removed or changed to verify the `??` fallback in the actual methods (which is unreachable via the typed API). Remove them.
+  **RESOLVED:** Replaced both `requiresApiKey` enumeration tests with two table-driven loops — one over `ProviderConfig.noApiKeyRequired` (asserts `isFalse`) and one over `InferenceProviderType.values` minus that set (asserts `isTrue`), each with a `reason`. New types are now covered automatically.
+- [x] **[MED]** `provider_config_test.dart` — `'genericOpenAi should require API key'` (line 144) is a duplicate of the individual assertion already inside `'should not include cloud providers or genericOpenAi'` (lines 120–141). One of the two should be removed.
+  **RESOLVED:** Removed the standalone `'genericOpenAi should require API key'` test; the `genericOpenAi` membership assertion remains inside `'should not include cloud providers or genericOpenAi'`, and the `requiresApiKey` loop also now covers it.
+- [x] **[LOW]** `provider_config_test.dart` — the `'should return empty string for unknown provider'` tests at lines 166–173 and 188–193 test `ProviderConfig.defaultBaseUrls[null] ?? ''` and `ProviderConfig.defaultNames[null] ?? ''` respectively. This tests `Map[null]` lookup (always null in Dart typed maps) rather than the `getDefaultBaseUrl`/`getDefaultName` methods. The `null` key cannot be passed to the typed `getDefaultBaseUrl(InferenceProviderType type)` method; the tests are testing the wrong thing. They should either be removed or changed to verify the `??` fallback in the actual methods (which is unreachable via the typed API). Remove them.
+  **RESOLVED:** Removed both `Map[null]` tests — the `??` fallback is unreachable via the typed enum API, so the tests asserted nothing about real behavior.
 
 ---
 
 ## Generative (Glados) testing opportunities
 
-- [ ] **[LOW]** `ProviderConfig` is a pure constants class with no logic beyond simple `Set.contains` and `Map` lookups. There is no non-trivial pure logic that Glados could explore. Skip.
-- [ ] **[MED]** `AiConfigInferenceProviderUsability.isUsable` (lines 98–109) contains a three-way boolean expression. A Glados property over `(apiKey, providerType, baseUrl)` triples would comprehensively verify the combined conditions. However, since the conditions are a simple conjunction of two `Set.contains` and two `String.isNotEmpty` checks, a small explicit truth-table (4 rows) is equally thorough and more readable. Prefer the truth-table approach; Glados not needed here.
+- [x] **[LOW]** `ProviderConfig` is a pure constants class with no logic beyond simple `Set.contains` and `Map` lookups. There is no non-trivial pure logic that Glados could explore. Skip.
+  **RESOLVED:** Confirmed by reading `provider_config.dart` — every method is a `Map`/`Set` lookup with no derived logic. No Glados candidate.
+- [x] **[MED]** `AiConfigInferenceProviderUsability.isUsable` (lines 98–109) contains a three-way boolean expression. A Glados property over `(apiKey, providerType, baseUrl)` triples would comprehensively verify the combined conditions. However, since the conditions are a simple conjunction of two `Set.contains` and two `String.isNotEmpty` checks, a small explicit truth-table (4 rows) is equally thorough and more readable. Prefer the truth-table approach; Glados not needed here.
+  **RESOLVED:** The four-row truth-table tests for `isUsable` (added under the HIGH item) cover each branch: non-empty key, keyless-with/without base URL, `mlxAudio` keyless-and-baseUrl-less, and key-requiring-without-key. Whitespace-only inputs exercise the `trim()` path. No Glados added.
 
 ---
 
@@ -55,14 +61,17 @@
   3. `apiKey` is empty AND provider does not require a key AND does not use a base URL (`mlxAudio`) → usable.
   4. Anything else → not usable.
   Add explicit tests for all four cases using `AiConfig.inferenceProvider(...)` instances.
-- [ ] **[MED]** `ProviderConfig.noBaseUrlRequired` (line 67) — tested only indirectly by the `'should have valid URLs'` test (lines 28–44). The set currently contains only `mlxAudio`. Add an explicit test that `ProviderConfig.usesBaseUrl(InferenceProviderType.mlxAudio)` returns `false` and that all other types return `true`.
-- [ ] **[LOW]** `ProviderConfig.defaultBaseUrls` and `ProviderConfig.defaultNames` have individual spot-checks only for alibaba and genericOpenAi. While exhaustive spot-checks are not needed (the `'should have correct URL'` / `'should have non-empty names'` tests loop over all), adding one more random provider (e.g. openRouter) to the spot-check table would catch transposition errors.
+- [x] **[MED]** `ProviderConfig.noBaseUrlRequired` (line 67) — tested only indirectly by the `'should have valid URLs'` test (lines 28–44). The set currently contains only `mlxAudio`. Add an explicit test that `ProviderConfig.usesBaseUrl(InferenceProviderType.mlxAudio)` returns `false` and that all other types return `true`.
+  **RESOLVED:** Added a `usesBaseUrl` group with a `'returns false only for mlxAudio'` test that asserts `usesBaseUrl(mlxAudio)` is `false` and loops over the remaining `InferenceProviderType.values` asserting `isTrue`.
+- [x] **[LOW]** `ProviderConfig.defaultBaseUrls` and `ProviderConfig.defaultNames` have individual spot-checks only for alibaba and genericOpenAi. While exhaustive spot-checks are not needed (the `'should have correct URL'` / `'should have non-empty names'` tests loop over all), adding one more random provider (e.g. openRouter) to the spot-check table would catch transposition errors.
+  **RESOLVED:** Added `openRouter` spot-checks — `defaultBaseUrls[openRouter]` == `https://openrouter.ai/api/v1` and `defaultNames[openRouter]` == `OpenRouter`.
 
 ---
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** All tests are synchronous constant lookups. No I/O, no timers. No speed improvements needed.
+- [x] **[LOW]** All tests are synchronous constant lookups. No I/O, no timers. No speed improvements needed.
+  **RESOLVED:** Confirmed — all tests (including the new ones) are synchronous map/set lookups and pure extension-getter evaluations. No I/O or timers.
 
 ---
 

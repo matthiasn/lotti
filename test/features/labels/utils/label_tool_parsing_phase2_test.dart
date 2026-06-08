@@ -14,6 +14,32 @@ import 'package:glados/glados.dart'
         any;
 import 'package:lotti/features/labels/utils/label_tool_parsing.dart';
 
+/// The four confidence strings the parser treats as canonical, mapped to the
+/// rank the parser assigns them. This mirrors the private `_confidenceToRank` /
+/// `_normalizeConfidence` contract so we can probe it through the public parser.
+const _canonicalConfidenceRanks = <String, int>{
+  'very_high': 3,
+  'high': 2,
+  'medium': 1,
+  'low': 0,
+};
+
+extension _AnyConfidenceString on Any {
+  /// Generates a confidence value: either one of the four canonical strings or
+  /// an arbitrary "junk" string (which must normalize to 'medium'/rank 1).
+  Generator<String> get confidenceProbe => choose([
+    ..._canonicalConfidenceRanks.keys,
+    'unexpected',
+    'VERY_HIGH',
+    'High',
+    '',
+    'highish',
+    'low ',
+    '1',
+    'none',
+  ]);
+}
+
 enum _GeneratedLabelCandidateShape { map, string, number, nullValue }
 
 enum _GeneratedLabelIdShape {
@@ -499,5 +525,98 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+
+  // Focused property tests pinning the private `_confidenceToRank` /
+  // `_normalizeConfidence` contract through the public parser, per TEST_REVIEW.
+  group('confidence normalization / rank contract', () {
+    bool isCanonical(String s) => _canonicalConfidenceRanks.containsKey(s);
+
+    Glados(any.confidenceProbe, ExploreConfig(numRuns: 120)).test(
+      'a single candidate is bucketed into exactly one valid confidence; '
+      'unknown values normalize to medium',
+      (confidence) {
+        final args = jsonEncode({
+          'labels': [
+            {'id': 'only', 'confidence': confidence},
+          ],
+        });
+
+        final result = parseLabelCallArgs(args);
+        final breakdown = result.confidenceBreakdown;
+
+        // Only the four canonical keys exist, and exactly one of them counts
+        // the single candidate -> normalized confidence is always one of four.
+        expect(
+          breakdown.keys.toSet(),
+          _canonicalConfidenceRanks.keys.toSet(),
+        );
+        expect(
+          breakdown.values.where((v) => v == 1).length,
+          1,
+          reason: 'the single candidate must land in exactly one bucket',
+        );
+        expect(breakdown.values.fold<int>(0, (a, b) => a + b), 1);
+
+        final bucket = breakdown.entries.firstWhere((e) => e.value == 1).key;
+        // Unknown / non-canonical confidences normalize to 'medium'.
+        if (!isCanonical(confidence)) {
+          expect(bucket, 'medium');
+        } else {
+          expect(bucket, confidence);
+        }
+      },
+      tags: 'glados',
+    );
+
+    Glados(any.confidenceProbe, ExploreConfig(numRuns: 120)).test(
+      'rank 0 (low) is dropped; rank > 0 is selected',
+      (confidence) {
+        final args = jsonEncode({
+          'labels': [
+            {'id': 'only', 'confidence': confidence},
+          ],
+        });
+
+        final result = parseLabelCallArgs(args);
+
+        // Effective rank: canonical lookup, else medium (rank 1) for unknowns.
+        final effectiveRank =
+            _canonicalConfidenceRanks[confidence] ??
+            _canonicalConfidenceRanks['medium']!;
+
+        // Rank is always within the 0..3 band.
+        expect(effectiveRank, inInclusiveRange(0, 3));
+
+        if (effectiveRank == 0) {
+          // 'low' is the only rank-0 confidence -> dropped, not selected.
+          expect(result.selectedIds, isEmpty);
+          expect(result.droppedLow, 1);
+        } else {
+          expect(result.selectedIds, ['only']);
+          expect(result.droppedLow, 0);
+        }
+      },
+      tags: 'glados',
+    );
+
+    test('ranks order selection very_high > high > medium and drop low', () {
+      // Deterministic ladder check covering all four ranks at once: the three
+      // non-low candidates are selected in strict descending rank order, and
+      // the low candidate is dropped.
+      final args = jsonEncode({
+        'labels': [
+          {'id': 'l_low', 'confidence': 'low'},
+          {'id': 'm', 'confidence': 'medium'},
+          {'id': 'vh', 'confidence': 'very_high'},
+          {'id': 'h', 'confidence': 'high'},
+        ],
+      });
+
+      final result = parseLabelCallArgs(args);
+
+      expect(result.selectedIds, ['vh', 'h', 'm']);
+      expect(result.droppedLow, 1);
+    });
   });
 }

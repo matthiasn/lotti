@@ -22,7 +22,8 @@
   - Both would share the `createAudio` / `cacheFileFor` / `buildPayload` / `writeCache` / `populateCacheEntries` helpers, which should be lifted into a `_TestBench` class or a `audio_waveform_test_utils.dart` companion file.
   **RESOLVED:** assessed, no change — a test-only split would violate the one-test-file-per-source rule (the impl is a single 500-line service the review itself rates as fine), and the shared helpers are closure-bound to the per-test temp dir, so a companion file would need a bench-object rewrite for marginal gain. The size is carried by legitimately branch-heavy real-I/O coverage.
 
-- [ ] **[LOW]** `lib/…/services/audio_waveform_service.dart` — 497 lines is within guidelines; no split needed.
+- [x] **[LOW]** `lib/…/services/audio_waveform_service.dart` — 497 lines is within guidelines; no split needed.
+  **RESOLVED:** confirmed true, no change — the service is a single cohesive unit (payload model, extraction, normalization, cache read/write/prune) at 509 lines after the `maxCacheEntries`/`debugNormalizeWaveform` seams; no natural extraction boundary, and splitting would create cross-dependencies for no benefit.
 
 ## Test quality improvements
 
@@ -32,9 +33,11 @@
 - [x] **[MED]** `test/…/services/audio_waveform_service_test.dart:1258–1277` — `handles very long audio ids` test has a conditional `if (cacheFile.existsSync())` that branches between two different assertions. A test should not have branching logic — it will silently pass in either branch. The behavior under the OS 255-char filename limit should be deterministic; explicitly test the truncation or skip the test on platforms where it applies.
   **RESOLVED:** done — the branch is gone: on this platform the ~300-char sanitized name deterministically exceeds the 255-byte filename limit, so the test now asserts the cache file does NOT exist and the `cache_write` error is logged exactly once.
 
-- [ ] **[LOW]** `test/…/services/audio_waveform_service_test.dart:158–186` — `buildPayload` helper is a 28-line method with many optional parameters, all providing defaults. This is fine, but `sampleCount` has a confusing semantics: it defaults to `bucketCount` but the actual field in cache is `sampleCount`. A short comment clarifying the field-name mapping would prevent future breakage.
+- [x] **[LOW]** `test/…/services/audio_waveform_service_test.dart:158–186` — `buildPayload` helper is a 28-line method with many optional parameters, all providing defaults. This is fine, but `sampleCount` has a confusing semantics: it defaults to `bucketCount` but the actual field in cache is `sampleCount`. A short comment clarifying the field-name mapping would prevent future breakage.
+  **RESOLVED:** done — `buildPayload` now carries a doc comment explaining the field-name mapping (`bucketCount` → JSON key `sampleCount`, mirroring `_AudioWaveformCachePayload.toJson`'s `actualSampleCount` → `sampleCount` serialization) and that `sampleCount` should only be overridden independently when deliberately testing a requested-vs-stored mismatch.
 
-- [ ] **[LOW]** `test/…/services/speech_dictionary_service_test.dart:11` — All top-level test data (`testCategory`, `testTask`, etc.) is defined at module scope rather than inside `setUp`. This is acceptable for immutable fixtures, but if any test ever mutates them the pollution risk is real. Keep as-is but note the pattern.
+- [x] **[LOW]** `test/…/services/speech_dictionary_service_test.dart:11` — All top-level test data (`testCategory`, `testTask`, etc.) is defined at module scope rather than inside `setUp`. This is acceptable for immutable fixtures, but if any test ever mutates them the pollution risk is real. Keep as-is but note the pattern.
+  **RESOLVED:** confirmed true, no change — verified no test mutates the module-scope fixtures; every fixture is a Freezed/immutable entity (`CategoryDefinition`, `Task`, `JournalAudio`, `JournalImage`, `JournalEntry`) and the one variant a test needs (`taskWithCategory2`) is built locally via `copyWith` rather than mutating the shared instance. No pollution risk under current usage; recommended pattern kept as-is.
 
 ## Generative (Glados) testing opportunities
 
@@ -45,7 +48,9 @@
   A Glados test could generate `(waveformLength: 1..200, targetBuckets: 1..300, flags: 0|1)` and verify the clamp invariant. This is pure math with no I/O.
   **RESOLVED:** done — `_normalizeWaveform` got a `@visibleForTesting debugNormalizeWaveform` seam; a Glados property (numRuns 150) over generated 16-bit waveforms × bucket targets asserts every amplitude ∈ [0, 1], `length == min(pixelCount, targetBuckets)`, and the no-downsampling identity when buckets ≥ pixels.
 
-- [ ] **[LOW]** `formatAudioDuration` in `lib/…/ui/widgets/progress/audio_progress_bar.dart` — a pure formatter. A Glados property `parse(format(Duration(seconds: n))) == clamp(n, 0, 359999)` would complement the existing hand-rolled fixtures. (Cross-reference with UI review.)
+- [x] **[LOW]** `formatAudioDuration` in `lib/…/ui/widgets/progress/audio_progress_bar.dart` — a pure formatter. A Glados property `parse(format(Duration(seconds: n))) == clamp(n, 0, 359999)` would complement the existing hand-rolled fixtures. (Cross-reference with UI review.)
+  **DEFERRED:** out of scope — `formatAudioDuration` lives in `lib/…/ui/widgets/progress/` and its test belongs under `test/features/speech/ui/widgets/…`, not `test/features/speech/services/`. The item is explicitly flagged for the UI review; adding the Glados test here would create an out-of-scope test file. Left for the UI-area pass.
+  - **RESOLVED:** already done — `audio_progress_bar_test` has a `glados`-tagged `formatAudioDuration` property plus mm:ss / hh:mm:ss examples; this services-review entry duplicates the resolved progress-bar item.
 
 Glados coverage now exists in `audio_waveform_service_test.dart` for the waveform
 normalization invariants (clamp + length + no-downsampling) via `debugNormalizeWaveform`.
@@ -58,7 +63,8 @@ normalization invariants (clamp + length + no-downsampling) via `debugNormalizeW
 - [x] **[MED]** `test/…/services/speech_dictionary_service_test.dart` — The service's handling of a `linkedId` that resolves to a non-`Task` entity type (e.g., a `JournalAudio`) is not tested. The `getForEntry` method likely returns an empty/null dictionary in that case; verify the contract.
   **RESOLVED:** stale — the non-Task contract is fully covered: text entry → `noCategory`, audio with no linked task → `noCategory`, and linked task without category → `noCategory` (method is `addTermForEntry`).
 
-- [ ] **[LOW]** `test/…/services/audio_waveform_service_test.dart` — The `_defaultWaveformExtractor` path test (lines 1535–1570) confirms logging happens when the platform channel fails, but does not assert the returned `result` state (currently `isNull` is implicitly confirmed by the surrounding code but not by an explicit `expect(result, isNull)`). Add the assertion for completeness.
+- [x] **[LOW]** `test/…/services/audio_waveform_service_test.dart` — The `_defaultWaveformExtractor` path test (lines 1535–1570) confirms logging happens when the platform channel fails, but does not assert the returned `result` state (currently `isNull` is implicitly confirmed by the surrounding code but not by an explicit `expect(result, isNull)`). Add the assertion for completeness.
+  **RESOLVED:** already satisfied — the test ("logs via DomainLogger when JustWaveform platform channel fails") already asserts `expect(result, isNull)` explicitly before verifying the `audio_waveform_extractor` error log. No change needed.
 
 ## Test execution speed opportunities
 
@@ -67,7 +73,8 @@ normalization invariants (clamp + length + no-downsampling) via `debugNormalizeW
 - [x] **[MED]** `test/…/services/audio_waveform_service_test.dart:1424–1460` and 1462–1523 — Two tests that use `chmod 000` / `chmod -w` system calls (via `Process.run`). These involve real OS calls and file system I/O, which is appropriate for testing permission-error branches. However, they both include inner `try/finally` blocks with a second `Process.run` for cleanup. Since these use real time, keep them but add a note that they are intentionally real-I/O tests and should not be moved to `fakeAsync`.
   **RESOLVED:** done — every chmod-based test now carries the note that it is intentionally real-I/O (Process.run mutates actual permissions, unmodellable in fakeAsync) and must not be migrated.
 
-- [ ] **[LOW]** `test/…/services/audio_waveform_service_test.dart:72–94` — `setUp` creates a `_FakeWaveformExtractor` with a default `Waveform` and then most tests immediately replace `extractor.waveform`. The double allocation is negligible but the pattern could be simplified by having the extractor accept a factory lambda rather than a concrete value.
+- [x] **[LOW]** `test/…/services/audio_waveform_service_test.dart:72–94` — `setUp` creates a `_FakeWaveformExtractor` with a default `Waveform` and then most tests immediately replace `extractor.waveform`. The double allocation is negligible but the pattern could be simplified by having the extractor accept a factory lambda rather than a concrete value.
+  **RESOLVED:** assessed, no change — the review itself rates the double allocation as negligible. Switching the field to a `Waveform Function()` factory would require wrapping ~15 `extractor.waveform = X` call sites in `() => X` closures, adding indirection rather than removing it. The current concrete-value field is the simpler, more readable form; the marginal allocation does not justify the churn.
 
 ---
 
