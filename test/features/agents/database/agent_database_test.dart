@@ -1,8 +1,10 @@
 // ignore_for_file: cascade_invocations
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:drift/drift.dart' show Variable;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:path/path.dart' as path;
 import 'package:sqlite3/sqlite3.dart' show SqliteException, sqlite3;
@@ -2027,6 +2029,30 @@ void main() {
       expect(batches.first.first.vectorClock, isNull);
     });
 
+    test(
+      'streamAgentEntitiesWithVectorClock yields no batches when empty',
+      () async {
+        final batches = await db
+            .streamAgentEntitiesWithVectorClock(batchSize: 10)
+            .toList();
+
+        // An empty table must produce zero batches, not one empty batch —
+        // the loop breaks before yielding when the first page is empty.
+        expect(batches, isEmpty);
+      },
+    );
+
+    test(
+      'streamAgentLinksWithVectorClock yields no batches when empty',
+      () async {
+        final batches = await db
+            .streamAgentLinksWithVectorClock(batchSize: 10)
+            .toList();
+
+        expect(batches, isEmpty);
+      },
+    );
+
     test('streamAgentEntitiesWithVectorClock paginates batches', () async {
       for (var i = 0; i < 5; i++) {
         await insertAgentEntity(
@@ -2142,5 +2168,71 @@ void main() {
       expect(batches, hasLength(1));
       expect(batches.first.first.vectorClock, isNull);
     });
+
+    // Reads back the vector clock of the single row currently in the table
+    // (every property iteration starts from an empty table).
+    Future<Map<String, int>?> readSingleVectorClock() async {
+      final batches = await db
+          .streamAgentEntitiesWithVectorClock(batchSize: 10)
+          .toList();
+      expect(batches, hasLength(1));
+      return batches.single.single.vectorClock;
+    }
+
+    // Property: any map of host -> non-negative int survives a
+    // jsonEncode -> _extractVectorClock round-trip without loss. The map is
+    // built deterministically from the generated host count and per-host
+    // values so the generator only needs primitive int axes.
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(0, 8), // host count
+      glados.IntAnys(glados.any).intInRange(0, 100000), // base value
+      glados.ExploreConfig(numRuns: 120),
+    ).test('round-trips any String->int vector clock without loss', (
+      hostCount,
+      baseValue,
+    ) async {
+      final vectorClock = <String, int>{
+        for (var i = 0; i < hostCount; i++) 'host-$i': baseValue + i,
+      };
+
+      await db.customStatement('DELETE FROM agent_entities');
+      await insertAgentEntity(
+        id: 'vc-prop',
+        serialized: jsonEncode({'vectorClock': vectorClock}),
+      );
+
+      expect(
+        await readSingleVectorClock(),
+        vectorClock,
+        reason: 'hostCount=$hostCount baseValue=$baseValue',
+      );
+    }, tags: 'glados');
+
+    // Property: a vectorClock map containing any non-numeric value collapses
+    // the whole clock to null (partial parsing is never returned).
+    glados.Glados(
+      glados.IntAnys(glados.any).intInRange(1, 8), // host count (>= 1)
+      glados.ExploreConfig(numRuns: 80),
+    ).test('returns null when any host value is non-numeric', (
+      hostCount,
+    ) async {
+      // One poisoned host among otherwise-valid numeric entries.
+      final vc = <String, dynamic>{
+        for (var i = 0; i < hostCount; i++) 'host-$i': i,
+        'bad-host': 'not-a-number',
+      };
+
+      await db.customStatement('DELETE FROM agent_entities');
+      await insertAgentEntity(
+        id: 'vc-prop-bad',
+        serialized: jsonEncode({'vectorClock': vc}),
+      );
+
+      expect(
+        await readSingleVectorClock(),
+        isNull,
+        reason: 'hostCount=$hostCount',
+      );
+    }, tags: 'glados');
   });
 }

@@ -125,6 +125,19 @@ class AgentRepository {
     }
   }
 
+  /// Test-only seam for `_sqliteInClauseChunks` — the pure dedup-and-chunk
+  /// iterator that guards every batched `IN (...)` query against SQLite's
+  /// `SQLITE_MAX_VARIABLE_NUMBER` cap. The chunk size is exposed alongside so
+  /// property tests can assert the no-chunk-exceeds-the-limit invariant
+  /// without hard-coding the constant.
+  @visibleForTesting
+  static const int debugInClauseChunkSize = _sqliteInClauseChunkSize;
+
+  /// Test-only seam for `_sqliteInClauseChunks`.
+  @visibleForTesting
+  static Iterable<List<T>> debugSqliteInClauseChunks<T>(Iterable<T> values) =>
+      _sqliteInClauseChunks(values);
+
   /// Batch-fetch non-deleted entities for every id in [ids]. Returns
   /// the matched entities keyed by their `id` column so the caller can
   /// look them up without iterating; ids that have no row (or whose
