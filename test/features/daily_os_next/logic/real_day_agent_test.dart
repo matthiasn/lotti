@@ -111,6 +111,46 @@ class _TestBench {
   );
 }
 
+/// Records the arguments handed to the two void mocked tools so the
+/// delegation tests can prove the adapter forwards them verbatim to the
+/// fallback (the mock's own implementations are silent no-ops, so there is
+/// no return value to assert on).
+class _RecordingFallbackAgent extends MockDayAgent {
+  _RecordingFallbackAgent()
+    : super(
+        triageLatency: Duration.zero,
+        summarizeLatency: Duration.zero,
+        pendingLatency: Duration.zero,
+      );
+
+  ({DateTime forDate, String text, ReflectionSource source})? reflection;
+  ({String taskId, CarryoverAction action, DateTime? when})? carryover;
+
+  @override
+  Future<void> recordReflection({
+    required DateTime forDate,
+    required String text,
+    required ReflectionSource source,
+  }) async {
+    reflection = (forDate: forDate, text: text, source: source);
+    await super.recordReflection(forDate: forDate, text: text, source: source);
+  }
+
+  @override
+  Future<void> recordCarryoverDecision({
+    required String taskId,
+    required CarryoverAction action,
+    DateTime? when,
+  }) async {
+    carryover = (taskId: taskId, action: action, when: when);
+    await super.recordCarryoverDecision(
+      taskId: taskId,
+      action: action,
+      when: when,
+    );
+  }
+}
+
 void main() {
   group('RealDayAgent.summarizeRecentPatterns', () {
     late _TestBench bench;
@@ -1048,8 +1088,12 @@ void main() {
         final items = await bench.adapter.parseCaptureToItems(
           const CaptureId('cap'),
         );
+        // This is the only exercise of the private `DayAgentCategory.copyWith`
+        // extension (it has no public/test seam), so assert its full contract
+        // here: `id` is overridden with the requested category id while the
+        // fallback's `name` and `colorHex` are carried through unchanged.
         expect(items.single.category.id, 'cat-missing');
-        // Uncategorised fallback colour preserved.
+        expect(items.single.category.name, 'Uncategorised');
         expect(items.single.category.colorHex, '5ED4B7');
       },
     );
@@ -2072,32 +2116,110 @@ void main() {
       ),
     );
 
+    // Each mocked tool gets its own focused delegation test. Asserting the
+    // *exact scripted payload* of the real `MockDayAgent` (not just the
+    // return type) is what proves the adapter forwarded to the genuine
+    // fallback rather than swallowing the call or returning a stub.
+
     test(
-      'mocked tools (shutdown / reflection / carryover / tomorrow / corpus) '
-      'delegate to the fallback agent',
+      'surfaceShutdownData forwards to the fallback and returns its scripted '
+      'completed/carryover/metrics verbatim',
       () async {
-        final forDate = _asOf;
-
         final shutdown = await bench.adapter.surfaceShutdownData(
-          forDate: forDate,
+          forDate: _asOf,
         );
-        expect(shutdown.completed, isA<List<CompletedItem>>());
 
-        await bench.adapter.recordReflection(
-          forDate: forDate,
-          text: 'looked back',
-          source: ReflectionSource.typed,
+        expect(
+          shutdown.completed.map((c) => c.taskId),
+          ['t_deck_review', 't_morning_run'],
         );
-        await bench.adapter.recordCarryoverDecision(
+        expect(shutdown.completed.first.durationMinutes, 95);
+        expect(
+          shutdown.carryover.map((c) => c.taskId),
+          ['t_onboarding_doc', 't_invoices'],
+        );
+        expect(
+          shutdown.carryover.first.suggestedTarget,
+          '→ tomorrow morning',
+        );
+        expect(shutdown.metrics.focusMinutes, 215);
+        expect(shutdown.metrics.flowSessions, 3);
+        expect(shutdown.metrics.energyScore, 7.4);
+      },
+    );
+
+    test(
+      'generateTomorrowNote forwards to the fallback and returns its scripted '
+      'note verbatim',
+      () async {
+        final note = await bench.adapter.generateTomorrowNote(forDate: _asOf);
+
+        expect(note.maturity, 1);
+        expect(note.body, contains('Onboarding doc'));
+        expect(note.body, startsWith('You started the Onboarding doc'));
+      },
+    );
+
+    test(
+      'surfaceTaskCorpus forwards the state filter to the fallback so only '
+      'matching scripted rows come back',
+      () async {
+        // Unfiltered call returns the full scripted corpus.
+        final all = await bench.adapter.surfaceTaskCorpus();
+        expect(all, hasLength(7));
+
+        // The filter argument must reach the fallback: an overdue filter
+        // narrows to the single scripted overdue row (the dentist task).
+        final overdue = await bench.adapter.surfaceTaskCorpus(
+          stateFilter: TaskCorpusState.overdue,
+        );
+        expect(overdue.map((i) => i.id), ['t_dentist']);
+        expect(
+          overdue.every((i) => i.state == TaskCorpusState.overdue),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'recordReflection forwards forDate/text/source verbatim to the fallback',
+      () async {
+        final recording = _RecordingFallbackAgent();
+        final adapter = _TestBench.create(fallback: recording).adapter;
+
+        await adapter.recordReflection(
+          forDate: _asOf,
+          text: 'looked back on a sharp morning',
+          source: ReflectionSource.voice,
+        );
+
+        expect(recording.reflection?.forDate, _asOf);
+        expect(recording.reflection?.text, 'looked back on a sharp morning');
+        expect(recording.reflection?.source, ReflectionSource.voice);
+        // The carryover sibling tool was not invoked by this call.
+        expect(recording.carryover, isNull);
+      },
+    );
+
+    test(
+      'recordCarryoverDecision forwards taskId/action/when verbatim to the '
+      'fallback',
+      () async {
+        final recording = _RecordingFallbackAgent();
+        final adapter = _TestBench.create(fallback: recording).adapter;
+        final when = DateTime(2026, 5, 27, 9);
+
+        await adapter.recordCarryoverDecision(
           taskId: 'task-x',
-          action: CarryoverAction.tomorrow,
+          action: CarryoverAction.pickDate,
+          when: when,
         );
 
-        final note = await bench.adapter.generateTomorrowNote(forDate: forDate);
-        expect(note.body, isNotEmpty);
-
-        final corpus = await bench.adapter.surfaceTaskCorpus();
-        expect(corpus, isA<List<TaskCorpusItem>>());
+        expect(recording.carryover?.taskId, 'task-x');
+        expect(recording.carryover?.action, CarryoverAction.pickDate);
+        expect(recording.carryover?.when, when);
+        // The reflection sibling tool was not invoked by this call.
+        expect(recording.reflection, isNull);
       },
     );
 

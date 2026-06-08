@@ -12,6 +12,10 @@ void main() {
         parseLatency: Duration.zero,
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
+        // `draftDayPlan` (below) otherwise waits the default 400 ms of real
+        // wall-clock per call — zero it out to keep the group deterministic
+        // and fast (see test/README.md's no-real-delay policy).
+        draftLatency: Duration.zero,
         clock: () => DateTime(2026, 5, 25, 9),
       );
     });
