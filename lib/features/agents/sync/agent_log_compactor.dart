@@ -290,16 +290,24 @@ class AgentLogCompactor {
   /// Shared newest-first chunked scan behind [searchLog] and [resolveByIds].
   ///
   /// Resolves content per chunk, collecting the first [limit] events for which
-  /// [matches] holds. Three things are derived for every returned hit without a
-  /// second pass over the log:
-  /// - its outgoing `[[relation:id]]` links, validated for existence against
-  ///   the full (cheaply-projected) set of log entry ids plus [extraKnownIds]
-  ///   (e.g. durable-knowledge keys that live outside the episodic log), and
-  ///   forward-followed through any supersession the scan has seen;
-  /// - whether the hit is itself superseded — accumulated from every scanned
-  ///   `[[supersedes:id]]` token. Superseders are always newer than their
-  ///   target and the scan runs newest-first, so this is complete for every
-  ///   returned hit even when the scan stops early at [limit].
+  /// [matches] holds. Two things are derived for every returned hit without a
+  /// second pass over the log — with different completeness guarantees:
+  /// - **`supersededByEntryId` (the hit's *own* supersession) is complete.**
+  ///   It is accumulated from every scanned `[[supersedes:id]]` token; because
+  ///   the agent can only cite ids it saw in an earlier wake, a superseder is
+  ///   strictly newer than its target, and the scan runs newest-first — so any
+  ///   superseder of a returned hit is always scanned before the hit matches,
+  ///   even when the scan stops early at [limit]. (A same-instant tie that the
+  ///   position key happened to order superseder-after-target is the only gap;
+  ///   it cannot arise from real cross-wake authoring.)
+  /// - **Outgoing `[[relation:id]]` links are best-effort.** Existence is
+  ///   validated against the full (cheaply-projected) set of log entry ids plus
+  ///   [extraKnownIds] (e.g. durable-knowledge keys outside the episodic log),
+  ///   which is always complete. Forward-following a non-`supersedes` target to
+  ///   its live version, however, only fires when that target's superseder was
+  ///   itself within the scan window — otherwise the link renders at its
+  ///   original (still-valid) id. This is presentation-only (transient tool
+  ///   output, never persisted), so the bound is acceptable.
   ///
   /// [extraKnownIds] lets a caller widen link validation beyond the memory log
   /// (the planner passes its knowledge keys/ids so cross-tier links resolve);
