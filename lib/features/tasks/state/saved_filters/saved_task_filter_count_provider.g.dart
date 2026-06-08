@@ -68,8 +68,8 @@ String _$savedTaskFilterCountRepositoryHash() =>
     r'0e7df05e8549069ba1778e04297051027703217a';
 
 /// Live `{savedFilterId → matching task count}` for every persisted saved
-/// filter, recomputed when the filter list changes or when a task-shaped
-/// notification arrives.
+/// filter, recomputed (debounced) when the filter list changes or when a
+/// task-shaped notification arrives.
 ///
 /// `UpdateNotifications.updateStream` multiplexes both locally-originated
 /// notifications and sync-originated ones (the latter are debounced by
@@ -80,8 +80,8 @@ String _$savedTaskFilterCountRepositoryHash() =>
 final savedTaskFilterCountsProvider = SavedTaskFilterCountsProvider._();
 
 /// Live `{savedFilterId → matching task count}` for every persisted saved
-/// filter, recomputed when the filter list changes or when a task-shaped
-/// notification arrives.
+/// filter, recomputed (debounced) when the filter list changes or when a
+/// task-shaped notification arrives.
 ///
 /// `UpdateNotifications.updateStream` multiplexes both locally-originated
 /// notifications and sync-originated ones (the latter are debounced by
@@ -97,8 +97,8 @@ final class SavedTaskFilterCountsProvider
         >
     with $FutureModifier<Map<String, int>>, $FutureProvider<Map<String, int>> {
   /// Live `{savedFilterId → matching task count}` for every persisted saved
-  /// filter, recomputed when the filter list changes or when a task-shaped
-  /// notification arrives.
+  /// filter, recomputed (debounced) when the filter list changes or when a
+  /// task-shaped notification arrives.
   ///
   /// `UpdateNotifications.updateStream` multiplexes both locally-originated
   /// notifications and sync-originated ones (the latter are debounced by
@@ -131,7 +131,7 @@ final class SavedTaskFilterCountsProvider
 }
 
 String _$savedTaskFilterCountsHash() =>
-    r'6e1128659993768ed428a33ef98e51ac8ddcbb98';
+    r'd860bceb76585d797ded1d62852b0b9833dbd56e';
 
 /// Convenience family — reads a single saved filter's count from the
 /// aggregated map. Returns 0 when the id no longer resolves (concurrent
