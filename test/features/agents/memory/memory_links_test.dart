@@ -138,6 +138,24 @@ void main() {
       expect(resolved.single.liveEntryId, 'e2');
     });
 
+    test(
+      'never forward-follows a supersedes link (it names the old entry)',
+      () {
+        const supersedesLink = MemoryLink(
+          relation: LinkRelation.supersedes,
+          entryId: 'e1',
+        );
+        final resolved = resolveMemoryLinks(
+          const [supersedesLink],
+          knownIds: {'e1', 'e2'},
+          supersededBy: const {'e1': 'e2'},
+        );
+        // A `relates`/`refines` link would jump to e2; supersedes stays at e1.
+        expect(resolved.single.liveEntryId, 'e1');
+        expect(resolved.single.superseded, isFalse);
+      },
+    );
+
     test('handles a self-superseding edge', () {
       final resolved = resolveMemoryLinks(
         const [link],

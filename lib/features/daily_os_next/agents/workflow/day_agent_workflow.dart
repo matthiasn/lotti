@@ -733,6 +733,22 @@ class DayAgentWorkflow {
       _logError('search_memory: failed to load capture metadata', error: e);
     }
 
+    // Widen link validation beyond the episodic log so a note that links to a
+    // durable-knowledge entry (e.g. a `moc-<topic>` map) resolves instead of
+    // rendering as a dead link. Durable knowledge lives outside the memory log,
+    // so the agent cites it by key; include keys and entity ids. Non-fatal.
+    final extraKnownIds = <String>{};
+    try {
+      final knowledge = await knowledgeService?.allFor(agentId) ?? const [];
+      for (final entry in knowledge) {
+        extraKnownIds
+          ..add(entry.key)
+          ..add(entry.id);
+      }
+    } catch (e) {
+      _logError('search_memory: failed to load knowledge ids', error: e);
+    }
+
     final compactor = AgentLogCompactor(
       syncService: syncService,
       inlineEvents: dayCaptureEvents(captureMetas),
@@ -742,8 +758,17 @@ class DayAgentWorkflow {
     final List<MemoryLogHit> hits;
     try {
       hits = ids.isNotEmpty
-          ? await compactor.resolveByIds(agentId, ids: ids)
-          : await compactor.searchLog(agentId, query: query, limit: limit);
+          ? await compactor.resolveByIds(
+              agentId,
+              ids: ids,
+              extraKnownIds: extraKnownIds,
+            )
+          : await compactor.searchLog(
+              agentId,
+              query: query,
+              limit: limit,
+              extraKnownIds: extraKnownIds,
+            );
     } catch (e, s) {
       _logError('search_memory failed', error: e, stackTrace: s);
       return const DayAgentToolResult(
@@ -784,10 +809,11 @@ class DayAgentWorkflow {
   }
 
   static String _formatLink(ResolvedMemoryLink link) {
-    final target = link.exists
-        ? link.link.entryId
-        : '${link.link.entryId} (not found)';
-    return '${link.link.relation.wire}:$target';
+    final wire = link.link.relation.wire;
+    final id = link.link.entryId;
+    if (!link.exists) return '$wire:$id (not found)';
+    if (link.superseded) return '$wire:$id → ${link.liveEntryId}';
+    return '$wire:$id';
   }
 
   Future<_TemplateContext?> _resolveTemplate(String agentId) async {
@@ -894,7 +920,10 @@ Refine rules:
 - Commit, shutdown, and agenda mutation tools are not available yet. Do
   not claim that you committed or shut down a day.
 
-Linking your memory:
+Your memory (append-only — you add, never overwrite):
+- Keep each observation atomic: one idea per note, so it can be linked and
+  superseded cleanly. Lead with a short `keywords: …` line when it will help
+  later recall find the note.
 - When an observation or knowledge note you write refines, supersedes,
   contradicts, or relates to an earlier entry you can see (in this prompt or a
   `search_memory` result), cite it inline as `[[relation:id]]` using that
@@ -902,8 +931,14 @@ Linking your memory:
   seen; never invent one.
 - To record a corrected "new version" of an earlier observation, write a fresh
   observation containing `[[supersedes:<oldId>]]` rather than restating it as
-  fact — your memory is append-only, so newer entries win by superseding, never
-  by overwriting.
+  fact — newer entries win by superseding, never by overwriting.
+- After a capture, write the durable takeaway as a linked observation rather
+  than leaving the raw transcript as your only memory of it.
+- Maintain topic maps: a `propose_knowledge` entry keyed `moc-<topic>` whose
+  statement curates `[[relates:id]]` links to the entries that matter for that
+  topic is a durable hub you (and the user) can navigate.
+- Actually follow your links: when an entry cites `[[relation:id]]`, call
+  `search_memory` with `ids` to pull those entries up before deciding.
 
 Record private observations and schedule one useful future wake when warranted.
 

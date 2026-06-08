@@ -116,9 +116,18 @@ Runtime behavior:
   of an append-only entry, so it never mutates history, never touches the cached
   prompt prefix, and stays convergent because the cited id is the synced entity
   id. `search_memory` resolves each hit's outgoing links — validating existence
-  (a hallucinated id renders as `(not found)`, never followed) — and flags an
-  entry that a newer note supersedes, giving the agent a navigable, append-only
-  memory graph without an explicit edge store or any in-place rewrite. See
+  (a hallucinated id renders as `(not found)`, never followed; a non-`supersedes`
+  link to a superseded entry forward-follows to the live version, rendered
+  `relation:old → live`) — and flags an entry that a newer note supersedes,
+  giving the agent a navigable, append-only memory graph without an explicit
+  edge store or any in-place rewrite. Validation is widened with the planner's
+  durable-knowledge keys (passed as `extraKnownIds`), so a cross-tier link to a
+  knowledge entry — e.g. a **Map of Content** keyed `moc-<topic>` whose statement
+  curates `[[relates:id]]` links to a topic's entries — resolves rather than
+  reading as dead. The system prompt fosters the Zettelkasten habits this
+  enables: atomic, keyword-led notes; superseding rather than overwriting;
+  distilling captures into linked permanent observations; maintaining MOCs; and
+  actually following links via `search_memory(ids:)`. See
   `docs/implementation_plans/2026-06-08_convergence_safe_a_mem.md`.
 - `DayAgentCaptureService` owns direct Capture/Reconcile mutations:
   `submit_capture`, `parse_capture_to_items`, `match_to_corpus`,

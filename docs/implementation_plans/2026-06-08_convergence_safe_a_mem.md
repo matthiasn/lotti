@@ -1,6 +1,6 @@
 # Convergence-safe A-MEM for the planner memory
 
-- **Status:** Phase 0 implemented (author-time links + recall). Phases 1–4 proposed (A16-adjacent).
+- **Status:** Phase 0 implemented (author-time links + recall). Zettelkasten prompt habits + MOC convention (Phase 1.5) implemented; cross-tier link validation + recall forward-follow landed. Phases 1 (attributes), 2 (embeddings), 3 (AgentLink), 4 (evolution/A16) still proposed.
 - **Date:** 2026-06-08
 - **Motivates:** Finding #8 + the open question of the [planner vs. state-of-the-art research note](../research/2026-06-08_long_horizon_planner_vs_state_of_the_art.md) — adopt the parts of A-MEM (Xu et al. 2025, [arXiv:2502.12110](https://arxiv.org/abs/2502.12110)) compatible with our append-only, convergent, cache-stable architecture.
 - **Builds on:** [Planner log search](./2026-06-08_planner_log_search.md) (the `search_memory` recall tool — already shipped; Phase 0 extends it).
@@ -177,16 +177,16 @@ Linking is the headline idea, but a Zettelkasten is more than links. What else i
 
 | Zettelkasten idea | Our analog | Verdict |
 |---|---|---|
-| **Atomic notes** (one idea per note) | one fact per observation / knowledge entry | **Adopt as a prompting norm** — makes links precise and supersession clean; zero mechanism. |
+| **Atomic notes** (one idea per note) | one fact per observation / knowledge entry | **Implemented (prompt norm)** — the system prompt now asks for atomic, keyword-led notes; zero mechanism. |
 | **Unique stable ids** | synced entity ids the agent sees in the log | **Already have** — this is exactly what makes Phase-0 links convergent. |
-| **Maps of Content / hub notes** (an index note linking into a topic cluster; an entry point that survives) | a knowledge entry keyed `moc:<topic>` whose statement is a curated `[[relates:…]]` list | **Adopt (Phase 1.5)** — zero new mechanism: a key convention + the Phase-0 grammar. A durable, navigable hub that survives summarization. The single most valuable extra. |
-| **Literature vs. permanent notes** (fleeting raw capture → distilled, linked note) | captures = fleeting/literature; observations + knowledge = permanent | **Already our split** — make the "distill a capture into a linked permanent observation" habit explicit in prompting. |
+| **Maps of Content / hub notes** (an index note linking into a topic cluster; an entry point that survives) | a knowledge entry keyed `moc-<topic>` whose statement is a curated `[[relates:…]]` list | **Implemented (Phase 1.5, prompt)** — zero new mechanism: a key convention + the Phase-0 grammar (hyphenated key so it fits the id charset). `search_memory` validates such cross-tier links via the planner's knowledge-key set, so MOC references resolve instead of reading as dead links. A durable, navigable hub that survives summarization. |
+| **Literature vs. permanent notes** (fleeting raw capture → distilled, linked note) | captures = fleeting/literature; observations + knowledge = permanent | **Implemented (prompt)** — the prompt now asks the agent to distill a capture into a *linked permanent observation* rather than relying on the raw transcript. |
 | **Keyword register / index** | the always-on hook index + Phase-1 keyword tag-lines | **Already have / Phase 1.** |
 | **Link with a reason** (annotate *why*, not just *that*) | optional trailing text after the token | **Defer** — the relation type already encodes a coarse "why"; free-text reasons cost cached-prefix tokens. Revisit only if recall quality needs it. |
 | **Folgezettel** (branching sequence ids) | a `follows`/sequence chain | **Skip** — subsumed by `refines`; our ids are uuids, not sequence positions. |
 | **Bottom-up emergent structure** (no rigid upfront taxonomy) | links + MOCs over a fixed schema | **Already the design philosophy** — structure lives in content, not the store. |
 
-The meta-lesson: a Zettelkasten's value comes as much from the **traversal habit** as from creating links. `search_memory(ids:)` is the traversal primitive; prompting the agent to actually follow links and maintain MOCs during a wake is what turns a pile of links into a Zettelkasten — and that habit is free (prompt-only), making it the cheapest high-leverage step after Phase 0. MOCs (Phase 1.5) are the natural next build.
+The meta-lesson: a Zettelkasten's value comes as much from the **traversal habit** as from creating links. `search_memory(ids:)` is the traversal primitive, and the prompt now asks the agent to actually follow links and maintain MOCs during a wake — turning a pile of links into a Zettelkasten. The remaining builds are Phase 1 (construction attributes as immutable fields), Phase 2 (semantic recall), and Phase 4 (weekly evolution-as-supersession, gated on A16).
 
 ## Explicit non-goals
 - In-place rewriting of any episodic capture/observation or knowledge note (breaks convergence + caching).

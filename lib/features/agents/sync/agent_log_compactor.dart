@@ -248,6 +248,7 @@ class AgentLogCompactor {
     String agentId, {
     required String query,
     int limit = 8,
+    Set<String> extraKnownIds = const {},
   }) async {
     final terms = query
         .toLowerCase()
@@ -258,6 +259,7 @@ class AgentLogCompactor {
     return _scanLog(
       agentId,
       limit: limit,
+      extraKnownIds: extraKnownIds,
       matches: (event, text) {
         final haystack = text.toLowerCase();
         return terms.every(haystack.contains);
@@ -274,11 +276,13 @@ class AgentLogCompactor {
     String agentId, {
     required Set<String> ids,
     int limit = 20,
+    Set<String> extraKnownIds = const {},
   }) async {
     if (ids.isEmpty || limit <= 0) return const [];
     return _scanLog(
       agentId,
       limit: limit,
+      extraKnownIds: extraKnownIds,
       matches: (event, text) => ids.contains(event.contentEntryId),
     );
   }
@@ -286,24 +290,32 @@ class AgentLogCompactor {
   /// Shared newest-first chunked scan behind [searchLog] and [resolveByIds].
   ///
   /// Resolves content per chunk, collecting the first [limit] events for which
-  /// [matches] holds. Two things are derived for every returned hit without a
+  /// [matches] holds. Three things are derived for every returned hit without a
   /// second pass over the log:
   /// - its outgoing `[[relation:id]]` links, validated for existence against
-  ///   the full (cheaply-projected) set of log entry ids;
+  ///   the full (cheaply-projected) set of log entry ids plus [extraKnownIds]
+  ///   (e.g. durable-knowledge keys that live outside the episodic log), and
+  ///   forward-followed through any supersession the scan has seen;
   /// - whether the hit is itself superseded — accumulated from every scanned
   ///   `[[supersedes:id]]` token. Superseders are always newer than their
   ///   target and the scan runs newest-first, so this is complete for every
   ///   returned hit even when the scan stops early at [limit].
+  ///
+  /// [extraKnownIds] lets a caller widen link validation beyond the memory log
+  /// (the planner passes its knowledge keys/ids so cross-tier links resolve);
+  /// the compactor stays agnostic about what those ids mean.
   Future<List<MemoryLogHit>> _scanLog(
     String agentId, {
     required int limit,
     required bool Function(InputEvent event, String text) matches,
+    Set<String> extraKnownIds = const {},
   }) async {
     final view = await _projectActiveView(agentId);
     if (view.log.events.isEmpty) return const [];
 
     final knownIds = <String>{
       for (final e in view.log.events) e.contentEntryId,
+      ...extraKnownIds,
     };
     final events = view.log.events.reversed.toList(); // newest-first
     final supersededBy = <String, String>{};
@@ -357,7 +369,11 @@ class AgentLogCompactor {
           type: m.type,
           text: m.text,
           edited: m.edited,
-          links: resolveMemoryLinks(m.parsed, knownIds: knownIds),
+          links: resolveMemoryLinks(
+            m.parsed,
+            knownIds: knownIds,
+            supersededBy: supersededBy,
+          ),
           supersededByEntryId: supersededBy[m.event.contentEntryId],
         ),
     ];

@@ -113,9 +113,11 @@ class ResolvedMemoryLink extends Equatable {
 }
 
 /// Validates [links] against the memory log. [knownIds] is the set of entry ids
-/// the agent could legitimately reference (every log entry). [supersededBy]
-/// maps an entry id to the id that supersedes it; resolution follows that chain
-/// (guarding against cycles) to the live id. Pure — no IO.
+/// the agent could legitimately reference (every log entry, plus any extra ids
+/// the caller widens with). [supersededBy] maps an entry id to the id that
+/// supersedes it; resolution follows that chain (guarding against cycles) to the
+/// live id — except for `supersedes` links themselves, whose whole purpose is to
+/// name the *old* entry, so they are never forward-followed. Pure — no IO.
 List<ResolvedMemoryLink> resolveMemoryLinks(
   List<MemoryLink> links, {
   required Set<String> knownIds,
@@ -126,7 +128,9 @@ List<ResolvedMemoryLink> resolveMemoryLinks(
       ResolvedMemoryLink(
         link: link,
         exists: knownIds.contains(link.entryId),
-        liveEntryId: _followSupersession(link.entryId, supersededBy),
+        liveEntryId: link.relation == LinkRelation.supersedes
+            ? link.entryId
+            : _followSupersession(link.entryId, supersededBy),
       ),
   ];
 }

@@ -890,6 +890,7 @@ void main() {
           (_) async => [
             obs('obs-a', DateTime.utc(2026, 5, 20)),
             obs('obs-b', DateTime.utc(2026, 5, 21)),
+            obs('obs-c', DateTime.utc(2026, 5, 22)),
           ],
         );
         when(
@@ -900,6 +901,11 @@ void main() {
             'obs-b',
             'new gym plan [[supersedes:obs-a]] [[relates:ghost]]',
           ),
+        );
+        when(
+          () => repository.getEntity('pl-obs-c'),
+        ).thenAnswer(
+          (_) async => payload('obs-c', 'gym recap [[relates:obs-a]]'),
         );
 
         conversationRepository.toolCalls = [
@@ -917,11 +923,95 @@ void main() {
           response,
           contains('(id: obs-a) old gym plan [superseded by obs-b]'),
         );
-        // obs-b surfaces its outgoing links, with the dead one annotated.
+        // obs-b surfaces its outgoing links: supersedes keeps the old id, the
+        // dead one is annotated.
         expect(
           response,
           contains('links: supersedes:obs-a, relates:ghost (not found)'),
         );
+        // obs-c's relates link forward-follows the superseded target to live.
+        expect(response, contains('links: relates:obs-a → obs-b'));
+      });
+
+      test('validates a link to a knowledge entry via its key', () async {
+        final ks = MockDayAgentKnowledgeService();
+        when(() => ks.activeFor(agentId)).thenAnswer((_) async => const []);
+        when(() => ks.allFor(agentId)).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.plannerKnowledge(
+                  id: 'k1',
+                  agentId: agentId,
+                  key: 'deep-work',
+                  hook: 'h',
+                  statementText: 's',
+                  source: KnowledgeSource.userStated,
+                  status: KnowledgeStatus.confirmed,
+                  createdAt: now,
+                  updatedAt: now,
+                  vectorClock: null,
+                )
+                as PlannerKnowledgeEntity,
+          ],
+        );
+        when(() => syncService.repository).thenReturn(repository);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getLinksFrom(agentId),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getCaptureEventMetaByAgentId(agentId),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => repository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.observation,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.agentMessage(
+                  id: 'obs',
+                  agentId: agentId,
+                  threadId: 'obs',
+                  kind: AgentMessageKind.observation,
+                  createdAt: DateTime.utc(2026, 5, 20),
+                  vectorClock: null,
+                  contentEntryId: 'pl-obs',
+                  metadata: const AgentMessageMetadata(),
+                )
+                as AgentMessageEntity,
+          ],
+        );
+        when(() => repository.getEntity('pl-obs')).thenAnswer(
+          (_) async =>
+              AgentDomainEntity.agentMessagePayload(
+                    id: 'pl-obs',
+                    agentId: agentId,
+                    createdAt: DateTime.utc(2026, 5, 20),
+                    vectorClock: null,
+                    content: const {'text': 'topic map [[relates:deep-work]]'},
+                  )
+                  as AgentMessagePayloadEntity,
+        );
+
+        conversationRepository.toolCalls = [
+          _toolCall(
+            name: DayAgentToolNames.searchMemory,
+            args: {'query': 'topic'},
+          ),
+        ];
+
+        final result = await execute(workflow(knowledgeService: ks));
+        expect(result.success, isTrue);
+        final response = conversationRepository.toolResponses.single;
+        // The knowledge key resolves (not a dead link) because the workflow
+        // widened validation with the planner's knowledge keys.
+        expect(response, contains('links: relates:deep-work'));
+        expect(response, isNot(contains('relates:deep-work (not found)')));
       });
     });
 

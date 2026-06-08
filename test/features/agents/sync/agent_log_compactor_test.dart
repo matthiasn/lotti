@@ -1045,6 +1045,38 @@ void main() {
       expect(hit.links, isEmpty);
       expect(hit.supersededByEntryId, isNull);
     });
+
+    test('extraKnownIds widens validation to ids outside the log', () async {
+      // A link to a durable-knowledge key (e.g. a `moc-…` map) lives outside
+      // the episodic log, so it is a dead link until the caller widens the set.
+      await seedObservation(
+        'o1',
+        'see the map [[relates:moc-deep-work]]',
+        day: 1,
+      );
+
+      final plain = (await compactor.searchLog(_agentId, query: 'map')).single;
+      expect(plain.links.single.exists, isFalse);
+
+      final widened = (await compactor.searchLog(
+        _agentId,
+        query: 'map',
+        extraKnownIds: {'moc-deep-work'},
+      )).single;
+      expect(widened.links.single.exists, isTrue);
+    });
+
+    test('forward-follows an outgoing link to the superseding entry', () async {
+      await seedObservation('a', 'gym plan v1', day: 1);
+      await seedObservation('b', 'gym plan v2 [[supersedes:a]]', day: 2);
+      await seedObservation('c', 'gym recap [[relates:a]]', day: 3);
+
+      final hits = await compactor.searchLog(_agentId, query: 'gym');
+      final c = hits.firstWhere((h) => h.contentEntryId == 'c');
+      expect(c.links.single.link.entryId, 'a');
+      expect(c.links.single.liveEntryId, 'b'); // jumped to the live version
+      expect(c.links.single.superseded, isTrue);
+    });
   });
 
   group('properties', () {
