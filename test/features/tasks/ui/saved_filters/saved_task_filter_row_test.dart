@@ -179,6 +179,55 @@ void main() {
     expect(find.byKey(SavedTaskFilterRowKeys.dragHandle('sv-1')), findsNothing);
   });
 
+  testWidgets(
+    'hover on an active row also reveals the delete affordance and drag handle',
+    (tester) async {
+      const handle = Icon(Icons.drag_indicator, size: 14, key: Key('handle'));
+      await tester.pumpWidget(
+        makeTestableWidget(
+          SavedTaskFilterRow(
+            view: _view,
+            active: true,
+            count: 4,
+            onActivate: () {},
+            onRename: (_) {},
+            onDelete: () {},
+            dragHandle: handle,
+          ),
+        ),
+      );
+
+      // Before hover the active row shows neither grip nor delete glyph.
+      expect(
+        find.byKey(SavedTaskFilterRowKeys.dragHandle('sv-1')),
+        findsNothing,
+      );
+
+      final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+      addTearDown(gesture.removePointer);
+      await gesture.addPointer();
+      await gesture.moveTo(
+        tester.getCenter(find.byKey(SavedTaskFilterRowKeys.root('sv-1'))),
+      );
+      await tester.pump();
+
+      // Hover on an active row surfaces both affordances, exactly like an
+      // inactive row — `active` only changes the surface tint, not the
+      // hover-driven controls.
+      expect(
+        find.byKey(SavedTaskFilterRowKeys.deleteButton('sv-1')),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(SavedTaskFilterRowKeys.dragHandle('sv-1')),
+        findsOneWidget,
+      );
+      // The count is still rendered (behind the delete glyph) on the active
+      // row while hovered.
+      expect(find.text('4'), findsOneWidget);
+    },
+  );
+
   testWidgets('two-tap delete: first arms, second invokes onDelete', (
     tester,
   ) async {
