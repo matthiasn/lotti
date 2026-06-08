@@ -286,6 +286,111 @@ extension _AnyGeneratedMetricsScenario on glados.Any {
 }
 
 void main() {
+  group('MetricsCounters – core counters', () {
+    test('non-DB counters respect the collect flag', () {
+      // collect=false: incProcessedWithType/incSkipped/incFailures/etc are
+      // intentional no-ops to keep steady-state overhead near zero.
+      final off = MetricsCounters()
+        ..incProcessedWithType('journalEntity')
+        ..incSkipped()
+        ..incFailures()
+        ..incCatchupBatches()
+        ..incRetriesScheduled()
+        ..incCircuitOpens();
+      final offSnap = off.snapshot();
+      expect(offSnap['processed'], 0);
+      expect(offSnap['skipped'], 0);
+      expect(offSnap['failures'], 0);
+      expect(offSnap['catchupBatches'], 0);
+      expect(offSnap['retriesScheduled'], 0);
+      expect(offSnap['circuitOpens'], 0);
+      expect(offSnap.containsKey('processed.journalEntity'), isFalse);
+
+      final on = MetricsCounters(collect: true)
+        ..incProcessedWithType('journalEntity')
+        ..incProcessedWithType('journalEntity')
+        ..incSkipped()
+        ..incFailures()
+        ..incCatchupBatches()
+        ..incRetriesScheduled()
+        ..incCircuitOpens();
+      final onSnap = on.snapshot();
+      expect(onSnap['processed'], 2);
+      expect(onSnap['skipped'], 1);
+      expect(onSnap['failures'], 1);
+      expect(onSnap['catchupBatches'], 1);
+      expect(onSnap['retriesScheduled'], 1);
+      expect(onSnap['circuitOpens'], 1);
+      expect(onSnap['processed.journalEntity'], 2);
+    });
+
+    test('DB counters are tracked even when collect is false', () {
+      // DB metrics deliberately bypass the collect gate — they record
+      // persistence outcomes that matter for diagnostics regardless of the
+      // verbose-metrics flag.
+      final m = MetricsCounters()
+        ..incDbApplied()
+        ..incDbApplied()
+        ..incDbIgnoredByVectorClock()
+        ..incConflictsCreated()
+        ..incDbMissingBase()
+        ..incDbEntryLinkNoop()
+        ..incStaleAttachmentPurges()
+        ..incSelfEventsSuppressed();
+      final snap = m.snapshot();
+      expect(snap['dbApplied'], 2);
+      expect(snap['dbIgnoredByVectorClock'], 1);
+      expect(snap['conflictsCreated'], 1);
+      expect(snap['dbMissingBase'], 1);
+      expect(snap['dbEntryLinkNoop'], 1);
+      expect(snap['staleAttachmentPurges'], 1);
+      expect(snap['selfEventsSuppressed'], 1);
+    });
+
+    test(
+      'processedByType / droppedByType ignore null and empty runtime types',
+      () {
+        final m = MetricsCounters(collect: true)
+          ..bumpProcessedType(null)
+          ..bumpProcessedType('')
+          ..bumpProcessedType('task')
+          ..bumpProcessedType('task')
+          ..bumpDroppedType(null)
+          ..bumpDroppedType('')
+          ..bumpDroppedType('entryLink');
+        final snap = m.snapshot();
+        expect(snap['processed.task'], 2);
+        expect(snap['droppedByType.entryLink'], 1);
+        // Null/empty runtime types must not produce 'processed.' / '.' keys.
+        expect(snap.containsKey('processed.'), isFalse);
+        expect(snap.containsKey('droppedByType.'), isFalse);
+      },
+    );
+
+    test('lastIgnored is a bounded ring buffer with serialized lengths', () {
+      final m = MetricsCounters(collect: true, lastIgnoredMax: 2)
+        ..addLastIgnored('a')
+        ..addLastIgnored('bb')
+        ..addLastIgnored('ccc');
+      final snap = m.snapshot();
+      // Only the most recent `lastIgnoredMax` entries are retained; the
+      // snapshot serializes each retained entry's *length* under a 1-based key.
+      expect(snap['lastIgnoredCount'], 2);
+      expect(snap['lastIgnored.1'], 'bb'.length);
+      expect(snap['lastIgnored.2'], 'ccc'.length);
+      expect(snap.containsKey('lastIgnored.3'), isFalse);
+    });
+
+    test('addLastIgnored records regardless of the collect flag', () {
+      // ringBufferAdd in addLastIgnored has no collect gate, so entries are
+      // captured even when collect=false (diagnostics ring is always live).
+      final m = MetricsCounters()..addLastIgnored('only');
+      final snap = m.snapshot();
+      expect(snap['lastIgnoredCount'], 1);
+      expect(snap['lastIgnored.1'], 'only'.length);
+    });
+  });
+
   group('MetricsCounters – signal counters', () {
     test('incSignalClientStream increments counter when collect=true', () {
       final m = MetricsCounters(collect: true)..incSignalClientStream();

@@ -240,6 +240,7 @@ void main() {
   group('CatchUpStrategy', () {
     glados.Glados(
       glados.any.timestampCatchUpScenario,
+      glados.ExploreConfig(numRuns: 80),
     ).test(
       'generated timestamp catch-up returns the modeled boundary slice',
       (scenario) async {
@@ -1397,6 +1398,7 @@ void main() {
 
     glados.Glados(
       glados.any.historyBootstrapScenario,
+      glados.ExploreConfig(numRuns: 80),
     ).test(
       'generated backward bootstrap honors boundary continuation cap',
       (scenario) async {
@@ -1937,6 +1939,7 @@ void main() {
 
     glados.Glados(
       glados.any.forwardBootstrapScenario,
+      glados.ExploreConfig(numRuns: 80),
     ).test(
       'generated forward bootstrap honors future paging and cap semantics',
       (scenario) async {

@@ -555,6 +555,56 @@ void main() {
       ).called(1);
     });
 
+    test(
+      'agent payload with no dominance check downloads even when a non-empty '
+      'local file exists (fast-path dedupe never applies to agent files)',
+      () async {
+        // Pre-create a non-empty local file. For a *non-agent* payload this
+        // would trigger the fast-path dedupe and skip the download. Agent
+        // payloads must bypass that fast-path because their bytes can change
+        // in place, so without a dominance check the download always proceeds.
+        const relativePath = '/agent_entities/foo.json';
+        final filePath = '${tempDir.path}/agent_entities/foo.json';
+        File(filePath)
+          ..createSync(recursive: true)
+          ..writeAsStringSync('stale-local-copy');
+
+        final fileBytes = utf8.encode('{"fresh":true}');
+        var downloadAttempted = false;
+        final e = _makeEvent(
+          eventId: 'ev-agent-no-check',
+          relativePath: relativePath,
+          mime: 'application/json',
+          downloadBytes: fileBytes,
+          onDownload: () => downloadAttempted = true,
+        );
+
+        // No localVcDominates wired -> the `isAgentPayload && localVcDominates
+        // != null` guard short-circuits and the VC check is skipped.
+        final ingestor = AttachmentIngestor(
+          documentsDirectory: tempDir,
+          verboseLogging: false,
+        );
+
+        final wrote = await ingestor.process(
+          event: e,
+          logging: logging,
+          attachmentIndex: index,
+        );
+
+        expect(
+          downloadAttempted,
+          isTrue,
+          reason:
+              'agent payload must not be short-circuited by the '
+              'file-exists fast-path dedupe',
+        );
+        expect(wrote, isTrue);
+        // The stale local bytes were overwritten with the downloaded bytes.
+        expect(File(filePath).readAsBytesSync(), fileBytes);
+      },
+    );
+
     test('localVcDominates throwing is logged and does not block the rest '
         'of the flow', () async {
       final ingestor = AttachmentIngestor(
