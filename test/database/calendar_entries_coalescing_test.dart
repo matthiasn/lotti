@@ -1,19 +1,13 @@
-import 'dart:io';
-
 import 'package:drift/drift.dart' as drift;
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/conversions.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/domain_logging.dart';
-import 'package:mocktail/mocktail.dart';
 
-import '../mocks/mocks.dart';
 import '../test_data/test_data.dart';
+import 'coalescing_test_utils.dart';
 
 /// Subclass of [JournalDb] whose `runCalendarEntriesFetch` throws so the
 /// coalescer's error-propagation branch can be exercised deterministically.
@@ -84,82 +78,14 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late _CountingJournalDb db;
-  late MockDomainLogger loggingService;
-  DomainLogger? previousLoggingService;
-  Directory? testDirectory;
-  Directory? previousDirectory;
+  late CoalescingDbBench<_CountingJournalDb> bench;
 
   setUp(() async {
-    if (getIt.isRegistered<Directory>()) {
-      previousDirectory = getIt<Directory>();
-      getIt.unregister<Directory>();
-    }
-    testDirectory = Directory.systemTemp.createTempSync(
-      'lotti_calendar_coalesce_',
-    );
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-          const MethodChannel('plugins.flutter.io/path_provider'),
-          (MethodCall methodCall) async {
-            if (methodCall.method == 'getApplicationDocumentsDirectory' ||
-                methodCall.method == 'getApplicationSupportDirectory' ||
-                methodCall.method == 'getTemporaryDirectory') {
-              return testDirectory!.path;
-            }
-            return null;
-          },
-        );
-    getIt.registerSingleton<Directory>(testDirectory!);
-
-    loggingService = MockDomainLogger();
-    when(
-      () => loggingService.log(
-        any<LogDomain>(),
-        any<String>(),
-        subDomain: any<String?>(named: 'subDomain'),
-      ),
-    ).thenAnswer((_) async {});
-    when(
-      () => loggingService.error(
-        any<LogDomain>(),
-        any<Object>(),
-        stackTrace: any<StackTrace?>(named: 'stackTrace'),
-        subDomain: any<String?>(named: 'subDomain'),
-      ),
-    ).thenAnswer((_) async {});
-    if (getIt.isRegistered<DomainLogger>()) {
-      previousLoggingService = getIt<DomainLogger>();
-      getIt.unregister<DomainLogger>();
-    }
-    getIt.registerSingleton<DomainLogger>(loggingService);
-
-    db = _CountingJournalDb();
-    await initConfigFlags(db, inMemoryDatabase: true);
+    bench = await CoalescingDbBench.create(_CountingJournalDb.new);
+    db = bench.db;
   });
 
-  tearDown(() async {
-    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(
-          const MethodChannel('plugins.flutter.io/path_provider'),
-          null,
-        );
-    await db.close();
-    if (getIt.isRegistered<DomainLogger>()) {
-      getIt.unregister<DomainLogger>();
-    }
-    if (previousLoggingService != null) {
-      getIt.registerSingleton<DomainLogger>(previousLoggingService!);
-    }
-    if (getIt.isRegistered<Directory>()) {
-      getIt.unregister<Directory>();
-    }
-    if (previousDirectory != null) {
-      getIt.registerSingleton<Directory>(previousDirectory!);
-    }
-    if (testDirectory != null && testDirectory!.existsSync()) {
-      testDirectory!.deleteSync(recursive: true);
-    }
-  });
+  tearDown(() => bench.tearDown());
 
   Future<void> insertEntry(JournalEntry entry) async {
     await db.upsertJournalDbEntity(toDbEntity(entry));

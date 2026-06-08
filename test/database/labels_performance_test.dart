@@ -1,6 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
 @Timeout(Duration(minutes: 2))
+@Tags(['performance'])
 library;
 
 import 'dart:io';
