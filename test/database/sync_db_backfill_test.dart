@@ -71,6 +71,93 @@ extension _AnyMissingLimitsScenario on Any {
   );
 }
 
+/// A single seeded `sync_sequence_log` row for the
+/// `batchIncrementRequestCounts` property. `hostIndex`/`counter` form the
+/// row's `(host_id, counter)` key; only rows whose [status] is `missing`
+/// or `requested` are eligible for the increment (the UPDATE is guarded on
+/// `status IN (missing, requested)`).
+class _IncrementSeedRow {
+  const _IncrementSeedRow({
+    required this.hostIndex,
+    required this.counter,
+    required this.status,
+    required this.requestCount,
+  });
+
+  final int hostIndex;
+  final int counter;
+  final SyncSequenceStatus status;
+  final int requestCount;
+
+  String get hostId => 'host-$hostIndex';
+
+  /// The composite key that `batchIncrementRequestCounts` matches on.
+  (String, int) get key => (hostId, counter);
+
+  /// Mirrors the SQL guard `status IN (missing, requested)`.
+  bool get isEligible =>
+      status == SyncSequenceStatus.missing ||
+      status == SyncSequenceStatus.requested;
+}
+
+/// One generated target for `batchIncrementRequestCounts`. The pair may or
+/// may not correspond to a seeded row; absent pairs must be silently
+/// ignored.
+class _IncrementTarget {
+  const _IncrementTarget({required this.hostIndex, required this.counter});
+
+  final int hostIndex;
+  final int counter;
+
+  String get hostId => 'host-$hostIndex';
+  (String, int) get key => (hostId, counter);
+}
+
+class _IncrementScenario {
+  const _IncrementScenario({required this.rows, required this.targets});
+
+  final List<_IncrementSeedRow> rows;
+  final List<_IncrementTarget> targets;
+}
+
+extension _AnyIncrementScenario on Any {
+  Generator<_IncrementSeedRow> get incrementSeedRow => combine4(
+    intInRange(0, 3),
+    intInRange(1, 6),
+    choose(const [
+      SyncSequenceStatus.missing,
+      SyncSequenceStatus.requested,
+      // Ineligible statuses — the guard must skip these even when targeted.
+      SyncSequenceStatus.received,
+      SyncSequenceStatus.backfilled,
+    ]),
+    intInRange(0, 5),
+    (int hostIndex, int counter, SyncSequenceStatus status, int requestCount) =>
+        _IncrementSeedRow(
+          hostIndex: hostIndex,
+          counter: counter,
+          status: status,
+          requestCount: requestCount,
+        ),
+  );
+
+  Generator<_IncrementTarget> get incrementTarget => combine2(
+    // Host range overlaps the seed range but extends one beyond it so some
+    // targets address rows that were never inserted.
+    intInRange(0, 4),
+    intInRange(1, 7),
+    (int hostIndex, int counter) =>
+        _IncrementTarget(hostIndex: hostIndex, counter: counter),
+  );
+
+  Generator<_IncrementScenario> get incrementScenario => combine2(
+    listWithLengthInRange(0, 10, incrementSeedRow),
+    listWithLengthInRange(0, 10, incrementTarget),
+    (List<_IncrementSeedRow> rows, List<_IncrementTarget> targets) =>
+        _IncrementScenario(rows: rows, targets: targets),
+  );
+}
+
 Future<void> _insertSequenceRow(
   SyncDatabase database, {
   required String hostId,
@@ -1479,5 +1566,126 @@ void main() {
       expect(entry.lastRequestedAt, isNotNull);
       expect(entry.lastRequestedAt!.isAfter(originalDate), isTrue);
     });
+  });
+
+  // Property: the bulk UPDATE in `batchIncrementRequestCounts` only touches
+  // rows whose `(host_id, counter)` is targeted AND whose status is `missing`
+  // or `requested` (the `WHERE ... AND status IN (missing, requested)` guard).
+  // For every such matched row, `request_count` must increase by exactly 1
+  // and the status must flip to `requested`; every other row — non-targeted
+  // rows and targeted-but-ineligible rows — must keep its original
+  // `request_count` and status; and targets that address no seeded row must
+  // be silently ignored (no insert, no throw).
+  //
+  // One in-memory DB is opened in this group's setUp and `sync_sequence_log`
+  // is truncated at the start of each generated run, so every input starts
+  // from a clean table without paying the cost of opening a DB per run.
+  group('batchIncrementRequestCounts property', () {
+    late SyncDatabase database;
+
+    setUp(() async {
+      database = SyncDatabase(inMemoryDatabase: true);
+    });
+    tearDown(() async {
+      await database.close();
+    });
+
+    Glados(any.incrementScenario, ExploreConfig(numRuns: 120)).test(
+      'increments exactly the matched (present + actionable) targets by 1, '
+      'leaves everything else untouched, and ignores absent targets',
+      (scenario) async {
+        // Start every run from an empty table (shared-DB pattern).
+        await database.customStatement('DELETE FROM sync_sequence_log');
+        await database.customStatement('DELETE FROM sync_sequence_watermarks');
+
+        // De-duplicate seed rows by their (host_id, counter) key; the table
+        // has a unique key on that pair, so later duplicates would be
+        // ignored by insertOrIgnore and skew the oracle.
+        final seededByKey = <(String, int), _IncrementSeedRow>{};
+        for (final row in scenario.rows) {
+          seededByKey.putIfAbsent(row.key, () => row);
+        }
+        final seeded = seededByKey.values.toList();
+
+        final base = DateTime(2024, 3, 15, 10);
+        if (seeded.isNotEmpty) {
+          await database.batchInsertSequenceEntries([
+            for (final row in seeded)
+              SyncSequenceLogCompanion(
+                hostId: Value(row.hostId),
+                counter: Value(row.counter),
+                status: Value(row.status.index),
+                requestCount: Value(row.requestCount),
+                createdAt: Value(base),
+                updatedAt: Value(base),
+              ),
+          ]);
+        }
+
+        // De-duplicate targets so the oracle is "matched ⇒ +1" rather than
+        // "matched ⇒ +occurrences". (A repeated target would legitimately
+        // increment more than once because each batch statement sees the
+        // prior write — still status IN (missing, requested) — but we keep
+        // the property's oracle to a single, exact increment.)
+        final targetKeys = <(String, int)>{
+          for (final target in scenario.targets) target.key,
+        };
+
+        await database.batchIncrementRequestCounts([
+          for (final key in targetKeys) (hostId: key.$1, counter: key.$2),
+        ]);
+
+        // No phantom rows: the table holds exactly the seeded keys. Absent
+        // targets must not have inserted anything.
+        final allRows = await database.select(database.syncSequenceLog).get();
+        expect(
+          allRows.map((r) => (r.hostId, r.counter)).toSet(),
+          seededByKey.keys.toSet(),
+        );
+
+        for (final seedRow in seeded) {
+          final row = await database.getEntryByHostAndCounter(
+            seedRow.hostId,
+            seedRow.counter,
+          );
+          expect(row, isNotNull);
+
+          final wasTargeted = targetKeys.contains(seedRow.key);
+          final shouldIncrement = wasTargeted && seedRow.isEligible;
+
+          if (shouldIncrement) {
+            expect(
+              row!.requestCount,
+              seedRow.requestCount + 1,
+              reason:
+                  'targeted actionable row ${seedRow.key} must increment by 1',
+            );
+            expect(
+              row.status,
+              SyncSequenceStatus.requested.index,
+              reason:
+                  'targeted actionable row ${seedRow.key} must be requested',
+            );
+            expect(row.lastRequestedAt, isNotNull);
+          } else {
+            expect(
+              row!.requestCount,
+              seedRow.requestCount,
+              reason:
+                  'row ${seedRow.key} (targeted=$wasTargeted, '
+                  'eligible=${seedRow.isEligible}) must be unchanged',
+            );
+            expect(
+              row.status,
+              seedRow.status.index,
+              reason: 'row ${seedRow.key} status must be unchanged',
+            );
+            // Untouched rows keep their seeded null lastRequestedAt.
+            expect(row.lastRequestedAt, isNull);
+          }
+        }
+      },
+      tags: 'glados',
+    );
   });
 }
