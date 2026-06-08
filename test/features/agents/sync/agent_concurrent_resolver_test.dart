@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -444,5 +445,147 @@ void main() {
       },
       tags: 'glados',
     );
+  });
+
+  group('resolveConcurrentAgentEntityOverride', () {
+    PlannerKnowledgeEntity knowledge({
+      required KnowledgeStatus status,
+      String id = 'k1',
+    }) =>
+        AgentDomainEntity.plannerKnowledge(
+              id: id,
+              agentId: 'a1',
+              key: 'deep-work',
+              hook: 'no deep work before 10',
+              statementText: 'Never schedule deep work before 10:00.',
+              source: KnowledgeSource.userStated,
+              status: status,
+              createdAt: DateTime(2026, 5, 20),
+              updatedAt: DateTime(2026, 5, 20),
+              vectorClock: null,
+            )
+            as PlannerKnowledgeEntity;
+
+    ScheduledWakeEntity wake({
+      required DateTime scheduledAt,
+      required ScheduledWakeStatus status,
+      String id = 'w1',
+    }) =>
+        AgentDomainEntity.scheduledWake(
+              id: id,
+              agentId: 'a1',
+              scheduledAt: scheduledAt,
+              status: status,
+              reason: 'scheduled',
+              updatedAt: DateTime(2026, 5, 20),
+              vectorClock: null,
+              triggerTokens: const ['planning_day:dayplan-2026-05-25'],
+            )
+            as ScheduledWakeEntity;
+
+    group('durable knowledge — retraction is terminal', () {
+      test('a concurrent retract beats a concurrent edit, both directions', () {
+        final retracted = knowledge(status: KnowledgeStatus.retracted);
+        final confirmed = knowledge(status: KnowledgeStatus.confirmed);
+        // Both replicas pick the retracted version → converge on retracted, so
+        // a concurrent edit cannot revive deliberately-removed knowledge.
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: retracted,
+            incoming: confirmed,
+          ),
+          ConcurrentWinner.local,
+        );
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: confirmed,
+            incoming: retracted,
+          ),
+          ConcurrentWinner.incoming,
+        );
+      });
+
+      test('same-status conflicts defer to LWW (null)', () {
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: knowledge(status: KnowledgeStatus.confirmed),
+            incoming: knowledge(status: KnowledgeStatus.confirmed, id: 'k2'),
+          ),
+          isNull,
+        );
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: knowledge(status: KnowledgeStatus.retracted),
+            incoming: knowledge(status: KnowledgeStatus.retracted, id: 'k2'),
+          ),
+          isNull,
+        );
+      });
+    });
+
+    group('scheduled wake — future reschedule beats past consume', () {
+      final earlier = DateTime(2026, 5, 25, 9);
+      final later = DateTime(2026, 5, 25, 18);
+
+      test('a pending re-arm to a later instant beats a consume of an earlier '
+          'one, both directions', () {
+        final rearm = wake(
+          scheduledAt: later,
+          status: ScheduledWakeStatus.pending,
+        );
+        final consumed = wake(
+          scheduledAt: earlier,
+          status: ScheduledWakeStatus.consumed,
+        );
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: rearm,
+            incoming: consumed,
+          ),
+          ConcurrentWinner.local,
+        );
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: consumed,
+            incoming: rearm,
+          ),
+          ConcurrentWinner.incoming,
+        );
+      });
+
+      test('a same-instant conflict defers to LWW so a fired wake is never '
+          'resurrected (null → no double-fire)', () {
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: wake(
+              scheduledAt: earlier,
+              status: ScheduledWakeStatus.pending,
+            ),
+            incoming: wake(
+              scheduledAt: earlier,
+              status: ScheduledWakeStatus.consumed,
+            ),
+          ),
+          isNull,
+        );
+      });
+    });
+
+    test('defers to LWW for entity types without a monotonic rule', () {
+      final state =
+          AgentDomainEntity.agentState(
+                id: 's1',
+                agentId: 'a1',
+                revision: 1,
+                slots: const AgentSlots(),
+                updatedAt: DateTime(2024),
+                vectorClock: null,
+              )
+              as AgentStateEntity;
+      expect(
+        resolveConcurrentAgentEntityOverride(local: state, incoming: state),
+        isNull,
+      );
+    });
   });
 }

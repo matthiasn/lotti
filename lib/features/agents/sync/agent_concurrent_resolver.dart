@@ -1,4 +1,5 @@
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
 /// Which of two concurrent versions of the same entity/link id should win.
@@ -51,6 +52,42 @@ ConcurrentWinner resolveConcurrent({
   return compareClocksCanonically(incomingVc, localVc) > 0
       ? ConcurrentWinner.incoming
       : ConcurrentWinner.local;
+}
+
+/// Type-specific **monotonic** resolution for two *concurrent* versions of one
+/// agent entity, applied BEFORE the generic [resolveConcurrent] LWW. Returns
+/// `null` to defer to LWW. Pure and symmetric — both replicas pass the same
+/// `(local, incoming)` pair and compute the same winner — so the result stays
+/// convergent regardless of arrival order.
+///
+/// The two rules close ADR 0022 conflict holes that raw wall-clock LWW on a
+/// shared id mishandles:
+///
+/// - **Durable knowledge — retraction is terminal.** A concurrent retract must
+///   not be revived by a concurrent edit/confirm of the same knowledge entry
+///   (a later wall-clock edit would otherwise resurrect knowledge the user
+///   deliberately removed). When exactly one side is retracted, it wins.
+/// - **Scheduled wakes — a future reschedule beats a past consume.** A pending
+///   pre-warm targeting a strictly-later instant wins over a concurrent consume
+///   of an earlier instant, so a re-armed wake is not silently dropped.
+///   Same-instant conflicts defer to LWW (the consume wins), so a stale pending
+///   can never resurrect a wake that already fired — no double-fire.
+ConcurrentWinner? resolveConcurrentAgentEntityOverride({
+  required AgentDomainEntity local,
+  required AgentDomainEntity incoming,
+}) {
+  if (local is PlannerKnowledgeEntity && incoming is PlannerKnowledgeEntity) {
+    final localRetracted = local.status == KnowledgeStatus.retracted;
+    final incomingRetracted = incoming.status == KnowledgeStatus.retracted;
+    if (localRetracted == incomingRetracted) return null;
+    return localRetracted ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+  }
+  if (local is ScheduledWakeEntity && incoming is ScheduledWakeEntity) {
+    final byTarget = local.scheduledAt.compareTo(incoming.scheduledAt);
+    if (byTarget == 0) return null;
+    return byTarget > 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+  }
+  return null;
 }
 
 /// A total, replica-independent ordering of two vector clocks. Compares each
