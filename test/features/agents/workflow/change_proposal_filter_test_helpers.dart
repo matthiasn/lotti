@@ -1,6 +1,5 @@
 import 'package:glados/glados.dart' as glados;
 
-
 enum GeneratedRedundancyToolKind { priority, status, title, language }
 
 enum GeneratedRedundancyArgShape {

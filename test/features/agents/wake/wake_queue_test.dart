@@ -1,158 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/wake/wake_queue.dart';
-
-enum _GeneratedWakeQueueOperationKind {
-  enqueue,
-  dequeue,
-  mergeTokens,
-  removeByAgent,
-  requeueLastDequeued,
-  clearHistoryWhenEmpty,
-}
-
-enum _GeneratedWakeQueueRunKeySlot { first, second, third, fourth }
-
-enum _GeneratedWakeQueueAgentSlot { first, second, third }
-
-enum _GeneratedWakeQueueTokenSlot { first, second, third, fourth }
-
-/// Workspace partition for a generated job. `none` maps to a `null`
-/// workspace key (task/project agents); `dayA`/`dayB` are two day workspaces
-/// under one planner identity — generated independently of the agent slot so
-/// the model exercises "same agent, different workspace" partitioning.
-enum _GeneratedWakeQueueWorkspaceSlot { none, dayA, dayB }
-
-final _generatedWakeQueueBase = DateTime(2026, 5, 18, 10);
-
-String _generatedWakeQueueRunKey(_GeneratedWakeQueueRunKeySlot slot) =>
-    'generated-wake-run-${slot.name}';
-
-String _generatedWakeQueueAgentId(_GeneratedWakeQueueAgentSlot slot) =>
-    'generated-wake-agent-${slot.name}';
-
-String _generatedWakeQueueToken(_GeneratedWakeQueueTokenSlot slot) =>
-    'generated-wake-token-${slot.name}';
-
-String? _generatedWakeQueueWorkspace(_GeneratedWakeQueueWorkspaceSlot slot) =>
-    switch (slot) {
-      _GeneratedWakeQueueWorkspaceSlot.none => null,
-      _GeneratedWakeQueueWorkspaceSlot.dayA => 'day:dayplan-2026-05-18',
-      _GeneratedWakeQueueWorkspaceSlot.dayB => 'day:dayplan-2026-05-19',
-    };
-
-class _GeneratedWakeQueueOperation {
-  const _GeneratedWakeQueueOperation({
-    required this.kind,
-    required this.runKeySlot,
-    required this.agentSlot,
-    required this.tokenSlot,
-    required this.workspaceSlot,
-  });
-
-  final _GeneratedWakeQueueOperationKind kind;
-  final _GeneratedWakeQueueRunKeySlot runKeySlot;
-  final _GeneratedWakeQueueAgentSlot agentSlot;
-  final _GeneratedWakeQueueTokenSlot tokenSlot;
-  final _GeneratedWakeQueueWorkspaceSlot workspaceSlot;
-
-  String get runKey => _generatedWakeQueueRunKey(runKeySlot);
-
-  String get agentId => _generatedWakeQueueAgentId(agentSlot);
-
-  String get token => _generatedWakeQueueToken(tokenSlot);
-
-  String? get workspaceKey => _generatedWakeQueueWorkspace(workspaceSlot);
-
-  @override
-  String toString() {
-    return '_GeneratedWakeQueueOperation('
-        'kind: $kind, runKeySlot: $runKeySlot, '
-        'agentSlot: $agentSlot, tokenSlot: $tokenSlot, '
-        'workspaceSlot: $workspaceSlot)';
-  }
-}
-
-class _GeneratedWakeQueueScenario {
-  const _GeneratedWakeQueueScenario({required this.operations});
-
-  final List<_GeneratedWakeQueueOperation> operations;
-
-  @override
-  String toString() {
-    return '_GeneratedWakeQueueScenario(operations: $operations)';
-  }
-}
-
-class _GeneratedWakeQueueModelJob {
-  _GeneratedWakeQueueModelJob({
-    required this.runKey,
-    required this.agentId,
-    required Set<String> triggerTokens,
-    required this.workspaceKey,
-  }) : triggerTokens = Set<String>.of(triggerTokens);
-
-  final String runKey;
-  final String agentId;
-  final Set<String> triggerTokens;
-  final String? workspaceKey;
-}
-
-class _GeneratedWakeQueueModel {
-  final queue = <_GeneratedWakeQueueModelJob>[];
-  final seenRunKeys = <String>{};
-  _GeneratedWakeQueueModelJob? lastDequeued;
-}
-
-extension _AnyGeneratedWakeQueueScenario on glados.Any {
-  glados.Generator<_GeneratedWakeQueueOperationKind>
-  get wakeQueueOperationKind =>
-      glados.AnyUtils(this).choose(_GeneratedWakeQueueOperationKind.values);
-
-  glados.Generator<_GeneratedWakeQueueRunKeySlot> get wakeQueueRunKeySlot =>
-      glados.AnyUtils(this).choose(_GeneratedWakeQueueRunKeySlot.values);
-
-  glados.Generator<_GeneratedWakeQueueAgentSlot> get wakeQueueAgentSlot =>
-      glados.AnyUtils(this).choose(_GeneratedWakeQueueAgentSlot.values);
-
-  glados.Generator<_GeneratedWakeQueueTokenSlot> get wakeQueueTokenSlot =>
-      glados.AnyUtils(this).choose(_GeneratedWakeQueueTokenSlot.values);
-
-  glados.Generator<_GeneratedWakeQueueWorkspaceSlot>
-  get wakeQueueWorkspaceSlot =>
-      glados.AnyUtils(this).choose(_GeneratedWakeQueueWorkspaceSlot.values);
-
-  glados.Generator<_GeneratedWakeQueueOperation> get wakeQueueOperation =>
-      glados.CombinableAny(this).combine5(
-        wakeQueueOperationKind,
-        wakeQueueRunKeySlot,
-        wakeQueueAgentSlot,
-        wakeQueueTokenSlot,
-        wakeQueueWorkspaceSlot,
-        (
-          _GeneratedWakeQueueOperationKind kind,
-          _GeneratedWakeQueueRunKeySlot runKeySlot,
-          _GeneratedWakeQueueAgentSlot agentSlot,
-          _GeneratedWakeQueueTokenSlot tokenSlot,
-          _GeneratedWakeQueueWorkspaceSlot workspaceSlot,
-        ) => _GeneratedWakeQueueOperation(
-          kind: kind,
-          runKeySlot: runKeySlot,
-          agentSlot: agentSlot,
-          tokenSlot: tokenSlot,
-          workspaceSlot: workspaceSlot,
-        ),
-      );
-
-  glados.Generator<_GeneratedWakeQueueScenario> get wakeQueueScenario =>
-      glados.ListAnys(this)
-          .listWithLengthInRange(0, 40, wakeQueueOperation)
-          .map(
-            (operations) => _GeneratedWakeQueueScenario(
-              operations: operations,
-            ),
-          );
-}
+import 'wake_queue_test_helpers.dart';
 
 void main() {
   late WakeQueue queue;
@@ -543,16 +392,16 @@ void main() {
       glados.ExploreConfig(numRuns: 160),
     ).test('matches generated operation sequence semantics', (scenario) {
       final generatedQueue = WakeQueue();
-      final model = _GeneratedWakeQueueModel();
+      final model = GeneratedWakeQueueModel();
       WakeJob? lastDequeued;
 
       for (final (index, operation) in scenario.operations.indexed) {
         switch (operation.kind) {
-          case _GeneratedWakeQueueOperationKind.enqueue:
+          case GeneratedWakeQueueOperationKind.enqueue:
             final expectedAccepted = model.seenRunKeys.add(operation.runKey);
             if (expectedAccepted) {
               model.queue.add(
-                _GeneratedWakeQueueModelJob(
+                GeneratedWakeQueueModelJob(
                   runKey: operation.runKey,
                   agentId: operation.agentId,
                   triggerTokens: {operation.token},
@@ -568,7 +417,7 @@ void main() {
                 reason: 'subscription',
                 triggerTokens: {operation.token},
                 workspaceKey: operation.workspaceKey,
-                createdAt: _generatedWakeQueueBase.add(
+                createdAt: generatedWakeQueueBase.add(
                   Duration(seconds: index),
                 ),
               ),
@@ -576,7 +425,7 @@ void main() {
 
             expect(accepted, expectedAccepted, reason: '$scenario');
 
-          case _GeneratedWakeQueueOperationKind.dequeue:
+          case GeneratedWakeQueueOperationKind.dequeue:
             final expected = model.queue.isEmpty
                 ? null
                 : model.queue.removeAt(0);
@@ -593,7 +442,7 @@ void main() {
               reason: '$scenario',
             );
 
-          case _GeneratedWakeQueueOperationKind.mergeTokens:
+          case GeneratedWakeQueueOperationKind.mergeTokens:
             // Merge partitions by (agentId, workspaceKey): only a job in the
             // same workspace coalesces.
             final expected = model.queue
@@ -613,10 +462,10 @@ void main() {
 
             expect(merged, expected != null, reason: '$scenario');
 
-          case _GeneratedWakeQueueOperationKind.removeByAgent:
+          case GeneratedWakeQueueOperationKind.removeByAgent:
             // Remove partitions by (agentId, workspaceKey): a day-A wake must
             // not drop another day's queued work under one identity.
-            final removed = <_GeneratedWakeQueueModelJob>[];
+            final removed = <GeneratedWakeQueueModelJob>[];
             model.queue.removeWhere((job) {
               if (job.agentId == operation.agentId &&
                   job.workspaceKey == operation.workspaceKey) {
@@ -637,14 +486,14 @@ void main() {
               reason: '$scenario',
             );
 
-          case _GeneratedWakeQueueOperationKind.requeueLastDequeued:
+          case GeneratedWakeQueueOperationKind.requeueLastDequeued:
             final expected = model.lastDequeued;
             if (expected != null && lastDequeued != null) {
               model.queue.add(expected);
               generatedQueue.requeue(lastDequeued);
             }
 
-          case _GeneratedWakeQueueOperationKind.clearHistoryWhenEmpty:
+          case GeneratedWakeQueueOperationKind.clearHistoryWhenEmpty:
             if (model.queue.isEmpty) {
               model.seenRunKeys.clear();
               generatedQueue.clearHistory();

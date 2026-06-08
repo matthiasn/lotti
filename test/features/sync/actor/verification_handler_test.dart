@@ -6,259 +6,7 @@ import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-enum _GeneratedVerificationDirection {
-  incoming,
-  outgoing,
-}
-
-enum _GeneratedVerificationStep {
-  request,
-  ready,
-  key,
-}
-
-enum _GeneratedVerificationEmojiMode {
-  empty,
-  one,
-  two,
-  throws,
-}
-
-class _GeneratedVerificationObservation {
-  const _GeneratedVerificationObservation({
-    required this.step,
-    required this.done,
-    required this.canceled,
-    required this.emojiMode,
-  });
-
-  final _GeneratedVerificationStep step;
-  final bool done;
-  final bool canceled;
-  final _GeneratedVerificationEmojiMode emojiMode;
-
-  String get wireStep {
-    return switch (step) {
-      _GeneratedVerificationStep.request => 'm.key.verification.request',
-      _GeneratedVerificationStep.ready => 'm.key.verification.ready',
-      _GeneratedVerificationStep.key => 'm.key.verification.key',
-    };
-  }
-
-  List<KeyVerificationEmoji> get emojis {
-    return switch (emojiMode) {
-      _GeneratedVerificationEmojiMode.empty => <KeyVerificationEmoji>[],
-      _GeneratedVerificationEmojiMode.one => <KeyVerificationEmoji>[
-        KeyVerificationEmoji(1),
-      ],
-      _GeneratedVerificationEmojiMode.two => <KeyVerificationEmoji>[
-        KeyVerificationEmoji(1),
-        KeyVerificationEmoji(2),
-      ],
-      _GeneratedVerificationEmojiMode.throws => <KeyVerificationEmoji>[],
-    };
-  }
-
-  List<String> get visibleEmojis {
-    if (step != _GeneratedVerificationStep.key ||
-        emojiMode == _GeneratedVerificationEmojiMode.throws) {
-      return const <String>[];
-    }
-    return emojis.map((emoji) => emoji.emoji).toList(growable: false);
-  }
-
-  String get emojiKey => visibleEmojis.join('|');
-
-  bool get terminal => done || canceled;
-
-  @override
-  String toString() {
-    return '_GeneratedVerificationObservation('
-        'step: $step, '
-        'done: $done, '
-        'canceled: $canceled, '
-        'emojiMode: $emojiMode'
-        ')';
-  }
-}
-
-class _GeneratedVerificationEvent {
-  const _GeneratedVerificationEvent({
-    required this.direction,
-    required this.observation,
-  });
-
-  final _GeneratedVerificationDirection direction;
-  final _GeneratedVerificationObservation observation;
-
-  String get wireDirection => switch (direction) {
-    _GeneratedVerificationDirection.incoming => 'incoming',
-    _GeneratedVerificationDirection.outgoing => 'outgoing',
-  };
-}
-
-class _GeneratedVerificationScenario {
-  const _GeneratedVerificationScenario({
-    required this.direction,
-    required this.initial,
-    required this.updates,
-  });
-
-  final _GeneratedVerificationDirection direction;
-  final _GeneratedVerificationObservation initial;
-  final List<_GeneratedVerificationObservation> updates;
-
-  String get wireDirection => switch (direction) {
-    _GeneratedVerificationDirection.incoming => 'incoming',
-    _GeneratedVerificationDirection.outgoing => 'outgoing',
-  };
-
-  List<_GeneratedVerificationEvent> expectedEvents() {
-    final expected = <_GeneratedVerificationEvent>[
-      _GeneratedVerificationEvent(direction: direction, observation: initial),
-    ];
-    if (initial.terminal) {
-      return expected;
-    }
-
-    var lastStep = initial.wireStep;
-    var lastDone = initial.done;
-    var lastCanceled = initial.canceled;
-    var lastEmojis = initial.emojiKey;
-    var active = true;
-
-    for (final update in updates) {
-      if (!active) {
-        break;
-      }
-      final changed =
-          lastStep != update.wireStep ||
-          lastDone != update.done ||
-          lastCanceled != update.canceled ||
-          lastEmojis != update.emojiKey;
-      if (changed) {
-        expected.add(
-          _GeneratedVerificationEvent(
-            direction: direction,
-            observation: update,
-          ),
-        );
-        lastStep = update.wireStep;
-        lastDone = update.done;
-        lastCanceled = update.canceled;
-        lastEmojis = update.emojiKey;
-      }
-      if (update.terminal) {
-        active = false;
-      }
-    }
-
-    return expected;
-  }
-
-  bool get expectedActive {
-    if (initial.terminal) {
-      return false;
-    }
-    for (final update in updates) {
-      if (update.terminal) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedVerificationScenario('
-        'direction: $direction, '
-        'initial: $initial, '
-        'updates: $updates'
-        ')';
-  }
-}
-
-extension _AnyGeneratedVerificationScenario on glados.Any {
-  glados.Generator<_GeneratedVerificationDirection> get verificationDirection =>
-      glados.AnyUtils(this).choose(_GeneratedVerificationDirection.values);
-
-  glados.Generator<_GeneratedVerificationStep> get verificationStep =>
-      glados.AnyUtils(this).choose(_GeneratedVerificationStep.values);
-
-  glados.Generator<_GeneratedVerificationEmojiMode> get verificationEmojiMode =>
-      glados.AnyUtils(this).choose(_GeneratedVerificationEmojiMode.values);
-
-  glados.Generator<_GeneratedVerificationObservation>
-  get verificationObservation => glados.CombinableAny(this).combine4(
-    verificationStep,
-    glados.BoolAny(this).bool,
-    glados.BoolAny(this).bool,
-    verificationEmojiMode,
-    (
-      _GeneratedVerificationStep step,
-      bool done,
-      bool canceled,
-      _GeneratedVerificationEmojiMode emojiMode,
-    ) => _GeneratedVerificationObservation(
-      step: step,
-      done: done,
-      canceled: canceled,
-      emojiMode: emojiMode,
-    ),
-  );
-
-  glados.Generator<_GeneratedVerificationScenario> get verificationScenario =>
-      glados.CombinableAny(this).combine3(
-        verificationDirection,
-        verificationObservation,
-        glados.ListAnys(
-          this,
-        ).listWithLengthInRange(0, 10, verificationObservation),
-        (
-          _GeneratedVerificationDirection direction,
-          _GeneratedVerificationObservation initial,
-          List<_GeneratedVerificationObservation> updates,
-        ) => _GeneratedVerificationScenario(
-          direction: direction,
-          initial: initial,
-          updates: updates,
-        ),
-      );
-}
-
-class _VerificationProbe {
-  _VerificationProbe(this.observation) {
-    when(() => verification.lastStep).thenAnswer((_) => observation.wireStep);
-    when(() => verification.isDone).thenAnswer((_) => observation.done);
-    when(() => verification.canceled).thenAnswer((_) => observation.canceled);
-    when(() => verification.sasEmojis).thenAnswer((_) {
-      if (observation.emojiMode == _GeneratedVerificationEmojiMode.throws) {
-        throw StateError('generated emoji failure');
-      }
-      return observation.emojis;
-    });
-    when(() => verification.onUpdate).thenAnswer((_) => _previousOnUpdate);
-    when(() => verification.onUpdate = any()).thenAnswer((invocation) {
-      currentOnUpdate =
-          invocation.positionalArguments.first as void Function()?;
-      return null;
-    });
-    when(verification.cancel).thenAnswer((_) async {});
-  }
-
-  final verification = MockKeyVerification();
-
-  void _previousOnUpdate() {}
-
-  _GeneratedVerificationObservation observation;
-  void Function()? currentOnUpdate;
-
-  void apply(_GeneratedVerificationObservation next) {
-    observation = next;
-    currentOnUpdate?.call();
-  }
-}
+import 'verification_handler_test_helpers.dart';
 
 void main() {
   group('VerificationHandler', () {
@@ -269,7 +17,7 @@ void main() {
       'generated verification observations emit only modelled state changes',
       (scenario) async {
         final events = <Map<String, Object?>>[];
-        final probe = _VerificationProbe(scenario.initial);
+        final probe = VerificationProbe(scenario.initial);
         final handler = VerificationHandler(
           onStateChanged: events.add,
           pollInterval: const Duration(days: 1),
@@ -277,9 +25,9 @@ void main() {
 
         try {
           switch (scenario.direction) {
-            case _GeneratedVerificationDirection.incoming:
+            case GeneratedVerificationDirection.incoming:
               handler.trackIncoming(probe.verification);
-            case _GeneratedVerificationDirection.outgoing:
+            case GeneratedVerificationDirection.outgoing:
               handler.trackOutgoing(probe.verification);
           }
 
@@ -300,10 +48,10 @@ void main() {
 
           final snapshot = handler.snapshot();
           switch (scenario.direction) {
-            case _GeneratedVerificationDirection.incoming:
+            case GeneratedVerificationDirection.incoming:
               expect(snapshot['hasIncoming'], scenario.expectedActive);
               expect(snapshot['hasOutgoing'], isFalse);
-            case _GeneratedVerificationDirection.outgoing:
+            case GeneratedVerificationDirection.outgoing:
               expect(snapshot['hasOutgoing'], scenario.expectedActive);
               expect(snapshot['hasIncoming'], isFalse);
           }
