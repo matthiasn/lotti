@@ -71,18 +71,22 @@ void main() {
         expect(find.byIcon(Icons.wifi_off_rounded), findsOneWidget);
       });
 
-      testWidgets('shows container with error styling', (
+      testWidgets('card border is tinted with the theme error color', (
         WidgetTester tester,
       ) async {
         await tester.pumpWidget(createTestWidget(error: testError));
         await tester.pump();
 
-        // Look for a Card with a border (matches new implementation)
+        // The border must come from the error palette, not be an arbitrary
+        // colour — that is what signals "this is an error" visually.
+        final scheme = Theme.of(
+          tester.element(find.byType(AiErrorDisplay)),
+        ).colorScheme;
+
         final card = tester.widget<Card>(find.byType(Card).first);
-        final shape = card.shape as RoundedRectangleBorder?;
-        expect(shape, isNotNull);
-        expect(shape?.side, isNotNull);
-        expect(shape?.borderRadius, isNotNull);
+        final shape = card.shape! as RoundedRectangleBorder;
+        expect(shape.side.color, scheme.error.withValues(alpha: 0.25));
+        expect(shape.side.width, 1.5);
       });
     });
 
