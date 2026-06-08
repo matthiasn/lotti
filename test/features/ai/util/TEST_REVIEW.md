@@ -45,6 +45,7 @@
 - [x] **[MED]** `test/features/ai/util/model_prepopulation_service_test.dart` (659 lines) vs impl (150 lines) — the ratio is 4×. The Glados generator scaffold is verbose but necessary; the static tests themselves repeat the 8-key `when` stub. Extract a `_stubRepo(mock, existingConfigs)` helper. **RESOLVED:** Done — added `stubRepo({models, providers})` covering the three standard stubs; the four full verbatim blocks now call it (capture-variant stubs stay inline since they ARE the assertions).
 
 - [ ] **[LOW]** `lib/features/ai/util/profile_seeding_service.dart` (255 lines) contains both the seeding logic and the full `defaultProfiles` static list (135 lines). Separating these is optional but would make each concern easier to locate.
+  **DEFERRED:** this is an impl-file split (lib/), outside the test/features/ai/util/ scope of this pass; touching the source module and its importers belongs to a separate refactor task.
 
 ---
 
@@ -56,7 +57,8 @@
 
 - [x] **[MED]** `test/features/ai/util/known_models_test.dart` lines 480–489: `'should have image generation model in geminiModels'` and `'image generation model should have valid configuration'` (lines 480–489) are near-duplicates that both fetch the same model and assert very similar things. Merge into one parameterized test or at minimum remove the redundant `isNotEmpty` check from the second test. **RESOLVED:** Done — merged into one test asserting modalities, providerModelId, reasoning flag, name, and description on the image-generation model.
 
-- [ ] **[LOW]** `test/features/ai/util/known_models_test.dart` lines 1196–1206: `'Anthropic category name + color are wired'` and `'Ollama category name + color are wired'` only assert `isNotEmpty` / `startsWith('#')` on string constants. These are weaker than the equivalent Alibaba tests (line 1085) that check exact values. Standardize to exact value assertions.
+- [x] **[LOW]** `test/features/ai/util/known_models_test.dart` lines 1196–1206: `'Anthropic category name + color are wired'` and `'Ollama category name + color are wired'` only assert `isNotEmpty` / `startsWith('#')` on string constants. These are weaker than the equivalent Alibaba tests (line 1085) that check exact values. Standardize to exact value assertions.
+  **RESOLVED:** both tests now assert exact values mirroring the Alibaba test — Anthropic `'Test Category Anthropic Enabled'` / `'#D97757'`, Ollama `'Test Category Ollama Enabled'` / `'#0F172A'` (values read from `known_models_ftue.dart`).
 
 ---
 
@@ -73,8 +75,10 @@
 
 - [x] **[MED]** `lib/features/ai/util/mlx_audio_channel.dart` — `MlxAudioRealtimeEvent.fromMap` and `MlxAudioModelDownloadProgress.fromMap` are pure deserializers with enum dispatch. The existing Glados `downloadProgressScenario` (in `mlx_audio_channel_test.dart`) covers `normalizedProgress` / `percentComplete` / `hasMeasuredProgress` thoroughly. ✓   **RESOLVED:** Stale — the item itself marks the coverage as complete (✓).
   `MlxAudioRealtimeEvent._typeFromString` has a `_` catch-all mapped to `.error` but no Glados coverage for arbitrary unknown strings. A small property (any non-canonical string returns `.error`) would tighten the contract.
+  **RESOLVED:** added a `glados.Glados<String>` property (`any.letterOrDigits`, numRuns 120) in the `MlxAudioRealtimeEvent` group asserting any non-canonical type string falls through to `MlxAudioRealtimeEventType.error`; canonical strings (all dotted, unreachable by `letterOrDigits`) are guard-skipped for safety.
 
-- [ ] **[LOW]** `lib/features/ai/util/pcm_amplitude.dart` — `computeDbfsFromPcm16` and `measurePcm16Amplitude` are thoroughly Glados-covered at numRuns=200 each. ✓
+- [x] **[LOW]** `lib/features/ai/util/pcm_amplitude.dart` — `computeDbfsFromPcm16` and `measurePcm16Amplitude` are thoroughly Glados-covered at numRuns=200 each. ✓
+  **RESOLVED (already covered):** both functions retain dedicated Glados properties (now at numRuns 120 each per the speed item), plus exhaustive static edge-case tests; no gap.
 
 ---
 
@@ -90,7 +94,8 @@
 
 - [x] **[MED]** `lib/features/ai/util/mlx_audio_channel.dart` — `MlxAudioModelProgressStore._setProgressIfNewer` (lines 515–527) guards against regressing a `downloading` → `notInstalled` transition and an `installed` → `notInstalled/downloading` transition. The channel test file tests `MlxAudioModelDownloadProgress` computed properties but the Riverpod provider-level `_setProgressIfNewer` state guard logic is not directly covered. **RESOLVED:** Done — added a store-level test driving the guard through the fake channel: a stale notInstalled poll cannot regress downloading, progressing to installed applies, and neither notInstalled nor downloading can regress installed.
 
-- [ ] **[LOW]** `lib/features/ai/util/profile_resolver.dart` — `_resolveFromModelId` legacy fallback (lines 167–186) is covered by `'uses legacy modelId fallback when no profileId anywhere'` and `'falls back to legacy when profile not found'`. ✓
+- [x] **[LOW]** `lib/features/ai/util/profile_resolver.dart` — `_resolveFromModelId` legacy fallback (lines 167–186) is covered by `'uses legacy modelId fallback when no profileId anywhere'` and `'falls back to legacy when profile not found'`. ✓
+  **RESOLVED (already covered):** confirmed both named tests exist in `profile_resolver_test.dart` (plus `'legacy fallback has empty skill assignments'`); no gap.
 
 ---
 
@@ -100,7 +105,8 @@
 
 - [x] **[MED]** `test/features/ai/util/mlx_audio_channel_test.dart` — the Glados `downloadProgressScenario` runs at 180 numRuns over 6 dimensions. This is appropriate, but two of the six dimensions (`includeByteCounts`, `includeProgress`) are boolean flags that produce only 4 combinations. A `combine4` + exhaustive flag enumeration would be equivalent to ~160 runs while being more deterministic. **RESOLVED:** Done (adapted) — the property already runs at numRuns 160; restructuring the generator for exhaustive flag enumeration would buy marginal determinism for a working 6-dimension scenario with shrinking, so the run count is the only change kept.
 
-- [ ] **[LOW]** `test/features/ai/util/known_models_test.dart` — the `maxCompletionTokens` group (lines 231–407) iterates over 8 provider model lists in a single `test` body (one test, 8 loops). If any assertion fails, the test name gives no indication of which provider failed. Splitting into one parameterized test per provider or using `for (final provider in [...]) test('...')` gives much faster failure diagnosis.
+- [x] **[LOW]** `test/features/ai/util/known_models_test.dart` — the `maxCompletionTokens` group (lines 231–407) iterates over 8 provider model lists in a single `test` body (one test, 8 loops). If any assertion fails, the test name gives no indication of which provider failed. Splitting into one parameterized test per provider or using `for (final provider in [...]) test('...')` gives much faster failure diagnosis.
+  **RESOLVED:** split into a dedicated Anthropic test (pins 2000) plus a `for (final entry in providersWithoutMaxTokens.entries) test('${entry.key} models leave maxCompletionTokens null')` loop generating one named test per provider, so a regression names the offending provider.
 
 ---
 

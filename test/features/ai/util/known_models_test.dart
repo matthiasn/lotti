@@ -241,15 +241,10 @@ extension _AnyGeneratedKnownModelScenario on glados.Any {
 void main() {
   group('KnownModel', () {
     group('maxCompletionTokens', () {
-      test('should be filled when defined in known models', () {
-        // Test Anthropic models which have maxCompletionTokens defined
+      // Anthropic models pin maxCompletionTokens to 2000; every other provider
+      // leaves it null. Split per-provider so a regression names the offender.
+      test('Anthropic models pin maxCompletionTokens to 2000', () {
         for (final model in anthropicModels) {
-          expect(
-            model.maxCompletionTokens,
-            isNotNull,
-            reason:
-                'Anthropic model ${model.name} should have maxCompletionTokens defined',
-          );
           expect(
             model.maxCompletionTokens,
             equals(2000),
@@ -257,80 +252,31 @@ void main() {
                 'Anthropic model ${model.name} should have maxCompletionTokens set to 2000',
           );
         }
-
-        // Test that other providers don't have maxCompletionTokens set
-        for (final model in geminiModels) {
-          expect(
-            model.maxCompletionTokens,
-            isNull,
-            reason:
-                'Gemini model ${model.name} should not have maxCompletionTokens defined',
-          );
-        }
-
-        for (final model in nebiusModels) {
-          expect(
-            model.maxCompletionTokens,
-            isNull,
-            reason:
-                'Nebius model ${model.name} should not have maxCompletionTokens defined',
-          );
-        }
-
-        for (final model in ollamaModels) {
-          expect(
-            model.maxCompletionTokens,
-            isNull,
-            reason:
-                'Ollama model ${model.name} should not have maxCompletionTokens defined',
-          );
-        }
-
-        for (final model in openaiModels) {
-          expect(
-            model.maxCompletionTokens,
-            isNull,
-            reason:
-                'OpenAI model ${model.name} should not have maxCompletionTokens defined',
-          );
-        }
-
-        for (final model in openRouterModels) {
-          expect(
-            model.maxCompletionTokens,
-            isNull,
-            reason:
-                'OpenRouter model ${model.name} should not have maxCompletionTokens defined',
-          );
-        }
-
-        for (final model in whisperModels) {
-          expect(
-            model.maxCompletionTokens,
-            isNull,
-            reason:
-                'Whisper model ${model.name} should not have maxCompletionTokens defined',
-          );
-        }
-
-        for (final model in voxtralModels) {
-          expect(
-            model.maxCompletionTokens,
-            isNull,
-            reason:
-                'Voxtral model ${model.name} should not have maxCompletionTokens defined',
-          );
-        }
-
-        for (final model in alibabaModels) {
-          expect(
-            model.maxCompletionTokens,
-            isNull,
-            reason:
-                'Alibaba model ${model.name} should not have maxCompletionTokens defined',
-          );
-        }
       });
+
+      final providersWithoutMaxTokens = <String, List<KnownModel>>{
+        'Gemini': geminiModels,
+        'Nebius': nebiusModels,
+        'Ollama': ollamaModels,
+        'OpenAI': openaiModels,
+        'OpenRouter': openRouterModels,
+        'Whisper': whisperModels,
+        'Voxtral': voxtralModels,
+        'Alibaba': alibabaModels,
+      };
+
+      for (final entry in providersWithoutMaxTokens.entries) {
+        test('${entry.key} models leave maxCompletionTokens null', () {
+          for (final model in entry.value) {
+            expect(
+              model.maxCompletionTokens,
+              isNull,
+              reason:
+                  '${entry.key} model ${model.name} should not have maxCompletionTokens defined',
+            );
+          }
+        });
+      }
 
       test(
         'should transfer maxCompletionTokens to AiConfigModel when converting',
@@ -1230,14 +1176,14 @@ void main() {
     });
 
     group('Ollama + Anthropic FTUE category constants', () {
-      test('Anthropic category name + color are wired', () {
-        expect(ftueAnthropicCategoryName, isNotEmpty);
-        expect(ftueAnthropicCategoryColor, startsWith('#'));
+      test('Anthropic category name + color have expected values', () {
+        expect(ftueAnthropicCategoryName, 'Test Category Anthropic Enabled');
+        expect(ftueAnthropicCategoryColor, '#D97757');
       });
 
-      test('Ollama category name + color are wired', () {
-        expect(ftueOllamaCategoryName, isNotEmpty);
-        expect(ftueOllamaCategoryColor, startsWith('#'));
+      test('Ollama category name + color have expected values', () {
+        expect(ftueOllamaCategoryName, 'Test Category Ollama Enabled');
+        expect(ftueOllamaCategoryColor, '#0F172A');
       });
     });
   });
