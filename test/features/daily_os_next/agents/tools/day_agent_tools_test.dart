@@ -19,7 +19,7 @@ void main() {
       // Pin the exact tool count so a tool added to dayAgentTools but missing
       // from the expected list below (or vice versa) is caught: containsAll
       // alone tolerates extras, hasLength closes that gap.
-      expect(names, hasLength(17));
+      expect(names, hasLength(18));
       expect(
         names,
         containsAll(const [
@@ -40,6 +40,7 @@ void main() {
           DayAgentToolNames.revertDiff,
           DayAgentToolNames.commitDay,
           DayAgentToolNames.uncommitDay,
+          DayAgentToolNames.proposeKnowledge,
         ]),
       );
     });
