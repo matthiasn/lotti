@@ -103,7 +103,8 @@
 
 - [x] **[MED]** `lib/features/journal/repository/clipboard_repository.dart` — **No test file.** The file is a one-line Riverpod provider. A single test verifying that `container.read(clipboardRepositoryProvider)` does not throw is sufficient and takes < 5 lines. **RESOLVED:** Done — created `clipboard_repository_test.dart` asserting the provider resolves without throwing (SystemClipboard.instance is null headless, real on devices).
 
-- [ ] **[LOW]** `lib/features/journal/utils/entry_types.dart` — `entryTypes` is a pure `const List<String>`. A trivial test asserting the count and presence of each known type would catch accidental deletions. Low value but high ease.
+- [x] **[LOW]** `lib/features/journal/utils/entry_types.dart` — `entryTypes` is a pure `const List<String>`. A trivial test asserting the count and presence of each known type would catch accidental deletions. Low value but high ease.
+  - **RESOLVED:** added `test/features/journal/utils/entry_types_test.dart` pinning the exact ordered set of 13 persisted entry-type discriminators (regression guard against accidental rename/removal that would silently break filtering & gating) plus a no-duplicates/no-empty invariant.
   **DEFERRED:** Resolving this requires creating `test/features/journal/utils/entry_types_test.dart`, which is outside this task's permitted area directory (`test/features/journal/repository/`). The new test file must be added by a run scoped to `test/features/journal/utils/` (where `entry_type_gating_test.dart` already lives and `entryTypes` is already imported, so the natural home is either a sibling `entry_types_test.dart` or an added group there).
 
 ---
