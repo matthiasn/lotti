@@ -1,6 +1,6 @@
 # Convergence-safe A-MEM for the planner memory
 
-- **Status:** Phase 0 implemented (author-time links + recall). Zettelkasten prompt habits + MOC convention (Phase 1.5) implemented; cross-tier link validation + recall forward-follow landed. Phases 1 (attributes), 2 (embeddings), 3 (AgentLink), 4 (evolution/A16) still proposed.
+- **Status:** Phases 0, 1, and 1.5 implemented — author-time links + recall (Phase 0), the Zettelkasten prompt habits + MOC convention (Phase 1.5), cross-tier link validation + recall forward-follow, and the immutable knowledge `tags` field + panel chips (Phase 1). Phases 2 (embeddings/semantic recall), 3 (AgentLink), and 4 (evolution/A16) still proposed.
 - **Date:** 2026-06-08
 - **Motivates:** Finding #8 + the open question of the [planner vs. state-of-the-art research note](../research/2026-06-08_long_horizon_planner_vs_state_of_the_art.md) — adopt the parts of A-MEM (Xu et al. 2025, [arXiv:2502.12110](https://arxiv.org/abs/2502.12110)) compatible with our append-only, convergent, cache-stable architecture.
 - **Builds on:** [Planner log search](./2026-06-08_planner_log_search.md) (the `search_memory` recall tool — already shipped; Phase 0 extends it).
@@ -82,7 +82,7 @@ The token is plain content. It rides inside the observation/knowledge text that 
 `supersedes` in the episodic tier is **a read-time preference, not a storage mutation**: when recall surfaces a note that another in-scope note supersedes, it folds/annotates the superseded one. This is the convergence-safe analog of "memory evolution" at the episodic level — pure recall behavior over immutable data, the "create a new version" pattern the model asked for.
 
 ### Parser + resolver (pure, testable)
-New file (proposed) `lib/features/agents/memory/memory_links.dart`:
+Shipped in `lib/features/agents/memory/memory_links.dart` (the sketch below is illustrative; the live API differs slightly — `superseded` is a getter, `liveEntryId` is non-nullable, and `supersededBy` is an optional param):
 
 ```dart
 enum LinkRelation { refines, supersedes, contradicts, relates }
@@ -150,12 +150,12 @@ The agent can author `[[relation:id]]` links in observations/knowledge, those li
 
 ---
 
-## Phase 1 — Construction attributes (as content)
+## Phase 1 — Construction attributes — **Implemented**
 
-Make recall hit better by having the agent attach keywords/tags — also as free text, not schema:
+Make recall hit better by having the agent attach keywords/tags:
 
-- **Episodic:** instruct the agent to lead an observation with a compact tag line (e.g. `keywords: deep-work, mornings`). Pure content; improves substring `search_memory`; zero schema.
-- **Knowledge:** keep attributes in the statement/hook text first. Only if a structured need emerges, add **immutable** `keywords`/`tags` fields to `PlannerKnowledgeEntity` (set once at origin, synced as content, never recomputed per replica) — additive to conversions/LWW. Prefer text-first.
+- **Episodic:** the prompt instructs the agent to lead an observation with a compact `keywords: …` line (`day_agent_workflow.dart` `_buildSystemPrompt`). Pure content; improves substring `search_memory`; zero schema.
+- **Knowledge:** an immutable `tags` field shipped on `PlannerKnowledgeEntity` (`agent_domain_entity.dart`) — author-provided on `propose_knowledge` (no extra LLM call), normalized once at origin (`_normalizeTags`: trim/dedup/cap), carried forward unchanged across confirm/edit, and rendered as `DsPill` chips in the "What I've learned" panel (`knowledge_panel.dart`). Additive JSON (old rows default to `[]`); convergent via the existing per-key recency/LWW. `keywords` / `contextDescription` fields stay deferred to Phase 2 (their first consumer is embeddings).
 
 Fallback: if the agent omits attributes, recall degrades to today's behavior.
 
@@ -186,7 +186,7 @@ Linking is the headline idea, but a Zettelkasten is more than links. What else i
 | **Folgezettel** (branching sequence ids) | a `follows`/sequence chain | **Skip** — subsumed by `refines`; our ids are uuids, not sequence positions. |
 | **Bottom-up emergent structure** (no rigid upfront taxonomy) | links + MOCs over a fixed schema | **Already the design philosophy** — structure lives in content, not the store. |
 
-The meta-lesson: a Zettelkasten's value comes as much from the **traversal habit** as from creating links. `search_memory(ids:)` is the traversal primitive, and the prompt now asks the agent to actually follow links and maintain MOCs during a wake — turning a pile of links into a Zettelkasten. The remaining builds are Phase 1 (construction attributes as immutable fields), Phase 2 (semantic recall), and Phase 4 (weekly evolution-as-supersession, gated on A16).
+The meta-lesson: a Zettelkasten's value comes as much from the **traversal habit** as from creating links. `search_memory(ids:)` is the traversal primitive, and the prompt now asks the agent to actually follow links and maintain MOCs during a wake — turning a pile of links into a Zettelkasten. The remaining builds are Phase 2 (semantic recall) and Phase 4 (weekly evolution-as-supersession, gated on A16); Phase 3 (`AgentLink` edge store) is a last resort only if the text convention proves insufficient.
 
 ## Explicit non-goals
 - In-place rewriting of any episodic capture/observation or knowledge note (breaks convergence + caching).

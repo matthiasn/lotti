@@ -27,6 +27,8 @@ uses `join_plan.dart` for flag-gated lazy fork healing.
 | `content_digest.dart` | `ContentDigest.of()` — versioned (`sha256-v1:`) content-addressed digest over canonical JSON; the address for captured inputs, compaction artifacts, and join ids (PR 5 / ADR 0017 §6 / ADR 0020). |
 | `input_capture.dart` | `RenderedSource`/`CapturedPayload`/`CaptureReference`/`CaptureResult`; `captureSources()` + `reconcileCapture()` — fold a wake's rendered user content into deduplicated, content-addressed per-source captures (PR 5 / ADR 0020). |
 | `input_frontier.dart` | `projectInputFrontier()` + `inputFrontierDigests()` — the active input frontier (latest-wins over `messagePayload` links and retraction markers). |
+| `input_events.dart` | `InputEvent` (+ `.inline`/`.inlineDeferred`), `EventPosition`, `InputEventLog`, `projectInputEvents()` — the append-only event-log read model: `messagePayload` links, observations, and retraction markers projected as one position-ordered stream. |
+| `decision_events.dart` | `decisionEventsFromLedger()` + `formatResolvedLedgerLine()` — resolved proposal verdicts projected as inline log events so they fold/interleave on the same substrate. |
 | `compaction_plan.dart` | `planCompaction()` + `CompactionPlan`/`TailEntry` — fold the oldest tail prefix that overflows a token budget (PR 5 / ADR 0017). |
 | `compaction_summary.dart` | `selectActiveSummary()` (event-prefix maximal-complete checkpoint) + `assembleCompactedTaskLog()` — the read side: active summary + uncovered verbatim tail with source ids. |
 | `checkpoint_selection.dart` | `selectActiveCheckpoint()` — message-DAG checkpoint selection (deepest summary ancestral to every head). |

@@ -1,6 +1,6 @@
 # Planner Log Search — `search_memory` recall tool
 
-- **Status:** In progress (this plan is implemented in the same change)
+- **Status:** Implemented. Later extended with an optional `ids` follow param + per-hit link resolution — owned by the [convergence-safe A-MEM plan](./2026-06-08_convergence_safe_a_mem.md) Phase 0 (`AgentLogCompactor.resolveByIds`, `[[relation:id]]` links).
 - **Date:** 2026-06-08
 - **Motivates:** Recommendation #1 of the [planner vs. state-of-the-art research note](../research/2026-06-08_long_horizon_planner_vs_state_of_the_art.md) — give the agent a tool to reach back into folded-away detail, the standard mitigation for **summarization drift** (Anthropic context-engineering; LCM-style "keep the original, recall on demand").
 - **Builds on:** [ADR 0017](../adr/0017-deterministic-log-compaction.md) (the immutable log is retained as ground truth; only the *prompt* sees `summary + tail`).

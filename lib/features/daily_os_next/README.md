@@ -103,8 +103,9 @@ Runtime behavior:
   `currentLocalTime` lets same-day drafting distinguish future plan slots from
   time that has already passed.
 - `DayAgentStrategy` handles private observations itself and delegates
-  `set_next_wake`, `search_memory`, the knowledge tools, Capture/Reconcile
-  tools, draft plan tools, and refine tools through the workflow handler.
+  `set_next_wake`, `search_memory`, the knowledge tool (`propose_knowledge`),
+  Capture/Reconcile tools, draft plan tools, and refine tools through the
+  workflow handler.
 - `search_memory` is the planner's recall + memory-linking tool, handled by the
   workflow itself (`DayAgentWorkflow._searchMemory` over `AgentLogCompactor`).
   With `query` it keyword-scans the **full** immutable capture-and-observation
