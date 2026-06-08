@@ -2309,28 +2309,32 @@ void main() {
         final sent =
             jsonDecode(conversationRepository.lastUserMessage!)
                 as Map<String, dynamic>;
-        final knowledge = sent['standingKnowledge'] as Map<String, dynamic>;
         // Hook index always present; the global statement is pulled in.
         expect(
-          knowledge['hookIndex'],
+          sent['knowledgeIndex'],
           contains('[deep-work] no deep work before 10 (scope: global)'),
         );
         expect(
-          knowledge['statements'],
+          sent['knowledgeStatements'],
           contains('Never schedule deep work before 10:00.'),
         );
-        // Prefix-cache stability: standingKnowledge precedes the volatile
-        // wall-clock, which stays the trailing key.
+        // Prefix-cache stability: the always-on index leads the prefix, the
+        // per-wake scope-filtered statements trail it, and the wall-clock is
+        // the last (most volatile) key.
         final keys = sent.keys.toList();
         expect(
-          keys.indexOf('standingKnowledge'),
+          keys.indexOf('knowledgeIndex'),
+          lessThan(keys.indexOf('knowledgeStatements')),
+        );
+        expect(
+          keys.indexOf('knowledgeStatements'),
           lessThan(keys.indexOf('currentLocalTime')),
         );
         expect(keys.last, 'currentLocalTime');
       },
     );
 
-    test('omits standingKnowledge when there is no active knowledge', () async {
+    test('omits knowledge blocks when there is no active knowledge', () async {
       final knowledgeService = MockDayAgentKnowledgeService();
       when(
         () => knowledgeService.activeFor(agentId),
@@ -2344,12 +2348,13 @@ void main() {
       final sent =
           jsonDecode(conversationRepository.lastUserMessage!)
               as Map<String, dynamic>;
-      expect(sent.containsKey('standingKnowledge'), isFalse);
+      expect(sent.containsKey('knowledgeIndex'), isFalse);
+      expect(sent.containsKey('knowledgeStatements'), isFalse);
     });
 
     test(
-      'durable knowledge is injected once via standingKnowledge — never folded '
-      'into the day log (ADR 0022 compaction exemption)',
+      'durable knowledge is injected once via knowledgeStatements — never '
+      'folded into the day log (ADR 0022 compaction exemption)',
       () async {
         final knowledgeService = MockDayAgentKnowledgeService();
         const statement = 'Never schedule deep work before 10:00.';
@@ -2377,7 +2382,7 @@ void main() {
 
         expect(result.success, isTrue);
         // Exactly one occurrence: the knowledge is a domain entity surfaced
-        // only via standingKnowledge, never pulled into the compaction fold.
+        // only via knowledgeStatements, never pulled into the compaction fold.
         final raw = conversationRepository.lastUserMessage!;
         expect(statement.allMatches(raw).length, 1);
       },
@@ -2415,12 +2420,92 @@ void main() {
         final sent =
             jsonDecode(conversationRepository.lastUserMessage!)
                 as Map<String, dynamic>;
-        final knowledge = sent['standingKnowledge'] as Map<String, dynamic>;
         // Hook index always lists the key (discovery)...
-        expect(knowledge['hookIndex'], contains('[gym]'));
+        expect(sent['knowledgeIndex'], contains('[gym]'));
         // ...but the full statement is withheld since this wake touches no
         // fitness category.
-        expect(knowledge.containsKey('statements'), isFalse);
+        expect(sent.containsKey('knowledgeStatements'), isFalse);
+      },
+    );
+
+    test(
+      'scope-filtered statements trail the dayLog so a changing statement set '
+      'cannot evict the large dayLog prefix (C1)',
+      () async {
+        // A wake with BOTH durable knowledge and a compacted dayLog: the
+        // always-on index must lead the prefix, the dayLog sits in the stable
+        // middle, and the per-wake scope-filtered statements trail it.
+        when(() => syncService.repository).thenReturn(repository);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.system),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getMessagesByKind(agentId, AgentMessageKind.summary),
+        ).thenAnswer((_) async => []);
+        when(
+          () => repository.getLinksFrom(agentId),
+        ).thenAnswer((_) async => []);
+        final capture =
+            AgentDomainEntity.capture(
+                  id: 'cap-x',
+                  agentId: agentId,
+                  transcript: 'a folded capture transcript',
+                  capturedAt: DateTime.utc(2026, 5, 25, 7),
+                  createdAt: DateTime.utc(2026, 5, 25, 7, 1),
+                  vectorClock: null,
+                )
+                as CaptureEntity;
+        when(() => repository.getCaptureEventMetaByAgentId(agentId)).thenAnswer(
+          (_) async => [
+            (
+              id: capture.id,
+              createdAt: capture.createdAt,
+              capturedAt: capture.capturedAt,
+            ),
+          ],
+        );
+        when(
+          () => repository.getEntity('cap-x'),
+        ).thenAnswer((_) async => capture);
+
+        final knowledgeService = MockDayAgentKnowledgeService();
+        when(() => knowledgeService.activeFor(agentId)).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.plannerKnowledge(
+                  id: 'k-global',
+                  agentId: agentId,
+                  key: 'deep-work',
+                  hook: 'no deep work before 10',
+                  statementText: 'Never schedule deep work before 10:00.',
+                  source: KnowledgeSource.userStated,
+                  status: KnowledgeStatus.confirmed,
+                  createdAt: DateTime(2026, 5, 20),
+                  updatedAt: DateTime(2026, 5, 20),
+                  vectorClock: null,
+                )
+                as PlannerKnowledgeEntity,
+          ],
+        );
+
+        final result = await execute(
+          workflow(knowledgeService: knowledgeService),
+        );
+
+        expect(result.success, isTrue);
+        final sent =
+            jsonDecode(conversationRepository.lastUserMessage!)
+                as Map<String, dynamic>;
+        final keys = sent.keys.toList();
+        // The C1 invariant: index → dayLog → statements.
+        expect(keys, containsAll(['knowledgeIndex', 'dayLog']));
+        expect(
+          keys.indexOf('knowledgeIndex'),
+          lessThan(keys.indexOf('dayLog')),
+        );
+        expect(
+          keys.indexOf('dayLog'),
+          lessThan(keys.indexOf('knowledgeStatements')),
+        );
       },
     );
 

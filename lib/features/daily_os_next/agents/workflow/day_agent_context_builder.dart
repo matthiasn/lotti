@@ -19,19 +19,21 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   }) {
     // Key order is deliberately STABLE → VOLATILE for prompt-prefix / KV-cache
     // reuse: providers cache the longest identical leading prefix, so anything
-    // that varies wake-to-wake must come last. Slow-changing day-stable blocks
-    // (standingKnowledge, dayLog, attentionPlanning) precede the per-wake mode
-    // blocks, and the genuinely volatile fields (triggerTokens, wall-clock)
-    // are trailing so they cannot evict the large stable blocks behind them.
+    // that varies wake-to-wake must come last. Crucially the two tiers of
+    // durable knowledge are split by stability: the always-on `knowledgeIndex`
+    // is global and slow-changing, so it leads the prefix; the scope-filtered
+    // `knowledgeStatements` vary by which scopes THIS wake touches (capture vs
+    // drafting vs refine touch different categories), so they sit AFTER the
+    // large day-stable `dayLog`/`attentionPlanning` — a changing statement set
+    // must never evict the (much larger) dayLog prefix behind it.
     final payload = <String, Object?>{
       'dayId': dayId,
       'planDate': planDate.toIso8601String(),
-      // Durable, compaction-exempt planner knowledge (ADR 0022 Decisions 9–10),
-      // two-tier: the always-on `hookIndex` plus the scope-filtered full
-      // `statements` for what this wake touches. Global and slow-changing, so
-      // it leads the stable prefix.
-      if (knowledge.hookIndex.isNotEmpty || knowledge.statements.isNotEmpty)
-        'standingKnowledge': knowledge.toJson(),
+      // Tier 1 — the always-on compact hook index of durable knowledge
+      // (ADR 0022 Decisions 9–10). One line per active key, independent of the
+      // wake's touched scopes, so it is byte-stable across a planning session
+      // and belongs ahead of the dayLog in the stable prefix.
+      if (knowledge.hookIndex.isNotEmpty) 'knowledgeIndex': knowledge.hookIndex,
       // The compacted day log (ADR 0017): capture transcripts and the agent's
       // observations as an append-only event tail behind a summary —
       // byte-stable at its head between folds.
@@ -39,6 +41,12 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       // Day-stable attention claims/agreements precede the per-wake mode blocks.
       if (!attentionPlanning.isEmpty)
         'attentionPlanning': _attentionPlanningToJson(attentionPlanning),
+      // Tier 2 — the scope-filtered full statements for the scopes THIS wake
+      // touches. Per-wake-variable, so placed below the large stable blocks
+      // (and above the equally per-wake mode blocks) to keep the dayLog prefix
+      // reusable across differing wake types within a day.
+      if (knowledge.statements.isNotEmpty)
+        'knowledgeStatements': knowledge.statements,
       // Mode blocks: present only for the wake that owns them, stable for it.
       if (captureContext != null) 'capture': captureContext.toJson(),
       if (draftingContext != null) 'drafting': draftingContext.toJson(),

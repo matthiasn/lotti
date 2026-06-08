@@ -87,10 +87,17 @@ Runtime behavior:
   statements), recent private observations, the day's `dayLog`, and — for
   `capture_submitted:<captureId>` wakes — the submitted capture plus a bounded
   task corpus snapshot. The user-message keys are ordered **stable → volatile**
-  (dayId, planDate, standing knowledge, dayLog … then trigger tokens and
-  `currentLocalTime` last) so the cacheable prompt prefix is maximised for
-  local KV-cache / prefix-cache reuse. `currentLocalTime` lets same-day drafting
-  distinguish future plan slots from time that has already passed.
+  so the cacheable prompt prefix is maximised for local KV-cache / prefix-cache
+  reuse. The two knowledge tiers are split by stability: the always-on
+  `knowledgeIndex` (global, slow-changing) leads the prefix *before* the large
+  `dayLog`, while the scope-filtered `knowledgeStatements` vary by which scopes
+  the wake touches (capture vs drafting vs refine) and therefore trail the
+  `dayLog`/`attentionPlanning` — a changing statement set must never evict the
+  much larger `dayLog` prefix behind it. Net order: `dayId`, `planDate`,
+  `knowledgeIndex`, `dayLog`, `attentionPlanning`, `knowledgeStatements`, the
+  per-wake mode block, then `triggerTokens` and `currentLocalTime` last.
+  `currentLocalTime` lets same-day drafting distinguish future plan slots from
+  time that has already passed.
 - `DayAgentStrategy` handles private observations itself and delegates
   `set_next_wake`, the knowledge tools, Capture/Reconcile tools, draft plan
   tools, and refine tools through the workflow handler.

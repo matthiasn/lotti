@@ -1277,9 +1277,4 @@ class _KnowledgeContext {
 
   final String hookIndex;
   final String statements;
-
-  Map<String, Object?> toJson() => <String, Object?>{
-    if (hookIndex.isNotEmpty) 'hookIndex': hookIndex,
-    if (statements.isNotEmpty) 'statements': statements,
-  };
 }
