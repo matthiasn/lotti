@@ -151,6 +151,32 @@ void main() {
       expect(find.byIcon(Icons.star), findsNWidgets(3));
     });
 
+    testWidgets('other-categories rows expose no star to tap', (tester) async {
+      await pumpPage(tester);
+
+      // Reveal an "Other categories" row.
+      await tester.scrollUntilVisible(
+        find.text('Commute'),
+        100,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pump();
+
+      // Non-favourite rows render no star at all (the star + its tap target
+      // are gated behind `if (category.isFavourite)`), so there is no UI
+      // affordance to promote a category back into favourites.
+      expect(
+        find.descendant(
+          of: find.ancestor(
+            of: find.text('Commute'),
+            matching: find.byType(Container),
+          ),
+          matching: find.byIcon(Icons.star),
+        ),
+        findsNothing,
+      );
+    });
+
     testWidgets('renders filled clock icons next to time chips', (
       tester,
     ) async {
