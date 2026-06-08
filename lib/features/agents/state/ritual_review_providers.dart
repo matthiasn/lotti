@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:meta/meta.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'ritual_review_providers.g.dart';
@@ -212,6 +213,19 @@ Future<RitualSummaryMetrics> ritualSummaryMetrics(
     ),
   );
 }
+
+/// Test-only seam for [_buildDailyWakeCounts] — the pure per-day wake bucket
+/// builder spanning `[chartStart, today]` inclusive.
+@visibleForTesting
+List<DailyWakeCountBucket> debugBuildDailyWakeCounts({
+  required List<WakeRunLogData> recentWakeRuns,
+  required DateTime chartStart,
+  required DateTime today,
+}) => _buildDailyWakeCounts(
+  recentWakeRuns: recentWakeRuns,
+  chartStart: chartStart,
+  today: today,
+);
 
 List<DailyWakeCountBucket> _buildDailyWakeCounts({
   required List<WakeRunLogData> recentWakeRuns,

@@ -1554,6 +1554,66 @@ void main() {
         expect(result, 'models/gemini-3-pro');
       });
 
+      // Tier 3 has a profileId AND a modelId, but profile resolution yields no
+      // usable inference profile, so it must fall through to version.modelId.
+      for (final scenario in <({String name, AiConfig? config})>[
+        (name: 'profile lookup returns null', config: null),
+        (
+          name: 'profile lookup returns a non-inference-profile config',
+          config: AiConfig.model(
+            id: 'profile-1',
+            name: 'Not a profile',
+            providerModelId: 'pm-1',
+            inferenceProviderId: 'ip-1',
+            createdAt: DateTime(2024, 3, 15),
+            inputModalities: const [Modality.text],
+            outputModalities: const [Modality.text],
+            isReasoningModel: false,
+          ),
+        ),
+      ]) {
+        test(
+          'tier 3: falls through to version modelId when ${scenario.name}',
+          () async {
+            stubDefaults();
+
+            final wakeRun = makeTestWakeRun(
+              threadId: 'thread-abc',
+              templateVersionId: 'ver-1',
+            );
+            when(
+              () => mockRepository.getWakeRunByThreadId(
+                kTestAgentId,
+                'thread-abc',
+              ),
+            ).thenAnswer((_) async => wakeRun);
+
+            final version = makeTestTemplateVersion(
+              id: 'ver-1',
+              profileId: 'profile-1',
+              modelId: 'models/gemini-3-pro',
+            );
+            when(
+              () => mockRepository.getEntity('ver-1'),
+            ).thenAnswer((_) async => version);
+            when(
+              () => mockAiConfigRepo.getConfigById('profile-1'),
+            ).thenAnswer((_) async => scenario.config);
+
+            final container = createContainer();
+            final result = await container.read(
+              modelIdForThreadProvider(kTestAgentId, 'thread-abc').future,
+            );
+
+            // Profile resolution failed → legacy version.modelId wins.
+            expect(result, 'models/gemini-3-pro');
+            verify(
+              () => mockAiConfigRepo.getConfigById('profile-1'),
+            ).called(1);
+          },
+        );
+      }
+
       test('tier 4: falls back to live agent config profile', () async {
         stubDefaults();
 
