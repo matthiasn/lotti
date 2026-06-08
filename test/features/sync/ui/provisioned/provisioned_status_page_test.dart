@@ -20,8 +20,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
-class MockClient extends Mock implements Client {}
-
 class _FakeDeviceKeys extends Fake implements DeviceKeys {}
 
 class _FakeMatrixUnverifiedController extends MatrixUnverifiedController {
@@ -52,7 +50,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   late MockMatrixService mockMatrixService;
-  late MockClient mockClient;
+  late MockMatrixClient mockClient;
 
   setUpAll(() {
     registerFallbackValue(_FakeDeviceKeys());
@@ -60,7 +58,7 @@ void main() {
 
   setUp(() {
     mockMatrixService = MockMatrixService();
-    mockClient = MockClient();
+    mockClient = MockMatrixClient();
 
     when(() => mockMatrixService.client).thenReturn(mockClient);
     when(() => mockClient.userID).thenReturn('@alice:example.com');
