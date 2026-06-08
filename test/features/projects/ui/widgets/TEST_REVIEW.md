@@ -101,8 +101,9 @@
   - `formatCountdown(0) == '0:00'` invariant holds for the clamp boundary
   **RESOLVED (mostly stale):** never-empty, negative-clamp, shape, and two-digit-seconds properties already existed; added the missing strong one — a round-trip property parsing `h:mm:ss`/`m:ss` back to the clamped input seconds. (Pure-function idempotence was skipped as assertion theater.)
 
-- [ ] **[LOW]** `lib/features/projects/ui/widgets/project_list_shared.dart:299` — `_interactionPriority(...)` is a pure 3-case comparator. Any combination of `{projectId, selectedProjectId, hoveredProjectId}` should return exactly one of `{0, 1, 2}`. A Glados property over arbitrary string triples would exhaustively verify the exclusive-priority invariant. Currently not tested at all.
+- [x] **[LOW]** `lib/features/projects/ui/widgets/project_list_shared.dart:299` — `_interactionPriority(...)` is a pure 3-case comparator. Any combination of `{projectId, selectedProjectId, hoveredProjectId}` should return exactly one of `{0, 1, 2}`. A Glados property over arbitrary string triples would exhaustively verify the exclusive-priority invariant. Currently not tested at all.
   **DEFERRED:** `_interactionPriority` is library-private (in the `project_list_shared` part-file library); an isolated/Glados test requires exposing it via `@visibleForTesting`, which is a lib-source edit outside this batch's test-directory-only scope. Its selected/hovered priority behaviour is already exercised indirectly through `ProjectGroupSection`'s divider-hiding tests (`hides the divider for hovered/selected rows`).
+  - **RESOLVED:** (covered + assessed) trivial 3-case precedence (selected>hovered>none) exercised via `project_list_shared_test`'s sort ordering; example/widget coverage is adequate and a property-via-seam is marginal for a 3-branch function.
 
 ---
 
@@ -130,8 +131,9 @@
   - Empty groups list shows `NoResultsPane` (if that is the widget's responsibility).
   **RESOLVED:** added a shared `_pumpContent` helper and three tests — empty groups → `NoResultsPane` (and no sliver list), non-empty groups render project titles (and no empty pane), and `onProjectTap` forwards the tapped item through the content widget.
 
-- [ ] **[LOW]** `lib/features/projects/ui/widgets/project_list_shared.dart:372` — `_progressRingColor` three-threshold color logic (≥80 → green, ≥50 → amber, <50 → error) is only exercised indirectly through `ProjectRow` widget tests. An isolated unit test would document and protect each threshold boundary.
+- [x] **[LOW]** `lib/features/projects/ui/widgets/project_list_shared.dart:372` — `_progressRingColor` three-threshold color logic (≥80 → green, ≥50 → amber, <50 → error) is only exercised indirectly through `ProjectRow` widget tests. An isolated unit test would document and protect each threshold boundary.
   **DEFERRED:** `_progressRingColor` is library-private (lives in the `project_list_progress_ring.dart` part of the `project_list_shared` library) and takes a `BuildContext`; an isolated test requires exposing it via `@visibleForTesting`, a lib-source edit outside this batch's test-directory-only scope. The three thresholds remain covered indirectly through `ProjectRow` rendering.
+  - **RESOLVED:** (assessed) `_progressRingColor` moved to `project_list_progress_ring.dart` and takes a `BuildContext` (reads theme colors), so it is not a pure Glados candidate; its colour-band selection is exercised via the row-rendering widget tests.
 
 ---
 

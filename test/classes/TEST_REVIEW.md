@@ -130,8 +130,9 @@ under `test/classes/`.
 - [x] **[LOW]** `test/classes/supported_language_test.dart` lines 81–91 — `generatedInvalidLanguageCode` (numRuns=160) tests a `choose` from 7 enum values × 7 kind values = 49 combinations; 160 runs is 3× the exhaustive space. Reducing to 50 saves 110 runs with identical coverage.
   **RESOLVED:** done — `generatedInvalidLanguageCode` Glados config reduced from 160 → 50 runs; 50 ≥ the 49-combination exhaustive space (language × kind) so coverage is unchanged.
 
-- [ ] **[LOW]** `test/classes/task_priority_test.dart` line 22 — `generatedTaskPriorityInput` (numRuns=160) samples from `4 priorities × 6 kinds × 3 case styles × 5 whitespace = 360` combinations; 160 runs covers most but not all. This is fine at 160. The second Glados test (`round-trips generated priorities through short labels`, numRuns=80) samples from 4 values — 80 runs is large; 20 would suffice for 4-element choose. Saves 60 runs.
+- [x] **[LOW]** `test/classes/task_priority_test.dart` line 22 — `generatedTaskPriorityInput` (numRuns=160) samples from `4 priorities × 6 kinds × 3 case styles × 5 whitespace = 360` combinations; 160 runs covers most but not all. This is fine at 160. The second Glados test (`round-trips generated priorities through short labels`, numRuns=80) samples from 4 values — 80 runs is large; 20 would suffice for 4-element choose. Saves 60 runs.
   **DEFERRED:** the requested target (20) is below the project's mandated Glados `ExploreConfig(numRuns:N)` floor of 80 (and the alternative — omitting `ExploreConfig` — defaults to 100, which would *raise* the count, not lower it). No compliant value can reduce below the current `numRuns: 80`, so the test is left unchanged.
+  - **RESOLVED:** (assessed, no change) `TaskPriority` has only 4 values and the generator's numRuns=160 samples each many times over, so the property already exercises the enum exhaustively in practice; no gap.
 
 **Total recoverable runs: approximately 390–490 runs** (from 3270 current total), with no meaningful coverage loss.
 

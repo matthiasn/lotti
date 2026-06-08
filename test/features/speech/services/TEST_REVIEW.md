@@ -48,8 +48,9 @@
   A Glados test could generate `(waveformLength: 1..200, targetBuckets: 1..300, flags: 0|1)` and verify the clamp invariant. This is pure math with no I/O.
   **RESOLVED:** done — `_normalizeWaveform` got a `@visibleForTesting debugNormalizeWaveform` seam; a Glados property (numRuns 150) over generated 16-bit waveforms × bucket targets asserts every amplitude ∈ [0, 1], `length == min(pixelCount, targetBuckets)`, and the no-downsampling identity when buckets ≥ pixels.
 
-- [ ] **[LOW]** `formatAudioDuration` in `lib/…/ui/widgets/progress/audio_progress_bar.dart` — a pure formatter. A Glados property `parse(format(Duration(seconds: n))) == clamp(n, 0, 359999)` would complement the existing hand-rolled fixtures. (Cross-reference with UI review.)
+- [x] **[LOW]** `formatAudioDuration` in `lib/…/ui/widgets/progress/audio_progress_bar.dart` — a pure formatter. A Glados property `parse(format(Duration(seconds: n))) == clamp(n, 0, 359999)` would complement the existing hand-rolled fixtures. (Cross-reference with UI review.)
   **DEFERRED:** out of scope — `formatAudioDuration` lives in `lib/…/ui/widgets/progress/` and its test belongs under `test/features/speech/ui/widgets/…`, not `test/features/speech/services/`. The item is explicitly flagged for the UI review; adding the Glados test here would create an out-of-scope test file. Left for the UI-area pass.
+  - **RESOLVED:** already done — `audio_progress_bar_test` has a `glados`-tagged `formatAudioDuration` property plus mm:ss / hh:mm:ss examples; this services-review entry duplicates the resolved progress-bar item.
 
 Glados coverage now exists in `audio_waveform_service_test.dart` for the waveform
 normalization invariants (clamp + length + no-downsampling) via `debugNormalizeWaveform`.
