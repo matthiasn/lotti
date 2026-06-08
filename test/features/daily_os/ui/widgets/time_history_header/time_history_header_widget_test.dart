@@ -262,7 +262,10 @@ void main() {
               child: const TimeHistoryHeader(),
             ),
           );
-          await tester.pumpAndSettle();
+          // Async build() resolves the data; two bounded pumps flush the
+          // microtask + post-frame callbacks (no running animation here).
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Verify that resetToToday hasn't been called yet
           expect(trackingController.resetToTodayCallCount, 0);
@@ -273,7 +276,10 @@ void main() {
 
           await tester.ensureVisible(todayButton);
           await tester.tap(todayButton);
-          await tester.pumpAndSettle();
+          // Tapping Today triggers a provider state change (goToToday +
+          // resetToToday) — today is absent from the window, so no scroll
+          // animation runs and a single pump is sufficient.
+          await tester.pump();
 
           // Because today is NOT in the data window, resetToToday() must have
           // been called (line 297 of time_history_header_widget.dart)
@@ -360,7 +366,10 @@ void main() {
               child: const TimeHistoryHeader(),
             ),
           );
-          await tester.pumpAndSettle();
+          // Two bounded pumps drain the async build() and post-frame
+          // centering callback; the chart runs in testMode so no animation.
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // The chart renders because data.days.length >= 2
           expect(find.byType(TimeHistoryStreamChart), findsOneWidget);
@@ -444,7 +453,10 @@ void main() {
               child: const TimeHistoryHeader(),
             ),
           );
-          await tester.pumpAndSettle();
+          // Two bounded pumps drain the async build() and post-frame
+          // centering callback; the chart runs in testMode so no animation.
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
 
           // Verify ClipRect is present — confirms the finite-clipRightX branch ran
           expect(find.byType(ClipRect), findsWidgets);
@@ -496,7 +508,10 @@ void main() {
             child: const TimeHistoryHeader(),
           ),
         );
-        await tester.pumpAndSettle();
+        // Two bounded pumps drain the async build() and post-frame
+        // centering callback; the chart runs in testMode so no animation.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // In dark mode the outer Container's background should be the dark constant
         final outerContainer = tester.widget<Container>(

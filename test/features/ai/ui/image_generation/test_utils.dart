@@ -21,8 +21,15 @@ class FakeReferenceImageSelectionController
   /// Number of [clearSelection] invocations.
   int clearSelectionCalls = 0;
 
+  /// The `taskId` the controller was last [build]-ed with, or `null` if the
+  /// controller has not been built yet.
+  String? builtWithTaskId;
+
   @override
-  ReferenceImageSelectionState build({required String taskId}) => _fixedState;
+  ReferenceImageSelectionState build({required String taskId}) {
+    builtWithTaskId = taskId;
+    return _fixedState;
+  }
 
   @override
   void toggleImageSelection(String imageId) {

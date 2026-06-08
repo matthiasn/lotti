@@ -48,6 +48,7 @@ void main() {
       tester,
     ) async {
       const refImageState = ReferenceImageSelectionState(isLoading: true);
+      final controller = FakeReferenceImageSelectionController(refImageState);
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
@@ -55,7 +56,7 @@ void main() {
             referenceImageSelectionControllerProvider(
               taskId: testLinkedTaskId,
             ).overrideWith(
-              () => FakeReferenceImageSelectionController(refImageState),
+              () => controller,
             ),
           ],
           child: const _CoverArtSkillModalHost(
@@ -68,7 +69,12 @@ void main() {
 
       await tester.pump();
 
-      // Loading state from reference image selection should be visible
+      // The modal must wire the *linkedTaskId* (not entityId) through to the
+      // reference-image controller, so the controller is built for the task
+      // whose images we want to load.
+      expect(controller.builtWithTaskId, testLinkedTaskId);
+
+      // Loading state from reference image selection should be visible.
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
@@ -363,6 +369,86 @@ void main() {
       expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
     });
 
+    testWidgets(
+      'progress view watches linkedTaskId status, not entityId',
+      (tester) async {
+        // entityId and linkedTaskId are deliberately distinct so that watching
+        // the wrong one would change the asserted outcome.
+        await tester.pumpWidget(
+          RiverpodWidgetTestBench(
+            overrides: [
+              referenceImageSelectionControllerProvider(
+                taskId: testLinkedTaskId,
+              ).overrideWith(
+                () => FakeReferenceImageSelectionController(
+                  const ReferenceImageSelectionState(),
+                ),
+              ),
+              triggerSkillProvider.overrideWith(
+                (ref, params) {
+                  // Generation runs under linkedTaskId.
+                  ref
+                      .read(
+                        inferenceStatusControllerProvider(
+                          id: testLinkedTaskId,
+                          aiResponseType: AiResponseType.imageGeneration,
+                        ).notifier,
+                      )
+                      .setStatus(InferenceStatus.running);
+                  return Future<void>.value();
+                },
+              ),
+            ],
+            child: const _CoverArtSkillModalHost(
+              entityId: testEntityId,
+              skillId: testSkillId,
+              linkedTaskId: testLinkedTaskId,
+            ),
+          ),
+        );
+
+        // Auto-skip flow — trigger generation (running observed on
+        // linkedTaskId).
+        await tester.pump();
+        await tester.pump();
+        await tester.pump();
+        expect(find.text('Generating image...'), findsOneWidget);
+
+        final container = ProviderScope.containerOf(
+          tester.element(find.byType(_CoverArtSkillModalHost)),
+        );
+
+        // Drive the *entityId* status to idle. If the progress view watched
+        // entityId it would now show completion — it must NOT, because the
+        // generation it tracks runs under linkedTaskId.
+        container
+            .read(
+              inferenceStatusControllerProvider(
+                id: testEntityId,
+                aiResponseType: AiResponseType.imageGeneration,
+              ).notifier,
+            )
+            .setStatus(InferenceStatus.idle);
+        await tester.pump();
+
+        expect(find.text('Cover art ready!'), findsNothing);
+        expect(find.text('Generating image...'), findsOneWidget);
+
+        // Driving the linkedTaskId status to idle DOES surface completion.
+        container
+            .read(
+              inferenceStatusControllerProvider(
+                id: testLinkedTaskId,
+                aiResponseType: AiResponseType.imageGeneration,
+              ).notifier,
+            )
+            .setStatus(InferenceStatus.idle);
+        await tester.pump();
+
+        expect(find.text('Cover art ready!'), findsOneWidget);
+      },
+    );
+
     testWidgets('progress view shows error when status becomes error', (
       tester,
     ) async {
@@ -448,5 +534,3 @@ class _CoverArtSkillModalHost extends ConsumerWidget {
     );
   }
 }
-
-/// Mock controller that returns processed images for testing.
