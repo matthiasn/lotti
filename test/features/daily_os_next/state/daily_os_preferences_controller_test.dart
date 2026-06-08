@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_preferences_controller.dart';
 import 'package:mocktail/mocktail.dart';
@@ -43,6 +44,51 @@ void main() {
       expect(prefs.allowsCategoryId('cat_health'), isFalse);
       expect(prefs.allowsCategoryId('cat_work'), isTrue);
     });
+
+    // The two predicates must agree for the same id, and both must mirror
+    // membership in the excluded set, regardless of how the set was built.
+    glados.Glados2(
+      // Candidate category id drawn from a pool that overlaps the excluded
+      // pool below, so both the allowed and excluded branches are exercised.
+      glados.AnyUtils(
+        glados.any,
+      ).choose(const ['cat_work', 'cat_health', 'cat_meals', 'cat_other']),
+      // Excluded set built from arbitrary subsets of a shared id pool.
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        0,
+        4,
+        glados.AnyUtils(
+          glados.any,
+        ).choose(const ['cat_work', 'cat_health', 'cat_meals']),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'allowsCategory(c) == allowsCategoryId(c.id) and both track exclusion',
+      (categoryId, excludedList) {
+        final excluded = excludedList.toSet();
+        final prefs = DailyOsPreferences(excludedCategoryIds: excluded);
+        final category = DayAgentCategory(
+          id: categoryId,
+          name: 'name',
+          colorHex: 'FF0000',
+        );
+        final reason = 'id=$categoryId excluded=$excluded';
+
+        // The two predicates are different surfaces of the same rule.
+        expect(
+          prefs.allowsCategory(category),
+          prefs.allowsCategoryId(categoryId),
+          reason: reason,
+        );
+        // And the rule is exactly "not in the excluded set".
+        expect(
+          prefs.allowsCategoryId(categoryId),
+          !excluded.contains(categoryId),
+          reason: reason,
+        );
+      },
+      tags: 'glados',
+    );
   });
 
   group('DailyOsPreferencesController', () {

@@ -229,6 +229,44 @@ void main() {
       expect(state.currentPlan, acceptedPlan);
     });
 
+    test(
+      'accept is a no-op once every change is already resolved '
+      '(_indicesForDecision yields no pending items)',
+      () async {
+        final acceptedPlan = draft.copyWith(scheduledMinutes: 360);
+        final agent = _RecordingRefineAgent(
+          updatedPlan: acceptedPlan,
+          livePlanAfterReject: acceptedPlan,
+        );
+        final container = makeContainer(overrideAgent: agent);
+        final notifier = container.read(
+          refineControllerProvider(draft).notifier,
+        )..beginListening(resetTranscript: true);
+        await notifier.finishWithTranscript('add gym and move review later');
+
+        final diff = container.read(refineControllerProvider(draft)).diff!;
+        // Resolve every change individually so no `pending` decisions remain.
+        for (final change in diff.changes) {
+          await notifier.acceptChange(change.id);
+        }
+        final resolvedCalls = agent.acceptedItemIndices.length;
+        expect(
+          container.read(refineControllerProvider(draft)).phase,
+          RefinePhase.accepted,
+        );
+
+        // With nothing pending, `_indicesForDecision(pending)` returns an
+        // empty list and `accept()` must bail out before calling the agent.
+        await notifier.accept();
+
+        expect(agent.acceptedItemIndices.length, resolvedCalls);
+        expect(
+          container.read(refineControllerProvider(draft)).phase,
+          RefinePhase.accepted,
+        );
+      },
+    );
+
     test('revert returns to idle with the original plan', () async {
       final container = makeContainer();
       final notifier = container.read(refineControllerProvider(draft).notifier)

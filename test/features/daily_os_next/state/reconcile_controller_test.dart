@@ -18,12 +18,7 @@ void main() {
     late MockDayAgent agent;
 
     setUp(() {
-      agent = MockDayAgent(
-        parseLatency: Duration.zero,
-        pendingLatency: Duration.zero,
-        triageLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
-      );
+      agent = _ZeroLatencyAgent();
     });
 
     ReconcileParams paramsFor(CaptureId id, {DateTime? dayDate}) =>
@@ -363,15 +358,19 @@ void main() {
   });
 }
 
-class _DateRecordingDayAgent extends MockDayAgent {
-  _DateRecordingDayAgent()
+/// Base for the scripted agents below: zero latencies and a fixed clock so
+/// each subclass only overrides the method under test.
+class _ZeroLatencyAgent extends MockDayAgent {
+  _ZeroLatencyAgent()
     : super(
         parseLatency: Duration.zero,
         pendingLatency: Duration.zero,
         triageLatency: Duration.zero,
         clock: () => DateTime(2026, 5, 25, 9),
       );
+}
 
+class _DateRecordingDayAgent extends _ZeroLatencyAgent {
   DateTime? pendingDate;
 
   @override
@@ -394,15 +393,7 @@ class _SeededPreferencesController extends DailyOsPreferencesController {
   }
 }
 
-class _RefreshingDayAgent extends MockDayAgent {
-  _RefreshingDayAgent()
-    : super(
-        parseLatency: Duration.zero,
-        pendingLatency: Duration.zero,
-        triageLatency: Duration.zero,
-        clock: () => DateTime(2026, 5, 25, 9),
-      );
-
+class _RefreshingDayAgent extends _ZeroLatencyAgent {
   int parseCalls = 0;
 
   static const _work = DayAgentCategory(
