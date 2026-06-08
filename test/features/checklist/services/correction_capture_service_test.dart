@@ -197,20 +197,35 @@ void main() {
         expect(capturedPending?.categoryId, equals('category-1'));
       });
 
-      test('does not set pending when no notifier provided', () async {
-        when(
-          () => mockCategoryRepository.getCategoryById('category-1'),
-        ).thenAnswer((_) async => testCategory);
+      test('does not set pending when no notifier provided', () {
+        fakeAsync((async) {
+          when(
+            () => mockCategoryRepository.getCategoryById('category-1'),
+          ).thenAnswer((_) async => testCategory);
 
-        // Service without notifier (created manually in setUp)
-        final result = await service.captureCorrection(
-          categoryId: 'category-1',
-          beforeText: 'test flight',
-          afterText: 'TestFlight',
-        );
+          // Service without notifier (created manually in setUp).
+          CorrectionCaptureResult? result;
+          service
+              .captureCorrection(
+                categoryId: 'category-1',
+                beforeText: 'test flight',
+                afterText: 'TestFlight',
+              )
+              .then((r) => result = r);
+          async.flushMicrotasks();
 
-        // Still returns pending, just no notifier to call
-        expect(result, equals(CorrectionCaptureResult.pending));
+          // Still classified as pending — the correction is valid; the only
+          // side effect (notifier.setPending) is simply skipped because there
+          // is no notifier.
+          expect(result, equals(CorrectionCaptureResult.pending));
+
+          // Invariant: with no notifier, NO save timer is ever started, so
+          // elapsing well past the save delay must not reach the repository.
+          async
+            ..elapse(kCorrectionSaveDelay + const Duration(seconds: 1))
+            ..flushMicrotasks();
+          verifyNever(() => mockCategoryRepository.updateCategory(any()));
+        });
       });
 
       test('sets pending and does not immediately save', () async {
@@ -296,22 +311,10 @@ void main() {
     });
   });
 
-  group('CorrectionCaptureResult', () {
-    test('has all expected values', () {
-      expect(CorrectionCaptureResult.values, hasLength(6));
-      expect(
-        CorrectionCaptureResult.values,
-        containsAll([
-          CorrectionCaptureResult.pending,
-          CorrectionCaptureResult.noCategory,
-          CorrectionCaptureResult.noChange,
-          CorrectionCaptureResult.trivialChange,
-          CorrectionCaptureResult.duplicate,
-          CorrectionCaptureResult.categoryNotFound,
-        ]),
-      );
-    });
-  });
+  // Note: the six CorrectionCaptureResult values are each asserted by a
+  // behavioral test in the `captureCorrection` group above (noCategory,
+  // noChange, trivialChange, categoryNotFound, duplicate, pending), so a
+  // standalone enum-existence test would add no behavioral coverage.
 
   group('PendingCorrection', () {
     test('creates with required properties', () {
@@ -1146,6 +1149,67 @@ void main() {
       // 2 chars but different letters: meaningful.
       expect(service.debugIsMeaningfulCorrection('ab', 'ax'), isTrue);
     });
+  });
+
+  group('duplicate detection round-trip property', () {
+    // `_isDuplicate` is private, but it is the gate that turns an
+    // already-stored before/after pair into `CorrectionCaptureResult.duplicate`
+    // on the public capture path. This round-trip property pins the invariant
+    // through that public API: if a category already carries an example, then
+    // capturing the exact same (normalized) pair must always be rejected as a
+    // duplicate — never saved again — for arbitrary content.
+    glados.Glados<String>(
+      glados.any.letterOrDigits,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'capturing an already-stored pair is always a duplicate',
+      (seed) {
+        // Construct a guaranteed-valid, distinct, meaningful pair:
+        // - both have length >= 3 (so the meaningfulness gate passes),
+        // - they always differ (different prefixes; avoids `noChange`),
+        // - no internal whitespace, so normalization is a no-op and the
+        //   stored value matches the captured value exactly.
+        final before = 'abc$seed';
+        final after = 'xyz$seed';
+
+        final category = testCategory.copyWith(
+          correctionExamples: [
+            ChecklistCorrectionExample(
+              before: before,
+              after: after,
+              capturedAt: DateTime(2025),
+            ),
+          ],
+        );
+        when(
+          () => mockCategoryRepository.getCategoryById('category-1'),
+        ).thenAnswer((_) async => category);
+
+        late CorrectionCaptureResult result;
+        fakeAsync((async) {
+          service
+              .captureCorrection(
+                categoryId: 'category-1',
+                beforeText: before,
+                afterText: after,
+              )
+              .then((r) => result = r);
+          async
+            ..flushMicrotasks()
+            ..elapse(kCorrectionSaveDelay + const Duration(milliseconds: 100))
+            ..flushMicrotasks();
+        });
+
+        expect(
+          result,
+          CorrectionCaptureResult.duplicate,
+          reason: 'before="$before" after="$after"',
+        );
+        // The duplicate must never be persisted again.
+        verifyNever(() => mockCategoryRepository.updateCategory(any()));
+      },
+      tags: 'glados',
+    );
   });
 
   group('clock-driven timestamps', () {
