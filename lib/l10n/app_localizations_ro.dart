@@ -3441,6 +3441,43 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextGreetingMorning => 'Bună dimineața.';
 
   @override
+  String get dailyOsNextKnowledgeConfirm => 'Confirmați';
+
+  @override
+  String get dailyOsNextKnowledgeConfirmedHeader => 'Confirmat';
+
+  @override
+  String get dailyOsNextKnowledgeEdit => 'Editați';
+
+  @override
+  String get dailyOsNextKnowledgeEditCancel => 'Anulați';
+
+  @override
+  String get dailyOsNextKnowledgeEditHookHint => 'Rezumat pe un rând';
+
+  @override
+  String get dailyOsNextKnowledgeEditSave => 'Salvați';
+
+  @override
+  String get dailyOsNextKnowledgeEditStatementHint => 'Ce ar trebui să rețin?';
+
+  @override
+  String get dailyOsNextKnowledgeEmpty =>
+      'Încă nimic — voi reține ce îmi spuneți.';
+
+  @override
+  String get dailyOsNextKnowledgeProposedHeader => 'Așteaptă confirmarea dvs.';
+
+  @override
+  String get dailyOsNextKnowledgeRetract => 'Uită';
+
+  @override
+  String get dailyOsNextKnowledgeStale => 'Mai este valabil?';
+
+  @override
+  String get dailyOsNextKnowledgeTitle => 'Ce am învățat';
+
+  @override
   String get dailyOsNextParsedCardBreakLinkTooltip => 'Desface legătura';
 
   @override

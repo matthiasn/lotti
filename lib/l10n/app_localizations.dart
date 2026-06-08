@@ -5742,6 +5742,78 @@ abstract class AppLocalizations {
   /// **'Good morning.'**
   String get dailyOsNextGreetingMorning;
 
+  /// No description provided for @dailyOsNextKnowledgeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm'**
+  String get dailyOsNextKnowledgeConfirm;
+
+  /// No description provided for @dailyOsNextKnowledgeConfirmedHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmed'**
+  String get dailyOsNextKnowledgeConfirmedHeader;
+
+  /// No description provided for @dailyOsNextKnowledgeEdit.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get dailyOsNextKnowledgeEdit;
+
+  /// No description provided for @dailyOsNextKnowledgeEditCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get dailyOsNextKnowledgeEditCancel;
+
+  /// No description provided for @dailyOsNextKnowledgeEditHookHint.
+  ///
+  /// In en, this message translates to:
+  /// **'One-line summary'**
+  String get dailyOsNextKnowledgeEditHookHint;
+
+  /// No description provided for @dailyOsNextKnowledgeEditSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get dailyOsNextKnowledgeEditSave;
+
+  /// No description provided for @dailyOsNextKnowledgeEditStatementHint.
+  ///
+  /// In en, this message translates to:
+  /// **'What should I remember?'**
+  String get dailyOsNextKnowledgeEditStatementHint;
+
+  /// No description provided for @dailyOsNextKnowledgeEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing yet — I\'ll remember what you tell me.'**
+  String get dailyOsNextKnowledgeEmpty;
+
+  /// No description provided for @dailyOsNextKnowledgeProposedHeader.
+  ///
+  /// In en, this message translates to:
+  /// **'Awaiting your confirmation'**
+  String get dailyOsNextKnowledgeProposedHeader;
+
+  /// No description provided for @dailyOsNextKnowledgeRetract.
+  ///
+  /// In en, this message translates to:
+  /// **'Forget'**
+  String get dailyOsNextKnowledgeRetract;
+
+  /// No description provided for @dailyOsNextKnowledgeStale.
+  ///
+  /// In en, this message translates to:
+  /// **'Still true?'**
+  String get dailyOsNextKnowledgeStale;
+
+  /// No description provided for @dailyOsNextKnowledgeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What I\'ve learned'**
+  String get dailyOsNextKnowledgeTitle;
+
   /// No description provided for @dailyOsNextParsedCardBreakLinkTooltip.
   ///
   /// In en, this message translates to:
