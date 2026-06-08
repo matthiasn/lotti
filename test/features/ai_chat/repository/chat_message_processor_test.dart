@@ -60,6 +60,29 @@ CreateChatCompletionStreamResponse _toolCallChunk({
   );
 }
 
+/// Stubs `mock.generate` (matching every named argument) to return `stream`.
+///
+/// The `generate` call carries eight positional/named parameters; matching
+/// them all by hand in every test is pure boilerplate, so this helper owns the
+/// `when(...)` shape and lets each test supply only the response [stream].
+void _stubGenerate(
+  MockCloudInferenceRepository mock,
+  Stream<CreateChatCompletionStreamResponse> stream,
+) {
+  when(
+    () => mock.generate(
+      any<String>(),
+      model: any<String>(named: 'model'),
+      temperature: any<double>(named: 'temperature'),
+      baseUrl: any<String>(named: 'baseUrl'),
+      apiKey: any<String>(named: 'apiKey'),
+      systemMessage: any<String>(named: 'systemMessage'),
+      provider: any<AiConfigInferenceProvider?>(named: 'provider'),
+      geminiThinkingMode: any(named: 'geminiThinkingMode'),
+    ),
+  ).thenAnswer((_) => stream);
+}
+
 void main() {
   setUpAll(() {
     registerFallbackValue(
@@ -471,15 +494,18 @@ void main() {
         // Act
         final result = processor.buildFinalPromptFromMessages(messages);
 
-        // Assert
-        expect(result, contains('User:'));
-        expect(result, contains('Hello'));
-        expect(result, contains('Assistant: Hi! Let me check your tasks.'));
-        expect(result, contains('Tool response: {"tasks": []}'));
-        expect(
-          result,
-          contains('Based on the conversation and tool results above'),
-        );
+        // Assert: lines are joined with a blank line, role-prefixed, in input
+        // order, with the fixed closing instruction appended last. Structural
+        // assertions on the exact line text and ordering — not loose
+        // `contains` — pin the Tool-response format and prevent silent
+        // reordering regressions.
+        final lines = result.split('\n\n');
+        expect(lines, [
+          'User: Hello',
+          'Assistant: Hi! Let me check your tasks.',
+          'Tool response: {"tasks": []}',
+          'Based on the conversation and tool results above, provide a helpful response to the user.',
+        ]);
       });
     });
 
@@ -816,22 +842,10 @@ void main() {
 
         const systemMessage = 'You are a helpful assistant';
 
-        final responseStream = Stream.fromIterable([
-          _contentChunk('No tasks found.'),
-        ]);
-
-        when(
-          () => mockCloudInferenceRepository.generate(
-            any<String>(),
-            model: any<String>(named: 'model'),
-            temperature: any<double>(named: 'temperature'),
-            baseUrl: any<String>(named: 'baseUrl'),
-            apiKey: any<String>(named: 'apiKey'),
-            systemMessage: any<String>(named: 'systemMessage'),
-            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-            geminiThinkingMode: any(named: 'geminiThinkingMode'),
-          ),
-        ).thenAnswer((_) => responseStream);
+        _stubGenerate(
+          mockCloudInferenceRepository,
+          Stream.fromIterable([_contentChunk('No tasks found.')]),
+        );
 
         // Act
         final result = await processor.generateFinalResponse(
@@ -980,54 +994,15 @@ void main() {
           ),
         );
 
-        final stream = Stream.fromIterable([
-          const CreateChatCompletionStreamResponse(
-            id: 'r1',
-            created: 0,
-            model: 'm',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: ''),
-              ),
-            ],
-          ),
-          const CreateChatCompletionStreamResponse(
-            id: 'r1',
-            created: 0,
-            model: 'm',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
-              ),
-            ],
-          ),
-          const CreateChatCompletionStreamResponse(
-            id: 'r1',
-            created: 0,
-            model: 'm',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: ' world'),
-              ),
-            ],
-          ),
-        ]);
-
-        when(
-          () => mockCloudInferenceRepository.generate(
-            any<String>(),
-            model: any<String>(named: 'model'),
-            temperature: any<double>(named: 'temperature'),
-            baseUrl: any<String>(named: 'baseUrl'),
-            apiKey: any<String>(named: 'apiKey'),
-            systemMessage: any<String>(named: 'systemMessage'),
-            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-            geminiThinkingMode: any(named: 'geminiThinkingMode'),
-          ),
-        ).thenAnswer((_) => stream);
+        // The empty first chunk must be dropped while the rest stream in order.
+        _stubGenerate(
+          mockCloudInferenceRepository,
+          Stream.fromIterable([
+            _contentChunk(''),
+            _contentChunk('Hello'),
+            _contentChunk(' world'),
+          ]),
+        );
 
         final chunks = await processor
             .generateFinalResponseStream(
@@ -1070,32 +1045,11 @@ void main() {
           );
 
           Stream<CreateChatCompletionStreamResponse> failingStream() async* {
-            yield const CreateChatCompletionStreamResponse(
-              id: 'r1',
-              created: 0,
-              model: 'm',
-              choices: [
-                ChatCompletionStreamResponseChoice(
-                  index: 0,
-                  delta: ChatCompletionStreamResponseDelta(content: 'Hello'),
-                ),
-              ],
-            );
+            yield _contentChunk('Hello');
             throw StateError('provider died mid-stream');
           }
 
-          when(
-            () => mockCloudInferenceRepository.generate(
-              any<String>(),
-              model: any<String>(named: 'model'),
-              temperature: any<double>(named: 'temperature'),
-              baseUrl: any<String>(named: 'baseUrl'),
-              apiKey: any<String>(named: 'apiKey'),
-              systemMessage: any<String>(named: 'systemMessage'),
-              provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-              geminiThinkingMode: any(named: 'geminiThinkingMode'),
-            ),
-          ).thenAnswer((_) => failingStream());
+          _stubGenerate(mockCloudInferenceRepository, failingStream());
 
           final stream = processor.generateFinalResponseStream(
             messages: const [
@@ -1142,43 +1096,25 @@ void main() {
           ),
         );
 
-        final stream = Stream<CreateChatCompletionStreamResponse>.fromIterable([
-          const CreateChatCompletionStreamResponse(
-            id: 'r0',
-            created: 0,
-            model: 'm',
-          ),
-          const CreateChatCompletionStreamResponse(
-            id: 'r1',
-            created: 0,
-            model: 'm',
-            choices: [],
-          ),
-          const CreateChatCompletionStreamResponse(
-            id: 'r2',
-            created: 0,
-            model: 'm',
-            choices: [
-              ChatCompletionStreamResponseChoice(
-                index: 0,
-                delta: ChatCompletionStreamResponseDelta(content: 'ok'),
-              ),
-            ],
-          ),
-        ]);
-
-        when(
-          () => mockCloudInferenceRepository.generate(
-            any<String>(),
-            model: any<String>(named: 'model'),
-            temperature: any<double>(named: 'temperature'),
-            baseUrl: any<String>(named: 'baseUrl'),
-            apiKey: any<String>(named: 'apiKey'),
-            systemMessage: any<String>(named: 'systemMessage'),
-            provider: any<AiConfigInferenceProvider?>(named: 'provider'),
-            geminiThinkingMode: any(named: 'geminiThinkingMode'),
-          ),
-        ).thenAnswer((_) => stream);
+        // A frame with no choices and a frame with empty choices must both be
+        // skipped without crashing before the real content frame streams out.
+        _stubGenerate(
+          mockCloudInferenceRepository,
+          Stream<CreateChatCompletionStreamResponse>.fromIterable([
+            const CreateChatCompletionStreamResponse(
+              id: 'r0',
+              created: 0,
+              model: 'm',
+            ),
+            const CreateChatCompletionStreamResponse(
+              id: 'r1',
+              created: 0,
+              model: 'm',
+              choices: [],
+            ),
+            _contentChunk('ok'),
+          ]),
+        );
 
         final out = await processor
             .generateFinalResponseStream(
