@@ -1,5 +1,3 @@
-// ignore_for_file: cascade_invocations
-
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -11,9 +9,6 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/ui/ai_response_summary.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/ui/widgets/nested_ai_responses_widget.dart';
-import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
@@ -76,23 +71,21 @@ final testAiResponseEntry2 = AiResponseEntry(
 
 void main() {
   late MockJournalRepository mockJournalRepository;
-  late MockUpdateNotifications mockUpdateNotifications;
-  late MockLoggingService mockLoggingService;
-  late StreamController<Set<String>> updateStreamController;
 
   setUpAll(() {
     registerFallbackValue(const <String>[]);
   });
 
-  setUp(() {
-    mockJournalRepository = MockJournalRepository();
-    mockUpdateNotifications = MockUpdateNotifications();
-    mockLoggingService = MockLoggingService();
-    updateStreamController = StreamController<Set<String>>.broadcast();
+  setUp(() async {
+    // Registers the core getIt graph (UpdateNotifications with an empty
+    // update stream, LoggingService, DomainLogger, JournalDb, SettingsDb, …)
+    // via a single shared helper instead of hand-rolled registrations.
+    // The controller only reads getIt<UpdateNotifications>() and the
+    // journalRepositoryProvider override below, so the empty update stream
+    // is exactly what these tests want (no spurious background refreshes).
+    await setUpTestGetIt();
 
-    when(
-      () => mockUpdateNotifications.updateStream,
-    ).thenAnswer((_) => updateStreamController.stream);
+    mockJournalRepository = MockJournalRepository();
 
     // Default stub for the bulk fetch path. The controller now coalesces
     // its N parallel `getJournalEntityById` calls into a single
@@ -111,17 +104,9 @@ void main() {
       }
       return results;
     });
-
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<UpdateNotifications>(mockUpdateNotifications);
-    getIt.registerSingleton<LoggingService>(mockLoggingService);
   });
 
-  tearDown(() {
-    updateStreamController.close();
-    getIt.unregister<UpdateNotifications>();
-    getIt.unregister<LoggingService>();
-  });
+  tearDown(tearDownTestGetIt);
 
   /// Helper to set up common test data and mocks for a single AI response
   void setupSingleAiResponse() {

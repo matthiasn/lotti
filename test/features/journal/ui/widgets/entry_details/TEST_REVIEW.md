@@ -69,9 +69,11 @@ Extra test files with no direct source counterpart:
 - [x] **[MED]** `test/…/header/initial_modal_page_content_test.dart` — Uses a custom ad-hoc `_buildWithRoute` helper that builds `ProviderScope` + `MaterialApp` + localization + `Scaffold` by hand (lines 42–73 in `modern_action_items_test.dart` which it shares). This helper duplicates what `makeTestableWidget()` + navigator setup could provide.
   **RESOLVED (assessed, no change):** the helper exists exactly once at file level (no per-test duplication) and its route-push wrapper is something `makeTestableWidget` cannot express. Delegating the app/l10n wrapping to `makeTestableWidget` was attempted and reverted — its theme/viewport/scroll wrapper semantics differ and 22 of 92 tests fail.
 
-- [ ] **[LOW]** `test/…/header/modern_generate_cover_art_item_test.dart` (281 L), `test/…/header/modern_labels_item_test.dart` (563 L), `test/…/header/modern_rate_session_item_test.dart` (138 L) — each of these files tests a class whose canonical home is `modern_action_items.dart`. They are satellite test files for a single source file. They should be merged into the `modern_action_items_test.dart` suite (after the impl split described above) so the one-per-source rule is honoured.
+- [x] **[LOW]** `test/…/header/modern_generate_cover_art_item_test.dart` (281 L), `test/…/header/modern_labels_item_test.dart` (563 L), `test/…/header/modern_rate_session_item_test.dart` (138 L) — each of these files tests a class whose canonical home is `modern_action_items.dart`. They are satellite test files for a single source file. They should be merged into the `modern_action_items_test.dart` suite (after the impl split described above) so the one-per-source rule is honoured.
+  **RESOLVED (stale):** all three satellite files no longer exist in `header/`; their coverage was already folded into `modern_action_items_test.dart`, which is now the single mirror for the part-file library (`ModernGenerateCoverArtItem`/`ModernLabelsItem`/`ModernRateSessionItem` are tested only there).
 
-- [ ] **[LOW]** `test/…/entry_detail_footer_test.dart` (222 L) — Quality is acceptable. One minor point: some tests assert only on `find.byType(EntryDetailFooter)` without checking the rendered state of child widgets (e.g. the delete/star/private buttons). Strengthening at least two tests to verify button icon states would improve behavioral coverage.
+- [x] **[LOW]** `test/…/entry_detail_footer_test.dart` (222 L) — Quality is acceptable. One minor point: some tests assert only on `find.byType(EntryDetailFooter)` without checking the rendered state of child widgets (e.g. the delete/star/private buttons). Strengthening at least two tests to verify button icon states would improve behavioral coverage.
+  **RESOLVED:** the "delete/star/private buttons" premise was inaccurate — `EntryDetailFooter` renders `DurationWidget`, `SaveButton`, and a map `Visibility`, not those header buttons. Added four behavioral tests (via `FakeEntryController` overrides): `DurationWidget` present but `SaveButton` absent when `inLinkedEntries:false`; `SaveButton` present when `inLinkedEntries:true`; map `Visibility` child built and `visible == true` when `showMap`; and `SizedBox.shrink` (no child widgets) when the entry is null. The map test uses a geolocation-free entry so `MapWidget` short-circuits to `Center` and never instantiates `FlutterMap` (no tile network I/O).
 
 ---
 
@@ -97,7 +99,8 @@ No genuine Glados candidates identified. All files in scope are UI widgets. The 
 - [x] **[MED]** `entry_detail_header_test.dart` + `entry_detail_header_collapsible_test.dart` — The `entry_detail_header.dart` chevron rotation animation is tested through the raw `AnimationController` value, but the case where `isCollapsed` is toggled multiple times in quick succession (e.g. before the animation completes) is not explicitly covered.
   **RESOLVED:** new test flips collapse three times with half-duration pumps between flips — the implicit `AnimatedRotation` retargets each time and settles on the final `-0.25` turn.
 
-- [ ] **[LOW]** `measurement_summary_test.dart` (113 L) — Tests rendering of `MeasurementSummary` with a nominal measurable type. The case where `measurableType` is null (no matching definition in the database) is not tested.
+- [x] **[LOW]** `measurement_summary_test.dart` (113 L) — Tests rendering of `MeasurementSummary` with a nominal measurable type. The case where `measurableType` is null (no matching definition in the database) is not tested.
+  **RESOLVED (stale):** already covered — the test `'renders SizedBox.shrink when dataType is null'` stubs `getDataTypeById` to return `null` and asserts the formatted value is absent (the widget's `dataType == null → SizedBox.shrink` branch).
 
 ---
 
@@ -115,7 +118,8 @@ No genuine Glados candidates identified. All files in scope are UI widgets. The 
 - [x] **[MED]** `test/…/header/modern_labels_item_test.dart` (563 L, 26 `pumpAndSettle` calls) and `test/…/header/modern_generate_cover_art_item_test.dart` (281 L, 0 `pumpAndSettle` — good). The `modern_labels_item_test.dart` uses `pumpAndSettle` universally across all render tests; since `ModernLabelsItem` is a `ConsumerWidget` with no inherent animations, most of these can become `pump()`.
   **RESOLVED (stale):** `modern_labels_item_test.dart` no longer exists in this directory.
 
-- [ ] **[LOW]** `test/…/entry_detail_footer_test.dart` (222 L) — `pumpAndSettle` calls count is modest; minor speed wins available but not a priority.
+- [x] **[LOW]** `test/…/entry_detail_footer_test.dart` (222 L) — `pumpAndSettle` calls count is modest; minor speed wins available but not a priority.
+  **RESOLVED:** the two render-only tests (`map is invisible…`, `time record button is not shown…`) now use a bounded `pump()` + `pump(10ms)` pair instead of `pumpAndSettle`. The remaining `pumpAndSettle` calls are in the two tap-interaction tests, where the `AnimatedOpacity`/time-service stream genuinely needs to settle.
 
 ---
 

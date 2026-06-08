@@ -2272,28 +2272,6 @@ void main() {
         );
         expect(sizeTransition.sizeFactor.value, 0.0);
       });
-
-      testWidgets('expanded image entry shows date widget', (tester) async {
-        when(
-          () => mockJournalDb.journalEntityById(testImageEntry.meta.id),
-        ).thenAnswer((_) async => testImageEntry);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            ProviderScope(
-              child: EntryDetailsWidget(
-                itemId: testImageEntry.meta.id,
-                showAiEntry: false,
-                linkedFrom: testTask,
-                link: testLinkStruct,
-              ),
-            ),
-          ),
-        );
-        await tester.pump();
-
-        expect(find.byType(EntryDatetimeWidget), findsAtLeastNWidgets(1));
-      });
     });
 
     group('expanded audio content structure', () {

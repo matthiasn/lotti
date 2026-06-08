@@ -22,7 +22,8 @@
 - [x] **[MED]** `test/features/journal/ui/widgets/editor/editor_widget_test.dart` is **982 lines** — approaching the 1000-line warning threshold. The file mixes five distinct concerns: (a) toolbar visibility, (b) embed builder configuration, (c) `getSelectedText` pure-function unit tests, (d) `getDictionaryResultMessage` pure-function unit tests, (e) `showDictionaryResultToast` widget tests, (f) `_buildContextMenu` integration tests. Concerns (c) and (d) are pure unit tests and could reasonably move to a separate `editor_widget_pure_test.dart`, but given the one-file-per-source constraint this is only advisory: the file is within limits.
   - **RESOLVED:** (assessed, no change) — as the item itself notes, the split is blocked by the one-test-file-per-source rule; the pure-function groups keep the file navigable and the parameterized dictionary flow (see the coverage item) shrank the widget-test share.
 
-- [ ] **[LOW]** All impl files are well within 500 lines. No impl splits needed.
+- [x] **[LOW]** All impl files are well within 500 lines. No impl splits needed.
+  - **RESOLVED:** (assessed, no change) — confirmed true: the file inventory shows every impl file at ≤251 lines (`editor_widget.dart` is the largest at 251); no split is warranted.
 
 ---
 
@@ -39,7 +40,8 @@
 - [x] **[MED]** `embed_builders_test.dart:24–50` and `52–85`: Both tests assert only `find.byType(Divider)` / `find.byIcon(...)`. Neither asserts the `key` property of the embed builders, the `expanded` getter value, or visual properties like `_dividerOpacity` or padding. The `UnknownEmbedBuilder` test text `'Unsupported content (unsupported)'` is never checked.
   - **RESOLVED:** done — both embed tests now pin the builder contract (`key`, `expanded`) and the rendered output: divider thickness/height/dimmed theme color + vertical padding, and the unknown-embed fallback text `'Unsupported content (unsupported)'` alongside the warning glyph.
 
-- [ ] **[LOW]** `editor_widget_test.dart:154–180` (`'configures embed builders and unknown fallback'`): asserts `builders!.any((b) => b is DividerEmbedBuilder)` which is a structural/configuration test rather than a behavioral one. This test would pass even if `DividerEmbedBuilder.build` was broken. The behavioral test in `embed_builders_test.dart` is the right place for this; consider removing the structural duplication.
+- [x] **[LOW]** `editor_widget_test.dart:154–180` (`'configures embed builders and unknown fallback'`): asserts `builders!.any((b) => b is DividerEmbedBuilder)` which is a structural/configuration test rather than a behavioral one. This test would pass even if `DividerEmbedBuilder.build` was broken. The behavioral test in `embed_builders_test.dart` is the right place for this; consider removing the structural duplication.
+  - **RESOLVED:** the test is now `'wires the UnknownEmbedBuilder fallback for unknown embeds'`: it drops the redundant structural `DividerEmbedBuilder` type-check (divider wiring is proven behaviourally by `'divider toolbar button inserts divider embed'`) and pins the specific catch-all — `quillEditor.config.unknownEmbedBuilder` is an `UnknownEmbedBuilder`. The fallback's actual rendering (warning glyph + `Unsupported content (<type>)`) is exercised behaviourally in `embed_builders_test.dart`; driving a live custom `BlockEmbed` through `QuillEditor` here proved brittle (block-embed insertion doesn't reliably lay out via a single pump), so the wiring of the specific fallback type is asserted instead.
 
 ---
 
@@ -68,7 +70,8 @@
 - [x] **[MED]** `editor_widget_test.dart`: `_addToDictionary` is tested for `success`, `noCategory`, and `emptyTerm` results (lines 729–918) but not for `duplicate`, `termTooLong`, `saveFailed`, `entryNotFound`, or `categoryNotFound`. Three of these (`duplicate`, `termTooLong`, `saveFailed`) return non-null messages — they should each have a corresponding integration test. `getDictionaryResultMessage` unit tests cover all cases, but the widget-level path (which calls `showDictionaryResultToast` which calls `context.showToast`) is only exercised for 3 of 8 cases.
   - **RESOLVED:** done — the three near-identical tests were replaced by a parameterized `runAddToDictionaryCase` flow generating one test per result: success, noCategory, duplicate, termTooLong, and saveFailed each assert their toast text; emptyTerm asserts silence. All five message-producing widget paths are now covered (entryNotFound/categoryNotFound are silent by the same null branch as emptyTerm).
 
-- [ ] **[LOW]** `EditorWidget` — the `margin` parameter (constructor, line 86) is never tested. With `margin: null` (default), the card renders with `null` margin; with a non-null margin, it should pass the value to the `Card`. This branch has zero test coverage.
+- [x] **[LOW]** `EditorWidget` — the `margin` parameter (constructor, line 86) is never tested. With `margin: null` (default), the card renders with `null` margin; with a non-null margin, it should pass the value to the `Card`. This branch has zero test coverage.
+  - **RESOLVED:** done — `buildEditorTestWidget` gained an optional `margin` param, and a single parameterized flow (`forwards margin=$margin to the Card`) covers both `null` (default) and `EdgeInsets.all(12)`, asserting `card.margin == margin`. (`Card` stores `margin` verbatim; the theme fallback `margin ?? cardTheme.margin ?? defaults.margin!` happens only inside `Card.build`, so the stored field is `null` for the default case.)
 
 ---
 
@@ -80,7 +83,8 @@
 - [x] **[MED]** `editor_widget_test.dart` has two `setUpAll` blocks (lines 36, 592) that each open `JournalDb` + `EditorDb` in memory — these are independent test groups that share no state yet repeat the same heavy setup. Merging into one shared setup, or using `setUpTestGetIt`, would reduce SQLite open/close overhead.
   - **RESOLVED:** done — the two identical heavy `setUpAll` blocks merged into one file-level `setUpAll`/`tearDownAll` pair (single in-memory JournalDb/EditorDb open per file); the context-menu group keeps only its cheap l10n load.
 
-- [ ] **[LOW]** `embed_builders_test.dart:81` uses `pumpAndSettle` unnecessarily for the unknown embed builder test. The `QuillEditor` renders synchronously; `await tester.pump()` is sufficient.
+- [x] **[LOW]** `embed_builders_test.dart:81` uses `pumpAndSettle` unnecessarily for the unknown embed builder test. The `QuillEditor` renders synchronously; `await tester.pump()` is sufficient.
+  - **RESOLVED:** done — the `pumpAndSettle()` in the unknown-embed test is now a single bounded `pump()` (no entrance animation to settle), removing the 10 s timeout exposure.
 
 ---
 
