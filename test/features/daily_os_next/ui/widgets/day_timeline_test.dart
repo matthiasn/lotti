@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
@@ -9,8 +10,10 @@ import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/why_chip.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/utils/consts.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -134,11 +137,19 @@ void _setView(WidgetTester tester, Size size) {
 Widget _wrap(
   Widget child, {
   Size size = const Size(1280, 1200),
+  ProviderContainer? container,
 }) {
-  return makeTestableWidget2(
+  // The timeline's blocks are ConsumerWidgets (they publish task-focus
+  // intents on tap), so every render needs a ProviderScope. When a test
+  // wants to read the published intent it passes its own [container].
+  final app = makeTestableWidget2(
     child,
     mediaQueryData: MediaQueryData(size: size),
   );
+  if (container != null) {
+    return UncontrolledProviderScope(container: container, child: app);
+  }
+  return ProviderScope(child: app);
 }
 
 void main() {
@@ -250,6 +261,103 @@ void main() {
 
       expect(openedPath, isNull);
     });
+
+    testWidgets(
+      'tracked blocks publish a scroll-to-entry focus intent before navigating',
+      (tester) async {
+        _setView(tester, const Size(1280, 1200));
+
+        String? openedPath;
+        beamToNamedOverride = (path) => openedPath = path;
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          _wrap(
+            container: container,
+            DayTimeline(
+              draft: _draftWithBlocks(
+                blocks: const [],
+                actualBlocks: [
+                  _timeBlock(
+                    id: '${actualTimeBlockIdPrefix}entry-7',
+                    title: 'Recorded session',
+                    startHour: 8,
+                    endHour: 9,
+                    type: TimeBlockType.manual,
+                    state: TimeBlockState.completed,
+                    taskId: 'task-9',
+                  ),
+                ],
+              ),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(
+          find.byKey(
+            const Key('daily_os_day_block_${actualTimeBlockIdPrefix}entry-7'),
+          ),
+        );
+        await tester.pump();
+
+        // Navigates to the backing task...
+        expect(openedPath, '/tasks/task-9');
+
+        // ...and first publishes the intent that makes the task page scroll
+        // to (and highlight) the tapped recording, using the decoded entry id.
+        final intent = container.read(
+          taskFocusControllerProvider(id: 'task-9'),
+        );
+        expect(intent, isNotNull);
+        expect(intent!.target, TaskFocusTarget.entry);
+        expect(intent.entryId, 'entry-7');
+        expect(intent.alignment, kDefaultScrollAlignment);
+      },
+    );
+
+    testWidgets(
+      'drafted task-linked blocks navigate without a focus intent',
+      (tester) async {
+        _setView(tester, const Size(1280, 1200));
+
+        beamToNamedOverride = (_) {};
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        await tester.pumpWidget(
+          _wrap(
+            container: container,
+            DayTimeline(
+              draft: _draftWithBlocks(
+                blocks: [
+                  _timeBlock(
+                    id: 'plan-task',
+                    title: 'Planned block',
+                    startHour: 8,
+                    endHour: 9,
+                    taskId: 'task-1',
+                  ),
+                ],
+              ),
+              clock: () => DateTime(2026, 5, 25, 9, 15),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        await tester.tap(find.byKey(const Key('daily_os_day_block_plan-task')));
+        await tester.pump();
+
+        // No backing recording → no scroll target published.
+        expect(
+          container.read(taskFocusControllerProvider(id: 'task-1')),
+          isNull,
+        );
+      },
+    );
 
     testWidgets('AI blocks render a WhyChip; cal and buffer blocks do not', (
       tester,

@@ -153,6 +153,33 @@ void main() {
     expect(block.duration, const Duration(minutes: 45));
   });
 
+  group('TimeBlock.trackedEntryId', () {
+    TimeBlock blockWithId(String id) => TimeBlock(
+      id: id,
+      title: 'Focus',
+      start: DateTime(2026, 5, 25, 9),
+      end: DateTime(2026, 5, 25, 9, 45),
+      type: TimeBlockType.manual,
+      state: TimeBlockState.completed,
+      category: const DayAgentCategory(
+        id: 'c1',
+        name: 'Work',
+        colorHex: 'AABBCC',
+      ),
+    );
+
+    test('decodes the backing entry id from a tracked (actual:) block', () {
+      expect(
+        blockWithId('${actualTimeBlockIdPrefix}entry-42').trackedEntryId,
+        'entry-42',
+      );
+    });
+
+    test('returns null for drafted/agent blocks without the prefix', () {
+      expect(blockWithId('b_ai').trackedEntryId, isNull);
+    });
+  });
+
   group('TimeBlock.copyWith', () {
     final base = TimeBlock(
       id: 'b1',

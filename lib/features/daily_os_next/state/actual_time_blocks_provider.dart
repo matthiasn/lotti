@@ -104,7 +104,7 @@ List<TimeBlock> actualTimeBlocksForEntries({
 
     out.add(
       TimeBlock(
-        id: 'actual:${entry.meta.id}',
+        id: '$actualTimeBlockIdPrefix${entry.meta.id}',
         title: title,
         start: entry.meta.dateFrom,
         end: entry.meta.dateTo,

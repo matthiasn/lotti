@@ -21,6 +21,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   "Uncategorized" in time-by-category views (including the Daily OS time
   history): the denormalized category column is now backfilled once from
   the stored entry data.
+- Daily OS Next: tapping a recorded session on the Day timeline now reopens
+  its task scrolled to — and briefly highlighting — that exact entry again,
+  instead of dropping you at the top of the task.
 
 ## [0.9.1016]
 ### Added

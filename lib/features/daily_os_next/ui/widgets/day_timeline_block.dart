@@ -60,7 +60,7 @@ class _BlockPosition extends StatelessWidget {
 /// faint neutral fill, neutral left border, a small category dot, a green
 /// check when done, a mono time range, and a "· tracked" suffix. They
 /// never read as drafted: they already happened.
-class DayBlock extends StatelessWidget {
+class DayBlock extends ConsumerWidget {
   const DayBlock({
     required this.block,
     this.tracked = false,
@@ -76,7 +76,7 @@ class DayBlock extends StatelessWidget {
   final ValueChanged<String>? onRename;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final category = _categoryColor();
     final isBuffer = block.type == TimeBlockType.buffer;
@@ -84,7 +84,23 @@ class DayBlock extends StatelessWidget {
     final taskId = block.taskId?.trim();
     final onTap = taskId == null || taskId.isEmpty
         ? null
-        : () => beamToNamed('/tasks/$taskId');
+        : () {
+            // Tracked blocks project a real time recording. Publish the
+            // focus intent before navigating so the task detail page
+            // scrolls to (and highlights) that exact recording, matching
+            // the old calendar behaviour. Drafted/agent blocks have no
+            // backing entry, so they just open the task at the top.
+            final entryId = block.trackedEntryId;
+            if (entryId != null) {
+              publishTaskFocus(
+                taskId: taskId,
+                entryId: entryId,
+                ref: ref,
+                alignment: kDefaultScrollAlignment,
+              );
+            }
+            beamToNamed('/tasks/$taskId');
+          };
 
     final fill = isBuffer
         ? Colors.transparent
