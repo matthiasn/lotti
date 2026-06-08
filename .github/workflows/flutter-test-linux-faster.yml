@@ -51,11 +51,10 @@ jobs:
           very_good test --coverage --exclude-tags glados -- \
             --total-shards=5 \
             --shard-index=${{ matrix.shard_index }}
-      - uses: codecov/codecov-action@v6.0.1
+      - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
-          use_pypi: true
           fail_ci_if_error: true
           flags: standard
           name: standard-shard-${{ matrix.shard_label }}
@@ -86,11 +85,10 @@ jobs:
         run: dart pub global activate very_good_cli
       - name: Run Flutter tests (glados)
         run: very_good test --coverage --tags glados
-      - uses: codecov/codecov-action@v6.0.1
+      - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
-          use_pypi: true
           fail_ci_if_error: true
           flags: glados
           files: coverage/lcov.info
@@ -105,10 +103,9 @@ jobs:
       - glados
     steps:
       - uses: actions/checkout@v5
-      - uses: codecov/codecov-action@v6.0.1
+      - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           slug: matthiasn/lotti
-          use_pypi: true
           fail_ci_if_error: true
           run_command: send-notifications
