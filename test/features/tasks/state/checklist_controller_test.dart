@@ -1105,15 +1105,24 @@ void main() {
     });
 
     group('relinkItem', () {
-      test('adds an item that is not yet in the list', () async {
-        final mockChecklistRepository = MockChecklistRepository();
+      late MockChecklistRepository mockChecklistRepository;
+
+      const params = (id: 'checklist-1', taskId: 'task-1');
+
+      setUp(() {
+        mockChecklistRepository = MockChecklistRepository();
         when(
           () => mockChecklistRepository.updateChecklist(
             checklistId: any(named: 'checklistId'),
             data: any(named: 'data'),
           ),
         ).thenAnswer((_) async => true);
+      });
 
+      /// Builds a container and warms up the `checklist-1` controller, ready
+      /// for a `relinkItem` call. The returned container reads both the
+      /// notifier and the published state.
+      Future<ProviderContainer> bootstrap() async {
         final container = ProviderContainer(
           overrides: [
             journalRepositoryProvider.overrideWithValue(mockJournalRepository),
@@ -1124,99 +1133,51 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        await container.read(
-          checklistControllerProvider((
-            id: 'checklist-1',
-            taskId: 'task-1',
-          )).future,
-        );
+        await container.read(checklistControllerProvider(params).future);
+        return container;
+      }
 
-        final notifier = container.read(
-          checklistControllerProvider((
-            id: 'checklist-1',
-            taskId: 'task-1',
-          )).notifier,
-        );
+      ChecklistController notifierOf(ProviderContainer container) =>
+          container.read(checklistControllerProvider(params).notifier);
 
-        await notifier.relinkItem('item-new');
-
+      /// The `linkedChecklistItems` of the last persisted `updateChecklist`.
+      List<String> lastPersistedItems() {
         final captured =
             verify(
                   () => mockChecklistRepository.updateChecklist(
                     checklistId: 'checklist-1',
                     data: captureAny(named: 'data'),
                   ),
-                ).captured.single
+                ).captured.last
                 as ChecklistData;
+        return captured.linkedChecklistItems;
+      }
 
-        expect(captured.linkedChecklistItems, ['item-1', 'item-2', 'item-new']);
+      test('adds an item that is not yet in the list', () async {
+        final container = await bootstrap();
+
+        await notifierOf(container).relinkItem('item-new');
+
+        expect(lastPersistedItems(), ['item-1', 'item-2', 'item-new']);
       });
 
       test(
         'does not duplicate an item that already exists in the list',
         () async {
-          final mockChecklistRepository = MockChecklistRepository();
-          when(
-            () => mockChecklistRepository.updateChecklist(
-              checklistId: any(named: 'checklistId'),
-              data: any(named: 'data'),
-            ),
-          ).thenAnswer((_) async => true);
-
-          final container = ProviderContainer(
-            overrides: [
-              journalRepositoryProvider.overrideWithValue(
-                mockJournalRepository,
-              ),
-              checklistRepositoryProvider.overrideWithValue(
-                mockChecklistRepository,
-              ),
-            ],
-          );
-          addTearDown(container.dispose);
-
-          await container.read(
-            checklistControllerProvider((
-              id: 'checklist-1',
-              taskId: 'task-1',
-            )).future,
-          );
-
-          final notifier = container.read(
-            checklistControllerProvider((
-              id: 'checklist-1',
-              taskId: 'task-1',
-            )).notifier,
-          );
+          final container = await bootstrap();
 
           // item-1 already present in testChecklist
-          await notifier.relinkItem('item-1');
+          await notifierOf(container).relinkItem('item-1');
 
           // The persisted list must not contain item-1 twice.
-          final captured =
-              verify(
-                    () => mockChecklistRepository.updateChecklist(
-                      checklistId: any(named: 'checklistId'),
-                      data: captureAny(named: 'data'),
-                    ),
-                  ).captured.last
-                  as ChecklistData;
           expect(
-            captured.linkedChecklistItems.where((id) => id == 'item-1').length,
+            lastPersistedItems().where((id) => id == 'item-1').length,
             1,
           );
 
-          final state = container.read(
-            checklistControllerProvider((
-              id: 'checklist-1',
-              taskId: 'task-1',
-            )),
-          );
-          // Items unchanged
-          expect(
-            state.value?.data.linkedChecklistItems,
-            ['item-1', 'item-2'],
-          );
+          // Items unchanged in state.
+          final state = container.read(checklistControllerProvider(params));
+          expect(state.value?.data.linkedChecklistItems, ['item-1', 'item-2']);
         },
       );
     });

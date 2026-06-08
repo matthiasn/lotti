@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/tasks/state/checklist_controller.dart';
 import 'package:lotti/features/tasks/state/checklist_item_controller.dart';
+import 'package:meta/meta.dart';
 
 /// Record type for completion controller parameters.
 typedef ChecklistCompletionParams = ({String id, String? taskId});
@@ -68,7 +69,7 @@ class ChecklistCompletionController
       }
     }
 
-    final activeItems = linkedIds
+    final items = linkedIds
         .map(
           (itemId) => ref
               .read(
@@ -76,7 +77,20 @@ class ChecklistCompletionController
               )
               .value,
         )
-        .nonNulls
+        .nonNulls;
+
+    return aggregateCompletion(items);
+  }
+
+  /// Pure aggregation core of [_computeState]: counts checked vs. total
+  /// *active* items, where an item is active when it is neither deleted nor
+  /// archived. Extracted so the counting/filtering arithmetic can be
+  /// property-tested directly, independent of the Riverpod wiring.
+  @visibleForTesting
+  static ChecklistCompletionState aggregateCompletion(
+    Iterable<ChecklistItem> items,
+  ) {
+    final activeItems = items
         .where((item) => !item.isDeleted && !item.data.isArchived)
         .toList();
     final totalCount = activeItems.length;

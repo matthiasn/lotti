@@ -1,6 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
+
+import '../../../helpers/entity_factories.dart';
 
 void main() {
   group('LinkedTasksController', () {
@@ -114,6 +118,55 @@ void main() {
 
       expect(state1, equals(state2));
       expect(state1, isNot(equals(state3)));
+    });
+  });
+
+  group('outgoingLinkedTasks', () {
+    const taskId = 'task-1';
+
+    ProviderContainer makeContainer(List<JournalEntity> resolvedEntities) {
+      final container = ProviderContainer(
+        overrides: [
+          resolvedOutgoingLinkedEntriesProvider(
+            taskId,
+          ).overrideWithValue(resolvedEntities),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('keeps only Task entities and drops non-Task entries', () {
+      final taskA = TestTaskFactory.create(id: 'a', title: 'A');
+      final taskB = TestTaskFactory.create(id: 'b', title: 'B');
+      final nonTask = JournalEntity.journalEntry(
+        meta: TestMetadataFactory.create(id: 'note'),
+      );
+
+      final container = makeContainer([taskA, nonTask, taskB]);
+
+      final result = container.read(outgoingLinkedTasksProvider(taskId));
+
+      // Only the two Task entities survive the whereType<Task>() filter,
+      // and their original relative order is preserved.
+      expect(result, [taskA, taskB]);
+    });
+
+    test('returns an empty list when no linked entity is a Task', () {
+      final note = JournalEntity.journalEntry(
+        meta: TestMetadataFactory.create(id: 'note'),
+      );
+      final project = TestProjectFactory.create(id: 'proj');
+
+      final container = makeContainer([note, project]);
+
+      expect(container.read(outgoingLinkedTasksProvider(taskId)), isEmpty);
+    });
+
+    test('returns an empty list when there are no linked entries', () {
+      final container = makeContainer(const []);
+
+      expect(container.read(outgoingLinkedTasksProvider(taskId)), isEmpty);
     });
   });
 }
