@@ -144,6 +144,18 @@ mixin _JournalDbConfigFlags on _$JournalDb {
         : filtered(privateStatuses);
   }
 
+  /// Test-only: drops the in-memory flag cache so the next access reloads
+  /// from the table. Needed when a single [JournalDb] is reused across tests
+  /// (the table is truncated between tests, but this cache would otherwise
+  /// retain stale flag values — and `initConfigFlags`/`insertFlagIfNotExists`
+  /// would skip re-seeding because the stale cache reports the flags exist).
+  @visibleForTesting
+  void resetConfigFlagCacheForTesting() {
+    _configFlagsLoaded = false;
+    _configFlagsBootstrap = null;
+    _configFlagsByName.clear();
+  }
+
   Future<void> _ensureConfigFlagsLoaded() {
     final existingBootstrap = _configFlagsBootstrap;
     if (existingBootstrap != null) {

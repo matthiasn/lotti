@@ -62,6 +62,12 @@ void main() {
   late Directory testDirectory;
 
   group('JournalDb links and ratings - ', () {
+    // The expensive ~40-step migration ladder runs once for the whole file;
+    // each test re-uses the instance and starts clean via clearAllTables.
+    setUpAll(() async {
+      db = JournalDb(inMemoryDatabase: true);
+    });
+
     setUp(() async {
       testDirectory = setupTestDirectory();
       reset(mockLoggingService);
@@ -70,19 +76,19 @@ void main() {
         loggingService: mockLoggingService,
         documentsDirectory: testDirectory,
       );
-      db = JournalDb(inMemoryDatabase: true);
+      await clearAllTables(db!);
       await initConfigFlags(db!, inMemoryDatabase: true);
     });
 
     tearDown(() async {
       unregisterJournalDbTestServices();
-      await db?.close();
       if (testDirectory.existsSync()) {
         testDirectory.deleteSync(recursive: true);
       }
     });
 
     tearDownAll(() async {
+      await db?.close();
       await getIt.reset();
     });
 

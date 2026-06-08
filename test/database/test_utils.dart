@@ -120,6 +120,10 @@ Future<void> clearAllTables(JournalDb db) async {
     await db.customStatement('DELETE FROM ${table.actualTableName}');
   }
   await db.customStatement('PRAGMA foreign_keys = ON');
+  // The DB also caches config flags in memory; drop that cache so a re-seed
+  // (initConfigFlags) actually re-writes defaults and reads return fresh
+  // values rather than the previous test's mutated flags.
+  db.resetConfigFlagCacheForTesting();
 }
 
 /// Deterministic timestamp shared by the entry builders below.

@@ -27,6 +27,12 @@ void main() {
   late Directory testDirectory;
 
   group('JournalDb task queries - ', () {
+    // The expensive ~40-step migration ladder runs once for the whole file;
+    // each test re-uses the instance and starts clean via clearAllTables.
+    setUpAll(() async {
+      db = JournalDb(inMemoryDatabase: true);
+    });
+
     setUp(() async {
       testDirectory = setupTestDirectory();
       reset(mockLoggingService);
@@ -35,19 +41,19 @@ void main() {
         loggingService: mockLoggingService,
         documentsDirectory: testDirectory,
       );
-      db = JournalDb(inMemoryDatabase: true);
+      await clearAllTables(db!);
       await initConfigFlags(db!, inMemoryDatabase: true);
     });
 
     tearDown(() async {
       unregisterJournalDbTestServices();
-      await db?.close();
       if (testDirectory.existsSync()) {
         testDirectory.deleteSync(recursive: true);
       }
     });
 
     tearDownAll(() async {
+      await db?.close();
       await getIt.reset();
     });
 
@@ -1182,10 +1188,16 @@ void main() {
       test('logs and swallows when the underlying statement fails', () async {
         // Dropping the journal table makes the raw UPDATE throw; the method
         // must log the failure instead of propagating it to the caller.
-        await db!.customStatement('DROP TABLE journal');
+        // Use a throwaway DB so the destructive DROP never corrupts the
+        // file-shared instance the other tests reuse.
+        final throwawayDb = JournalDb(inMemoryDatabase: true);
+        addTearDown(throwawayDb.close);
+        await initConfigFlags(throwawayDb, inMemoryDatabase: true);
+
+        await throwawayDb.customStatement('DROP TABLE journal');
         DevLogger.clear();
 
-        await db!.updateTaskPriorityColumn(
+        await throwawayDb.updateTaskPriorityColumn(
           id: 'prio-col-task',
           priority: 'P0',
           rank: 1,

@@ -26,6 +26,12 @@ void main() {
   late Directory testDirectory;
 
   group('JournalDb definitions - ', () {
+    // The expensive ~40-step migration ladder runs once for the whole file;
+    // each test re-uses the instance and starts clean via clearAllTables.
+    setUpAll(() async {
+      db = JournalDb(inMemoryDatabase: true);
+    });
+
     setUp(() async {
       testDirectory = setupTestDirectory();
       reset(mockLoggingService);
@@ -34,19 +40,19 @@ void main() {
         loggingService: mockLoggingService,
         documentsDirectory: testDirectory,
       );
-      db = JournalDb(inMemoryDatabase: true);
+      await clearAllTables(db!);
       await initConfigFlags(db!, inMemoryDatabase: true);
     });
 
     tearDown(() async {
       unregisterJournalDbTestServices();
-      await db?.close();
       if (testDirectory.existsSync()) {
         testDirectory.deleteSync(recursive: true);
       }
     });
 
     tearDownAll(() async {
+      await db?.close();
       await getIt.reset();
     });
 
@@ -576,11 +582,16 @@ void main() {
       );
 
       test('non-constraint failures propagate to the caller', () async {
-        await db!.close();
         // A closed database is not a constraint violation — the error must
-        // reach the caller so addLabeled's transaction rolls back.
+        // reach the caller so addLabeled's transaction rolls back. Use a
+        // throwaway DB so closing it does not affect the shared instance, and
+        // force its lazy connection open (run a query) before closing so the
+        // closed-DB error path is actually exercised.
+        final closedDb = JournalDb(inMemoryDatabase: true);
+        await closedDb.listConfigFlags().get();
+        await closedDb.close();
         await expectLater(
-          db!.insertLabel('any-journal', 'any-label'),
+          closedDb.insertLabel('any-journal', 'any-label'),
           throwsA(anything),
         );
       });
