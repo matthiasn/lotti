@@ -633,6 +633,51 @@ void main() {
         expect(fab.categoryId, 'cat-only-one');
       },
     );
+
+    testWidgets(
+      'passes null categoryId to FloatingAddActionButton when multiple '
+      'categories are selected',
+      (tester) async {
+        // selectedCategoryIds.length > 1 takes the `null` branch in
+        // InfiniteJournalPage.build — no single category can be inferred for
+        // the FAB target.
+        const state = JournalPageState(
+          match: '',
+          filters: <DisplayFilter>{},
+          showPrivateEntries: false,
+          showTasks: false,
+          selectedEntryTypes: <String>[],
+          fullTextMatches: <String>{},
+          pagingController: null,
+          taskStatuses: <String>[],
+          selectedTaskStatuses: <String>{},
+          selectedCategoryIds: {'cat-one', 'cat-two'},
+          selectedLabelIds: <String>{},
+          selectedPriorities: <String>{},
+        );
+
+        final fakeController = _FakeJournalPageController(state);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const InfiniteJournalPage(),
+            overrides: [
+              journalPageScopeProvider.overrideWithValue(false),
+              journalPageControllerProvider(
+                false,
+              ).overrideWith(() => fakeController),
+            ],
+          ),
+        );
+
+        await tester.pump(const Duration(milliseconds: 16));
+
+        final fab = tester.widget<FloatingAddActionButton>(
+          find.byType(FloatingAddActionButton),
+        );
+        expect(fab.categoryId, isNull);
+      },
+    );
   });
 }
 
