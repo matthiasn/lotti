@@ -86,7 +86,8 @@ class DayAgentKnowledgeService {
     final hook = _requireString(args, 'hook');
     final statement = _requireString(args, 'statement');
     final value = _optionalString(args, 'value') ?? '';
-    final scope = _validScope(_optionalString(args, 'scope'));
+    // Scope is validated by `propose` (the single choke point); pass it through.
+    final scope = _optionalString(args, 'scope') ?? knowledgeGlobalScope;
     // The hook is the always-on, bounded index tier (ADR 0022 Decision 10);
     // a multi-KB hook would defeat the bounded-prompt premise.
     if (hook.length > _maxHookLength) {
@@ -131,6 +132,10 @@ class DayAgentKnowledgeService {
     String scope = knowledgeGlobalScope,
     KnowledgeSource source = KnowledgeSource.agentInferred,
   }) async {
+    // Validate at the public choke point (not just the tool wrapper): a
+    // malformed scope stored here would silently never match any wake's
+    // touched scopes, hiding the knowledge forever — reject it loudly instead.
+    final resolvedScope = _validScope(scope);
     final now = clock.now();
     final active = await _activeFor(agentId);
     final prior = active.where((e) => e.key == key).firstOrNull;
@@ -150,7 +155,7 @@ class DayAgentKnowledgeService {
               updatedAt: now,
               vectorClock: null,
               value: value,
-              scope: scope,
+              scope: resolvedScope,
               supersedesId: prior?.id,
               confirmedAt: confirmed ? now : null,
             )

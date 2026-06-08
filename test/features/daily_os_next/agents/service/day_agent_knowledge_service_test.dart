@@ -129,6 +129,21 @@ void main() {
             expect(entry.supersedesId, 'prior');
           });
     });
+
+    test('rejects a malformed scope at the public choke point', () async {
+      await expectLater(
+        service.propose(
+          agentId: agentId,
+          key: 'k',
+          hook: 'h',
+          statement: 's',
+          scope: 'focus', // missing category:/project: prefix
+        ),
+        throwsA(isA<DayAgentKnowledgeException>()),
+      );
+      // Validation runs before any write, so nothing is persisted.
+      expect(upserts, isEmpty);
+    });
   });
 
   group('executeTool propose_knowledge', () {
