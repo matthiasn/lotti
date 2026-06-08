@@ -174,6 +174,46 @@ void main() {
   );
 
   test(
+    'an empty wake (no sources, empty frontier) short-circuits: no '
+    'transaction is opened and nothing is written',
+    () async {
+      // A freshly-woken agent with no captured content yet that reads an empty
+      // source set produces an empty delta — the `if (delta.isEmpty) return`
+      // guard must bail before `runInTransaction`, so receivers never see a
+      // wake that touched nothing.
+      final countingRepo = _TransactionCountingRepository()
+        ..seed([makeTestState(agentId: _agentId)]);
+      final vc = MockVectorClockService();
+      when(
+        () => vc.getNextVectorClock(previous: any(named: 'previous')),
+      ).thenAnswer((_) async => const VectorClock({'h1': 1}));
+      final outbox = MockOutboxService();
+      when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+      final emptyCapture = AgentInputCaptureService(
+        syncService: AgentSyncService(
+          repository: countingRepo,
+          outboxService: outbox,
+          vectorClockService: vc,
+        ),
+      );
+
+      final delta = await emptyCapture.captureWakeInputs(
+        agentId: _agentId,
+        sources: const [],
+        at: DateTime.utc(2024, 3, 10),
+      );
+
+      expect(delta.isEmpty, isTrue);
+      expect(countingRepo.transactionCount, 0); // no transaction opened
+      // The only seeded entity is the agent state; nothing was appended.
+      expect(countingRepo.payloads, isEmpty);
+      expect(countingRepo.links, isEmpty);
+      expect(countingRepo.messages, isEmpty);
+      verifyNever(() => outbox.enqueueMessage(any()));
+    },
+  );
+
+  test(
     'a throw mid-transaction propagates and suppresses every buffered sync '
     'echo (no partial outbox flush)',
     () async {
@@ -221,5 +261,17 @@ class _LinkThrowingRepository extends InMemoryAgentRepository {
   @override
   Future<void> upsertLink(AgentLink link) async {
     throw StateError('link write rejected');
+  }
+}
+
+/// In-memory repository that counts how many times a transaction is opened, so
+/// a test can prove the empty-delta short-circuit bails before `runInTransaction`.
+class _TransactionCountingRepository extends InMemoryAgentRepository {
+  int transactionCount = 0;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) {
+    transactionCount++;
+    return super.runInTransaction(action);
   }
 }

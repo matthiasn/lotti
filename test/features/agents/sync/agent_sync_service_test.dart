@@ -1702,6 +1702,44 @@ void main() {
     });
 
     test(
+      'state row with null head + no prior messages: backfill is reached but '
+      'returns null — root append, no edges',
+      () async {
+        // The edge between "first message is a root" and "no state row":
+        // here the state row exists with an unset head, so the append DOES
+        // enter the legacy backfill branch and queries the prefix — but it is
+        // empty, so _backfillMessageChain returns null, writing no msgprev
+        // edges. The message lands as a root and the head advances.
+        when(
+          () => mockRepository.getAgentState('agent-1'),
+        ).thenAnswer((_) async => makeTestState(agentId: 'agent-1'));
+        when(
+          () => mockRepository.getAgentMessages('agent-1'),
+        ).thenAnswer((_) async => <AgentMessageEntity>[]);
+
+        await syncService.upsertEntity(newMessage());
+
+        // Backfill was attempted (distinguishes this from the no-state-row
+        // path, which skips the prefix scan entirely).
+        verify(() => mockRepository.getAgentMessages('agent-1')).called(1);
+        // Empty prefix ⇒ no chain edges written at all.
+        verifyNever(() => mockRepository.upsertLink(any()));
+
+        final upserted = verify(
+          () => mockRepository.upsertEntity(captureAny()),
+        ).captured.cast<AgentDomainEntity>();
+        expect(
+          upserted.whereType<AgentMessageEntity>().single.prevMessageId,
+          isNull,
+        );
+        expect(
+          upserted.whereType<AgentStateEntity>().single.recentHeadMessageId,
+          'm-new',
+        );
+      },
+    );
+
+    test(
       'backfills a legacy edge-less prefix into a chain on first append',
       () async {
         // Legacy agent: messages exist, but the head pointer was never set.
