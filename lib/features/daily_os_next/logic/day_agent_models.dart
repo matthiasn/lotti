@@ -222,6 +222,13 @@ enum TimeBlockState {
   dropped,
 }
 
+/// Prefix used to encode a tracked [TimeBlock]'s id from the journal
+/// entry id of the time recording it projects (`actual:<entryId>`).
+/// The prefix keeps recorded-session ids distinct from drafted/agent
+/// block ids, and lets the Day timeline recover the backing entry id
+/// so tapping a tracked block can scroll the task detail page to it.
+const actualTimeBlockIdPrefix = 'actual:';
+
 /// A scheduled placement on a day. The agent emits these from
 /// `drafted_day_plan`; every `ai` block carries a verbatim `reason`
 /// string that the UI surfaces in the WhyChip popover.
@@ -264,6 +271,14 @@ class TimeBlock {
   final String? location;
 
   Duration get duration => end.difference(start);
+
+  /// The journal entry id of the time recording this block projects, or
+  /// null when the block is not a tracked recording (drafted/agent/cal
+  /// blocks keep their own ids). Derived from the [actualTimeBlockIdPrefix]
+  /// encoding applied when projecting real entries onto the timeline.
+  String? get trackedEntryId => id.startsWith(actualTimeBlockIdPrefix)
+      ? id.substring(actualTimeBlockIdPrefix.length)
+      : null;
 
   TimeBlock copyWith({
     String? id,
