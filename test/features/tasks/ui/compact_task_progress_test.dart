@@ -352,9 +352,9 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
-      // Ensure AsyncNotifier completes and rebuilds
+      // Async controller resolution + rebuild (no real animations to settle).
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
     }
 
     const estimate = Duration(hours: 1, minutes: 50);

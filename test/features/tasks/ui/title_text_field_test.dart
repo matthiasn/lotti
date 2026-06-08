@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/tasks/ui/title_text_field.dart';
-import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../test_helper.dart';
 
@@ -151,17 +150,13 @@ void main() {
       final saved = <String?>[];
 
       await tester.pumpWidget(
-        MaterialApp(
-          localizationsDelegates: AppLocalizations.localizationsDelegates,
-          supportedLocales: AppLocalizations.supportedLocales,
-          home: Scaffold(
-            body: Center(
-              child: TitleTextField(
-                focusNode: focusNode,
-                keepFocusOnSave: true,
-                clearOnSave: true,
-                onSave: saved.add,
-              ),
+        WidgetTestBench(
+          child: Center(
+            child: TitleTextField(
+              focusNode: focusNode,
+              keepFocusOnSave: true,
+              clearOnSave: true,
+              onSave: saved.add,
             ),
           ),
         ),

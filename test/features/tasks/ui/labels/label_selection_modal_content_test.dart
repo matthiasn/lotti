@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -83,17 +85,34 @@ void main() {
     List<LabelDefinition>? availableLabels,
     ValueNotifier<String>? searchQuery,
     ValueNotifier<Future<bool> Function()?>? applyController,
+    Stream<List<LabelDefinition>>? labelsStream,
+    bool reactiveAvailable = false,
   }) {
     applyController ??= ValueNotifier<Future<bool> Function()?>(null);
     final query = searchQuery ?? ValueNotifier<String>('');
 
     return ProviderScope(
       overrides: [
-        availableLabelsForCategoryProvider(categoryId).overrideWith(
-          (ref) => availableLabels ?? testLabels,
-        ),
+        // When [reactiveAvailable] is set, mirror production by deriving the
+        // category-scoped list from [labelsStreamProvider] (through the
+        // pass-through cache stub) so a stream emission flows into the UI.
+        // Otherwise pin a fixed list for the simpler rendering assertions.
+        if (reactiveAvailable)
+          availableLabelsForCategoryProvider(categoryId).overrideWith(
+            (ref) => getIt<EntitiesCacheService>().filterLabelsForCategory(
+              ref.watch(labelsStreamProvider).value ??
+                  const <LabelDefinition>[],
+              categoryId,
+            ),
+          )
+        else
+          availableLabelsForCategoryProvider(categoryId).overrideWith(
+            (ref) => availableLabels ?? testLabels,
+          ),
         labelsRepositoryProvider.overrideWithValue(repository),
-        labelsStreamProvider.overrideWith((ref) => Stream.value(testLabels)),
+        labelsStreamProvider.overrideWith(
+          (ref) => labelsStream ?? Stream.value(testLabels),
+        ),
       ],
       child: WidgetTestBench(
         child: Material(
@@ -353,6 +372,49 @@ void main() {
         // Should not find create button since 'Urgent' is an exact match
         expect(find.textContaining('Create "Urgent" label'), findsNothing);
       });
+
+      testWidgets(
+        'list refreshes when the labels stream emits a newly created label',
+        (tester) async {
+          // Drive the available list reactively from the labels stream so a
+          // post-creation refresh (a new label arriving from the repository
+          // watch) flows into the rendered list, exactly like production.
+          final controller = StreamController<List<LabelDefinition>>();
+          addTearDown(controller.close);
+
+          await tester.pumpWidget(
+            buildWidget(
+              initialLabelIds: const [],
+              labelsStream: controller.stream,
+              reactiveAvailable: true,
+            ),
+          );
+
+          controller.add(testLabels);
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.text('Urgent'), findsOneWidget);
+
+          final created = testLabelDefinition1.copyWith(
+            id: 'label-new',
+            name: 'Documentation',
+            description: 'Freshly created label',
+            color: '#123456',
+          );
+
+          // Simulate the repository watch emitting the updated set after the
+          // editor sheet persisted a new label.
+          controller.add([...testLabels, created]);
+          await tester.pump();
+          await tester.pump();
+
+          expect(find.text('Documentation'), findsOneWidget);
+          expect(find.text('Freshly created label'), findsOneWidget);
+          // Pre-existing labels remain rendered alongside the new one.
+          expect(find.text('Urgent'), findsOneWidget);
+        },
+      );
     });
 
     group('Apply functionality', () {
