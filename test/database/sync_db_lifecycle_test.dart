@@ -1168,42 +1168,39 @@ void main() {
       'already-bound row',
       () async {
         final database = SyncDatabase(inMemoryDatabase: true);
-        try {
-          final createdAt = DateTime(2026, 5, 24, 11);
-          await database.recordSequenceEntry(
-            SyncSequenceLogCompanion(
-              hostId: const Value('burn-conflict-host'),
-              counter: const Value(1),
-              entryId: const Value('bound-entry'),
-              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
-              status: Value(SyncSequenceStatus.received.index),
-              createdAt: Value(createdAt),
-              updatedAt: Value(createdAt),
-            ),
-          );
+        addTearDown(database.close);
+        final createdAt = DateTime(2026, 5, 24, 11);
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('burn-conflict-host'),
+            counter: const Value(1),
+            entryId: const Value('bound-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(createdAt),
+            updatedAt: Value(createdAt),
+          ),
+        );
 
-          await database.markReservedSequenceCounterBurnPending(
+        await database.markReservedSequenceCounterBurnPending(
+          hostId: 'burn-conflict-host',
+          counter: 1,
+          now: createdAt.add(const Duration(minutes: 1)),
+        );
+
+        final row = await database.getEntryByHostAndCounter(
+          'burn-conflict-host',
+          1,
+        );
+        expect(row, isNotNull);
+        expect(row!.status, SyncSequenceStatus.received.index);
+        expect(row.entryId, 'bound-entry');
+        expect(
+          await database.burnPendingSequenceCountersForHost(
             hostId: 'burn-conflict-host',
-            counter: 1,
-            now: createdAt.add(const Duration(minutes: 1)),
-          );
-
-          final row = await database.getEntryByHostAndCounter(
-            'burn-conflict-host',
-            1,
-          );
-          expect(row, isNotNull);
-          expect(row!.status, SyncSequenceStatus.received.index);
-          expect(row.entryId, 'bound-entry');
-          expect(
-            await database.burnPendingSequenceCountersForHost(
-              hostId: 'burn-conflict-host',
-            ),
-            isEmpty,
-          );
-        } finally {
-          await database.close();
-        }
+          ),
+          isEmpty,
+        );
       },
     );
 
@@ -1212,28 +1209,25 @@ void main() {
       'burned with no payload mapping',
       () async {
         final database = SyncDatabase(inMemoryDatabase: true);
-        try {
-          final now = DateTime(2026, 5, 24, 12);
+        addTearDown(database.close);
+        final now = DateTime(2026, 5, 24, 12);
 
-          final recorded = await database.recordOwnUnresolvableSequenceCounter(
-            hostId: 'own-burn-host',
-            counter: 1,
-            now: now,
-          );
+        final recorded = await database.recordOwnUnresolvableSequenceCounter(
+          hostId: 'own-burn-host',
+          counter: 1,
+          now: now,
+        );
 
-          expect(recorded, isTrue);
-          final row = await database.getEntryByHostAndCounter(
-            'own-burn-host',
-            1,
-          );
-          expect(row, isNotNull);
-          expect(row!.status, SyncSequenceStatus.burned.index);
-          expect(row.entryId, isNull);
-          expect(row.payloadType, SyncSequencePayloadType.journalEntity.index);
-          expect(await database.getLastCounterForHost('own-burn-host'), 1);
-        } finally {
-          await database.close();
-        }
+        expect(recorded, isTrue);
+        final row = await database.getEntryByHostAndCounter(
+          'own-burn-host',
+          1,
+        );
+        expect(row, isNotNull);
+        expect(row!.status, SyncSequenceStatus.burned.index);
+        expect(row.entryId, isNull);
+        expect(row.payloadType, SyncSequencePayloadType.journalEntity.index);
+        expect(await database.getLastCounterForHost('own-burn-host'), 1);
       },
     );
 
@@ -1242,43 +1236,40 @@ void main() {
       'and clears stale payload mappings',
       () async {
         final database = SyncDatabase(inMemoryDatabase: true);
-        try {
-          final createdAt = DateTime(2026, 5, 24, 12);
-          await database.recordSequenceEntry(
-            SyncSequenceLogCompanion(
-              hostId: const Value('own-burn-update-host'),
-              counter: const Value(1),
-              entryId: const Value('stale-entry'),
-              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
-              status: Value(SyncSequenceStatus.missing.index),
-              createdAt: Value(createdAt),
-              updatedAt: Value(createdAt),
-            ),
-          );
+        addTearDown(database.close);
+        final createdAt = DateTime(2026, 5, 24, 12);
+        await database.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value('own-burn-update-host'),
+            counter: const Value(1),
+            entryId: const Value('stale-entry'),
+            payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+            status: Value(SyncSequenceStatus.missing.index),
+            createdAt: Value(createdAt),
+            updatedAt: Value(createdAt),
+          ),
+        );
 
-          final recorded = await database.recordOwnUnresolvableSequenceCounter(
-            hostId: 'own-burn-update-host',
-            counter: 1,
-            payloadType: SyncSequencePayloadType.entryLink,
-            now: createdAt.add(const Duration(minutes: 1)),
-          );
+        final recorded = await database.recordOwnUnresolvableSequenceCounter(
+          hostId: 'own-burn-update-host',
+          counter: 1,
+          payloadType: SyncSequencePayloadType.entryLink,
+          now: createdAt.add(const Duration(minutes: 1)),
+        );
 
-          expect(recorded, isTrue);
-          final row = await database.getEntryByHostAndCounter(
-            'own-burn-update-host',
-            1,
-          );
-          expect(row, isNotNull);
-          expect(row!.status, SyncSequenceStatus.burned.index);
-          expect(row.entryId, isNull);
-          expect(row.payloadType, SyncSequencePayloadType.entryLink.index);
-          expect(
-            row.updatedAt,
-            createdAt.add(const Duration(minutes: 1)),
-          );
-        } finally {
-          await database.close();
-        }
+        expect(recorded, isTrue);
+        final row = await database.getEntryByHostAndCounter(
+          'own-burn-update-host',
+          1,
+        );
+        expect(row, isNotNull);
+        expect(row!.status, SyncSequenceStatus.burned.index);
+        expect(row.entryId, isNull);
+        expect(row.payloadType, SyncSequencePayloadType.entryLink.index);
+        expect(
+          row.updatedAt,
+          createdAt.add(const Duration(minutes: 1)),
+        );
       },
     );
 
@@ -1287,53 +1278,49 @@ void main() {
       'authoritative payload mappings',
       () async {
         final database = SyncDatabase(inMemoryDatabase: true);
-        try {
-          final createdAt = DateTime(2026, 5, 24, 12);
-          final statuses = [
-            SyncSequenceStatus.received,
-            SyncSequenceStatus.backfilled,
-            SyncSequenceStatus.deleted,
-          ];
+        addTearDown(database.close);
+        final createdAt = DateTime(2026, 5, 24, 12);
+        final statuses = [
+          SyncSequenceStatus.received,
+          SyncSequenceStatus.backfilled,
+          SyncSequenceStatus.deleted,
+        ];
 
-          for (final status in statuses) {
-            final counter = status.index + 1;
-            await database.recordSequenceEntry(
-              SyncSequenceLogCompanion(
-                hostId: const Value('own-burn-authoritative-host'),
-                counter: Value(counter),
-                entryId: Value('entry-$counter'),
-                payloadType: Value(SyncSequencePayloadType.journalEntity.index),
-                status: Value(status.index),
-                createdAt: Value(createdAt),
-                updatedAt: Value(createdAt),
-              ),
-            );
+        for (final status in statuses) {
+          final counter = status.index + 1;
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value('own-burn-authoritative-host'),
+              counter: Value(counter),
+              entryId: Value('entry-$counter'),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(status.index),
+              createdAt: Value(createdAt),
+              updatedAt: Value(createdAt),
+            ),
+          );
 
-            final recorded = await database
-                .recordOwnUnresolvableSequenceCounter(
-                  hostId: 'own-burn-authoritative-host',
-                  counter: counter,
-                  payloadType: SyncSequencePayloadType.entryLink,
-                  now: createdAt.add(const Duration(minutes: 1)),
-                );
+          final recorded = await database.recordOwnUnresolvableSequenceCounter(
+            hostId: 'own-burn-authoritative-host',
+            counter: counter,
+            payloadType: SyncSequencePayloadType.entryLink,
+            now: createdAt.add(const Duration(minutes: 1)),
+          );
 
-            expect(recorded, isFalse, reason: '$status');
-            final row = await database.getEntryByHostAndCounter(
-              'own-burn-authoritative-host',
-              counter,
-            );
-            expect(row, isNotNull);
-            expect(row!.status, status.index, reason: '$status');
-            expect(row.entryId, 'entry-$counter', reason: '$status');
-            expect(
-              row.payloadType,
-              SyncSequencePayloadType.journalEntity.index,
-              reason: '$status',
-            );
-            expect(row.updatedAt, createdAt, reason: '$status');
-          }
-        } finally {
-          await database.close();
+          expect(recorded, isFalse, reason: '$status');
+          final row = await database.getEntryByHostAndCounter(
+            'own-burn-authoritative-host',
+            counter,
+          );
+          expect(row, isNotNull);
+          expect(row!.status, status.index, reason: '$status');
+          expect(row.entryId, 'entry-$counter', reason: '$status');
+          expect(
+            row.payloadType,
+            SyncSequencePayloadType.journalEntity.index,
+            reason: '$status',
+          );
+          expect(row.updatedAt, createdAt, reason: '$status');
         }
       },
     );
@@ -1343,33 +1330,30 @@ void main() {
       'row — a repeat burn does not rewrite the row or churn updated_at',
       () async {
         final database = SyncDatabase(inMemoryDatabase: true);
-        try {
-          final now = DateTime(2026, 5, 24, 12);
-          final first = await database.recordOwnUnresolvableSequenceCounter(
-            hostId: 'own-burn-idempotent-host',
-            counter: 1,
-            now: now,
-          );
-          expect(first, isTrue);
+        addTearDown(database.close);
+        final now = DateTime(2026, 5, 24, 12);
+        final first = await database.recordOwnUnresolvableSequenceCounter(
+          hostId: 'own-burn-idempotent-host',
+          counter: 1,
+          now: now,
+        );
+        expect(first, isTrue);
 
-          final second = await database.recordOwnUnresolvableSequenceCounter(
-            hostId: 'own-burn-idempotent-host',
-            counter: 1,
-            now: now.add(const Duration(minutes: 5)),
-          );
-          // burned is in the isNotIn guard, so the repeat finds nothing to
-          // update and nothing to insert.
-          expect(second, isFalse);
+        final second = await database.recordOwnUnresolvableSequenceCounter(
+          hostId: 'own-burn-idempotent-host',
+          counter: 1,
+          now: now.add(const Duration(minutes: 5)),
+        );
+        // burned is in the isNotIn guard, so the repeat finds nothing to
+        // update and nothing to insert.
+        expect(second, isFalse);
 
-          final row = await database.getEntryByHostAndCounter(
-            'own-burn-idempotent-host',
-            1,
-          );
-          expect(row!.status, SyncSequenceStatus.burned.index);
-          expect(row.updatedAt, now);
-        } finally {
-          await database.close();
-        }
+        final row = await database.getEntryByHostAndCounter(
+          'own-burn-idempotent-host',
+          1,
+        );
+        expect(row!.status, SyncSequenceStatus.burned.index);
+        expect(row.updatedAt, now);
       },
     );
 
@@ -1383,71 +1367,68 @@ void main() {
         const hostId = 'generated-burn-pending-guard-host';
         const counter = 1;
         final createdAt = DateTime(2026, 5, 24, 12);
-        try {
-          final shouldTransition =
-              status == _GeneratedSequenceLifecycleStatus.absent ||
-              status == _GeneratedSequenceLifecycleStatus.reserved ||
-              status == _GeneratedSequenceLifecycleStatus.burnPending;
-          final seedEntryId = shouldTransition ? null : 'original-entry';
+        addTearDown(database.close);
+        final shouldTransition =
+            status == _GeneratedSequenceLifecycleStatus.absent ||
+            status == _GeneratedSequenceLifecycleStatus.reserved ||
+            status == _GeneratedSequenceLifecycleStatus.burnPending;
+        final seedEntryId = shouldTransition ? null : 'original-entry';
 
-          if (status != _GeneratedSequenceLifecycleStatus.absent) {
-            await database.recordSequenceEntry(
-              SyncSequenceLogCompanion(
-                hostId: const Value(hostId),
-                counter: const Value(counter),
-                entryId: seedEntryId == null
-                    ? const Value.absent()
-                    : Value(seedEntryId),
-                payloadType: Value(SyncSequencePayloadType.journalEntity.index),
-                status: Value(
-                  _SequenceLifecycleRowSpec(
-                    status: status,
-                    payloadType: SyncSequencePayloadType.journalEntity,
-                    hasEntryId: seedEntryId != null,
-                    requestCount: 0,
-                    lastRequestedAt: _GeneratedRequestTimestamp.absent,
-                    updatedAt: _GeneratedUpdatedTimestamp.fresh,
-                  ).syncStatus.index,
-                ),
-                createdAt: Value(createdAt),
-                updatedAt: Value(createdAt),
+        if (status != _GeneratedSequenceLifecycleStatus.absent) {
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(hostId),
+              counter: const Value(counter),
+              entryId: seedEntryId == null
+                  ? const Value.absent()
+                  : Value(seedEntryId),
+              payloadType: Value(SyncSequencePayloadType.journalEntity.index),
+              status: Value(
+                _SequenceLifecycleRowSpec(
+                  status: status,
+                  payloadType: SyncSequencePayloadType.journalEntity,
+                  hasEntryId: seedEntryId != null,
+                  requestCount: 0,
+                  lastRequestedAt: _GeneratedRequestTimestamp.absent,
+                  updatedAt: _GeneratedUpdatedTimestamp.fresh,
+                ).syncStatus.index,
               ),
-            );
-          }
-
-          await database.markReservedSequenceCounterBurnPending(
-            hostId: hostId,
-            counter: counter,
-            now: createdAt.add(const Duration(minutes: 1)),
+              createdAt: Value(createdAt),
+              updatedAt: Value(createdAt),
+            ),
           );
+        }
 
-          final row = await database.getEntryByHostAndCounter(hostId, counter);
-          expect(row, isNotNull, reason: '$status');
+        await database.markReservedSequenceCounterBurnPending(
+          hostId: hostId,
+          counter: counter,
+          now: createdAt.add(const Duration(minutes: 1)),
+        );
 
-          if (shouldTransition) {
-            expect(
-              row!.status,
-              SyncSequenceStatus.burnPending.index,
-              reason: '$status',
-            );
-            expect(row.entryId, isNull, reason: '$status');
-          } else {
-            expect(
-              row!.status,
-              _SequenceLifecycleRowSpec(
-                status: status,
-                payloadType: SyncSequencePayloadType.journalEntity,
-                hasEntryId: seedEntryId != null,
-                requestCount: 0,
-                lastRequestedAt: _GeneratedRequestTimestamp.absent,
-                updatedAt: _GeneratedUpdatedTimestamp.fresh,
-              ).syncStatus.index,
-              reason: '$status',
-            );
-            expect(row.entryId, seedEntryId, reason: '$status');
-          }
-        } finally {
-          await database.close();
+        final row = await database.getEntryByHostAndCounter(hostId, counter);
+        expect(row, isNotNull, reason: '$status');
+
+        if (shouldTransition) {
+          expect(
+            row!.status,
+            SyncSequenceStatus.burnPending.index,
+            reason: '$status',
+          );
+          expect(row.entryId, isNull, reason: '$status');
+        } else {
+          expect(
+            row!.status,
+            _SequenceLifecycleRowSpec(
+              status: status,
+              payloadType: SyncSequencePayloadType.journalEntity,
+              hasEntryId: seedEntryId != null,
+              requestCount: 0,
+              lastRequestedAt: _GeneratedRequestTimestamp.absent,
+              updatedAt: _GeneratedUpdatedTimestamp.fresh,
+            ).syncStatus.index,
+            reason: '$status',
+          );
+          expect(row.entryId, seedEntryId, reason: '$status');
         }
       },
       tags: 'glados',
@@ -1457,90 +1438,83 @@ void main() {
       'preserve the reservation lifecycle invariants',
       (scenario) async {
         final database = SyncDatabase(inMemoryDatabase: true);
-        try {
-          for (var index = 0; index < scenario.outcomes.length; index++) {
-            final counter = index + 1;
-            await database.recordReservedSequenceCounter(
-              hostId: _ReservationLifecycleScenario.hostId,
-              counter: counter,
-              now: _ReservationLifecycleScenario.start.add(
-                Duration(minutes: counter),
-              ),
-            );
+        addTearDown(database.close);
+        for (var index = 0; index < scenario.outcomes.length; index++) {
+          final counter = index + 1;
+          await database.recordReservedSequenceCounter(
+            hostId: _ReservationLifecycleScenario.hostId,
+            counter: counter,
+            now: _ReservationLifecycleScenario.start.add(
+              Duration(minutes: counter),
+            ),
+          );
 
-            switch (scenario.outcomes[index]) {
-              case _GeneratedReservationOutcome.stillReserved:
-                break;
-              case _GeneratedReservationOutcome.boundReceived:
-                await database.recordSequenceEntry(
-                  SyncSequenceLogCompanion(
-                    hostId: const Value(_ReservationLifecycleScenario.hostId),
-                    counter: Value(counter),
-                    entryId: Value('reservation-entry-$counter'),
-                    payloadType: Value(
-                      SyncSequencePayloadType.journalEntity.index,
-                    ),
-                    status: Value(SyncSequenceStatus.received.index),
-                    createdAt: Value(
-                      _ReservationLifecycleScenario.start.add(
-                        Duration(minutes: counter),
-                      ),
-                    ),
-                    updatedAt: Value(
-                      _ReservationLifecycleScenario.start.add(
-                        Duration(minutes: counter, seconds: 1),
-                      ),
+          switch (scenario.outcomes[index]) {
+            case _GeneratedReservationOutcome.stillReserved:
+              break;
+            case _GeneratedReservationOutcome.boundReceived:
+              await database.recordSequenceEntry(
+                SyncSequenceLogCompanion(
+                  hostId: const Value(_ReservationLifecycleScenario.hostId),
+                  counter: Value(counter),
+                  entryId: Value('reservation-entry-$counter'),
+                  payloadType: Value(
+                    SyncSequencePayloadType.journalEntity.index,
+                  ),
+                  status: Value(SyncSequenceStatus.received.index),
+                  createdAt: Value(
+                    _ReservationLifecycleScenario.start.add(
+                      Duration(minutes: counter),
                     ),
                   ),
-                );
-              case _GeneratedReservationOutcome.burnPending:
-                await database.markReservedSequenceCounterBurnPending(
-                  hostId: _ReservationLifecycleScenario.hostId,
-                  counter: counter,
-                  now: _ReservationLifecycleScenario.start.add(
-                    Duration(minutes: counter, seconds: 2),
+                  updatedAt: Value(
+                    _ReservationLifecycleScenario.start.add(
+                      Duration(minutes: counter, seconds: 1),
+                    ),
                   ),
-                );
-            }
+                ),
+              );
+            case _GeneratedReservationOutcome.burnPending:
+              await database.markReservedSequenceCounterBurnPending(
+                hostId: _ReservationLifecycleScenario.hostId,
+                counter: counter,
+                now: _ReservationLifecycleScenario.start.add(
+                  Duration(minutes: counter, seconds: 2),
+                ),
+              );
           }
+        }
 
-          expect(
-            await database.reservedSequenceCountersForHost(
-              hostId: _ReservationLifecycleScenario.hostId,
-            ),
-            scenario.expectedReservedCounters,
-          );
-          expect(
-            await database.burnPendingSequenceCountersForHost(
-              hostId: _ReservationLifecycleScenario.hostId,
-            ),
-            scenario.expectedBurnPendingCounters,
-          );
-          expect(
-            await database.getLastCounterForHost(
-              _ReservationLifecycleScenario.hostId,
-            ),
-            scenario.expectedWatermark,
-          );
+        expect(
+          await database.reservedSequenceCountersForHost(
+            hostId: _ReservationLifecycleScenario.hostId,
+          ),
+          scenario.expectedReservedCounters,
+        );
+        expect(
+          await database.burnPendingSequenceCountersForHost(
+            hostId: _ReservationLifecycleScenario.hostId,
+          ),
+          scenario.expectedBurnPendingCounters,
+        );
+        expect(
+          await database.getLastCounterForHost(
+            _ReservationLifecycleScenario.hostId,
+          ),
+          scenario.expectedWatermark,
+        );
 
-          for (
-            var counter = 1;
-            counter <= scenario.outcomes.length;
-            counter++
-          ) {
-            final row = await database.getEntryByHostAndCounter(
-              _ReservationLifecycleScenario.hostId,
-              counter,
-            );
-            expect(row, isNotNull, reason: 'counter $counter');
-            expect(
-              row!.status,
-              scenario.expectedStatus(counter).index,
-              reason: 'counter $counter',
-            );
-          }
-        } finally {
-          await database.close();
+        for (var counter = 1; counter <= scenario.outcomes.length; counter++) {
+          final row = await database.getEntryByHostAndCounter(
+            _ReservationLifecycleScenario.hostId,
+            counter,
+          );
+          expect(row, isNotNull, reason: 'counter $counter');
+          expect(
+            row!.status,
+            scenario.expectedStatus(counter).index,
+            reason: 'counter $counter',
+          );
         }
       },
       tags: 'glados',
@@ -1550,91 +1524,86 @@ void main() {
       'match the generated reset and retirement model',
       (scenario) async {
         final database = SyncDatabase(inMemoryDatabase: true);
-        try {
-          for (var index = 0; index < scenario.rows.length; index++) {
-            final counter = index + 1;
-            final row = scenario.rows[index];
-            if (!row.isStored) continue;
+        addTearDown(database.close);
+        for (var index = 0; index < scenario.rows.length; index++) {
+          final counter = index + 1;
+          final row = scenario.rows[index];
+          if (!row.isStored) continue;
 
-            final entryId = row.entryId(counter);
-            final lastRequestedAt = row.lastRequestedAtValue(
-              _SequenceLifecycleScenario.now,
-            );
-            await database.recordSequenceEntry(
-              SyncSequenceLogCompanion(
-                hostId: const Value(_SequenceLifecycleScenario.hostId),
-                counter: Value(counter),
-                entryId: entryId == null
-                    ? const Value.absent()
-                    : Value(entryId),
-                payloadType: Value(row.payloadType.index),
-                status: Value(row.syncStatus.index),
-                createdAt: Value(
-                  row.createdAt(_SequenceLifecycleScenario.now),
-                ),
-                updatedAt: Value(
-                  row.updatedAtValue(_SequenceLifecycleScenario.now),
-                ),
-                requestCount: Value(row.requestCount),
-                lastRequestedAt: lastRequestedAt == null
-                    ? const Value.absent()
-                    : Value(lastRequestedAt),
-              ),
-            );
-          }
-
-          final affected = switch (scenario.operation) {
-            _GeneratedSequenceLifecycleOperation.resetKnown =>
-              await database.resetUnresolvableWithKnownPayload(),
-            _GeneratedSequenceLifecycleOperation.resetAll =>
-              await database.resetAllUnresolvableEntries(),
-            _GeneratedSequenceLifecycleOperation.retireExhausted =>
-              await database.retireExhaustedRequestedEntries(
-                maxRequestCount: _SequenceLifecycleScenario.maxRequestCount,
-                grace: _SequenceLifecycleScenario.grace,
-                now: _SequenceLifecycleScenario.now,
-                pageSize: 3,
-              ),
-            _GeneratedSequenceLifecycleOperation.retireAgedOut =>
-              await database.retireAgedOutRequestedEntries(
-                amnestyWindow: _SequenceLifecycleScenario.amnestyWindow,
-                now: _SequenceLifecycleScenario.now,
-                pageSize: 3,
-              ),
-          };
-
-          expect(affected, scenario.expectedAffectedCount);
-
-          for (var counter = 1; counter <= scenario.rows.length; counter++) {
-            final entry = await database.getEntryByHostAndCounter(
-              _SequenceLifecycleScenario.hostId,
-              counter,
-            );
-            final expected = scenario.expectedRow(counter);
-            if (expected.status == null) {
-              expect(entry, isNull, reason: 'counter $counter');
-              continue;
-            }
-
-            expect(entry, isNotNull, reason: 'counter $counter');
-            expect(entry!.status, expected.status!.index);
-            expect(entry.entryId, expected.entryId);
-            expect(entry.payloadType, expected.payloadType!.index);
-            expect(entry.requestCount, expected.requestCount);
-            if (expected.lastRequestedCleared) {
-              expect(entry.lastRequestedAt, isNull);
-            }
-          }
-
-          expect(
-            await database.getLastCounterForHost(
-              _SequenceLifecycleScenario.hostId,
-            ),
-            scenario.expectedWatermark,
+          final entryId = row.entryId(counter);
+          final lastRequestedAt = row.lastRequestedAtValue(
+            _SequenceLifecycleScenario.now,
           );
-        } finally {
-          await database.close();
+          await database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: const Value(_SequenceLifecycleScenario.hostId),
+              counter: Value(counter),
+              entryId: entryId == null ? const Value.absent() : Value(entryId),
+              payloadType: Value(row.payloadType.index),
+              status: Value(row.syncStatus.index),
+              createdAt: Value(
+                row.createdAt(_SequenceLifecycleScenario.now),
+              ),
+              updatedAt: Value(
+                row.updatedAtValue(_SequenceLifecycleScenario.now),
+              ),
+              requestCount: Value(row.requestCount),
+              lastRequestedAt: lastRequestedAt == null
+                  ? const Value.absent()
+                  : Value(lastRequestedAt),
+            ),
+          );
         }
+
+        final affected = switch (scenario.operation) {
+          _GeneratedSequenceLifecycleOperation.resetKnown =>
+            await database.resetUnresolvableWithKnownPayload(),
+          _GeneratedSequenceLifecycleOperation.resetAll =>
+            await database.resetAllUnresolvableEntries(),
+          _GeneratedSequenceLifecycleOperation.retireExhausted =>
+            await database.retireExhaustedRequestedEntries(
+              maxRequestCount: _SequenceLifecycleScenario.maxRequestCount,
+              grace: _SequenceLifecycleScenario.grace,
+              now: _SequenceLifecycleScenario.now,
+              pageSize: 3,
+            ),
+          _GeneratedSequenceLifecycleOperation.retireAgedOut =>
+            await database.retireAgedOutRequestedEntries(
+              amnestyWindow: _SequenceLifecycleScenario.amnestyWindow,
+              now: _SequenceLifecycleScenario.now,
+              pageSize: 3,
+            ),
+        };
+
+        expect(affected, scenario.expectedAffectedCount);
+
+        for (var counter = 1; counter <= scenario.rows.length; counter++) {
+          final entry = await database.getEntryByHostAndCounter(
+            _SequenceLifecycleScenario.hostId,
+            counter,
+          );
+          final expected = scenario.expectedRow(counter);
+          if (expected.status == null) {
+            expect(entry, isNull, reason: 'counter $counter');
+            continue;
+          }
+
+          expect(entry, isNotNull, reason: 'counter $counter');
+          expect(entry!.status, expected.status!.index);
+          expect(entry.entryId, expected.entryId);
+          expect(entry.payloadType, expected.payloadType!.index);
+          expect(entry.requestCount, expected.requestCount);
+          if (expected.lastRequestedCleared) {
+            expect(entry.lastRequestedAt, isNull);
+          }
+        }
+
+        expect(
+          await database.getLastCounterForHost(
+            _SequenceLifecycleScenario.hostId,
+          ),
+          scenario.expectedWatermark,
+        );
       },
       tags: 'glados',
     );
