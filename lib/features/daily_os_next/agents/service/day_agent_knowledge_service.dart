@@ -51,7 +51,7 @@ class DayAgentKnowledgeService {
   final void Function(String id)? onPersistedStateChanged;
 
   static const _uuid = Uuid();
-  static const _maxHookLength = 120;
+  static const int _maxHookLength = knowledgeHookMaxLength;
 
   /// Executes a durable-knowledge tool emitted by the agent.
   Future<DayAgentDirectToolResult> executeTool({
@@ -88,14 +88,8 @@ class DayAgentKnowledgeService {
     final value = _optionalString(args, 'value') ?? '';
     // Scope is validated by `propose` (the single choke point); pass it through.
     final scope = _optionalString(args, 'scope') ?? knowledgeGlobalScope;
-    // The hook is the always-on, bounded index tier (ADR 0022 Decision 10);
-    // a multi-KB hook would defeat the bounded-prompt premise.
-    if (hook.length > _maxHookLength) {
-      throw const DayAgentKnowledgeException(
-        '"hook" must be at most $_maxHookLength characters '
-        '(it is the always-on index line).',
-      );
-    }
+    // `hook` and `scope` are both validated by `propose` (the single choke
+    // point); pass them through.
     final sourceArg = _optionalString(args, 'source') ?? 'agentInferred';
     final source = sourceArg == 'userStated'
         ? KnowledgeSource.userStated
@@ -136,6 +130,10 @@ class DayAgentKnowledgeService {
     // malformed scope stored here would silently never match any wake's
     // touched scopes, hiding the knowledge forever — reject it loudly instead.
     final resolvedScope = _validScope(scope);
+    // The hook is the always-on index tier (ADR 0022 Decision 10) injected into
+    // every system prompt; an oversized hook is bloat, so reject it here too
+    // (programmatic callers bypass the tool wrapper).
+    _validHook(hook);
     final now = clock.now();
     final active = await _activeFor(agentId);
     final prior = active.where((e) => e.key == key).firstOrNull;
@@ -212,6 +210,9 @@ class DayAgentKnowledgeService {
   }) async {
     final entry = await _load(entryId);
     if (entry == null) return null;
+    // Same always-on-index ceiling as `propose`: a panel edit must not be able
+    // to grow the hook past the bound either.
+    _validHook(hook);
     final now = clock.now();
     final updated = entry.copyWith(
       hook: hook,
@@ -280,5 +281,17 @@ class DayAgentKnowledgeService {
     throw const DayAgentKnowledgeException(
       '"scope" must be "global", "category:<id>", or "project:<id>".',
     );
+  }
+
+  /// Rejects a `hook` longer than [_maxHookLength]. The hook is the always-on
+  /// index line injected into every system prompt (ADR 0022 Decision 10), so a
+  /// multi-KB hook would defeat the bounded-prompt premise.
+  static void _validHook(String hook) {
+    if (hook.length > _maxHookLength) {
+      throw const DayAgentKnowledgeException(
+        '"hook" must be at most $_maxHookLength characters '
+        '(it is the always-on index line).',
+      );
+    }
   }
 }

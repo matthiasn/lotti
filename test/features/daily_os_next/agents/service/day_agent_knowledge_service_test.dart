@@ -144,6 +144,27 @@ void main() {
       // Validation runs before any write, so nothing is persisted.
       expect(upserts, isEmpty);
     });
+
+    test('rejects an over-long hook at the public choke point', () async {
+      // The tool wrapper delegates hook validation here, so a programmatic
+      // caller that bypasses the tool is still bounded.
+      await expectLater(
+        service.propose(
+          agentId: agentId,
+          key: 'k',
+          hook: 'x' * 200,
+          statement: 's',
+        ),
+        throwsA(
+          isA<DayAgentKnowledgeException>().having(
+            (e) => e.message,
+            'message',
+            contains('hook'),
+          ),
+        ),
+      );
+      expect(upserts, isEmpty);
+    });
   });
 
   group('executeTool propose_knowledge', () {
@@ -244,6 +265,23 @@ void main() {
     test('confirm of a missing entry returns null without writing', () async {
       when(() => repository.getEntity('gone')).thenAnswer((_) async => null);
       expect(await service.confirm('gone'), isNull);
+      expect(upserts, isEmpty);
+    });
+
+    test('editStatement rejects an over-long hook without writing', () async {
+      final confirmed = knowledge(id: 'e4', key: 'k');
+      when(() => repository.getEntity('e4')).thenAnswer((_) async => confirmed);
+
+      await expectLater(
+        service.editStatement('e4', hook: 'x' * 200, statement: 'new'),
+        throwsA(
+          isA<DayAgentKnowledgeException>().having(
+            (e) => e.message,
+            'message',
+            contains('hook'),
+          ),
+        ),
+      );
       expect(upserts, isEmpty);
     });
   });

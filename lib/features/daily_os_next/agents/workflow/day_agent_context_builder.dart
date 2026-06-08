@@ -105,6 +105,14 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   /// the categories of the baseline plan blocks being drafted/refined. This is
   /// the wake's real workspace, not the planner identity's static allow-list
   /// (which is empty = "allow all" and would surface nothing).
+  ///
+  /// Only `category:` scopes are derived: the day planner is category-organized
+  /// and every touched entity (`AttentionRequestEntity`,
+  /// `StandingAgreementEntity`, `DecidedTaskRef`, `PlannedBlock`) carries a
+  /// `categoryId` but no project id. `project:` scopes (which `_validScope`/the
+  /// tool schema still accept per ADR Decision 10) therefore have no source here
+  /// and stay reserved for a future project dimension — there is nothing to
+  /// extract a project id from today.
   Set<String> _touchedScopes({
     required AttentionPlanningInputs attentionPlanning,
     required _DraftingContext? draftingContext,

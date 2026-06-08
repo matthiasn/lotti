@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/daily_os_next/state/planner_knowledge_provider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -244,6 +245,10 @@ class _EditDialogState extends State<_EditDialog> {
         children: [
           TextField(
             controller: _hook,
+            // The hook is the always-on index line (ADR 0022 Decision 10);
+            // cap it in the UI so the service-level guard is never hit and the
+            // user gets a live character counter.
+            maxLength: knowledgeHookMaxLength,
             decoration: InputDecoration(
               hintText: context.messages.dailyOsNextKnowledgeEditHookHint,
             ),

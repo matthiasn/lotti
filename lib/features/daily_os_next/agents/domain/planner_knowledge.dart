@@ -14,6 +14,12 @@ const knowledgeProjectScopePrefix = 'project:';
 /// The always-present global scope.
 const knowledgeGlobalScope = 'global';
 
+/// Max length of a knowledge entry's `hook` — the always-on index line
+/// (ADR 0022 Decision 10). The hook is injected into every system prompt, so a
+/// multi-KB hook would defeat the bounded-prompt premise. Shared by the service
+/// validation and the panel's edit field so both enforce the same ceiling.
+const knowledgeHookMaxLength = 120;
+
 /// Builds a category scope string for [categoryId].
 String knowledgeCategoryScope(String categoryId) =>
     '$knowledgeCategoryScopePrefix$categoryId';
