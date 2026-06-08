@@ -38,6 +38,33 @@ const _category = DayAgentCategory(
   colorHex: '5ED4B7',
 );
 
+/// Date / clock generators for the [capturedAtForSelectedDate] properties.
+///
+/// [boundaryDate] biases days toward month-end (28-31) so the
+/// year/month/day projection is exercised across short/long months;
+/// [clockMoment] is a full timestamp (date + time-of-day) standing in for
+/// `clock.now()`.
+extension _AnyCaptureMoment on glados.Any {
+  glados.Generator<DateTime> get boundaryDate =>
+      glados.CombinableAny(this).combine3(
+        glados.any.intInRange(1, 9999),
+        glados.any.intInRange(1, 13),
+        glados.any.intInRange(28, 32),
+        DateTime.new,
+      );
+
+  glados.Generator<DateTime> get clockMoment =>
+      glados.CombinableAny(this).combine6(
+        glados.any.intInRange(1, 9999),
+        glados.any.intInRange(1, 13),
+        glados.any.intInRange(1, 29),
+        glados.any.intInRange(0, 24),
+        glados.any.intInRange(0, 60),
+        glados.any.intInRange(0, 60),
+        DateTime.new,
+      );
+}
+
 Widget _wrap(
   Widget child, {
   List<Override> overrides = const [],
@@ -1328,6 +1355,59 @@ void main() {
           lessThanOrEqualTo(math.max(6, minLines)),
           reason: reason,
         );
+      },
+      tags: 'glados',
+    );
+  });
+
+  group('capturedAtForSelectedDate', () {
+    test('null selectedDate returns the clock moment unchanged', () {
+      final now = DateTime(2026, 5, 26, 9, 41, 7, 123, 456);
+      expect(capturedAtForSelectedDate(now, null), now);
+    });
+
+    test('combines selected calendar day with the clock time-of-day', () {
+      final now = DateTime(2026, 5, 26, 9, 41, 7, 123, 456);
+      final result = capturedAtForSelectedDate(now, DateTime(2026, 2, 3, 22));
+      // Calendar day comes from selectedDate; time-of-day from the clock.
+      expect(result, DateTime(2026, 2, 3, 9, 41, 7, 123, 456));
+    });
+
+    glados.Glados2<DateTime, DateTime>(
+      glados.any.boundaryDate,
+      glados.any.clockMoment,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'projects selected day onto the clock time-of-day at month/year edges',
+      (selectedDate, now) {
+        final result = capturedAtForSelectedDate(now, selectedDate);
+        final reason = 'selected=$selectedDate now=$now';
+
+        // The contract: year/month/day come from selectedDate, the
+        // time-of-day fields from the clock. Comparing against the same
+        // local `DateTime` construction keeps the property DST-safe (both
+        // sides normalise any spring-forward hour identically) while still
+        // verifying the field-mapping holds across month/year boundaries.
+        expect(
+          result,
+          DateTime(
+            selectedDate.year,
+            selectedDate.month,
+            selectedDate.day,
+            now.hour,
+            now.minute,
+            now.second,
+            now.millisecond,
+            now.microsecond,
+          ),
+          reason: reason,
+        );
+
+        // The calendar day is always preserved (a DST gap shifts at most
+        // the hour, never the day), independent of any normalisation.
+        expect(result.year, selectedDate.year, reason: reason);
+        expect(result.month, selectedDate.month, reason: reason);
+        expect(result.day, selectedDate.day, reason: reason);
       },
       tags: 'glados',
     );
