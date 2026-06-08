@@ -61,7 +61,8 @@
 - [x] **[MED]** `test/features/tasks/ui/checklists/checklist_item_row_test.dart` — tests for "edit mode calls updateTitle" (line 414) and "cancel icon exits editing" (line 1075) and "edit mode cancel with pristine field" (line 1132) each build their own full `ProviderScope` + `makeTestableWidgetWithScaffold` from scratch (≈ 25 lines each) instead of using `_pumpWithControllers`. These should be consolidated.
   **RESOLVED (stale):** all three named tests already route through `_pumpWithControllers` (23 uses); the remaining inline pumps express override shapes the helper deliberately does not (null item controller, etc.).
 
-- [ ] **[LOW]** `test/features/tasks/ui/checklists/checklist_card_test.dart` — line 157–165 and 236–241 use `pumpAndSettle()` right after `tester.tap(find.byKey(_addFieldKey))` to settle the focus animation (200 ms). This is legitimate usage where an animation must complete, but the comment "pumpAndSettle" is needed precisely because `AnimatedContainer` drives a 200 ms cross-fade. Consider replacing with `await tester.pump(const Duration(milliseconds: 220))` to make the timing intent explicit and avoid the 10-second timeout risk.
+- [x] **[LOW]** `test/features/tasks/ui/checklists/checklist_card_test.dart` — line 157–165 and 236–241 use `pumpAndSettle()` right after `tester.tap(find.byKey(_addFieldKey))` to settle the focus animation (200 ms). This is legitimate usage where an animation must complete, but the comment "pumpAndSettle" is needed precisely because `AnimatedContainer` drives a 200 ms cross-fade. Consider replacing with `await tester.pump(const Duration(milliseconds: 220))` to make the timing intent explicit and avoid the 10-second timeout risk.
+  **RESOLVED:** all four `pumpAndSettle()` calls in the two focus-cross-fade tests (border-colour and border-width) replaced with `tester.pump(const Duration(milliseconds: 250))` — one full step past the fixed 200 ms `AnimatedContainer` fade — making the timing intent explicit and removing the 10 s timeout risk.
 
 ---
 
@@ -75,7 +76,8 @@
   A Glados property test could assert that for any `completionRate ∈ [0.0, 1.0]` and `totalCount ∈ [0, 100]`, `completed` is always in `[0, total]` and equals `(completionRate * total).round()` when `completedCount` is null. This is non-trivial pure arithmetic with a null-override branch.
   **RESOLVED:** the math is extracted as the pure `resolveCompletedCount` (used by the widget) with a Glados2 property — derived count equals `(rate*total).round()`, stays in `[0, total]`, an explicit `completedCount` always wins, and the empty-checklist short-circuit returns 0.
 
-- [ ] **[LOW]** `buildChecklistProgressRing` (line 1052) takes a `completionRate` that is clamped by `CircularProgressIndicator.value`. A Glados property could verify that the rendered `CircularProgressIndicator.value` is always clamped to `[0, 1]` regardless of the input, catching future off-by-one bugs if the provider arithmetic changes.
+- [x] **[LOW]** `buildChecklistProgressRing` (line 1052) takes a `completionRate` that is clamped by `CircularProgressIndicator.value`. A Glados property could verify that the rendered `CircularProgressIndicator.value` is always clamped to `[0, 1]` regardless of the input, catching future off-by-one bugs if the provider arithmetic changes.
+  **RESOLVED (reframed):** the literal premise is wrong — `CircularProgressIndicator.value` is a raw field; Flutter clamps to `[0, 1]` only inside its private `_effectiveValue`/painter at render time, so asserting that clamp would test a third-party internal. Instead added a Glados property in `checklist_card_test.dart` (`buildChecklistProgressRing — properties`, numRuns 120, tagged glados) over `completionRate ∈ [-0.5, 2.0]` that asserts the helper — *our* code — forwards the rate verbatim to the indicator's `value` and always paints `successColor` with the given `semanticsLabel`. This is the off-by-one regression guard that actually belongs to this codebase (a provider that mangled the rate would break it). The helper is a pure widget factory needing no `BuildContext`, so it is invoked directly and the returned tree inspected without pumping.
 
 ---
 
@@ -89,7 +91,8 @@
 - [x] **[MED]** `checklist_card.dart` — the `_AddItemField._submit` method (line 973) trims the input and short-circuits on empty string. `checklist_card_test.dart` tests trimming but does not test that submitting an all-whitespace string (`'   '`) does **not** call `onCreateItem`.
   **RESOLVED:** new test submits `'   '` and asserts `onCreateItem` is never invoked.
 
-- [ ] **[LOW]** `checklists_widget.dart` — the empty-state (no checklists) and "all checklists archived" paths are not visible in `checklists_widget_test.dart`. The file has significant branching based on `checklistIds.isEmpty`.
+- [x] **[LOW]** `checklists_widget.dart` — the empty-state (no checklists) and "all checklists archived" paths are not visible in `checklists_widget_test.dart`. The file has significant branching based on `checklistIds.isEmpty`.
+  **RESOLVED (partly stale, partly new):** the `checklistIds.isEmpty` empty-state path is already covered by the existing `hides the section entirely when there are no checklists` and `handles null checklistIds correctly` tests (both assert no `ChecklistCardWrapper`, no header, no sort menu). There is no "archived" concept in the impl; the actual remaining uncovered branch is the per-card `checklist == null` guard (`checklists_widget.dart` line 131 — a deleted/stale id still listed in `checklistIds` collapses that one card to `SizedBox.shrink`). Added a test that overrides `checklist2`'s `checklistControllerProvider` to resolve to `null` (via a file-local `_StubChecklistController`) and asserts only the surviving `checklist1` card renders.
 
 ---
 
