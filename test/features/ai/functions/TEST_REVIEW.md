@@ -63,7 +63,8 @@
 - [x] **[MED]** `test/features/ai/functions/task_priority_handler_test.dart:206–260` — the `parsePriority` group has 8 individual `test()` calls, several of which test the same property (e.g., `'should parse P0 to p0Urgent'` and `'should handle mixed case'` both assert `parsePriority('P0') == p0Urgent`). These should be collapsed into one parameterized property test.
   **RESOLVED:** collapsed to a valid-code table test (10 case/whitespace variants), one invalid/non-string loop, and a Glados oracle property (see the Glados item).
 
-- [ ] **[LOW]** `test/features/ai/functions/label_functions_test.dart` — the single test is schema-structure only. There is no test verifying that `LabelFunctions.assignTaskLabels` constant equals `'assign_task_labels'`, and no test that the `confidence` enum in `labels.items.properties.confidence.enum` is `['low', 'medium', 'high', 'very_high']` in that specific order (the test uses `containsAll` which ignores order, but the schema description says "highest-confidence first" — the order matters for AI prompt quality).
+- [x] **[LOW]** `test/features/ai/functions/label_functions_test.dart` — the single test is schema-structure only. There is no test verifying that `LabelFunctions.assignTaskLabels` constant equals `'assign_task_labels'`, and no test that the `confidence` enum in `labels.items.properties.confidence.enum` is `['low', 'medium', 'high', 'very_high']` in that specific order (the test uses `containsAll` which ignores order, but the schema description says "highest-confidence first" — the order matters for AI prompt quality).
+  **RESOLVED:** added a dedicated test asserting `LabelFunctions.assignTaskLabels == 'assign_task_labels'` (the wire/dispatch key), and switched the confidence-enum assertion from `containsAll` to an exact ordered list equality `['low', 'medium', 'high', 'very_high']`, with a comment documenting that the order is contract-relevant.
 
 ---
 
@@ -82,7 +83,8 @@
 - [x] **[MED]** `lib/features/ai/functions/task_priority_handler.dart` (`parsePriority`) — pure function mapping strings to a 4-value enum (or null). A Glados property over `any.string` verifying `parsePriority(s) ∈ {P0,P1,P2,P3,null}` and `parsePriority(parsePriority(s)?.short) == parsePriority(s)` (round-trip idempotence) would replace the 8 fragmented static tests with one parameterized property.
   **RESOLVED:** added the Glados property — result must equal a trim/uppercase reverse-map oracle (which implies membership in the 4-value+null set), and non-null results round-trip idempotently through their canonical code.
 
-- [ ] **[LOW]** `lib/features/ai/functions/checklist_completion_functions.dart` / `task_functions.dart` — JSON schema definitions (the `parameters` maps) are deeply nested Dart literals. A property `∀ valid tool call built from the schema: fromJson(toJson(result)) == result` on the `@freezed` data classes (`ChecklistCompletionSuggestion`, `SetTaskLanguageResult`) would catch any schema-vs-deserializer drift.
+- [x] **[LOW]** `lib/features/ai/functions/checklist_completion_functions.dart` / `task_functions.dart` — JSON schema definitions (the `parameters` maps) are deeply nested Dart literals. A property `∀ valid tool call built from the schema: fromJson(toJson(result)) == result` on the `@freezed` data classes (`ChecklistCompletionSuggestion`, `SetTaskLanguageResult`) would catch any schema-vs-deserializer drift.
+  **RESOLVED:** added Glados `fromJson(toJson(x)) == x` round-trip properties for both freezed classes — `ChecklistCompletionSuggestion` (in `checklist_completion_functions_test.dart`) and `SetTaskLanguageResult` (in `task_functions_test.dart`) — each combining `any.letterOrDigits` for the string fields with a `choose(...values)` generator over the full confidence enum (`numRuns: 120`, tagged `glados`).
 
 ---
 
@@ -98,7 +100,8 @@
 - [x] **[MED]** `test/features/ai/functions/lotti_batch_checklist_handler_test.dart` — the `failedItems` getter (impl line 323) and its contribution to `createToolResponse` output when *some* items succeed and *some* fail is tested, but the path where `autoChecklistService.autoCreateChecklist` returns `success: false` with a non-null `createdItems` list is not covered.
   **RESOLVED:** new test returns `success: false` WITH a non-null `createdItems` — the handler keys off `success`, records both items as failed ('Checklist creation failed'), and the tool response lists them.
 
-- [ ] **[LOW]** `test/features/ai/functions/function_handler_test.dart` — `FunctionCallResult.wasSkipped` and `wasNoOp` convenience getters are not exercised (they are defined on `TaskDueDateResult`/`TaskEstimateResult`/`TaskPriorityResult`, not on `FunctionCallResult` itself — which doesn't have them). Confirming that the base `FunctionCallResult` struct carries `success`, `functionName`, `arguments`, `data`, and `error` correctly is the actual gap.
+- [x] **[LOW]** `test/features/ai/functions/function_handler_test.dart` — `FunctionCallResult.wasSkipped` and `wasNoOp` convenience getters are not exercised (they are defined on `TaskDueDateResult`/`TaskEstimateResult`/`TaskPriorityResult`, not on `FunctionCallResult` itself — which doesn't have them). Confirming that the base `FunctionCallResult` struct carries `success`, `functionName`, `arguments`, `data`, and `error` correctly is the actual gap.
+  **RESOLVED (confirmed-true, no change):** the observation is correct that `wasSkipped`/`wasNoOp` do not exist on `FunctionCallResult` (verified in `function_handler.dart` — the class has only `success`, `functionName`, `arguments`, `data`, `error`), so there is nothing extra to exercise. The stated "actual gap" is already closed: the `FunctionCallResult` group (`stores all fields correctly`, `error defaults to null`, `success result has null error`, `failed result has error message`) asserts every field including the `data` map contents. No code change needed.
 
 ---
 
@@ -112,7 +115,8 @@
 - [x] **[MED]** `test/features/ai/functions/task_priority_handler_test.dart` — the `parsePriority` group (lines 206–260) contains 8 synchronous static tests that together exercise fewer than 15 distinct inputs. Since all are synchronous and cheap, the overhead is small, but collapsing them into a Glados property (see "Glados" section) would make the suite both faster and more thorough.
   **RESOLVED:** same change as the parsePriority items above — table + Glados property.
 
-- [ ] **[LOW]** `test/features/ai/functions/task_estimate_handler_test.dart` — the `parseMinutes` group (lines 580–630) has a similar structure to the `parsePriority` group: 10 individual synchronous tests over a pure function. A Glados property over the input space would be more thorough and no slower (since Glados properties are only slightly heavier than a loop over 10 hand-rolled inputs).
+- [x] **[LOW]** `test/features/ai/functions/task_estimate_handler_test.dart` — the `parseMinutes` group (lines 580–630) has a similar structure to the `parsePriority` group: 10 individual synchronous tests over a pure function. A Glados property over the input space would be more thorough and no slower (since Glados properties are only slightly heavier than a loop over 10 hand-rolled inputs).
+  **RESOLVED (stale — already done):** a dedicated `parseMinutes — Glados properties` group already exists (`task_estimate_handler_test.dart`, ~lines 937–1040) with seven properties: valid-int identity, double-rounding, numeric-string parse, non-positive rejection, above-max rejection, null → null, and the in-bounds invariant on non-null results (all `numRuns: 120`, tagged `glados`). No further change needed.
 
 ---
 

@@ -5,6 +5,11 @@ import 'package:lotti/classes/supported_language.dart';
 import 'package:lotti/features/ai/functions/task_functions.dart';
 import 'package:openai_dart/openai_dart.dart';
 
+extension _AnyLanguageConfidence on glados.Any {
+  glados.Generator<LanguageDetectionConfidence> get languageConfidence =>
+      glados.AnyUtils(this).choose(LanguageDetectionConfidence.values);
+}
+
 void main() {
   group('TaskFunctions.getTools', () {
     test('returns tool definitions for all four task functions', () {
@@ -119,6 +124,31 @@ void main() {
       final back = SetTaskLanguageResult.fromJson(json);
       expect(back, result);
     });
+
+    // Round-trip property over the full field space: catches any drift between
+    // the schema literals and the generated (de)serializer for arbitrary
+    // language codes, reasons, and every confidence enum value.
+    glados.Glados<(String, String, LanguageDetectionConfidence)>(
+      glados.CombinableAny(glados.any).combine3(
+        glados.any.letterOrDigits,
+        glados.any.letterOrDigits,
+        glados.any.languageConfidence,
+        (String code, String reason, LanguageDetectionConfidence c) =>
+            (code, reason, c),
+      ),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'fromJson(toJson(x)) == x',
+      (triple) {
+        final original = SetTaskLanguageResult(
+          languageCode: triple.$1,
+          confidence: triple.$3,
+          reason: triple.$2,
+        );
+        expect(SetTaskLanguageResult.fromJson(original.toJson()), original);
+      },
+      tags: 'glados',
+    );
   });
 
   group('SetTaskLanguageResult.fromJson — confidence parsing contract', () {

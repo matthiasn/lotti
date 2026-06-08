@@ -3,6 +3,12 @@ import 'package:lotti/features/ai/functions/label_functions.dart';
 import 'package:openai_dart/openai_dart.dart';
 
 void main() {
+  test('assignTaskLabels constant equals the wire tool name', () {
+    // The AI prompt and downstream dispatch key off this exact literal; a
+    // rename of the constant value would silently break tool-call routing.
+    expect(LabelFunctions.assignTaskLabels, 'assign_task_labels');
+  });
+
   test('assign_task_labels tool is defined with correct schema', () {
     final tools = LabelFunctions.getTools();
     expect(tools, isNotEmpty);
@@ -28,9 +34,13 @@ void main() {
     expect((itemProps['id'] as Map<String, dynamic>)['type'], 'string');
     final confidence = itemProps['confidence'] as Map<String, dynamic>;
     expect(confidence['type'], 'string');
+    // Order is asserted exactly (not containsAll): the enum is ascending
+    // confidence (low → very_high) and the surrounding schema instructs the
+    // model to provide highest-confidence labels first, so the contract is
+    // order-sensitive.
     expect(
-      confidence['enum'],
-      containsAll(['low', 'medium', 'high', 'very_high']),
+      (confidence['enum'] as List).cast<String>(),
+      ['low', 'medium', 'high', 'very_high'],
     );
 
     // oneOf accepts either new or legacy
