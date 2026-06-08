@@ -746,6 +746,90 @@ void main() {
     }
   });
 
+  group('DesktopTaskHeader — status tint invariants', () {
+    // Property-style coverage for the `_statusTint` switch in the meta part.
+    // `_statusTint` needs a BuildContext (it reads palette + design tokens),
+    // so it cannot be driven by Glados, which has no WidgetTester. Instead we
+    // exhaustively pump every TaskStatus variant and assert the two invariants
+    // that must hold no matter which branch the switch takes: the pill's
+    // translucent background must have a valid alpha in [0, 1], and the
+    // foreground (label) colour must never be fully transparent. If a new
+    // TaskStatus variant is ever added without a matching switch arm the
+    // build switch becomes non-exhaustive (compile error) — and if an arm is
+    // added with a bad colour this test fails at runtime.
+    final createdAt = DateTime.utc(2026);
+    final statuses = <TaskStatus>[
+      TaskStatus.open(id: 'inv-open', createdAt: createdAt, utcOffset: 0),
+      TaskStatus.inProgress(
+        id: 'inv-in-progress',
+        createdAt: createdAt,
+        utcOffset: 0,
+      ),
+      TaskStatus.groomed(id: 'inv-groomed', createdAt: createdAt, utcOffset: 0),
+      TaskStatus.blocked(
+        id: 'inv-blocked',
+        createdAt: createdAt,
+        utcOffset: 0,
+        reason: 'waiting',
+      ),
+      TaskStatus.onHold(
+        id: 'inv-hold',
+        createdAt: createdAt,
+        utcOffset: 0,
+        reason: 'paused',
+      ),
+      TaskStatus.done(id: 'inv-done', createdAt: createdAt, utcOffset: 0),
+      TaskStatus.rejected(
+        id: 'inv-rejected',
+        createdAt: createdAt,
+        utcOffset: 0,
+      ),
+    ];
+
+    for (final status in statuses) {
+      testWidgets(
+        'pill tint for ${status.runtimeType} has a valid background alpha and '
+        'an opaque foreground',
+        (tester) async {
+          await _pumpDesktop(
+            tester,
+            DesktopTaskHeader(
+              data: _fixture(status: status),
+              onTitleSaved: (_) {},
+            ),
+          );
+
+          final context = tester.element(find.byType(DesktopTaskHeader));
+          final label = status.localizedLabel(context);
+          final text = tester.widget<Text>(find.text(label));
+          final box = tester.widget<DecoratedBox>(
+            find
+                .ancestor(
+                  of: find.text(label),
+                  matching: find.byType(DecoratedBox),
+                )
+                .first,
+          );
+          final background = (box.decoration as BoxDecoration).color;
+
+          expect(background, isNotNull, reason: '${status.runtimeType}');
+          expect(
+            background!.a,
+            inInclusiveRange(0.0, 1.0),
+            reason: 'background alpha out of range for ${status.runtimeType}',
+          );
+          final foreground = text.style?.color;
+          expect(foreground, isNotNull, reason: '${status.runtimeType}');
+          expect(
+            foreground!.a,
+            greaterThan(0.0),
+            reason: 'foreground transparent for ${status.runtimeType}',
+          );
+        },
+      );
+    }
+  });
+
   group('DesktopTaskHeader — title editor edge cases', () {
     testWidgets(
       'a title change arriving while the editor is open does NOT clobber '

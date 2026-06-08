@@ -30,7 +30,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Picker'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify modal elements are shown
       expect(find.text('Due Date'), findsOneWidget);
@@ -65,10 +66,12 @@ void main() {
       );
 
       await tester.tap(find.text('Open Picker'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Cancel'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(callbackCalled, isFalse);
       expect(find.text('Due Date'), findsNothing);
@@ -99,10 +102,12 @@ void main() {
       );
 
       await tester.tap(find.text('Open Picker'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Clear'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(resultDate, isNull);
     });
@@ -128,10 +133,12 @@ void main() {
       );
 
       await tester.tap(find.text('Open Picker'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       await tester.tap(find.text('Done'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       expect(find.text('Due Date'), findsNothing);
     });
@@ -157,7 +164,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Picker'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Verify picker is shown (will use DateTime.now as default)
       expect(find.byType(CupertinoDatePicker), findsOneWidget);
@@ -191,11 +199,13 @@ void main() {
       );
 
       await tester.tap(find.text('Open Picker'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap Done without changing the date
       await tester.tap(find.text('Done'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Callback should not be called if date is unchanged
       expect(callbackCalled, isFalse);
@@ -229,7 +239,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Picker'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Simulate user scrolling the date picker by dragging
       final pickerFinder = find.byType(CupertinoDatePicker);
@@ -237,11 +248,13 @@ void main() {
 
       // Drag down to change the date (simulates user interaction)
       await tester.drag(pickerFinder, const Offset(0, -50));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Tap Done after changing date
       await tester.tap(find.text('Done'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // Callback should be called since user interacted with picker
       expect(resultDate, isNotNull);
@@ -275,15 +288,18 @@ void main() {
         );
 
         await tester.tap(find.text('Open Picker'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Scroll to change the date
         final pickerFinder = find.byType(CupertinoDatePicker);
         await tester.drag(pickerFinder, const Offset(0, -100));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         await tester.tap(find.text('Done'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Since date was changed, callback should be called
         expect(resultDate, isNotNull);
@@ -318,11 +334,13 @@ void main() {
         );
 
         await tester.tap(find.text('Open Picker'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Just tap Done without any interaction
         await tester.tap(find.text('Done'));
-        await tester.pumpAndSettle();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
 
         // Callback SHOULD be called - when there's no existing due date and user
         // opens the picker and clicks Done, they're explicitly confirming they
@@ -353,7 +371,8 @@ void main() {
       );
 
       await tester.tap(find.text('Open Picker'));
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
       // All three buttons should be in the same Row
       final cancelButton = find.text('Cancel');

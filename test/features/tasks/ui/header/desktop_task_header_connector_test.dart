@@ -561,8 +561,13 @@ void main() {
         await tester.pump(const Duration(milliseconds: 300));
 
         // The label selection sliver mounts inside the modal once the
-        // onAddLabelTap → _openLabelSelector path fires.
+        // onAddLabelTap → _openLabelSelector path fires. The labels stream is
+        // empty and no search query is active, so the sliver renders its empty
+        // state — asserting on that content proves the modal actually opened
+        // and populated its (empty) label list, not merely that the type is
+        // present somewhere in the tree.
         expect(find.byType(LabelSelectionSliverContent), findsOneWidget);
+        expect(find.text('No labels available yet.'), findsOneWidget);
       },
     );
 
