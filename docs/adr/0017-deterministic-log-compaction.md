@@ -115,6 +115,14 @@ stateDiagram-v2
 - Implemented: `ContentDigest.of`, input capture/frontier projection,
   compaction planning, summary selection, and the task/project/day wake memory
   path that captures inputs and assembles summary + tail context.
+- Implemented (recall escape hatch): `AgentLogCompactor.searchLog` /
+  `resolveByIds` — the `search_memory` tool, an on-demand reader that scans the
+  **full** immutable log (folded events plus the verbatim tail), so a wake can
+  recall detail that compaction folded out of the active summary. This is what
+  makes summary lossiness acceptable. Append-only `[[relation:id]]` memory links
+  (`features/agents/memory/memory_links.dart`) ride inside log-entry text;
+  `supersedes` drives recency-wins recall, validated and forward-followed by the
+  recall reader.
 - Still planned: merge-summary tuning for deeply diverged branches and any
   later planner-specific memory policies.
 

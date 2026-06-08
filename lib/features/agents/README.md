@@ -226,7 +226,9 @@ Persisted agent-side entities include:
   `AgentState.scheduledWakeAt`.
 - `PlannerKnowledgeEntity` — the Daily OS planner's durable knowledge ("memorize
   what I tell you", ADR 0022). Compaction-exempt; the active Head set is a pure
-  recency-wins projection over the entries (no separate Head entity).
+  recency-wins projection over the entries (no separate Head entity). Carries
+  optional immutable author-time `tags` (set once at origin, surfaced as chips
+  in the "What I've learned" panel).
 
 Persisted links include:
 

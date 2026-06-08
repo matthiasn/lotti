@@ -59,7 +59,7 @@ class DayAgentService {
   static const _uuid = Uuid();
   static const String _agentKind = AgentKinds.dayAgent;
 
-  /// How far back the one-time legacy migration re-parents day-scoped entities
+  /// How far back the legacy migration re-parents day-scoped entities
   /// onto the planner (ADR 0022). Older days are archived in place to avoid
   /// flooding sync for long-time experimental users.
   static const _migrationLookback = Duration(days: 14);

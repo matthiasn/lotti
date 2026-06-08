@@ -103,8 +103,9 @@ Runtime behavior:
   `currentLocalTime` lets same-day drafting distinguish future plan slots from
   time that has already passed.
 - `DayAgentStrategy` handles private observations itself and delegates
-  `set_next_wake`, `search_memory`, the knowledge tools, Capture/Reconcile
-  tools, draft plan tools, and refine tools through the workflow handler.
+  `set_next_wake`, `search_memory`, the knowledge tool (`propose_knowledge`),
+  Capture/Reconcile tools, draft plan tools, and refine tools through the
+  workflow handler.
 - `search_memory` is the planner's recall + memory-linking tool, handled by the
   workflow itself (`DayAgentWorkflow._searchMemory` over `AgentLogCompactor`).
   With `query` it keyword-scans the **full** immutable capture-and-observation
@@ -131,7 +132,7 @@ Runtime behavior:
   reading as dead. The system prompt fosters the Zettelkasten habits this
   enables: atomic, keyword-led notes; superseding rather than overwriting;
   distilling captures into linked permanent observations; maintaining MOCs; and
-  actually following links via `search_memory(ids:)`. See
+  actually following links via `search_memory(ids:)`. See ADR 0026 and
   `docs/implementation_plans/2026-06-08_convergence_safe_a_mem.md`.
 - `DayAgentCaptureService` owns direct Capture/Reconcile mutations:
   `submit_capture`, `parse_capture_to_items`, `match_to_corpus`,
@@ -303,6 +304,15 @@ stateDiagram-v2
   direction (graph traversal from a capture to every plan it produced) and is
   written in the same transaction. Treat the field as canonical and the link
   as derived — do not mutate one without the other.
+- `DayAgentPlanService` also owns `commit_day` / `uncommit_day`: `commit_day`
+  flips `DayPlanStatus.draft → committed` and walks every drafted block to
+  `PlannedBlockState.committed` (the agent shifts to shepherding; further edits
+  need an explicit refine); `uncommit_day` reverses it, leaving
+  `inProgress`/`completed`/`dropped` blocks untouched. Both are **idempotent**.
+  Committing is a **user** action, driven from the Commit surface
+  (`ui/pages/commit_page.dart` → `RealDayAgent.commitDay`); the same tools are
+  also reachable through the LLM tool dispatcher, but the system prompt steers
+  the agent not to commit/uncommit autonomously (like `accept_diff`/`revert_diff`).
 - For today's plan, `draft_day_plan` rejects new drafted `ai` or `manual`
   blocks whose start is before `currentLocalTime`. It still accepts earlier
   blocks when their state is `inProgress`, `completed`, or `dropped`, because
@@ -446,8 +456,9 @@ stateDiagram-v2
   recent `DayPlanEntity` rows across **all** days under the one planner — the
   deliberate cross-day learning the single identity enables. It does not persist
   new state.
-- Future Daily OS Next commit, agenda, and shutdown tools should be added
-  under this feature without importing `features/daily_os`.
+- Future Daily OS Next agenda and shutdown tools should be added under this
+  feature without importing `features/daily_os` (commit/uncommit already ship —
+  see the `DayAgentPlanService` notes above).
 
 The planner identity's lifecycle (ADR 0022) — one durable mind, many day
 workspaces, with legacy day agents archived on first flip:
@@ -484,6 +495,8 @@ stateDiagram-v2
   PendingDiff --> PendingDiff: accept_diff(itemIndices)
   PendingDiff --> PendingDiff: revert_diff(itemIndices)
   PendingDiff --> DraftedPlan: all items resolved
+  DraftedPlan --> Committed: commit_day (user, via Commit surface)
+  Committed --> DraftedPlan: uncommit_day
 ```
 
 The Day view is a projection over one `DraftPlan` rather than a second planner

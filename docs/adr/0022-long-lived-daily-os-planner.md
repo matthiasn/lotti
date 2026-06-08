@@ -132,7 +132,13 @@ assumption becomes more expensive.
     (cf. ADR 0014 critical-observation injection). Agent-inferred observations
     stay in the compactable episodic stream until the slow loop or an explicit
     user confirmation promotes them. The store is specified in the implementation
-    plan's "Durable Planner Knowledge" section.
+    plan's "Durable Planner Knowledge" section. Each record also carries optional
+    author-time `tags` (immutable, set once at origin, surfaced as chips in the
+    "What I've learned" panel). The episodic log behind this two-tier memory is
+    reachable on demand via the `search_memory` recall tool (ADR 0017), whose
+    hits resolve author-time `[[relation:id]]` links against both the episodic
+    log and durable-knowledge keys (a `moc-<topic>` knowledge entry can thus act
+    as a curated map into related memory).
 
 11. **Domain agents are peers, not part of the planner.** Specialist agents
     (e.g. fitness, sleep) are separate durable identities. They negotiate for

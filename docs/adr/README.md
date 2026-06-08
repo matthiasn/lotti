@@ -53,3 +53,4 @@ Each ADR should contain:
 - [`0023-durable-domain-agents-and-time-negotiation.md`](./0023-durable-domain-agents-and-time-negotiation.md)
 - [`0024-correction-lexicon-and-transcript-correction.md`](./0024-correction-lexicon-and-transcript-correction.md)
 - [`0025-insights-time-analysis-data-layer.md`](./0025-insights-time-analysis-data-layer.md)
+- [`0026-author-time-memory-links.md`](./0026-author-time-memory-links.md)
