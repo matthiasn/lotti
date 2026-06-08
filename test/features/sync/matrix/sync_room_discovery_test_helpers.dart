@@ -1,4 +1,3 @@
-
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
