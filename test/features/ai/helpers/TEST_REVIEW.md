@@ -58,7 +58,8 @@
 - [x] **[MED]** `test/features/ai/helpers/entity_state_helper_test.dart` — five individual `test()` cases for `getCurrentEntityState` each fully construct a `JournalImage` fixture (30-line blocks). These differ only in mock behavior. A `_runCase({bool entityFound, bool typeMatches, bool throws})` helper parameterized over the three axes would DRY this to a single table.
   **RESOLVED:** done — the four fetch-as-JournalImage cases now run through one `runImageCase({expected, stubbed, throws})` helper with shared `testImage`/`testTask` fixtures; ~80 lines of duplicated arrange/act/assert removed.
 
-- [ ] **[LOW]** `test/features/ai/helpers/prompt_builder_helper_test.dart:1891–2021` — the `_logPlaceholderFailure on placeholder build error` group re-defines `correctionExamplesConfig()` and `audioEntity(...)` helpers that are identical to the same helpers defined in the `correction_examples placeholder injection` group (lines 1349–1360, 1912–1927). Extract these to file level.
+- [x] **[LOW]** `test/features/ai/helpers/prompt_builder_helper_test.dart:1891–2021` — the `_logPlaceholderFailure on placeholder build error` group re-defines `correctionExamplesConfig()` and `audioEntity(...)` helpers that are identical to the same helpers defined in the `correction_examples placeholder injection` group (lines 1349–1360, 1912–1927). Extract these to file level.
+  **RESOLVED:** done — the duplicated `correctionExamplesConfig()` (defined twice, identically) and `audioEntity(...)` are now single file-level helpers `_correctionExamplesConfig()` and `_audioEntity(...)` placed beside `_makePromptConfig`; both in-group definitions removed and all call sites repointed.
 
 ---
 
@@ -71,7 +72,8 @@
 - [x] **[MED]** `lib/features/ai/helpers/prompt_capability_filter.dart` (`isLocalOnlyProviderType`) — pure function over a small closed enum (`InferenceProviderType`). A property `∀ t: isLocalOnlyProviderType(t) == (t ∈ {whisper, ollama, voxtral, mlxAudio})` would auto-detect any future enum variant that is incorrectly classified. `profile_locality_test.dart` has similar coverage but exercising it through the full stack; a unit Glados test on the static predicate would run faster and shrink more cleanly.
   **RESOLVED:** stale — `prompt_capability_filter_test.dart` already ends with both a Glados property over the enum and an exhaustive per-variant loop asserting `isLocalOnlyProviderType(t) == (t ∈ {whisper, ollama, voxtral, mlxAudio})`.
 
-- [ ] **[LOW]** `lib/features/ai/helpers/profile_locality.dart` (`profileIsLocal`) — already well-tested with hand-written cases but no property tests. A Glados scenario generator over `(Set<providerModelId> × InferenceProviderType per slot)` could enforce the "fail-closed on missing model/provider" invariant across any combination of slot counts and provider types.
+- [x] **[LOW]** `lib/features/ai/helpers/profile_locality.dart` (`profileIsLocal`) — already well-tested with hand-written cases but no property tests. A Glados scenario generator over `(Set<providerModelId> × InferenceProviderType per slot)` could enforce the "fail-closed on missing model/provider" invariant across any combination of slot counts and provider types.
+  **RESOLVED:** done — added a Glados property (`numRuns: 120`, `tags: 'glados'`) driven by a private `_ProfileLocalityScenario` (one `_SlotShape` per slot: unset / localResolved / cloudResolved / missingModel / missingProvider, plus a generated `InferenceProviderType`). The scenario stubs the repo's batch snapshots and computes `expectedIsLocal` independently (any populated slot that is cloud, unresolved-model, or unresolved-provider fails closed; local-type slots stay local), asserting `profileIsLocal == expectedIsLocal` and `verifyNever(getConfigById)`. The thinking slot is forced non-unset (mandatory).
 
 ---
 
@@ -87,7 +89,8 @@
 - [x] **[MED]** `test/features/ai/helpers/profile_locality_test.dart` — the deduplication logic ("same model id in multiple slots is only looked up once") is mentioned in the impl comment but there is no test verifying that a profile reusing the same `providerModelId` across both `thinkingModelId` and `thinkingHighEndModelId` still resolves to one repository lookup rather than two.
   **RESOLVED:** done — added 'profileIsLocal — lookup deduplication': the same model id in both thinking slots resolves with exactly one `getConfigsByType` call per config type and zero per-slot `getConfigById` calls.
 
-- [ ] **[LOW]** `test/features/ai/helpers/entity_state_helper_test.dart` — tests cover `JournalImage` type mismatches but not the case where the entity is a `JournalAudio` (a different concrete type). The generic `<T>` mechanism is therefore tested for only one of the two realistic entity types.
+- [x] **[LOW]** `test/features/ai/helpers/entity_state_helper_test.dart` — tests cover `JournalImage` type mismatches but not the case where the entity is a `JournalAudio` (a different concrete type). The generic `<T>` mechanism is therefore tested for only one of the two realistic entity types.
+  **RESOLVED:** done — a successful `JournalAudio` fetch was already covered, but the **mismatch** branch was only tested for `<JournalImage>`. Added a `<JournalAudio>`-requested / `JournalImage`-returned mismatch test asserting the result is null, so the `is! T` guard is now exercised for a second requested concrete type.
 
 ---
 
@@ -99,7 +102,8 @@
 - [x] **[MED]** `test/features/ai/helpers/prompt_builder_helper_audio_transcript_test.dart` and `prompt_builder_helper_current_task_summary_test.dart` — same raw GetIt per-test cost as above. Both files also duplicate the `testTask` and `testAudio` fixture definitions that are already present in `prompt_builder_helper_speech_dictionary_test.dart`. Merging into one file (per the one-test-file-per-source-file rule) and sharing a file-level setup would remove 3× repeated fixture initialization.
   **RESOLVED:** stale — both files were already merged into the single mirror `prompt_builder_helper_test.dart` (per the one-test-file-per-source rule) with shared file-level fixtures.
 
-- [ ] **[LOW]** `test/features/ai/helpers/prompt_capability_filter_mobile_test.dart` — 702 lines of tests that silently return early on desktop (the current CI and dev machine target). These tests contribute no coverage on the build environment. Until a mobile CI target exists, tagging them with `@TestOn('android || ios')` would exclude them from the desktop shard entirely, saving their trivial-but-nonzero warm-up cost.
+- [x] **[LOW]** `test/features/ai/helpers/prompt_capability_filter_mobile_test.dart` — 702 lines of tests that silently return early on desktop (the current CI and dev machine target). These tests contribute no coverage on the build environment. Until a mobile CI target exists, tagging them with `@TestOn('android || ios')` would exclude them from the desktop shard entirely, saving their trivial-but-nonzero warm-up cost.
+  **RESOLVED (stale, no change):** the premise no longer holds. The companion MED item above already restructured this file to force `platform.isDesktop = false` / `isMobile = true` in `setUp` (mutable globals, restored in teardown), so the tests no longer return early — they actually exercise the mobile code paths on the desktop CI/dev host, which is the *only* place they ever run. Applying `@TestOn('android || ios')` would exclude them from the desktop shard and, since there is no mobile CI target, mean the mobile paths run nowhere — directly undoing the coverage the restructure enabled to save a negligible warm-up cost. Intentionally not changed.
 
 ---
 

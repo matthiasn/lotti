@@ -95,6 +95,30 @@ void main() {
         return runImageCase(stubbed: testTask, expected: null);
       });
 
+      test(
+        'returns null on type mismatch for a second concrete type '
+        '(expecting JournalAudio but fetch yields JournalImage)',
+        () async {
+          // Exercises the generic `<T>` mismatch branch for a different
+          // requested type than JournalImage, so the type guard is covered
+          // for both realistic entity types rather than only one.
+          const audioId = 'audio-id';
+          when(
+            () => mockAiInputRepo.getEntity(audioId),
+          ).thenAnswer((_) async => testImage);
+
+          final result =
+              await EntityStateHelper.getCurrentEntityState<JournalAudio>(
+                entityId: audioId,
+                aiInputRepo: mockAiInputRepo,
+                entityTypeName: 'audio',
+              );
+
+          expect(result, isNull);
+          verify(() => mockAiInputRepo.getEntity(audioId)).called(1);
+        },
+      );
+
       test('returns null when repository throws exception', () {
         return runImageCase(throws: true, expected: null);
       });

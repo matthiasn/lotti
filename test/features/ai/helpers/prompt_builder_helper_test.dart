@@ -73,6 +73,37 @@ AiConfigPrompt _makePromptConfig({
   );
 }
 
+/// Standard `audioTranscription` prompt config carrying the
+/// `{{correction_examples}}` placeholder in the user message. Shared by the
+/// correction-examples injection and `_logPlaceholderFailure` groups.
+AiConfigPrompt _correctionExamplesConfig() => _makePromptConfig(
+  id: 'transcription-prompt',
+  name: 'Transcription',
+  systemMessage: 'System',
+  userMessage: 'Transcribe: {{correction_examples}}',
+  createdAt: DateTime(2024, 3, 15),
+  requiredInputData: const [InputDataType.audioFiles],
+);
+
+/// A minimal [JournalAudio] entity with the given [id]. Shared by the
+/// `_logPlaceholderFailure` group's failure-path tests.
+JournalAudio _audioEntity(String id) => JournalAudio(
+  data: AudioData(
+    audioFile: 'audio.m4a',
+    audioDirectory: '/test',
+    duration: const Duration(minutes: 1),
+    dateFrom: DateTime(2024, 3, 15),
+    dateTo: DateTime(2024, 3, 15),
+  ),
+  meta: Metadata(
+    id: id,
+    createdAt: DateTime(2024, 3, 15),
+    dateFrom: DateTime(2024, 3, 15),
+    dateTo: DateTime(2024, 3, 15),
+    updatedAt: DateTime(2024, 3, 15),
+  ),
+);
+
 void main() {
   late PromptBuilderHelper promptBuilder;
   late MockAiInputRepository mockAiInputRepository;
@@ -1315,17 +1346,6 @@ void main() {
       // promptConfig.aiResponseType == AiResponseType.audioTranscription.
       // They also require EntitiesCacheService to be registered in GetIt.
 
-      // Helper that builds the standard audioTranscription promptConfig with
-      // the {{correction_examples}} placeholder in the user message.
-      AiConfigPrompt correctionExamplesConfig() => _makePromptConfig(
-        id: 'transcription-prompt',
-        name: 'Transcription',
-        systemMessage: 'System',
-        userMessage: 'Transcribe: {{correction_examples}}',
-        createdAt: DateTime(2024, 3, 15),
-        requiredInputData: const [InputDataType.audioFiles],
-      );
-
       // Helper that builds a Task with the given categoryId set.
       Task taskWithCategory(String taskId, String categoryId) => Task(
         data: TaskData(
@@ -1390,7 +1410,7 @@ void main() {
           addTearDown(tearDownTestGetIt);
 
           final task = taskWithCategory('task-1', categoryId);
-          final config = correctionExamplesConfig();
+          final config = _correctionExamplesConfig();
 
           final result = await promptBuilder.buildPromptWithData(
             promptConfig: config,
@@ -1445,7 +1465,7 @@ void main() {
           addTearDown(tearDownTestGetIt);
 
           final task = taskWithCategory('task-sort', categoryId);
-          final config = correctionExamplesConfig();
+          final config = _correctionExamplesConfig();
 
           final result = await promptBuilder.buildPromptWithData(
             promptConfig: config,
@@ -1489,7 +1509,7 @@ void main() {
         addTearDown(tearDownTestGetIt);
 
         final task = taskWithCategory('task-cap', categoryId);
-        final config = correctionExamplesConfig();
+        final config = _correctionExamplesConfig();
 
         final result = await promptBuilder.buildPromptWithData(
           promptConfig: config,
@@ -1530,7 +1550,7 @@ void main() {
         );
 
         final result = await promptBuilder.buildPromptWithData(
-          promptConfig: correctionExamplesConfig(),
+          promptConfig: _correctionExamplesConfig(),
           entity: task,
         );
 
@@ -1553,7 +1573,7 @@ void main() {
         final task = taskWithCategory('task-notfound', 'missing-cat');
 
         final result = await promptBuilder.buildPromptWithData(
-          promptConfig: correctionExamplesConfig(),
+          promptConfig: _correctionExamplesConfig(),
           entity: task,
         );
 
@@ -1584,7 +1604,7 @@ void main() {
           final task = taskWithCategory('task-empty', categoryId);
 
           final result = await promptBuilder.buildPromptWithData(
-            promptConfig: correctionExamplesConfig(),
+            promptConfig: _correctionExamplesConfig(),
             entity: task,
           );
 
@@ -1636,7 +1656,7 @@ void main() {
           addTearDown(tearDownTestGetIt);
 
           final result = await builder.buildPromptWithData(
-            promptConfig: correctionExamplesConfig(),
+            promptConfig: _correctionExamplesConfig(),
             entity: audio,
           );
 
@@ -1663,7 +1683,7 @@ void main() {
           final task = taskWithCategory('task-throw', 'cat-throw');
 
           final result = await promptBuilder.buildPromptWithData(
-            promptConfig: correctionExamplesConfig(),
+            promptConfig: _correctionExamplesConfig(),
             entity: task,
           );
 
@@ -1855,32 +1875,6 @@ void main() {
       // catch in buildPromptWithData. _findLinkedTask (called before the inner
       // try) is the throwing point: it awaits journalRepository.getLinkedEntities.
 
-      AiConfigPrompt correctionExamplesConfig() => _makePromptConfig(
-        id: 'transcription-prompt',
-        name: 'Transcription',
-        systemMessage: 'System',
-        userMessage: 'Transcribe: {{correction_examples}}',
-        createdAt: DateTime(2024, 3, 15),
-        requiredInputData: const [InputDataType.audioFiles],
-      );
-
-      JournalAudio audioEntity(String id) => JournalAudio(
-        data: AudioData(
-          audioFile: 'audio.m4a',
-          audioDirectory: '/test',
-          duration: const Duration(minutes: 1),
-          dateFrom: DateTime(2024, 3, 15),
-          dateTo: DateTime(2024, 3, 15),
-        ),
-        meta: Metadata(
-          id: id,
-          createdAt: DateTime(2024, 3, 15),
-          dateFrom: DateTime(2024, 3, 15),
-          dateTo: DateTime(2024, 3, 15),
-          updatedAt: DateTime(2024, 3, 15),
-        ),
-      );
-
       test(
         'replaces {{correction_examples}} with empty string and logs error '
         'via DomainLogger when building examples throws',
@@ -1913,8 +1907,8 @@ void main() {
           );
 
           final result = await builder.buildPromptWithData(
-            promptConfig: correctionExamplesConfig(),
-            entity: audioEntity('audio-boom'),
+            promptConfig: _correctionExamplesConfig(),
+            entity: _audioEntity('audio-boom'),
           );
 
           // Placeholder replaced with '' despite the failure (graceful fallback).
@@ -1966,8 +1960,8 @@ void main() {
           );
 
           final result = await builder.buildPromptWithData(
-            promptConfig: correctionExamplesConfig(),
-            entity: audioEntity('audio-no-logger'),
+            promptConfig: _correctionExamplesConfig(),
+            entity: _audioEntity('audio-no-logger'),
           );
 
           expect(result, equals('Transcribe: '));
