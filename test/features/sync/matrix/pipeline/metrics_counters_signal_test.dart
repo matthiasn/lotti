@@ -1,289 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/sync/matrix/pipeline/metrics_counters.dart';
-
-enum _GeneratedMetricsOperationKind {
-  incProcessedWithType,
-  bumpProcessedType,
-  bumpDroppedType,
-  incSkipped,
-  incFailures,
-  incCatchupBatches,
-  incRetriesScheduled,
-  incCircuitOpens,
-  incSignalClientStream,
-  incSignalTimelineCallbacks,
-  incSignalTimelineNewEvent,
-  incSignalTimelineInsert,
-  incSignalFirstStreamCatchupTriggers,
-  incSignalCatchupDeferred,
-  incSignalCatchupCoalesce,
-  incSignalLiveScanDeferredInitialCatchupIncomplete,
-  incSignalLiveScanDeferredCatchupInFlight,
-  incSignalLiveScanDeferredInFlight,
-  incSignalNoTimeline,
-  incWakeDetections,
-  incSignalConnectivity,
-  recordSignalLatency,
-  incTrailingCatchups,
-  incLiveScanDeferred,
-  incLiveScanCoalesce,
-  incLiveScanTrailingScheduled,
-  incDbApplied,
-  incDbIgnoredByVectorClock,
-  incConflictsCreated,
-  incDbMissingBase,
-  incDbEntryLinkNoop,
-  incStaleAttachmentPurges,
-  incSelfEventsSuppressed,
-  addLastIgnored,
-}
-
-class _GeneratedMetricsOperation {
-  const _GeneratedMetricsOperation({
-    required this.kind,
-    required this.valueSlot,
-  });
-
-  final _GeneratedMetricsOperationKind kind;
-  final int valueSlot;
-
-  int get latencyMs => valueSlot * 25;
-
-  String get ignoredEntry => 'ignored-$valueSlot';
-
-  String? get syncRuntimeType {
-    switch (valueSlot % 5) {
-      case 0:
-        return null;
-      case 1:
-        return '';
-      case 2:
-        return 'journalEntity';
-      case 3:
-        return 'entryLink';
-      case 4:
-        return 'task';
-    }
-    throw StateError('unsupported value slot $valueSlot');
-  }
-
-  @override
-  String toString() {
-    return '_GeneratedMetricsOperation('
-        'kind: $kind, '
-        'valueSlot: $valueSlot'
-        ')';
-  }
-}
-
-class _GeneratedMetricsScenario {
-  const _GeneratedMetricsScenario({
-    required this.collect,
-    required this.lastIgnoredMax,
-    required this.operations,
-  });
-
-  final bool collect;
-  final int lastIgnoredMax;
-  final List<_GeneratedMetricsOperation> operations;
-
-  @override
-  String toString() {
-    return '_GeneratedMetricsScenario('
-        'collect: $collect, '
-        'lastIgnoredMax: $lastIgnoredMax, '
-        'operations: $operations'
-        ')';
-  }
-}
-
-class _ExpectedMetricsModel {
-  _ExpectedMetricsModel({
-    required this.collect,
-    required this.lastIgnoredMax,
-  });
-
-  final bool collect;
-  final int lastIgnoredMax;
-  final Map<String, int> counters = <String, int>{
-    'processed': 0,
-    'skipped': 0,
-    'failures': 0,
-    'catchupBatches': 0,
-    'retriesScheduled': 0,
-    'circuitOpens': 0,
-    'dbApplied': 0,
-    'dbIgnoredByVectorClock': 0,
-    'conflictsCreated': 0,
-    'dbMissingBase': 0,
-    'dbEntryLinkNoop': 0,
-    'staleAttachmentPurges': 0,
-    'selfEventsSuppressed': 0,
-    'signalClientStream': 0,
-    'signalTimelineCallbacks': 0,
-    'signalTimelineNewEvent': 0,
-    'signalTimelineInsert': 0,
-    'signalFirstStreamCatchupTriggers': 0,
-    'signalCatchupDeferredCount': 0,
-    'signalCatchupCoalesceCount': 0,
-    'signalLiveScanDeferredInitialCatchupIncomplete': 0,
-    'signalLiveScanDeferredCatchupInFlight': 0,
-    'signalLiveScanDeferredInFlight': 0,
-    'signalNoTimelineCount': 0,
-    'wakeDetections': 0,
-    'signalConnectivity': 0,
-    'signalLatencyLastMs': 0,
-    'signalLatencyMinMs': 0,
-    'signalLatencyMaxMs': 0,
-    'trailingCatchups': 0,
-    'liveScanDeferredCount': 0,
-    'liveScanCoalesceCount': 0,
-    'liveScanTrailingScheduled': 0,
-  };
-  final Map<String, int> processedByType = <String, int>{};
-  final Map<String, int> droppedByType = <String, int>{};
-  final List<String> lastIgnored = <String>[];
-  var _hasSignalLatency = false;
-
-  void apply(_GeneratedMetricsOperation operation) {
-    switch (operation.kind) {
-      case _GeneratedMetricsOperationKind.incProcessedWithType:
-        if (!collect) return;
-        _bump('processed');
-        _bumpType(processedByType, operation.syncRuntimeType);
-      case _GeneratedMetricsOperationKind.bumpProcessedType:
-        if (!collect) return;
-        _bumpType(processedByType, operation.syncRuntimeType);
-      case _GeneratedMetricsOperationKind.bumpDroppedType:
-        if (!collect) return;
-        _bumpType(droppedByType, operation.syncRuntimeType);
-      case _GeneratedMetricsOperationKind.incSkipped:
-        _bumpCollected('skipped');
-      case _GeneratedMetricsOperationKind.incFailures:
-        _bumpCollected('failures');
-      case _GeneratedMetricsOperationKind.incCatchupBatches:
-        _bumpCollected('catchupBatches');
-      case _GeneratedMetricsOperationKind.incRetriesScheduled:
-        _bumpCollected('retriesScheduled');
-      case _GeneratedMetricsOperationKind.incCircuitOpens:
-        _bumpCollected('circuitOpens');
-      case _GeneratedMetricsOperationKind.incSignalClientStream:
-        _bumpCollected('signalClientStream');
-      case _GeneratedMetricsOperationKind.incSignalTimelineCallbacks:
-        _bumpCollected('signalTimelineCallbacks');
-      case _GeneratedMetricsOperationKind.incSignalTimelineNewEvent:
-        _bumpCollected('signalTimelineNewEvent');
-      case _GeneratedMetricsOperationKind.incSignalTimelineInsert:
-        _bumpCollected('signalTimelineInsert');
-      case _GeneratedMetricsOperationKind.incSignalFirstStreamCatchupTriggers:
-        _bumpCollected('signalFirstStreamCatchupTriggers');
-      case _GeneratedMetricsOperationKind.incSignalCatchupDeferred:
-        _bumpCollected('signalCatchupDeferredCount');
-      case _GeneratedMetricsOperationKind.incSignalCatchupCoalesce:
-        _bumpCollected('signalCatchupCoalesceCount');
-      case _GeneratedMetricsOperationKind
-          .incSignalLiveScanDeferredInitialCatchupIncomplete:
-        _bumpCollected('signalLiveScanDeferredInitialCatchupIncomplete');
-      case _GeneratedMetricsOperationKind
-          .incSignalLiveScanDeferredCatchupInFlight:
-        _bumpCollected('signalLiveScanDeferredCatchupInFlight');
-      case _GeneratedMetricsOperationKind.incSignalLiveScanDeferredInFlight:
-        _bumpCollected('signalLiveScanDeferredInFlight');
-      case _GeneratedMetricsOperationKind.incSignalNoTimeline:
-        _bumpCollected('signalNoTimelineCount');
-      case _GeneratedMetricsOperationKind.incWakeDetections:
-        _bumpCollected('wakeDetections');
-      case _GeneratedMetricsOperationKind.incSignalConnectivity:
-        _bumpCollected('signalConnectivity');
-      case _GeneratedMetricsOperationKind.recordSignalLatency:
-        if (!collect) return;
-        final latencyMs = operation.latencyMs;
-        counters['signalLatencyLastMs'] = latencyMs;
-        if (!_hasSignalLatency || latencyMs < counters['signalLatencyMinMs']!) {
-          counters['signalLatencyMinMs'] = latencyMs;
-        }
-        if (!_hasSignalLatency || latencyMs > counters['signalLatencyMaxMs']!) {
-          counters['signalLatencyMaxMs'] = latencyMs;
-        }
-        _hasSignalLatency = true;
-      case _GeneratedMetricsOperationKind.incTrailingCatchups:
-        _bumpCollected('trailingCatchups');
-      case _GeneratedMetricsOperationKind.incLiveScanDeferred:
-        _bumpCollected('liveScanDeferredCount');
-      case _GeneratedMetricsOperationKind.incLiveScanCoalesce:
-        _bumpCollected('liveScanCoalesceCount');
-      case _GeneratedMetricsOperationKind.incLiveScanTrailingScheduled:
-        _bumpCollected('liveScanTrailingScheduled');
-      case _GeneratedMetricsOperationKind.incDbApplied:
-        _bump('dbApplied');
-      case _GeneratedMetricsOperationKind.incDbIgnoredByVectorClock:
-        _bump('dbIgnoredByVectorClock');
-      case _GeneratedMetricsOperationKind.incConflictsCreated:
-        _bump('conflictsCreated');
-      case _GeneratedMetricsOperationKind.incDbMissingBase:
-        _bump('dbMissingBase');
-      case _GeneratedMetricsOperationKind.incDbEntryLinkNoop:
-        _bump('dbEntryLinkNoop');
-      case _GeneratedMetricsOperationKind.incStaleAttachmentPurges:
-        _bump('staleAttachmentPurges');
-      case _GeneratedMetricsOperationKind.incSelfEventsSuppressed:
-        _bump('selfEventsSuppressed');
-      case _GeneratedMetricsOperationKind.addLastIgnored:
-        lastIgnored.add(operation.ignoredEntry);
-        if (lastIgnored.length > lastIgnoredMax) {
-          lastIgnored.removeAt(0);
-        }
-    }
-  }
-
-  void _bumpCollected(String key) {
-    if (collect) _bump(key);
-  }
-
-  void _bump(String key) {
-    counters.update(key, (value) => value + 1);
-  }
-
-  void _bumpType(Map<String, int> target, String? runtimeType) {
-    if (runtimeType == null || runtimeType.isEmpty) return;
-    target.update(runtimeType, (value) => value + 1, ifAbsent: () => 1);
-  }
-}
-
-extension _AnyGeneratedMetricsScenario on glados.Any {
-  glados.Generator<_GeneratedMetricsOperationKind> get metricsOperationKind =>
-      glados.AnyUtils(this).choose(_GeneratedMetricsOperationKind.values);
-
-  glados.Generator<_GeneratedMetricsOperation> get metricsOperation =>
-      glados.CombinableAny(this).combine2(
-        metricsOperationKind,
-        glados.IntAnys(this).intInRange(0, 9),
-        (
-          _GeneratedMetricsOperationKind kind,
-          int valueSlot,
-        ) => _GeneratedMetricsOperation(
-          kind: kind,
-          valueSlot: valueSlot,
-        ),
-      );
-
-  glados.Generator<_GeneratedMetricsScenario> get metricsScenario =>
-      glados.CombinableAny(this).combine3(
-        glados.IntAnys(this).intInRange(0, 2),
-        glados.IntAnys(this).intInRange(0, 6),
-        glados.ListAnys(this).listWithLengthInRange(1, 36, metricsOperation),
-        (
-          int collectSlot,
-          int lastIgnoredMax,
-          List<_GeneratedMetricsOperation> operations,
-        ) => _GeneratedMetricsScenario(
-          collect: collectSlot == 1,
-          lastIgnoredMax: lastIgnoredMax,
-          operations: operations,
-        ),
-      );
-}
+import 'metrics_counters_signal_test_helpers.dart';
 
 void main() {
   group('MetricsCounters – core counters', () {
@@ -573,84 +291,84 @@ void main() {
           collect: scenario.collect,
           lastIgnoredMax: scenario.lastIgnoredMax,
         );
-        final model = _ExpectedMetricsModel(
+        final model = ExpectedMetricsModel(
           collect: scenario.collect,
           lastIgnoredMax: scenario.lastIgnoredMax,
         );
 
         for (final operation in scenario.operations) {
           switch (operation.kind) {
-            case _GeneratedMetricsOperationKind.incProcessedWithType:
+            case GeneratedMetricsOperationKind.incProcessedWithType:
               counters.incProcessedWithType(operation.syncRuntimeType);
-            case _GeneratedMetricsOperationKind.bumpProcessedType:
+            case GeneratedMetricsOperationKind.bumpProcessedType:
               counters.bumpProcessedType(operation.syncRuntimeType);
-            case _GeneratedMetricsOperationKind.bumpDroppedType:
+            case GeneratedMetricsOperationKind.bumpDroppedType:
               counters.bumpDroppedType(operation.syncRuntimeType);
-            case _GeneratedMetricsOperationKind.incSkipped:
+            case GeneratedMetricsOperationKind.incSkipped:
               counters.incSkipped();
-            case _GeneratedMetricsOperationKind.incFailures:
+            case GeneratedMetricsOperationKind.incFailures:
               counters.incFailures();
-            case _GeneratedMetricsOperationKind.incCatchupBatches:
+            case GeneratedMetricsOperationKind.incCatchupBatches:
               counters.incCatchupBatches();
-            case _GeneratedMetricsOperationKind.incRetriesScheduled:
+            case GeneratedMetricsOperationKind.incRetriesScheduled:
               counters.incRetriesScheduled();
-            case _GeneratedMetricsOperationKind.incCircuitOpens:
+            case GeneratedMetricsOperationKind.incCircuitOpens:
               counters.incCircuitOpens();
-            case _GeneratedMetricsOperationKind.incSignalClientStream:
+            case GeneratedMetricsOperationKind.incSignalClientStream:
               counters.incSignalClientStream();
-            case _GeneratedMetricsOperationKind.incSignalTimelineCallbacks:
+            case GeneratedMetricsOperationKind.incSignalTimelineCallbacks:
               counters.incSignalTimelineCallbacks();
-            case _GeneratedMetricsOperationKind.incSignalTimelineNewEvent:
+            case GeneratedMetricsOperationKind.incSignalTimelineNewEvent:
               counters.incSignalTimelineNewEvent();
-            case _GeneratedMetricsOperationKind.incSignalTimelineInsert:
+            case GeneratedMetricsOperationKind.incSignalTimelineInsert:
               counters.incSignalTimelineInsert();
-            case _GeneratedMetricsOperationKind
+            case GeneratedMetricsOperationKind
                 .incSignalFirstStreamCatchupTriggers:
               counters.incSignalFirstStreamCatchupTriggers();
-            case _GeneratedMetricsOperationKind.incSignalCatchupDeferred:
+            case GeneratedMetricsOperationKind.incSignalCatchupDeferred:
               counters.incSignalCatchupDeferred();
-            case _GeneratedMetricsOperationKind.incSignalCatchupCoalesce:
+            case GeneratedMetricsOperationKind.incSignalCatchupCoalesce:
               counters.incSignalCatchupCoalesce();
-            case _GeneratedMetricsOperationKind
+            case GeneratedMetricsOperationKind
                 .incSignalLiveScanDeferredInitialCatchupIncomplete:
               counters.incSignalLiveScanDeferredInitialCatchupIncomplete();
-            case _GeneratedMetricsOperationKind
+            case GeneratedMetricsOperationKind
                 .incSignalLiveScanDeferredCatchupInFlight:
               counters.incSignalLiveScanDeferredCatchupInFlight();
-            case _GeneratedMetricsOperationKind
+            case GeneratedMetricsOperationKind
                 .incSignalLiveScanDeferredInFlight:
               counters.incSignalLiveScanDeferredInFlight();
-            case _GeneratedMetricsOperationKind.incSignalNoTimeline:
+            case GeneratedMetricsOperationKind.incSignalNoTimeline:
               counters.incSignalNoTimeline();
-            case _GeneratedMetricsOperationKind.incWakeDetections:
+            case GeneratedMetricsOperationKind.incWakeDetections:
               counters.incWakeDetections();
-            case _GeneratedMetricsOperationKind.incSignalConnectivity:
+            case GeneratedMetricsOperationKind.incSignalConnectivity:
               counters.incSignalConnectivity();
-            case _GeneratedMetricsOperationKind.recordSignalLatency:
+            case GeneratedMetricsOperationKind.recordSignalLatency:
               counters.recordSignalLatencyMs(operation.latencyMs);
-            case _GeneratedMetricsOperationKind.incTrailingCatchups:
+            case GeneratedMetricsOperationKind.incTrailingCatchups:
               counters.incTrailingCatchups();
-            case _GeneratedMetricsOperationKind.incLiveScanDeferred:
+            case GeneratedMetricsOperationKind.incLiveScanDeferred:
               counters.incLiveScanDeferred();
-            case _GeneratedMetricsOperationKind.incLiveScanCoalesce:
+            case GeneratedMetricsOperationKind.incLiveScanCoalesce:
               counters.incLiveScanCoalesce();
-            case _GeneratedMetricsOperationKind.incLiveScanTrailingScheduled:
+            case GeneratedMetricsOperationKind.incLiveScanTrailingScheduled:
               counters.incLiveScanTrailingScheduled();
-            case _GeneratedMetricsOperationKind.incDbApplied:
+            case GeneratedMetricsOperationKind.incDbApplied:
               counters.incDbApplied();
-            case _GeneratedMetricsOperationKind.incDbIgnoredByVectorClock:
+            case GeneratedMetricsOperationKind.incDbIgnoredByVectorClock:
               counters.incDbIgnoredByVectorClock();
-            case _GeneratedMetricsOperationKind.incConflictsCreated:
+            case GeneratedMetricsOperationKind.incConflictsCreated:
               counters.incConflictsCreated();
-            case _GeneratedMetricsOperationKind.incDbMissingBase:
+            case GeneratedMetricsOperationKind.incDbMissingBase:
               counters.incDbMissingBase();
-            case _GeneratedMetricsOperationKind.incDbEntryLinkNoop:
+            case GeneratedMetricsOperationKind.incDbEntryLinkNoop:
               counters.incDbEntryLinkNoop();
-            case _GeneratedMetricsOperationKind.incStaleAttachmentPurges:
+            case GeneratedMetricsOperationKind.incStaleAttachmentPurges:
               counters.incStaleAttachmentPurges();
-            case _GeneratedMetricsOperationKind.incSelfEventsSuppressed:
+            case GeneratedMetricsOperationKind.incSelfEventsSuppressed:
               counters.incSelfEventsSuppressed();
-            case _GeneratedMetricsOperationKind.addLastIgnored:
+            case GeneratedMetricsOperationKind.addLastIgnored:
               counters.addLastIgnored(operation.ignoredEntry);
           }
           model.apply(operation);
