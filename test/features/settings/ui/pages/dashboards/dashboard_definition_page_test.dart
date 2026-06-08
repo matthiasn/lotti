@@ -1181,6 +1181,104 @@ void main() {
       },
     );
 
+    // copyDashboard's switch sends DashboardHealthItem, DashboardWorkoutItem,
+    // and DashboardSurveyItem through the `break` arm: unlike measurement items
+    // they are NOT looked up in JournalDb. These cases prove the copy succeeds
+    // for each non-measurement item type without ever querying a measurable.
+    final nonMeasurableCopyCases = <({String label, DashboardItem item})>[
+      (
+        label: 'health',
+        item: const DashboardHealthItem(
+          color: '#0000FF',
+          healthType: 'HealthDataType.WEIGHT',
+        ),
+      ),
+      (
+        label: 'workout',
+        item: const DashboardWorkoutItem(
+          workoutType: 'running',
+          displayName: 'Running calories',
+          color: '#0000FF',
+          valueType: WorkoutValueType.energy,
+        ),
+      ),
+      (
+        label: 'survey',
+        item: const DashboardSurveyItem(
+          colorsByScoreKey: {
+            'Positive Affect Score': '#00FF00',
+            'Negative Affect Score': '#FF0000',
+          },
+          surveyType: 'panasSurveyTask',
+          surveyName: 'PANAS',
+        ),
+      ),
+    ];
+
+    for (final copyCase in nonMeasurableCopyCases) {
+      testWidgets(
+        'copying a dashboard containing only a ${copyCase.label} item takes '
+        'the break branch and never queries a measurable',
+        (tester) async {
+          final formKey = GlobalKey<FormBuilderState>();
+
+          DashboardDefinition? saved;
+          when(
+            () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+          ).thenAnswer((invocation) async {
+            saved = invocation.positionalArguments.first as DashboardDefinition;
+            return 1;
+          });
+
+          final dashboard = testDashboardConfig.copyWith(
+            items: [copyCase.item],
+          );
+
+          await tester.pumpWidget(
+            makeTestableWidgetNoScroll(
+              DashboardDefinitionPage(
+                dashboard: dashboard,
+                formKey: formKey,
+              ),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          // Mark dirty so copyDashboard persists a meaningful dashboard.
+          await tester.enterText(
+            find.byKey(const Key('dashboard_name_field')),
+            'Copied ${copyCase.label} dashboard',
+          );
+          await tester.pump();
+
+          final copyButtonFinder = find.byIcon(Icons.copy);
+          await tester.dragUntilVisible(
+            copyButtonFinder,
+            find.byType(SingleChildScrollView),
+            const Offset(0, 500),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          await tester.tap(copyButtonFinder);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          // The dashboard was persisted and its single item survived the copy.
+          verify(
+            () => mockPersistenceLogic.upsertDashboardDefinition(any()),
+          ).called(1);
+          expect(saved!.items, hasLength(1));
+          expect(saved!.items.first, copyCase.item);
+
+          // The break branch means NO measurable lookup happened for these
+          // item types (only DashboardMeasurementItem hits getMeasurable…).
+          verifyNever(() => mockJournalDb.getMeasurableDataTypeById(any()));
+        },
+      );
+    }
+
     testWidgets(
       'reordering items via semantics reorders dashboardItems and persists',
       (tester) async {
