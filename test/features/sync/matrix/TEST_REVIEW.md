@@ -88,7 +88,8 @@ assigned test files.
 
 - [x] **[MED]** **`sync_event_processor_agent_handlers_test.dart` concurrency-blocker test (lines ~374–540)** uses `Completer`-based blocking (`blockerOneStarted`, `blockerOneRelease`, `blockerTwoStarted`, `blockerTwoRelease`) to prove bundle-cache isolation under concurrent `process()` calls. This is a sound technique but the Completer plumbing (~170 lines) dwarfs the 20-line assertion. Extract a `_ConcurrentBundleBlocker` test-utility class with `start()`, `awaitStarted()`, and `release()` methods to make the intent legible. **RESOLVED:** (assessed, no change) the Completer plumbing is the test's actual subject — it proves cache isolation under precisely interleaved concurrency; hiding the interleaving behind a utility class would obscure the schedule being asserted. The blocker pattern is documented inline.
 
-- [ ] **[LOW]** **`matrix_service_test.dart` `publishIncomingRunnerState is a no-op` test (line ~975)** asserts `expect(service.publishIncomingRunnerState, returnsNormally)`. This checks a method reference, not a call. Use `expect(() => service.publishIncomingRunnerState(), returnsNormally)`.
+- [x] **[LOW]** **`matrix_service_test.dart` `publishIncomingRunnerState is a no-op` test (line ~975)** asserts `expect(service.publishIncomingRunnerState, returnsNormally)`. This checks a method reference, not a call. Use `expect(() => service.publishIncomingRunnerState(), returnsNormally)`.
+  **RESOLVED:** Replaced the tear-off reference assertion (which never invoked the method) with `expect(() => service.publishIncomingRunnerState(), returnsNormally)` so the no-op-with-null-runner path is actually executed; the redundant tear-off line was dropped.
 
 ---
 
@@ -113,7 +114,8 @@ The following are genuine candidates — pure logic with algebraic invariants an
   - `SyncEntryLink` always has its own `vectorClock` in `coveredVectorClocks`
   - `SyncAgentEntity/Link` with null `originatingHostId` get host stamped
 
-- [ ] **[LOW]** **`_decodeSyncEventPayload` round-trip** (`sync_event_processor.dart:73–76`). The top-level isolate entry point (`base64 → utf8 → json`) is trivially pure. A Glados property over arbitrary JSON maps would verify: `_decodeSyncEventPayload(base64.encode(utf8.encode(json.encode(m)))) == m`. Very cheap to add and locks the compute-offload path against future changes.
+- [x] **[LOW]** **`_decodeSyncEventPayload` round-trip** (`sync_event_processor.dart:73–76`). The top-level isolate entry point (`base64 → utf8 → json`) is trivially pure. A Glados property over arbitrary JSON maps would verify: `_decodeSyncEventPayload(base64.encode(utf8.encode(json.encode(m)))) == m`. Very cheap to add and locks the compute-offload path against future changes.
+  **RESOLVED:** Added a `@visibleForTesting decodeSyncEventPayloadForTesting` seam (delegates to the private worker) and a tagged Glados property (`numRuns: 120`) in `sync_event_processor_test.dart` that generates JSON maps over strings/ints/bools/null/int-lists (with key collisions) and asserts `decode(base64(utf8(json(m)))) == m` for every case.
 
 *No Glados candidates are identified for `_applyMessage` or `_prepareForMessage` dispatch — these functions touch Matrix I/O, DB, and file system, placing them outside the Glados scope per project guidelines.*
 
@@ -137,7 +139,8 @@ The following are genuine candidates — pure logic with algebraic invariants an
 
 - [x] **[MED]** **`sync_event_processor.dart` `runWithDeferredMissingEntryNudges`** (`lines 702–717`). This top-level function has two branches: `processor.runtimeType != SyncEventProcessor` (bypasses wrapper) and `sequenceLogService == null` (bypasses wrapper). The mock-processor path is covered implicitly by callers that pass a `MockSyncEventProcessor`, but the `sequenceLogService == null` path is not explicitly tested. **RESOLVED:** (stale) the `runWithDeferredMissingEntryNudges` group explicitly tests both the mock-processor and absent-sequence-log fallbacks.
 
-- [ ] **[LOW]** **`matrix_service.dart` `discoverExistingSyncRooms` getter** (`line 222`). The method delegates to `_roomManager.discoverExistingSyncRooms()`. No test verifies the delegation.
+- [x] **[LOW]** **`matrix_service.dart` `discoverExistingSyncRooms` getter** (`line 222`). The method delegates to `_roomManager.discoverExistingSyncRooms()`. No test verifies the delegation.
+  **RESOLVED:** Added a delegation test that stubs `roomManager.discoverExistingSyncRooms()` to return a `SyncRoomCandidate` list, then asserts `MatrixService.discoverExistingSyncRooms()` returns it unchanged and calls the room manager exactly once.
 
 ---
 
@@ -153,7 +156,8 @@ The following are genuine candidates — pure logic with algebraic invariants an
 
 - [x] **[MED]** **`sync_event_processor_agent_handlers_test.dart` — the concurrency-blocker test uses unresolved `Future` chains** (two `Completer`-blocked `process()` calls running concurrently). These are real async waits by design, but the test releases the blockers sequentially with `pumpEventQueue()` gaps. The test infrastructure documentation warns that `pumpEventQueue()` inside `testWidgets` can be slow; verifying that the non-widget service test is using `async.flushMicrotasks()` or clean `await` chains instead would be worthwhile. **Estimated impact: negligible unless this causes occasional flakiness from scheduling non-determinism.** **RESOLVED:** (assessed, no change) the test is a plain `test()` (not `testWidgets`), where `pumpEventQueue()` is just a bounded event-loop drain; the awaited Completer chains are deterministic.
 
-- [ ] **[LOW]** **`matrix_message_sender_test.dart` second Glados test (`numRuns: 140`)** covers bundle scenarios with 0–8 children and 6 child kinds. The scenario space is large; `numRuns: 100` would still give strong coverage and save ~28% of the Glados CI budget for this property. Revisit after confirming no regression with reduced runs.
+- [x] **[LOW]** **`matrix_message_sender_test.dart` second Glados test (`numRuns: 140`)** covers bundle scenarios with 0–8 children and 6 child kinds. The scenario space is large; `numRuns: 100` would still give strong coverage and save ~28% of the Glados CI budget for this property. Revisit after confirming no regression with reduced runs.
+  **RESOLVED:** Lowered the bundle Glados property from `numRuns: 140` to `110` (~21% reduction). 110 was chosen over the suggested 100 to honor the repo's Glados convention of `numRuns ∈ [80,180] ≠ 100`; coverage of the 0–8 child × 6-kind space stays strong.
 
 ---
 

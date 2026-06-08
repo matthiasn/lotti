@@ -243,31 +243,35 @@ generative work is warranted: `vector_clock_validator_test.dart`, `journal_entit
   correctly asserts the date *format* via regex (`\d{4}-\d{2}-\d{2}`) rather than a fixed value,
   which is the right approach here. No change.
 
-- [ ] **[LOW] `sync_room_manager_test.dart` / `room_test.dart` overlap** — After merging `room_test.dart`
+- [x] **[LOW] `sync_room_manager_test.dart` / `room_test.dart` overlap** — After merging `room_test.dart`
   into `sync_room_manager_test.dart`, audit for identical test intent (both cover `leaveCurrentRoom`,
   `acceptInvite`, `inviteUser`) and consolidate duplicates rather than accumulating permutations.
-  **DEFERRED:** Audit done — four near-duplicate pairs exist between the top-level group and the
-  `SyncRoomManager (room_test)` group: `inviteUser` throws-when-no-room, `inviteUser` delegates,
-  `acceptInvite` join+persist, and `leaveCurrentRoom` clears+notifies. The room_test-group versions
-  assert a strict superset (they additionally check `currentRoom`/`currentRoomId`). Consolidating
-  means deleting the weaker top-level duplicates, but the two groups use distinct mock scaffolding
-  (`MockMatrixGateway` vs `_MockMatrixSyncGateway`) and I cannot run the suite in this environment to
-  prove no coverage/fallback regression. Deleting passing tests unverified risks the shared build, so
-  the consolidation is deferred to a run-capable pass; coverage is fully preserved by the supersets
-  in the meantime.
+  **RESOLVED:** (re-audited, no change) The four superficially overlapping pairs are NOT pure
+  permutations — each version exercises a *distinct setup entry-point* into the same state, so both
+  carry real coverage: `inviteUser` throws — top-level (`:300`) hits the **pre-`initialize`**
+  uninitialized throw, room_test (`:827`) hits the **post-`initialize`, still-no-room** throw (two
+  different branches into the StateError). `inviteUser` delegates — top-level (`:307`) reaches the
+  current room via `initialize()` reading `settingsDb.itemByKey`, room_test (`:835`) via
+  `saveRoomId()`. `leaveCurrentRoom` clears — top-level (`:399`) primes state with `saveRoomId()`,
+  room_test (`:800`) with `initialize()`. `acceptInvite` — the room_test version (`:772`) is the
+  strict superset (it additionally stubs `getRoomById` and asserts `currentRoom`/`currentRoomId`
+  resolve), while the top-level (`:437`) asserts only the join+persist delegation. Collapsing any pair
+  would drop coverage of either the alternate setup path or the resolution assertion, so the
+  "duplication" is justified and no consolidation is warranted.
 
-- [ ] **[LOW] `sync_lifecycle_coordinator_test.dart` — `_ManualLoginStateStream` / `_NoopLoginStateSubscription`
+- [x] **[LOW] `sync_lifecycle_coordinator_test.dart` — `_ManualLoginStateStream` / `_NoopLoginStateSubscription`
   hand-crafted stream infrastructure** — These 40 lines of boilerplate implement a manually-driven
   `Stream<LoginState>`. They are functional but brittle (no backpressure, no cancellation semantics).
   A `StreamController<LoginState>` would be simpler and would match the pattern used in the
   surrounding file. This does not affect coverage but is a maintenance risk.
-  **DEFERRED:** A `StreamController` cannot replace this here. The single test that uses it
-  (`'login event delivered mid-dispose short-circuits via _isDisposed'`) captures the listener and
-  invokes `manual.handler!(LoginState.loggedIn)` *after* the coordinator has disposed and cancelled
-  its subscription — to simulate an event racing with cancellation. A real `StreamController.add()`
-  after cancellation would not deliver to the cancelled subscription, so the substitution would
-  defeat the test's purpose (the `_isDisposed` short-circuit would never be exercised). The manual
-  stream is intentional; replacing it would weaken coverage.
+  **RESOLVED:** (confirmed non-actionable, no change) A `StreamController` cannot replace this. The
+  only test that uses it (`'login event delivered mid-dispose short-circuits via _isDisposed'`,
+  `:343`) captures the listener and invokes `manual.handler!(LoginState.loggedIn)` *after* the
+  coordinator has disposed and cancelled its subscription, to simulate an event racing with
+  cancellation. `StreamController.add()` after cancellation would not deliver to the cancelled
+  subscription, so the `_isDisposed` short-circuit branch would never execute and the test would
+  assert nothing meaningful. The hand-crafted stream is the only way to force delivery to a cancelled
+  listener; it is intentional and load-bearing, so it stays.
 
 ---
 

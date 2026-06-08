@@ -76,6 +76,13 @@ Map<String, dynamic> _decodeSyncEventPayload(String raw) {
   return json.decode(decoded) as Map<String, dynamic>;
 }
 
+/// Test seam for [_decodeSyncEventPayload], the `compute` worker entry point.
+/// Exposes the pure base64→utf8→json decode so the compute-offload path can be
+/// pinned without spinning up a background isolate.
+@visibleForTesting
+Map<String, dynamic> decodeSyncEventPayloadForTesting(String raw) =>
+    _decodeSyncEventPayload(raw);
+
 /// Decodes timeline events from Matrix and persists them locally.
 class SyncEventProcessor {
   SyncEventProcessor({

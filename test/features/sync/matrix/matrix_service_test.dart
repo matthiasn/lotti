@@ -12,6 +12,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/matrix/pipeline/matrix_stream_consumer.dart';
 import 'package:lotti/features/sync/matrix/stats.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
+import 'package:lotti/features/sync/matrix/sync_room_discovery.dart';
 import 'package:lotti/features/sync/matrix/sync_room_manager.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
@@ -955,13 +956,35 @@ void main() {
       controller.close();
     });
 
+    // Covers line 222: discoverExistingSyncRooms delegates to the room
+    // manager and returns its result unchanged.
+    test('discoverExistingSyncRooms delegates to room manager', () async {
+      const candidate = SyncRoomCandidate(
+        roomId: '!room:server',
+        roomName: 'Lotti Sync',
+        createdAt: null,
+        memberCount: 2,
+        hasStateMarker: true,
+        hasLottiContent: true,
+      );
+      when(
+        () => roomManager.discoverExistingSyncRooms(),
+      ).thenAnswer((_) async => [candidate]);
+
+      final result = await createService().discoverExistingSyncRooms();
+
+      expect(result, [candidate]);
+      verify(() => roomManager.discoverExistingSyncRooms()).called(1);
+    });
+
     // Covers lines 287-288: publishIncomingRunnerState is a no-op when
     // incomingKeyVerificationRunner is null (default).
     test(
       'publishIncomingRunnerState is a no-op when runner is null',
       () {
         final service = createService();
-        // No runner set — should not throw.
+        // No runner set — returnsNormally invokes the passed tear-off, so this
+        // genuinely calls publishIncomingRunnerState and asserts it doesn't throw.
         expect(service.publishIncomingRunnerState, returnsNormally);
         expect(service.incomingKeyVerificationRunner, isNull);
       },

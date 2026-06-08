@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -29,6 +30,114 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
 import 'sync_event_processor_test_helpers.dart';
+
+// --- Glados generators for the _decodeSyncEventPayload round-trip property. ---
+
+/// Fixed key vocabulary for generated JSON maps. Using a small slot set (with a
+/// deliberate duplicate) exercises both distinct keys and key collisions while
+/// keeping keys JSON-safe and stable across shrinks.
+enum _GeneratedJsonKeySlot { id, type, count, flag, nested, idAgain }
+
+String _generatedJsonKey(_GeneratedJsonKeySlot slot) => switch (slot) {
+  _GeneratedJsonKeySlot.id => 'id',
+  _GeneratedJsonKeySlot.type => 'type',
+  _GeneratedJsonKeySlot.count => 'count',
+  _GeneratedJsonKeySlot.flag => 'flag',
+  _GeneratedJsonKeySlot.nested => 'nested',
+  _GeneratedJsonKeySlot.idAgain => 'id',
+};
+
+/// The JSON value shapes the generator can emit. `compute(_decodeSyncEventPayload)`
+/// must round-trip every JSON-representable value, so we cover primitives, null,
+/// and one level of list nesting.
+enum _GeneratedJsonValueKind { text, integer, boolean, nullValue, intList }
+
+class _GeneratedJsonEntry {
+  const _GeneratedJsonEntry({
+    required this.keySlot,
+    required this.valueKind,
+    required this.intValue,
+    required this.boolValue,
+    required this.listValues,
+  });
+
+  final _GeneratedJsonKeySlot keySlot;
+  final _GeneratedJsonValueKind valueKind;
+  final int intValue;
+  final bool boolValue;
+  final List<int> listValues;
+
+  String get key => _generatedJsonKey(keySlot);
+
+  Object? get value => switch (valueKind) {
+    _GeneratedJsonValueKind.text => 'v$intValue',
+    _GeneratedJsonValueKind.integer => intValue,
+    _GeneratedJsonValueKind.boolean => boolValue,
+    _GeneratedJsonValueKind.nullValue => null,
+    _GeneratedJsonValueKind.intList => listValues,
+  };
+
+  @override
+  String toString() => '_GeneratedJsonEntry(key: $key, value: $value)';
+}
+
+class _GeneratedJsonScenario {
+  const _GeneratedJsonScenario({required this.entries});
+
+  final List<_GeneratedJsonEntry> entries;
+
+  /// Builds the JSON map. Later entries with the same key win, matching the
+  /// last-write-wins semantics of `json.decode` on duplicate object keys.
+  Map<String, dynamic> get jsonMap {
+    final out = <String, dynamic>{};
+    for (final entry in entries) {
+      out[entry.key] = entry.value;
+    }
+    return out;
+  }
+
+  @override
+  String toString() => '_GeneratedJsonScenario(entries: $entries)';
+}
+
+extension _AnyGeneratedJson on glados.Any {
+  glados.Generator<_GeneratedJsonKeySlot> get jsonKeySlot =>
+      glados.AnyUtils(this).choose(_GeneratedJsonKeySlot.values);
+
+  glados.Generator<_GeneratedJsonValueKind> get jsonValueKind =>
+      glados.AnyUtils(this).choose(_GeneratedJsonValueKind.values);
+
+  glados.Generator<_GeneratedJsonEntry> get jsonEntry =>
+      glados.CombinableAny(this).combine5(
+        jsonKeySlot,
+        jsonValueKind,
+        glados.IntAnys(this).intInRange(-1000, 1000),
+        glados.BoolAny(this).bool,
+        glados.ListAnys(this).listWithLengthInRange(
+          0,
+          5,
+          glados.IntAnys(this).intInRange(-1000, 1000),
+        ),
+        (
+          _GeneratedJsonKeySlot keySlot,
+          _GeneratedJsonValueKind valueKind,
+          int intValue,
+          bool boolValue,
+          List<int> listValues,
+        ) => _GeneratedJsonEntry(
+          keySlot: keySlot,
+          valueKind: valueKind,
+          intValue: intValue,
+          boolValue: boolValue,
+          listValues: listValues,
+        ),
+      );
+
+  glados.Generator<_GeneratedJsonScenario> get jsonScenario =>
+      glados.ListAnys(this)
+          .listWithLengthInRange(0, 8, jsonEntry)
+          .map((entries) => _GeneratedJsonScenario(entries: entries));
+}
 
 void main() {
   setUpAll(registerSyncProcessorFallbacks);
@@ -2111,4 +2220,24 @@ void main() {
       ).called(1);
     },
   );
+
+  group('_decodeSyncEventPayload (compute worker entry point)', () {
+    glados.Glados(
+      glados.any.jsonScenario,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'round-trips any JSON map through base64 -> utf8 -> json',
+      (scenario) {
+        final original = scenario.jsonMap;
+        // The compute worker is fed exactly this encoding by prepare(): the
+        // Matrix event body is base64(utf8(json(...))).
+        final encoded = base64.encode(utf8.encode(json.encode(original)));
+
+        final decoded = decodeSyncEventPayloadForTesting(encoded);
+
+        expect(decoded, equals(original), reason: '$scenario');
+      },
+      tags: 'glados',
+    );
+  });
 }
