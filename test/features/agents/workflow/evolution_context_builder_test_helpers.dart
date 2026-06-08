@@ -1,7 +1,6 @@
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 
-
 class GeneratedEvolutionContextCounts {
   const GeneratedEvolutionContextCounts({
     required this.reportCount,
