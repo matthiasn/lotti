@@ -160,6 +160,13 @@ void main() {
       // Self is excluded from the "known nodes" section because it already
       // appears at the top of the page.
       expect(find.text('Studio Mac'), findsOneWidget); // only in the field
+
+      // The peer tile subtitle joins platform + localized capability labels.
+      // "Other Mac" advertises ollamaLlm, so its subtitle must carry the
+      // localized capability string (not the raw enum name); "Linux Box" has
+      // no capabilities so its subtitle is the bare platform.
+      expect(find.text('linux · Ollama LLM'), findsOneWidget);
+      expect(find.text('linux'), findsOneWidget);
     },
   );
 
