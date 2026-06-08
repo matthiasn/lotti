@@ -1012,17 +1012,11 @@ void main() {
   });
 
   group('AudioRecorderController - Integration Tests', () {
-    test(
-      'AudioRecorderController can be instantiated with mocked dependencies',
-      () {
-        // This test verifies that the AudioRecorderController can be created
-        // with our mocked dependencies
-        expect(
-          () => container.read(audioRecorderControllerProvider),
-          returnsNormally,
-        );
-      },
-    );
+    // Note: a former 'can be instantiated with mocked dependencies' smoke test
+    // was removed here. It only asserted `returnsNormally` on provider
+    // creation, which is already (and more meaningfully) covered by the
+    // 'should initialize with correct initial state' test that asserts every
+    // field of the initial AudioRecorderState.
 
     test('AudioRecorderController handles missing permissions', () async {
       // This test verifies that when the AudioRecorder has no permission
