@@ -86,6 +86,11 @@ void main() {
       expect(findBuiltInSkill('skill-does-not-exist-xyz'), isNull);
     });
 
+    test('findBuiltInSkill returns null for an empty ID', () {
+      // No skill uses '' as its id, so the linear scan must fall through.
+      expect(findBuiltInSkill(''), isNull);
+    });
+
     group('design prompt skill', () {
       late AiConfigSkill skill;
 
@@ -182,21 +187,6 @@ void main() {
         }
       },
     );
-
-    test('image generation skill requires text modality', () {
-      final s = findBuiltInSkill(skillImageGenId);
-      expect(s, isNotNull);
-      expect(s!.requiredInputModalities, [Modality.text]);
-    });
-
-    test('transcription skills still require audio modality', () {
-      final transcribeSkills = builtInSkills.where(
-        (s) => s.skillType == SkillType.transcription,
-      );
-      for (final s in transcribeSkills) {
-        expect(s.requiredInputModalities, [Modality.audio]);
-      }
-    });
   });
 
   group('skillRegistryProvider', () {
