@@ -9,7 +9,8 @@ typedef ProjectTaskRollupCounts = ({
 /// Project query surface for [JournalDb]: project lists, task↔project
 /// resolution via the denormalized `project_id` column, and rollup
 /// aggregates.
-mixin _JournalDbProjectQueries on _$JournalDb, _JournalDbConfigFlags {
+mixin _JournalDbProjectQueries
+    on _$JournalDb, _JournalDbConfigFlags, _JournalDbJournalQueries {
   /// Updates the denormalized `project_id` column for a task row.
   ///
   /// Pass [projectId] = null to clear the project association.
@@ -86,6 +87,38 @@ mixin _JournalDbProjectQueries on _$JournalDb, _JournalDbConfigFlags {
       );
     }
     return projectIds;
+  }
+
+  /// Maps each id in [taskIds] to its denormalized `project_id`, omitting
+  /// tasks with no project association.
+  ///
+  /// Reads the `idx_journal_project_id` partial index via a plain id-IN
+  /// lookup, chunked to stay under SQLite's bind-variable cap. Unlike
+  /// [getProjectIdsForTaskIds] (which flattens to a deduplicated set), this
+  /// preserves the per-task mapping needed to resolve each task's project.
+  Future<Map<String, String>> getProjectIdMapForTasks(
+    Set<String> taskIds,
+  ) async {
+    if (taskIds.isEmpty) return const <String, String>{};
+    final idList = taskIds.toList(growable: false);
+    final result = <String, String>{};
+    for (var i = 0; i < idList.length; i += _sqliteInListChunk) {
+      final end = (i + _sqliteInListChunk).clamp(0, idList.length);
+      final chunk = idList.sublist(i, end);
+      final rows =
+          await (selectOnly(journal)
+                ..addColumns([journal.id, journal.projectId])
+                ..where(journal.id.isIn(chunk) & journal.projectId.isNotNull()))
+              .get();
+      for (final row in rows) {
+        final id = row.read(journal.id);
+        final projectId = row.read(journal.projectId);
+        if (id != null && projectId != null) {
+          result[id] = projectId;
+        }
+      }
+    }
+    return result;
   }
 
   /// Returns all visible, non-deleted projects across categories.
@@ -190,15 +223,72 @@ mixin _JournalDbProjectQueries on _$JournalDb, _JournalDbConfigFlags {
     return res.map(fromDbEntity).whereType<Task>().toList();
   }
 
+  // Microtask-coalescing state for `getProjectForTask`. The
+  // `projectForTaskProvider` Riverpod `FutureProvider.autoDispose.family`
+  // mounts one provider per visible task row, so a task list fans out one
+  // project lookup per row. In the super-slow log this showed up as a
+  // cluster of `journal ⋈ linked_entries … ORDER BY … LIMIT 1` selects
+  // (each carrying a `USE TEMP B-TREE FOR ORDER BY`) queued behind one
+  // another. The coalescer merges every concurrent caller in one microtask
+  // wave into a single denormalized `project_id` lookup plus one bulk
+  // project fetch; each caller pulls its task's project out of the map.
+  _PendingProjectForTaskWave? _pendingProjectForTaskWave;
+
+  /// Single-shot fetch executed by the project-for-task coalescer: resolves
+  /// `taskId → project_id` from the denormalized column, then loads the
+  /// distinct projects through the private-status-filtered bulk read.
+  ///
+  /// Extracted as a protected seam so tests can count DB round-trips and
+  /// assert that concurrent callers collapse into one wave.
+  @protected
+  @visibleForTesting
+  Future<Map<String, ProjectEntry>> runProjectForTaskFetch(
+    Set<String> taskIds,
+  ) async {
+    final projectIdByTask = await getProjectIdMapForTasks(taskIds);
+    if (projectIdByTask.isEmpty) return const <String, ProjectEntry>{};
+    final projects = await getJournalEntitiesForIdsUnordered(
+      projectIdByTask.values.toSet(),
+    );
+    final projectById = <String, ProjectEntry>{
+      for (final project in projects)
+        if (project is ProjectEntry) project.meta.id: project,
+    };
+    return <String, ProjectEntry>{
+      for (final entry in projectIdByTask.entries)
+        entry.key: ?projectById[entry.value],
+    };
+  }
+
+  Future<ProjectEntry?> _coalesceProjectForTask(String taskId) {
+    final wave = _pendingProjectForTaskWave ??= _PendingProjectForTaskWave();
+    wave.mergedIds.add(taskId);
+    if (!wave.scheduled) {
+      wave.scheduled = true;
+      scheduleMicrotask(() async {
+        _pendingProjectForTaskWave = null;
+        try {
+          wave.completer.complete(await runProjectForTaskFetch(wave.mergedIds));
+        } catch (error, stack) {
+          wave.completer.completeError(error, stack);
+        }
+      });
+    }
+    return wave.completer.future.then((map) => map[taskId]);
+  }
+
   /// Returns the project linked to a task, or null if unlinked.
-  Future<ProjectEntry?> getProjectForTask(String taskId) async {
-    final privateStatuses = await _visiblePrivateStatuses();
-    final res = await projectForTask(taskId).get();
-    if (res.isEmpty) return null;
-    final entity = fromDbEntity(res.first);
-    if (entity is! ProjectEntry) return null;
-    if (!privateStatuses.contains(entity.meta.private ?? false)) return null;
-    return entity;
+  ///
+  /// Resolves through the denormalized, indexed `journal.project_id` column
+  /// — kept in lock-step with the latest non-hidden ProjectLink by
+  /// `upsertEntryLink` and `upsertJournalDbEntity` via `_projectIdSubquery`,
+  /// the same ordering the old `journal ⋈ linked_entries` join used — and
+  /// coalesces concurrent per-row callers into one wave (see
+  /// [_pendingProjectForTaskWave]). The project's own private flag is still
+  /// honored: a project hidden by the private gate resolves to null because
+  /// the bulk read filters it out.
+  Future<ProjectEntry?> getProjectForTask(String taskId) {
+    return _coalesceProjectForTask(taskId);
   }
 
   /// Returns the existing ProjectLink for a task, or null.
@@ -207,4 +297,15 @@ mixin _JournalDbProjectQueries on _$JournalDb, _JournalDbConfigFlags {
     if (res.isEmpty) return null;
     return entryLinkFromLinkedDbEntry(res.first);
   }
+}
+
+/// In-flight coalescing wave for `getProjectForTask`. Concurrent callers
+/// within the same microtask merge their task ids; the wave fires one
+/// denormalized `project_id` lookup plus one bulk project fetch, and each
+/// caller pulls its task's project out of the returned map.
+class _PendingProjectForTaskWave {
+  final Set<String> mergedIds = <String>{};
+  bool scheduled = false;
+  final Completer<Map<String, ProjectEntry>> completer =
+      Completer<Map<String, ProjectEntry>>.sync();
 }
