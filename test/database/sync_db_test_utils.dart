@@ -48,3 +48,20 @@ extension AnyGeneratedOutboxStatus on Any {
   Generator<GeneratedOutboxStatus> get generatedOutboxStatus =>
       choose(GeneratedOutboxStatus.values);
 }
+
+/// Deletes every row from every table in [db] **without** recreating the
+/// schema, so a single `setUpAll`-opened in-memory [SyncDatabase] can be reused
+/// across all tests in a group/file while each test still starts from an empty
+/// database. The 24-step migration ladder then runs once per file instead of
+/// once per test. (Unlike `JournalDb`, `SyncDatabase` keeps no in-memory cache,
+/// so a table wipe fully resets its state.)
+///
+/// Foreign-key enforcement is toggled off for the sweep so delete order is
+/// irrelevant, and `db.allTables` guarantees no table is missed.
+Future<void> clearAllSyncTables(SyncDatabase db) async {
+  await db.customStatement('PRAGMA foreign_keys = OFF');
+  for (final table in db.allTables) {
+    await db.customStatement('DELETE FROM ${table.actualTableName}');
+  }
+  await db.customStatement('PRAGMA foreign_keys = ON');
+}
