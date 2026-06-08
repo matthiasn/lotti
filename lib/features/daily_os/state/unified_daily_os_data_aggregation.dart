@@ -574,14 +574,18 @@ int calculateDayEndHour(
   // Find max end time across all planned slots
   for (final slot in planned) {
     // If entry ends on the next day (crosses midnight), treat as hour 24
-    final endHour = !slot.endTime.isBefore(nextDay) ? 24 : slot.endTime.hour + 1;
+    final endHour = !slot.endTime.isBefore(nextDay)
+        ? 24
+        : slot.endTime.hour + 1;
     if (endHour > latest) latest = endHour;
   }
 
   // Find max end time across all actual slots
   for (final slot in actual) {
     // If entry ends on the next day (crosses midnight), treat as hour 24
-    final endHour = !slot.endTime.isBefore(nextDay) ? 24 : slot.endTime.hour + 1;
+    final endHour = !slot.endTime.isBefore(nextDay)
+        ? 24
+        : slot.endTime.hour + 1;
     if (endHour > latest) latest = endHour;
   }
 

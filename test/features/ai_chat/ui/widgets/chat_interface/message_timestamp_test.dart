@@ -76,27 +76,47 @@ void main() {
       glados.IntAnys(glados.any).intInRange(0, 24),
       glados.IntAnys(glados.any).intInRange(0, 60),
       glados.ExploreConfig(numRuns: 120),
-    ).test('formatted clock is well-formed HH:mm for any wall-clock time', (
-      hour,
-      minute,
-    ) {
-      final ts = DateTime(2024, 3, 15, hour, minute);
-      final label = _formatTime(ts);
+    ).test(
+      'formatted clock is well-formed HH:mm for any wall-clock time',
+      (
+        hour,
+        minute,
+      ) {
+        final ts = DateTime(2024, 3, 15, hour, minute);
+        final label = _formatTime(ts);
 
-      expect(label.length, 5, reason: 'label "$label" is not 5 chars');
-      expect(label[2], ':', reason: 'separator missing in "$label"');
+        expect(label.length, 5, reason: 'label "$label" is not 5 chars');
+        expect(label[2], ':', reason: 'separator missing in "$label"');
 
-      final parts = label.split(':');
-      expect(parts.length, 2);
-      expect(parts[0].length, 2, reason: 'hour field not zero-padded: "$label"');
-      expect(parts[1].length, 2, reason: 'min field not zero-padded: "$label"');
+        final parts = label.split(':');
+        expect(parts.length, 2);
+        expect(
+          parts[0].length,
+          2,
+          reason: 'hour field not zero-padded: "$label"',
+        );
+        expect(
+          parts[1].length,
+          2,
+          reason: 'min field not zero-padded: "$label"',
+        );
 
-      final parsedHour = int.parse(parts[0]);
-      final parsedMinute = int.parse(parts[1]);
-      expect(parsedHour, hour);
-      expect(parsedMinute, minute);
-      expect(parsedHour, inInclusiveRange(0, 23), reason: 'hour out of range');
-      expect(parsedMinute, inInclusiveRange(0, 59), reason: 'min out of range');
-    }, tags: 'glados');
+        final parsedHour = int.parse(parts[0]);
+        final parsedMinute = int.parse(parts[1]);
+        expect(parsedHour, hour);
+        expect(parsedMinute, minute);
+        expect(
+          parsedHour,
+          inInclusiveRange(0, 23),
+          reason: 'hour out of range',
+        );
+        expect(
+          parsedMinute,
+          inInclusiveRange(0, 59),
+          reason: 'min out of range',
+        );
+      },
+      tags: 'glados',
+    );
   });
 }

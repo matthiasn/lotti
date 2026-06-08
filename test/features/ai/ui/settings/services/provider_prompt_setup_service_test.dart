@@ -35,7 +35,10 @@ void main() {
       glados.IntAnys(glados.any).intInRange(0, 1 << 12),
       glados.IntAnys(glados.any).intInRange(0, 1 << 12),
       glados.ExploreConfig(numRuns: 120),
-    ).test('totalModels == modelsCreated + modelsVerified', (created, verified) {
+    ).test('totalModels == modelsCreated + modelsVerified', (
+      created,
+      verified,
+    ) {
       final result = GeminiFtueResult(
         modelsCreated: created,
         modelsVerified: verified,

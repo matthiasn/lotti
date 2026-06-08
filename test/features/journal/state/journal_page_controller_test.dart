@@ -210,77 +210,89 @@ void main() {
           glados.any,
         ).intInRange(0, JournalPageController.pageSize + 1),
         glados.ExploreConfig(numRuns: 120),
-      ).test('next key is the cumulative end offset for full-page chains', (
-        numFullPages,
-        lastPageLen,
-      ) {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(false).notifier,
-          );
-          settle(async);
-          controller.debugPostFilterNextRawOffset = null;
+      ).test(
+        'next key is the cumulative end offset for full-page chains',
+        (
+          numFullPages,
+          lastPageLen,
+        ) {
+          fakeAsync((async) {
+            final controller = container.read(
+              journalPageControllerProvider(false).notifier,
+            );
+            settle(async);
+            controller.debugPostFilterNextRawOffset = null;
 
-          const pageSize = JournalPageController.pageSize;
+            const pageSize = JournalPageController.pageSize;
 
-          // Build a chain of [numFullPages] full pages followed by one page
-          // of [lastPageLen] items, with keys = cumulative start offsets.
-          final pages = <List<JournalEntity>>[
-            for (var i = 0; i < numFullPages; i++) page(pageSize),
-            page(lastPageLen),
-          ];
-          final keys = <int>[];
-          var offset = 0;
-          for (final p in pages) {
-            keys.add(offset);
-            offset += p.length;
-          }
+            // Build a chain of [numFullPages] full pages followed by one page
+            // of [lastPageLen] items, with keys = cumulative start offsets.
+            final pages = <List<JournalEntity>>[
+              for (var i = 0; i < numFullPages; i++) page(pageSize),
+              page(lastPageLen),
+            ];
+            final keys = <int>[];
+            var offset = 0;
+            for (final p in pages) {
+              keys.add(offset);
+              offset += p.length;
+            }
 
-          final state = PagingState<int, JournalEntity>(
-            keys: keys,
-            pages: pages,
-          );
-          final next = controller.debugGetNextPageKey(state);
+            final state = PagingState<int, JournalEntity>(
+              keys: keys,
+              pages: pages,
+            );
+            final next = controller.debugGetNextPageKey(state);
 
-          if (lastPageLen < pageSize) {
-            // Short last page -> data exhausted -> no further page.
-            expect(next, isNull, reason: 'len=$lastPageLen pages=$numFullPages');
-          } else {
-            // Every page full -> next key is the exclusive end offset, which
-            // equals lastKey + lastPage.length and the total item count.
-            final totalItems = pages.fold<int>(0, (sum, p) => sum + p.length);
-            expect(next, totalItems, reason: 'pages=${numFullPages + 1}');
-            expect(next, keys.last + pages.last.length);
-          }
-        });
-      }, tags: 'glados');
+            if (lastPageLen < pageSize) {
+              // Short last page -> data exhausted -> no further page.
+              expect(
+                next,
+                isNull,
+                reason: 'len=$lastPageLen pages=$numFullPages',
+              );
+            } else {
+              // Every page full -> next key is the exclusive end offset, which
+              // equals lastKey + lastPage.length and the total item count.
+              final totalItems = pages.fold<int>(0, (sum, p) => sum + p.length);
+              expect(next, totalItems, reason: 'pages=${numFullPages + 1}');
+              expect(next, keys.last + pages.last.length);
+            }
+          });
+        },
+        tags: 'glados',
+      );
 
       glados.Glados(
         glados.IntAnys(glados.any).intInRange(0, 100000),
         glados.ExploreConfig(numRuns: 120),
-      ).test('a pending post-filter offset wins and is consumed exactly once', (
-        rawOffset,
-      ) {
-        fakeAsync((async) {
-          final controller = container.read(
-            journalPageControllerProvider(false).notifier,
-          );
-          settle(async);
+      ).test(
+        'a pending post-filter offset wins and is consumed exactly once',
+        (
+          rawOffset,
+        ) {
+          fakeAsync((async) {
+            final controller = container.read(
+              journalPageControllerProvider(false).notifier,
+            );
+            settle(async);
 
-          const pageSize = JournalPageController.pageSize;
-          final fullState = PagingState<int, JournalEntity>(
-            keys: const [0],
-            pages: [page(pageSize)],
-          );
+            const pageSize = JournalPageController.pageSize;
+            final fullState = PagingState<int, JournalEntity>(
+              keys: const [0],
+              pages: [page(pageSize)],
+            );
 
-          controller.debugPostFilterNextRawOffset = rawOffset;
-          // First call returns the override and consumes it.
-          expect(controller.debugGetNextPageKey(fullState), rawOffset);
-          expect(controller.debugPostFilterNextRawOffset, isNull);
-          // Second call falls back to the computed cumulative key.
-          expect(controller.debugGetNextPageKey(fullState), pageSize);
-        });
-      }, tags: 'glados');
+            controller.debugPostFilterNextRawOffset = rawOffset;
+            // First call returns the override and consumes it.
+            expect(controller.debugGetNextPageKey(fullState), rawOffset);
+            expect(controller.debugPostFilterNextRawOffset, isNull);
+            // Second call falls back to the computed cumulative key.
+            expect(controller.debugGetNextPageKey(fullState), pageSize);
+          });
+        },
+        tags: 'glados',
+      );
     });
 
     group('Initialization', () {
