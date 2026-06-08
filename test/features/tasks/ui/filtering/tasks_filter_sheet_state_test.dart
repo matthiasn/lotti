@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' show AnyUtils, Glados, any;
+import 'package:glados/glados.dart' show AnyUtils, Glados, ListAnys, any;
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
@@ -157,6 +157,37 @@ void main() {
           ),
           internalId,
         );
+      },
+      tags: 'glados',
+    );
+
+    // Property test for the set transformation that backs
+    // `_prioritySetToDisplayIds` in `tasks_filter_sheet_state.dart`: the
+    // production code maps each internal priority via `toDisplayId` and drops
+    // null results. Whatever arbitrary subset of internal IDs (including the
+    // unrecognised `UNKNOWN` sentinel) is fed in, the resulting display ID set
+    // must always be a subset of the four valid display IDs.
+    Glados(
+      any.list(any.choose(const ['P0', 'P1', 'P2', 'P3', 'UNKNOWN'])),
+    ).test(
+      'display-id mapping yields only valid display IDs for any input subset',
+      (internalList) {
+        final internals = internalList.toSet();
+        final displayIds = <String>{
+          for (final internal in internals)
+            ?TasksFilterPriorityIds.toDisplayId(internal),
+        };
+
+        const validDisplayIds = {'p0', 'p1', 'p2', 'p3'};
+        expect(displayIds.difference(validDisplayIds), isEmpty);
+
+        // Independent oracle: every recognised internal ID survives as its
+        // lower-cased display ID, and the only entry ever dropped is the
+        // unrecognised sentinel.
+        final expected = {
+          for (final i in internals.difference({'UNKNOWN'})) i.toLowerCase(),
+        };
+        expect(displayIds, expected);
       },
       tags: 'glados',
     );
