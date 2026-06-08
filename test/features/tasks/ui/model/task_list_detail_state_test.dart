@@ -532,6 +532,79 @@ void main() {
     });
 
     test(
+      'dueDateSort orders two non-null due dates ascending, ignoring title',
+      () {
+        // Same section, both records have a non-null due. This forces the
+        // `leftDue != null && rightDue != null` arm and its `dueCompare != 0`
+        // guard (the branch the Glados generator only hits opportunistically)
+        // to decide the order: the earlier due date sorts first. Titles are
+        // chosen so the title tie-breaker would invert the order if it ran.
+        final earlierDue = _record(
+          id: 'earlier-due',
+          title: 'Zeta', // alphabetically last, must NOT win
+          sectionDate: DateTime(2026, 4),
+          createdAt: DateTime(2026, 4, 1, 8),
+          status: _open(DateTime(2026, 4, 1, 8)),
+          due: DateTime(2026, 4, 3),
+        );
+        final laterDue = _record(
+          id: 'later-due',
+          title: 'Alpha', // alphabetically first, must NOT win
+          sectionDate: DateTime(2026, 4),
+          createdAt: DateTime(2026, 4, 1, 9),
+          status: _open(DateTime(2026, 4, 1, 9)),
+          due: DateTime(2026, 4, 9),
+        );
+
+        final state = _stateWith(
+          [laterDue, earlierDue],
+          sortId: TaskSortIds.dueDateSort,
+        );
+
+        expect(
+          state.visibleTasks.map((record) => record.task.meta.id),
+          ['earlier-due', 'later-due'],
+        );
+      },
+    );
+
+    test(
+      'dueDateSort falls through to title when both due dates are equal',
+      () {
+        // Same section, identical non-null due -> dueCompare == 0, so the
+        // comparator must fall through to the title tie-breaker even though the
+        // due-date arm was entered.
+        final due = DateTime(2026, 4, 5);
+        final bravo = _record(
+          id: 'bravo',
+          title: 'Bravo',
+          sectionDate: DateTime(2026, 4),
+          createdAt: DateTime(2026, 4, 1, 8),
+          status: _open(DateTime(2026, 4, 1, 8)),
+          due: due,
+        );
+        final alpha = _record(
+          id: 'alpha',
+          title: 'Alpha',
+          sectionDate: DateTime(2026, 4),
+          createdAt: DateTime(2026, 4, 1, 9),
+          status: _open(DateTime(2026, 4, 1, 9)),
+          due: due,
+        );
+
+        final state = _stateWith(
+          [bravo, alpha],
+          sortId: TaskSortIds.dueDateSort,
+        );
+
+        expect(
+          state.visibleTasks.map((record) => record.task.meta.id),
+          ['alpha', 'bravo'],
+        );
+      },
+    );
+
+    test(
       'status filter matches done and rejected tasks via _statusFilterId',
       () {
         // Exercises the TaskDone and TaskRejected arms of _statusFilterId,
