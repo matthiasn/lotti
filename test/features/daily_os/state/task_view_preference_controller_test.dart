@@ -1,11 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/daily_os/state/task_view_preference_controller.dart';
-import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -13,18 +12,16 @@ void main() {
   late ProviderContainer container;
   late MockSettingsDb mockSettingsDb;
 
-  setUp(() {
-    mockSettingsDb = MockSettingsDb();
-
-    getIt.allowReassignment = true;
-    getIt.registerSingleton<SettingsDb>(mockSettingsDb);
+  setUp(() async {
+    final mocks = await setUpTestGetIt();
+    mockSettingsDb = mocks.settingsDb;
 
     container = ProviderContainer();
   });
 
-  tearDown(() {
+  tearDown(() async {
     container.dispose();
-    getIt.reset();
+    await tearDownTestGetIt();
   });
 
   group('TaskViewPreference', () {

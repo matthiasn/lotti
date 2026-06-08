@@ -1030,13 +1030,68 @@ void main() {
       });
     });
 
-    test('invalidates self when date crosses midnight', () {
+    test('invalidates self and re-emits new day value across midnight', () {
       // Use an advancing fake clock so the poll loop actually observes a new
       // day. Start just before midnight on day A, then elapse past the
       // 15-second poll delay so the next iteration lands on day B.
+      //
+      // Day A has a planned block spanning the midnight boundary, so the
+      // pre-midnight emission resolves to day A's category. Day B's only
+      // planned block is in the morning, so once "today" rolls over the
+      // provider invalidates itself, re-establishes the dependency on day B's
+      // data, and the new emission must NOT be day A's category (it resolves to
+      // null because nothing contains 00:00:15). This proves the emitted value
+      // actually transitions to the new day's schedule, not merely that an
+      // extra emission occurred.
       final dayA = DateTime(2024, 3, 15);
       final dayB = DateTime(2024, 3, 16);
       final justBeforeMidnight = DateTime(2024, 3, 15, 23, 59, 59);
+
+      // Day A block: 23:00 dayA -> 00:30 dayB, contains justBeforeMidnight.
+      final dayABlockStart = DateTime(2024, 3, 15, 23);
+      final dayABlockEnd = DateTime(2024, 3, 16, 0, 30);
+      final dayATimeline = DailyTimelineData(
+        date: dayA,
+        plannedSlots: [
+          PlannedTimeSlot(
+            startTime: dayABlockStart,
+            endTime: dayABlockEnd,
+            block: PlannedBlock(
+              id: 'block-a',
+              categoryId: 'cat-day-a',
+              startTime: dayABlockStart,
+              endTime: dayABlockEnd,
+            ),
+            categoryId: 'cat-day-a',
+          ),
+        ],
+        actualSlots: [],
+        dayStartHour: 8,
+        dayEndHour: 18,
+      );
+
+      // Day B block: 09:00 -> 10:00, does NOT contain 00:00:15.
+      final dayBBlockStart = DateTime(2024, 3, 16, 9);
+      final dayBBlockEnd = DateTime(2024, 3, 16, 10);
+      final dayBTimeline = DailyTimelineData(
+        date: dayB,
+        plannedSlots: [
+          PlannedTimeSlot(
+            startTime: dayBBlockStart,
+            endTime: dayBBlockEnd,
+            block: PlannedBlock(
+              id: 'block-b',
+              categoryId: 'cat-day-b',
+              startTime: dayBBlockStart,
+              endTime: dayBBlockEnd,
+            ),
+            categoryId: 'cat-day-b',
+          ),
+        ],
+        actualSlots: [],
+        dayStartHour: 8,
+        dayEndHour: 18,
+      );
 
       fakeAsync((async) {
         withClock(async.getClock(justBeforeMidnight), () {
@@ -1048,7 +1103,7 @@ void main() {
                   DailyOsData(
                     date: dayA,
                     dayPlan: createTestPlan(),
-                    timelineData: createTestTimelineData(),
+                    timelineData: dayATimeline,
                     budgetProgress: [],
                   ),
                 ),
@@ -1058,7 +1113,7 @@ void main() {
                   DailyOsData(
                     date: dayB,
                     dayPlan: createTestPlan(),
-                    timelineData: createTestTimelineData(),
+                    timelineData: dayBTimeline,
                     budgetProgress: [],
                   ),
                 ),
@@ -1066,6 +1121,21 @@ void main() {
             ],
           );
           addTearDown(testContainer.dispose);
+
+          // Pre-resolve both days' unified data so the very first poll
+          // iteration reads loaded data (avoiding the transient loading-state
+          // window that would otherwise yield null before midnight).
+          unawaited(
+            testContainer.read(
+              unifiedDailyOsDataControllerProvider(date: dayA).future,
+            ),
+          );
+          unawaited(
+            testContainer.read(
+              unifiedDailyOsDataControllerProvider(date: dayB).future,
+            ),
+          );
+          async.flushMicrotasks();
 
           final emissions = <String?>[];
           testContainer.listen<AsyncValue<String?>>(
@@ -1076,15 +1146,19 @@ void main() {
             fireImmediately: true,
           );
 
-          // First emission for day A (still before midnight).
+          // First poll iteration runs with day A's loaded data while still
+          // before midnight.
           async.flushMicrotasks();
           final emissionsBeforeMidnight = emissions.length;
           expect(emissionsBeforeMidnight, greaterThan(0));
+          // Before midnight the active category is day A's block.
+          expect(emissions.last, equals('cat-day-a'));
 
           // Cross midnight: advancing past the 15-second poll delay makes the
           // next loop iteration see today (day B) != currentDate (day A), so it
           // calls ref.invalidateSelf(). The rebuilt provider re-establishes the
-          // dependency on day B's data and emits again.
+          // dependency on day B's data and emits again — now reading day B's
+          // schedule, where nothing contains 00:00:15.
           async
             ..elapse(const Duration(seconds: 16))
             ..flushMicrotasks();
@@ -1096,6 +1170,9 @@ void main() {
                 'crossing midnight should invalidate self and re-emit for '
                 'the new day',
           );
+          // The new emission must reflect day B's schedule, not day A's.
+          expect(emissions.last, isNot(equals('cat-day-a')));
+          expect(emissions.last, isNull);
         });
       });
     });
