@@ -20,7 +20,8 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `test/…/speech_modal/transcripts_list_item_test.dart` at 606 lines is the largest in this subdir. It covers many interaction and state scenarios for a 148-line widget, which is a reasonable ratio (4×). No structural split needed, but the per-test `getIt.reset()` + manual `registerSingleton` calls add overhead — use `setUpTestGetIt()`.
+- [x] **[LOW]** `test/…/speech_modal/transcripts_list_item_test.dart` at 606 lines is the largest in this subdir. It covers many interaction and state scenarios for a 148-line widget, which is a reasonable ratio (4×). No structural split needed, but the per-test `getIt.reset()` + manual `registerSingleton` calls add overhead — use `setUpTestGetIt()`.
+  **RESOLVED:** (stale) — the file's `setUp` already uses `setUpTestGetIt(additionalSetup: ...)` with `tearDown(tearDownTestGetIt)`; no `getIt.reset()` remains and the only `registerSingleton` calls are inside the `additionalSetup` callback (the sanctioned pattern). No structural split needed.
 
 ## Test quality improvements
 
@@ -34,7 +35,8 @@
 - [x] **[MED]** `test/…/speech_modal/language_dropdown_test.dart:21–48` — `_FakeEntryController` is defined locally. The same fake pattern appears in `transcripts_list_test.dart` (also local `_FakeEntryController`). These are identical implementations in two files; consolidate into `test/features/speech/ui/widgets/speech_modal/test_utils.dart` or a shared fake in a speech-feature-level test helper.
   - **RESOLVED:** done — the duplicate `_FakeEntryController` classes consolidated into `FakeEntryController` in a new feature-level `test_utils.dart` (with the setLanguage call tracking both files can use); both tests import it.
 
-- [ ] **[LOW]** `test/…/speech_modal/transcripts_list_test.dart:21–42` — Another local `_FakeEntryController`. Third definition of the same class. See above.
+- [x] **[LOW]** `test/…/speech_modal/transcripts_list_test.dart:21–42` — Another local `_FakeEntryController`. Third definition of the same class. See above.
+  **RESOLVED:** (stale) — the local `_FakeEntryController` is already gone; the file imports the shared `FakeEntryController` from `test_utils.dart` and uses it in the `_pump` helper. Only leftover comment banners remained where the class used to be.
 
 ## Generative (Glados) testing opportunities
 
@@ -47,7 +49,8 @@
 - [x] **[MED]** `test/…/speech_modal/language_dropdown_test.dart` — Verify that selecting a language from the dropdown calls `entryController.setLanguage(language)`. The `_FakeEntryController` already tracks `setLanguageCalls` — confirm at least one test asserts `setLanguageCalls` is populated after a dropdown selection.
   - **RESOLVED:** (stale) — the dropdown test already asserts `ctrl.setLanguageCalls` contains the selected language after a dropdown selection.
 
-- [ ] **[LOW]** `test/…/speech_modal/transcripts_list_test.dart` — Verify the case where `audio.transcripts` is empty — the list should render an appropriate empty state rather than crash.
+- [x] **[LOW]** `test/…/speech_modal/transcripts_list_test.dart` — Verify the case where `audio.transcripts` is empty — the list should render an appropriate empty state rather than crash.
+  **RESOLVED:** added a `renders no TranscriptListItems when transcripts list is empty` test that pumps a `JournalAudio` with `transcripts: []`. It asserts zero `TranscriptListItem`s render (no crash on the empty `...?[].map(...)` spread) and that the `JournalAudio` branch is actually taken — its `Column` shell renders as a descendant of `TranscriptsList`, distinguishing it from the `SizedBox.shrink()` collapse used for null/non-audio entries. Added the `flutter/material.dart` import the assertion needs. File passes (6/6).
 
 ## Test execution speed opportunities
 

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
@@ -123,6 +124,25 @@ void main() {
         await _pump(tester, entry: _makeAudio());
 
         expect(find.byType(TranscriptListItem), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'renders no TranscriptListItems when transcripts list is empty',
+      (tester) async {
+        await _pump(tester, entry: _makeAudio(transcripts: []));
+
+        // An empty (non-null) list must collapse to no items without crashing.
+        expect(find.byType(TranscriptListItem), findsNothing);
+
+        // The JournalAudio branch is still taken (not the SizedBox.shrink()
+        // collapse used for null/non-audio entries): its Column shell with the
+        // leading 10px spacer renders.
+        final shell = find.descendant(
+          of: find.byType(TranscriptsList),
+          matching: find.byType(Column),
+        );
+        expect(shell, findsOneWidget);
       },
     );
 
