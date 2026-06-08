@@ -17,9 +17,11 @@
 
 ## File size / split opportunities
 
-- [ ] **[LOW]** `test/features/agents/util/inference_provider_resolver_test.dart` — 483 lines for a 129-line impl. The file is within acceptable range but the static test section (lines ~161–480) has multiple tests with nearly identical 3–4-line stub blocks. Extract a `_stubModels()` + `_stubProvider()` pair of helpers to reduce repetition.
+- [x] **[LOW]** `test/features/agents/util/inference_provider_resolver_test.dart` — 483 lines for a 129-line impl. The file is within acceptable range but the static test section (lines ~161–480) has multiple tests with nearly identical 3–4-line stub blocks. Extract a `_stubModels()` + `_stubProvider()` pair of helpers to reduce repetition.
+  **RESOLVED:** done — added `stubModels(List<AiConfig>)` and `stubProvider(String, AiConfig?)` helpers in `main()` and rewired `stubResolution` plus every static test's `getConfigsByType`/`getConfigById` stub through them, removing the repeated 3–4-line `when(...).thenAnswer(...)` blocks. Also collapsed the one inline `AiConfig.inferenceProvider(...)` openAi construction onto the `testInferenceProvider(inferenceProviderType: ...)` factory.
 
-- [ ] **[LOW]** Both impl files are well within size limits (129 and 11 lines). No split action needed for the implementation side.
+- [x] **[LOW]** Both impl files are well within size limits (129 and 11 lines). No split action needed for the implementation side.
+  **RESOLVED:** (confirmed, no change) — verified `inference_provider_resolver.dart` is 215 lines (grew with three sibling resolver functions, still well under the 500-line threshold) and `text_utils.dart` is 11 lines. No impl-side split warranted.
 
 ---
 
@@ -39,7 +41,8 @@
 - [x] **[MED]** `inference_provider_resolver_test.dart` — The `_providerTypesForKnownModel` private function drives the preferred-provider-type matching logic (lines 123–130 in impl). This function iterates `knownModelsByProvider` and is effectively untested: all static tests and the Glados scenario use a `modelId` of `'models/gemini-3-flash-preview'` (which produces a non-empty preferred-type set) and a `'generated-model'` (which produces an empty preferred-type set and falls into the "no preferred types → accept any usable provider" branch). The "usable fallback" path (lines 105–112 in impl), where a provider exists but has the wrong type and a later provider has no known type, is tested by the static test `'skips stale duplicate model rows…'` but the `developer.log('No provider with a known matching type…')` branch at line 107 is never explicitly verified — add an assertion that `usableFallback` is returned and has the expected `id`.
   - **RESOLVED:** done — added a fallback-path test: a known Gemini model whose only usable provider has the wrong type (openAi) resolves via the `usableFallback` branch to that provider (the central `testInferenceProvider` factory gained a defaulted `inferenceProviderType` parameter for this).
 
-- [ ] **[LOW]** `inference_provider_resolver_test.dart` — Inline `registerFallbackValue(AiConfigType.model)` in `setUpAll` (line 165). `AiConfigType` fallback values could be centralised in `test/helpers/fallbacks.dart` if they are used across multiple files. Verify and consolidate.
+- [x] **[LOW]** `inference_provider_resolver_test.dart` — Inline `registerFallbackValue(AiConfigType.model)` in `setUpAll` (line 165). `AiConfigType` fallback values could be centralised in `test/helpers/fallbacks.dart` if they are used across multiple files. Verify and consolidate.
+  **RESOLVED:** removed the inline registration (and its now-empty `setUpAll`) entirely — it was dead code. Verified the only `any()` matcher in the file is `getConfigById(any())` whose argument is a built-in `String` (mocktail handles those without registration), while `getConfigsByType` is always stubbed and verified with a concrete `AiConfigType.model` literal, never via `any()`. No `AiConfigType` fallback is required here, so there is nothing to consolidate into the central `fallbacks.dart` (which already registers an `AiConfigType` value via `registerAllFallbackValues()` — mocktail fallbacks are per runtime type, not per enum value). A comment documents why no registration is needed.
 
 ---
 
@@ -73,15 +76,18 @@
 - [x] **[MED]** `inference_provider_resolver_test.dart` — The Glados property verifies `resolvesProvider` (true/false) and `expectedLookupProviderIds` (number of `getConfigById` calls), but does not assert the returned `provider` object's field values (e.g. `provider.apiKey`, `provider.inferenceProviderType`). For the `cloudWithKey` shape, add: `expect(provider!.apiKey, equals('generated-key'))`.
   - **RESOLVED:** done — the Glados body now asserts `provider.apiKey == 'generated-key'` whenever the resolved scenario shape is `cloudWithKey`, proving the record carries real provider fields through.
 
-- [ ] **[LOW]** `inference_provider_resolver_test.dart` — Empty `matchingModels` path is covered by the Glados scenario `_GeneratedModelLookupShape.empty` and by the static test `'returns null when model is not found'`. **Well covered.**
+- [x] **[LOW]** `inference_provider_resolver_test.dart` — Empty `matchingModels` path is covered by the Glados scenario `_GeneratedModelLookupShape.empty` and by the static test `'returns null when model is not found'`. **Well covered.**
+  **RESOLVED:** (confirmed, no change) — verified both paths still exist: the static `'returns null when model is not found'` test stubs `[]` models and asserts `isNull`, and the Glados `_GeneratedModelLookupShape.empty`/`nonMatchingOnly` shapes assert `provider == null` plus `verifyNever(getConfigById)`. The empty-`matchingModels` branch (impl lines 56–63) is covered.
 
 ---
 
 ## Test execution speed opportunities
 
-- [ ] **[LOW]** `test/features/agents/util/inference_provider_resolver_test.dart:440` — Single Glados property at `numRuns: 120`. The property tests a pure function (`resolveInferenceProvider`) with only `MockAiConfigRepository` stubs; construction is lightweight. The `setUpAll` at line 165 already registers fallback values once, and the `setUp` at line 170 (inferred) rebuilds the mock on every iteration. Given the low cost of mock construction here and the small `numRuns` count, the speed impact is negligible.
+- [x] **[LOW]** `test/features/agents/util/inference_provider_resolver_test.dart:440` — Single Glados property at `numRuns: 120`. The property tests a pure function (`resolveInferenceProvider`) with only `MockAiConfigRepository` stubs; construction is lightweight. The `setUpAll` at line 165 already registers fallback values once, and the `setUp` at line 170 (inferred) rebuilds the mock on every iteration. Given the low cost of mock construction here and the small `numRuns` count, the speed impact is negligible.
+  **RESOLVED:** (confirmed, no change) — `numRuns: 120` is within the 80..180 (≠100) convention, the body constructs only a fresh `MockAiConfigRepository` plus two `when(...)` stubs per run (no I/O, timers, or pumping), so per-iteration cost is negligible. The `setUpAll` referenced here was removed as part of the fallbacks item above; the property body now builds its own `generatedRepository` per run as before. No speed action needed.
 
-- [ ] **[LOW]** No `pumpAndSettle`, `Future.delayed`, real `Timer`, or `Stream.periodic` calls found in this directory. No fake-time violations. No significant test-execution-speed issues found in this scope.
+- [x] **[LOW]** No `pumpAndSettle`, `Future.delayed`, real `Timer`, or `Stream.periodic` calls found in this directory. No fake-time violations. No significant test-execution-speed issues found in this scope.
+  **RESOLVED:** (confirmed, no change) — re-grepped the whole `test/features/agents/util/` directory for `pumpAndSettle`, `Future.delayed`, `Timer`, `Stream.periodic`, `DateTime.now`, and `sleep(`; zero matches. No fake-time or speed violations to fix.
 
 ---
 
