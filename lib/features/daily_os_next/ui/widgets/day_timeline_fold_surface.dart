@@ -1,5 +1,14 @@
 part of 'day_timeline.dart';
 
+/// Formats an absolute hour-of-day marker for the timeline rail and the
+/// fold-region range labels, e.g. `08:00`. Hour `24` is the exclusive
+/// end-of-day marker and renders as `24:00`; any other value is taken
+/// modulo 24 so wrap-around inputs collapse onto a 24-hour clock.
+String formatTimelineHourLabel(int hour) {
+  final displayHour = hour == 24 ? 24 : hour % 24;
+  return '${displayHour.toString().padLeft(2, '0')}:00';
+}
+
 class _FoldRegionLayer extends StatelessWidget {
   const _FoldRegionLayer({
     required this.foldingState,
@@ -138,13 +147,11 @@ class _FoldRegionToggle extends StatelessWidget {
   }
 
   String _formatFoldRange(TimelineFoldRegion region) {
-    String label(int hour, {required bool isRangeEnd}) {
-      final displayHour = isRangeEnd && hour == 24 ? 24 : hour % 24;
-      return '${displayHour.toString().padLeft(2, '0')}:00';
-    }
-
-    return '${label(region.startHour, isRangeEnd: false)}-'
-        '${label(region.endHour, isRangeEnd: true)}';
+    // A fold region's start is always in [0, 23] and its end in [1, 24], so the
+    // shared formatter reproduces the previous per-bound behaviour: the start
+    // never hits the 24 special case, and the end renders 24 as `24:00`.
+    return '${formatTimelineHourLabel(region.startHour)}-'
+        '${formatTimelineHourLabel(region.endHour)}';
   }
 }
 

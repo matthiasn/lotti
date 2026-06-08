@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/day_timeline.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/editable_title.dart';
@@ -1248,6 +1249,38 @@ void main() {
           findsOneWidget,
         );
       },
+    );
+  });
+
+  group('formatTimelineHourLabel', () {
+    test('renders the exclusive end-of-day marker as 24:00, not 00:00', () {
+      // The 24 special case is the whole reason the formatter is not a plain
+      // `hour % 24` — fold ranges and the rail label use 24 to mean
+      // "end of day". Regressing this would collapse 24:00 to 00:00.
+      expect(formatTimelineHourLabel(24), '24:00');
+      expect(formatTimelineHourLabel(0), '00:00');
+      expect(formatTimelineHourLabel(9), '09:00');
+      expect(formatTimelineHourLabel(13), '13:00');
+    });
+
+    glados.Glados<int>(
+      glados.any.intInRange(0, 25),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'always formats as HH:00 with a zero-padded hour in [00, 24]',
+      (hour) {
+        final label = formatTimelineHourLabel(hour);
+
+        // Shape: exactly two digits, a colon, then the literal minutes 00.
+        expect(RegExp(r'^\d{2}:00$').hasMatch(label), isTrue);
+
+        final displayHour = int.parse(label.substring(0, 2));
+        // 24 stays 24 (end-of-day); every other value is on a 24-hour clock.
+        final expected = hour == 24 ? 24 : hour % 24;
+        expect(displayHour, expected);
+        expect(displayHour, inInclusiveRange(0, 24));
+      },
+      tags: 'glados',
     );
   });
 }
