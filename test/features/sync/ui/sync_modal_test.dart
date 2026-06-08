@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +27,55 @@ class SpySyncController extends SyncMaintenanceController {
   Future<void> syncAll({required Set<SyncStep> selectedSteps}) {
     onSyncAll?.call(selectedSteps);
     return super.syncAll(selectedSteps: selectedSteps);
+  }
+}
+
+/// Returns a fixed [SyncState] from [build] and no-ops the real sync work, so
+/// progress-view rendering can be driven entirely from the test.
+class TestSyncController extends SyncMaintenanceController {
+  TestSyncController(this._initialState);
+
+  final SyncState _initialState;
+
+  @override
+  SyncState build() => _initialState;
+
+  @override
+  Future<void> syncAll({required Set<SyncStep> selectedSteps}) async {}
+
+  @override
+  void reset() {}
+}
+
+/// Keeps [syncAll] pending until [complete] is called so the modal stays on
+/// the progress page; [reset] records whether the Done button invoked it.
+class _PendingSyncController extends SyncMaintenanceController {
+  _PendingSyncController(this.pendingState);
+
+  final SyncState pendingState;
+  final Completer<void> _completer = Completer<void>();
+
+  bool resetCalled = false;
+
+  @override
+  SyncState build() => const SyncState();
+
+  @override
+  Future<void> syncAll({required Set<SyncStep> selectedSteps}) async {
+    state = pendingState.copyWith(selectedSteps: selectedSteps);
+    return _completer.future;
+  }
+
+  void complete() {
+    if (!_completer.isCompleted) {
+      _completer.complete();
+    }
+  }
+
+  @override
+  void reset() {
+    resetCalled = true;
+    state = const SyncState();
   }
 }
 
@@ -357,5 +408,131 @@ void main() {
     await tester.pump();
     confirmButton = tester.widget<LottiPrimaryButton>(confirmFinder);
     expect(confirmButton.onPressed, isNotNull);
+  });
+
+  group('SyncModal · progress view', () {
+    testWidgets(
+      'SyncModal widget itself renders nothing (build returns SizedBox.shrink)',
+      (tester) async {
+        // Even mid-sync, the SyncModal *widget* paints nothing — all UI lives
+        // in the modal route opened by SyncModal.show, not in build().
+        final testController = TestSyncController(
+          const SyncState(isSyncing: true, progress: 50),
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              syncControllerProvider.overrideWith(() => testController),
+            ],
+            child: MaterialApp(
+              localizationsDelegates: AppLocalizations.localizationsDelegates,
+              supportedLocales: AppLocalizations.supportedLocales,
+              home: Builder(
+                builder: (context) => const SyncModal(),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text('50%'), findsNothing);
+        expect(find.byType(LinearProgressIndicator), findsNothing);
+        expect(find.byIcon(Icons.check_circle_outline), findsNothing);
+      },
+    );
+
+    testWidgets('progress view reflects controller updates and Done resets', (
+      tester,
+    ) async {
+      const pendingState = SyncState(
+        isSyncing: true,
+        progress: 50,
+        currentStep: SyncStep.categories,
+        selectedSteps: {
+          SyncStep.measurables,
+          SyncStep.categories,
+        },
+        stepProgress: {
+          SyncStep.measurables: StepProgress(processed: 5, total: 5),
+          SyncStep.categories: StepProgress(processed: 1, total: 10),
+        },
+      );
+
+      final controller = _PendingSyncController(pendingState);
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            syncControllerProvider.overrideWith(() => controller),
+            syncLoggingServiceProvider.overrideWithValue(mockLoggingService),
+          ],
+          child: MaterialApp(
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: Builder(
+              builder: (context) {
+                return Scaffold(
+                  body: Center(
+                    child: ElevatedButton(
+                      onPressed: () => SyncModal.show(context),
+                      child: const Text('Open sync modal'),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open sync modal'));
+      await tester.pumpAndSettle();
+
+      final confirmButtonFinder = find.widgetWithText(
+        LottiPrimaryButton,
+        messages.syncEntitiesConfirm,
+      );
+      final confirmButton = tester.widget<LottiPrimaryButton>(
+        confirmButtonFinder,
+      );
+      confirmButton.onPressed?.call();
+      await tester.pump();
+
+      // Mid-sync progress: bar, percent, per-step counts and icons.
+      expect(find.byType(LinearProgressIndicator), findsOneWidget);
+      expect(find.text('50%'), findsOneWidget);
+      expect(find.text('1 / 10'), findsOneWidget);
+      expect(find.byIcon(Icons.sync), findsOneWidget);
+      expect(
+        find.byIcon(Icons.check_circle_outline),
+        findsAtLeastNWidgets(1),
+      );
+
+      // Completion: success title + Done button replace the progress bar.
+      controller.state = pendingState.copyWith(
+        progress: 100,
+        currentStep: SyncStep.complete,
+        isSyncing: false,
+      );
+      await tester.pump();
+
+      expect(find.text(messages.syncEntitiesSuccessTitle), findsOneWidget);
+      expect(find.text(messages.doneButton.toUpperCase()), findsOneWidget);
+
+      controller.complete();
+      await tester.pump();
+
+      // Tapping Done invokes reset() and closes the modal.
+      final doneButton = tester.widget<LottiPrimaryButton>(
+        find.widgetWithText(
+          LottiPrimaryButton,
+          messages.doneButton.toUpperCase(),
+        ),
+      );
+      doneButton.onPressed?.call();
+      await tester.pumpAndSettle();
+
+      expect(controller.resetCalled, isTrue);
+    });
   });
 }

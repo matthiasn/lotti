@@ -49,7 +49,10 @@ void main() {
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(const SyncSettingsPage()),
         );
-        await tester.pumpAndSettle();
+        // The page is a StatelessWidget gated on a synchronous config-flag
+        // stream; no long animations, so a bounded pump suffices.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 50));
 
         final context = tester.element(find.byType(SyncSettingsPage));
         expect(
@@ -115,7 +118,8 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const SyncSettingsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byType(DesignSystemGroupedList), findsOneWidget);
       // 1 ProvisionedSyncSettingsCard (contains a DesignSystemListItem)
@@ -128,7 +132,8 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const SyncSettingsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       // 6 regular items + 1 provisioned card = 7 SettingsIcon (node-profile added)
       expect(find.byType(SettingsIcon), findsNWidgets(7));
@@ -145,7 +150,8 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const SyncSettingsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byIcon(Icons.chevron_right_rounded), findsNWidgets(7));
     });
@@ -156,7 +162,8 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const SyncSettingsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       final items = tester.widgetList<DesignSystemListItem>(
         find.byType(DesignSystemListItem),
@@ -178,7 +185,8 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const SyncSettingsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       expect(find.byType(OutboxBadgeIcon), findsOneWidget);
     });
@@ -187,7 +195,8 @@ void main() {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(const SyncSettingsPage()),
       );
-      await tester.pumpAndSettle();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       final context = tester.element(find.byType(SyncSettingsPage));
       expect(
@@ -264,14 +273,18 @@ void main() {
               ),
             ),
           );
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 50));
 
           final context = tester.element(find.byType(SyncSettingsPage));
           final title = find.text(titleFor(context, rowIndex));
           expect(title, findsOneWidget);
           await tester.ensureVisible(title);
           await tester.tap(title);
-          await tester.pumpAndSettle();
+          // Bounded pump covers the Beamer route transition (~300ms) without
+          // risking the 10s pumpAndSettle timeout.
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
 
           expect(
             delegate.currentBeamLocation.state.routeInformation.uri.path,

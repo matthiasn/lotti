@@ -121,5 +121,51 @@ void main() {
       expect(toast.tone, DesignSystemToastTone.success);
       expect(toast.description, isNull);
     });
+
+    testWidgets(
+      'rethrows and shows no toast when the clipboard channel fails',
+      (tester) async {
+        // Simulate an unavailable / failing platform clipboard: the channel
+        // throws, so Clipboard.setData rejects. The helper does not swallow
+        // this, so the future must reject and no toast may appear.
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          SystemChannels.platform,
+          (MethodCall call) async {
+            if (call.method == 'Clipboard.setData') {
+              throw PlatformException(code: 'clipboard_unavailable');
+            }
+            return null;
+          },
+        );
+
+        late BuildContext capturedContext;
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            Builder(
+              builder: (context) {
+                capturedContext = context;
+                return const SizedBox.shrink();
+              },
+            ),
+          ),
+        );
+
+        await expectLater(
+          ClipboardHelper.copyTextAndNotify(
+            capturedContext,
+            'unreachable',
+            title: 'Copied',
+          ),
+          throwsA(isA<PlatformException>()),
+        );
+
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The failure short-circuits before context.showToast, so nothing
+        // renders.
+        expect(find.byType(DesignSystemToast), findsNothing);
+      },
+    );
   });
 }
