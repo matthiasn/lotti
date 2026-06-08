@@ -409,11 +409,20 @@ void main() {
       expect(find.byType(AiRunningAnimation), findsOneWidget);
       expect(find.byType(GlassContainer), findsOneWidget);
 
-      // The AiRunningAnimationWrapper inside should be interactive
+      // The AiRunningAnimationWrapper inside should be interactive — and that
+      // must translate into a real tap target: the inner wrapper wires up a
+      // GestureDetector only when isInteractive is true.
       final wrapper = tester.widget<AiRunningAnimationWrapper>(
         find.byType(AiRunningAnimationWrapper),
       );
       expect(wrapper.isInteractive, isTrue);
+      expect(
+        find.descendant(
+          of: find.byType(GlassContainer),
+          matching: find.byType(GestureDetector),
+        ),
+        findsOneWidget,
+      );
 
       container.dispose();
     });
