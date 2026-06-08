@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:drift/drift.dart' show Value;
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
+import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
@@ -730,6 +732,56 @@ void main() {
       expect(r2.shouldSchedule, isFalse); // only one item (B) and it succeeded
       verify(() => repo.markSent(any())).called(1);
     });
+
+    // Real-DB round-trip: the mock-based cap tests above verify the processor
+    // *calls* markRetry and logs the cap event, but only a real DB proves the
+    // row actually transitions to status=error with retries bumped to the cap.
+    test('retry cap transitions item to error in DB', () async {
+      final db = SyncDatabase(inMemoryDatabase: true);
+      addTearDown(db.close);
+
+      // Insert one outbox item with retries at cap-1.
+      const cap = 3;
+      final itemId = await db.addOutboxItem(
+        OutboxCompanion.insert(
+          message: jsonEncode(
+            const SyncMessage.aiConfigDelete(id: 'X').toJson(),
+          ),
+          subject: 'cap-test',
+        ),
+      );
+      // Set retries to cap-1 so the next markRetry hits the cap.
+      await db.updateOutboxItem(
+        OutboxCompanion(
+          id: Value(itemId),
+          retries: const Value(cap - 1),
+          status: Value(OutboxStatus.pending.index),
+        ),
+      );
+
+      final repo = DatabaseOutboxRepository(db, maxRetries: cap);
+      final sender = MockOutboxMessageSender();
+      when(() => sender.send(any())).thenAnswer((_) async => false);
+      final log = MockDomainLogger();
+      _stubSilentLogging(log);
+
+      final proc = OutboxProcessor(
+        repository: repo,
+        messageSender: sender,
+        loggingService: log,
+        maxRetriesOverride: cap,
+      );
+
+      final result = await proc.processQueue();
+      expect(result.shouldSchedule, isTrue);
+      expect(result.nextDelay, Duration.zero); // advance to next item
+
+      // Verify DB state updated to error and retries incremented to cap.
+      final rows = await db.allOutboxItems;
+      final row = rows.firstWhere((e) => e.id == itemId);
+      expect(row.retries, cap);
+      expect(row.status, OutboxStatus.error.index);
+    });
   });
 
   group('timeout and diagnostics', () {
@@ -795,7 +847,7 @@ void main() {
     });
   });
 
-  test('send completing at exact timeout boundary doesnt race', () async {
+  test('send completing at exact timeout boundary doesnt race', () {
     fakeAsync((async) {
       final repo = MockOutboxRepository();
       final sender = MockOutboxMessageSender();

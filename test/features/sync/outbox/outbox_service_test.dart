@@ -6261,6 +6261,23 @@ void main() {
               subDomain: 'prune',
             ),
           ).called(1);
+
+          // The startup prune is a one-shot Timer that nulls itself out in
+          // its callback (_startupPruneTimer = null). Advancing well past the
+          // grace but short of the 24h periodic interval must NOT fire a
+          // second startup prune — proving the one-shot timer does not
+          // re-arm.
+          async
+            ..elapse(const Duration(minutes: 5))
+            ..flushMicrotasks();
+          verifyNever(
+            () => repository.pruneSentOutboxItemsChunked(
+              retention: any(named: 'retention'),
+              chunkSize: any(named: 'chunkSize'),
+              vacuumWhenDone: any(named: 'vacuumWhenDone'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          );
         });
       },
     );
