@@ -252,6 +252,11 @@ void main() {
     when(
       () => repository.getDueScheduledWakeRecords(any()),
     ).thenAnswer((_) async => []);
+    // Default: every due agent's identity is live, so the lifecycle guard lets
+    // it through. Archived-agent tests override this.
+    when(
+      () => repository.getEntity(any()),
+    ).thenAnswer((_) async => makeTestIdentity());
   });
 
   ScheduledWakeManager createAndStart({
@@ -295,6 +300,11 @@ void main() {
             when(
               () => generatedRepository.getDueScheduledWakeRecords(any()),
             ).thenAnswer((_) async => []);
+            // Every generated agent is live, so the lifecycle guard passes and
+            // the enqueue/fast-forward model is exercised unchanged.
+            when(
+              () => generatedRepository.getEntity(any()),
+            ).thenAnswer((_) async => makeTestIdentity());
             when(() => generatedSyncService.upsertEntity(any())).thenAnswer((
               invocation,
             ) async {
@@ -511,6 +521,106 @@ void main() {
           );
 
           manager.stop();
+        });
+      });
+    });
+
+    group('archived-agent guard (ADR 0022)', () {
+      test('skips and clears the wake for a dormant (archived) agent', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final pastSchedule = DateTime(2024, 3, 15, 9);
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [makeTestState(scheduledWakeAt: pastSchedule)],
+            );
+            // The identity was archived by the planner cutover (or never
+            // migrated on this device) — it must not wake.
+            when(() => repository.getEntity(any())).thenAnswer(
+              (_) async => makeTestIdentity(lifecycle: AgentLifecycle.dormant),
+            );
+            when(
+              () => syncService.upsertEntity(any()),
+            ).thenAnswer((_) async {});
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            verifyNever(
+              () => orchestrator.enqueueManualWake(
+                agentId: any(named: 'agentId'),
+                reason: any(named: 'reason'),
+              ),
+            );
+            // Its stale scheduledWakeAt is cleared so it stops surfacing.
+            final cleared =
+                verify(
+                      () => syncService.upsertEntity(captureAny()),
+                    ).captured.single
+                    as AgentStateEntity;
+            expect(cleared.scheduledWakeAt, isNull);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('skips and clears the wake when the identity is missing', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final pastSchedule = DateTime(2024, 3, 15, 9);
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [makeTestState(scheduledWakeAt: pastSchedule)],
+            );
+            when(
+              () => repository.getEntity(any()),
+            ).thenAnswer((_) async => null);
+            when(
+              () => syncService.upsertEntity(any()),
+            ).thenAnswer((_) async {});
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            verifyNever(
+              () => orchestrator.enqueueManualWake(
+                agentId: any(named: 'agentId'),
+                reason: any(named: 'reason'),
+              ),
+            );
+            verify(() => syncService.upsertEntity(any())).called(1);
+
+            manager.stop();
+          });
+        });
+      });
+
+      test('still enqueues for an active agent (regression)', () {
+        final now = DateTime(2024, 3, 15, 10, 30);
+        final pastSchedule = DateTime(2024, 3, 15, 9);
+
+        fakeAsync((async) {
+          withClock(Clock.fixed(now), () {
+            when(() => repository.getDueScheduledAgentStates(any())).thenAnswer(
+              (_) async => [makeTestState(scheduledWakeAt: pastSchedule)],
+            );
+            // Default setUp stub already returns an active identity.
+
+            final manager = createAndStart();
+            async.flushMicrotasks();
+
+            verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: kTestAgentId,
+                reason: WakeReason.scheduled.name,
+              ),
+            ).called(1);
+
+            manager.stop();
+          });
         });
       });
     });

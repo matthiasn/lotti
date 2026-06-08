@@ -66,9 +66,23 @@ class ScheduledWakeManager {
 
       var enqueued = 0;
       var fastForwarded = 0;
+      var skippedArchived = 0;
 
       for (final state in dueStates) {
         try {
+          // Defense-in-depth (ADR 0022): the due query filters on
+          // `scheduledWakeAt` only — not lifecycle — so an archived or missing
+          // identity could still surface here. An archived agent must never
+          // wake, and clearing its stale `scheduledWakeAt` self-heals the
+          // legacy-migration gap where a peer that never ran the migration
+          // (e.g. a never-synced local `day_agent`) kept a live wake that would
+          // otherwise re-fire and fail every cycle.
+          if (!await _isActiveAgent(state.agentId)) {
+            await _clearStaleScheduledWake(state, now);
+            skippedArchived++;
+            continue;
+          }
+
           if (_canFastForward(state)) {
             await _fastForwardSchedule(state, now);
             fastForwarded++;
@@ -94,7 +108,8 @@ class ScheduledWakeManager {
       if (dueStates.isNotEmpty || recordsEnqueued > 0) {
         _log(
           'processed ${dueStates.length} due agents: '
-          '$enqueued enqueued, $fastForwarded fast-forwarded; '
+          '$enqueued enqueued, $fastForwarded fast-forwarded, '
+          '$skippedArchived archived skipped; '
           '$recordsEnqueued scheduled-wake record(s) fired',
         );
       }
@@ -142,6 +157,32 @@ class ScheduledWakeManager {
       }
     }
     return enqueued;
+  }
+
+  /// Whether [agentId]'s identity is live (lifecycle `active`). A missing,
+  /// dormant, or destroyed identity must never wake on a schedule — mirroring
+  /// the restore path, which only re-subscribes active agents.
+  Future<bool> _isActiveAgent(String agentId) async {
+    final identity = await _repository.getEntity(agentId);
+    return identity?.mapOrNull(agent: (e) => e.lifecycle) ==
+        AgentLifecycle.active;
+  }
+
+  /// Clears an archived agent's stale `scheduledWakeAt` so the due query stops
+  /// returning it every cycle (synced upsert, LWW-convergent).
+  Future<void> _clearStaleScheduledWake(
+    AgentStateEntity state,
+    DateTime now,
+  ) async {
+    if (state.scheduledWakeAt == null) return;
+    await _syncService.upsertEntity(
+      state.copyWith(scheduledWakeAt: null, updatedAt: now),
+    );
+    onPersistedStateChanged?.call(state.agentId);
+    _log(
+      'cleared stale scheduledWakeAt for archived '
+      '${DomainLogger.sanitizeId(state.agentId)}',
+    );
   }
 
   /// Whether this agent can be fast-forwarded instead of fully woken.
