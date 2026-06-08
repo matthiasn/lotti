@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -112,6 +113,33 @@ void main() {
           else
             event.contentEntryId,
       ],
+    );
+  }
+
+  // A fully isolated harness — Glados re-runs its body many times, so
+  // property tests must not share the setUp's accumulating repo/compactor.
+  ({
+    AgentInputCaptureService capture,
+    AgentLogCompactor compactor,
+  })
+  buildHarness() {
+    final harnessRepo = InMemoryAgentRepository()
+      ..seed([makeTestState(agentId: _agentId)]);
+    final vc = MockVectorClockService();
+    var counter = 0;
+    when(
+      () => vc.getNextVectorClock(previous: any(named: 'previous')),
+    ).thenAnswer((_) async => VectorClock({'h1': ++counter}));
+    final outbox = MockOutboxService();
+    when(() => outbox.enqueueMessage(any())).thenAnswer((_) async {});
+    final harnessSync = AgentSyncService(
+      repository: harnessRepo,
+      outboxService: outbox,
+      vectorClockService: vc,
+    );
+    return (
+      capture: AgentInputCaptureService(syncService: harnessSync),
+      compactor: AgentLogCompactor(syncService: harnessSync),
     );
   }
 
@@ -939,5 +967,107 @@ void main() {
       expect(hits.single.type, 'capture');
       expect(hits.single.text, 'lazy transcript about taxes');
     });
+  });
+
+  group('properties', () {
+    glados.Glados(
+      glados.ListAnys(
+        glados.any,
+      ).listWithLengthInRange(
+        1,
+        6,
+        glados.IntAnys(glados.any).intInRange(0, 1000),
+      ),
+      glados.ExploreConfig(numRuns: 40),
+    ).test(
+      'assembleContext is append-only as captures accumulate (the '
+      'prefix-cache invariant)',
+      (vals) async {
+        final h = buildHarness();
+        var prev = '';
+        // Capture cumulatively (each wake re-submits the prefix + one new
+        // entry); between folds every render must only APPEND bytes.
+        for (var k = 0; k < vals.length; k++) {
+          final sources = [
+            for (var i = 0; i <= k; i++)
+              src('e$i', 'note $i v${vals[i]}', day: i + 1),
+          ];
+          await h.capture.captureWakeInputs(
+            agentId: _agentId,
+            sources: sources,
+            at: DateTime.utc(2024, 3, 10 + k),
+          );
+          final ctx = await h.compactor.assembleContext(_agentId);
+          expect(
+            ctx.startsWith(prev),
+            isTrue,
+            reason: 'append-only broke at step $k for $vals',
+          );
+          prev = ctx;
+        }
+      },
+      tags: 'glados',
+    );
+
+    const vocab = ['alpha', 'beta', 'gamma', 'delta', 'epsilon'];
+    glados.Glados2(
+      glados.ListAnys(glados.any).listWithLengthInRange(
+        1,
+        6,
+        glados.ListAnys(
+          glados.any,
+        ).listWithLengthInRange(
+          1,
+          3,
+          glados.IntAnys(glados.any).intInRange(0, 5),
+        ),
+      ),
+      glados.ListAnys(
+        glados.any,
+      ).listWithLengthInRange(
+        1,
+        2,
+        glados.IntAnys(glados.any).intInRange(0, 5),
+      ),
+      glados.ExploreConfig(numRuns: 50),
+    ).test(
+      'searchLog hits satisfy term-AND, the limit, and recency order',
+      (docs, queryIdx) async {
+        final h = buildHarness();
+        for (var i = 0; i < docs.length; i++) {
+          final text = docs[i].map((w) => vocab[w]).join(' ');
+          await h.capture.captureWakeInputs(
+            agentId: _agentId,
+            sources: [src('d$i', text, day: i + 1)],
+            at: DateTime.utc(2024, 3, 10 + i),
+          );
+        }
+        final query = queryIdx.map((w) => vocab[w]).join(' ');
+        final terms = query.toLowerCase().split(' ');
+        final hits = await h.compactor.searchLog(
+          _agentId,
+          query: query,
+          limit: 3,
+        );
+
+        expect(hits.length, lessThanOrEqualTo(3));
+        for (final hit in hits) {
+          final haystack = hit.text.toLowerCase();
+          expect(
+            terms.every(haystack.contains),
+            isTrue,
+            reason: 'hit "${hit.text}" missing a term of "$query"',
+          );
+        }
+        for (var i = 1; i < hits.length; i++) {
+          expect(
+            hits[i].at.isAfter(hits[i - 1].at),
+            isFalse,
+            reason: 'recency order broken',
+          );
+        }
+      },
+      tags: 'glados',
+    );
   });
 }

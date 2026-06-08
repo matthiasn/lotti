@@ -587,5 +587,91 @@ void main() {
         isNull,
       );
     });
+
+    // Maps a winner verdict back to the physical entity it selects (or null).
+    T? pick<T>(ConcurrentWinner? winner, T local, T incoming) => winner == null
+        ? null
+        : (winner == ConcurrentWinner.local ? local : incoming);
+
+    glados.Glados2(
+      glados.any.bool,
+      glados.any.bool,
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'knowledge: retraction is terminal and convergent regardless of arg '
+      'order',
+      (aRetracted, bRetracted) {
+        final a = knowledge(
+          status: aRetracted
+              ? KnowledgeStatus.retracted
+              : KnowledgeStatus.confirmed,
+          id: 'a',
+        );
+        final b = knowledge(
+          status: bRetracted
+              ? KnowledgeStatus.retracted
+              : KnowledgeStatus.confirmed,
+          id: 'b',
+        );
+        // Both replicas (each holding one side as "local") must select the
+        // SAME physical entry, or both defer — otherwise they diverge.
+        final w1 = pick(
+          resolveConcurrentAgentEntityOverride(local: a, incoming: b),
+          a,
+          b,
+        );
+        final w2 = pick(
+          resolveConcurrentAgentEntityOverride(local: b, incoming: a),
+          b,
+          a,
+        );
+        expect(w1?.id, w2?.id, reason: 'must converge');
+        if (aRetracted != bRetracted) {
+          expect(w1?.id, (aRetracted ? a : b).id); // retracted side wins
+        } else {
+          expect(w1, isNull); // same status → defer to LWW
+        }
+      },
+      tags: 'glados',
+    );
+
+    glados.Glados2(
+      glados.IntAnys(glados.any).intInRange(0, 8),
+      glados.IntAnys(glados.any).intInRange(0, 8),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'scheduled wake: the later scheduledAt wins, convergent; equal defers',
+      (h1, h2) {
+        final base = DateTime(2026, 5, 25);
+        // Status differs deliberately — the rule keys on scheduledAt only.
+        final a = wake(
+          scheduledAt: base.add(Duration(hours: h1)),
+          status: ScheduledWakeStatus.pending,
+          id: 'a',
+        );
+        final b = wake(
+          scheduledAt: base.add(Duration(hours: h2)),
+          status: ScheduledWakeStatus.consumed,
+          id: 'b',
+        );
+        final w1 = pick(
+          resolveConcurrentAgentEntityOverride(local: a, incoming: b),
+          a,
+          b,
+        );
+        final w2 = pick(
+          resolveConcurrentAgentEntityOverride(local: b, incoming: a),
+          b,
+          a,
+        );
+        expect(w1?.id, w2?.id, reason: 'must converge');
+        if (h1 != h2) {
+          expect(w1?.id, (h1 > h2 ? a : b).id); // later instant wins
+        } else {
+          expect(w1, isNull); // same instant → defer to LWW (no double-fire)
+        }
+      },
+      tags: 'glados',
+    );
   });
 }
