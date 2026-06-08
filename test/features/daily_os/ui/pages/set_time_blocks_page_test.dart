@@ -223,38 +223,27 @@ void main() {
   }
 
   group('SetTimeBlocksPage — layout', () {
-    testWidgets('renders header with title and date', (tester) async {
+    testWidgets('renders all expected layout elements in a single pump', (
+      tester,
+    ) async {
       await pumpPage(tester);
 
+      // Header: title and back affordance.
       expect(find.text('Set time blocks'), findsOneWidget);
       expect(find.byIcon(Icons.arrow_back), findsOneWidget);
-    });
 
-    testWidgets('renders Favourites section header', (tester) async {
-      await pumpPage(tester);
-
+      // Section headers (favourites + others both present for this fixture).
       expect(find.text('Favourites'), findsOneWidget);
-    });
-
-    testWidgets('renders Other categories section header', (tester) async {
-      await pumpPage(tester);
-
       expect(find.text('Other categories'), findsOneWidget);
-    });
 
-    testWidgets('renders all category rows', (tester) async {
-      await pumpPage(tester);
-
+      // One row per category, each labelled with its category name.
       expect(find.byType(CategoryBlockRow), findsNWidgets(4));
       expect(find.text('Work'), findsOneWidget);
       expect(find.text('Study'), findsOneWidget);
       expect(find.text('Leisure'), findsOneWidget);
       expect(find.text('Commute'), findsOneWidget);
-    });
 
-    testWidgets('renders Save plan button', (tester) async {
-      await pumpPage(tester);
-
+      // Save action.
       expect(find.text('Save plan'), findsOneWidget);
     });
   });
@@ -606,6 +595,63 @@ void main() {
         expect(testController.savedBlocks, isNotNull);
         expect(testController.savedBlocks, isEmpty);
         expect(find.text('Set time blocks'), findsNothing);
+      },
+    );
+  });
+
+  group('SetTimeBlocksPage — init idempotence', () {
+    testWidgets(
+      'rebuild after a user edit does not re-seed from the existing plan',
+      (tester) async {
+        // Existing plan seeds one Work block via _initFromExistingPlan.
+        final existingBlock = PlannedBlock(
+          id: 'existing-1',
+          categoryId: 'cat-work',
+          startTime: DateTime(2026, 3, 15, 9),
+          endTime: DateTime(2026, 3, 15, 12),
+        );
+
+        await pumpPageWithNavigator(
+          tester,
+          data: _makeData(blocks: [existingBlock]),
+        );
+        await tester.pump();
+
+        // Initial seed: Work has a block (check icon), the rest do not.
+        expect(find.byIcon(Icons.check_circle), findsOneWidget);
+
+        // User edits a *different* category: add a block to Study. Each tap
+        // triggers a rebuild, which re-invokes _initFromExistingPlan. The
+        // _initializedDate guard must prevent it from clearing _pendingBlocks
+        // and dropping the user's Study block.
+        await tester.tap(find.text('Study'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.text('Add new time block'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Collapse Study — another setState/rebuild cycle. If init were not
+        // idempotent, this rebuild would wipe the Study block.
+        await tester.tap(find.text('Study'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Both Work (existing) and Study (user-added) now show a block.
+        expect(find.byIcon(Icons.check_circle), findsNWidgets(2));
+
+        // Persisting confirms both blocks survived the repeated rebuilds:
+        // the existing Work block was not duplicated and the Study edit was
+        // not lost.
+        await tester.tap(find.byType(FilledButton));
+        await tester.pumpAndSettle();
+
+        expect(testController.savedBlocks, isNotNull);
+        final savedCategoryIds =
+            testController.savedBlocks!.map((b) => b.categoryId).toList()
+              ..sort();
+        expect(savedCategoryIds, ['cat-study', 'cat-work']);
       },
     );
   });
