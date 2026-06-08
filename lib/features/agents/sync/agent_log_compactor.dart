@@ -208,8 +208,14 @@ class AgentLogCompactor {
       log: view.log,
       cutoff: view.active?.cutoff,
     );
+    // _resolveEventContents can drop events whose content is (temporarily)
+    // unavailable — e.g. a deferred capture not yet synced. The replay marker
+    // must pin to the last event actually RENDERED, not the raw tail, or
+    // assembleContextAsOf could later reconstruct a different prompt once the
+    // dropped content arrives.
+    final resolved = await _resolveEventContents(tailEvents);
     final tail = [
-      for (final loaded in await _resolveEventContents(tailEvents))
+      for (final loaded in resolved)
         TailLine(
           source: _toRenderedSource(loaded.event, loaded.content),
           edited: loaded.event.isEdit,
@@ -222,7 +228,7 @@ class AgentLogCompactor {
         tail: tail,
       ),
       activeSummaryId: view.active?.id,
-      lastEventPosition: tailEvents.isEmpty ? null : tailEvents.last.position,
+      lastEventPosition: resolved.isEmpty ? null : resolved.last.event.position,
     );
   }
 

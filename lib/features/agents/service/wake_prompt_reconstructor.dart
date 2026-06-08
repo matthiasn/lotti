@@ -49,12 +49,12 @@ class WakePromptReconstructor {
     if (record == null) return null;
 
     // Captures become deferred inline events (id + position); their transcripts
-    // are resolved from the already-loaded set via a map resolver, so the
-    // compactor renders only the tail it needs without a second query.
+    // are materialized lazily in resolveInlineContent — only for the tail the
+    // compactor renders — so large historical transcripts aren't transformed
+    // up front.
     final captures = await _loadCaptures(agentId);
-    final captureContent = <String, Map<String, Object?>>{
-      for (final capture in captures)
-        capture.id: captureInlineContent(capture.transcript),
+    final capturesById = <String, CaptureEntity>{
+      for (final capture in captures) capture.id: capture,
     };
     final inlineEvents = <InputEvent>[
       ...await _decisionEvents(agentId),
@@ -64,7 +64,12 @@ class WakePromptReconstructor {
     final compactor = AgentLogCompactor(
       syncService: syncService,
       inlineEvents: inlineEvents,
-      resolveInlineContent: (id) async => captureContent[id],
+      resolveInlineContent: (id) async {
+        final capture = capturesById[id];
+        return capture == null
+            ? null
+            : captureInlineContent(capture.transcript);
+      },
     );
     final log = await compactor.assembleContextAsOf(
       agentId,

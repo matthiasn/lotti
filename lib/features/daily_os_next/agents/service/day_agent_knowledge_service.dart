@@ -90,10 +90,16 @@ class DayAgentKnowledgeService {
     final scope = _optionalString(args, 'scope') ?? knowledgeGlobalScope;
     // `hook` and `scope` are both validated by `propose` (the single choke
     // point); pass them through.
+    // Reject unknown source values rather than silently downgrading a
+    // malformed payload to agentInferred.
     final sourceArg = _optionalString(args, 'source') ?? 'agentInferred';
-    final source = sourceArg == 'userStated'
-        ? KnowledgeSource.userStated
-        : KnowledgeSource.agentInferred;
+    final source = switch (sourceArg) {
+      'userStated' => KnowledgeSource.userStated,
+      'agentInferred' => KnowledgeSource.agentInferred,
+      _ => throw const DayAgentKnowledgeException(
+        '"source" must be "userStated" or "agentInferred".',
+      ),
+    };
 
     final entry = await propose(
       agentId: agentId,

@@ -106,18 +106,20 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
   /// the wake's real workspace, not the planner identity's static allow-list
   /// (which is empty = "allow all" and would surface nothing).
   ///
-  /// Only `category:` scopes are derived: the day planner is category-organized
-  /// and every touched entity (`AttentionRequestEntity`,
-  /// `StandingAgreementEntity`, `DecidedTaskRef`, `PlannedBlock`) carries a
-  /// `categoryId` but no project id. `project:` scopes (which `_validScope`/the
-  /// tool schema still accept per ADR Decision 10) therefore have no source here
-  /// and stay reserved for a future project dimension — there is nothing to
-  /// extract a project id from today.
+  /// `category:` scopes come from the `categoryId` every touched entity carries
+  /// (`AttentionRequestEntity`, `StandingAgreementEntity`, `DecidedTaskRef`,
+  /// `PlannedBlock`). `project:` scopes are derived from claims/agreements that
+  /// explicitly target a project (`targetKind == 'project'`, `targetId` = the
+  /// project id), so `project:`-scoped durable knowledge (which `_validScope`
+  /// and the tool schema accept, ADR Decision 10) is actually reachable when a
+  /// project-targeted claim or agreement is in play; tasks/blocks expose only a
+  /// category, so they contribute no project scope.
   Set<String> _touchedScopes({
     required AttentionPlanningInputs attentionPlanning,
     required _DraftingContext? draftingContext,
     required _RefineContext? refineContext,
   }) {
+    const projectTargetKind = 'project';
     final scopes = <String>{};
     void addCategory(String? categoryId) {
       if (categoryId != null && categoryId.isNotEmpty) {
@@ -125,11 +127,21 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       }
     }
 
+    void addProject(String? targetKind, String? targetId) {
+      if (targetKind == projectTargetKind &&
+          targetId != null &&
+          targetId.isNotEmpty) {
+        scopes.add(knowledgeProjectScope(targetId));
+      }
+    }
+
     for (final claim in attentionPlanning.claims) {
       addCategory(claim.categoryId);
+      addProject(claim.targetKind, claim.targetId);
     }
     for (final agreement in attentionPlanning.standingAgreements) {
       addCategory(agreement.categoryId);
+      addProject(agreement.targetKind, agreement.targetId);
     }
     final decidedTasks = draftingContext?.decidedTasks;
     if (decidedTasks != null) {

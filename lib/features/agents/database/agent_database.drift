@@ -309,7 +309,7 @@ getDueScheduledAgentStates: SELECT * FROM agent_entities WHERE type = 'agentStat
 
 getDueScheduledWakeRecords: SELECT * FROM agent_entities WHERE type = 'scheduledWake' AND deleted_at IS NULL AND json_extract(serialized, '$.status') = 'pending' AND json_extract(serialized, '$.scheduledAt') IS NOT NULL AND json_extract(serialized, '$.scheduledAt') <= :nowIso;
 
-getPendingScheduledWakeRecords: SELECT * FROM agent_entities WHERE type = 'scheduledWake' AND deleted_at IS NULL AND json_extract(serialized, '$.status') = 'pending' ORDER BY json_extract(serialized, '$.scheduledAt') ASC;
+getPendingScheduledWakeRecords: SELECT * FROM agent_entities WHERE type = 'scheduledWake' AND deleted_at IS NULL AND json_extract(serialized, '$.status') = 'pending' AND json_extract(serialized, '$.scheduledAt') IS NOT NULL ORDER BY json_extract(serialized, '$.scheduledAt') ASC;
 
 getAgentEntitiesWithNullVectorClock: SELECT * FROM agent_entities WHERE json_extract(serialized, '$.vectorClock') IS NULL ORDER BY created_at ASC;
 

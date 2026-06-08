@@ -5066,7 +5066,7 @@ abstract class _$AgentDatabase extends GeneratedDatabase {
 
   Selectable<AgentEntity> getPendingScheduledWakeRecords() {
     return customSelect(
-      'SELECT * FROM agent_entities WHERE type = \'scheduledWake\' AND deleted_at IS NULL AND json_extract(serialized, \'\$.status\') = \'pending\' ORDER BY json_extract(serialized, \'\$.scheduledAt\') ASC',
+      'SELECT * FROM agent_entities WHERE type = \'scheduledWake\' AND deleted_at IS NULL AND json_extract(serialized, \'\$.status\') = \'pending\' AND json_extract(serialized, \'\$.scheduledAt\') IS NOT NULL ORDER BY json_extract(serialized, \'\$.scheduledAt\') ASC',
       variables: [],
       readsFrom: {agentEntities},
     ).asyncMap(agentEntities.mapFromRow);

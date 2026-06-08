@@ -19,12 +19,13 @@ void main() {
       // Pin the exact tool count so a tool added to dayAgentTools but missing
       // from the expected list below (or vice versa) is caught: containsAll
       // alone tolerates extras, hasLength closes that gap.
-      expect(names, hasLength(18));
+      expect(names, hasLength(19));
       expect(
         names,
         containsAll(const [
           DayAgentToolNames.recordObservations,
           DayAgentToolNames.setNextWake,
+          DayAgentToolNames.searchMemory,
           DayAgentToolNames.submitCapture,
           DayAgentToolNames.parseCaptureToItems,
           DayAgentToolNames.matchToCorpus,
@@ -323,6 +324,22 @@ void main() {
       expect(props.containsKey('deferTo'), isTrue);
       expect(params['required'], isNot(contains('deferTo')));
     });
+    test('proposeKnowledge requires key/hook/statement and pins the source '
+        'enum', () {
+      final params = parametersFor(DayAgentToolNames.proposeKnowledge);
+      expect(params['type'], 'object');
+      expect(params['additionalProperties'], isFalse);
+      expect(
+        requiredFor(DayAgentToolNames.proposeKnowledge),
+        containsAll(['key', 'hook', 'statement']),
+      );
+      final props = params['properties']! as Map<String, dynamic>;
+      expect(
+        (props['source']! as Map<String, dynamic>)['enum'],
+        ['userStated', 'agentInferred'],
+      );
+    });
+
     test('nested item schemas keep their own strict contracts', () {
       // setNextWake: both fields required.
       expect(

@@ -495,6 +495,7 @@ void main() {
       expect(result, isA<PlannerKnowledgeEntity>());
       final k = result as PlannerKnowledgeEntity;
       expect(k.key, 'deep-work-earliest-start');
+      expect(k.hook, 'no deep work before 10');
       expect(k.statementText, 'Never schedule deep work before 10:00.');
       expect(k.source, KnowledgeSource.userStated);
       expect(k.status, KnowledgeStatus.confirmed);

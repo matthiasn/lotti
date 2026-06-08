@@ -17,55 +17,56 @@ class KnowledgePanel extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final asyncView = ref.watch(plannerKnowledgeProvider);
+    // Use the last resolved value (not maybeWhen) so a confirm/retract/edit
+    // invalidation keeps the panel rendered during the background refresh
+    // instead of flashing to empty (repo no-flash rule).
+    final view = ref.watch(plannerKnowledgeProvider).value;
+    if (view == null) {
+      return const SizedBox.shrink();
+    }
 
-    return asyncView.maybeWhen(
-      data: (view) {
-        return Container(
-          decoration: BoxDecoration(
-            color: tokens.colors.background.level02,
-            borderRadius: BorderRadius.circular(tokens.radii.l),
-            border: Border.all(color: tokens.colors.decorative.level01),
+    return Container(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.l),
+        border: Border.all(color: tokens.colors.decorative.level01),
+      ),
+      padding: EdgeInsets.all(tokens.spacing.step5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            context.messages.dailyOsNextKnowledgeTitle,
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
           ),
-          padding: EdgeInsets.all(tokens.spacing.step5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                context.messages.dailyOsNextKnowledgeTitle,
-                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
+          SizedBox(height: tokens.spacing.step4),
+          if (view.isEmpty)
+            Text(
+              context.messages.dailyOsNextKnowledgeEmpty,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
               ),
+            ),
+          if (view.proposed.isNotEmpty) ...[
+            _SectionHeader(
+              label: context.messages.dailyOsNextKnowledgeProposedHeader,
+            ),
+            for (final entry in view.proposed)
+              _KnowledgeRow(entry: entry, proposed: true),
+          ],
+          if (view.confirmed.isNotEmpty) ...[
+            if (view.proposed.isNotEmpty)
               SizedBox(height: tokens.spacing.step4),
-              if (view.isEmpty)
-                Text(
-                  context.messages.dailyOsNextKnowledgeEmpty,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              if (view.proposed.isNotEmpty) ...[
-                _SectionHeader(
-                  label: context.messages.dailyOsNextKnowledgeProposedHeader,
-                ),
-                for (final entry in view.proposed)
-                  _KnowledgeRow(entry: entry, proposed: true),
-              ],
-              if (view.confirmed.isNotEmpty) ...[
-                if (view.proposed.isNotEmpty)
-                  SizedBox(height: tokens.spacing.step4),
-                _SectionHeader(
-                  label: context.messages.dailyOsNextKnowledgeConfirmedHeader,
-                ),
-                for (final entry in view.confirmed)
-                  _KnowledgeRow(entry: entry, proposed: false),
-              ],
-            ],
-          ),
-        );
-      },
-      orElse: () => const SizedBox.shrink(),
+            _SectionHeader(
+              label: context.messages.dailyOsNextKnowledgeConfirmedHeader,
+            ),
+            for (final entry in view.confirmed)
+              _KnowledgeRow(entry: entry, proposed: false),
+          ],
+        ],
+      ),
     );
   }
 }
