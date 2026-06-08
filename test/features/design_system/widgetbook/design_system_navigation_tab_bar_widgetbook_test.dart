@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_navigation_tab_bar_widgetbook.dart';
 
-import '../../../widget_test_utils.dart';
+import 'widgetbook_test_helpers.dart';
 
 void main() {
   group('buildDesignSystemNavigationTabBarWidgetbookComponent', () {
@@ -13,17 +12,11 @@ void main() {
         ..devicePixelRatio = 1.0;
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
-      final component = buildDesignSystemNavigationTabBarWidgetbookComponent();
-      final useCase = component.useCases.single;
 
-      expect(component.name, 'Tab bar');
-      expect(useCase.name, 'Overview');
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
+      await pumpWidgetbookOverview(
+        tester,
+        buildDesignSystemNavigationTabBarWidgetbookComponent(),
+        expectedName: 'Tab bar',
       );
 
       expect(find.text('Tab Bar Variants'), findsOneWidget);

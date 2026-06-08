@@ -1,25 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_dropdown_widgetbook.dart';
 
-import '../../../widget_test_utils.dart';
+import 'widgetbook_test_helpers.dart';
 
 void main() {
   group('buildDesignSystemDropdownWidgetbookComponent', () {
     testWidgets('builds the dropdown overview use case', (tester) async {
-      final component = buildDesignSystemDropdownWidgetbookComponent();
-      final useCase = component.useCases.single;
-
-      expect(component.name, 'Dropdowns');
-      expect(useCase.name, 'Overview');
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
+      await pumpWidgetbookOverview(
+        tester,
+        buildDesignSystemDropdownWidgetbookComponent(),
+        expectedName: 'Dropdowns',
       );
 
       expect(find.text('Combobox'), findsOneWidget);

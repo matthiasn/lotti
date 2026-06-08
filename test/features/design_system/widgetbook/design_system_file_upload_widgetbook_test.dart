@@ -1,27 +1,18 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/file_uploads/design_system_file_upload.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_file_upload_widgetbook.dart';
 
-import '../../../widget_test_utils.dart';
+import 'widgetbook_test_helpers.dart';
 
 void main() {
   group('buildDesignSystemFileUploadWidgetbookComponent', () {
     testWidgets('renders the overview page with all variants', (
       tester,
     ) async {
-      final component = buildDesignSystemFileUploadWidgetbookComponent();
-      final useCase = component.useCases.single;
-
-      expect(component.name, 'File upload');
-      expect(useCase.name, 'Overview');
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
+      await pumpWidgetbookOverview(
+        tester,
+        buildDesignSystemFileUploadWidgetbookComponent(),
+        expectedName: 'File upload',
       );
 
       // Drop zone section

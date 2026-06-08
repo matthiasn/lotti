@@ -1,26 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_task_list_item_widgetbook.dart';
 
-import '../../../widget_test_utils.dart';
+import 'widgetbook_test_helpers.dart';
 
 void main() {
   group('buildDesignSystemTaskListItemWidgetbookComponent', () {
     testWidgets('renders the overview page with all variants', (
       tester,
     ) async {
-      final component = buildDesignSystemTaskListItemWidgetbookComponent();
-      final useCase = component.useCases.single;
-
-      expect(component.name, 'Task list item');
-      expect(useCase.name, 'Overview');
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
+      await pumpWidgetbookOverview(
+        tester,
+        buildDesignSystemTaskListItemWidgetbookComponent(),
+        expectedName: 'Task list item',
       );
 
       // Verify section title is rendered

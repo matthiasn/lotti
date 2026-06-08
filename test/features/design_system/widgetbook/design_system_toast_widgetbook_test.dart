@@ -1,25 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/widgetbook/design_system_toast_widgetbook.dart';
 
-import '../../../widget_test_utils.dart';
+import 'widgetbook_test_helpers.dart';
 
 void main() {
   group('buildDesignSystemToastWidgetbookComponent', () {
     testWidgets('builds the toast overview use case', (tester) async {
-      final component = buildDesignSystemToastWidgetbookComponent();
-      final useCase = component.useCases.single;
-
-      expect(component.name, 'Toast');
-      expect(useCase.name, 'Overview');
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          Builder(builder: useCase.builder),
-          theme: DesignSystemTheme.light(),
-        ),
+      await pumpWidgetbookOverview(
+        tester,
+        buildDesignSystemToastWidgetbookComponent(),
+        expectedName: 'Toast',
       );
 
       // Section headers: the first two render in the initial viewport,
@@ -54,9 +46,11 @@ void main() {
       expect(find.text('With Countdown'), findsOneWidget);
       expect(find.byType(DesignSystemToast), findsWidgets);
 
-      // Cleanup: drain animation controllers from the live countdown bars
-      // so the test doesn't tear down with pending Timers.
-      await tester.pump(const Duration(seconds: 10));
+      // Cleanup: drain the live countdown bars so the test doesn't tear down
+      // with a still-ticking AnimationController. The two countdown toasts
+      // reverse from 1.0 over 5s and from 0.6 over 8s (= 4.8s real time), so a
+      // single 5-second pump fully drains both — 10s was unnecessary slack.
+      await tester.pump(const Duration(seconds: 5));
       expect(tester.takeException(), isNull);
     });
   });
