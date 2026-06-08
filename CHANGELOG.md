@@ -16,6 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   switching is instantaneous even with years of entries, and private
   entries stay hidden unless the private flag is on.
 
+### Changed
+- Task and project lists stay snappier under sync: a task's project is now
+  resolved from a denormalized, indexed column (and batched across rows
+  instead of one query per task), and the projects overview plus the
+  saved-filter sidebar counts now coalesce rapid update notifications into a
+  single refresh instead of recomputing on every burst.
+
 ### Fixed
 - Time tracked on entries created before mid-2024 could show up as
   "Uncategorized" in time-by-category views (including the Daily OS time
