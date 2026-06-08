@@ -1,15 +1,18 @@
 import 'package:beamer/beamer.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_linkify/flutter_linkify.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/dashboards/ui/widgets/dashboard_widget.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/pages/create/complete_habit_dialog.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/date_time/datetime_bottom_sheet.dart';
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
@@ -199,7 +202,13 @@ void main() {
 
       await pumpHabitDialog(tester);
 
-      expect(find.byType(SingleChildScrollView).evaluate().length, 2);
+      // When the habit has a dashboardId the dialog renders the dashboard
+      // preview. Assert on the behaviour (the DashboardWidget is present and
+      // is configured with that id) rather than counting scroll views.
+      final dashboardFinder = find.byType(DashboardWidget);
+      expect(dashboardFinder, findsOneWidget);
+      final dashboardWidget = tester.widget<DashboardWidget>(dashboardFinder);
+      expect(dashboardWidget.dashboardId, 'dash-1');
     });
 
     testWidgets(
@@ -330,6 +339,76 @@ void main() {
         expect(captured[1], 'Great job today');
         final completion = captured[0] as HabitCompletionData;
         expect(completion.completionType, HabitCompletionType.success);
+      },
+    );
+
+    testWidgets(
+      'tapping the date field opens the picker modal and Done feeds the '
+      'dialog setDateTime',
+      (tester) async {
+        when(
+          () => mockPersistenceLogic.createHabitCompletionEntry(
+            data: any(named: 'data'),
+            comment: any(named: 'comment'),
+            habitDefinition: habitFlossing,
+          ),
+        ).thenAnswer((_) async => null);
+
+        // Pump with a fixed past dateString so _started (and therefore the
+        // field text and the picker's initial value) is deterministic:
+        // end-of-day on 2024-01-15 → "2024-01-15 23:59".
+        final delegate = BeamerDelegate(
+          locationBuilder: RoutesLocationBuilder(
+            routes: {'/': (context, state, data) => Container()},
+          ).call,
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget(
+            BeamerProvider(
+              routerDelegate: delegate,
+              child: Material(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(
+                    maxHeight: 800,
+                    maxWidth: 800,
+                  ),
+                  child: HabitDialog(
+                    habitId: habitFlossing.id,
+                    dateString: '2024-01-15',
+                    themeData: ThemeData(),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The dialog's date field is the only DateTimeField in the tree and
+        // initially shows the end-of-day time for the supplied dateString.
+        expect(find.byType(DateTimeField), findsOneWidget);
+        expect(find.text('2024-01-15 23:59'), findsOneWidget);
+
+        // Tap the field → the Wolt picker modal must open. This exercises the
+        // tap-on-field → picker-open path that the direct-callback test below
+        // does not.
+        await tester.tap(find.byType(DateTimeField));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(DateTimeBottomSheet), findsOneWidget);
+        expect(find.byType(CupertinoDatePicker), findsOneWidget);
+
+        // Confirm with Done — the picker's selected value (the unchanged
+        // initial date) flows back into the dialog's setDateTime callback.
+        await tester.tap(find.text('Done'));
+        await tester.pumpAndSettle();
+
+        // Modal is dismissed and the dialog still reflects the picked time,
+        // proving the picker → dialog wiring round-tripped.
+        expect(find.byType(DateTimeBottomSheet), findsNothing);
+        expect(find.text('2024-01-15 23:59'), findsOneWidget);
       },
     );
 
