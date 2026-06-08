@@ -665,6 +665,47 @@ void main() {
       expect(dashboard.items, hasLength(1));
       expect(dashboard.items[0], isA<DashboardMeasurementItem>());
     });
+
+    // Glados (MED): for any interleaving of known and unknown item types the
+    // sanitizer must keep exactly the known-type items and drop the rest
+    // before deserialization. Kinds 0..2 are valid known items, kind 3 is an
+    // unknown runtimeType.
+    Map<String, dynamic> itemForKind(int kind, int index) {
+      switch (kind) {
+        case 0:
+          return {'runtimeType': 'measurement', 'id': 'm-$index'};
+        case 1:
+          return {
+            'runtimeType': 'healthChart',
+            'color': '#00FF00',
+            'healthType': 'HEART_RATE',
+          };
+        case 2:
+          return {'runtimeType': 'habitChart', 'habitId': 'h-$index'};
+        default:
+          return {'runtimeType': 'unknown_$index', 'x': 'y'};
+      }
+    }
+
+    glados.Glados(
+      glados.any.listWithLengthInRange(0, 12, glados.any.intInRange(0, 4)),
+      glados.ExploreConfig(numRuns: 120),
+    ).test(
+      'keeps exactly the known-type items for any known/unknown mix',
+      (kinds) {
+        final items = [
+          for (var i = 0; i < kinds.length; i++) itemForKind(kinds[i], i),
+        ];
+        final expectedKnown = kinds.where((k) => k != 3).length;
+
+        final dashboard = fromDashboardDbEntity(
+          makeDbEntity(makeDashboardJson(items: items)),
+        );
+
+        expect(dashboard.items, hasLength(expectedKnown), reason: 'kinds=$kinds');
+      },
+      tags: 'glados',
+    );
   });
 
   group('dashboardStreamMapper handles parse failures gracefully', () {

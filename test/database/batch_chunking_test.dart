@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -304,6 +305,50 @@ void main() {
           {'r-0', 'r-600', 'r-1100'},
         );
       },
+    );
+  });
+
+  // MED: property coverage for the shared `_sqliteInListChunk = 500` batch
+  // splitter used by `journalEntityMapForIds` / `getDayPlansByIds`. Only six
+  // rows are stored; each run queries an arbitrary-length id list (often
+  // spanning multiple 500-id chunks, with duplicates and absent ids) and
+  // asserts the result is exactly the stored∩requested set, each row once.
+  group('getDayPlansByIds chunking — Glados', () {
+    final base = DateTime(2027);
+    const storedOffsets = [0, 1, 250, 500, 900, 1150];
+    late Set<String> storedIds;
+
+    setUp(() async {
+      storedIds = {
+        for (final o in storedOffsets) dayPlanId(base.add(Duration(days: o))),
+      };
+      for (final o in storedOffsets) {
+        await db.upsertJournalDbEntity(
+          toDbEntity(makePlan(base.add(Duration(days: o)))),
+        );
+      }
+    });
+
+    glados.Glados(
+      glados.any.listWithLengthInRange(0, 1100, glados.any.intInRange(0, 1200)),
+      glados.ExploreConfig(numRuns: 60),
+    ).test(
+      'returns exactly the stored ids in the request, deduped, across chunks',
+      (offsets) async {
+        final requestIds = [
+          for (final o in offsets) dayPlanId(base.add(Duration(days: o))),
+        ];
+        final expected = requestIds.toSet().intersection(storedIds);
+
+        final result = await db.getDayPlansByIds(requestIds);
+        final returnedIds = result.map((p) => p.meta.id).toSet();
+
+        expect(returnedIds, expected, reason: 'len=${requestIds.length}');
+        // No row is returned twice, regardless of duplicate request ids or
+        // chunk-boundary placement.
+        expect(result.length, returnedIds.length, reason: 'no duplicate rows');
+      },
+      tags: 'glados',
     );
   });
 }
