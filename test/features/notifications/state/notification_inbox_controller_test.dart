@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:collection';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/notification_entity.dart';
@@ -6,7 +9,10 @@ import 'package:lotti/features/notifications/state/notification_inbox_controller
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 // All `scheduledFor` timestamps in these tests sit far enough in the past or
@@ -276,6 +282,130 @@ void main() {
       expect(state, isA<AsyncError<int>>());
     },
   );
+
+  // Exercises the `_refreshEpoch` guard in isolation: concurrent stream events
+  // can fan out multiple `_refresh()` calls, and an earlier-started fetch that
+  // resolves *after* a newer one must be discarded so the latest result always
+  // wins. A mock DB hands back completer-backed futures so the test controls
+  // the resolution order explicitly — impossible to provoke deterministically
+  // with the real in-memory DB, which resolves reads synchronously in order.
+  group('stale-completion ordering (epoch guard)', () {
+    late MockNotificationsDb mockDb;
+    late Queue<Completer<List<NotificationEntity>>> dueNowCompleters;
+
+    setUpAll(registerAllFallbackValues);
+
+    setUp(() {
+      mockDb = MockNotificationsDb();
+      dueNowCompleters = Queue<Completer<List<NotificationEntity>>>();
+      when(() => mockDb.dueNow(any())).thenAnswer((_) {
+        final completer = Completer<List<NotificationEntity>>();
+        dueNowCompleters.add(completer);
+        return completer.future;
+      });
+
+      getIt
+        ..unregister<NotificationsDb>()
+        ..registerSingleton<NotificationsDb>(mockDb);
+    });
+
+    Completer<List<NotificationEntity>> nextCompleter() {
+      // The producer only enqueues on demand, so wait for the controller to
+      // actually issue the read before grabbing its completer.
+      expect(dueNowCompleters, isNotEmpty);
+      return dueNowCompleters.removeFirst();
+    }
+
+    testWidgets(
+      'discards a slower earlier refresh in favour of a faster later one',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        // build() issues the initial fetch; resolve it to a known baseline.
+        final initialRead = container.read(
+          unseenNotificationCountProvider.future,
+        );
+        await tester.pump();
+        nextCompleter().complete([
+          _notification(id: 'baseline', scheduledFor: _farPast),
+        ]);
+        expect(await initialRead, 1);
+
+        // First refresh (epoch N+1): a single debounce cycle, fetch held open.
+        updateNotifications.notify({inboxNotification});
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
+        final firstRefresh = nextCompleter();
+
+        // Second refresh (epoch N+2): a fresh debounce cycle, also held open.
+        updateNotifications.notify({inboxNotification});
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
+        // The newer (epoch N+2) fetch resolves first with three rows.
+        nextCompleter().complete([
+          _notification(id: 'a', scheduledFor: _farPast),
+          _notification(id: 'b', scheduledFor: _farPast),
+          _notification(id: 'c', scheduledFor: _farPast),
+        ]);
+        await tester.pump();
+        expect(container.read(unseenNotificationCountProvider).value, 3);
+
+        // The older (epoch N+1) fetch resolves *after* with a different value;
+        // because its epoch is stale, the result must be dropped.
+        firstRefresh.complete([
+          _notification(id: 'stale', scheduledFor: _farPast),
+        ]);
+        await tester.pump();
+
+        expect(
+          container.read(unseenNotificationCountProvider).value,
+          3,
+          reason: 'stale epoch-N+1 result must not overwrite the newer count',
+        );
+      },
+    );
+
+    testWidgets(
+      'a stale fetch failure does not clobber the newer success',
+      (tester) async {
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        final initialRead = container.read(
+          unseenNotificationCountProvider.future,
+        );
+        await tester.pump();
+        nextCompleter().complete(const <NotificationEntity>[]);
+        expect(await initialRead, 0);
+
+        updateNotifications.notify({inboxNotification});
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
+        final firstRefresh = nextCompleter();
+
+        updateNotifications.notify({inboxNotification});
+        await tester.pump(const Duration(milliseconds: 100));
+        await tester.pump();
+        // Newer refresh succeeds first.
+        nextCompleter().complete([
+          _notification(id: 'fresh', scheduledFor: _farPast),
+        ]);
+        await tester.pump();
+        expect(container.read(unseenNotificationCountProvider).value, 1);
+
+        // Older refresh then fails — its stale epoch must suppress the error so
+        // the controller keeps reporting the newer success instead of flipping
+        // to AsyncError.
+        firstRefresh.completeError(Exception('stale failure'));
+        await tester.pump();
+
+        final state = container.read(unseenNotificationCountProvider);
+        expect(state, isA<AsyncData<int>>());
+        expect(state.value, 1);
+      },
+    );
+  });
 }
 
 NotificationEntity _notification({

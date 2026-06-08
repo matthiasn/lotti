@@ -324,6 +324,16 @@ TaskOverdueNotification _overdue({
       as TaskOverdueNotification;
 }
 
+/// Independent re-derivation of the impl's tie-break ordering.
+///
+/// Deliberately *not* imported from the implementation: `_prefers` in
+/// `notification_inbox_projection.dart` is private and returns a `bool`
+/// "candidate beats existing" relation, whereas this Glados oracle needs a
+/// `reduce`-compatible "pick the winner of two" function. Keeping a separate
+/// copy means the test asserts the documented ordering contract
+/// (updatedAt > createdAt > scheduledFor > id, latest wins) rather than just
+/// re-running the production code against itself — if the impl drifts from the
+/// contract, this oracle catches it.
 TaskSuggestionNotification _preferred(
   TaskSuggestionNotification a,
   TaskSuggestionNotification b,
