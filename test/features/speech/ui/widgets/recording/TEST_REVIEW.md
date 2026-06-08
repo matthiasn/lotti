@@ -30,6 +30,7 @@
   **RESOLVED:** done — the timer-text width test (tabular figures keep 41 vs 48 minutes at identical width) was folded into `audio_recording_indicator_test.dart` with its fixed-state fake controller; the orphan file is deleted.
 
 - [ ] **[LOW]** `lib/…/recording/audio_recording_modal.dart` (453 lines) is near threshold. If post-merge test file is very large, consider extracting `AudioRecordingModalContent` into its own source file `audio_recording_modal_content.dart` as a natural split seam.
+  **DEFERRED:** out of scope for a test-quality pass — this is a production-code structural refactor (moving a widget to a new source file), conditioned on the test file being "very large", and would create new source/test files outside the test improvements remit. The condition is also weak now: the modal test was already merged into a single file. Leaving the source structure to a dedicated refactor PR.
 
 ## Test quality improvements
 
@@ -45,7 +46,8 @@
 - [x] **[MED]** `test/…/recording/audio_recording_modal_test.dart:352–1137` — 14 tests build ad-hoc `ProviderScope + MaterialApp + Scaffold + localization` wrappers individually via `pumpWidget(createTestWidget(...))`. The file already has a `createTestWidget` helper (line ~300), but it is defined per-test scope rather than as a file-level helper with parameterized overrides. The `_pumpModalContent` helper in `audio_recording_modal_coverage_test.dart` is the right pattern — adopt it in the main test file on merge.
   **RESOLVED:** stale — the coverage file was already merged in and the helpers consolidated: one main-scope `createTestWidget({state, category, linkedTaskId, …})`, plus `pumpModalContent` and `createTestWidgetWithEntry`; the 14 ad-hoc wrappers are gone.
 
-- [ ] **[LOW]** `test/…/recording/audio_recording_orb_test.dart:12–36` — The `AudioRecordingSignalLevel.fromDbfs(...)` tests use 8 hand-rolled fixture values. These are good concrete examples, but no test verifies the monotonicity invariant (`dbfs1 < dbfs2 → normalized1 ≤ normalized2`). This is a Glados candidate (see below).
+- [x] **[LOW]** `test/…/recording/audio_recording_orb_test.dart:12–36` — The `AudioRecordingSignalLevel.fromDbfs(...)` tests use 8 hand-rolled fixture values. These are good concrete examples, but no test verifies the monotonicity invariant (`dbfs1 < dbfs2 → normalized1 ≤ normalized2`). This is a Glados candidate (see below).
+  **RESOLVED:** already covered — the `AudioRecordingSignalLevel.fromDbfs — Glados properties` group (numRuns 200) asserts `quieter.normalized <= level.normalized` for every generated dBFS, which is exactly the monotonicity invariant. The 8 fixture examples remain as concrete documentation of the curve shape.
 
 ## Generative (Glados) testing opportunities
 
@@ -56,7 +58,8 @@
   Generate with `any.double` (including `nan`, `+inf`, `-inf`) filtered to avoid Dart floating-point special cases if needed.
   **RESOLVED:** done — Glados property (numRuns 200) over deci-dB values in [-200, +20]: normalized stays in [0, 1], clipping triggers strictly above -3 dBFS, and the curve is monotonic (quieter never normalizes higher); plus a static non-finite-input test (NaN/±∞ → silent, non-clipping).
 
-- [ ] **[LOW]** `VuMeterPainter` paint logic in `lib/…/recording/vu_meter_painter.dart` — The `shouldRepaint` logic is already tested. The `paint` method's geometric calculations (tick positions, needle angle from 0.0–1.0 value) are deterministic pure functions of `value` and `size`. A Glados property over `(value: 0..1, size: 50..500)` could verify: no `RangeError`, `drawCircleCount ≥ 0`, tick layout is within bounds. The existing `_CountingCanvas` infrastructure already supports this.
+- [x] **[LOW]** `VuMeterPainter` paint logic in `lib/…/recording/vu_meter_painter.dart` — The `shouldRepaint` logic is already tested. The `paint` method's geometric calculations (tick positions, needle angle from 0.0–1.0 value) are deterministic pure functions of `value` and `size`. A Glados property over `(value: 0..1, size: 50..500)` could verify: no `RangeError`, `drawCircleCount ≥ 0`, tick layout is within bounds. The existing `_CountingCanvas` infrastructure already supports this.
+  **RESOLVED:** done — added a `VuMeterPainter.paint — geometry properties` Glados group (numRuns 150) driven by a `combine5` generator over `value`/`peakValue`/`clipValue` (unit-interval, int-encoded) and width/height (50..700, int-encoded). It asserts `paint` returns normally for every case, `drawCircleCount >= 0`, and — by diffing against an indicators-off baseline on the existing `_CountingCanvas` — that the clip branch adds exactly 4 circles iff `clipValue > 0` and the peak branch adds exactly 1 line iff `peakValue > 0`, over the full input space.
 
 ## Coverage / missing-behavior gaps
 
@@ -66,7 +69,8 @@
 - [x] **[MED]** `test/…/recording/audio_recording_modal_test.dart` and `coverage_test.dart` — The `AudioRecordingModal.show()` static method is tested in the coverage file (via `_pumpShowModalTrigger`) but the dismiss/close path (tapping outside the bottom sheet) is not verified. The test calls `pumpAndSettle()` after showing the modal but does not assert that the modal can be dismissed.
   **RESOLVED:** stale — 'should set modal invisible when modal is dismissed' already taps outside the sheet (barrier tap at (10,10)) and asserts `modalVisible` flips back to false.
 
-- [ ] **[LOW]** `test/…/recording/audio_recording_indicator_test.dart` — Confirm that the timer text sub-widget state (elapsed recording time) is tested for the case where recording has been going on for >59 seconds (minute rollover in `formatElapsed`).
+- [x] **[LOW]** `test/…/recording/audio_recording_indicator_test.dart` — Confirm that the timer text sub-widget state (elapsed recording time) is tested for the case where recording has been going on for >59 seconds (minute rollover in `formatElapsed`).
+  **RESOLVED:** confirmed covered — the indicator renders `formatDuration(state.progress)` (there is no `formatElapsed`). Minute rollover (>59 s) is asserted by `'indicator has correct styling'` (`Duration(minutes:1, seconds:23)` → `'00:01:23'`), `'indicator shows correct duration format'` (`Duration(minutes:1, seconds:30)` → `'00:01:30'` and `Duration(hours:1, minutes:15, seconds:45)` → `'01:15:45'`). Hour rollover is covered too, so no new test is needed.
 
 ## Test execution speed opportunities
 

@@ -3,8 +3,64 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/speech/ui/widgets/recording/vu_meter_constants.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/vu_meter_painter.dart';
+
+// ---------------------------------------------------------------------------
+// Generators for VuMeterPainter geometry property tests.
+//
+// `paint` is a deterministic pure function of `value`, the indicator inputs,
+// and the canvas `size`. We generate over integer-encoded deciles/dimensions
+// (rather than raw doubles) so the shrinker reduces each dimension cleanly and
+// we never hit double NaN/inf edge cases that the painter is not expected to
+// receive from its production callers.
+// ---------------------------------------------------------------------------
+class _PaintCase {
+  const _PaintCase({
+    required this.value,
+    required this.peakValue,
+    required this.clipValue,
+    required this.width,
+    required this.height,
+  });
+
+  final double value;
+  final double peakValue;
+  final double clipValue;
+  final double width;
+  final double height;
+}
+
+extension _AnyPaintCase on glados.Any {
+  glados.Generator<double> get unitInterval =>
+      glados.IntAnys(this).intInRange(0, 1000).map((i) => i / 1000.0);
+
+  glados.Generator<double> get canvasExtent =>
+      glados.IntAnys(this).intInRange(50, 700).map((i) => i.toDouble());
+
+  glados.Generator<_PaintCase> get paintCase =>
+      glados.CombinableAny(this).combine5(
+        unitInterval,
+        unitInterval,
+        unitInterval,
+        canvasExtent,
+        canvasExtent,
+        (
+          double value,
+          double peakValue,
+          double clipValue,
+          double width,
+          double height,
+        ) => _PaintCase(
+          value: value,
+          peakValue: peakValue,
+          clipValue: clipValue,
+          width: width,
+          height: height,
+        ),
+      );
+}
 
 // ---------------------------------------------------------------------------
 // Helper: record a painter onto a real Canvas backed by PictureRecorder.
@@ -483,6 +539,60 @@ void main() {
           const Duration(milliseconds: 150),
         );
       },
+    );
+  });
+
+  // -------------------------------------------------------------------------
+  // paint() — geometry property test
+  //
+  // For any in-range value/peak/clip and any sensibly-sized canvas, the
+  // needle-angle and tick-layout math must not throw (no RangeError from
+  // trig/clamp), the clip branch must add its 4 circles iff clipValue > 0,
+  // and the peak branch must add its 1 line iff peakValue > 0.
+  // -------------------------------------------------------------------------
+  group('VuMeterPainter.paint — geometry properties', () {
+    glados.Glados<_PaintCase>(
+      glados.any.paintCase,
+      glados.ExploreConfig(numRuns: 150),
+    ).test(
+      'paint never throws and emits the expected indicator draw counts',
+      (c) {
+        final size = Size(c.width, c.height);
+
+        // Baseline: same geometry but with both indicators forced off, so the
+        // delta isolates exactly the clip/peak branch contributions.
+        final baseline = _makeCountingCanvas();
+        _painter(value: c.value).paint(baseline, size);
+
+        final counting = _makeCountingCanvas();
+        expect(
+          () => _painter(
+            value: c.value,
+            peakValue: c.peakValue,
+            clipValue: c.clipValue,
+          ).paint(counting, size),
+          returnsNormally,
+          reason:
+              'value=${c.value} peak=${c.peakValue} clip=${c.clipValue} '
+              'size=$size',
+        );
+
+        final expectedExtraCircles = c.clipValue > 0 ? 4 : 0;
+        final expectedExtraLines = c.peakValue > 0 ? 1 : 0;
+
+        expect(
+          counting.drawCircleCount - baseline.drawCircleCount,
+          expectedExtraCircles,
+          reason: 'clip branch should add 4 circles iff clipValue>0',
+        );
+        expect(
+          counting.drawLineCount - baseline.drawLineCount,
+          expectedExtraLines,
+          reason: 'peak branch should add 1 line iff peakValue>0',
+        );
+        expect(counting.drawCircleCount, greaterThanOrEqualTo(0));
+      },
+      tags: 'glados',
     );
   });
 }
