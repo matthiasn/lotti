@@ -467,22 +467,24 @@ void main() {
         expect(state.selectAgentFilter('agent-1'), same(state));
       });
 
-      test('switches selection and counts a non-first option in appliedCount',
-          () {
-        final state = seed();
-        // The first option is the neutral default → appliedCount stays 0.
-        expect(state.appliedCount, 0);
+      test(
+        'switches selection and counts a non-first option in appliedCount',
+        () {
+          final state = seed();
+          // The first option is the neutral default → appliedCount stays 0.
+          expect(state.appliedCount, 0);
 
-        final switched = state.selectAgentFilter('agent-1');
-        expect(switched.selectedAgentFilterId, 'agent-1');
-        // Selecting a non-first agent option adds exactly one to the count.
-        expect(switched.appliedCount, 1);
+          final switched = state.selectAgentFilter('agent-1');
+          expect(switched.selectedAgentFilterId, 'agent-1');
+          // Selecting a non-first agent option adds exactly one to the count.
+          expect(switched.appliedCount, 1);
 
-        // Switching back to the first (default) option drops the count again.
-        final backToDefault = switched.selectAgentFilter('agent-all');
-        expect(backToDefault.selectedAgentFilterId, 'agent-all');
-        expect(backToDefault.appliedCount, 0);
-      });
+          // Switching back to the first (default) option drops the count again.
+          final backToDefault = switched.selectAgentFilter('agent-all');
+          expect(backToDefault.selectedAgentFilterId, 'agent-all');
+          expect(backToDefault.appliedCount, 0);
+        },
+      );
     });
 
     group('selectSearchMode', () {

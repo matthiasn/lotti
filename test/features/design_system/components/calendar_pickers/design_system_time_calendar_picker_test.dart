@@ -416,5 +416,32 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets(
+      'weekday columns follow the device region week-start',
+      (tester) async {
+        // English UI throughout; only the device region changes. A US device
+        // starts the week on Sunday, a UK device on Monday — so the MON
+        // column slides to the left edge for the UK region.
+        tester.platformDispatcher.localeTestValue = const Locale('en', 'US');
+        addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+        await pumpPicker(
+          tester,
+          presentation: DesignSystemTimeCalendarPickerPresentation.regular,
+          mode: DesignSystemTimeCalendarPickerMode.light,
+        );
+        final mondayXSundayFirst = tester.getTopLeft(find.text('MON')).dx;
+
+        tester.platformDispatcher.localeTestValue = const Locale('en', 'GB');
+        await pumpPicker(
+          tester,
+          presentation: DesignSystemTimeCalendarPickerPresentation.regular,
+          mode: DesignSystemTimeCalendarPickerMode.light,
+        );
+        final mondayXMondayFirst = tester.getTopLeft(find.text('MON')).dx;
+
+        expect(mondayXMondayFirst, lessThan(mondayXSundayFirst));
+      },
+    );
   });
 }

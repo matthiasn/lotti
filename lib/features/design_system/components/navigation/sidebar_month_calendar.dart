@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/typography_helpers.dart';
+import 'package:lotti/utils/week_start.dart';
 
 /// Compact month calendar for the desktop navigation sidebar — the
 /// `CalendarWidget` from the Daily OS design handoff (sidebar spec):
@@ -58,12 +59,13 @@ class SidebarMonthCalendar extends StatelessWidget {
     };
 
     final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
-    final firstDayOffset = DateUtils.firstDayOffset(
-      month.year,
-      month.month,
-      materialLocalizations,
-    );
-    final firstDayOfWeekIndex = materialLocalizations.firstDayOfWeekIndex;
+    // Start the week from the *device region's* convention (Monday in most
+    // of the world, Sunday in the US/etc.), not the app UI language — see
+    // [deviceFirstDayOfWeekIndex]. `DateUtils.firstDayOffset` is keyed by
+    // MaterialLocalizations, so compute the leading-cell offset by hand.
+    final firstDayOfWeekIndex = deviceFirstDayOfWeekIndex(context);
+    final firstOfMonth = DateTime(month.year, month.month);
+    final firstDayOffset = leadingDayOffset(firstOfMonth, firstDayOfWeekIndex);
     final narrowWeekdays = materialLocalizations.narrowWeekdays;
 
     return Column(

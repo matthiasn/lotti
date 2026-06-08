@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/utils/week_start.dart';
 
 part 'design_system_interactive_time_calendar_picker.dart';
 
@@ -217,9 +218,9 @@ class _MonthCalendarCard extends StatelessWidget {
     final palette = _TimeCalendarPalette.fromMode(mode);
     final geometry = _TimeCalendarGeometry.fromTokens(tokens);
     final localeTag = Localizations.localeOf(context).toLanguageTag();
-    final firstDayOfWeek = MaterialLocalizations.of(
-      context,
-    ).firstDayOfWeekIndex;
+    // Week start follows the device region (e.g. Monday in Europe), not the
+    // app UI language — see [deviceFirstDayOfWeekIndex].
+    final firstDayOfWeek = deviceFirstDayOfWeekIndex(context);
     final visibleLabel = DateFormat.yMMMM(localeTag).format(visibleMonth);
     final weeks = _buildMonthGrid(visibleMonth, firstDayOfWeek);
 
@@ -633,7 +634,7 @@ class _TimeCalendarPalette {
 List<List<int?>> _buildMonthGrid(DateTime month, int firstDayOfWeekIndex) {
   final firstDay = DateTime(month.year, month.month);
   final daysInMonth = _daysInMonth(month);
-  final offset = (firstDay.weekday % 7 - firstDayOfWeekIndex + 7) % 7;
+  final offset = leadingDayOffset(firstDay, firstDayOfWeekIndex);
   final cells = <int?>[
     ...List<int?>.filled(offset, null),
     ...List<int?>.generate(daysInMonth, (index) => index + 1),

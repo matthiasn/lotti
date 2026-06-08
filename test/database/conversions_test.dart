@@ -702,7 +702,11 @@ void main() {
           makeDbEntity(makeDashboardJson(items: items)),
         );
 
-        expect(dashboard.items, hasLength(expectedKnown), reason: 'kinds=$kinds');
+        expect(
+          dashboard.items,
+          hasLength(expectedKnown),
+          reason: 'kinds=$kinds',
+        );
       },
       tags: 'glados',
     );

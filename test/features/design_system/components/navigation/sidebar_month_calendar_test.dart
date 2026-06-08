@@ -12,6 +12,29 @@ Widget _wrap(Widget child) => makeTestableWidget2(
   mediaQueryData: const MediaQueryData(size: Size(400, 800)),
 );
 
+/// The seven weekday-header letters in render order. They are the first
+/// seven [Text] widgets inside the calendar grid (day numbers follow).
+List<String> _weekdayHeaders(WidgetTester tester) => tester
+    .widgetList<Text>(
+      find.descendant(
+        of: find.byType(GridView),
+        matching: find.byType(Text),
+      ),
+    )
+    .take(7)
+    .map((text) => text.data ?? '')
+    .toList();
+
+Widget _mayCalendar() => _wrap(
+  SidebarMonthCalendar(
+    month: DateTime(2026, 5),
+    today: DateTime(2026, 5, 24),
+    onPreviousMonth: () {},
+    onNextMonth: () {},
+    onDaySelected: (_) {},
+  ),
+);
+
 void main() {
   group('SidebarMonthCalendar', () {
     testWidgets(
@@ -163,5 +186,58 @@ void main() {
           .length;
       expect(markedBoxes, unmarkedBoxes + 1);
     });
+
+    testWidgets(
+      'starts the week on Sunday for a Sunday-first device region',
+      (tester) async {
+        // English UI, but a US device — the week must still start on Sunday.
+        tester.platformDispatcher.localeTestValue = const Locale('en', 'US');
+        addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+
+        await tester.pumpWidget(_mayCalendar());
+
+        final headers = _weekdayHeaders(tester);
+        // Sunday-first → S, M, T, … (Sunday then Monday).
+        expect(headers.first, 'S');
+        expect(headers[1], 'M');
+      },
+    );
+
+    testWidgets(
+      'starts the week on Monday for a Monday-first device region',
+      (tester) async {
+        // Same English UI, but a UK device — the week starts on Monday,
+        // proving week-start follows the device region, not the UI language.
+        tester.platformDispatcher.localeTestValue = const Locale('en', 'GB');
+        addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+
+        await tester.pumpWidget(_mayCalendar());
+
+        final headers = _weekdayHeaders(tester);
+        // Monday-first → M, T, W, … (Monday then Tuesday).
+        expect(headers.first, 'M');
+        expect(headers[1], 'T');
+      },
+    );
+
+    testWidgets(
+      'shifts the leading-day offset with the region week-start',
+      (tester) async {
+        // 1 May 2026 is a Friday. Sunday-first leaves 5 leading blanks
+        // before the "1" cell; Monday-first leaves 4. Compare the on-screen
+        // x-position of "1" between the two regions to prove the shift.
+        tester.platformDispatcher.localeTestValue = const Locale('en', 'US');
+        addTearDown(tester.platformDispatcher.clearLocaleTestValue);
+        await tester.pumpWidget(_mayCalendar());
+        final sundayFirstX = tester.getTopLeft(find.text('1')).dx;
+
+        tester.platformDispatcher.localeTestValue = const Locale('en', 'GB');
+        await tester.pumpWidget(_mayCalendar());
+        final mondayFirstX = tester.getTopLeft(find.text('1')).dx;
+
+        // One fewer leading blank → the "1" sits one column to the left.
+        expect(mondayFirstX, lessThan(sundayFirstX));
+      },
+    );
   });
 }

@@ -31,6 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Daily OS Next: tapping a recorded session on the Day timeline now reopens
   its task scrolled to — and briefly highlighting — that exact entry again,
   instead of dropping you at the top of the task.
+- Calendars now start the week on the day your region uses (Monday in most
+  of the world, Sunday in the US and similar regions) instead of always on
+  Sunday. The week start follows your device region, so it stays correct
+  even when the app is shown in English. Affects the Daily OS sidebar month
+  calendar and the date pickers.
 
 ## [0.9.1016]
 ### Added

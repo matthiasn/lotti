@@ -499,37 +499,43 @@ void main() {
       glados.Glados(
         glados.IntAnys(glados.any).intInRange(0, 2100), // requested-id count
         glados.ExploreConfig(numRuns: 120),
-      ).test('chunking dedups its input and never exceeds the host-var cap', (
-        count,
-      ) {
-        // Half the ids are duplicated to exercise the dedup step.
-        final input = <String>[
-          for (var i = 0; i < count; i++) 'id-$i',
-          for (var i = 0; i < count ~/ 2; i++) 'id-$i',
-        ];
-        final deduped = input.toSet();
+      ).test(
+        'chunking dedups its input and never exceeds the host-var cap',
+        (
+          count,
+        ) {
+          // Half the ids are duplicated to exercise the dedup step.
+          final input = <String>[
+            for (var i = 0; i < count; i++) 'id-$i',
+            for (var i = 0; i < count ~/ 2; i++) 'id-$i',
+          ];
+          final deduped = input.toSet();
 
-        final chunks = AgentRepository.debugSqliteInClauseChunks(input).toList();
-        final flattened = chunks.expand((chunk) => chunk).toList();
+          final chunks = AgentRepository.debugSqliteInClauseChunks(
+            input,
+          ).toList();
+          final flattened = chunks.expand((chunk) => chunk).toList();
 
-        // No chunk exceeds the SQLite host-variable cut-off.
-        for (final chunk in chunks) {
-          expect(
-            chunk.length,
-            lessThanOrEqualTo(AgentRepository.debugInClauseChunkSize),
-            reason: 'count=$count',
-          );
-        }
-        // Every distinct input id appears exactly once across all chunks ...
-        expect(flattened.toSet(), deduped, reason: 'count=$count');
-        expect(flattened, hasLength(deduped.length), reason: 'count=$count');
-        // ... and an empty input yields no chunks at all.
-        if (deduped.isEmpty) {
-          expect(chunks, isEmpty, reason: 'count=$count');
-        } else {
-          expect(chunks, isNotEmpty, reason: 'count=$count');
-        }
-      }, tags: 'glados');
+          // No chunk exceeds the SQLite host-variable cut-off.
+          for (final chunk in chunks) {
+            expect(
+              chunk.length,
+              lessThanOrEqualTo(AgentRepository.debugInClauseChunkSize),
+              reason: 'count=$count',
+            );
+          }
+          // Every distinct input id appears exactly once across all chunks ...
+          expect(flattened.toSet(), deduped, reason: 'count=$count');
+          expect(flattened, hasLength(deduped.length), reason: 'count=$count');
+          // ... and an empty input yields no chunks at all.
+          if (deduped.isEmpty) {
+            expect(chunks, isEmpty, reason: 'count=$count');
+          } else {
+            expect(chunks, isNotEmpty, reason: 'count=$count');
+          }
+        },
+        tags: 'glados',
+      );
     });
 
     test('upsert overwrites existing entity with same ID', () async {
