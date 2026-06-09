@@ -18,7 +18,7 @@ part 'evolution_chat_state.g.dart';
 /// Manages the lifecycle of an evolution chat session for a specific template.
 ///
 /// On [build], starts a new multi-turn session via
-/// [TemplateEvolutionWorkflow.startSession]. The user can then send messages,
+/// `TemplateEvolutionWorkflow.startSession`. The user can then send messages,
 /// approve/reject proposals, and end the session.
 @riverpod
 class EvolutionChatState extends _$EvolutionChatState {
