@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/model/proposal_ledger_status.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 import 'package:sqlite3/sqlite3.dart' show SqliteException;
