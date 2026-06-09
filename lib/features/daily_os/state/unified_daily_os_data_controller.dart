@@ -22,6 +22,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'unified_daily_os_data_controller.g.dart';
 part 'unified_daily_os_data_aggregation.dart';
+part 'unified_daily_os_calculations.dart';
 
 /// Combined data for Daily OS view - single source of truth.
 ///
