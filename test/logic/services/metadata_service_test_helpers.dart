@@ -1,7 +1,6 @@
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/journal_entities.dart';
 
-
 class GeneratedMetadataUpdateScenario {
   const GeneratedMetadataUpdateScenario({
     required this.mask,

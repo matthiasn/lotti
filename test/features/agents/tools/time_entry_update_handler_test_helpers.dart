@@ -1,7 +1,6 @@
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/entry_text.dart';
 
-
 enum GeneratedSummaryShape {
   absent,
   valid,

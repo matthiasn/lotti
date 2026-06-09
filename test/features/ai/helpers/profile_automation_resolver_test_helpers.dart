@@ -1,6 +1,5 @@
 import 'package:glados/glados.dart' as glados;
 
-
 enum GeneratedAgentResolutionOutcome {
   noAgent,
   noTemplate,

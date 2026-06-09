@@ -1,7 +1,5 @@
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/genui/evolution_catalog.dart';
-
 
 void main() {
   group('buildEvolutionCatalog', () {
