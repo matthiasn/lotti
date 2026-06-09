@@ -15,14 +15,9 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:uuid/uuid.dart';
 
-part 'agent_message_chain.dart';
+part 'agent_sync_transaction_context.dart';
 
-/// Per-chain transaction context, stored in a [Zone] value so that
-/// concurrent transaction chains each have their own isolated buffer.
-class _TransactionContext {
-  final List<SyncMessage> pendingMessages = [];
-  final List<Future<void> Function()> pendingSequenceBindings = [];
-}
+part 'agent_message_chain.dart';
 
 /// Zone key used to look up the active [_TransactionContext].
 const Symbol _txKey = #AgentSyncService_txKey;
