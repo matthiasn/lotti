@@ -25,7 +25,6 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
@@ -37,21 +36,8 @@ import 'package:openai_dart/openai_dart.dart';
 import '../../features/agents/test_utils.dart';
 import '../../mocks/mocks.dart';
 import 'eval_models.dart';
+import 'scripted_agent_behavior.dart';
 import 'scripted_conversation_repository.dart';
-
-/// The fixed "model output" a scripted run replays: the tool calls the agent
-/// would have made, an optional final assistant message, and the token usage.
-class ScriptedAgentBehavior {
-  const ScriptedAgentBehavior({
-    this.toolCalls = const <ToolCallRecord>[],
-    this.finalResponse,
-    this.usage = const InferenceUsage(inputTokens: 0, outputTokens: 0),
-  });
-
-  final List<ToolCallRecord> toolCalls;
-  final String? finalResponse;
-  final InferenceUsage usage;
-}
 
 /// Runs the real planner workflow for a drafting wake.
 abstract final class PlannerEvalBench {
@@ -85,9 +71,15 @@ abstract final class PlannerEvalBench {
     final domainLogger = MockDomainLogger();
     final planService = MockDayAgentPlanService();
     final conversation = ScriptedConversationRepository()
-      ..toolCalls = _toToolCalls(behavior.toolCalls)
-      ..finalResponse = behavior.finalResponse
-      ..usage = behavior.usage;
+      ..toolCalls = _toToolCalls(behavior.firstToolCalls)
+      ..toolCallsByInvocation = [
+        for (final turn in behavior.turns) _toToolCalls(turn.toolCalls),
+      ]
+      ..finalResponse = behavior.firstFinalResponse
+      ..usage = behavior.firstUsage
+      ..usageByInvocation = [
+        for (final turn in behavior.turns) turn.usage,
+      ];
 
     var currentState = makeTestState(
       id: 'state-$_agentId',
@@ -211,13 +203,16 @@ abstract final class PlannerEvalBench {
       ),
     );
 
+    final executedToolCalls = behavior.toolCallsForTurns(
+      conversation.sendMessageCount,
+    );
     return AgentRunOutput(
       success: result.success,
       error: result.error,
-      usage: behavior.usage,
-      toolCalls: behavior.toolCalls,
-      plannedBlocks: _blocksFrom(behavior.toolCalls),
-      observations: _observationsFrom(behavior.toolCalls),
+      usage: behavior.usageForTurns(conversation.sendMessageCount),
+      toolCalls: executedToolCalls,
+      plannedBlocks: _blocksFrom(executedToolCalls),
+      observations: _observationsFrom(executedToolCalls),
       mutatedEntryIds: result.mutatedEntries.keys.toSet(),
       turnCount: conversation.sendMessageCount,
     );

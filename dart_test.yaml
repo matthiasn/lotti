@@ -6,3 +6,9 @@ tags:
       Slow performance/benchmark tests (e.g. large-dataset inserts under a long
       @Timeout). Can be kept out of the fast default lane via
       `--exclude-tags performance` and run on a dedicated CI step.
+  eval-live:
+    description: >-
+      Live model agent evaluation tests. These require LOTTI_EVAL_LIVE=1 and
+      provider credentials, and must not run in the default suite.
+  eval-report:
+    description: Eval trace report/verification entrypoints.

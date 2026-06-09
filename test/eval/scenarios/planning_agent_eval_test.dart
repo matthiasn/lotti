@@ -11,55 +11,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 
 import '../harness/eval_harness.dart';
+import 'eval_scenarios.dart';
 
 void main() {
-  // Deterministic clock — never DateTime.now() in tests.
-  final today = DateTime(2026, 6, 9, 7);
-
-  final scenario = EvalScenario(
-    id: 'planner_morning_capacity',
-    title: 'Morning capture: ADR + PR review + a run within capacity',
-    agentKind: AgentKind.planningAgent,
-    appState: MockedAppState(
-      now: today,
-      categoryIds: const ['cat-work', 'cat-health', 'cat-admin'],
-      tasks: [
-        MockTask(
-          id: 'task-adr',
-          title: 'Finish the planner ADR',
-          status: 'IN PROGRESS',
-          due: DateTime(2026, 6, 9),
-          estimateMinutes: 120,
-          categoryId: 'cat-work',
-        ),
-        MockTask(
-          id: 'task-pr',
-          title: 'Review the slow-query PR',
-          status: 'OPEN',
-          due: DateTime(2026, 6, 10),
-          estimateMinutes: 45,
-          categoryId: 'cat-work',
-        ),
-        const MockTask(
-          id: 'task-run',
-          title: 'Morning run',
-          status: 'OPEN',
-          estimateMinutes: 40,
-          categoryId: 'cat-health',
-        ),
-      ],
-    ),
-    userInput: const UserInput(
-      transcript:
-          "Here's what I want to get done today: finish the planner "
-          'ADR, review the slow-query PR, and fit in a morning run before '
-          'standup.',
-      triggerTokens: {'drafting:dayplan-2026-06-09'},
-    ),
-    expectations: const EvalExpectations(
-      mustCallTools: {'draft_day_plan'},
-    ),
-  );
+  final scenario = plannerMorningCapacityScenario;
 
   AgentRunOutput goodOutput() => AgentRunOutput(
     success: true,
@@ -224,6 +179,17 @@ void main() {
       expect(loaded, hasLength(2));
       // Verdicts were reattached from the sibling .verdict.json files.
       expect(loaded.every((t) => t.verdict != null), isTrue);
+      expect(
+        loaded.every(
+          (t) => t.verdict!.traceDigest?.startsWith('sha256:') ?? false,
+        ),
+        isTrue,
+        reason: 'verdicts must be bound to the trace bytes they graded',
+      );
+      await expectLater(
+        writer.writeTrace(localTrace, overwrite: true),
+        throwsStateError,
+      );
 
       final summaries = EvalReporter.summarize(loaded);
       final local = summaries.firstWhere(

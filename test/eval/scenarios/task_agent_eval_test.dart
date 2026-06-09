@@ -8,32 +8,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/inference_usage.dart';
 
 import '../harness/eval_harness.dart';
+import 'eval_scenarios.dart';
 
 void main() {
-  final scenario = EvalScenario(
-    id: 'task_release_notes',
-    title: 'Groom release-notes task: estimate, status, checklist, labels',
-    agentKind: AgentKind.taskAgent,
-    appState: MockedAppState(
-      now: DateTime(2026, 6, 9, 9),
-      categoryIds: const ['cat-work'],
-      tasks: const [
-        MockTask(
-          id: 'task-notes',
-          title: 'Write release notes for 0.x',
-          status: 'IN PROGRESS',
-          categoryId: 'cat-work',
-          checklist: [
-            MockChecklistItem(id: 'ci-1', title: 'Draft summary'),
-          ],
-        ),
-      ],
-    ),
-    userInput: const UserInput(
-      transcript: 'Help me get the release notes ready.',
-      triggerTokens: {'decided_task:task-notes'},
-    ),
-  );
+  final scenario = taskReleaseNotesScenario;
 
   AgentRunOutput goodOutput() => const AgentRunOutput(
     success: true,

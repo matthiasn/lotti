@@ -15,43 +15,115 @@
 # this NEVER runs in default CI. See docs/adr/0029-agent-evaluation-harness.md.
 #
 # Usage:
-#   LOTTI_EVAL_LIVE=1 GEMINI_API_KEY=... OLLAMA_BASE_URL=http://localhost:11434 \
-#     eval/run_level2.sh [runId]
+#   eval/run_level2.sh run [runId]
+#   eval/run_level2.sh grade [runId]
+#   eval/run_level2.sh verify [runId]
+#   eval/run_level2.sh report [runId]
+#   eval/run_level2.sh all [runId]
 #
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-RUN_ID="${1:-$(date +%Y%m%d-%H%M%S)}"
-RUN_DIR="eval/runs/${RUN_ID}"
-mkdir -p "$RUN_DIR"
+RUNS_ROOT="eval/runs"
+
+latest_run_id() {
+  if [[ ! -d "$RUNS_ROOT" ]]; then
+    echo "!!! No eval run directory exists under ${RUNS_ROOT}." >&2
+    exit 6
+  fi
+  local latest
+  latest="$(find "$RUNS_ROOT" -mindepth 1 -maxdepth 1 -type d -print 2>/dev/null | sort | tail -n 1 || true)"
+  if [[ -z "$latest" ]]; then
+    echo "!!! No eval runs found under ${RUNS_ROOT}." >&2
+    exit 6
+  fi
+  basename "$latest"
+}
+
+MODE="${1:-run}"
+if [[ "$MODE" != "run" && "$MODE" != "grade" && "$MODE" != "verify" && "$MODE" != "report" && "$MODE" != "all" ]]; then
+  RUN_ID="$MODE"
+  MODE="run"
+else
+  case "$MODE" in
+    run | all)
+      RUN_ID="${2:-$(date +%Y%m%d-%H%M%S)}"
+      ;;
+    grade | verify | report)
+      RUN_ID="${2:-$(latest_run_id)}"
+      ;;
+  esac
+fi
+RUN_DIR="${RUNS_ROOT}/${RUN_ID}"
 
 echo "==> Level 2 eval run: ${RUN_ID}"
 echo "    output: ${RUN_DIR}"
 
-if [[ "${LOTTI_EVAL_LIVE:-0}" != "1" ]]; then
-  echo "!!! LOTTI_EVAL_LIVE is not 1 — refusing to make live model calls." >&2
-  echo "    Set LOTTI_EVAL_LIVE=1 plus provider credentials to run Level 2." >&2
-  exit 2
-fi
+run_traces() {
+  if [[ "${LOTTI_EVAL_LIVE:-0}" != "1" ]]; then
+    echo "!!! LOTTI_EVAL_LIVE is not 1 — refusing to make live model calls." >&2
+    echo "    Set LOTTI_EVAL_LIVE=1 plus provider credentials to run Level 2." >&2
+    exit 2
+  fi
+  if [[ ! -f "test/eval/scenarios/live_runner_test.dart" ]]; then
+    echo "!!! LiveEvalTarget runner is not implemented yet." >&2
+    echo "    Expected test/eval/scenarios/live_runner_test.dart." >&2
+    exit 3
+  fi
+  if [[ -e "$RUN_DIR" ]] && compgen -G "${RUN_DIR}/*" > /dev/null; then
+    echo "!!! Refusing to write into non-empty run directory: ${RUN_DIR}" >&2
+    exit 4
+  fi
+  mkdir -p "$RUN_DIR"
+  echo "==> Producing traces..."
+  fvm flutter test test/eval/scenarios/live_runner_test.dart --tags eval-live \
+    --dart-define=EVAL_RUN="${RUN_ID}"
+}
 
-# 1. Produce traces. The live runner reads EVAL_RUN to know where to write.
-#    (Phase 2: test/eval/scenarios/live_runner_test.dart drives LiveEvalTarget.)
-echo "==> Producing traces..."
-fvm flutter test test/eval/scenarios --tags eval-live \
-  --dart-define=EVAL_RUN="${RUN_ID}"
+grade_prompt() {
+  if [[ ! -d "$RUN_DIR" ]]; then
+    echo "!!! Missing run directory: ${RUN_DIR}" >&2
+    exit 5
+  fi
+  echo "==> Grade the traces with Claude Code:"
+  echo "      claude -p \"Follow eval/grade_run.md to grade ${RUN_DIR}\""
+}
 
-# 2. Grade with Claude Code (judge). Human review encouraged after.
-echo "==> Grade the traces with Claude Code:"
-echo "      claude -p \"Follow eval/grade_run.md to grade ${RUN_DIR}\""
-echo "    (run this step interactively, then re-run with the reporter below)"
+verify_run() {
+  echo "==> Verifying trace/verdict bindings..."
+  fvm flutter test test/eval/scenarios/report_test.dart \
+    --plain-name "verifies complete trace/verdict matrix for an eval run" \
+    --dart-define=EVAL_RUN="${RUN_ID}"
+}
 
-# 3. Report — only meaningful once verdicts exist.
-if compgen -G "${RUN_DIR}/*.verdict.json" > /dev/null; then
+report_run() {
   echo "==> Aggregating report..."
   fvm flutter test test/eval/scenarios/report_test.dart \
+    --plain-name "renders eval run summary" \
     --dart-define=EVAL_RUN="${RUN_ID}"
-else
-  echo "==> No verdicts yet — grade with Claude Code, then re-run for the report."
-fi
+}
+
+case "$MODE" in
+  run)
+    run_traces
+    grade_prompt
+    ;;
+  grade)
+    grade_prompt
+    ;;
+  verify)
+    verify_run
+    ;;
+  report)
+    verify_run
+    report_run
+    ;;
+  all)
+    run_traces
+    grade_prompt
+    echo "==> After grading, run:"
+    echo "      eval/run_level2.sh report ${RUN_ID}"
+    ;;
+esac

@@ -12,48 +12,13 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 
 import '../../helpers/fallbacks.dart';
 import '../harness/eval_harness.dart';
-import '../harness/planner_eval_bench.dart' show ScriptedAgentBehavior;
 import '../harness/scripted_eval_target.dart';
+import 'eval_scenarios.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
 
-  const dayId = 'dayplan-2026-06-09';
-  final today = DateTime(2026, 6, 9, 7);
-
-  EvalScenario scenarioWith(MockedAppState state) => EvalScenario(
-    id: 'planner_workflow_drafting',
-    title: 'Real workflow drafting wake within capacity',
-    agentKind: AgentKind.planningAgent,
-    appState: state,
-    userInput: const UserInput(
-      transcript: 'Finish the planner ADR and fit in a morning run.',
-      triggerTokens: {'drafting:$dayId'},
-    ),
-    expectations: const EvalExpectations(mustCallTools: {'draft_day_plan'}),
-  );
-
-  final appState = MockedAppState(
-    now: today,
-    categoryIds: const ['cat-work', 'cat-health'],
-    tasks: [
-      MockTask(
-        id: 'task-adr',
-        title: 'Finish the planner ADR',
-        status: 'IN PROGRESS',
-        due: DateTime(2026, 6, 9),
-        estimateMinutes: 120,
-        categoryId: 'cat-work',
-      ),
-      const MockTask(
-        id: 'task-run',
-        title: 'Morning run',
-        status: 'OPEN',
-        estimateMinutes: 40,
-        categoryId: 'cat-health',
-      ),
-    ],
-  );
+  final scenario = plannerWorkflowDraftingScenario;
 
   Map<String, dynamic> block({
     required String categoryId,
@@ -68,6 +33,7 @@ void main() {
     'taskId': taskId,
     'title': title,
     'type': 'ai',
+    'reason': 'scripted eval baseline',
   };
 
   test(
@@ -78,7 +44,7 @@ void main() {
           ToolCallRecord(
             name: 'draft_day_plan',
             args: {
-              'dayId': dayId,
+              'dayId': kPlannerWorkflowDayId,
               'blocks': [
                 block(
                   categoryId: 'cat-health',
@@ -102,7 +68,6 @@ void main() {
         usage: const InferenceUsage(inputTokens: 4200, outputTokens: 700),
       );
 
-      final scenario = scenarioWith(appState);
       final output = await ScriptedEvalTarget.fromMap(
         {scenario.id: behavior},
         profileName: kFrontierProfile.name,
@@ -130,7 +95,7 @@ void main() {
           ToolCallRecord(
             name: 'draft_day_plan',
             args: {
-              'dayId': dayId,
+              'dayId': kPlannerWorkflowDayId,
               'blocks': [
                 block(
                   categoryId: 'cat-work',
@@ -154,7 +119,6 @@ void main() {
         usage: const InferenceUsage(inputTokens: 4200, outputTokens: 700),
       );
 
-      final scenario = scenarioWith(appState);
       final output = await ScriptedEvalTarget.fromMap(
         {scenario.id: behavior},
         profileName: kFrontierProfile.name,

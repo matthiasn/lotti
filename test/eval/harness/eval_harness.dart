@@ -6,6 +6,8 @@
 export 'eval_assertions.dart';
 export 'eval_models.dart';
 export 'eval_reporter.dart';
+export 'eval_run_verifier.dart';
 export 'eval_target.dart';
 export 'profiles.dart';
+export 'scripted_agent_behavior.dart';
 export 'trace_writer.dart';

@@ -10,7 +10,6 @@
 //   - status enum          — lib/features/agents/tools/task_agent_tool_definitions.dart:775
 
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.dart';
 
 import 'eval_models.dart';
 
@@ -298,16 +297,10 @@ EvalCheck checkProducedPlanForCapture(
   if (scenario.userInput.transcript.trim().isEmpty) {
     return EvalCheck.pass('produced_plan', 'no capture to act on');
   }
-  final names = output.toolNames.toSet();
-  final produced =
-      output.plannedBlocks.isNotEmpty ||
-      names.contains(DayAgentToolNames.draftDayPlan) ||
-      names.contains(DayAgentToolNames.parseCaptureToItems) ||
-      names.contains(DayAgentToolNames.proposePlanDiff);
-  if (!produced) {
+  if (output.plannedBlocks.isEmpty) {
     return EvalCheck.fail(
       'produced_plan',
-      'capture present but no plan, diff, or parsed items produced',
+      'capture present but no planned blocks were produced',
     );
   }
   return EvalCheck.pass('produced_plan');

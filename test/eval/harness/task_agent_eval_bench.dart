@@ -33,10 +33,10 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
-import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/model/ai_input.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openai_dart/openai_dart.dart';
 
@@ -44,7 +44,7 @@ import '../../features/agents/test_utils.dart';
 import '../../features/agents/workflow/task_agent_workflow_test_helpers.dart';
 import '../../mocks/mocks.dart';
 import 'eval_models.dart';
-import 'planner_eval_bench.dart' show ScriptedAgentBehavior;
+import 'scripted_agent_behavior.dart';
 
 /// Runs the real task-agent workflow for a single-task wake.
 abstract final class TaskAgentEvalBench {
@@ -80,6 +80,7 @@ abstract final class TaskAgentEvalBench {
     final checklistRepository = MockChecklistRepository();
     final labelsRepository = MockLabelsRepository();
     final templateService = MockAgentTemplateService();
+    final persistedEntities = <AgentDomainEntity>[];
 
     final testAgentState = makeTestState(
       id: 'state-$_agentId',
@@ -123,7 +124,7 @@ abstract final class TaskAgentEvalBench {
               displayName: 'Eval Task Agent',
               lifecycle: AgentLifecycle.active,
               mode: AgentInteractionMode.autonomous,
-              allowedCategoryIds: const {'cat-001'},
+              allowedCategoryIds: scenario.appState.categoryIds.toSet(),
               currentStateId: 'state-$_agentId',
               config: const AgentConfig(),
               createdAt: DateTime(2024),
@@ -140,6 +141,7 @@ abstract final class TaskAgentEvalBench {
       templateService: templateService,
       testTemplate: testTemplate,
       testTemplateVersion: testTemplateVersion,
+      persistedEntities: persistedEntities,
     );
     stubFullExecutePath(
       mockAgentRepository: agentRepository,
@@ -152,27 +154,41 @@ abstract final class TaskAgentEvalBench {
       agentId: _agentId,
       taskId: taskId,
     );
+    when(
+      () => aiInputRepository.buildTaskDetailsJson(id: taskId),
+    ).thenAnswer(
+      (_) async => jsonEncode(scenario.appState.tasks.first.toJson()),
+    );
 
-    conversationRepository.sendMessageDelegate =
-        ({
-          required conversationId,
-          required message,
-          required model,
-          required provider,
-          required inferenceRepo,
-          tools,
-          toolChoice,
-          temperature = 0.7,
-          strategy,
-        }) async {
-          if (strategy is TaskAgentStrategy) {
-            await strategy.processToolCalls(
-              toolCalls: _toToolCalls(behavior.toolCalls),
-              manager: conversationManager,
-            );
-          }
-          return behavior.usage;
-        };
+    conversationRepository
+      ..maxDelegateCalls = behavior.isMultiTurn ? behavior.turns.length : 1
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            final turnIndex =
+                conversationRepository.sendMessageDelegateCallCount - 1;
+            final toolCalls = behavior.isMultiTurn
+                ? behavior.turns[turnIndex].toolCalls
+                : behavior.toolCalls;
+            if (strategy is TaskAgentStrategy) {
+              await strategy.processToolCalls(
+                toolCalls: _toToolCalls(toolCalls),
+                manager: conversationManager,
+              );
+            }
+            return behavior.isMultiTurn
+                ? behavior.turns[turnIndex].usage
+                : behavior.usage;
+          };
 
     final workflow = createTestWorkflow(
       agentRepository: agentRepository,
@@ -200,13 +216,16 @@ abstract final class TaskAgentEvalBench {
       ),
     );
 
+    final executedToolCalls = behavior.toolCallsForTurns(
+      conversationRepository.sendMessageDelegateCallCount,
+    );
     return AgentRunOutput(
       success: result.success,
       error: result.error,
-      usage: behavior.usage,
-      toolCalls: behavior.toolCalls,
-      report: _reportFrom(behavior.toolCalls),
-      observations: _observationsFrom(behavior.toolCalls),
+      usage: _usageFromPersisted(persistedEntities),
+      toolCalls: executedToolCalls,
+      report: _reportFromPersisted(persistedEntities),
+      observations: _observationsFromPersisted(persistedEntities),
       mutatedEntryIds: result.mutatedEntries.keys.toSet(),
       turnCount: conversationRepository.sendMessageDelegateCallCount,
     );
@@ -222,8 +241,13 @@ abstract final class TaskAgentEvalBench {
     required MockAgentTemplateService templateService,
     required AgentTemplateEntity testTemplate,
     required AgentTemplateVersionEntity testTemplateVersion,
+    required List<AgentDomainEntity> persistedEntities,
   }) {
-    when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+    when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
+      persistedEntities.add(
+        invocation.positionalArguments.single as AgentDomainEntity,
+      );
+    });
     stubAppendMilestone(syncService);
     stubReconciledAgentState(syncService, agentRepository);
 
@@ -348,30 +372,59 @@ abstract final class TaskAgentEvalBench {
     ];
   }
 
-  static AgentReportRecord? _reportFrom(List<ToolCallRecord> calls) {
-    for (final call in calls) {
-      if (call.name != TaskAgentToolNames.updateReport) continue;
-      return AgentReportRecord(
-        oneLiner: (call.args['oneLiner'] as String?) ?? '',
-        tldr: (call.args['tldr'] as String?) ?? '',
-        content: (call.args['content'] as String?) ?? '',
+  static InferenceUsage _usageFromPersisted(
+    List<AgentDomainEntity> persistedEntities,
+  ) {
+    final usages = persistedEntities.whereType<WakeTokenUsageEntity>();
+    var usage = InferenceUsage.empty;
+    for (final entity in usages) {
+      usage = usage.merge(
+        InferenceUsage(
+          inputTokens: entity.inputTokens,
+          outputTokens: entity.outputTokens,
+          thoughtsTokens: entity.thoughtsTokens,
+          cachedInputTokens: entity.cachedInputTokens,
+        ),
       );
     }
-    return null;
+    return usage;
   }
 
-  static List<String> _observationsFrom(List<ToolCallRecord> calls) {
+  static AgentReportRecord? _reportFromPersisted(
+    List<AgentDomainEntity> persistedEntities,
+  ) {
+    final reports = persistedEntities
+        .whereType<AgentReportEntity>()
+        .where((report) => report.deletedAt == null)
+        .toList();
+    if (reports.isEmpty) return null;
+    final report = reports.last;
+    return AgentReportRecord(
+      oneLiner: report.oneLiner ?? '',
+      tldr: report.tldr ?? '',
+      content: report.content,
+    );
+  }
+
+  static List<String> _observationsFromPersisted(
+    List<AgentDomainEntity> persistedEntities,
+  ) {
+    final payloadsById = <String, AgentMessagePayloadEntity>{
+      for (final payload
+          in persistedEntities.whereType<AgentMessagePayloadEntity>())
+        payload.id: payload,
+    };
     final observations = <String>[];
-    for (final call in calls) {
-      if (call.name != TaskAgentToolNames.recordObservations) continue;
-      final raw = call.args['observations'];
-      if (raw is! List) continue;
-      for (final item in raw) {
-        if (item is String) {
-          observations.add(item);
-        } else if (item is Map<String, dynamic> && item['text'] is String) {
-          observations.add(item['text'] as String);
-        }
+    for (final message in persistedEntities.whereType<AgentMessageEntity>()) {
+      if (message.kind != AgentMessageKind.observation ||
+          message.deletedAt != null) {
+        continue;
+      }
+      final contentEntryId = message.contentEntryId;
+      if (contentEntryId == null) continue;
+      final text = payloadsById[contentEntryId]?.content['text'];
+      if (text is String && text.trim().isNotEmpty) {
+        observations.add(text);
       }
     }
     return observations;

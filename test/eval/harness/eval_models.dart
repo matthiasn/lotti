@@ -24,6 +24,17 @@ enum AgentKind {
       AgentKind.values.firstWhere((k) => k.name == name);
 }
 
+/// Coarse model capability class used for tuning and reporting.
+enum EvalModelClass {
+  localSmall,
+  localReasoning,
+  frontierFast,
+  frontierReasoning;
+
+  static EvalModelClass fromName(String name) =>
+      EvalModelClass.values.firstWhere((c) => c.name == name);
+}
+
 /// The simulated user input that drives a wake.
 ///
 /// For the planner this is the capture transcript ("Here is what I want to
@@ -436,35 +447,46 @@ class EvalProfile {
   const EvalProfile({
     required this.name,
     required this.isLocal,
+    required this.modelClass,
     required this.modelId,
     this.temperature = 0.7,
     this.maxCompletionTokens,
     this.tokenBudget = 1 << 30,
+    this.trialCount = 1,
   });
 
   factory EvalProfile.fromJson(Map<String, dynamic> json) => EvalProfile(
     name: json['name'] as String,
     isLocal: json['isLocal'] as bool,
+    modelClass: EvalModelClass.fromName(
+      (json['modelClass'] as String?) ??
+          ((json['isLocal'] as bool) ? 'localReasoning' : 'frontierReasoning'),
+    ),
     modelId: json['modelId'] as String,
     temperature: (json['temperature'] as num?)?.toDouble() ?? 0.7,
     maxCompletionTokens: (json['maxCompletionTokens'] as num?)?.toInt(),
     tokenBudget: (json['tokenBudget'] as num?)?.toInt() ?? (1 << 30),
+    trialCount: (json['trialCount'] as num?)?.toInt() ?? 1,
   );
 
   final String name;
   final bool isLocal;
+  final EvalModelClass modelClass;
   final String modelId;
   final double temperature;
   final int? maxCompletionTokens;
   final int tokenBudget;
+  final int trialCount;
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'name': name,
     'isLocal': isLocal,
+    'modelClass': modelClass.name,
     'modelId': modelId,
     'temperature': temperature,
     if (maxCompletionTokens != null) 'maxCompletionTokens': maxCompletionTokens,
     'tokenBudget': tokenBudget,
+    'trialCount': trialCount,
   };
 }
 
@@ -507,6 +529,7 @@ class JudgeVerdict {
     required this.quality,
     required this.efficiency,
     required this.pass,
+    this.traceDigest,
     this.rationale = '',
     this.issues = const <String>[],
   });
@@ -516,6 +539,7 @@ class JudgeVerdict {
     quality: (json['quality'] as num).toInt(),
     efficiency: (json['efficiency'] as num).toInt(),
     pass: json['pass'] as bool,
+    traceDigest: json['traceDigest'] as String?,
     rationale: (json['rationale'] as String?) ?? '',
     issues: ((json['issues'] as List<dynamic>?) ?? const [])
         .map((e) => e as String)
@@ -526,14 +550,26 @@ class JudgeVerdict {
   final int quality;
   final int efficiency;
   final bool pass;
+  final String? traceDigest;
   final String rationale;
   final List<String> issues;
+
+  JudgeVerdict withTraceDigest(String digest) => JudgeVerdict(
+    goalAttainment: goalAttainment,
+    quality: quality,
+    efficiency: efficiency,
+    pass: pass,
+    traceDigest: digest,
+    rationale: rationale,
+    issues: issues,
+  );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'goalAttainment': goalAttainment,
     'quality': quality,
     'efficiency': efficiency,
     'pass': pass,
+    if (traceDigest != null) 'traceDigest': traceDigest,
     'rationale': rationale,
     'issues': issues,
   };
@@ -546,12 +582,14 @@ class EvalTrace {
     required this.scenario,
     required this.profile,
     required this.output,
+    this.trialIndex = 0,
     this.level1Checks = const <EvalCheck>[],
     this.verdict,
   });
 
   factory EvalTrace.fromJson(Map<String, dynamic> json) => EvalTrace(
     runId: json['runId'] as String,
+    trialIndex: (json['trialIndex'] as num?)?.toInt() ?? 0,
     scenario: EvalScenario.fromJson(json['scenario'] as Map<String, dynamic>),
     profile: EvalProfile.fromJson(json['profile'] as Map<String, dynamic>),
     output: AgentRunOutput.fromJson(json['output'] as Map<String, dynamic>),
@@ -563,7 +601,10 @@ class EvalTrace {
         : JudgeVerdict.fromJson(json['verdict'] as Map<String, dynamic>),
   );
 
+  static const schemaVersion = 1;
+
   final String runId;
+  final int trialIndex;
   final EvalScenario scenario;
   final EvalProfile profile;
   final AgentRunOutput output;
@@ -578,12 +619,15 @@ class EvalTrace {
     scenario: scenario,
     profile: profile,
     output: output,
+    trialIndex: trialIndex,
     level1Checks: level1Checks,
     verdict: v,
   );
 
   Map<String, dynamic> toJson() => <String, dynamic>{
+    'schemaVersion': schemaVersion,
     'runId': runId,
+    'trialIndex': trialIndex,
     'scenario': scenario.toJson(),
     'profile': profile.toJson(),
     'output': output.toJson(),

@@ -11,11 +11,14 @@ You are **not** the agent. You do not fix or rewrite the output. You judge it.
 
 A JSON `EvalTrace` with:
 
-- `agentKind` — `taskAgent` or `planningAgent`.
-- `profileName` + whether it was a local or frontier model.
-- `userInput.transcript` — what the user said they want.
-- `userInput.triggerTokens` — what woke the agent (e.g. `drafting:<dayId>`).
-- The mocked app state for the scenario (tasks, deadlines, capacity, categories).
+- `schemaVersion`, `runId`, and `trialIndex`.
+- `scenario.agentKind` — `taskAgent` or `planningAgent`.
+- `profile.name`, `profile.modelClass`, and whether it was a local or frontier
+  model.
+- `scenario.userInput.transcript` — what the user said they want.
+- `scenario.userInput.triggerTokens` — what woke the agent
+  (e.g. `drafting:<dayId>`).
+- `scenario.appState` — mocked tasks, deadlines, capacity, and categories.
 - `output` — the agent's actual result: `toolCalls`, `plannedBlocks`, `report`,
   `observations`, `mutatedEntryIds`, and `usage` (token counts:
   `inputTokens` / `outputTokens` / `thoughtsTokens` / `cachedInputTokens`).
@@ -46,6 +49,7 @@ agent-specific rubric provided alongside this prompt
 
 ```json
 {
+  "traceDigest": "sha256:<digest of the .trace.json file>",
   "goalAttainment": 4,
   "quality": 5,
   "efficiency": 3,
@@ -60,6 +64,9 @@ Rules:
 - `pass` is `true` only if **every** dimension is ≥ 3 **and** no Level 1 check
   failed for a correctness/safety invariant (hallucinated id, over-capacity plan,
   invalid status transition).
+- `traceDigest` must be copied from the SHA-256 digest you computed for the
+  exact `.trace.json` file. The reporter rejects verdicts with missing or stale
+  digests.
 - `rationale` must cite specifics from the trace (a tool name, a block time, a
   token count), never generic praise.
 - `issues` is empty `[]` only for a clean pass. Otherwise list the real problems.
