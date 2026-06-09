@@ -464,93 +464,16 @@ const dayAgentTools = <AgentToolDefinition>[
     },
   ),
   AgentToolDefinition(
-    name: DayAgentToolNames.acceptDiff,
-    description:
-        'Apply a previously proposed plan diff. Omit itemIndices to accept '
-        'every change in the ChangeSet.',
-    parameters: {
-      'type': 'object',
-      'properties': {
-        'changeSetId': {'type': 'string'},
-        'itemIndices': {
-          'type': 'array',
-          'items': {'type': 'integer', 'minimum': 0},
-          'description':
-              'Zero-based indices of the changes to accept. Omit to accept '
-              'all pending changes.',
-        },
-      },
-      'required': ['changeSetId'],
-      'additionalProperties': false,
-    },
-  ),
-  AgentToolDefinition(
-    name: DayAgentToolNames.revertDiff,
-    description:
-        'Retract a previously proposed plan diff without mutating the live '
-        'plan entity. Omit itemIndices to retract every change in the '
-        'ChangeSet.',
-    parameters: {
-      'type': 'object',
-      'properties': {
-        'changeSetId': {'type': 'string'},
-        'itemIndices': {
-          'type': 'array',
-          'items': {'type': 'integer', 'minimum': 0},
-          'description':
-              'Zero-based indices of the changes to retract. Omit to '
-              'retract all pending changes.',
-        },
-      },
-      'required': ['changeSetId'],
-      'additionalProperties': false,
-    },
-  ),
-  AgentToolDefinition(
-    name: DayAgentToolNames.commitDay,
-    description:
-        "Commit the day's draft plan. Flips DayPlanStatus.draft → "
-        'DayPlanStatus.committed and walks every drafted block to '
-        'PlannedBlockState.committed. The agent shifts to shepherding mode; '
-        'further edits require an explicit refine. Idempotent: re-commit '
-        'on an already-committed plan returns the current state.',
-    parameters: {
-      'type': 'object',
-      'properties': {
-        'dayId': {'type': 'string'},
-      },
-      'required': ['dayId'],
-      'additionalProperties': false,
-    },
-  ),
-  AgentToolDefinition(
-    name: DayAgentToolNames.uncommitDay,
-    description:
-        'Revert a committed day plan back to draft so the user can edit it '
-        'again. Flips DayPlanStatus.committed → DayPlanStatus.draft and '
-        'walks each committed block back to PlannedBlockState.drafted. '
-        'Blocks already in inProgress / completed / dropped keep their '
-        'state (history preservation). Idempotent: calling on a draft plan '
-        'returns the live plan unchanged.',
-    parameters: {
-      'type': 'object',
-      'properties': {
-        'dayId': {'type': 'string'},
-      },
-      'required': ['dayId'],
-      'additionalProperties': false,
-    },
-  ),
-  AgentToolDefinition(
     name: DayAgentToolNames.proposeKnowledge,
     description:
         'Durably remember something about how the user wants to be planned '
         '("memorize what I tell you"). Use a stable, reusable key (e.g. '
         '"deep-work-earliest-start"), a one-line hook for the always-on index, '
         'and the full verbatim statement. Set source to "userStated" only when '
-        'the user told you directly — that confirms it immediately; otherwise '
-        "use \"agentInferred\" and it awaits the user's confirmation. Re-using "
-        'an existing key supersedes the prior value (recency wins).',
+        'the user told you directly; otherwise use "agentInferred". Either way '
+        "the entry awaits the user's confirmation in their knowledge panel "
+        'before it becomes durable. Re-using an existing key supersedes the '
+        'prior value (recency wins).',
     parameters: {
       'type': 'object',
       'properties': {

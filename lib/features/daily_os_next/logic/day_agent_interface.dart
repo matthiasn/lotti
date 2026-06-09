@@ -109,7 +109,8 @@ abstract class DayAgentInterface {
     bool Function()? isCancelled,
   });
 
-  /// Tool: `accept_diff`. Commit the proposed [PlanDiff] — the
+  /// User verdict (UI-only, not an agent tool): apply the proposed
+  /// [PlanDiff] — the
   /// returned plan becomes the user's current draft. When [itemIndices]
   /// is supplied, only those zero-based change rows are accepted.
   Future<DraftPlan> acceptDiff(
@@ -117,7 +118,8 @@ abstract class DayAgentInterface {
     List<int>? itemIndices,
   });
 
-  /// Tool: `revert_diff`. Discard the proposed [PlanDiff] — the
+  /// User verdict (UI-only, not an agent tool): discard the proposed
+  /// [PlanDiff] — the
   /// caller-provided plan is the one to keep.
   Future<DraftPlan> revertDiff({
     required PlanDiff diff,
@@ -125,7 +127,8 @@ abstract class DayAgentInterface {
     List<int>? itemIndices,
   });
 
-  /// Tool: `commit_day`. Toggles the day's state from drafted to
+  /// User verdict (UI-only, not an agent tool): toggles the day's
+  /// state from drafted to
   /// committed. Blocks render solid (no dashed outline) once this
   /// completes; the agent's role shifts to shepherding (no more
   /// re-proposals unless the user invokes Refine).

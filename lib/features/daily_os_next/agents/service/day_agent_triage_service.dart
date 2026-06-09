@@ -4,14 +4,28 @@ part of 'day_agent_capture_service.dart';
 /// delegator pattern as the corpus part.
 extension DayAgentTriageService on DayAgentCaptureService {
   /// Applies one reconcile triage action to a task.
+  ///
+  /// The target task must be inside the planner's category allow-list:
+  /// triage mutates task status/due dates, so the planner must not be able
+  /// to close or re-date tasks outside its configured scope.
   Future<Task> applyTriageImpl({
+    required String agentId,
     required String taskId,
     required String action,
     DateTime? deferTo,
   }) async {
+    final identity = await _requireIdentity(agentId);
     final entity = await journalDb.journalEntityById(taskId);
     if (entity is! Task) {
       throw DayAgentCaptureException('task $taskId not found');
+    }
+    if (!DayAgentCaptureService._categoryAllowed(
+      entity.meta.categoryId,
+      identity.allowedCategoryIds,
+    )) {
+      throw DayAgentCaptureException(
+        'task $taskId is outside the allowed categories for this planner',
+      );
     }
 
     final now = clock.now();

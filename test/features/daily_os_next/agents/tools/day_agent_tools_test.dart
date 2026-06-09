@@ -19,7 +19,7 @@ void main() {
       // Pin the exact tool count so a tool added to dayAgentTools but missing
       // from the expected list below (or vice versa) is caught: containsAll
       // alone tolerates extras, hasLength closes that gap.
-      expect(names, hasLength(19));
+      expect(names, hasLength(15));
       expect(
         names,
         containsAll(const [
@@ -37,14 +37,29 @@ void main() {
           DayAgentToolNames.draftDayPlan,
           DayAgentToolNames.summarizeRecentPatterns,
           DayAgentToolNames.proposePlanDiff,
-          DayAgentToolNames.acceptDiff,
-          DayAgentToolNames.revertDiff,
-          DayAgentToolNames.commitDay,
-          DayAgentToolNames.uncommitDay,
           DayAgentToolNames.proposeKnowledge,
         ]),
       );
     });
+
+    test(
+      'never exposes the user-verdict actions as model tools (ADR 0006)',
+      () {
+        // accept_diff / revert_diff / commit_day / uncommit_day are the user's
+        // verdicts: the UI calls DayAgentPlanService directly. String literals
+        // are deliberate — the constants were removed, and this is the safety
+        // net against the definitions being reintroduced.
+        final names = dayAgentTools.map((tool) => tool.name).toSet();
+        for (final verdict in const [
+          'accept_diff',
+          'revert_diff',
+          'commit_day',
+          'uncommit_day',
+        ]) {
+          expect(names, isNot(contains(verdict)), reason: verdict);
+        }
+      },
+    );
 
     test('locks schemas to object inputs with no extra properties', () {
       for (final tool in dayAgentTools) {
@@ -248,49 +263,6 @@ void main() {
       expect((properties['reason'] as Map<String, dynamic>)['type'], 'string');
     });
 
-    test('commit_day and uncommit_day require dayId only', () {
-      for (final name in const [
-        DayAgentToolNames.commitDay,
-        DayAgentToolNames.uncommitDay,
-      ]) {
-        final params = parametersFor(name);
-        expect(params['type'], 'object', reason: name);
-        expect(params['required'], ['dayId'], reason: name);
-        expect(params['additionalProperties'], isFalse, reason: name);
-        final properties = params['properties'] as Map<String, dynamic>;
-        expect(properties.keys, ['dayId'], reason: name);
-        expect(
-          (properties['dayId'] as Map<String, dynamic>)['type'],
-          'string',
-          reason: name,
-        );
-      }
-    });
-
-    test('accept_diff and revert_diff share the resolution schema', () {
-      for (final name in const [
-        DayAgentToolNames.acceptDiff,
-        DayAgentToolNames.revertDiff,
-      ]) {
-        final params = parametersFor(name);
-        expect(params['required'], ['changeSetId'], reason: name);
-        expect(params['additionalProperties'], isFalse, reason: name);
-        final indices =
-            (params['properties'] as Map<String, dynamic>)['itemIndices']
-                as Map<String, dynamic>;
-        expect(indices['type'], 'array', reason: name);
-        expect(
-          (indices['items'] as Map<String, dynamic>)['type'],
-          'integer',
-          reason: name,
-        );
-        expect(
-          (indices['items'] as Map<String, dynamic>)['minimum'],
-          0,
-          reason: name,
-        );
-      }
-    });
     test(
       'recordObservations pins the oneOf item shape and its enum contracts',
       () {
@@ -349,6 +321,18 @@ void main() {
       expect(
         (props['source']! as Map<String, dynamic>)['enum'],
         ['userStated', 'agentInferred'],
+      );
+      // The description must not promise auto-confirmation: every proposal
+      // awaits the user's panel confirmation regardless of source.
+      final description = dayAgentTools
+          .singleWhere(
+            (tool) => tool.name == DayAgentToolNames.proposeKnowledge,
+          )
+          .description;
+      expect(description, isNot(contains('confirms it immediately')));
+      expect(
+        description,
+        contains("awaits the user's confirmation"),
       );
       // Optional author-time tags: a string array, not required.
       final tags = props['tags']! as Map<String, dynamic>;

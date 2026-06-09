@@ -1321,11 +1321,22 @@ void main() {
       setUp(() => bench = _TestBench.create());
 
       test(
-        'applyTriage forwards the action name and only includes deferTo when '
-        'deferring',
+        'applyTriage resolves the planner identity, forwards the action name '
+        'and only includes deferTo when deferring',
         () async {
+          const agentId = dailyOsPlannerAgentId;
+          when(
+            () => bench.dayAgentService.getOrCreatePlannerAgent(),
+          ).thenAnswer(
+            (_) async => makeTestIdentity(
+              id: agentId,
+              agentId: agentId,
+              kind: AgentKinds.dayAgent,
+            ),
+          );
           when(
             () => bench.captureService.applyTriage(
+              agentId: any(named: 'agentId'),
               taskId: any(named: 'taskId'),
               action: any(named: 'action'),
               deferTo: any(named: 'deferTo'),
@@ -1340,6 +1351,7 @@ void main() {
           expect(immediate.action, TriageAction.today);
           verify(
             () => bench.captureService.applyTriage(
+              agentId: agentId,
               taskId: 't-1',
               action: 'today',
             ),
@@ -1354,6 +1366,7 @@ void main() {
           expect(deferred.action, TriageAction.defer);
           verify(
             () => bench.captureService.applyTriage(
+              agentId: agentId,
               taskId: 't-2',
               action: 'defer',
               deferTo: _asOf,

@@ -151,7 +151,9 @@ class RealDayAgent implements DayAgentInterface {
     required TriageAction action,
     DateTime? deferTo,
   }) async {
+    final identity = await dayAgentService.getOrCreatePlannerAgent();
     await captureService.applyTriage(
+      agentId: identity.agentId,
       taskId: taskId,
       action: action.name,
       deferTo: deferTo,

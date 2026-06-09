@@ -24,10 +24,15 @@ class DayAgentKnowledgeException implements Exception {
 /// Backend for durable planner knowledge — the compaction-exempt
 /// "memorize what I tell you" store (ADR 0022 Decisions 9–10).
 ///
-/// The agent proposes knowledge via `propose_knowledge`; a `userStated`
-/// instruction skips straight to confirmed (the user said it). The user gates
-/// agent-inferred entries (and edits/retracts) through the "What I've learned"
-/// panel via [confirm] / [retract] / [editStatement]. Recency-wins supersession
+/// The agent proposes knowledge via `propose_knowledge`; every proposal lands
+/// `proposed`, regardless of the model-attested `source`. ADR 0022 Decision 10
+/// requires an explicit user confirmation before anything becomes durable, and
+/// a model claim of "the user said this" is not one — capture transcripts flow
+/// into the prompt, so trusting the attestation would let transcript content
+/// write straight into permanent memory. `source` is kept as provenance so the
+/// panel can prioritize user-stated entries for confirmation. The user gates
+/// entries (and edits/retracts) through the "What I've learned" panel via
+/// [confirm] / [retract] / [editStatement]. Recency-wins supersession
 /// (ADR 0022 Decision 10) is realized by the Head selection in
 /// `activePlannerKnowledge`; this service just appends/updates entries.
 class DayAgentKnowledgeService {
@@ -128,10 +133,11 @@ class DayAgentKnowledgeService {
 
   /// Propose (or supersede) a durable-knowledge entry for [key].
   ///
-  /// A `userStated` source is confirmed immediately (the user said it); an
-  /// `agentInferred` source lands `proposed`, awaiting the panel gate. When a
-  /// confirmed entry already exists for [key], the new entry records it via
-  /// `supersedesId` (recency wins).
+  /// Every entry lands `proposed`, awaiting the user's confirmation in the
+  /// "What I've learned" panel — the model-attested [source] is provenance
+  /// only and never confirms (ADR 0022 Decision 10). When a confirmed entry
+  /// already exists for [key], the new entry records it via `supersedesId`
+  /// (recency wins).
   Future<PlannerKnowledgeEntity> propose({
     required String agentId,
     required String key,
@@ -153,7 +159,6 @@ class DayAgentKnowledgeService {
     final now = clock.now();
     final active = await _activeFor(agentId);
     final prior = active.where((e) => e.key == key).firstOrNull;
-    final confirmed = source == KnowledgeSource.userStated;
     final entry =
         AgentDomainEntity.plannerKnowledge(
               id: 'planner_knowledge_${_uuid.v4()}',
@@ -162,17 +167,16 @@ class DayAgentKnowledgeService {
               hook: hook,
               statementText: statement,
               source: source,
-              status: confirmed
-                  ? KnowledgeStatus.confirmed
-                  : KnowledgeStatus.proposed,
+              status: KnowledgeStatus.proposed,
               createdAt: now,
               updatedAt: now,
               vectorClock: null,
               value: value,
               scope: resolvedScope,
               tags: _normalizeTags(tags),
+              // confirmedAt stays null: only the panel confirm() flow may
+              // set it (ADR 0022 Decision 10).
               supersedesId: prior?.id,
-              confirmedAt: confirmed ? now : null,
             )
             as PlannerKnowledgeEntity;
     await syncService.upsertEntity(entry);

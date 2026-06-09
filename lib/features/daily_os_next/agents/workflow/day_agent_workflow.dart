@@ -850,7 +850,7 @@ class DayAgentWorkflow {
     const knowledgeToolLines =
         '- `propose_knowledge`: durably remember how the user wants to be '
         'planned. Use source "userStated" only when the user told you '
-        'directly (that confirms it); otherwise it awaits their confirmation.';
+        'directly; every entry awaits their confirmation in the panel.';
     final toolLines = <String>[
       '- `record_observations`: private memory for learnings and uncertainty.',
       '- `set_next_wake`: schedule the next useful pre-warm wake.',
@@ -915,12 +915,10 @@ Refine rules:
   from `refine.baselinePlan.blocks` for `moved` and `dropped` changes;
   `added` changes carry a fresh `to` block payload. Every change must
   include a non-empty `reason`.
-- Do not call `accept_diff` or `revert_diff` autonomously — those are the
-  user's verdicts, surfaced through the UI.
-- `commit_day` and `uncommit_day` exist and work, but committing a day is the
-  user's decision, surfaced through the UI (like `accept_diff`/`revert_diff`):
-  do not call them autonomously, and do not claim you committed or uncommitted a
-  day on your own. After the user commits, the plan is in shepherding mode and
+- Accepting or reverting a proposed diff and committing or uncommitting a day
+  are the user's verdicts, surfaced through the UI only — you have no tools
+  for them. Never claim you applied, committed, or uncommitted anything on
+  your own. After the user commits, the plan is in shepherding mode and
   further edits require an explicit refine.
 - Shutdown and agenda mutation tools are not available yet. Do not claim you
   shut down a day.
