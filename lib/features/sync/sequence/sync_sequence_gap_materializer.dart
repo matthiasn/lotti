@@ -3,7 +3,8 @@ part of 'sync_sequence_log_service.dart';
 /// Large-gap materialization and covered-counter bookkeeping of
 /// [SyncSequenceLogService] — the private heavy lifting behind the
 /// receive path.
-extension SyncSequenceGapMaterializer on SyncSequenceLogService {
+mixin _SyncSequenceGapMaterializer on _SyncSequenceLogServiceBase {
+  @override
   Future<int> _materializeLargeGap({
     required String hostId,
     required int startCounter,
@@ -62,6 +63,7 @@ extension SyncSequenceGapMaterializer on SyncSequenceLogService {
     return insertedCount;
   }
 
+  @override
   List<VectorClock> _filterCoveredVectorClocks(
     List<VectorClock>? coveredVectorClocks,
     VectorClock current,
@@ -88,6 +90,7 @@ extension SyncSequenceGapMaterializer on SyncSequenceLogService {
   /// yet in the sequence log. This pre-emptively marks them as received before
   /// gap detection can mark them as missing, preventing unnecessary backfill
   /// requests for counters that were superseded before being sent.
+  @override
   Future<void> _markCoveredCountersAsReceived({
     required List<VectorClock> coveredVectorClocks,
     required String entryId,
