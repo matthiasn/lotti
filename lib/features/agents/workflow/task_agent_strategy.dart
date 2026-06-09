@@ -24,6 +24,7 @@ export 'package:lotti/features/agents/model/observation_record.dart'
     show ObservationRecord;
 
 part 'task_agent_tool_handlers.dart';
+part 'task_agent_change_handlers.dart';
 
 /// Callback that resolves a journal entity's category ID from its entity ID.
 typedef ResolveCategoryId = Future<String?> Function(String entityId);
