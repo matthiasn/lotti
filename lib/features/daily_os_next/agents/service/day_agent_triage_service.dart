@@ -30,18 +30,18 @@ extension DayAgentTriageService on DayAgentCaptureService {
 
     final now = clock.now();
     final updated = switch (action.trim()) {
-      'today' => DayAgentCaptureService._withDueToday(entity, now),
-      'doNow' || 'do_now' => DayAgentCaptureService._withStatus(
+      'today' => _withDueToday(entity, now),
+      'doNow' || 'do_now' => _withStatus(
         entity,
         TaskStatus.inProgress(
-          id: DayAgentCaptureService._uuid.v4(),
+          id: _uuid.v4(),
           createdAt: now,
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
       ),
       'defer' => entity.copyWith(
         data: entity.data.copyWith(
-          due: DayAgentCaptureService._endOfDay(
+          due: _endOfDay(
             deferTo ??
                 (throw const DayAgentCaptureException(
                   'deferTo is required for defer',
@@ -49,18 +49,18 @@ extension DayAgentTriageService on DayAgentCaptureService {
           ),
         ),
       ),
-      'done' => DayAgentCaptureService._withStatus(
+      'done' => _withStatus(
         entity,
         TaskStatus.done(
-          id: DayAgentCaptureService._uuid.v4(),
+          id: _uuid.v4(),
           createdAt: now,
           utcOffset: now.timeZoneOffset.inMinutes,
         ),
       ),
-      'drop' => DayAgentCaptureService._withStatus(
+      'drop' => _withStatus(
         entity,
         TaskStatus.rejected(
-          id: DayAgentCaptureService._uuid.v4(),
+          id: _uuid.v4(),
           createdAt: now,
           utcOffset: now.timeZoneOffset.inMinutes,
         ),

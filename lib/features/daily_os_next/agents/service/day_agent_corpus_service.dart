@@ -8,7 +8,7 @@ extension DayAgentCorpusService on DayAgentCaptureService {
   Future<List<Map<String, Object?>>> buildTaskCorpusSnapshotImpl({
     required Set<String> allowedCategoryIds,
     required DateTime day,
-    int limit = DayAgentCaptureService._maxCorpusTasks,
+    int limit = _maxCorpusTasks,
   }) async {
     final dayStart = localDay(day);
     final openTasks = await journalDb.getOpenTasksForDayAgentCorpus(
@@ -19,8 +19,8 @@ extension DayAgentCorpusService on DayAgentCaptureService {
 
     final byId = <String, Task>{};
     for (final task in [...overdueAndToday, ...openTasks]) {
-      if (DayAgentCaptureService._isClosedTask(task)) continue;
-      if (!DayAgentCaptureService._categoryAllowed(
+      if (_isClosedTask(task)) continue;
+      if (!_categoryAllowed(
         task.meta.categoryId,
         allowedCategoryIds,
       )) {
@@ -56,9 +56,9 @@ extension DayAgentCorpusService on DayAgentCaptureService {
       throw const DayAgentCaptureException('phrase must not be empty');
     }
 
-    final categoryFilter = DayAgentCaptureService._categoryFilterForHint(
+    final categoryFilter = _categoryFilterForHint(
       allowedCategoryIds: identity.allowedCategoryIds,
-      categoryHint: DayAgentCaptureService._blankToNull(categoryHint),
+      categoryHint: _blankToNull(categoryHint),
     );
     if (categoryFilter != null && categoryFilter.isEmpty) {
       return const <DayAgentCorpusMatch>[];
@@ -72,22 +72,21 @@ extension DayAgentCorpusService on DayAgentCaptureService {
     );
     final taskById = {
       for (final entity in entities)
-        if (entity is Task && !DayAgentCaptureService._isClosedTask(entity))
-          entity.id: entity,
+        if (entity is Task && !_isClosedTask(entity)) entity.id: entity,
     };
 
     final matches = <DayAgentCorpusMatch>[];
     for (var i = 0; i < ids.length; i++) {
       final task = taskById[ids[i]];
       if (task == null) continue;
-      if (!DayAgentCaptureService._categoryAllowed(
+      if (!_categoryAllowed(
         task.meta.categoryId,
         categoryFilter,
       )) {
         continue;
       }
       matches.add(corpusMatchFromTask(task, 1 / (i + 1)));
-      if (matches.length >= DayAgentCaptureService._maxMatchCandidates) break;
+      if (matches.length >= _maxMatchCandidates) break;
     }
     return matches;
   }
