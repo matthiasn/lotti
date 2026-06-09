@@ -91,3 +91,93 @@ void registerLazyServiceForTesting<T extends Object>(
 @visibleForTesting
 void safeLogForTesting(String message, {required bool isError}) =>
     _safeLog(message, isError: isError);
+
+/// Registers late-loaded, sandbox-fragile and optional services (audio
+/// waveform, the label pipeline, the local embedding pipeline) plus the
+/// one-time sequence-log backfill. Split from [registerSingletons] for file
+/// size; every dependency is resolved through [getIt], so no state is
+/// threaded in from the caller.
+Future<void> _registerLateAndOptionalServices() async {
+  // Register services that might fail in sandboxed environments using lazy loading
+  _registerLazyServiceSafely<AudioWaveformService>(
+    AudioWaveformService.new,
+    'AudioWaveformService',
+  );
+
+  unawaited(getIt<MatrixService>().init());
+
+  // Label validator used by the assignment processor
+  _registerLazyServiceSafely<LabelValidator>(
+    LabelValidator.new,
+    'LabelValidator',
+  );
+
+  // Label assignment processor
+  _registerLazyServiceSafely<LabelAssignmentProcessor>(
+    LabelAssignmentProcessor.new,
+    'LabelAssignmentProcessor',
+  );
+
+  // Label assignment event service for UI notifications
+  _registerLazyServiceSafely<LabelAssignmentEventService>(
+    LabelAssignmentEventService.new,
+    'LabelAssignmentEventService',
+  );
+
+  // Embedding generation pipeline (Ollama-based, local).
+  // If the backend fails to initialize, the pipeline is non-essential
+  // and the app should still start.
+  // coverage:ignore-start
+  try {
+    final embeddingStore = await openShardedEmbeddingStore(
+      documentsPath: getIt<Directory>().path,
+    );
+    getIt
+      ..registerSingleton<EmbeddingStore>(
+        embeddingStore,
+        dispose: (store) => store.close(),
+      )
+      ..registerSingleton<OllamaEmbeddingRepository>(
+        OllamaEmbeddingRepository(),
+        dispose: (repo) => repo.close(),
+      )
+      ..registerSingleton<EmbeddingService>(
+        EmbeddingService(
+          embeddingStore: embeddingStore,
+          embeddingRepository: getIt<OllamaEmbeddingRepository>(),
+          journalDb: getIt<JournalDb>(),
+          updateNotifications: getIt<UpdateNotifications>(),
+          aiConfigRepository: getIt<AiConfigRepository>(),
+        ),
+        dispose: (svc) async => svc.stop(),
+      )
+      ..registerSingleton<VectorSearchRepository>(
+        VectorSearchRepository(
+          embeddingStore: embeddingStore,
+          embeddingRepository: getIt<OllamaEmbeddingRepository>(),
+          journalDb: getIt<JournalDb>(),
+          aiConfigRepository: getIt<AiConfigRepository>(),
+        ),
+      );
+
+    getIt<EmbeddingService>().start();
+    _safeLog('Embedding pipeline initialized successfully', isError: false);
+  } catch (e, stackTrace) {
+    if (getIt.isRegistered<DomainLogger>()) {
+      getIt<DomainLogger>().error(
+        LogDomain.ai,
+        e,
+        stackTrace: stackTrace,
+        subDomain: 'embedding_pipeline_init',
+      );
+    }
+    _safeLog(
+      'Embedding pipeline unavailable: $e',
+      isError: true,
+    );
+  }
+  // coverage:ignore-end
+
+  // Automatically populate sequence log if empty (one-time migration)
+  unawaited(_checkAndPopulateSequenceLog());
+}
