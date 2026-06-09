@@ -33,6 +33,7 @@ part 'database_links_ratings.dart';
 part 'database_project_queries.dart';
 part 'database_task_due_queries.dart';
 part 'database_task_queries.dart';
+part 'database_task_query_builders.dart';
 
 const journalDbFileName = 'db.sqlite';
 
@@ -89,6 +90,7 @@ class JournalDb extends _$JournalDb
         _JournalDbConfigFlags,
         _JournalDbInsightsQueries,
         _JournalDbJournalQueries,
+        _JournalDbTaskQueriesBuilders,
         _JournalDbTaskQueries,
         _JournalDbTaskDueQueries,
         _JournalDbProjectQueries,
