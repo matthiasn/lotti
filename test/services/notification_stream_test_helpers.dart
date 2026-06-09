@@ -1,6 +1,4 @@
-
 import 'package:glados/glados.dart' as glados;
-
 
 enum GeneratedNotificationStreamOperationKind {
   matching,
