@@ -18,6 +18,8 @@ import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:record/record.dart' as record;
 
+part 'capture_controller_cleanup.dart';
+
 part 'capture_state.dart';
 
 /// Drives the Capture screen's recording lifecycle.
@@ -35,7 +37,11 @@ part 'capture_state.dart';
 ///
 /// Test seam: inject any of the constructor parameters to keep tests
 /// deterministic and off the real mic / cloud.
-class CaptureController extends Notifier<CaptureState> {
+const _minDbfs = -45.0;
+const double _minVisualDbfs = CaptureState.defaultDbfs;
+
+class CaptureController extends Notifier<CaptureState>
+    with _CaptureRealtimeCleanup {
   CaptureController({
     AudioRecorderRepository? recorder,
     AudioTranscriptionService? transcriber,
@@ -59,6 +65,7 @@ class CaptureController extends Notifier<CaptureState> {
   final record.AudioRecorder Function() _realtimeRecorderFactory;
   final Future<JournalAudio?> Function(AudioNote)? _persistAudioOverride;
   final Directory Function() _docDir;
+  @override
   final DateTime Function() _now;
 
   /// Rolling-window size for the live waveform (~1.6s at 20ms cadence).
@@ -67,9 +74,6 @@ class CaptureController extends Notifier<CaptureState> {
   /// dBFS floor used to normalise amplitudes into 0..1. Values below
   /// this clamp to 0; -45 keeps speech visible without amplifying room
   /// noise into oscillating full-height bars.
-  static const _minDbfs = -45.0;
-
-  static const double _minVisualDbfs = CaptureState.defaultDbfs;
 
   /// Minimum extra characters the full-file batch transcript must have
   /// over the realtime `done` text before we prefer the batch result.
@@ -77,12 +81,13 @@ class CaptureController extends Notifier<CaptureState> {
   /// punctuation/whitespace; this margin avoids swapping out a good
   /// realtime transcript for a near-identical batch one and only kicks
   /// in when batch is meaningfully longer (i.e. realtime truncated).
-  static const _batchTranscriptOvertakeMargin = 8;
 
   late final AudioRecorderRepository _recorder =
       _recorderOverride ?? AudioRecorderRepository();
+  @override
   late final AudioTranscriptionService _transcriber =
       _transcriberOverride ?? ref.read(audioTranscriptionServiceProvider);
+  @override
   late final RealtimeTranscriptionService _realtimeService =
       _realtimeServiceOverride ??
       ref.read(realtimeTranscriptionServiceProvider);
@@ -95,23 +100,33 @@ class CaptureController extends Notifier<CaptureState> {
   ({AiConfigInferenceProvider provider, AiConfigModel model})?
   _activeRealtimeConfig;
 
+  @override
   StreamSubscription<record.Amplitude>? _ampSub;
+  @override
   StreamSubscription<double>? _realtimeAmpSub;
+  @override
   record.AudioRecorder? _realtimeRecorder;
 
   // Pre-computed audio path data so we can build the AudioNote after
   // the realtime service writes the .m4a file.
+  @override
   String? _realtimeOutputBasePath;
+  @override
   String? _realtimeAudioDirectory;
+  @override
   String? _realtimeAudioFile;
 
   // Batch fallback state.
+  @override
   AudioNote? _recordingNote;
+  @override
   DateTime? _recordingStartedAt;
+  @override
   bool _verifyRealtimeTranscript = true;
 
   /// Marks whether the current session is using the realtime path.
   /// `null` outside of a session.
+  @override
   bool? _activeIsRealtime;
 
   @override
@@ -471,41 +486,6 @@ class CaptureController extends Notifier<CaptureState> {
     );
   }
 
-  Future<String> _resolveRealtimeFinalTranscript({
-    required RealtimeStopResult result,
-    required String realtimeTranscript,
-  }) async {
-    if (!_verifyRealtimeTranscript) return realtimeTranscript;
-
-    final audioFilePath = result.audioFilePath;
-    if (audioFilePath == null || audioFilePath.isEmpty) {
-      return realtimeTranscript;
-    }
-
-    try {
-      final batchTranscript = (await _transcriber.transcribe(
-        audioFilePath,
-      )).trim();
-      if (batchTranscript.isEmpty) return realtimeTranscript;
-      if (realtimeTranscript.isEmpty || result.usedTranscriptFallback) {
-        return batchTranscript;
-      }
-
-      // Realtime `done` can occasionally be shorter than the spoken capture.
-      // Keep realtime when it agrees, but let full-file transcription repair
-      // obvious truncation before the user reaches the editable transcript.
-      if (batchTranscript.length >
-          realtimeTranscript.length + _batchTranscriptOvertakeMargin) {
-        return batchTranscript;
-      }
-    } catch (_) {
-      // Final verification is best-effort. Realtime still gives the user an
-      // editable transcript if the batch transcriber is unavailable.
-    }
-
-    return realtimeTranscript;
-  }
-
   Future<void> _finishListeningBatch() async {
     await _ampSub?.cancel();
     _ampSub = null;
@@ -577,113 +557,6 @@ class CaptureController extends Notifier<CaptureState> {
       amplitudes: const <double>[],
       audioId: journalAudio?.meta.id,
     );
-  }
-
-  /// Persists [transcript] as an [AudioTranscript] on [journalAudio]
-  /// and mirrors the text into [JournalAudio.entryText] so the audio
-  /// entry shows up with searchable content in the journal.
-  Future<void> _attachTranscriptToJournalAudio({
-    required JournalAudio journalAudio,
-    required String transcript,
-    required String library,
-    required String model,
-    required String detectedLanguage,
-  }) async {
-    try {
-      final persistenceLogic = getIt<PersistenceLogic>();
-      final audioTranscript = AudioTranscript(
-        created: _now(),
-        library: library,
-        model: model,
-        detectedLanguage: detectedLanguage,
-        transcript: transcript,
-      );
-      final existing = journalAudio.data.transcripts ?? <AudioTranscript>[];
-      final updated = journalAudio.copyWith(
-        meta: await persistenceLogic.updateMetadata(journalAudio.meta),
-        data: journalAudio.data.copyWith(
-          transcripts: [...existing, audioTranscript],
-        ),
-        entryText: EntryText(plainText: transcript, markdown: transcript),
-      );
-      await persistenceLogic.updateDbEntity(updated);
-    } catch (_) {
-      // Attaching the transcript is best-effort — the capture flow
-      // still proceeds with the in-memory transcript even if the
-      // journal mutation fails.
-    }
-  }
-
-  Future<void> _cleanupRealtime({required bool disposeRecorder}) async {
-    final ampSub = _realtimeAmpSub;
-    _realtimeAmpSub = null;
-    if (ampSub != null) {
-      unawaited(ampSub.cancel());
-    }
-    if (disposeRecorder) {
-      final recorder = _realtimeRecorder;
-      _realtimeRecorder = null;
-      if (recorder != null) {
-        try {
-          await recorder.dispose();
-        } catch (_) {}
-      }
-    }
-    unawaited(_realtimeService.dispose());
-    _realtimeOutputBasePath = null;
-    _realtimeAudioDirectory = null;
-    _realtimeAudioFile = null;
-    _recordingStartedAt = null;
-    _activeIsRealtime = null;
-  }
-
-  void _cleanupSync() {
-    final ampSub = _ampSub;
-    _ampSub = null;
-    if (ampSub != null) {
-      unawaited(ampSub.cancel());
-    }
-    final realtimeAmpSub = _realtimeAmpSub;
-    _realtimeAmpSub = null;
-    if (realtimeAmpSub != null) {
-      unawaited(realtimeAmpSub.cancel());
-    }
-    final recorder = _realtimeRecorder;
-    _realtimeRecorder = null;
-    if (recorder != null) {
-      unawaited(
-        () async {
-          try {
-            await recorder.stop();
-          } catch (_) {}
-          try {
-            await recorder.dispose();
-          } catch (_) {}
-        }(),
-      );
-    }
-    // Mirror `_cleanupRealtime`: tear down the active WebSocket / MLX
-    // session so route disposal and `reset()` don't leak the running
-    // transcription. The provider itself is keep-alive, so the service
-    // instance survives — only the in-flight session is torn down.
-    unawaited(_realtimeService.dispose());
-    _recordingNote = null;
-    _recordingStartedAt = null;
-    _realtimeOutputBasePath = null;
-    _realtimeAudioDirectory = null;
-    _realtimeAudioFile = null;
-    _activeIsRealtime = null;
-  }
-
-  static double _normaliseDbfs(double dbfs) {
-    if (dbfs.isNaN || dbfs.isInfinite) return 0;
-    final clamped = dbfs.clamp(_minDbfs, 0.0);
-    return (clamped - _minDbfs) / -_minDbfs;
-  }
-
-  static double _sanitizeVisualDbfs(double dbfs) {
-    if (dbfs.isNaN || dbfs.isInfinite) return _minVisualDbfs;
-    return dbfs.clamp(_minVisualDbfs, 0.0);
   }
 }
 
