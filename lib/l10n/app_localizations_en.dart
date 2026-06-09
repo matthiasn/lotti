@@ -4969,6 +4969,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inputDataTypeTasksListName => 'Tasks List';
 
   @override
+  String get insightsChartCompareCaption => 'This period vs the previous';
+
+  @override
   String get insightsChartCumulative => 'Cumulative';
 
   @override
@@ -4987,7 +4990,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsChooseFocusCategories => 'Choose focus categories';
 
   @override
+  String get insightsCompare => 'Compare';
+
+  @override
+  String get insightsComparePrevious => 'Previous';
+
+  @override
+  String get insightsCompareVs => 'vs';
+
+  @override
   String get insightsDeletedCategory => 'Deleted category';
+
+  @override
+  String get insightsDeltaNew => 'new';
 
   @override
   String get insightsEmptyBody =>
@@ -4997,7 +5012,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsEmptyChart => 'No data in this range';
 
   @override
-  String get insightsEmptyShowYtd => 'View year to date';
+  String get insightsEmptyShowYear => 'View this year';
 
   @override
   String get insightsEmptyTitle => 'No tracked time in this range';
@@ -5027,31 +5042,40 @@ class AppLocalizationsEn extends AppLocalizations {
   String get insightsPartialWeek => 'partial week';
 
   @override
-  String get insightsRange1d => '1d';
+  String get insightsPeriodDay => 'Day';
 
   @override
-  String get insightsRange30d => '30d';
+  String get insightsPeriodJump => 'Jump to a date';
 
   @override
-  String get insightsRange7d => '7d';
+  String get insightsPeriodMonth => 'Month';
 
   @override
-  String get insightsRangeCustom => 'Custom range';
+  String get insightsPeriodNext => 'Next period';
 
   @override
-  String get insightsRangeLastMonth => 'Last month';
+  String get insightsPeriodPrevious => 'Previous period';
 
   @override
-  String get insightsRangeMtd => 'MTD';
+  String get insightsPeriodQuarter => 'Quarter';
 
   @override
-  String get insightsRangeYtd => 'YTD';
+  String get insightsPeriodWeek => 'Week';
+
+  @override
+  String get insightsPeriodYear => 'Year';
 
   @override
   String get insightsTableAvgPerDay => 'AVG/DAY';
 
   @override
   String get insightsTableCategory => 'CATEGORY';
+
+  @override
+  String get insightsTableDelta => 'Δ%';
+
+  @override
+  String get insightsTablePrevious => 'PREVIOUS';
 
   @override
   String get insightsTableShare => 'SHARE';

@@ -124,8 +124,11 @@ class InsightsDayBuckets {
   int get hashCode => Object.hash(windowStartDay, _deepEquality.hash(days));
 }
 
-/// Quick-access range presets, mirroring the Cursor usage dashboard.
-enum InsightsRangePreset { d1, d7, d30, mtd, ytd, lastMonth }
+/// Calendar granularity the period stepper browses by. Weeks start on the
+/// device region's first weekday (`firstDayOfWeekIndex` — Monday across most
+/// of Europe, Sunday in the US), as resolved by the navigation/controller
+/// logic; the others snap to calendar month/quarter/year bounds.
+enum InsightsPeriodUnit { day, week, month, quarter, year }
 
 /// A resolved, day-aligned analysis range `[startDay, endDayExclusive)`.
 @immutable
@@ -133,7 +136,6 @@ class InsightsRange {
   const InsightsRange({
     required this.startDay,
     required this.endDayExclusive,
-    this.preset,
   }) : assert(startDay < endDayExclusive, 'range must span at least one day');
 
   /// First epoch day of the range (inclusive).
@@ -142,24 +144,62 @@ class InsightsRange {
   /// Epoch day after the last included day (exclusive).
   final int endDayExclusive;
 
-  /// The preset this range was resolved from; `null` for custom ranges.
-  final InsightsRangePreset? preset;
-
   int get dayCount => endDayExclusive - startDay;
 
   @override
   bool operator ==(Object other) =>
       other is InsightsRange &&
       other.startDay == startDay &&
-      other.endDayExclusive == endDayExclusive &&
-      other.preset == preset;
+      other.endDayExclusive == endDayExclusive;
 
   @override
-  int get hashCode => Object.hash(startDay, endDayExclusive, preset);
+  int get hashCode => Object.hash(startDay, endDayExclusive);
+
+  @override
+  String toString() => 'InsightsRange($startDay..<$endDayExclusive)';
+}
+
+/// The period stepper's selection: the browsed [unit] plus the resolved
+/// [range] it currently points at. The unit is retained so prev/next can
+/// shift by a whole period and the granularity control can re-derive it.
+@immutable
+class InsightsPeriodSelection {
+  const InsightsPeriodSelection({
+    required this.unit,
+    required this.range,
+    this.compareEnabled = false,
+  });
+
+  final InsightsPeriodUnit unit;
+  final InsightsRange range;
+
+  /// Whether the dashboard compares [range] against the immediately
+  /// preceding period of the same [unit].
+  final bool compareEnabled;
+
+  InsightsPeriodSelection copyWith({
+    InsightsPeriodUnit? unit,
+    InsightsRange? range,
+    bool? compareEnabled,
+  }) => InsightsPeriodSelection(
+    unit: unit ?? this.unit,
+    range: range ?? this.range,
+    compareEnabled: compareEnabled ?? this.compareEnabled,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      other is InsightsPeriodSelection &&
+      other.unit == unit &&
+      other.range == range &&
+      other.compareEnabled == compareEnabled;
+
+  @override
+  int get hashCode => Object.hash(unit, range, compareEnabled);
 
   @override
   String toString() =>
-      'InsightsRange($startDay..<$endDayExclusive, preset: $preset)';
+      'InsightsPeriodSelection($unit, $range, compare: $compareEnabled)';
 }
 
 /// X-axis granularity for the chart, derived from the range length.

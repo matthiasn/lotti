@@ -12,7 +12,8 @@ import 'package:lotti/features/insights/state/insights_providers.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_chart_card.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_kpi_row.dart';
-import 'package:lotti/features/insights/ui/widgets/insights_range_selector.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_period_picker.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_period_stepper.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_table.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -31,10 +32,24 @@ class TimeAnalysisPage extends ConsumerWidget {
     final tokens = context.designTokens;
     final messages = context.messages;
 
-    final range = ref.watch(insightsRangeControllerProvider);
+    final selection = ref.watch(insightsRangeControllerProvider);
     final bucketsAsync = ref.watch(
-      insightsBucketsProvider(insightsWindowFor(range)),
+      insightsBucketsProvider(insightsWindowFor(selection.range)),
     );
+    // Previous-period buckets drive the comparison deltas. The range comes
+    // from the controller so it uses the same region-aligned first weekday as
+    // the current range (deriving it here with the Monday default misaligned
+    // the comparison week for Sunday/Saturday-first regions). `.value`
+    // (valueOrNull) so a still-loading previous window never blanks or blocks
+    // the established dashboard.
+    final previousRange = ref
+        .read(insightsRangeControllerProvider.notifier)
+        .previousComparisonRange;
+    final previousBuckets = previousRange == null
+        ? null
+        : ref
+              .watch(insightsBucketsProvider(insightsWindowFor(previousRange)))
+              .value;
     final preferences = ref.watch(insightsPreferencesControllerProvider);
     final categories =
         ref.watch(categoriesStreamProvider).value ??
@@ -65,16 +80,20 @@ class TimeAnalysisPage extends ConsumerWidget {
           ),
           data: (buckets) => _DashboardContent(
             buckets: buckets,
-            range: range,
+            selection: selection,
+            previousBuckets: previousBuckets,
+            previousRange: previousRange,
             resolver: resolver,
             categories: categories,
             focusCategoryIds: preferences.focusCategoryIds,
-            onPresetSelected: ref
+            onSelectUnit: ref
                 .read(insightsRangeControllerProvider.notifier)
-                .selectPreset,
-            onCustomRangeSelected: ref
+                .selectUnit,
+            onStep: ref.read(insightsRangeControllerProvider.notifier).step,
+            onOpenCalendar: () => showInsightsPeriodPicker(context: context),
+            onToggleCompare: ref
                 .read(insightsRangeControllerProvider.notifier)
-                .selectCustom,
+                .toggleCompare,
             onToggleFocusCategory: ref
                 .read(insightsPreferencesControllerProvider.notifier)
                 .toggleFocusCategory,
@@ -88,28 +107,40 @@ class TimeAnalysisPage extends ConsumerWidget {
 class _DashboardContent extends StatelessWidget {
   const _DashboardContent({
     required this.buckets,
-    required this.range,
+    required this.selection,
+    required this.previousBuckets,
+    required this.previousRange,
     required this.resolver,
     required this.categories,
     required this.focusCategoryIds,
-    required this.onPresetSelected,
-    required this.onCustomRangeSelected,
+    required this.onSelectUnit,
+    required this.onStep,
+    required this.onOpenCalendar,
+    required this.onToggleCompare,
     required this.onToggleFocusCategory,
   });
 
   final InsightsDayBuckets buckets;
-  final InsightsRange range;
+  final InsightsPeriodSelection selection;
+
+  /// Previous-period buckets + range when comparison is on (else null).
+  final InsightsDayBuckets? previousBuckets;
+  final InsightsRange? previousRange;
+
   final InsightsCategoryResolver resolver;
   final List<CategoryDefinition> categories;
   final Set<String> focusCategoryIds;
-  final ValueChanged<InsightsRangePreset> onPresetSelected;
-  final void Function(DateTime start, DateTime end) onCustomRangeSelected;
+  final ValueChanged<InsightsPeriodUnit> onSelectUnit;
+  final ValueChanged<int> onStep;
+  final VoidCallback onOpenCalendar;
+  final VoidCallback onToggleCompare;
   final ValueChanged<String> onToggleFocusCategory;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final range = selection.range;
 
     // Pure derivations, recomputed per build (~1-3ms at 10k-50k entries,
     // measured — well within a frame). The daily/ranked aggregation is
@@ -130,6 +161,30 @@ class _DashboardContent extends StatelessWidget {
     );
     final isEmpty = kpis.totalSeconds == 0;
 
+    // Comparison derivations — only once the previous window has loaded.
+    final compareRange = previousRange;
+    final prevBuckets = previousBuckets;
+    InsightsKpis? previousKpis;
+    Map<String?, int>? previousByCategory;
+    List<int>? comparisonTotals;
+    if (compareRange != null && prevBuckets != null) {
+      previousKpis = buildKpis(
+        prevBuckets,
+        compareRange,
+        focusCategoryIds: focusCategoryIds,
+      );
+      previousByCategory = {
+        for (final row in buildTableRows(prevBuckets, compareRange))
+          row.categoryId: row.seconds,
+      };
+      // Previous-period per-bucket totals aligned to the current chart's
+      // x-axis, for the grouped comparison bars.
+      comparisonTotals = alignedPreviousTotals(
+        chartData,
+        buildChartData(prevBuckets, compareRange),
+      );
+    }
+
     return ListView(
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step6,
@@ -145,10 +200,12 @@ class _DashboardContent extends StatelessWidget {
               messages.insightsTimeAnalysisTitle,
               style: calmPageTitleStyle(tokens),
             ),
-            InsightsRangeSelector(
-              range: range,
-              onPresetSelected: onPresetSelected,
-              onCustomRangeSelected: onCustomRangeSelected,
+            InsightsPeriodStepper(
+              selection: selection,
+              onSelectUnit: onSelectUnit,
+              onStep: onStep,
+              onOpenCalendar: onOpenCalendar,
+              onToggleCompare: onToggleCompare,
             ),
           ],
         ),
@@ -157,28 +214,34 @@ class _DashboardContent extends StatelessWidget {
           _EmptyState(
             title: messages.insightsEmptyTitle,
             body: messages.insightsEmptyBody,
-            // Don't strand the user on a dead range: one click jumps to
-            // the widest preset, where data is most likely to exist.
-            actionLabel: range.preset != InsightsRangePreset.ytd
-                ? messages.insightsEmptyShowYtd
+            // Don't strand the user on a dead period: one click widens to
+            // the whole year, where data is most likely to exist.
+            actionLabel: selection.unit != InsightsPeriodUnit.year
+                ? messages.insightsEmptyShowYear
                 : null,
-            onAction: () => onPresetSelected(InsightsRangePreset.ytd),
+            onAction: () => onSelectUnit(InsightsPeriodUnit.year),
           )
         else ...[
           InsightsKpiRow(
             kpis: kpis,
+            previousKpis: previousKpis,
             categories: categories,
             focusCategoryIds: focusCategoryIds,
             onToggleFocusCategory: onToggleFocusCategory,
           ),
           SizedBox(height: tokens.spacing.sectionGap),
-          InsightsChartCard(chartData: chartData, resolver: resolver),
+          InsightsChartCard(
+            chartData: chartData,
+            resolver: resolver,
+            comparisonTotals: comparisonTotals,
+          ),
           SizedBox(height: tokens.spacing.sectionGap),
           InsightsTable(
             rows: tableRows,
             resolver: resolver,
             // avg/day equals the total on a single-day range — noise.
             showAvgPerDay: range.dayCount > 1,
+            previousSecondsByCategory: previousByCategory,
           ),
         ],
         SizedBox(height: tokens.spacing.step6),

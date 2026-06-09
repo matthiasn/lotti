@@ -243,13 +243,34 @@ void main() {
         DateTime(2024, 3, 1, 10),
       );
       expect(interval.toString(), contains('TimeInterval'));
-      const range = InsightsRange(
-        startDay: 10,
-        endDayExclusive: 17,
-        preset: InsightsRangePreset.d7,
-      );
-      expect(range.toString(), contains('d7'));
+      const range = InsightsRange(startDay: 10, endDayExclusive: 17);
       expect(range.toString(), contains('10'));
+      expect(range.toString(), contains('17'));
+
+      const selection = InsightsPeriodSelection(
+        unit: InsightsPeriodUnit.week,
+        range: range,
+      );
+      expect(
+        selection,
+        const InsightsPeriodSelection(
+          unit: InsightsPeriodUnit.week,
+          range: InsightsRange(startDay: 10, endDayExclusive: 17),
+        ),
+      );
+      expect(
+        selection ==
+            const InsightsPeriodSelection(
+              unit: InsightsPeriodUnit.month,
+              range: range,
+            ),
+        isFalse,
+      );
+      // compareEnabled participates in equality and copyWith.
+      expect(selection == selection.copyWith(compareEnabled: true), isFalse);
+      expect(selection.copyWith(compareEnabled: true).compareEnabled, isTrue);
+      expect(selection.toString(), contains('week'));
+      expect(selection.toString(), contains('compare'));
     });
   });
 

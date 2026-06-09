@@ -360,4 +360,341 @@ void main() {
       expect(chart.partialLastBucket, isTrue);
     });
   });
+
+  group('accumulate', () {
+    test('produces running sums per series', () {
+      expect(
+        accumulate([
+          [1, 2, 3],
+          [0, 0, 5],
+        ]),
+        [
+          [1, 3, 6],
+          [0, 0, 5],
+        ],
+      );
+    });
+  });
+
+  group('bucketTotal / alignedPreviousTotals', () {
+    InsightsChartData chart(List<List<int>> values, int buckets) =>
+        InsightsChartData(
+          granularity: InsightsGranularity.day,
+          bucketStarts: [
+            for (var i = 0; i < buckets; i++) DateTime(2024, 3, i + 1),
+          ],
+          seriesKeys: [for (var s = 0; s < values.length; s++) 'cat-$s'],
+          values: values,
+        );
+
+    test('bucketTotal sums every series in a bucket', () {
+      final data = chart([
+        [3600, 0, 1800],
+        [900, 1800, 0],
+      ], 3);
+      expect(bucketTotal(data, 0), 4500);
+      expect(bucketTotal(data, 1), 1800);
+      expect(bucketTotal(data, 2), 1800);
+    });
+
+    test('aligns previous totals bucket-for-bucket on equal lengths', () {
+      final current = chart([
+        [3600, 1800, 900],
+      ], 3);
+      final previous = chart([
+        [1800, 3600, 0],
+      ], 3);
+      expect(alignedPreviousTotals(current, previous), [1800, 3600, 0]);
+    });
+
+    test('zero-fills current buckets the previous period lacks', () {
+      // A 31-day current month against a 30-day previous month: the extra
+      // current bucket has no counterpart.
+      final current = chart([
+        [for (var i = 0; i < 31; i++) 600],
+      ], 31);
+      final previous = chart([
+        [for (var i = 0; i < 30; i++) 300],
+      ], 30);
+      final aligned = alignedPreviousTotals(current, previous);
+      expect(aligned, hasLength(31));
+      expect(aligned.last, 0);
+      expect(aligned[29], 300);
+    });
+
+    test('drops previous buckets beyond the current axis', () {
+      final current = chart([
+        [600, 600],
+      ], 2);
+      final previous = chart([
+        [300, 300, 300],
+      ], 3);
+      expect(alignedPreviousTotals(current, previous), [300, 300]);
+    });
+  });
+
+  group('buildTableRows', () {
+    test('computes share and avg over days in range', () {
+      final day = DateTime(2024, 3);
+      final buckets = bucketize(
+        [
+          InsightsTimeRow(
+            dateFrom: DateTime(2024, 3, 1, 9),
+            dateTo: DateTime(2024, 3, 1, 12),
+            categoryId: 'work',
+          ),
+          InsightsTimeRow(
+            dateFrom: DateTime(2024, 3, 1, 13),
+            dateTo: DateTime(2024, 3, 1, 14),
+            categoryId: null,
+          ),
+        ],
+        windowStartDay: epochDay(day),
+      );
+      final rows = buildTableRows(
+        buckets,
+        InsightsRange(
+          startDay: epochDay(day),
+          endDayExclusive: epochDay(day) + 4,
+        ),
+      );
+      expect(rows, hasLength(2));
+      expect(rows[0].categoryId, 'work');
+      expect(rows[0].seconds, 3 * 3600);
+      expect(rows[0].share, closeTo(0.75, 1e-9));
+      expect(rows[0].avgSecondsPerDay, 3 * 3600 ~/ 4);
+      expect(rows[1].categoryId, isNull);
+      expect(rows[1].share, closeTo(0.25, 1e-9));
+    });
+
+    test('returns empty for ranges without data', () {
+      expect(
+        buildTableRows(
+          InsightsDayBuckets.empty,
+          const InsightsRange(startDay: 19000, endDayExclusive: 19007),
+        ),
+        isEmpty,
+      );
+    });
+  });
+
+  group('buildKpis', () {
+    final day = DateTime(2024, 3);
+    final buckets = bucketize(
+      [
+        InsightsTimeRow(
+          dateFrom: DateTime(2024, 3, 1, 9),
+          dateTo: DateTime(2024, 3, 1, 12),
+          categoryId: 'work',
+        ),
+        InsightsTimeRow(
+          dateFrom: DateTime(2024, 3, 1, 13),
+          dateTo: DateTime(2024, 3, 1, 14),
+          categoryId: 'errands',
+        ),
+      ],
+      windowStartDay: epochDay(day),
+    );
+    final range = InsightsRange(
+      startDay: epochDay(day),
+      endDayExclusive: epochDay(day) + 7,
+    );
+
+    test('without focus configuration only total is reported', () {
+      final kpis = buildKpis(buckets, range, focusCategoryIds: const {});
+      expect(kpis.totalSeconds, 4 * 3600);
+      expect(kpis.focusSeconds, isNull);
+      expect(kpis.otherSeconds, isNull);
+    });
+
+    test('with focus categories, focus + other partition the total', () {
+      final kpis = buildKpis(buckets, range, focusCategoryIds: const {'work'});
+      expect(kpis.totalSeconds, 4 * 3600);
+      expect(kpis.focusSeconds, 3 * 3600);
+      expect(kpis.otherSeconds, 3600);
+    });
+  });
+
+  // ---------------------------------------------------------------------
+  // Property-based tests (Glados)
+  // ---------------------------------------------------------------------
+
+  glados.Glados<List<_EntrySpec>>(
+    glados.any.entrySpecs,
+  ).test('bucketize conserves per-row duration when no same-category rows '
+      'overlap (midnight/DST splits lose nothing)', (specs) {
+    // De-overlap by giving every row its own category, isolating the
+    // split logic from the (separately tested) union-merge.
+    final rows = [
+      for (var i = 0; i < specs.length; i++)
+        InsightsTimeRow(
+          dateFrom: specs[i].start,
+          dateTo: specs[i].end,
+          categoryId: 'unique-$i',
+        ),
+    ];
+    final buckets = bucketize(rows, windowStartDay: _windowStartDay());
+    final bucketTotal = buckets.days.values
+        .expand((cells) => cells.values)
+        .fold<int>(0, (sum, cell) => sum + cell.seconds);
+    final rowTotal = rows.fold<int>(
+      0,
+      (sum, r) => sum + r.dateTo.difference(r.dateFrom).inSeconds,
+    );
+    expect(bucketTotal, rowTotal);
+  }, tags: 'glados');
+
+  glados.Glados<List<_EntrySpec>>(
+    glados.any.entrySpecs,
+  ).test('every bucketized segment lies within its day and within the '
+      'window', (specs) {
+    final windowStartDay = _windowStartDay();
+    final buckets = bucketize(
+      [for (final s in specs) s.row],
+      windowStartDay: windowStartDay,
+    );
+    buckets.days.forEach((day, cells) {
+      expect(day, greaterThanOrEqualTo(windowStartDay));
+      final start = dayStart(day);
+      final end = nextLocalMidnight(start);
+      for (final cell in cells.values) {
+        for (final interval in cell.intervals) {
+          expect(interval.start.isBefore(start), isFalse);
+          expect(interval.end.isAfter(end), isFalse);
+        }
+      }
+    });
+  }, tags: 'glados');
+
+  glados.Glados<List<_EntrySpec>>(
+    glados.any.entrySpecs,
+  ).test('union-merged cells never exceed naive sums and merging is '
+      'idempotent', (specs) {
+    final buckets = bucketize(
+      [for (final s in specs) s.row],
+      windowStartDay: _windowStartDay(),
+    );
+    for (final cells in buckets.days.values) {
+      for (final cell in cells.values) {
+        // Idempotence: merging an already-merged list is a no-op.
+        expect(mergeIntervals(cell.intervals), cell.intervals);
+        // Disjoint and sorted.
+        for (var i = 1; i < cell.intervals.length; i++) {
+          expect(
+            cell.intervals[i].start.isAfter(cell.intervals[i - 1].end),
+            isTrue,
+          );
+        }
+        expect(cell.seconds, intervalSeconds(cell.intervals));
+      }
+    }
+  }, tags: 'glados');
+
+  glados.Glados<List<_EntrySpec>>(
+    glados.any.entrySpecs,
+  ).test('chart totals equal table totals equal KPI total for any data', (
+    specs,
+  ) {
+    final buckets = bucketize(
+      [for (final s in specs) s.row],
+      windowStartDay: _windowStartDay(),
+    );
+    final range = InsightsRange(
+      startDay: _windowStartDay(),
+      // Wide enough to cover every generated span (40 days + 3-day max
+      // duration + slack).
+      endDayExclusive: _windowStartDay() + 50,
+    );
+    final chartTotal = buildChartData(
+      buckets,
+      range,
+    ).values.expand((row) => row).fold<int>(0, (a, b) => a + b);
+    final tableTotal = buildTableRows(
+      buckets,
+      range,
+    ).fold<int>(0, (sum, row) => sum + row.seconds);
+    final kpiTotal = buildKpis(
+      buckets,
+      range,
+      focusCategoryIds: const {},
+    ).totalSeconds;
+    expect(chartTotal, tableTotal);
+    expect(tableTotal, kpiTotal);
+  }, tags: 'glados');
+
+  glados.Glados<List<_EntrySpec>>(
+    glados.any.entrySpecs,
+  ).test('table shares sum to 1 and rows are ranked descending', (specs) {
+    final buckets = bucketize(
+      [for (final s in specs) s.row],
+      windowStartDay: _windowStartDay(),
+    );
+    final range = InsightsRange(
+      startDay: _windowStartDay(),
+      endDayExclusive: _windowStartDay() + 50,
+    );
+    final rows = buildTableRows(buckets, range);
+    if (rows.isEmpty) return;
+    final shareSum = rows.fold<double>(0, (sum, row) => sum + row.share);
+    expect(shareSum, closeTo(1, 1e-9));
+    for (var i = 1; i < rows.length; i++) {
+      expect(rows[i].seconds, lessThanOrEqualTo(rows[i - 1].seconds));
+    }
+  }, tags: 'glados');
+
+  glados.Glados<int>(
+    glados.any.intInRange(-100000, 100000),
+  ).test('weekStartDay maps every day onto the Monday at or before it', (
+    day,
+  ) {
+    final monday = weekStartDay(day);
+    expect(monday, lessThanOrEqualTo(day));
+    expect(day - monday, lessThan(7));
+    // Anchor: epoch day 4 (1970-01-05) was a Monday; Mondays are ≡ 4 mod 7.
+    final remainder = monday % 7;
+    expect(remainder < 0 ? remainder + 7 : remainder, 4);
+    // Idempotence: a Monday maps to itself.
+    expect(weekStartDay(monday), monday);
+  }, tags: 'glados');
+
+  glados.Glados<List<_EntrySpec>>(
+    glados.any.entrySpecs,
+  ).test('cumulative series are monotone non-decreasing', (specs) {
+    final buckets = bucketize(
+      [for (final s in specs) s.row],
+      windowStartDay: _windowStartDay(),
+    );
+    final chart = buildChartData(
+      buckets,
+      InsightsRange(
+        startDay: _windowStartDay(),
+        endDayExclusive: _windowStartDay() + 50,
+      ),
+    );
+    for (final row in accumulate(chart.values)) {
+      for (var i = 1; i < row.length; i++) {
+        expect(row[i], greaterThanOrEqualTo(row[i - 1]));
+      }
+    }
+  }, tags: 'glados');
+
+  glados.Glados<List<_EntrySpec>>(
+    glados.any.entrySpecs,
+  ).test("hourly totals for a day sum to that day's daily total", (specs) {
+    final buckets = bucketize(
+      [for (final s in specs) s.row],
+      windowStartDay: _windowStartDay(),
+    );
+    for (final day in buckets.days.keys) {
+      final hourlySum = hourlyTotals(
+        buckets,
+        day,
+      ).expand((bucket) => bucket.values).fold<int>(0, (a, b) => a + b);
+      final dailySum = buckets.days[day]!.values.fold<int>(
+        0,
+        (sum, cell) => sum + cell.seconds,
+      );
+      expect(hourlySum, dailySum);
+    }
+  }, tags: 'glados');
 }

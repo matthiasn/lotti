@@ -5,6 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [0.9.1020]
+### Added
+- Time Analysis (desktop): a Compare toggle puts the current period
+  side-by-side with the one immediately before it — headline tiles show the
+  change versus the previous period, the per-category table gains Previous
+  and Δ% columns, and the chart switches to grouped bars pairing each
+  bucket's current total with a muted previous-period bar (the tooltip reads
+  out the previous total and the percent change).
 ### Changed
 - All settings definition pages (categories, labels, habits, measurables,
   dashboards) now share one design language. Every list page has the same
@@ -30,6 +37,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dashboard editor: save-and-copy moved to a header action next to the
   title, and saving with an invalid form no longer navigates away while
   silently discarding the changes.
+- Time Analysis (desktop): the wide date-range row — preset chips plus a
+  custom-range dialog — is replaced by a compact period stepper. Pick a
+  granularity (Day / Week / Month / Quarter / Year) and browse to the
+  previous or next period with the ‹ › arrows; the dashboard updates live
+  as you step, with no dialog. Weeks follow your device region — they start
+  on Monday across most of Europe and on Sunday in the US — both in the
+  stepper's week periods and in the jump-to-date calendar grid.
+- Time Analysis (desktop): tap the period label to open a calendar and jump
+  straight to any date's period; the dashboard updates live behind the
+  sheet as you pick.
 
 ## [0.9.1019]
 ### Changed

@@ -5031,6 +5031,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get inputDataTypeTasksListName => 'Seznam úkolů';
 
   @override
+  String get insightsChartCompareCaption => 'Toto období vs. předchozí';
+
+  @override
   String get insightsChartCumulative => 'Kumulativně';
 
   @override
@@ -5049,7 +5052,19 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsChooseFocusCategories => 'Vybrat fokusové kategorie';
 
   @override
+  String get insightsCompare => 'Porovnat';
+
+  @override
+  String get insightsComparePrevious => 'Předchozí';
+
+  @override
+  String get insightsCompareVs => 'vs';
+
+  @override
   String get insightsDeletedCategory => 'Smazaná kategorie';
+
+  @override
+  String get insightsDeltaNew => 'nový';
 
   @override
   String get insightsEmptyBody =>
@@ -5059,7 +5074,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsEmptyChart => 'V tomto období nejsou žádná data';
 
   @override
-  String get insightsEmptyShowYtd => 'Zobrazit celý rok';
+  String get insightsEmptyShowYear => 'Zobrazit tento rok';
 
   @override
   String get insightsEmptyTitle => 'V tomto období není zaznamenaný žádný čas';
@@ -5089,31 +5104,40 @@ class AppLocalizationsCs extends AppLocalizations {
   String get insightsPartialWeek => 'část týdne';
 
   @override
-  String get insightsRange1d => '1d';
+  String get insightsPeriodDay => 'Den';
 
   @override
-  String get insightsRange30d => '30d';
+  String get insightsPeriodJump => 'Přejít na datum';
 
   @override
-  String get insightsRange7d => '7d';
+  String get insightsPeriodMonth => 'Měsíc';
 
   @override
-  String get insightsRangeCustom => 'Vlastní období';
+  String get insightsPeriodNext => 'Další období';
 
   @override
-  String get insightsRangeLastMonth => 'Minulý měsíc';
+  String get insightsPeriodPrevious => 'Předchozí období';
 
   @override
-  String get insightsRangeMtd => 'MTD';
+  String get insightsPeriodQuarter => 'Čtvrtletí';
 
   @override
-  String get insightsRangeYtd => 'YTD';
+  String get insightsPeriodWeek => 'Týden';
+
+  @override
+  String get insightsPeriodYear => 'Rok';
 
   @override
   String get insightsTableAvgPerDay => 'Ø/DEN';
 
   @override
   String get insightsTableCategory => 'KATEGORIE';
+
+  @override
+  String get insightsTableDelta => 'Δ%';
+
+  @override
+  String get insightsTablePrevious => 'PŘEDCHOZÍ';
 
   @override
   String get insightsTableShare => 'PODÍL';

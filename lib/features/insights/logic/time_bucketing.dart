@@ -340,6 +340,33 @@ InsightsChartData buildChartData(
   );
 }
 
+/// Total seconds in [data]'s bucket at [index] across every series.
+int bucketTotal(InsightsChartData data, int index) {
+  var total = 0;
+  for (final row in data.values) {
+    total += row[index];
+  }
+  return total;
+}
+
+/// Previous-period per-bucket totals aligned to [current]'s bucket axis, for
+/// the grouped-bar comparison.
+///
+/// The x-axis always stays the current period: index `i` is the previous
+/// period's total for the bucket sharing current index `i`. Current buckets
+/// with no previous counterpart (a longer current month) get 0, and any
+/// extra previous buckets are dropped. Adjacent periods of the same unit
+/// always share a granularity, so the indices line up bucket-for-bucket.
+List<int> alignedPreviousTotals(
+  InsightsChartData current,
+  InsightsChartData previous,
+) {
+  return [
+    for (var i = 0; i < current.bucketStarts.length; i++)
+      i < previous.bucketStarts.length ? bucketTotal(previous, i) : 0,
+  ];
+}
+
 /// Running-sum transform of `values[series][bucket]` along buckets.
 /// Each output row is monotone non-decreasing.
 List<List<int>> accumulate(List<List<int>> values) {

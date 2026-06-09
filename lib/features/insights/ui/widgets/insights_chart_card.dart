@@ -24,11 +24,19 @@ class InsightsChartCard extends StatefulWidget {
   const InsightsChartCard({
     required this.chartData,
     required this.resolver,
+    this.comparisonTotals,
     super.key,
   });
 
   final InsightsChartData chartData;
   final InsightsCategoryResolver resolver;
+
+  /// Previous-period totals aligned to [chartData]'s buckets
+  /// ([alignedPreviousTotals]). When non-null the chart switches to grouped
+  /// current-vs-previous bars and hides the daily/cumulative toggle — the
+  /// comparison is a per-bucket total view, so the cumulative mode (and the
+  /// category stacking it shares with the daily bars) would only muddy it.
+  final List<int>? comparisonTotals;
 
   @override
   State<InsightsChartCard> createState() => _InsightsChartCardState();
@@ -38,6 +46,9 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
   InsightsChartMode _mode = InsightsChartMode.daily;
 
   String _captionText(AppLocalizations messages) {
+    if (widget.comparisonTotals != null) {
+      return messages.insightsChartCompareCaption;
+    }
     final base = _mode == InsightsChartMode.daily
         ? messages.insightsChartDailyCaption
         : messages.insightsChartCumulativeCaption;
@@ -91,20 +102,26 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
                     ],
                   ),
                 ),
-                // Same pill idiom as the range selector — one "pick one of
-                // N" language across the dashboard.
-                InsightsPillButton(
-                  label: messages.insightsChartDaily,
-                  active: _mode == InsightsChartMode.daily,
-                  onTap: () => setState(() => _mode = InsightsChartMode.daily),
-                ),
-                SizedBox(width: tokens.spacing.step2),
-                InsightsPillButton(
-                  label: messages.insightsChartCumulative,
-                  active: _mode == InsightsChartMode.cumulative,
-                  onTap: () =>
-                      setState(() => _mode = InsightsChartMode.cumulative),
-                ),
+                // The daily/cumulative toggle is meaningless in compare mode
+                // (the chart is fixed to grouped per-bucket totals), so it
+                // drops out while comparing.
+                if (widget.comparisonTotals == null) ...[
+                  // Same pill idiom as the range selector — one "pick one of
+                  // N" language across the dashboard.
+                  InsightsPillButton(
+                    label: messages.insightsChartDaily,
+                    active: _mode == InsightsChartMode.daily,
+                    onTap: () =>
+                        setState(() => _mode = InsightsChartMode.daily),
+                  ),
+                  SizedBox(width: tokens.spacing.step2),
+                  InsightsPillButton(
+                    label: messages.insightsChartCumulative,
+                    active: _mode == InsightsChartMode.cumulative,
+                    onTap: () =>
+                        setState(() => _mode = InsightsChartMode.cumulative),
+                  ),
+                ],
               ],
             ),
             SizedBox(height: tokens.spacing.step5),
@@ -112,6 +129,12 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
               height: _chartHeight,
               child: widget.chartData.isEmpty
                   ? EmptyChart(message: messages.insightsEmptyChart)
+                  : widget.comparisonTotals != null
+                  ? StackedBarChart(
+                      chartData: widget.chartData,
+                      resolver: widget.resolver,
+                      comparisonTotals: widget.comparisonTotals,
+                    )
                   : _mode == InsightsChartMode.daily
                   ? StackedBarChart(
                       chartData: widget.chartData,
@@ -122,14 +145,17 @@ class _InsightsChartCardState extends State<InsightsChartCard> {
                       resolver: widget.resolver,
                     ),
             ),
-            // A one-item legend restates the obvious — only render when
-            // there is something to disambiguate.
-            if (widget.chartData.seriesKeys.length > 1) ...[
+            // A one-item legend restates the obvious — only render when there
+            // is something to disambiguate (multiple categories, or the
+            // previous-period ghost bar that compare mode adds).
+            if (widget.chartData.seriesKeys.length > 1 ||
+                widget.comparisonTotals != null) ...[
               SizedBox(height: tokens.spacing.step4),
               ChartLegend(
                 seriesKeys: widget.chartData.seriesKeys,
                 rolledUpCount: widget.chartData.rolledUpCount,
                 resolver: widget.resolver,
+                showPrevious: widget.comparisonTotals != null,
               ),
             ],
           ],

@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/theme/typography_helpers.dart';
 import 'package:lotti/features/insights/logic/chart_colors.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_category_resolver.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_delta_chip.dart';
 import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -21,6 +22,7 @@ class InsightsTable extends StatelessWidget {
     required this.rows,
     required this.resolver,
     this.showAvgPerDay = true,
+    this.previousSecondsByCategory,
     super.key,
   });
 
@@ -30,6 +32,11 @@ class InsightsTable extends StatelessWidget {
   /// Hidden for single-day ranges, where avg/day would just repeat the
   /// total.
   final bool showAvgPerDay;
+
+  /// Previous-period seconds per category when comparison is on. When set,
+  /// the table swaps to a focused current-vs-previous view (Δ% + previous
+  /// columns instead of share/avg/bar).
+  final Map<String?, int>? previousSecondsByCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -84,9 +91,14 @@ class InsightsTable extends StatelessWidget {
     // gracefully (bar → avg/day → share → total) instead of overflowing.
     // Below ~180px only the flexible category column survives. A single
     // row also drops the data bar: a maxed 100% bar encodes nothing.
-    final showBar = maxWidth >= 520 && rows.length > 1;
-    final showAvg = showAvgPerDay && maxWidth >= 400;
-    final showShare = maxWidth >= 280;
+    // Compare mode is a focused current-vs-previous view: Δ% + previous
+    // replace share/avg/bar so the columns never overflow a narrow pane.
+    final compare = previousSecondsByCategory != null;
+    final showDelta = compare && maxWidth >= 240;
+    final showPrevious = compare && maxWidth >= 360;
+    final showBar = !compare && maxWidth >= 520 && rows.length > 1;
+    final showAvg = !compare && showAvgPerDay && maxWidth >= 400;
+    final showShare = !compare && maxWidth >= 280;
     final showTotal = maxWidth >= 180;
 
     return DecoratedBox(
@@ -107,12 +119,24 @@ class InsightsTable extends StatelessWidget {
               showShare: showShare,
               showAvgPerDay: showAvg,
               showBar: showBar,
+              showDelta: showDelta,
+              showPrevious: showPrevious,
               category: Text(
                 messages.insightsTableCategory,
                 style: headerStyle,
               ),
               total: Text(
                 messages.insightsTableTotal,
+                style: headerStyle,
+                textAlign: TextAlign.right,
+              ),
+              delta: Text(
+                messages.insightsTableDelta,
+                style: headerStyle,
+                textAlign: TextAlign.right,
+              ),
+              previous: Text(
+                messages.insightsTablePrevious,
                 style: headerStyle,
                 textAlign: TextAlign.right,
               ),
@@ -135,6 +159,24 @@ class InsightsTable extends StatelessWidget {
                 showShare: showShare,
                 showAvgPerDay: showAvg,
                 showBar: showBar,
+                showDelta: showDelta,
+                showPrevious: showPrevious,
+                delta: Align(
+                  alignment: Alignment.centerRight,
+                  child: InsightsDeltaChip(
+                    current: row.seconds,
+                    previous: previousSecondsByCategory?[row.categoryId] ?? 0,
+                  ),
+                ),
+                previous: Text(
+                  formatDurationTable(
+                    previousSecondsByCategory?[row.categoryId] ?? 0,
+                  ),
+                  style: numberStyle.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                  textAlign: TextAlign.right,
+                ),
                 category: Row(
                   children: [
                     Container(
@@ -207,10 +249,14 @@ class _TableRowLayout extends StatelessWidget {
   const _TableRowLayout({
     required this.category,
     required this.total,
+    required this.delta,
+    required this.previous,
     required this.share,
     required this.avgPerDay,
     required this.bar,
     required this.showTotal,
+    required this.showDelta,
+    required this.showPrevious,
     required this.showShare,
     required this.showAvgPerDay,
     required this.showBar,
@@ -218,10 +264,14 @@ class _TableRowLayout extends StatelessWidget {
 
   final Widget category;
   final Widget total;
+  final Widget delta;
+  final Widget previous;
   final Widget share;
   final Widget avgPerDay;
   final Widget bar;
   final bool showTotal;
+  final bool showDelta;
+  final bool showPrevious;
   final bool showShare;
   final bool showAvgPerDay;
   final bool showBar;
@@ -237,6 +287,14 @@ class _TableRowLayout extends StatelessWidget {
         children: [
           Expanded(child: category),
           if (showTotal) SizedBox(width: numberColumnWidth, child: total),
+          if (showDelta) ...[
+            SizedBox(width: tokens.spacing.step4),
+            SizedBox(width: numberColumnWidth, child: delta),
+          ],
+          if (showPrevious) ...[
+            SizedBox(width: tokens.spacing.step4),
+            SizedBox(width: numberColumnWidth, child: previous),
+          ],
           if (showShare) ...[
             SizedBox(width: tokens.spacing.step4),
             SizedBox(width: numberColumnWidth, child: share),

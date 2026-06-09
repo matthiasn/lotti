@@ -14,8 +14,9 @@ flowchart LR
     DB[(journal table)] -->|"insightsTimeRows()\nslim 3-column query,\nno serialized blob"| REPO[InsightsRepository]
     NOTIF[UpdateNotifications\nTEXT_ENTRY · TASK · LINK_CHANGED · PRIVATE_FLAG_TOGGLED] --> BUCKETS
     REPO --> BUCKETS["insightsBucketsProvider\nStreamProvider.family(InsightsWindow{startDay, endYear})\nnotificationDrivenItemStream + cacheFor"]
-    BUCKETS --> PAGE[TimeAnalysisPage]
-    RANGE[InsightsRangeController\npreset + custom, clock-injected] --> PAGE
+    BUCKETS -->|"current + previousPeriod window\n(when compare is on)"| PAGE[TimeAnalysisPage]
+    RANGE[InsightsRangeController\nperiod stepper: unit + range + compareEnabled, clock-injected] --> PAGE
+    REGION[firstDayOfWeekIndexProvider\nregion-aware week start] --> RANGE
     PREFS[InsightsPreferencesController\nfocus categories, SettingsDb JSON] --> PAGE
     CATS[categoriesStreamProvider] --> PAGE
     PAGE -->|pure functions:\nbuildChartData · buildTableRows · buildKpis| WIDGETS[KPI row · chart card · table]
@@ -23,9 +24,10 @@ flowchart LR
 
 Layering:
 
-- **`logic/`** — pure, Flutter-free functions (`time_bucketing.dart`,
-  `range_presets.dart`) plus the chart color derivation
-  (`chart_colors.dart`). Exhaustively property-tested with Glados.
+- **`logic/`** — pure, Flutter-free functions (`time_bucketing.dart`;
+  `period_navigation.dart` for the stepper's calendar snapping;
+  `range_presets.dart` for the fetch-window key) plus the chart color
+  derivation (`chart_colors.dart`). Exhaustively property-tested with Glados.
 - **`model/`** — hand-rolled immutable value types with deep equality
   (no codegen). Deep equality is load-bearing: an unchanged background
   refetch produces an equal `InsightsDayBuckets`, so Riverpod never
@@ -36,6 +38,74 @@ Layering:
   plain values to dumb widgets.
 - **`ui/`** — design-system tokens throughout; `fl_chart` for the stacked
   bar (daily) and pre-stacked cumulative area charts.
+
+## Period navigation
+
+The range is browsed, not picked from presets. `InsightsRangeController`
+holds an `InsightsPeriodSelection` — a granularity (`InsightsPeriodUnit`:
+day / week / month / quarter / year) plus the resolved `InsightsRange` it
+points at, and a `compareEnabled` flag (see *Comparison* below).
+`period_navigation.dart` snaps a date to the containing period
+(region-aware weeks; calendar month / quarter / year bounds) and shifts by
+whole periods. Snapping (`periodContaining`) takes the first weekday;
+shifting (`shiftPeriod`) does not — an aligned week stays aligned under a
+±7-day move, so week stepping shifts the bounds directly and is independent
+of the first weekday (which matters because it resolves asynchronously).
+The `InsightsPeriodStepper` renders `‹ [unit ▾] label ›`: the
+dropdown re-derives the period for a new granularity (keeping the current
+anchor), the chevrons step one period at a time, and forward is disabled
+once the period reaches today. Every step is an in-memory slice within the
+year window (below), so the dashboard updates with no database round trip.
+
+**Region-aware week start.** Week periods (and the calendar grid) start on
+the device region's first weekday — Monday across most of Europe, Sunday in
+the US — rather than a fixed day. `period_navigation.dart` takes a
+`firstDayOfWeekIndex` (`0 = Sunday` … `6 = Saturday`, default Monday) for
+its week snapping; `InsightsRangeController` reads it from the app-wide
+`firstDayOfWeekIndexProvider` (`utils/device_region.dart`, the same source
+the Daily OS sidebar calendar uses). The provider is a `FutureProvider`
+(native region lookup on macOS), so the controller `ref.read`s it once in
+`build` (Monday until it resolves) and holds the index in a field —
+**watching** would re-run `build` on resolution and discard any
+step/jump/compare the user made in that window. A `ref.listen` re-anchors
+instead: when the region resolves it re-derives the period under the new
+first weekday **only while the user is still on the current period**,
+preserving the unit and compare toggle and never clobbering navigation.
+
+Tapping the period label opens the **calendar picker**
+(`insights_period_picker.dart`, a Wolt modal sheet wrapping the
+design-system `SidebarMonthCalendar`): the grid uses the same
+`firstDayOfWeekIndex`, and picking a day calls
+`InsightsRangeController.jumpTo`, which snaps to the period of the current
+granularity that contains it. The sheet stays open and the dashboard
+updates live behind the dimmed scrim, so you can browse days and watch the
+data change before dismissing.
+
+## Comparison
+
+The stepper's Compare toggle flips `compareEnabled`. When on, the page
+watches a second window for the controller's `previousComparisonRange` — the
+period immediately before the current one, derived purely from the
+already-aligned `state.range` via `shiftPeriod` (so it never re-snaps and
+can't drift out of step with the current range, even if the first weekday
+resolves after the range was built — the page used to re-derive it with a
+Monday default and misaligned the comparison for Sunday/Saturday regions).
+The KPI
+tiles render an `InsightsDeltaChip` (sign and color convey direction;
+`insightsDeltaPercent` returns `null` for a zero baseline, shown as "new"),
+and the per-category table swaps its share / average / bar columns for
+**Previous** and **Δ%** columns. Both windows are ordinary in-memory slices,
+so toggling compare and stepping stay database-free.
+
+The chart joins the comparison too. `alignedPreviousTotals` projects the
+previous period's per-bucket totals onto the current period's x-axis (extra
+current buckets — a longer month — zero-fill; extra previous buckets drop),
+and the daily bar chart becomes **grouped bars**: each bucket pairs the
+current stacked-by-category bar with a single muted ghost bar for the
+previous total. The daily/cumulative toggle hides while comparing (the
+comparison is a per-bucket total view, where cumulative stacking would only
+muddy it), the legend gains a *Previous* swatch, and the current-bar tooltip
+appends a `Previous … Δ%` footer in the same accents as the delta chip.
 
 ## Data semantics
 
@@ -77,7 +147,7 @@ Layering:
 stateDiagram-v2
     [*] --> Loading: first watch of window W
     Loading --> Ready: buckets(W)
-    Ready --> Ready: preset switch within W\n(zero DB, in-memory slice)
+    Ready --> Ready: period switch within W\n(zero DB, in-memory slice)
     Ready --> LoadingW2: range needs another year\n(new family instance W2)
     LoadingW2 --> Ready: buckets(W2)\nW stays cached (cacheFor 5min)
     Ready --> Refetching: entry/task/link/private notification
@@ -86,10 +156,10 @@ stateDiagram-v2
 
 - The fetch window is **January 1st of the range-start year through the end
   of tomorrow, capped at January 1st after the range-end year** — a
-  past-year custom range loads only its own year(s). The Riverpod family
-  key is a value-equal `({startDay, endYear})` record; every preset within
+  past-year period loads only its own year(s). The Riverpod family
+  key is a value-equal `({startDay, endYear})` record; every period within
   one year shares one in-memory bucket cache, so range switching never
-  touches the database (measured: all six presets in ~5ms
+  touches the database (measured: all five period granularities in ~2-8ms
   on a 10k-entry year; cold fetch+bucketize ~35ms —
   `test/database/insights_performance_test.dart`).
 - A different year is a different provider instance — there is no mutable
@@ -105,7 +175,7 @@ stateDiagram-v2
   a caption under the title states what the chart shows. No pies, no
   donuts, zero-based axes, horizontal gridlines only.
 - Granularity tiers: hourly for 1-day ranges, daily up to 120 days, weekly
-  beyond (YTD ≈ 52 x-points). Partial edge weeks are flagged in tooltips.
+  beyond (a full year ≈ 52 x-points). Partial edge weeks are flagged in tooltips.
 - At most 6 series plus a slate **Other (+N)** rollup; uncategorized time is
   a distinct neutral gray. Series order (largest on the baseline), legend
   order, and table order are all descending by total.
@@ -140,12 +210,12 @@ on tap.
 
 - `test/features/insights/logic/` — unit + Glados property tests (tagged
   `glados`): duration conservation under midnight/DST splits, union-merge
-  idempotence, monotone cumulative series, preset well-formedness,
+  idempotence, monotone cumulative series, period-snapping invariants,
   chart/table/KPI total agreement.
 - `test/database/database_insights_queries_test.dart` — fan-out,
   precedence, window-edge, and floor semantics against a real in-memory DB.
 - `test/database/insights_performance_test.dart` — 10k-entry benchmark for
-  the cold fetch and the in-memory preset-switch budget.
+  the cold fetch and the in-memory period-switch budget.
 - `test/features/insights/ui/time_analysis_screenshots_test.dart` — renders
   ten scenarios at desktop size with real fonts for design review
   (opt-in: `LOTTI_SCREENSHOT_DIR=<dir> fvm flutter test …` — the font

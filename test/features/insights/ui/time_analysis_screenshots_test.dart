@@ -151,6 +151,17 @@ Future<void> _tap(WidgetTester tester, Finder finder) async {
   });
 }
 
+/// Opens the granularity dropdown (whose chip shows [current]) and picks
+/// [target].
+Future<void> _selectGranularity(
+  WidgetTester tester,
+  String current,
+  String target,
+) async {
+  await _tap(tester, find.text(current));
+  await _tap(tester, find.text(target).last);
+}
+
 void main() {
   // OPT-IN ONLY. The harness loads real fonts via FontLoader, which
   // registers them process-wide with no way to unload. Under very_good's
@@ -217,7 +228,7 @@ void main() {
     }
   });
 
-  testWidgets('7d default — dark', (tester) async {
+  testWidgets('week default — dark', (tester) async {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
@@ -227,10 +238,10 @@ void main() {
     expect(find.text('Time per day'), findsOneWidget); // daily mode default
     // KPI tile label + table column header.
     expect(find.text('TOTAL'), findsNWidgets(2));
-    await _capture(tester, '01_7d_default_dark');
+    await _capture(tester, '01_week_default_dark');
   });
 
-  testWidgets('7d default — light', (tester) async {
+  testWidgets('week default — light', (tester) async {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
@@ -239,10 +250,10 @@ void main() {
     );
     expect(find.text('Time Analysis'), findsOneWidget);
     expect(find.text('Choose focus categories'), findsOneWidget);
-    await _capture(tester, '02_7d_default_light');
+    await _capture(tester, '02_week_default_light');
   });
 
-  testWidgets('7d with focus configured — dark', (tester) async {
+  testWidgets('week with focus configured — dark', (tester) async {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
@@ -250,21 +261,21 @@ void main() {
       focusCategoryIds: const {'cat-client', 'cat-deep'},
     );
     expect(find.text('FOCUS'), findsOneWidget);
-    await _capture(tester, '03_7d_focus_dark');
+    await _capture(tester, '03_week_focus_dark');
   });
 
-  testWidgets('30d — dark', (tester) async {
+  testWidgets('month — dark', (tester) async {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
       categories: insightsScenarioCategories,
     );
-    await _tap(tester, find.text('30d'));
-    expect(find.text('May 9 – Jun 7'), findsOneWidget);
-    await _capture(tester, '04_30d_dark');
+    await _selectGranularity(tester, 'Week', 'Month');
+    expect(find.text('June 2026'), findsOneWidget);
+    await _capture(tester, '04_month_dark');
   });
 
-  testWidgets('YTD with many categories (weekly + Other) — dark', (
+  testWidgets('year with many categories (weekly + Other) — dark', (
     tester,
   ) async {
     await _pumpDashboard(
@@ -272,35 +283,34 @@ void main() {
       rows: insightsScenarioRows(_now, manyCategories: true),
       categories: insightsScenarioCategories,
     );
-    await _tap(tester, find.text('YTD'));
+    await _selectGranularity(tester, 'Week', 'Year');
     expect(find.textContaining('Other'), findsWidgets);
-    await _capture(tester, '05_ytd_weekly_other_dark');
+    await _capture(tester, '05_year_weekly_other_dark');
   });
 
-  testWidgets('30d cumulative — dark', (tester) async {
+  testWidgets('month cumulative — dark', (tester) async {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
       categories: insightsScenarioCategories,
     );
-    await _tap(tester, find.text('30d'));
+    await _selectGranularity(tester, 'Week', 'Month');
     await _tap(tester, find.text('Cumulative'));
     expect(find.text('Running total over the range'), findsOneWidget);
     expect(find.text('Time per day'), findsNothing);
-    await _capture(tester, '06_30d_cumulative_dark');
+    await _capture(tester, '06_month_cumulative_dark');
   });
 
-  testWidgets('1d hourly — dark', (tester) async {
+  testWidgets('day hourly — dark', (tester) async {
     await _pumpDashboard(
       tester,
       rows: insightsScenarioRows(_now),
       categories: insightsScenarioCategories,
     );
-    await _tap(tester, find.text('1d'));
-    // Single-day range: avg/day would repeat the total, so it is hidden.
+    await _selectGranularity(tester, 'Week', 'Day');
+    // Single-day period: avg/day would repeat the total, so it is hidden.
     expect(find.text('AVG/DAY'), findsNothing);
-    expect(find.text('Jun 7'), findsOneWidget); // single-date range label
-    await _capture(tester, '07_1d_hourly_dark');
+    await _capture(tester, '07_day_hourly_dark');
   });
 
   testWidgets('empty range — dark', (tester) async {
@@ -313,17 +323,17 @@ void main() {
     await _capture(tester, '08_empty_dark');
   });
 
-  testWidgets('sparse data 30d — dark', (tester) async {
+  testWidgets('sparse data month — dark', (tester) async {
     await _pumpDashboard(
       tester,
       rows: insightsSparseRows(_now),
       categories: insightsScenarioCategories,
     );
-    await _tap(tester, find.text('30d'));
+    await _selectGranularity(tester, 'Week', 'Month');
     // Sparse data: sub-minute averages render the <0:01 guard.
     expect(find.text('<0:01'), findsWidgets);
     expect(find.text('Uncategorized'), findsWidgets);
-    await _capture(tester, '09_sparse_30d_dark');
+    await _capture(tester, '09_sparse_month_dark');
   });
 
   testWidgets('single category — dark', (tester) async {

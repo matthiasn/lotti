@@ -1,0 +1,103 @@
+import 'package:lotti/features/insights/logic/time_bucketing.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
+
+/// Pure calendar navigation for the Time Analysis period stepper.
+///
+/// Every function returns a day-aligned [InsightsRange] snapped to the
+/// boundaries of [InsightsPeriodUnit]: region-aware weeks (first weekday set
+/// by `firstDayOfWeekIndex`, `0 = Sunday` … `6 = Saturday`, default Monday),
+/// and calendar month / quarter / year bounds. All arithmetic goes through
+/// the `DateTime` constructor (which normalizes overflow and is DST-safe)
+/// and [epochDay], so stepping never drifts across daylight-saving changes.
+
+/// Monday in Flutter's `firstDayOfWeekIndex` convention; the default first
+/// weekday when no device region is known. Shared across the feature so the
+/// `0 = Sunday … 6 = Saturday` fallback is written in exactly one place.
+const int defaultFirstDayOfWeekIndex = DateTime.monday % 7;
+
+/// The period of [unit] that contains [anchor] (a local date).
+///
+/// [firstDayOfWeekIndex] (`0 = Sunday` … `6 = Saturday`) sets which weekday a
+/// week starts on; it is ignored for non-week units.
+InsightsRange periodContaining(
+  InsightsPeriodUnit unit,
+  DateTime anchor, {
+  int firstDayOfWeekIndex = defaultFirstDayOfWeekIndex,
+}) {
+  final day = DateTime(anchor.year, anchor.month, anchor.day);
+  switch (unit) {
+    case InsightsPeriodUnit.day:
+      final start = epochDay(day);
+      return InsightsRange(startDay: start, endDayExclusive: start + 1);
+    case InsightsPeriodUnit.week:
+      // `weekday` is 1 (Mon) … 7 (Sun); `% 7` gives the same 0 (Sun) … 6
+      // (Sat) frame as firstDayOfWeekIndex. Walk back to the week's first
+      // day.
+      final offset = (day.weekday % 7 - firstDayOfWeekIndex + 7) % 7;
+      final first = DateTime(day.year, day.month, day.day - offset);
+      final start = epochDay(first);
+      return InsightsRange(startDay: start, endDayExclusive: start + 7);
+    case InsightsPeriodUnit.month:
+      return _bounds(
+        DateTime(day.year, day.month),
+        DateTime(day.year, day.month + 1),
+      );
+    case InsightsPeriodUnit.quarter:
+      final firstMonth = ((day.month - 1) ~/ 3) * 3 + 1; // 1, 4, 7, or 10
+      return _bounds(
+        DateTime(day.year, firstMonth),
+        DateTime(day.year, firstMonth + 3),
+      );
+    case InsightsPeriodUnit.year:
+      return _bounds(DateTime(day.year), DateTime(day.year + 1));
+  }
+}
+
+/// Shifts [range] (assumed aligned to [unit]) by [delta] whole periods —
+/// negative to go back, positive to go forward.
+///
+/// Week shifting moves the bounds by whole weeks directly rather than
+/// re-snapping through [periodContaining]: an aligned week stays aligned
+/// under a ±7-day shift regardless of which weekday it starts on, so this is
+/// independent of the device-region first weekday. That matters because the
+/// first weekday resolves asynchronously — re-snapping with an index that
+/// changed after [range] was built could drift the result by up to six days.
+InsightsRange shiftPeriod(
+  InsightsRange range,
+  InsightsPeriodUnit unit,
+  int delta,
+) {
+  final start = dayStart(range.startDay);
+  switch (unit) {
+    case InsightsPeriodUnit.day:
+      return periodContaining(
+        unit,
+        DateTime(start.year, start.month, start.day + delta),
+      );
+    case InsightsPeriodUnit.week:
+      return InsightsRange(
+        startDay: range.startDay + 7 * delta,
+        endDayExclusive: range.endDayExclusive + 7 * delta,
+      );
+    case InsightsPeriodUnit.month:
+      return periodContaining(unit, DateTime(start.year, start.month + delta));
+    case InsightsPeriodUnit.quarter:
+      return periodContaining(
+        unit,
+        DateTime(start.year, start.month + 3 * delta),
+      );
+    case InsightsPeriodUnit.year:
+      return periodContaining(unit, DateTime(start.year + delta));
+  }
+}
+
+/// The period immediately before [range] (one whole [unit] earlier). Used by
+/// the comparison mode to derive the "previous period".
+InsightsRange previousPeriod(InsightsRange range, InsightsPeriodUnit unit) =>
+    shiftPeriod(range, unit, -1);
+
+InsightsRange _bounds(DateTime startInclusive, DateTime endExclusive) =>
+    InsightsRange(
+      startDay: epochDay(startInclusive),
+      endDayExclusive: epochDay(endExclusive),
+    );
