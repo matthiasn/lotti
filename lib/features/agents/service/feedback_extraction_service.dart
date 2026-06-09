@@ -542,22 +542,54 @@ class FeedbackExtractionService {
     'severe',
   ];
 
-  /// Extract a displayable detail string from an observation payload.
-  static String _observationDetailText(AgentMessagePayloadEntity? payload) {
-    if (payload == null) return 'Observation recorded';
-    final text = payload.content['text'];
-    if (text is String && text.trim().isNotEmpty) {
-      return truncateAgentText(text, 200);
-    }
-    return 'Observation recorded';
-  }
-
-  /// Map a numeric rating to a sentiment.
+  /// Extract and aggregate feedback across ALL templates sharing a soul.
   ///
-  /// Shared by wake-run and evolution-session classification.
-  static FeedbackSentiment _sentimentFromRating(double rating) => rating >= 4.0
-      ? FeedbackSentiment.positive
-      : rating <= 2.0
-      ? FeedbackSentiment.negative
-      : FeedbackSentiment.neutral;
+  /// Returns a map of template ID → [ClassifiedFeedback] for use by the
+  /// soul evolution context builder, which groups feedback by source template.
+  Future<Map<String, ClassifiedFeedback>> extractForSoul({
+    required String soulId,
+    required DateTime since,
+    DateTime? until,
+  }) async {
+    final effectiveUntil = until ?? clock.now();
+    final soulService = soulDocumentService;
+    if (soulService == null) {
+      return {};
+    }
+
+    final templateIds = await soulService.getTemplatesUsingSoul(soulId);
+    if (templateIds.isEmpty) {
+      return {};
+    }
+
+    final results = await Future.wait(
+      templateIds.map(
+        (id) async {
+          try {
+            return MapEntry(
+              id,
+              await extract(
+                templateId: id,
+                since: since,
+                until: effectiveUntil,
+              ),
+            );
+          } catch (e, s) {
+            developer.log(
+              'Feedback extraction failed for template '
+              '${DomainLogger.sanitizeId(id)}',
+              name: 'FeedbackExtractionService',
+              error: e.runtimeType,
+              stackTrace: s,
+            );
+            return null;
+          }
+        },
+      ),
+    );
+
+    return Map.fromEntries(
+      results.whereType<MapEntry<String, ClassifiedFeedback>>(),
+    );
+  }
 }
