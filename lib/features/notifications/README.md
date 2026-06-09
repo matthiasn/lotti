@@ -57,10 +57,12 @@ ephemeral and do not route through the journal conflict UI.
 
 Task-agent proposal notifications may be seeded with the `ChangeSetEntity.id`
 so a fresh wave can create a new durable row after an older row was acted-on or
-retracted. The active inbox invariant is still task-scoped: before
-`NotificationRepository.createTaskSuggestion` writes a row, it serializes the
-task's notification mutation and retracts every other open `taskSuggestion` row
-for the same linked task. The bell projection also deduplicates by
+retracted. The active inbox invariant is still task-scoped:
+`NotificationRepository.createTaskSuggestion` serializes the task's notification
+mutation, writes (upserts) the new row, then retracts every other open
+`taskSuggestion` row for the same linked task (excluding the row it just wrote),
+so the bell can never show multiple suggestion rows for the same task. The bell
+projection also deduplicates by
 `(type: taskSuggestion, linkedTaskId)` so stale rows left by older app versions
 cannot render as duplicate inbox entries or inflate the badge count.
 

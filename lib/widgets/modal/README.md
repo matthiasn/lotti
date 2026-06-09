@@ -1,75 +1,136 @@
 # Modal Components
 
-This directory contains reusable modal components that provide consistent animations and visual feedback across the application. These components follow a layered architecture to maximize code reuse and maintainability.
+This directory contains the app's modal-presentation utilities (built on
+`wolt_modal_sheet`) plus a small set of animation widgets used for interactive
+list/card items. The only public export of the package is `ModalUtils` (via
+`index.dart`).
 
-## Architecture
+## Contents
 
 ```
-AnimatedModalItem (base animation layer)
-    └── AnimatedModalItemWithIcon (adds icon animation support)
-            └── ModernModalEntryTypeItem (entry creation specific)
-    └── AnimatedModalItemController (shared animation controller)
-
-Independent Components:
-- ModernModalPromptItem (selection prompts)
-- ModernModalActionItem (actions with optional destructive styling)
+lib/widgets/modal/
+├── index.dart                       # exports modal_utils.dart only
+├── modal_utils.dart                 # ModalUtils: Wolt sheet helpers
+├── confirmation_modal.dart          # showConfirmationModal(...)
+├── modal_action_sheet.dart          # showModalActionSheet(...)
+├── modal_sheet_action.dart          # ModalSheetAction<T> (action model)
+├── sized_wolt_dialog_type.dart      # SizedWoltDialogType (width-configurable dialog)
+├── animated_modal_item.dart         # AnimatedModalItem (hover/tap animation wrapper)
+└── animated_modal_item_controller.dart # AnimatedModalItemController (ChangeNotifier)
 ```
 
-## Core Components
+## Modal Presentation API
+
+### ModalUtils
+
+`ModalUtils` (the only export of `index.dart`) wraps `WoltModalSheet` with the
+app's styling and responsive behavior. Key static members:
+
+- `modalTypeBuilder(context)` — returns a `bottomSheet` below
+  `WoltModalConfig.pageBreakpoint` and a `dialog` at or above it.
+- `shouldUseRootNavigatorForBottomSheet(context)` — true below the breakpoint.
+- `getModalBarrierColor({isDark, context})` / `getModalBackgroundColor(context)`
+  — theme-derived barrier and background colors.
+- `modalSheetPage({...})` / `sliverModalSheetPage({...})` — build styled
+  `WoltModalSheetPage` / `SliverWoltModalSheetPage` instances with optional
+  title, back button (`onTapBack`), and close button (`showCloseButton`).
+- `showSinglePageModal<T>({...})` — show a single styled page.
+- `showSingleSliverPageModal<T>({...})` — show a single sliver-based page.
+- `showMultiPageModal<T>({...})` — show a multi-page modal with an optional
+  `pageIndexNotifier`.
+- `showBottomSheet<T>({...})` — thin wrapper over `showModalBottomSheet` that
+  applies the root-navigator heuristic.
+
+```dart
+ModalUtils.showSinglePageModal<void>(
+  context: context,
+  title: 'Title',
+  builder: (context) => const MyModalBody(),
+);
+```
+
+### showConfirmationModal
+
+`Future<bool> showConfirmationModal({required context, required message, ...})`
+in `confirmation_modal.dart` shows a single-page confirmation built on
+`ModalUtils.showSinglePageModal`. It renders an optional warning icon (when
+`isDestructive`), the message, and `cancel`/`confirm` buttons, returning `true`
+only when the confirm button is tapped.
+
+```dart
+final ok = await showConfirmationModal(
+  context: context,
+  message: 'Delete this entry?',
+  confirmLabel: 'DELETE',
+  cancelLabel: 'CANCEL',
+);
+```
+
+### showModalActionSheet / ModalSheetAction
+
+`Future<T?> showModalActionSheet<T>({required context, ...})` in
+`modal_action_sheet.dart` shows a bottom sheet of `LottiTertiaryButton` actions
+plus an optional title, message, and cancel button. Each action is a
+`ModalSheetAction<T>` (`label`, optional `key`, optional `icon`,
+`isDestructiveAction`); the sheet pops with the tapped action's `key`.
+
+```dart
+final choice = await showModalActionSheet<String>(
+  context: context,
+  actions: const [
+    ModalSheetAction(label: 'Edit', key: 'edit'),
+    ModalSheetAction(label: 'Delete', key: 'delete', isDestructiveAction: true),
+  ],
+  cancelLabel: 'Cancel',
+);
+```
+
+### SizedWoltDialogType
+
+`SizedWoltDialogType` (`sized_wolt_dialog_type.dart`) subclasses Wolt's
+`WoltDialogType` to render the dialog at a configurable `preferredWidth`,
+shrinking to fit (less the standard dialog padding) on narrower screens and
+capping height at 80% of available height (minimum 360px).
+
+## Animation Widgets
 
 ### AnimatedModalItem
 
-The foundation component that provides hover and tap animations for any modal item.
+`AnimatedModalItem` (`animated_modal_item.dart`) is a `StatefulWidget` wrapper
+that adds hover and tap animations to an arbitrary `child`.
 
 ```dart
 AnimatedModalItem(
   onTap: () => print('Tapped'),
-  child: Text('Click me'),
-  // Optional parameters
-  hoverScale: 0.99,        // Scale on hover (default: 0.99)
-  tapScale: 0.98,          // Scale on tap (default: 0.98)
-  tapOpacity: 0.8,         // Opacity on tap (default: 0.8)
-  hoverElevation: 4,       // Shadow elevation on hover (default: 4)
-  isDisabled: false,       // Disable interactions
-  margin: EdgeInsets.all(8), // Custom margin
-  disableShadow: false,    // Disable shadow rendering
+  child: const Text('Click me'),
+  // Optional parameters (defaults shown)
+  hoverScale: 0.99,        // Scale on hover
+  tapScale: 0.98,          // Scale on tap
+  tapOpacity: 0.8,         // Opacity on tap
+  hoverElevation: 4,       // Shadow elevation added on hover
+  isDisabled: false,       // Disable interactions (renders at 0.5 opacity)
+  controller: null,        // Optional shared AnimatedModalItemController
+  margin: null,            // Defaults to symmetric(horizontal: cardPadding, vertical: cardSpacing / 2)
+  disableShadow: false,    // Skip the box shadow entirely
 )
 ```
 
-**Features:**
-- Smooth hover animations on desktop
-- Tap animations with scale and opacity
-- Automatic shadow elevation changes
-- Disabled state support
-- Customizable animation parameters
+If no `controller` is supplied, the widget creates and disposes an internal
+`AnimatedModalItemController`. Both internal and external controller swaps are
+handled in `didUpdateWidget`, and animations are re-initialized when scale,
+opacity, elevation, or the controller change.
 
-### AnimatedModalItemWithIcon
-
-Extends AnimatedModalItem to add icon-specific animations. Uses composition to reuse all base animations.
-
-```dart
-AnimatedModalItemWithIcon(
-  onTap: () => print('Tapped'),
-  iconBuilder: (context, iconAnimation, {required bool isPressed}) {
-    return Icon(
-      Icons.add,
-      color: isPressed ? Colors.blue : Colors.grey,
-    );
-  },
-  child: Text('Item with animated icon'),
-  iconScaleOnTap: 0.9,     // Icon scale animation (default: 0.9)
-)
-```
-
-**Features:**
-- All AnimatedModalItem features
-- Additional icon scale animation on tap
-- Icon builder provides animation value and pressed state
-- Automatic synchronization with base animations
+The only consumer of `AnimatedModalItem` outside this directory is
+`AnimatedModernTaskCard`
+(`lib/features/journal/ui/widgets/list_cards/animated_task_card.dart`), which
+wraps `ModernTaskCard` with `margin: EdgeInsets.zero` and `disableShadow: true`.
 
 ### AnimatedModalItemController
 
-Manages animation controllers for modal items. Can be shared between parent and child components for synchronized animations.
+`AnimatedModalItemController` (`animated_modal_item_controller.dart`) is a
+`ChangeNotifier` that owns the two `AnimationController`s used by
+`AnimatedModalItem`. It exists primarily so the animation state is observable in
+tests, and can be shared so multiple widgets animate in sync.
 
 ```dart
 final controller = AnimatedModalItemController(vsync: this);
@@ -77,149 +138,71 @@ final controller = AnimatedModalItemController(vsync: this);
 AnimatedModalItem(
   controller: controller,
   onTap: () => print('Tapped'),
-  child: Text('Controlled item'),
-)
+  child: const Text('Controlled item'),
+);
 
-// Access animation values
-controller.hoverAnimationController.value  // 0.0 to 1.0
-controller.tapAnimationController.value    // 0.0 to 1.0
+// Drive / read animation state
+controller.startHover();                          // forward hover
+controller.startTap();                            // forward tap
+controller.hoverAnimationController.value;         // 0.0 to 1.0
+controller.tapAnimationController.value;           // 0.0 to 1.0
 ```
 
-## Specialized Components
-
-### ModernModalEntryTypeItem
-
-Used in the entry creation modal for selecting entry types (Event, Task, Audio, etc.).
-
-```dart
-ModernModalEntryTypeItem(
-  icon: Icons.event_rounded,
-  title: 'Event',
-  onTap: () => createEvent(),
-  iconColor: Colors.blue,    // Optional custom color
-  isDisabled: false,
-  badge: BadgeWidget(),      // Optional badge
-)
-```
-
-**Features:**
-- Consistent entry type selection UI
-- Icon with gradient background
-- Add icon indicator
-- Badge support
-- Uses AnimatedModalItemWithIcon for animations
-
-### ModernModalPromptItem
-
-Used for selection prompts where users choose from options.
-
-```dart
-ModernModalPromptItem(
-  icon: Icons.public,
-  title: 'Public',
-  description: 'Anyone can see this',
-  onTap: () => selectOption(),
-  isSelected: true,          // Shows selected state
-  badge: CountBadge(5),      // Optional badge
-)
-```
-
-**Features:**
-- Title and description layout
-- Selected state with background color
-- Direct AnimatedModalItem usage
-- Badge support
-
-### ModernModalActionItem
-
-Used for action items in modal menus, supports destructive actions.
-
-```dart
-ModernModalActionItem(
-  icon: Icons.delete_outline,
-  title: 'Delete',
-  subtitle: 'This cannot be undone',  // Optional
-  onTap: () => deleteItem(),
-  isDestructive: true,      // Red styling
-  trailing: Icon(Icons.chevron_right), // Optional
-)
-```
-
-**Features:**
-- Destructive action styling
-- Optional subtitle
-- Trailing widget support
-- Direct AnimatedModalItem usage
+Constructor durations default to `hoverDuration: 200ms` and `tapDuration: 150ms`.
+`AnimatedModalItem` is a plain field holder of `controller`; the controller is a
+standalone `ChangeNotifier`, not a subclass of `AnimatedModalItem`.
 
 ## Animation Details
 
-### Hover Animations (Desktop)
-- Scale: 1.0 → 0.99 (subtle shrink)
-- Elevation: 0 → 4 (shadow appears)
-- Duration: 200ms
-- Curve: easeOutCubic
+These describe `AnimatedModalItem` (`animated_modal_item.dart`).
+
+### Hover Animations
+- Scale: `1.0 → hoverScale` (default 0.99)
+- Elevation: shadow blur grows by `hoverElevation` (default 4)
+- Duration: 200ms (controller `hoverDuration`)
+- Curve: `Curves.easeOutCubic`
 
 ### Tap Animations
-- Scale: 1.0 → 0.98 (or custom)
-- Opacity: 1.0 → 0.8 (or custom)
-- Icon Scale: 1.0 → 0.9 (if using AnimatedModalItemWithIcon)
-- Duration: 100ms
-- Curve: easeOutCubic (easeOutBack for icons)
+- Scale: `1.0 → tapScale` (default 0.98)
+- Opacity: `1.0 → tapOpacity` (default 0.8)
+- Duration: 150ms (controller `tapDuration`; the build's `AnimatedOpacity` also
+  uses 150ms)
+- Curve: `Curves.easeOutCubic`
 
 ### Disabled State
 - Opacity: 0.5
-- No animations trigger
-- Tap callbacks disabled
+- Hover/tap callbacks are gated on `!isDisabled`
+- `onTap` is set to `null`
 
 ## Styling Constants
 
-All components use consistent styling from `AppTheme`:
+`AnimatedModalItem` pulls its layout values from `AppTheme`
+(`lib/themes/theme.dart`):
 
 ```dart
-// Spacing
-AppTheme.cardPadding          // 14px
-AppTheme.cardSpacing          // Vertical spacing between cards
-AppTheme.spacingSmall         // 8px
-AppTheme.spacingMedium        // 12px
-AppTheme.spacingLarge         // 16px
-
-// Sizing
-AppTheme.iconContainerSize    // 40px
-AppTheme.iconSize             // Icon inside container
-AppTheme.cardBorderRadius     // 16px
-
-// Typography
-AppTheme.titleFontSize        // Title text size
-AppTheme.subtitleFontSize     // Subtitle text size
-AppTheme.letterSpacingTitle   // Letter spacing
+AppTheme.cardPadding          // 16 (default horizontal margin)
+AppTheme.cardSpacing          // 10 (default vertical margin = cardSpacing / 2)
+AppTheme.cardBorderRadius     // 16
 ```
 
-## Best Practices
+Related constants available in `AppTheme` (not all used by this widget):
 
-1. **Use the appropriate component for your use case:**
-   - Entry creation → ModernModalEntryTypeItem
-   - Option selection → ModernModalPromptItem
-   - Actions → ModernModalActionItem
-   - Custom → AnimatedModalItem or AnimatedModalItemWithIcon
-
-2. **Maintain consistent animations:**
-   - Use default animation values unless specific needs
-   - Keep hover and tap scales subtle (0.97-0.99)
-   - Don't make animations too fast or slow
-
-3. **Accessibility:**
-   - Always provide meaningful tap handlers
-   - Use isDisabled for non-interactive states
-   - Ensure sufficient contrast for text and icons
-
-4. **Performance:**
-   - Animation controllers are properly disposed
-   - Use const constructors where possible
-   - Avoid rebuilding during animations
+```dart
+AppTheme.cardPaddingCompact   // 14
+AppTheme.iconContainerSize    // 44
+AppTheme.iconContainerSizeCompact // 40
+AppTheme.iconSize             // 22
+AppTheme.spacingSmall         // 8
+AppTheme.spacingMedium        // 12
+AppTheme.spacingLarge         // 16
+AppTheme.titleFontSize        // 18
+AppTheme.subtitleFontSize     // 13
+AppTheme.letterSpacingTitle   // 0.15
+```
 
 ## Examples
 
-### Custom Modal Item
+### Custom animated item
 
 ```dart
 AnimatedModalItem(
@@ -227,9 +210,9 @@ AnimatedModalItem(
   hoverScale: 0.995,
   tapScale: 0.99,
   child: Container(
-    padding: EdgeInsets.all(16),
+    padding: const EdgeInsets.all(16),
     child: Row(
-      children: [
+      children: const [
         Icon(Icons.folder),
         SizedBox(width: 12),
         Text('My Custom Item'),
@@ -241,40 +224,18 @@ AnimatedModalItem(
 )
 ```
 
-### Entry Type with Custom Badge
-
-```dart
-ModernModalEntryTypeItem(
-  icon: Icons.task_alt_rounded,
-  title: 'Task',
-  onTap: () => createTask(),
-  badge: Container(
-    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-    decoration: BoxDecoration(
-      color: Colors.blue,
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Text(
-      'NEW',
-      style: TextStyle(fontSize: 10, color: Colors.white),
-    ),
-  ),
-)
-```
-
 ## Testing
 
-All modal components have comprehensive test coverage:
+Tests live in `test/widgets/modal/`:
 
-- `animated_modal_item_test.dart` - Base animation tests
-- `animated_modal_item_with_icon_test.dart` - Icon animation tests
-- `modern_modal_entry_type_item_test.dart` - Entry type item tests
-- `modern_modal_prompt_item_test.dart` - Prompt item tests
-- `modern_modal_action_item_test.dart` - Action item tests
-- `modal_items_animation_integration_test.dart` - Integration tests
-- `animated_modal_item_resource_leak_test.dart` - Resource management tests
+- `animated_modal_item_test.dart` — `AnimatedModalItem` animation/behavior
+- `animated_modal_item_controller_test.dart` — controller state and disposal
+- `confirmation_modal_test.dart` — `showConfirmationModal`
+- `modal_action_sheet_test.dart` — `showModalActionSheet` / `ModalSheetAction`
+- `modal_utils_test.dart` — `ModalUtils` helpers
 
-Run tests with:
+Run them with:
+
 ```bash
-flutter test test/widgets/modal/
+fvm flutter test test/widgets/modal/
 ```

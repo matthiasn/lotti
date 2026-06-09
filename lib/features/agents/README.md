@@ -25,10 +25,12 @@ Startup does this:
    Daily OS planner's day-scoped pre-warms, ADR 0022)
 5. starts `ProjectActivityMonitor`
 6. seeds default agent templates
-7. seeds default inference profiles and default skills, then upgrades older
-   default profiles with skill assignments
-8. restores persisted task-agent subscriptions, project-agent direct-edit
-   subscriptions, and persisted deferred wake jobs
+7. seeds default inference profiles, then seeds default soul documents and
+   their template assignments, then backfills skill assignments onto older
+   default profiles. Skills themselves are not seeded — they live as code in
+   the built-in skill registry (`lib/features/ai/skills/built_in_skills.dart`)
+8. restores persisted task-agent, day-agent, and project-agent subscriptions,
+   and persisted deferred wake jobs
 9. wires the sync event processor if one is registered in `GetIt`
 
 - Task agent wake prompts include:
@@ -49,10 +51,12 @@ Startup does this:
   on-demand drill-down into a sibling task that was included in the current
   related-task directory. The tool is scoped to the current wake's allowlist;
   it cannot browse arbitrary tasks or other projects.
-- Task-agent wakes that resolve to Gemini 3 Flash pass a workflow-local
-  `GeminiThinkingConfig(thinkingBudget: 1)` override through
-  `CloudInferenceWrapper`, which serializes to Gemini 3 `thinkingLevel: LOW`.
-  The shared model default remains unchanged.
+- Task-agent wakes pass the resolved profile's
+  `thinkingModel?.geminiThinkingMode` (a `GeminiThinkingMode?`) into
+  `CloudInferenceWrapper`. Thinking level is profile-driven; there is no
+  Gemini-Flash-specific override or hard-coded budget in this feature. The
+  `GeminiThinkingMode` → numeric/`thinkingLevel` mapping lives in
+  `GeminiThinkingConfig` in the `ai` feature.
 - Linked task context for agents is built directly in
   `TaskAgentWorkflow._buildLinkedTasksContextJson` (forked from
   `AiInputRepository.buildLinkedTasksJson` for the wake path), and injects a
@@ -87,7 +91,7 @@ flowchart TD
   Init --> Start["WakeOrchestrator.start(localUpdateStream)"]
   Init --> Sched["ScheduledWakeManager.start()"]
   Init --> Activity["ProjectActivityMonitor.start()"]
-  Init --> Seed["Seed templates, profiles, and skills"]
+  Init --> Seed["Seed templates, profiles, and souls (skills are built-in code, not seeded)"]
   Init --> Restore["Restore subscriptions and deferred wakes"]
   Init --> Sync["Wire SyncEventProcessor (if available)"]
 ```
@@ -95,12 +99,14 @@ flowchart TD
 ## Settings Surfaces
 
 `Settings > Agents` is the operator-facing entry point for the feature. The
-landing page now exposes four runtime views:
+landing page now exposes five runtime views (`Stats` is the default landing
+tab):
 
+- `Stats`: token usage and recent activity
 - `Templates`: reusable agent definitions and version heads
+- `Instances`: persisted agent identities and evolution sessions
 - `Souls`: pluggable personality documents with version history and template
   assignments
-- `Instances`: persisted agent identities and evolution sessions
 - `Pending Wakes`: live wake timers derived from persisted `AgentStateEntity`
   records
 
@@ -136,18 +142,19 @@ clear the persisted marker. A completed subscription wake only writes a new
 `nextWakeAt` when follow-up work is still queued, so the Wake Cycles surfaces
 show pending work rather than a cooldown with nothing left to run.
 
-The instances dashboard stays intentionally lightweight. It exposes kind and
-lifecycle filters for task agents, and the task-agent modes now include one
-compact aggregate line showing the current counts for total, active, dormant,
-and destroyed task-agent identities. The stats line is derived from the same
-loaded `AgentIdentityEntity` list as the cards below it, so it tracks the
-currently persisted fleet size without adding another query path.
+The instances dashboard stays intentionally lightweight. It drives the shared
+`AgentListingShell` with kind and lifecycle/status filter axes. The toolbar
+shows a single result count (`agentInstancesResultCountAll`, or
+`agentInstancesResultCountFiltered` once a filter narrows the list), and
+grouping by status emits a per-group active-count badge. There is no aggregate
+total/active/dormant/destroyed breakdown line.
 
 ```mermaid
 flowchart LR
-  Settings["Settings > Agents"] --> Templates["Templates tab"]
-  Settings --> Souls["Souls tab"]
+  Settings["Settings > Agents"] --> Stats["Stats tab (default)"]
+  Settings --> Templates["Templates tab"]
   Settings --> Instances["Instances tab"]
+  Settings --> Souls["Souls tab"]
   Settings --> Pending["Pending Wakes tab"]
 
   Pending --> Throttle["nextWakeAt<br/>deferred wake"]
@@ -633,9 +640,16 @@ The current persisted agent kinds are:
 
 | Kind | Slot | Primary workflow | Trigger shape |
 | --- | --- | --- | --- |
-| `task_agent` | `activeTaskId` | `TaskAgentWorkflow` | task notifications, creation, reanalysis |
+| `task_agent` | `activeTaskId` | `TaskAgentWorkflow` | task notifications, creation, reanalysis, transcription-complete |
 | `project_agent` | `activeProjectId` | `ProjectAgentWorkflow` | creation, direct project edits, daily scheduled digest |
 | `template_improver` | `activeTemplateId` | `ImproverAgentWorkflow` | scheduled ritual |
+| `day_agent` | day workspace (`day:<dayId>`), no single active slot (ADR 0022) | `DayAgentWorkflow` | day-scoped `ScheduledWakeEntity` pre-warms and capture wakes |
+
+The day agent is the single long-lived Daily OS planner (ADR 0022). The wake
+executor (`agent_providers.dart`) routes `AgentKinds.dayAgent` to
+`DayAgentWorkflow`, but the workflow and its service live in
+`lib/features/daily_os_next/agents/`, not in this feature. Startup restores
+day-agent subscriptions alongside task- and project-agent subscriptions.
 
 There is no separate persisted `meta_improver` kind. A meta-improver is a
 `template_improver` whose `recursionDepth > 0`. `recursionDepth` and the ritual
@@ -670,8 +684,12 @@ stateDiagram-v2
   one identity handling many day workspaces (`day:<dayId>`), so a day-B capture
   wake must never merge into — or cancel — a day-A draft wake. A null workspace
   (task/project/improver agents) only partitions with other null workspaces, so
-  their behavior is unchanged. The key is deliberately **excluded** from run-key
-  hashes (it scopes queue partitioning, not dedup identity).
+  their behavior is unchanged. The key partitions queue-level merge/supersede/
+  cancellation by `(agentId, workspaceKey)`; it is **excluded** from the
+  subscription run-key hash (`RunKeyFactory.forSubscription`) but **included**
+  in the manual run-key hash (`RunKeyFactory.forManual`), so two day-scoped
+  manual wakes enqueued in the same tick get distinct run keys instead of the
+  second being deduped away.
 - enforces single-flight execution per agent through `WakeRunner`
 - persists wake-run entries before execution
 - suppresses self-notifications using vector clocks
@@ -685,6 +703,9 @@ The persisted wake reasons are:
 - `creation`
 - `reanalysis`
 - `scheduled`
+- `transcriptionComplete` — fired after speech transcription completes for a
+  task-linked audio entry; bypasses the throttle so the user does not wait out
+  the 120-second coalescing window after speaking
 
 Subscription-driven wakes are throttled with a 120-second window. A
 subscription can opt into daily-digest deferral for propagated-only matches;
@@ -788,7 +809,8 @@ The task wake prompt is assembled from:
   id, no other-task identity, no entry text) so the agent can avoid
   proposing `create_time_entry` intervals on this task that overlap with
   what is already being tracked elsewhere. See `_buildActiveTimerSection`
-  in `task_agent_workflow.dart`.
+  in `task_agent_context_builder.dart` (called from
+  `task_agent_prompt_builder.dart`).
 - editable historical time entries linked from the current task. The
   `Editable Time Entries` prompt section lists non-running `JournalEntry`
   ids, `dateFrom`, `dateTo`, and current text so the agent can propose
@@ -807,7 +829,7 @@ external source URLs; internal task links belong inline in the report body.
 
 ### Tool Policy
 
-Task agents have three immediate local tools:
+Task agents have four immediate local tools:
 
 - `update_report`
 - `record_observations`
@@ -824,7 +846,7 @@ The current deferred task tools are:
 - `update_task_due_date`
 - `update_task_priority`
 - `set_task_status`
-- `set_task_language`
+- `set_task_language` *(conditionally immediate — see carve-out below)*
 - `add_multiple_checklist_items`
 - `update_checklist_items`
 - `assign_task_labels`
@@ -864,33 +886,36 @@ fan out and wake producer agents synchronously during drafting.
   pending running-timer text updates before persisting the replacement
 - suppresses redundant proposals when they would not change current state
 
-#### Initial-title carve-out
+#### Initial-field carve-out
 
-`set_task_title` is the one deferred tool that can run on the immediate
-path. When the strategy resolves the current task metadata and the title
-is null or empty-after-trim, the call routes through `AgentToolExecutor`
-like any other immediate tool — the title is applied without a user
-confirmation prompt so a freshly dictated task gets a meaningful name
-without an empty-looking suggestion sitting in the panel waiting for
-approval. If `AgentToolExecutor` rejects that autonomous write with a
+`set_task_title` and `set_task_language` are the deferred tools that can
+run on the immediate path on first population. When the strategy resolves
+the current task metadata and the corresponding field (`title`, or
+`languageCode`) is null or empty-after-trim, the call routes through
+`AgentToolExecutor` like any other immediate tool — the value is applied
+without a user confirmation prompt so a freshly dictated task gets a
+meaningful name (and language) without an empty-looking suggestion sitting
+in the panel waiting for approval. The two carve-outs share the same
+`_shouldAutoApplyInitialField` check; the language carve-out mirrors the
+title logic. If `AgentToolExecutor` rejects that autonomous write with a
 category-policy denial, the strategy converts the same tool call back
 into a normal change-set proposal instead of returning the denial to the
-model. Once a title is present the tool reverts to the normal deferred
+model. Once the field is present the tool reverts to the normal deferred
 path.
 
 The auto-apply check (`_shouldAutoApplyInitialField`) deliberately
 re-runs the metadata resolver on every call rather than trusting the
-cached snapshot, so a title populated by any source — a concurrent user
+cached snapshot, so a field populated by any source — a concurrent user
 edit, a prior auto-apply in the same wake, a synced edit from another
 device — is seen before dispatch. After a successful auto-apply or
-policy-fallback proposal, the strategy also marks `set_task_title` as
+policy-fallback proposal, the strategy also marks the tool name as
 used in `_usedDeferredTools`, so a repeat call in the same wake cannot
 re-auto-apply on the pre-write snapshot and instead hits the same
 single-use guard as other deferred tools. The dispatcher itself stays
-simple: it is the single write path for both auto-applied initial titles
-and user-confirmed renames, so the "don't overwrite a populated title"
+simple: it is the single write path for both auto-applied initial values
+and user-confirmed edits, so the "don't overwrite a populated field"
 invariant is enforced at the strategy boundary and not at the mutation
-boundary (where it would otherwise block legitimate renames).
+boundary (where it would otherwise block legitimate edits).
 
 ### Confirmation Path
 
@@ -1041,12 +1066,12 @@ stateDiagram-v2
   [*] --> pending: ChangeSetBuilder.build()
   pending --> confirmed: user swipe-confirm
   pending --> rejected: user swipe-reject
+  pending --> deferred: user defers the decision
   pending --> retracted: agent retract_suggestions
-  pending --> expired: review window elapsed
   confirmed --> [*]
   rejected --> [*]
+  deferred --> [*]
   retracted --> [*]
-  expired --> [*]
 
   note right of retracted
     Actor: agent. Decision persisted with
@@ -1163,10 +1188,11 @@ summary is stale again.
 Templates are first-class persisted entities with a template row, version rows,
 and a head pointer.
 
-`AgentTemplateService.seedDefaults()` currently seeds five named templates:
+`AgentTemplateService.seedDefaults()` currently seeds six named templates:
 
 - `Laura`
 - `Tom`
+- `Shepherd` (the Daily OS day-agent template, kind `dayAgent`)
 - `Project Analyst`
 - `Template Improver`
 - `Meta Improver`
@@ -1183,7 +1209,6 @@ only exposes the retained signals:
 - lifetime wake count
 - wakes since the last completed ritual
 - token usage since the last completed ritual
-- mean time to resolution
 - 30-day wake activity buckets
 
 `TemplateEvolutionWorkflow` is the multi-turn session runtime. It handles both
@@ -1200,8 +1225,8 @@ template evolution (skill changes) and soul evolution (personality changes):
    `publish_ritual_recap` tool payload plus the approved-change rationale,
    ratings, and transcript snapshot
 
-Session history cards render only the persisted recap `tldr`. They do not
-fall back to `feedbackSummary`.
+Session history cards prefer the persisted recap `tldr` and fall back to
+`session.feedbackSummary` when the recap `tldr` is absent or empty.
 
 Only one active evolution session per template is allowed at a time.
 
@@ -1277,8 +1302,10 @@ Templates without a soul assignment fall back to the legacy
 `## Your Personality & Directives` format.
 
 Six seeded souls are available as a personality palette: Laura, Tom, Max, Iris,
-Sage, and Kit. Laura and Tom are pre-assigned to their respective templates;
-the others are available for manual assignment.
+Sage, and Kit. Three default soul-to-template assignments are seeded: the Laura
+soul to the Laura task template, the Tom soul to the Tom task template, and the
+Laura soul to the Project Analyst project template. Max, Iris, Sage, and Kit are
+available for manual assignment.
 
 ### Standalone Soul Evolution
 
@@ -1414,11 +1441,9 @@ agent runtime produces:
   back). All confirms route through `ChangeSetConfirmationService`.
   A `Confirm all` button batches `confirmAll` over distinct change
   sets.
-- a `History · N` toggle that lazily expands resolved ledger entries,
-  rendered with `Confirmed` / `Dismissed` tags and a strikethrough.
-- a footer that surfaces the recent-actions count (full ledger total)
-  and a `See activity / Hide activity` pill that expands a
-  `RECENT ACTIVITY` list capped at 6 entries.
+- a `History · N` toggle (`_HistoryToggle`, label `aiCardHistoryToggle`) that
+  lazily expands resolved ledger entries, rendered with `Confirmed` /
+  `Dismissed` tags and a strikethrough.
 - the wake-cycle affordances directly in the header: a running spinner
   while a wake is in flight, otherwise a refresh icon button (calls
   `TaskAgentService.triggerReanalysis`) when no wake is scheduled, or
@@ -1442,9 +1467,9 @@ The card is the only entry point in `task_form.dart`; the legacy
 
 `lib/features/agents/ui/agent_internals_panel.dart` is a dismissable
 right-side overlay (clamped between 600 and 800 px) reachable from
-three affordances inside the AI card: tapping the agent name link
-under the title, the avatar in the activity footer, and the `Open
-agent internals` pill that appears under the expanded report. The
+two affordances inside the AI card: tapping the agent name link in the
+header (`onAgentTap`), and the `Open agent internals` pill that appears
+under the expanded report (`onOpenInternals`). The
 panel itself is a thin shell — header + close button + scrim — that
 hosts `AgentInternalsBody` once the `agentIdentityProvider` resolves.
 A `barrierDismissible: true` route plus an explicit full-screen

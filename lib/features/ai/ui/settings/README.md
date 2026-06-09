@@ -1,6 +1,6 @@
 # AI Settings Module
 
-A comprehensive settings interface for managing AI configurations including inference providers, models, and prompts.
+A comprehensive settings interface for managing AI configurations including inference providers, models, and inference profiles.
 
 ## Overview
 
@@ -18,31 +18,70 @@ The AI Settings module provides a unified interface for managing all AI-related 
 
 ### Module Structure
 
+This is a curated subset of the directory — the most load-bearing files
+for the live page — not an exhaustive listing. The actual directory also
+contains the inference edit pages (`inference_model_edit_page.dart`,
+`inference_provider_edit_page.dart`,
+`inference_provider_form_create.dart` / `_edit.dart`), layout helpers
+(`breakpoints.dart`, `form_bottom_bar.dart`,
+`embedding_backfill_modal.dart`), the `provider/` subtree (provider
+detail page + sections), the `util/` subtree (`active_profile.dart`,
+`ai_provider_status.dart`, `ai_provider_visual.dart`,
+`ai_settings_back_nav.dart`), and additional `services/` entries
+(per-provider `*_ftue_setup.dart`, `ai_setup_prompt_service.dart`,
+`gemini_setup_prompt_service.dart`, `ftue_helpers.dart`).
+
 ```
 lib/features/ai/ui/settings/
 ├── ai_settings_page.dart                   # Main page component
+├── ai_settings_tab_builders.dart           # Per-tab body builders (part of page)
 ├── ai_settings_filter_state.dart           # Filter state model
 ├── ai_settings_filter_service.dart         # Filtering business logic
 ├── ai_settings_navigation_service.dart     # Navigation logic
-├── ai_config_card.dart                     # Reusable config card component
+├── inference_model_edit_page.dart          # Model edit form
+├── inference_provider_edit_page.dart       # Provider edit form
+├── ai_config_card.dart                     # Legacy config card (unused by page)
+├── provider/                               # Provider detail page + sections
+│   ├── ai_provider_detail_page.dart        # Intermediate provider detail page
+│   ├── ai_provider_connection_section.dart
+│   └── ai_provider_models_section.dart
+├── util/                                   # Shared status/visual/nav helpers
+│   ├── active_profile.dart
+│   ├── ai_provider_status.dart
+│   ├── ai_provider_visual.dart
+│   └── ai_settings_back_nav.dart
 ├── services/
 │   ├── ai_config_delete_service.dart       # Delete + cascade + undo (DS toast)
 │   ├── connection_verifier_service.dart    # Live API-key verification
 │   ├── ftue_trigger_service.dart           # First-time UX gating
-│   └── provider_prompt_setup_service.dart  # Provider FTUE prompt setup
+│   ├── provider_prompt_setup_service.dart  # Provider FTUE prompt setup
+│   ├── ai_setup_prompt_service.dart        # Setup-prompt service
+│   ├── gemini_setup_prompt_service.dart    # Gemini setup-prompt service
+│   ├── ftue_helpers.dart                   # Shared FTUE helpers
+│   └── *_ftue_setup.dart                   # Per-provider FTUE setup
+│                                           #   (alibaba/anthropic/gemini/
+│                                           #    mistral/ollama/openai)
 ├── widgets/
-│   ├── ai_settings_search_bar.dart         # Search input component
-│   ├── ai_settings_tab_bar.dart            # Tab navigation component
-│   ├── ai_settings_filter_chips.dart       # Filter UI components
-│   ├── ai_settings_config_sliver.dart      # Sliver-based config list
-│   ├── ai_settings_fixed_header.dart       # Fixed header component
+│   ├── ai_settings_search_bar.dart         # Search input (used via v2 header bar)
+│   ├── ai_settings_filter_chips.dart       # Models-tab filter chips
+│   ├── config_error_state.dart             # Error state UI (used by page)
+│   ├── config_loading_state.dart           # Loading state UI (used by page)
 │   ├── ai_settings_floating_action_button.dart # Contextual FAB
-│   ├── config_empty_state.dart             # Empty state UI
-│   ├── config_error_state.dart             # Error state UI
-│   ├── config_loading_state.dart           # Loading state UI
-│   ├── dismiss_background.dart             # Swipe-to-delete background
-│   ├── dismissible_config_card.dart        # Dismissible card wrapper
-│   └── v2/                                 # Redesigned card chrome
+│   ├── ai_settings_tab_bar.dart            # Legacy tab bar (unused by page)
+│   ├── ai_settings_config_sliver.dart      # Legacy sliver config list (unused)
+│   ├── ai_settings_fixed_header.dart       # Legacy fixed header (unused)
+│   ├── config_empty_state.dart             # Legacy empty state (unused by page)
+│   ├── dismiss_background.dart             # Legacy swipe-to-delete background
+│   ├── dismissible_config_card.dart        # Legacy dismissible card wrapper
+│   └── v2/                                 # Live card chrome
+│       ├── ai_settings_header_bar.dart     # Search row
+│       ├── ai_settings_tab_bar.dart        # Providers/Models/Profiles tabs
+│       ├── ai_settings_cards.dart          # Card library owner (part files below)
+│       ├── ai_provider_card.dart           # Providers-tab card (part)
+│       ├── ai_model_card.dart              # Models-tab card (part)
+│       ├── ai_profile_card.dart            # Profiles-tab card (part)
+│       ├── ai_settings_empty_view.dart     # FTUE banner + no-providers card
+│       └── ai_card_action_menu.dart        # Per-card ⋯ overflow menu
 └── README.md                               # This documentation
 ```
 
@@ -50,30 +89,39 @@ lib/features/ai/ui/settings/
 
 ### Sliver-Based Layout
 
-The AI Settings page uses a modern sliver-based architecture for optimal scrolling performance and proper scroll event propagation. This architecture was implemented to solve scroll propagation issues that occurred with the previous box-based layout.
+The AI Settings page renders as a single `CustomScrollView`. None of the
+slivers are pinned/sticky — the title strip, search row, and tab bar all
+scroll with the content.
 
 **Key Benefits:**
 - Smooth, performant scrolling with large lists
-- Proper scroll event propagation throughout the widget tree
-- Collapsing app bar with animated title
-- Sticky header section for search, tabs, and filters
 - Memory-efficient rendering of configuration lists
 
 **Layout Structure:**
 ```dart
 CustomScrollView(
   slivers: [
-    SliverAppBar(           // Collapsing title bar
-      flexibleSpace: FlexibleSpaceBar(...),
+    SettingsPageHeader(...),            // Shared settings title strip
+    SliverToBoxAdapter(                 // Search row (not pinned)
+      child: AiSettingsHeaderBar(...),
     ),
-    SliverPinnedToBoxAdapter( // Sticky header
-      child: AiSettingsFixedHeader(...),
+    // _buildBodySlivers():
+    SliverToBoxAdapter(                 // v2 tab bar (not pinned)
+      child: AiSettingsTabBar(...),
     ),
-    // Dynamic content slivers based on active tab
-    AiSettingsConfigSliver(...),
+    // Per-tab content built from the active tab:
+    //   providers -> _buildProvidersGrid (AiProviderCard grid)
+    //   models    -> AiSettingsFilterChips strip + _buildModelsList (AiModelCard)
+    //   profiles  -> _buildProfilesGrid (AiProfileCard grid)
+    SliverToBoxAdapter(child: SizedBox(height: 80)),
   ],
 )
 ```
+
+When no providers are configured the body instead shows the
+`AiSettingsFtueBanner` and `AiSettingsNoProvidersCard`. Initial-load and
+error states render through `ConfigLoadingState` / `ConfigErrorState`
+(`SliverFillRemaining`).
 
 ## Components
 
@@ -99,24 +147,27 @@ Navigator.push(context, MaterialPageRoute(
 ));
 ```
 
-#### `AiConfigCard`
-A reusable card component for displaying AI configurations.
+#### v2 Cards (`AiProviderCard`, `AiModelCard`, `AiProfileCard`)
 
-**Features:**
-- Supports all AI config types (providers, models, prompts)
-- Capability indicators for models
-- Compact mode for dense layouts
-- Consistent Material 3 design
+The live page renders one card type per tab from `widgets/v2/`. The three
+card widgets are Dart `part` files of `widgets/v2/ai_settings_cards.dart`
+(the library owner), so they cannot be imported individually — importing
+`ai_settings_cards.dart` brings all three into scope. That file's only
+real `export` is `AiProviderCardStatus` (re-exported from
+`util/ai_provider_status.dart`). Each card takes a `menuActions` list —
+built by the page's `_buildCardMenu` — that populates the per-card `⋯`
+overflow menu (`AiCardActionMenuButton`) with `Edit` and `Delete` rows.
 
-**Usage:**
-```dart
-AiConfigCard(
-  config: myAiConfig,
-  showCapabilities: true,
-  isCompact: false,
-  onTap: () => navigateToEdit(config),
-)
-```
+- `AiProviderCard` — grid card for the Providers tab. Shows a connection
+  status footer (`AiProviderCard.statusFor`) and an optional `onFix`
+  action when the stored API key is invalid.
+- `AiModelCard` — list card for the Models tab.
+- `AiProfileCard` — grid card for the Profiles tab. Takes an `isActive`
+  flag that marks the currently-active inference profile.
+
+> Note: `AiConfigCard` (`ai_config_card.dart`, with a `compact` flag) and
+> its `DismissibleConfigCard` wrapper are legacy widgets that are no
+> longer referenced by the live page.
 
 #### `InferenceModelEditPage`
 
@@ -141,58 +192,45 @@ flowchart TD
 Persisted rows that predate the field deserialize with
 `GeminiThinkingMode.low`, matching the runtime's low-latency default.
 
-#### `AiSettingsConfigSliver`
-A sliver-based configuration list that replaces the previous box-based implementation.
+#### Per-tab body builders (`ai_settings_tab_builders.dart`)
 
-**Features:**
-- Proper sliver implementation for scroll propagation
-- Swipe-to-delete with confirmation
-- Loading, error, and empty states
-- Generic type support for all config types
+The per-tab content is built by helpers in `ai_settings_tab_builders.dart`
+(a `part` of `ai_settings_page.dart`):
 
-**Usage:**
-```dart
-AiSettingsConfigSliver<AiConfigModel>(
-  configsAsync: modelsAsync,
-  filteredConfigs: filteredModels,
-  emptyMessage: 'No AI models configured',
-  emptyIcon: Icons.smart_toy,
-  showCapabilities: true,
-  onConfigTap: _handleConfigTap,
-  onRetry: () => refetchData(),
-)
-```
+- `_buildProvidersGrid` / `_buildProfilesGrid` — responsive grids
+  (1 column on mobile, 2 columns on desktop) of `AiProviderCard` /
+  `AiProfileCard`.
+- `_buildModelsList` — list of `AiModelCard`, preceded by the
+  `AiSettingsFilterChips` strip on the Models tab.
+- `_emptyTabSliver` — the empty-state sliver shown by each builder when a
+  tab has no configs.
 
-#### `AiSettingsFixedHeader`
-The sticky header section containing search, tabs, and filters.
+Deletion is wired through the per-card `⋯` overflow menu's `Delete` action
+(`_buildCardMenu` → `AiConfigDeleteService`), not via swipe.
 
-**Features:**
-- Search bar for filtering configurations
-- Tab bar for navigation between config types
-- Context-aware filter chips (models tab only)
-- Stays pinned when scrolling
+#### `AiSettingsHeaderBar` + `AiSettingsTabBar` (v2)
 
-**Usage:**
-```dart
-SliverPinnedToBoxAdapter(
-  child: AiSettingsFixedHeader(
-    searchController: _searchController,
-    tabController: _tabController,
-    filterState: _filterState,
-    onSearchClear: _handleSearchClear,
-    onTabChanged: _handleTabChange,
-    onFilterChanged: _updateFilterState,
-  ),
-)
-```
+Search and tab navigation are two separate, non-pinned slivers:
+
+- `AiSettingsHeaderBar` (`widgets/v2/ai_settings_header_bar.dart`) — the
+  search row only. The "Add" affordance moved to the per-tab
+  `AiSettingsFloatingActionButton`.
+- `AiSettingsTabBar` (`widgets/v2/ai_settings_tab_bar.dart`) — the
+  Providers / Models / Profiles tab strip, with per-tab counts.
+
+> Note: `AiSettingsConfigSliver` (`widgets/ai_settings_config_sliver.dart`,
+> with its `ConfigEmptyState` / `DismissibleConfigCard` / swipe-to-delete
+> chrome) and `AiSettingsFixedHeader`
+> (`widgets/ai_settings_fixed_header.dart`, a pinned search+tabs+filters
+> header) are legacy widgets that the live page no longer uses.
 
 #### `AiSettingsFloatingActionButton`
 A context-aware FAB that changes based on the active tab.
 
 **Features:**
-- Dynamic icon and label per tab
-- Gradient icon container
-- Consistent styling
+- Circular design-system FAB (`DesignSystemFloatingActionButton`)
+- Per-tab icon; the per-tab text is carried as the FAB's `semanticLabel`
+  (screen readers / tooltips), not as a visible inline label
 - Wrapped in shared bottom-navigation clearance so it stays above the floating shell
 
 **Tab Configurations:**
@@ -249,7 +287,6 @@ Centralized navigation logic for AI configuration editing.
 - Type-safe navigation based on config type
 - Consistent edit page routing
 - Support for create vs edit modes
-- Permission checking hooks
 
 **Usage:**
 ```dart
@@ -292,7 +329,8 @@ stateDiagram-v2
 Provider deletes pass the `CascadeDeletionResult` through to the undo
 handler so the provider *and* every cascaded model are re-saved on
 undo. Other variants restore the single config. Undo failures are
-logged via `LoggingService` under `AI_CONFIG / DELETE_SERVICE`.
+logged via `DomainLogger` under `LogDomain.ai` with subDomain
+`DELETE_SERVICE`.
 
 ## Key Features
 
@@ -308,14 +346,26 @@ logged via `LoggingService` under `AI_CONFIG / DELETE_SERVICE`.
 
 ### 3. Tabbed Navigation
 - **Providers Tab**: Manage AI inference providers (OpenAI, Anthropic, etc.)
-- **Models Tab**: Manage AI models with advanced filtering options. Gemini
-  model rows also expose the default thinking mode; popup-triggered skills can
-  override that default for one invocation.
-- **Prompts Tab**: Manage AI prompts and templates
+- **Models Tab**: Manage AI models with advanced filtering options. The
+  Models-tab card (`AiModelCard`) shows the name, provider-model id,
+  capability chips, and MLX download status — it does not expose the
+  Gemini thinking mode. The default Gemini thinking mode is edited inside
+  the model edit form (`InferenceModelEditPage`); popup-triggered skills
+  can override that default for one invocation.
+- **Profiles Tab**: Manage inference profiles
 
-### 4. Direct Navigation
-- **One-Click Access**: Click any configuration card to go directly to edit page
-- **No Intermediate Steps**: Eliminates unnecessary list page navigation
+### 4. Card-Tap Navigation
+- **Model / Profile cards**: tapping a card beams straight to the edit
+  route (`/settings/ai/model/<id>` or `/settings/ai/profile/<id>`) via
+  `navigateToConfigEdit`.
+- **Provider cards**: tapping a provider card routes through an
+  intermediate `AiProviderDetailPage` (`/settings/ai/provider/<id>`) via
+  `navigateToProviderDetail`; the user reaches `InferenceProviderEditPage`
+  from there. The card's "Fix" affordance (shown when the stored API key
+  is invalid) routes to the same detail page with `focusApiKey: true`,
+  which pushes the edit form with the key field focused.
+- The deprecated swipe-to-delete chrome is gone; deletion runs from the
+  per-card `⋯` overflow menu.
 
 ## Usage Examples
 
@@ -456,13 +506,15 @@ The new AI Settings page replaces several old interfaces:
 
 1. **Advanced Settings → AI Providers** → Now: AI Settings → Providers tab
 2. **Advanced Settings → AI Models** → Now: AI Settings → Models tab
-3. **Advanced Settings → AI Prompts** → Now: AI Settings → Prompts tab
+3. **Advanced Settings → AI Profiles** → Now: AI Settings → Profiles tab
 
 ### Breaking Changes
 
 - Navigation paths have changed (old paths still work but redirect)
 - Some filter combinations may behave differently
-- Edit page navigation is now direct (no intermediate list pages)
+- Card taps no longer pass through intermediate list pages. Model and
+  profile cards beam straight to their edit route; provider cards open an
+  intermediate `AiProviderDetailPage` before the edit form.
 
 ### Compatibility
 
@@ -488,27 +540,31 @@ The modular architecture allows easy extension:
 - Add new navigation targets in `AiSettingsNavigationService`
 - Add new UI components in `widgets/` directory
 - Extend filter state in `AiSettingsFilterState`
-- Create custom state widgets following the pattern of `ConfigEmptyState`, etc.
+- Create custom state widgets following the pattern of `ConfigErrorState`, etc.
 - Add new sliver implementations for different list behaviors
 
 ## Widget Extraction Pattern
 
 The AI Settings module follows a consistent pattern of extracting reusable widgets:
 
-1. **State Widgets**: `ConfigEmptyState`, `ConfigErrorState`, `ConfigLoadingState`
+1. **State Widgets**: `ConfigErrorState`, `ConfigLoadingState`
+   - Used by the page for error / initial-loading states
    - Single responsibility for each state
-   - Consistent UI across the module
    - Easy to test in isolation
+   - Empty tabs use the page's `_emptyTabSliver` helper; `ConfigEmptyState`
+     is legacy (only referenced by `AiSettingsConfigSliver`).
 
-2. **Composite Widgets**: `AiSettingsFixedHeader`, `DismissibleConfigCard`
+2. **Composite Widgets**: `AiSettingsHeaderBar`, `AiSettingsTabBar` (v2)
    - Combine multiple UI elements
    - Encapsulate complex behavior
    - Reduce parent widget complexity
+   - (`AiSettingsFixedHeader` / `DismissibleConfigCard` are legacy.)
 
-3. **Behavioral Widgets**: `DismissBackground`, `AiSettingsFloatingActionButton`
-   - Specific UI behaviors
+3. **Behavioral Widgets**: `AiSettingsFloatingActionButton`
+   - Per-tab icon + semantic label
    - Reusable across different contexts
    - Self-contained logic
+   - (`DismissBackground` is legacy.)
 
 ## Contributing
 

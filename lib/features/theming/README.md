@@ -34,12 +34,12 @@ lib/features/theming/
 ```mermaid
 flowchart LR
   UI["Settings / app shell"] --> Ctl["ThemingController"]
-  Ctl --> Themes["theme_definitions.dart"]
+  Notify["UpdateNotifications"] --> Ctl["ThemingController"]
   Ctl --> Settings["SettingsDb"]
-  Ctl --> Notify["UpdateNotifications"]
   Ctl --> Sync["OutboxService"]
-  Themes --> ThemeData["ThemeData builders"]
-  ThemeData --> App["MaterialApp theming"]
+  Themes["theme_definitions.dart (FlexScheme map)"] --> Build["ThemeData builders (_buildTheme + withOverrides)"]
+  Ctl --> Build
+  Build --> App["MaterialApp theming"]
 ```
 
 The feature is conceptually simple, but the runtime path matters because theme changes can come from:
@@ -60,7 +60,7 @@ Theme definitions come from standard `FlexScheme` mappings.
 The build path also applies:
 
 - shared overrides
-- Linux emoji font fallback
+- a cross-platform emoji font fallback chain (`Apple Color Emoji` / `Segoe UI Emoji` / `Noto Color Emoji`, applied on all non-web platforms)
 
 ## Theming State Machine
 
@@ -88,7 +88,7 @@ sequenceDiagram
   participant Sync as "OutboxService"
 
   User->>Ctl: choose light/dark theme or theme mode
-  Ctl->>Ctl: validate theme name and build ThemeData
+  Ctl->>Ctl: light/dark theme: validate theme name and build ThemeData; theme mode: update mode only
   Ctl->>Settings: save selected names / mode
   Ctl->>Sync: enqueue themingSelection sync message
   Ctl-->>User: updated theme state

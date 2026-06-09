@@ -40,9 +40,9 @@ class NotificationRepository {
   /// after an older row was acted-on/retracted (those lifecycle fields are
   /// monotonic and cannot be cleared). Even with seeded rows, the active inbox
   /// invariant is task-scoped: task-suggestion mutations are serialized per
-  /// task, and before the new row is written every other open `taskSuggestion`
-  /// row for [linkedTaskId] is retracted so the bell can never show multiple
-  /// suggestion rows for the same task.
+  /// task, and after the new row is written every other open `taskSuggestion`
+  /// row for [linkedTaskId] is retracted (the new row's id is excluded) so the
+  /// bell can never show multiple suggestion rows for the same task.
   Future<NotificationEntity?> createTaskSuggestion({
     required String linkedTaskId,
     required int suggestionCount,

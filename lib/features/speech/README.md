@@ -52,7 +52,7 @@ flowchart LR
 
   SpeechRepo --> Persist["PersistenceLogic + JournalDb"]
   DictSvc --> CategoryRepo["CategoryRepository + JournalRepository"]
-  RtTx --> AiConfig["AI config + Mistral realtime repository"]
+  RtTx --> AiConfig["AI config + Mistral or MLX-audio realtime backend"]
   Persist --> JournalAudio["JournalAudio"]
 ```
 
@@ -172,7 +172,8 @@ post-recording transcription with dictionary/context biasing.
 - creates a raw `record.AudioRecorder`
 - starts `pcm16bits`, `16kHz`, mono streaming
 - resolves realtime configuration through `RealtimeTranscriptionService`
-- currently requires a configured Mistral realtime model/provider pair
+- prefers a configured Mistral realtime model/provider pair, falling back to a
+  local MLX-audio model/provider pair when only that is wired up
 - subscribes to the realtime amplitude stream for the same VU meter
 - accumulates transcript deltas into `partialTranscript`
 
@@ -251,8 +252,10 @@ implementation:
 - `setAudioNote()` moves the state to `stopped`
 - `play()` moves it to `playing`
 - `pause()` moves it to `paused`
-- completion updates `progress` to the clip duration after a short delay, but
-  does not flip `status` back to `stopped`
+- completion updates `progress` to the clip duration and flips `status` back to
+  `stopped` after a short delay, then tears down the live `Player` (state such
+  as `audioNote`/`totalDuration` is preserved so the next `play()` transparently
+  reopens the file)
 
 ```mermaid
 stateDiagram-v2
@@ -263,11 +266,11 @@ stateDiagram-v2
   Paused --> Playing: play()
   Playing --> Stopped: setAudioNote(new audio)
   Paused --> Stopped: setAudioNote(new audio)
-  Playing --> Playing: completion event sets progress = duration
+  Playing --> Stopped: completion sets progress = duration, status = stopped
 ```
 
-That last transition is deliberate in this diagram because it reflects the
-code as written, not an idealized player state machine.
+This diagram reflects the code as written, not an idealized player state
+machine.
 
 ### Waveform extraction
 
@@ -354,8 +357,11 @@ the linked task has profile-driven transcription available.
 ## Boundaries
 
 - `journal` owns entry detail surfaces and supplies `JournalAudio`
-- `ai_chat` owns realtime transcription transport and Mistral WebSocket access
-- `ai` owns profile automation and skill execution
+- `ai_chat` owns realtime transcription transport orchestration
+  (`RealtimeTranscriptionService`)
+- `ai` owns the Mistral realtime WebSocket repository
+  (`MistralRealtimeTranscriptionRepository`), the MLX-audio backend
+  (`MlxAudioChannel`), profile automation, and skill execution
 - `categories` owns the speech dictionary persistence target
 - `speech` owns the audio-specific runtime, playback, waveform cache, and
   transcript maintenance layer that connects those systems

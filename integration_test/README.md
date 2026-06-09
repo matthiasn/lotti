@@ -6,13 +6,28 @@ Integration tests verify end-to-end functionality that cannot be adequately test
 
 ### 1. Matrix Sync Tests (`matrix_service_test.dart`)
 
-**What it tests:**
+This suite contains three tests:
+
+**`Create room & join (sync v2)`** — the baseline two-device flow:
 - Two-device sync flow with real Matrix homeserver (Dendrite)
 - Room creation and encrypted room join
 - Device discovery and SAS emoji verification
 - Bidirectional message exchange (100 messages each direction, or 10 in slow network mode)
 - Self-event suppression (devices don't re-apply their own messages)
 - Message persistence to local database
+
+**`Large-volume convergence: Bob catches up 1000 messages after cold restart`**
+(250 in slow network mode, 30-minute test timeout with a 15-minute internal
+convergence-wait budget) — Alice sends a large burst while Bob's
+client is closed; Bob then reopens with a fresh client/pipeline but the same persisted DB
+(sync token + journal) and must bootstrap catch-up from scratch.
+
+**`Mid-burst rejoin`** — Bob comes online while Alice is halfway through a 600-message burst
+(150 in slow network mode, 30-minute test timeout with a 15-minute internal
+convergence-wait budget). This interleaves the two delivery paths: the
+live `onTimelineEvent` stream covers messages sent after Bob rejoins, while the bridge's
+`/messages` pagination backfills what was missed offline. The `event_id UNIQUE` constraint on
+`inbound_event_queue` deduplicates events delivered by both paths near the join boundary.
 
 **Problems this catches:**
 - Regressions in Matrix SDK integration
@@ -31,8 +46,8 @@ Tests sync behavior under adverse network conditions using Toxiproxy.
 | Test | Scenario | What It Verifies |
 |------|----------|------------------|
 | Network interruption during sync | Alice sends messages, network is cut mid-way, then restored | Messages sent while offline eventually sync after reconnection |
-| High latency | 500ms latency added to all network calls | Sync completes correctly despite slow responses |
-| Bandwidth throttling | Network limited to 10 KB/s | Large payloads sync without data loss or corruption |
+| High latency | 2000ms latency added to all network calls | Sync completes correctly despite slow responses |
+| Bandwidth throttling | Network limited to 50 KB/s | Large payloads sync without data loss or corruption |
 | Multiple network interruptions | Network toggled on/off multiple times during sync | Eventual consistency after repeated disruptions |
 
 **Problems this catches:**
@@ -54,22 +69,40 @@ Basic UI smoke test that creates a journal entry through the UI.
 ### 4. Matrix Actor Isolate Network Test (`matrix_actor_isolate_network_test.dart`)
 
 **What it tests:**
-- Actor-style isolate command handling (`SendPort`/`ReceivePort`)
-- Real network I/O from the worker isolate against Matrix docker endpoint
-- Basic protocol response validation from `/_matrix/client/versions`
-- Password login from the worker isolate against `/_matrix/client/v3/login` when
-  `TEST_USER` and `TEST_PASSWORD` are provided
-- Runtime-parity single-user-across-devices flow from the worker isolate using the Matrix SDK
-  client path (`createMatrixClient` + `MatrixSdkGateway`) when `TEST_USER` and
-  `TEST_PASSWORD` are provided:
-  connect, login, create room, join (same user on second actor), send message, and verify actor
-  health telemetry. Init now starts background sync implicitly; a retry loop is used for message send during sync warm-up.
+
+Spawns two production `SyncActorHost` isolates (`lib/features/sync/actor/sync_actor_host.dart`)
+that simulate two devices of the *same* Matrix user, then drives a single-user two-device flow
+entirely through actor commands (`ping`, `init`, `createRoom`, `joinRoom`, `startVerification`,
+`acceptVerification`, `acceptSas`, `sendText`, `kickOutbox`, `getHealth`,
+`getVerificationState`):
+
+- Actor-style isolate command handling (`SendPort`/`ReceivePort`) and host event streams
+- A reachability precheck against `/_matrix/client/versions` (the test fails fast if the
+  homeserver is unreachable); login itself happens inside each isolate via the `init` command
+  using `TEST_USER`/`TEST_PASSWORD` dart-defines
+- Implicit background sync after `init` (the test waits for `syncLoopActive` via `getHealth`)
+- Peer device-key discovery and a single-pass SAS emoji verification flow, asserting the
+  matched emoji fingerprints converge on both hosts
+- Bidirectional `sendText` (DeviceA → DeviceB and back), asserting `incomingMessage` host
+  events with a retry loop during sync warm-up
+- Durable outbox delivery: seeds outbox rows in each isolate's `SyncDatabase`, calls
+  `kickOutbox`, and asserts `sendAck` / `incomingMessage` counts on both hosts
+- Actor health/encryption telemetry (`encryptionEnabled`, `deviceKeys`)
 
 **Problems this catches:**
 - Isolate network/runtime regressions
-- Regressions where isolate behavior diverges from runtime Matrix SDK behavior
+- Regressions in the production `SyncActorHost` command/event protocol
 - Actor message-loop shutdown/cleanup bugs
+- Durable outbox send/receive regressions across isolates
 - Environment-level connectivity regressions to the local Matrix server
+
+### 5. Manual Screenshots (`manual_screenshots_test.dart`)
+
+A manual screenshot-capture tool rather than a CI verification suite. It runs the full app shell
+with an in-memory harness and a single `testWidgets` case (`captures AI provider onboarding states
+in the full app shell`) that drives the AI provider onboarding UI and writes PNG screenshots via
+`manual_screenshot_utils.dart` to the directory named by the `LOTTI_SCREENSHOT_DIR` dart-define /
+env var (defaulting to `screenshots/manual`).
 
 ## Infrastructure
 
@@ -85,10 +118,16 @@ The Matrix tests require a Docker Compose environment with:
 
 ### Running the Tests
 
+All run scripts live in `integration_test/`. Most (`run_matrix_tests.sh`,
+`run_matrix_actor_isolate_test.sh`, `setup_toxiproxy_docker.sh`) resolve their own location and
+`cd` into `integration_test/docker` as needed; `run_resilience_tests.sh` instead references the
+compose file by path (`docker compose -f docker/docker-compose.yml`) and runs the test from the
+project root.
+
 1. **Start the Docker environment:**
    ```shell
-   cd docker
-   docker-compose up
+   cd integration_test/docker
+   docker compose up
    ```
 
 2. **Run the Matrix sync test:**
@@ -100,29 +139,44 @@ The Matrix tests require a Docker Compose environment with:
    ```shell
    ./run_matrix_actor_isolate_test.sh
    ```
-   This script creates two temporary Matrix users in docker and passes
-   `TEST_USER1`/`TEST_USER2`/`TEST_PASSWORD` to the test.
+   This script creates one temporary Matrix user in docker and passes
+   `TEST_USER`/`TEST_PASSWORD` to the test. Both simulated devices log in as
+   the same user.
 
-4. **Run with simulated bad network:**
+4. **Run the resilience tests:**
    ```shell
-   # Set up Toxiproxy
+   ./run_resilience_tests.sh
+   ```
+   This script creates four temporary user pairs in docker and runs
+   `sync_resilience_test.dart` with `TEST_USER1` through `TEST_USER8`.
+
+5. **Run with simulated bad network:**
+   ```shell
+   # Set up Toxiproxy (applies 200ms latency and 300 KB/s bandwidth)
    ./setup_toxiproxy_docker.sh
 
-   # Run against degraded network (500ms latency, 100 KB/s)
+   # Run against the degraded network
    SLOW_NETWORK=true ./run_matrix_tests.sh
    ```
 
 ### Test Users
 
-The test script creates dedicated test users on the Dendrite server. Each resilience test uses a separate user pair to avoid device accumulation across test runs:
+The run scripts create dedicated test users on the Dendrite server. Each resilience test uses a separate user pair to avoid device accumulation across test runs:
 
-- `TEST_USER1` / `TEST_USER2` - Matrix sync test
-- `TEST_USER3` through `TEST_USER8` - Resilience tests (one pair per test)
+- `run_resilience_tests.sh` provisions four pairs as `TEST_USER1` through `TEST_USER8`
+  (one pair per resilience test, the first test using `TEST_USER1`/`TEST_USER2`).
+- `run_matrix_tests.sh` independently provisions its own freshly-created users and passes
+  them as `TEST_USER1`/`TEST_USER2` for the standalone Matrix sync test.
 
 ### Performance Expectations
 
-| Mode | Matrix Sync Test | Resilience Tests |
-|------|------------------|------------------|
+The figures below are for the baseline `Create room & join` test (which itself carries a
+15-minute timeout). The `Large-volume convergence` (1000-message cold restart) and
+`Mid-burst rejoin` (600-message) tests each carry a 30-minute test timeout (with a 15-minute
+internal per-wait convergence budget) and run considerably longer.
+
+| Mode | Matrix Sync Test (baseline) | Resilience Tests |
+|------|-----------------------------|------------------|
 | Normal network | ~50s | ~2-3 min per test |
 | Degraded network | ~1m 25s | ~5-8 min per test |
 
@@ -157,4 +211,4 @@ These integration tests provide confidence that:
 
 - [PR #1695](https://github.com/matthiasn/lotti/pull/1695) - Original Matrix sync test implementation
 - `lib/features/sync/README.md` - Sync architecture documentation
-- `docs/sync_simplification_plan.md` - Recent sync pipeline simplification
+- `docs/implementation_plans/2025-10-11-sync_simplification_plan.md` - Recent sync pipeline simplification

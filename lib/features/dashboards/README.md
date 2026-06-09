@@ -57,7 +57,9 @@ lib/features/dashboards/
 │   ├── pages/                   # List page and single dashboard page
 │   └── widgets/
 │       ├── charts/              # Chart shells and chart-specific widgets
+│       │   └── time_series/     # Time-series chart helpers
 │       └── ...                  # Filter, list, card widgets
+├── widgetbook/                  # Dev-only Insights design showcase + mock data
 └── README.md
 ```
 
@@ -101,10 +103,20 @@ The feature splits cleanly into two halves:
 
 ## Dashboard List Flow
 
-The list page is a `CustomScrollView` with a title row containing the category
-filter button, followed by a grouped rounded-card container of
+The list scaffold is a `CustomScrollView` with a title row containing the
+category filter button, followed by a grouped rounded-card container of
 `DesignSystemListItem`-based `DashboardCard`s. The old `SliverAppBar` has been
 removed in favour of a lightweight inline header.
+
+`DashboardsListPage` branches on `isDesktopLayout(context)`. On mobile it returns
+the list scaffold alone and tapping a card beams to `/dashboards/:id`. On desktop
+it becomes a master/detail split: a sized list pane (width from
+`paneWidthControllerProvider`), a `ResizableDivider` that drives
+`paneWidthControllerProvider.updateListPaneWidth`, and an `Expanded` detail pane.
+The detail pane is a `ValueListenableBuilder` on
+`getIt<NavService>().desktopSelectedDashboardId` that embeds `DashboardPage`
+directly for the selected id, or renders `DesktopDetailEmptyState` when nothing
+is selected.
 
 ```mermaid
 flowchart TD
@@ -124,14 +136,13 @@ Code-backed details worth knowing:
 - `dashboardsProvider` reads all dashboards from `JournalDb`, then filters to
   `active == true`
 - category filtering is purely local UI state; no database query changes
-- `DashboardsFilter` renders its icon as a tiny ring `PieChart` based on the
-  currently visible dashboards and category colors
+- `DashboardsFilter` is an `IconButton` whose icon toggles between
+  `Icons.filter_alt_rounded` (when at least one category is selected) and
+  `Icons.filter_alt_outlined` (when none are); tapping it opens a bottom sheet of
+  category `ActionChip`s that toggle `selectedCategoryIdsProvider`
 - `DashboardsListPage` wires its scroll controller into
   `UserActivityService.updateActivity`, so even scrolling quietly counts as user
   activity
-
-That filter button does double duty as both control and tiny dashboard census.
-Not flashy, but genuinely handy.
 
 ## Single Dashboard Page Lifecycle
 
@@ -162,6 +173,7 @@ sequenceDiagram
     Page->>Page: update BarWidthController scale
   else dashboard missing
     Page->>Page: beamToNamed('/dashboards')
+    Page-->>User: render EmptyScaffoldWithTitle(dashboardNotFound)
   end
 ```
 
@@ -171,8 +183,8 @@ The page has a simple two-state lifecycle driven by `EntitiesCacheService.getDas
 stateDiagram-v2
   [*] --> Lookup: open /dashboards/:id
   Lookup --> Viewing: dashboard found
-  Lookup --> Redirect: dashboard == null
-  Redirect --> [*]: beamToNamed('/dashboards')
+  Lookup --> NotFound: dashboard == null
+  NotFound --> [*]: beamToNamed('/dashboards') + render EmptyScaffoldWithTitle(dashboardNotFound)
 
   state Viewing {
     [*] --> Rendering
@@ -259,7 +271,9 @@ None of that is mysterious. It is just the shape of the current code.
 ## Related Code Outside This Folder
 
 - `lib/features/settings/ui/pages/dashboards/` edits dashboard definitions
-- `lib/widgets/charts/habits/` provides the habit chart/card reused here
+- `lib/widgets/charts/habits/` provides the habit chart (`DashboardHabitsChart`)
+  reused here, which in turn renders `HabitCompletionCard` from
+  `lib/features/habits/ui/widgets/`
 - `lib/features/surveys/tools/run_surveys.dart` backs the survey `+` actions
 - `lib/services/entities_cache_service.dart` provides fast dashboard lookups for
   page routing/title rendering

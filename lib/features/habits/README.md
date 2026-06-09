@@ -46,7 +46,7 @@ lib/features/habits/
         ├── habit_completion_color_icon.dart     # Completion status icon
         ├── habit_dashboard.dart                 # Dashboard integration widget
         ├── habit_page_app_bar.dart              # Habits page app bar
-        ├── habit_streaks.dart                   # Streak tracking display
+        ├── habit_streaks.dart                   # Completed-today count display (HabitStreaksCounter)
         ├── habits_filter.dart                   # Habit filtering controls
         ├── habits_search.dart                   # Habit search
         └── status_segmented_control.dart        # Status filter segmented control
@@ -211,7 +211,7 @@ The controller does not run a timer for "open now" logic. Instead, it recomputes
 - the selected category set changes
 - the habits tab becomes the active top-level tab again (off→on edge on `NavService.getIndexStream()`)
 
-That last part is worth calling out. `showHabit()` depends on `DateTime.now()`, so the tab-active recomputation is the feature's lightweight answer to "time passed while the tab was off-screen." It refreshes the due/later split without keeping a background ticker alive. The trigger is wired by subscribing to `NavService.getIndexStream()` in `HabitsController._init` and comparing the emitted index to `NavService.habitsIndex` — the controller tracks the previous active state and only recomputes on the inactive→active edge, so a stream of repeated active emissions costs nothing.
+That last part is worth calling out. `showHabit()` depends on `DateTime.now()`, so the tab-active recomputation is the feature's lightweight answer to "time passed while the tab was off-screen." It refreshes the due/later split without keeping a background ticker alive. The trigger is wired by subscribing to `NavService.getIndexStream()` inside `HabitsController.build()` and comparing the emitted index to `NavService.habitsIndex` in `_handleNavIndex` — the controller tracks the previous active state and only recomputes on the inactive→active edge, so a stream of repeated active emissions costs nothing.
 
 ### Search vs. category filtering
 
@@ -337,8 +337,8 @@ Delete is a soft delete via `deletedAt`, not a hard remove.
 
 ## Current Constraints And Reality Checks
 
-- The model has `autoCompleteRule`, and the settings controller still has rule-removal helpers, but the autocomplete widget is currently commented out on the details page.
-- `shortStreakCount` and `longStreakCount` are still computed in `HabitsController`, but `HabitStreaksCounter` currently renders only "`X out of Y habits completed today`". The streak text is commented out.
+- The model has an optional `autoCompleteRule`, and `HabitSettingsState` carries an `autoCompleteRule` field, but that field is always initialized to `null` and never mutated by `HabitSettingsController`; no autocomplete editing widget is wired up — only a dead `// const HabitAutocompleteWrapper(),` reference remains at `lib/features/settings/ui/pages/habits/habit_details_page.dart:197`, and there is no `HabitAutocompleteWrapper` class anywhere in the codebase.
+- `shortStreakCount` and `longStreakCount` are still computed in `HabitsController`, but `HabitStreaksCounter` currently renders only "`X out of Y habits completed today`" and never displays the computed streak counts.
 - Text search is local page filtering, not repository querying.
 - The "due now" split is based only on daily `showFrom` and current clock time.
 

@@ -34,13 +34,16 @@ lib/features/tasks/
 ├── repository/
 ├── services/
 ├── state/
+│   └── saved_filters/
 ├── ui/
 │   ├── checklists/
 │   ├── filtering/
 │   ├── header/
 │   ├── labels/
 │   ├── linked_tasks/
+│   ├── model/
 │   ├── pages/
+│   ├── saved_filters/
 │   └── widgets/
 ├── util/
 └── widgetbook/
@@ -123,12 +126,12 @@ At runtime the browse page does three specific things:
 flowchart TD
   Page["TasksTabPage"] --> PageCtl["JournalPageController(showTasks=true)"]
   PageCtl --> Paging["PagingController / infinite_scroll_pagination"]
-  Paging --> Entries["buildTaskBrowseEntries(items, sortOption, now)"]
+  Paging --> Entries["buildTaskBrowseEntries(items, sortOption, now, hasNextPage)"]
   Entries --> Rows["TaskBrowseListItem rows"]
   Rows --> Surface["GroupedCardRowSurface"]
-  Rows --> RowInteractions["buildTaskBrowseRowInteractions(...)"]
-  RowInteractions --> SharedInteractions["buildGroupedCardRowInteractions(...)"]
-  SharedInteractions --> Projects["Projects grouped rows use the same adjacency logic"]
+  Rows --> RowInteractions["buildTaskBrowseRowInteraction(...)"]
+  RowInteractions --> Interaction["GroupedCardRowInteraction (adjacency suppression)"]
+  Interaction --> Projects["Projects grouped rows use the same adjacency logic"]
 ```
 
 The section semantics are intentionally sort-dependent:
@@ -176,8 +179,9 @@ Checklist content is modeled separately through checklist entities and linked ch
   button. It exposes the most-frequent inline actions directly: a
   "Track time" pill plus round affordances for add-checklist,
   import-image, audio recording, and "more actions" (opens
-  `CreateEntryModal` for long-tail items — Event / Text / Paste image /
-  link to event, plus capture-screenshot on macOS and Linux). The pill
+  `CreateEntryModal` for long-tail items — Checklist (task host only) /
+  Event / Task / Audio / Timer / Text / Paste image, plus import-image on
+  macOS and mobile and capture-screenshot on macOS and Linux). The pill
   has two states:
   - Idle: tapping starts a new timer linked to this task.
   - Tracking-this-task: the live elapsed time replaces the label, with
@@ -212,9 +216,10 @@ Checklist content is modeled separately through checklist entities and linked ch
   shell hides its bottom nav pill whenever the active beamer route is
   `/tasks/<uuid>` (computed in `_AppScreenState._isTaskDetailRoute`,
   no per-page lifecycle plumbing), so the action bar can dock flush
-  against the home indicator. The desktop shell uses the same predicate
-  to hide its bottom-right floating recording indicator on task detail
-  routes, since the action bar already exposes the recording control.
+  against the home indicator. This predicate is mobile-only — the desktop
+  shell has no floating recording indicator; the desktop running-timer
+  surface is the sidebar `SidebarTimerSection` card, which hides itself via
+  its own logic (see "Sidebar timer coordination" below).
   TaskActionBar consumes the safe-area inset internally.
 
 ```mermaid
@@ -248,7 +253,7 @@ The hide condition is the conjunction of:
 - `linkedFrom.meta.id == NavService.desktopSelectedTaskId`, and
 - `NavService.currentPath` starts with `/tasks/` (i.e. user is on a task-detail route).
 
-The route check matters because `desktopSelectedTaskId` is sticky across tab switches: it's only mutated by `tasks_location.dart` (via `NavService.resetDesktopTaskDetail` / `pushDesktopTaskDetail` / `popDesktopTaskDetail`). Without the path guard, switching from a task to e.g. Habits would leave the sidebar card hidden even though the action bar is no longer on screen.
+The route check matters because `desktopSelectedTaskId` is sticky across tab switches: it's only mutated by `NavService.resetDesktopTaskDetail` (called from `tasks_location.dart` on URL changes), `NavService.pushDesktopTaskDetail` (linked-task taps via `task_navigation.dart`), and `NavService.popDesktopTaskDetail` (desktop back arrow in `task_detail_back_leading.dart`). Without the path guard, switching from a task to e.g. Habits would leave the sidebar card hidden even though the action bar is no longer on screen.
 
 Reactivity sources composed inside the card:
 
@@ -284,7 +289,7 @@ Inside `TaskForm`, the composition is also fairly opinionated:
 
 ### Visual surface
 
-Most section cards on the task detail page (Task description, Linked Tasks, Checklists, expanded activity) render on `TaskDetailSectionCard` — solid `background.level02`, `radii.l`, subtle `decorative.level01` border, no gradient, no drop shadow. This matches the `task_browse_list_item` surface in the task list, so the detail page reads as part of the same system. The section is encapsulated by `TaskShowcasePalette` and the design-system tokens — no ad-hoc hex values.
+Most section cards on the task detail page (Task description, Checklists, expanded activity) render on `TaskDetailSectionCard` — solid `background.level02`, `radii.l`, subtle `decorative.level01` border, no gradient, no drop shadow. `LinkedTasksWidget` does not use that shared widget; it replicates the same surface treatment inline (a raw `DecoratedBox` with `background.level02`, `radii.l`, and a `decorative.level01` border). This matches the `task_browse_list_item` surface in the task list, so the detail page reads as part of the same system. The section is encapsulated by `TaskShowcasePalette` and the design-system tokens — no ad-hoc hex values.
 
 The **AI Summary** card is the deliberate exception. It does not use `TaskDetailSectionCard`. Instead it draws on a dedicated dark AI surface defined in `assets/design_system/tokens.json` under `color.aiCard.*`: a `#0E1A22` background, a teal-at-14%-alpha border, a 14px radius, and a subtle teal outer glow shadow. Proposal-kind chips draw from `color.proposalKind.{add, update, remove, priority, estimate, status, label, due}.{color, surface}` so the chip colors stay tokenized. All accents inside the card route through `color.aiCard.accent` (the existing Lotti teal). The hex values are set up to be visually consistent across both Light and Dark themes since the card itself is dark-only by design.
 
@@ -292,7 +297,7 @@ Some text styles inside the card override the base design-system token's `height
 
 ### DesktopTaskHeader visual states
 
-The header has three interactive title states driven by `MouseRegion` + local editing state, all sharing the same 28px capsule (`surface.hover` fill, `radii.s` corners):
+The header title has two interactive states driven by local editing state. The ReadOnly state is plain text plus an edit pencil (no capsule); the Editing state is a capsule-shaped `TextField` with a `surface.hover` fill and an 8px radius (`_capsuleRadius = 8.0`):
 
 ```mermaid
 stateDiagram-v2
@@ -305,11 +310,11 @@ stateDiagram-v2
 - ReadOnly: the title renders as plain `Text` in Heading 3 Bold, wrapping onto multiple lines for long strings.
 - Editing: the title becomes a capsule-shaped inline `TextField` with a teal `interactive.enabled` border and external check (save) and close (cancel) buttons. Enter inserts a newline; ⌘/Ctrl+Enter or tapping the check saves.
 
-The header body is three explicit lines:
+The header body is three explicit lines, composed top-to-bottom in `DesktopTaskHeader.build`:
 
-1. **Title** — tap to edit.
-2. **Classification** — `Wrap` of `[category | unassigned placeholder] → [project | No project placeholder] → [label chips | Add Label placeholder]`.
-3. **Metadata** — `Wrap` of `[due date | No due date placeholder] → [estimate chip] → [priority badge] → [status dropdown]`.
+1. **Crumb** (`_HeroCrumb`) — a `Row` of `[category | unassigned placeholder] / [project | No project placeholder]` separated by a literal `/`. No label chips here.
+2. **Title** (`_TitleReadOnly` / `_TitleEditor`) — tap to edit.
+3. **Meta** (`_MetaRow`) — a trailing-aligned `Wrap` of `[priority badge] → [due date | No due date placeholder] → [estimate chip] → [label chips | Add Label placeholder]`, with the `[status dropdown]` pinned to the trailing edge. Labels live in this meta row, not in a separate classification line.
 
 There is no ellipsis inside the header — entry actions live on the pinned app bar. `TaskCompactAppBar` and `TaskExpandableAppBar` also surface the task title in `subtitle2` once the detail scroll offset passes a threshold, so the title stays visible as the header scrolls out of view.
 
@@ -333,7 +338,7 @@ Checklists are one of the main reasons the tasks feature exists as its own featu
 
 ```mermaid
 flowchart TD
-  Checklist["ChecklistWidget"] --> Ctl["ChecklistController"]
+  Checklist["ChecklistCardWrapper"] --> Ctl["ChecklistController"]
   Ctl --> DB["JournalDb"]
   Ctl --> Repo["ChecklistRepository"]
   Ctl --> Notify["UpdateNotifications"]
@@ -384,7 +389,6 @@ stateDiagram-v2
   [*] --> Browse
   Browse --> Manage: toggleManageMode()
   Manage --> Browse: toggleManageMode()
-  Manage --> Browse: exitManageMode()
 ```
 
 When manage mode is active:
@@ -489,31 +493,32 @@ Persistence uses:
 
 - `TASKS_CATEGORY_FILTERS` for the tasks tab
 
-which keeps tasks-tab filter state separate from the journal tab. One subtle boundary here: project filtering is persisted in the same controller state, but the visible project filter controls are rendered by shared/project widgets rather than `lib/features/tasks/ui/filtering/`.
+which keeps tasks-tab filter state separate from the journal tab. The visible project filter controls live in this feature: `task_filter_modal.dart`'s `_handleProjectFieldPressed` opens the grouped project-selection modal `showProjectSelectionModal` (`lib/features/tasks/ui/filtering/task_project_selection_modal.dart`), and the resulting project IDs are persisted in the same controller state as the other filter clauses.
 
 ### Saved Filters
 
 The tasks tab also supports user-saved filters surfaced as a treeview under the Tasks destination in the desktop sidebar. The model lives in `lib/features/tasks/state/saved_filters/`:
 
-- `SavedTaskFilter` (`{id, name, filter: TasksFilter}`) is a Freezed JSON-serializable model. The ephemeral `query` / `match` field on `JournalPageState` is intentionally NOT part of the saved payload — it stays on the live page state and is preserved across saved-filter activations.
+- `SavedTaskFilter` (`{id, name, filter: TasksFilter}`) is a Freezed JSON-serializable model. The ephemeral `match` (search text) field on `JournalPageState` is intentionally NOT part of the saved payload — it stays on the live page state and is preserved across saved-filter activations.
 - `SavedTaskFiltersPersistence` writes the ordered list as a single JSON blob to `SettingsDb` under the `SAVED_TASK_FILTERS` key. Position in the list IS the sort order. Mirrors the dedup-on-write pattern of `JournalFilterPersistence`.
 - `savedTaskFiltersControllerProvider` (Riverpod `keepAlive: true` async notifier) exposes `create`, `rename`, `updateFilter`, `delete`, `reorder`. Each mutation persists.
 - `SavedTaskFilterActivator` applies a `SavedTaskFilter` to the live `JournalPageController` via `applyBatchFilterUpdate`.
 
-Three derived providers wire the UI to the live page state:
+Two derived providers wire the UI to the live page state:
 
 - `currentSavedTaskFilterIdProvider` — id of the saved filter whose persisted shape matches the live filter (display-only fields like `showCoverArt`/`showProjectsHeader`/`showDistances` are ignored when matching), or `null` when nothing matches.
-- `tasksFilterHasUnsavedClausesProvider` — `true` when the live filter has clauses but doesn't match any saved filter; gates the sidebar `+` and modal Save button.
-- `liveTasksFilterProvider` — snapshot of the live `TasksFilter` shape; used by the Save flow to capture exactly what the user sees.
+- `tasksFilterHasUnsavedClausesProvider` — `true` when the live filter has clauses but doesn't match any saved filter; gates the modal Save button (`canSave`).
+
+Both derive the live `TasksFilter` snapshot from the page state via the private helper `_liveFilterFor(JournalPageState)` in `saved_task_filter_activator.dart` (the Save flow itself builds the filter via `_draftStateToTasksFilter` in `task_filter_modal.dart`) — there is no `liveTasksFilterProvider`.
 
 Sidebar counts: `savedTaskFilterCountsProvider` computes `{savedFilterId → matching task count}` by fanning out one `repo.count` per saved filter, recomputed on `taskNotification`. Because each recompute is one count query per filter, notification-driven invalidations are debounced (300ms in `savedTaskFilterCounts`) so a sync burst — already coalesced upstream by `UpdateNotifications` into ~1s/100ms batches — collapses into a single recompute instead of re-running every filter's count per batch. The initial computation is never debounced.
 
 Surfaces:
 
-1. Sidebar treeview (`TasksSavedFiltersTree` → `SavedTaskFiltersSection` + `SavedTaskFilterRow`) — rendered via `DesktopSidebarDestination.expandedChildBuilder` only when the Tasks destination is active and the sidebar is expanded. Hover-trash with two-tap confirm delete, double-click rename, drag-to-reorder via `ReorderableListView.builder`. Empty state is a dashed pill instructing the user to adjust the filter and tap Save.
+1. Sidebar treeview (`TasksSavedFiltersTree` → `SavedTaskFiltersSection` + `SavedTaskFilterRow`) — rendered via `DesktopSidebarDestination.expandedChildBuilder` only when the Tasks destination is active and the sidebar is expanded. Hover-trash with two-tap confirm delete, double-click rename, drag-to-reorder via `ReorderableListView.builder`. When there are no saved filters the section is hidden entirely (`SizedBox.shrink`) — there is no add affordance in the sidebar; new filters are saved only through the Save button in the Tasks Filter modal.
 2. Filter modal Save flow — `DesignSystemTaskFilterActionBar` gained an optional Save button next to Apply. Tapping it opens an inline name popup (`MenuAnchor`-anchored) with autofocus, Enter-to-commit, Escape-to-cancel, click-outside dismiss. The name is passed to `showTaskFilterModal`'s `onSavePressed` handler, which calls `create()` for new saves and `updateFilter()` when the user edits and re-saves the currently active filter under the same name.
 3. Tasks pane named-filter indicator — `TabSectionHeader.titleSuffix` renders `· {savedFilterName}` next to "Tasks" when a saved filter is active.
-4. Save / update / delete confirmation toasts via `SnackBar` (`saved_task_filter_toast.dart`).
+4. Save / update / delete confirmation toasts via the design-system toast (`context.showToast`, in `saved_task_filter_toast.dart`).
 
 ```mermaid
 stateDiagram-v2
@@ -527,14 +532,13 @@ stateDiagram-v2
   Saved --> Saved: Save with same name →\nupdateFilter (no rename)
 ```
 
-Counts in the saved-filter rows are surfaced through the optional `counts: Map<String, int>?` parameter on `SavedTaskFiltersSection`. The current desktop wiring leaves this null pending a per-saved-filter task-count provider — the row hides the count when none is supplied.
+Counts in the saved-filter rows are surfaced through the optional `counts: Map<String, int>?` parameter on `SavedTaskFiltersSection`. The desktop wiring (`TasksSavedFiltersTree`) supplies real counts by watching `savedTaskFilterCountsProvider` (falling back to an empty map while loading); the row hides the count for any filter not present in the map.
 
 The redesigned browse page also preserves the existing non-filter runtime behavior:
 
 - pull-to-refresh
 - full-text vs vector search toggle
 - quick-label strip
-- optional project health header
 - create-task FAB and auto-assign flow
 - `/tasks/:taskId` navigation on row selection
 
@@ -550,7 +554,8 @@ The task detail metadata band is concentrated entirely inside `DesktopTaskHeader
 - due date
 - estimate
 - labels
-- ellipsis actions (share, extended actions, speech modal) via `ExtendedHeaderModal`
+
+Ellipsis actions (share, extended actions, speech modal) are NOT owned by the connector — `ExtendedHeaderModal.show` is invoked from the pinned app bar's `more_vert` button (`TaskCompactAppBar` / `TaskExpandableAppBar`), not the header.
 
 Notable behavior already implemented:
 
@@ -562,7 +567,7 @@ Notable behavior already implemented:
   page state
 - labels are category-aware, but still allow out-of-scope assigned labels to be removed
 - project selection integrates with the project health layer without making the task feature own project analysis itself
-- language is not surfaced in the new header itself — it is reachable through the pinned app bar's triple-dot menu, which shows a "Set language" action (`ModernSetTaskLanguageItem`). The action renders the currently selected language's flag inline when one is set, falls back to `Icons.language` otherwise, and opens the same `LanguageSelectionModalContent` modal used by the category editor. Selection is persisted via `journalRepositoryProvider.updateJournalEntity` with `ChangeSource.user` on `TaskData.languageSource`.
+- language is not surfaced in the new header itself — it is reachable through the pinned app bar's triple-dot menu, which shows a "Set language" action (`ModernSetTaskLanguageItem`). The action renders the currently selected language's flag inline when one is set, falls back to `Icons.language` otherwise, and opens the same `LanguageSelectionModalContent` modal used by the category editor. Selection is persisted via `EntryController.updateTaskLanguage`, which writes through `PersistenceLogic.updateTask`, setting `ChangeSource.user` on `TaskData.languageSource`.
 
 ## AI and Media Integrations
 

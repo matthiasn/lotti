@@ -70,13 +70,20 @@ The bundle file contains a Base64url-encoded string (no padding) that decodes to
 
 ```json
 {
-  "v": 1,
+  "v": 2,
+  "kind": "provisioned",
   "homeServer": "https://matrix.example.com",
   "user": "@lotti_sync_user42:example.com",
   "password": "<generated>",
   "roomId": "!abcdef:example.com"
 }
 ```
+
+The `kind` field is the import discriminator: CLI bundles are always
+`"provisioned"`, which tells the Lotti client to rotate the password on first
+import (the peer-to-peer handover bundle emitted by a configured desktop uses
+`"handover"` instead). Schema version 2 (and a present `kind`) are required;
+the client rejects v:1 bundles, which predate the discriminator.
 
 Paste the contents of the output file into the Lotti desktop client's
 "Provisioned Sync" import field.
@@ -91,7 +98,10 @@ Paste the contents of the output file into the Lotti desktop client's
    - End-to-end encryption enabled
    - `m.lotti.sync_room` state marker for room discovery
    - Federation disabled
-6. **Writes the provisioning bundle** to the specified output file
+6. **Re-enforces critical room state** with explicit `PUT .../state/...`
+   requests for `m.room.encryption`, `m.room.name`, and `m.lotti.sync_room`,
+   because some homeserver versions/setups ignore parts of `initial_state`
+7. **Writes the provisioning bundle** to the specified output file
 
 If room creation or user login fails after the user was already created, the
 tool automatically deactivates the orphan account and reports the failure.

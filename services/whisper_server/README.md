@@ -7,7 +7,7 @@ A high-performance, production-ready Python FastAPI server that provides local W
 - ✅ **Local Processing**: Runs Whisper models locally on your hardware
 - ✅ **OpenAI Compatible**: Uses OpenAI's API format for seamless integration
 - ✅ **High Performance**: Optimized for speed with quantization, flash attention, and hardware acceleration
-- ✅ **Multi-GPU Support**: CUDA, MPS (Apple Silicon), and CPU compatibility
+- ✅ **Multi-platform Device Selection**: Automatically picks a single best device among CUDA, MPS (Apple Silicon), or CPU
 - ✅ **Audio Preprocessing**: Automatic resampling, normalization, and silence trimming
 - ✅ **Secure**: Input validation, file size limits, format detection
 - ✅ **Configurable**: Environment-based configuration
@@ -23,7 +23,6 @@ A high-performance, production-ready Python FastAPI server that provides local W
 - **Torch compile** for JIT optimization
 - **Optimized batch sizes** based on hardware
 - **Audio preprocessing** for optimal model performance
-- **Smaller default model** (whisper-tiny) for speed
 
 ### **🔧 Hardware Optimizations**
 - **CUDA**: Full optimizations (quantization + flash attention + high batch sizes)
@@ -108,18 +107,15 @@ Pre-built binaries for Linux and macOS are available in [GitHub Releases](https:
 | Platform | Architecture | Filename |
 |----------|--------------|----------|
 | Linux | x64 | `whisper_server-linux-x64.tar.gz` |
-| macOS | Intel (x64) | `whisper_server-macos-x64.tar.gz` |
 | macOS | Apple Silicon (ARM64) | `whisper_server-macos-arm64.tar.gz` |
+
+There is no pre-built macOS Intel (x64) binary; the release workflow only builds Linux x64 and macOS ARM64. Intel macOS users must build from source (see Setup, using `requirements_macos_intel.txt`).
 
 Download and extract:
 
 ```bash
 # Linux (x64)
 tar -xzvf whisper_server-linux-x64.tar.gz
-./whisper_api_server
-
-# macOS Intel
-tar -xzvf whisper_server-macos-x64.tar.gz
 ./whisper_api_server
 
 # macOS Apple Silicon (M1/M2/M3/M4)
@@ -129,10 +125,11 @@ tar -xzvf whisper_server-macos-arm64.tar.gz
 
 ### **Command Line Tool**
 
-For direct file transcription, use the CLI tool:
+`whisper_server.py` is a thin client for the **remote** OpenAI hosted Whisper API, not the local server. It does not run any local model: it requires an `OPENAI_API_KEY` and POSTs the file to `OPENAI_BASE_URL` (default `https://api.openai.com/v1`), so it incurs API usage and is unrelated to the local FastAPI server above.
 
 ```bash
-python whisper_server.py path/to/audio.m4a
+export OPENAI_API_KEY="sk-..."
+python whisper_server.py path/to/audio.m4a [model]
 ```
 
 ## API Endpoints
@@ -160,7 +157,7 @@ Transcribe audio using local Whisper models.
 ```
 
 ### **POST `/v1/chat/completions`**
-OpenAI-compatible endpoint that proxies to `/v1/audio/transcriptions`.
+Convenience alias that forwards the same request body to `/v1/audio/transcriptions` and returns the transcription response shape (`text`, `processing_time`, `model`, `format`) — not an OpenAI ChatCompletion object.
 
 ### **GET `/health`**
 Health check endpoint.
@@ -174,13 +171,13 @@ The server supports the following Whisper models (optimized for performance):
 
 | Model | Size | Speed | Quality | Default |
 |-------|------|-------|---------|---------|
-| `whisper-1` | ~39MB | Fastest | Good | ✅ |
+| `whisper-1` | ~1550MB | Slow | Best | ✅ |
 | `whisper-tiny` | ~39MB | Fastest | Good | |
 | `whisper-small` | ~244MB | Fast | Better | |
 | `whisper-medium` | ~769MB | Medium | Better | |
 | `whisper-large` | ~1550MB | Slow | Best | |
 
-**Note**: `whisper-1` maps to `whisper-tiny` for optimal speed.
+**Note**: `whisper-1` maps to `openai/whisper-large-v3` (the same model as `whisper-large`) for accuracy comparable to the hosted OpenAI service.
 
 ## Hardware Requirements
 
@@ -205,6 +202,8 @@ Typical transcription times for 1-minute audio:
 | Intel i7 (CPU) | whisper-tiny | ~8-15s | 2-3x |
 
 *Times include preprocessing and model loading on first run*
+
+**Note**: These figures are measured with `whisper-tiny`. The default model (`whisper-1`) resolves to `openai/whisper-large-v3`, which is substantially larger and slower; pass `whisper-tiny` explicitly to get the speeds above.
 
 ## Environment Variables
 

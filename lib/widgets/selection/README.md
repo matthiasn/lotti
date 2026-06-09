@@ -1,10 +1,10 @@
 # Selection Widgets
 
-This directory contains reusable components for building consistent selection modals throughout the application. These components follow Material Design principles and provide a unified user experience for all selection interfaces.
+This directory contains reusable components for building consistent selection modals throughout the application, plus a family of unified toggle/switch widgets (see [Unified Toggles](#unified-toggles)). These components follow Material Design principles and provide a unified user experience for all selection interfaces.
 
 ## Overview
 
-The selection widgets were created to eliminate code duplication across various selection modals (modality selection, input type selection, response type selection, etc.) and provide a consistent, maintainable architecture for selection interfaces.
+The selection widgets were created to eliminate code duplication across various selection modals (e.g. modality selection in `lib/features/ai/ui/settings/widgets/modality_selection_modal.dart` and the Gemini thinking-mode picker in `lib/features/ai/ui/widgets/gemini_thinking_mode_picker_modal.dart`) and provide a consistent, maintainable architecture for selection interfaces.
 
 ## Components
 
@@ -27,7 +27,8 @@ SelectionOption(
   icon: Icons.example_icon,
   isSelected: true,
   onTap: () => handleSelection(),
-  selectionIndicator: RadioSelectionIndicator(isSelected: true), // Optional custom indicator
+  // selectionIndicator: Icon(Icons.star), // Optional custom indicator widget;
+  // when omitted, the default checkmark/empty-circle indicator is used.
 )
 ```
 
@@ -100,28 +101,64 @@ SelectionOptionsList(
 )
 ```
 
+## Unified Toggles
+
+This directory also contains a family of toggle/switch components (in
+`unified_toggle.dart` and its part file `unified_toggle_field.dart`). They are
+**not** re-exported by the `selection.dart` barrel; import them directly from
+`package:lotti/widgets/selection/unified_toggle.dart`.
+
+### UnifiedToggle
+
+A bare toggle that wraps Flutter's `Switch` (or `CupertinoSwitch` for the
+`cupertino` variant) and selects active/inactive colors based on a
+`UnifiedToggleVariant`. The `UnifiedToggleVariant` enum has five values:
+
+- `normal` — primary theme color (default `FormSwitch` behavior)
+- `warning` — error color, for sensitive options
+- `priority` — `starredGold`, for starred/important items
+- `archived` — outline color, for inactive items
+- `cupertino` — renders a `CupertinoSwitch` with the iOS system green active track
+
+An `activeColor` argument overrides the variant color. `enabled: false` disables
+`onChanged`.
+
+### UnifiedToggleField
+
+A labeled toggle for form-like contexts: an `InkWell` row with a `title`,
+optional `subtitle`, optional `leading` widget, and a trailing `UnifiedToggle`.
+Tapping the row invokes `onChanged`. Accepts the same `variant`/`activeColor`
+options as `UnifiedToggle`, plus `dense` and `contentPadding` layout controls.
+
+### UnifiedAiToggleField
+
+An AI-settings-styled toggle field with a gradient/bordered container, an
+optional `icon` chip, a `label`, and an optional `description`. The container
+border and icon coloring change based on the current `value`.
+
 ## Selection Indicators
 
-The package includes two types of selection indicators:
+`SelectionOption` renders a single built-in indicator, the private
+`_DefaultSelectionIndicator` (see `selection_option.dart`): a checkmark
+(`Icons.check_rounded`) inside a filled circle when selected, and an empty
+outlined circle when not. This is used whenever the optional `selectionIndicator`
+parameter is `null`.
 
-### Default Selection Indicator (Checkmark)
-Used for multi-selection scenarios. Shows a checkmark when selected and an empty circle when not.
-
-### RadioSelectionIndicator
-Used for single-selection scenarios. Shows a filled radio button when selected.
+To use a different indicator, pass any widget via the `selectionIndicator`
+parameter; it is rendered in place of the default.
 
 **Usage:**
 ```dart
-// For multi-selection (default)
+// Default indicator (checkmark / empty circle)
 SelectionOption(
   // ... other properties
   // No need to specify selectionIndicator
 )
 
-// For single-selection
+// Custom indicator
 SelectionOption(
   // ... other properties
-  selectionIndicator: RadioSelectionIndicator(isSelected: isSelected),
+  selectionIndicator: Icon(isSelected ? Icons.star : Icons.star_border),
 )
 ```
 

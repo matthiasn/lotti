@@ -30,7 +30,7 @@ AiFormSection(
 ```
 
 **Features:**
-- Card-based design with subtle shadow and border
+- Card-based header with a subtle gradient and border
 - Icon and title header
 - Optional description text
 - Consistent padding and spacing
@@ -47,13 +47,13 @@ AiTextField(
   onChanged: (value) => handleNameChange(value),
   validator: (value) => validateName(value),
   prefixIcon: Icons.label_outline_rounded,
-  suffixIcon: Icons.info_outline_rounded,
+  suffixIcon: const Icon(Icons.info_outline_rounded),
 )
 ```
 
 **Features:**
-- Floating label design
-- Optional prefix/suffix icons
+- Static label rendered above the input field
+- Optional prefix icon (`IconData?`) and suffix widget (`Widget?`)
 - Built-in validation with error display
 - Support for single/multi-line input
 - Password/obscure text support
@@ -73,22 +73,7 @@ UnifiedAiToggleField(
 )
 ```
 
-**Note:** `AiSwitchField` is deprecated. Use `UnifiedAiToggleField` directly from `package:lotti/widgets/selection/unified_toggle.dart`.
-
-#### `AiDropdownField`
-A dropdown selection field with consistent styling.
-
-**Usage:**
-```dart
-AiDropdownField<String>(
-  label: 'Default Model',
-  hint: 'Select a model',
-  value: selectedModel,
-  items: availableModels,
-  onChanged: (value) => handleModelChange(value),
-  prefixIcon: Icons.model_training_rounded,
-)
-```
+**Note:** The former `AiSwitchField` has been removed. Use `UnifiedAiToggleField` directly from `package:lotti/widgets/selection/unified_toggle.dart`.
 
 ### Button Components
 
@@ -118,8 +103,8 @@ Row(
 
 ### Helper Extensions
 
-#### `FormErrorExtension`
-Provides human-readable error messages for form validation errors.
+#### `ModelFormErrorExtension` / `ProviderFormErrorExtension`
+Provide human-readable error messages for form validation errors via a `displayMessage` getter on `ModelFormError` and `ProviderFormError`.
 
 ```dart
 // Automatically converts enum errors to display messages

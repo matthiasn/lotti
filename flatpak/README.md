@@ -12,14 +12,14 @@ cd flatpak
 
 ## How It Works
 
-The script uses [flatpak-flutter](https://github.com/TheAppgineer/flatpak-flutter) (pinned to v0.11.0) to generate offline build manifests. This replaces the complex 12,000+ line `manifest_tool` Python orchestrator with a small bash wrapper plus a local foreign-dependency overlay.
+The script uses [flatpak-flutter](https://github.com/TheAppgineer/flatpak-flutter) (pinned to v0.11.0) to generate offline build manifests. This replaces the complex 12,000+ line `manifest_tool` Python orchestrator with a ~110-line bash wrapper plus a local foreign-dependency overlay.
 
 ### What It Does
 
 1. Clones flatpak-flutter if not present
-2. Substitutes commit hash into manifest template
-3. Copies `foreign.json` for custom plugin support
-4. Merges `flatpak_flutter_extra/foreign_deps.json` into flatpak-flutter's bundled foreign dependency database
+2. Applies the `flatpak_flutter_extra/` overlay: copies its mirrored patch subdirectories into flatpak-flutter's `foreign_deps/` tree, then deep-merges `flatpak_flutter_extra/foreign_deps.json` into flatpak-flutter's bundled foreign dependency database
+3. Substitutes commit hash into manifest template
+4. Copies `foreign.json` for custom plugin support
 5. Runs flatpak-flutter to generate all dependency manifests
 6. Outputs everything to `direct-build/output/`
 7. Copies output to `../com.matthiasn.lotti` flathub repo (if present)
@@ -31,7 +31,7 @@ direct-build/output/
 ├── com.matthiasn.lotti.yml          # Main manifest
 ├── generated/
 │   ├── sources/
-│   │   ├── cargo.json               # Rust crates (~3500 entries)
+│   │   ├── cargo.json               # Rust crates (~880 entries)
 │   │   └── pubspec.json             # Dart packages
 │   ├── modules/
 │   │   ├── flutter-sdk-X.X.X.json   # Flutter SDK + Dart SDK
@@ -42,16 +42,48 @@ direct-build/output/
 
 ## Release Workflow
 
+### Automated (primary path)
+
+The primary release path is the `.github/workflows/flathub-release-pr.yml`
+GitHub Actions workflow ("Flathub Release PR"). It triggers on any tag push
+(`on: push: tags: ['**']`) and can also be run manually via
+`workflow_dispatch` (with optional `commit_sha`, `version_override`, and
+`dry_run` inputs).
+
+The workflow:
+1. Checks out Lotti into `lotti/` and `flathub/com.matthiasn.lotti` into a
+   sibling `com.matthiasn.lotti/`, matching the layout
+   `prepare_flathub_build.sh` expects.
+2. Resolves the version from `pubspec.yaml` (or `version_override`) and
+   validates it as a git branch name.
+3. Creates/resets a release branch named after the version from
+   `origin/master` in the Flathub clone.
+4. Clones flatpak-flutter at the version pinned in
+   `prepare_flathub_build.sh`, installs its Python requirements, then runs
+   `./flatpak/prepare_flathub_build.sh`, which copies the generated manifest
+   and sources into the sibling Flathub checkout.
+5. Commits and force-pushes (`--force-with-lease`) the release branch.
+6. Opens (or reuses) a PR against `flathub/com.matthiasn.lotti` `master`
+   using `gh` and the `FLATHUB_PAT` secret.
+
+Once the PR is open, trigger the Flathub build by commenting `bot, build` on
+it.
+
+### Manual (local fallback)
+
+To generate and submit a release locally instead of via the workflow:
+
 ```bash
-# 1. Ensure flathub repo is cloned as sibling
-# (only needed once)
-cd ..
+# 1. Ensure the flathub repo is cloned as a sibling of the lotti2 repo root
+#    (only needed once). prepare_flathub_build.sh looks for it at
+#    <lotti2-parent>/com.matthiasn.lotti.
+cd <lotti2-parent>   # the directory that contains the lotti2 checkout
 git clone git@github.com:flathub/com.matthiasn.lotti.git
 
 # 2. Generate manifest and copy to flathub repo
 cd lotti2/flatpak
 ./prepare_flathub_build.sh <commit-hash>
-# Script automatically copies output to ../com.matthiasn.lotti/
+# Script automatically copies output to ../../com.matthiasn.lotti/
 
 # 3. Commit and create PR
 cd ../../com.matthiasn.lotti
@@ -98,7 +130,9 @@ This file tells flatpak-flutter about plugins not in its built-in database.
 
 **How to check current version:**
 ```bash
-grep -A5 "flutter_vodozemac:" pubspec.lock
+# Run from the repo root. The version line is 7 lines below the
+# package header, so use -A8 (or pipe to grep "version:").
+grep -A8 "flutter_vodozemac:" pubspec.lock | grep "version:"
 ```
 
 ### flatpak_flutter_extra/foreign_deps.json
@@ -142,7 +176,7 @@ The source manifest template. Uses `COMMIT_PLACEHOLDER` which gets replaced by `
 
 ### Missing Rust dependencies in cargo.json
 
-**Symptom:** cargo.json has ~400 entries instead of ~3500
+**Symptom:** cargo.json has far fewer entries than the healthy baseline (~880)
 
 **Cause:** `foreign.json` missing or has wrong version
 
@@ -199,7 +233,7 @@ This would eliminate the need for local `foreign.json` maintenance.
 Could add a script to automatically update foreign.json paths when pubspec.lock changes:
 
 ```bash
-VERSION=$(grep -A3 "flutter_vodozemac:" pubspec.lock | grep "version:" | awk '{print $2}' | tr -d '"')
+VERSION=$(grep -A8 "flutter_vodozemac:" pubspec.lock | grep "version:" | awk '{print $2}' | tr -d '"')
 sed -i "s/flutter_vodozemac-[0-9.]*/flutter_vodozemac-$VERSION/g" flatpak/foreign.json
 ```
 
@@ -207,7 +241,7 @@ sed -i "s/flutter_vodozemac-[0-9.]*/flutter_vodozemac-$VERSION/g" flatpak/foreig
 
 | File | Purpose |
 |------|---------|
-| `prepare_flathub_build.sh` | Main script (~50 lines) |
+| `prepare_flathub_build.sh` | Main script (~110 lines) |
 | `check_foreign_deps.py` | Cheap PR-safe validation for foreign dependency patch drift |
 | `foreign.json` | Custom plugin definitions |
 | `flatpak_flutter_extra/foreign_deps.json` | Versioned overlay for flatpak-flutter's dependency database |
@@ -220,7 +254,7 @@ sed -i "s/flutter_vodozemac-[0-9.]*/flutter_vodozemac-$VERSION/g" flatpak/foreig
 The previous `manifest_tool` grew to 12,000+ lines of Python attempting to handle every edge case. This direct approach:
 
 - Uses flatpak-flutter as intended
-- ~50 lines of bash vs 12,000+ lines of Python
+- ~110 lines of bash vs 12,000+ lines of Python
 - Easier to understand and maintain
 - Delegates complexity to upstream tool
 - Only maintains what's truly custom (foreign.json)

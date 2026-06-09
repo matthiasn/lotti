@@ -36,7 +36,7 @@ flowchart TD
   Wake --> Strategy["DayAgentStrategy"]
   Strategy --> Observe["record_observations"]
   Strategy --> Schedule["set_next_wake"]
-  Strategy --> KnowledgeTools["propose/confirm/retract_knowledge"]
+  Strategy --> KnowledgeTools["propose_knowledge"]
   Strategy --> CaptureTools["capture/reconcile tools"]
   CaptureTools --> CaptureService["DayAgentCaptureService"]
   CaptureService --> Entities["agent_entities: capture (dayId) + parsedItem"]
@@ -357,10 +357,15 @@ stateDiagram-v2
   `drafting` block in the user message JSON. Items in `decidedCaptureItems`
   are approved NEW/unlinked capture items; the model must call
   `create_task_from_phrase` first and place the returned task id.
-- Day-agent wakes that resolve to Gemini 3 Flash use a `thinkingLevel: LOW`
-  override through their `CloudInferenceWrapper` instance. The shared Gemini
-  Flash default remains unchanged; workflows opt into this latency profile
-  explicitly instead of changing the global model default.
+- Day-agent wakes forward the resolved profile model's `geminiThinkingMode`
+  into their `CloudInferenceWrapper` instance
+  (`resolvedProfile.thinkingModel?.geminiThinkingMode`); the task and project
+  agent workflows pass the same value the same way, so there is no
+  day-agent-specific override. For Gemini 3.x models this serializes to the
+  `thinkingLevel` wire parameter; the value comes from the model's own config,
+  which defaults to `GeminiThinkingMode.low`, and the default day-agent template
+  model (`models/gemini-3-flash-preview`) inherits that `low` default rather
+  than an explicit per-workflow opt-in.
 - Drafting wakes must finish by calling `draft_day_plan`. If the model stops
   after reconcile work or emits prose instead, `DayAgentWorkflow` sends one
   forced retry with `tool_choice` pinned to `draft_day_plan`; if that still
@@ -405,16 +410,20 @@ stateDiagram-v2
   untouched. Both write `ChangeDecisionEntity` records per resolved item
   with `actor: user` and `verdict: confirmed | rejected`. Added blocks inherit
   `committed` state when the amended plan was already agreed/committed.
-- Attention negotiation now has an indexed read/write path into planning.
+- Attention negotiation has an indexed **read** path into planning.
   Task agents can call `request_attention`, which writes an evidence-backed
   `AttentionRequestEntity` into the synced agent log after checking existing
   active claims for the same task through `attention_claim_index`. The day
   agent loads `AgentRepository.getAttentionPlanningInputsForWindow(...)` for
   the planning day, which returns window-visible claims plus active
   `StandingAgreementEntity` records through projection indexes rather than
-  source-table JSON scans. Planner awards still flow through the existing
-  human-gated `ChangeSet` path: a planner may write `AttentionAwardEntity`
-  records linked back to requests and concrete day plans when proposing blocks.
+  source-table JSON scans, and surfaces them in the prompt. The
+  `AttentionAwardEntity` model (plus its `attention_award_request` /
+  `attention_award_plan` link types and db/sync conversions) exists for a
+  future award path, but the planner does not yet write awards: when proposing
+  blocks it writes only `ChangeSetEntity` plan diffs (via
+  `DayAgentPlanService.proposePlanDiff`) and `DayPlanEntity` rows (via
+  `persistDraftPlan`).
   Per ADR 0021, the planner behavior is LLM-mediated claim weighing; there is
   no standalone deterministic arbitrator fallback in production. The day
   agent must not wake task/project/health agents during drafting to manufacture
@@ -453,9 +462,10 @@ stateDiagram-v2
   (trim/dedup/cap) and carried forward immutably across confirm/edit, surfaced
   as `DsPill` chips under each entry in the "What I've learned" panel.
 - `summarize_recent_patterns` returns transient learning-card payloads from
-  recent `DayPlanEntity` rows across **all** days under the one planner — the
-  deliberate cross-day learning the single identity enables. It does not persist
-  new state.
+  recent `DayPlanEntity` rows under the one planner — bounded by a
+  `lookbackDays` window (default 7) ending at `asOf`, not all of the planner's
+  history — the deliberate cross-day learning the single identity enables. It
+  does not persist new state.
 - Future Daily OS Next agenda and shutdown tools should be added under this
   feature without importing `features/daily_os` (commit/uncommit already ship —
   see the `DayAgentPlanService` notes above).
@@ -472,7 +482,7 @@ stateDiagram-v2
     [*] --> Idle
     Idle --> DayWake: planning_day:&lt;dayId&gt; wake (capture / draft / refine / pre-warm)
     DayWake --> Idle: wake completes (one day workspace touched)
-    Idle --> Learning: propose/confirm/retract_knowledge
+    Idle --> Learning: propose_knowledge (agent) / confirm/retract/edit (user panel)
     Learning --> Idle: Head set updated (compaction-exempt)
   }
   Active --> Active: convergent re-creation on another device merges via LWW

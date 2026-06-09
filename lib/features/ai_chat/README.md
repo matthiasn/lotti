@@ -48,6 +48,7 @@ lib/features/ai_chat/
 ├── ui/
 │   ├── controllers/
 │   │   ├── chat_recorder_controller.dart    # Audio recording state machine
+│   │   ├── chat_recorder_state.dart          # Recorder state/enum (part of controller)
 │   │   ├── chat_session_controller.dart     # Active conversation state
 │   │   ├── chat_sessions_controller.dart    # Session list management
 │   │   ├── chat_stream_parser.dart          # Stream content/reasoning separator
@@ -65,6 +66,7 @@ lib/features/ai_chat/
 │       │   ├── assistant_settings_sheet.dart
 │       │   ├── bubble_corner_action.dart
 │       │   ├── chat_header.dart
+│       │   ├── chat_voice_controls.dart
 │       │   ├── error_banner.dart
 │       │   ├── input_area.dart
 │       │   ├── message_bubble.dart
@@ -97,7 +99,7 @@ flowchart LR
   Processor --> ToolRepo["TaskSummaryRepository"]
   Processor --> Cloud["CloudInferenceRepository"]
   BatchTx --> Cloud
-  RtTx --> RtProvider["Mistral realtime WebSocket path"]
+  RtTx --> RtProvider["MLX or Mistral realtime backend"]
 
   ToolRepo --> Journal["JournalDb / task + work-entry reads"]
   Cloud --> Providers["Configured provider adapters"]
@@ -201,13 +203,17 @@ This is one of the reasons the feature feels smarter than a plain chat wrapper. 
 It uses:
 
 - `ChatStreamParser`
-- `thinking_parser.dart`
 - `ChatStreamUtils`
 
 to separate:
 
 - visible answer text
 - hidden reasoning blocks
+
+Separately, the chat UI widgets (`message_bubble.dart`, `streaming_content.dart`)
+use `thinking_parser.dart` (`ThinkingUtils`) at display time to hide or strip
+reasoning blocks from rendered/copied output. The controller itself does not
+reference `thinking_parser.dart`.
 
 Behavior that matters:
 
@@ -238,6 +244,7 @@ stateDiagram-v2
   RealtimeRecording --> Idle: cancel
   Processing --> Idle: transcript ready
   Processing --> Idle: transcription error
+  Processing --> Idle: cancel
 ```
 
 Controller states are:
@@ -263,12 +270,12 @@ The controller also tracks:
 
 - reads AI configs
 - finds audio-capable models
-- prefers local MLX Qwen3-ASR models because they receive the category speech
-  dictionary as prompt context
-- falls back to Mistral offline transcription models so their `context_bias`
-  parameter can receive the same dictionary terms
-- otherwise uses a configured Mistral audio model, `gemini-2.5-flash`, or the
-  first audio-capable model
+- prefers Mistral offline transcription models first, so their `context_bias`
+  parameter can receive the category speech dictionary terms
+- then any configured Mistral audio model
+- then local MLX Qwen3-ASR models, which receive the same speech dictionary as
+  prompt context
+- otherwise uses a `gemini-2.5-flash` model, or the first audio-capable model
 - excludes realtime-only Mistral models
 - sends MLX Audio model files directly to the native Swift bridge
 - otherwise base64-encodes the local audio file and calls `CloudInferenceRepository.generateWithAudio(...)`
@@ -306,8 +313,8 @@ dictionary/biasing behavior as batch transcription.
 
 It:
 
-- resolves a local MLX Qwen3-ASR realtime model when configured, otherwise a
-  Mistral realtime transcription model
+- resolves a Mistral realtime transcription model when configured, otherwise a
+  local MLX Qwen3-ASR realtime model
 - opens the native MLX realtime session or Mistral WebSocket session
 - streams PCM audio chunks
 - computes local amplitude values from PCM

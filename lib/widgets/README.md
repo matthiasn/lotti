@@ -1,6 +1,6 @@
 # Lotti Reusable Widgets
 
-This directory contains all reusable widgets used throughout the Lotti application. These widgets are organized by functionality and designed to maintain consistency across the app.
+This directory contains reusable widgets used throughout the Lotti application. These widgets are organized by functionality and designed to maintain consistency across the app.
 
 ## Table of Contents
 
@@ -11,13 +11,14 @@ This directory contains all reusable widgets used throughout the Lotti applicati
 - [Create Widgets](#create-widgets)
 - [Date/Time Widgets](#datetime-widgets)
 - [Event Widgets](#event-widgets)
-- [Layout Widgets](#layout-widgets)
+- [Flag Widgets](#flag-widgets)
+- [Form Widgets](#form-widgets)
 - [Miscellaneous Widgets](#miscellaneous-widgets)
 - [Modal Widgets](#modal-widgets)
 - [Navigation Bar Widgets](#navigation-bar-widgets)
 - [Search Widgets](#search-widgets)
 - [Selection Widgets](#selection-widgets)
-- [Sync/Matrix Widgets](#syncmatrix-widgets)
+- [UI Widgets](#ui-widgets)
 
 ## App Bar Widgets
 
@@ -25,6 +26,15 @@ Located in `/lib/widgets/app_bar/`
 
 ### BackWidget
 A customizable back navigation widget for app bars.
+
+### GlassActionButton
+Glass-styled action button for use over images. Combines `GlassIconContainer` with `Material`/`InkWell` for tap feedback; takes any child (typically an `Icon`) and an `onTap` callback.
+
+### GlassBackButton
+Glass-styled back button for use over images. Wraps `GlassActionButton` with a chevron icon; defaults to `Navigator.maybePop` but accepts a custom `onPressed`.
+
+### GlassIconContainer
+Container with a dark, blurred glass background for overlay icons, keeping them visible over images of varying brightness.
 
 ### JournalFilter
 Filter widget for journal entries with various filtering options.
@@ -34,6 +44,9 @@ Icon component for the journal filter, providing visual feedback for active filt
 
 ### JournalSliverAppBar
 A sliver app bar specifically designed for journal pages with scrolling behavior.
+
+### SettingsPageHeader
+Sliver settings header that adapts to phone, tablet, and desktop layouts. Measures the actual pane width via `SliverLayoutBuilder` (correct on desktop split-pane layouts) and supports a title, optional subtitle, back button, bottom widget, and actions. Used across settings, sync, AI, categories, and other feature pages.
 
 ### SliverTitleBar
 A generic sliver title bar that can be customized for different screens.
@@ -57,21 +70,12 @@ Secondary (outlined) button with Lotti's design system styling. Used for seconda
 ### LottiTertiaryButton
 Tertiary (text) button with Lotti's design system styling. Used for text-only buttons with minimal styling, typically for secondary actions or links.
 
-### RoundedButton
-Basic rounded button with customizable appearance.
-
-### RoundedFilledButton
-Filled rounded button with solid background color.
-
 ## Card Widgets
 
 Located in `/lib/widgets/cards/`
 
 ### EnhancedModernCard
-An enhanced version of ModernBaseCard with additional features like animations and gestures.
-
-### ModalCard
-Card specifically designed for use in modal dialogs with appropriate styling.
+A thin wrapper around `ModernBaseCard` that applies the enhanced styling: it defaults the gradient to `GradientThemes.primaryGradient` and passes `isEnhanced: true`, forwarding `onTap` to the base card.
 
 ### ModernBaseCard
 Base card component following modern design principles. Extended by other card widgets.
@@ -108,14 +112,11 @@ Located in `/lib/widgets/create/`
 ### MeasurementSuggestions
 Widget that provides intelligent suggestions for measurement entries.
 
-### RadialAddTagButtons
-Radial menu interface for adding tags, providing an intuitive circular selection UI.
-
 ## Date/Time Widgets
 
 Located in `/lib/widgets/date_time/`
 
-Note: All timer and date labels across the app use a shared mono tabular style to prevent width “breathing” as digits change. In general, prefer using `monoTabularStyle` from `lib/themes/theme.dart` (tabular figures enabled) for any time strings rendered as `HH:MM` or `HH:MM:SS`.
+Note: Timer and date labels across the app use tabular figures to prevent width “breathing” as digits change. For time strings rendered as `HH:MM` or `HH:MM:SS`, prefer `tabularFigureStyle` from `lib/themes/theme.dart` (keeps the regular UI font and stabilises digits via `numericBadgeFontFeatures`), or apply `numericBadgeFontFeatures` directly. `monoTabularStyle` is reserved for code-style surfaces (JSON payloads, log readouts), not UI time labels.
 
 ### DateTimeBottomSheet
 Bottom sheet for selecting date and time values with a user-friendly interface.
@@ -126,9 +127,6 @@ Form field specifically designed for date and time input with validation.
 ### DateTimeStickyActionBar
 Sticky action bar for date/time related actions, stays visible during scrolling.
 
-### DurationBottomSheet
-Bottom sheet for selecting duration values (hours, minutes, seconds).
-
 ## Event Widgets
 
 Located in `/lib/widgets/events/`
@@ -137,36 +135,30 @@ Located in `/lib/widgets/events/`
 Comprehensive form for creating and editing events with all necessary fields.
 
 ### EventStatusWidget
-Widget displaying the current status of an event (upcoming, ongoing, completed).
+Chip displaying the current status of an event. Renders the `EventStatus` enum value (`tentative`, `planned`, `ongoing`, `completed`, `cancelled`, `postponed`, `rescheduled`, `missed`) as a colored label.
 
-## Layout Widgets
+## Flag Widgets
 
-Located in `/lib/widgets/layouts/`
+Located in `/lib/widgets/flags/`
 
-### SpaceBetweenWrap
-A custom layout widget that behaves like a Row with `MainAxisAlignment.spaceBetween` when children fit on one line, but automatically wraps to multiple lines when they don't.
+### buildLanguageFlag
+Utility function that renders a language flag with consistent country-code overrides for languages whose flag differs from a direct ISO mapping.
 
-**Usage:**
-```dart
-SpaceBetweenWrap(
-  spacing: 16.0,
-  runSpacing: 8.0,
-  children: [
-    Widget1(),
-    Widget2(),
-    Widget3(),
-  ],
-)
-```
+## Form Widgets
 
-**Features:**
-- Distributes children evenly across available width when they fit
-- Automatically wraps to next line when space is insufficient
-- Customizable spacing between items and lines
-- No pixel overflow errors
+Located in `/lib/widgets/form/`
 
-### RenderSpaceBetweenWrap
-The render object implementation for SpaceBetweenWrap. Not typically used directly.
+### LottiFormSection
+Section header with optional icon and description for grouping related form fields.
+
+### LottiSwitchField
+Switch field with consistent styling, supporting title, subtitle, and icon.
+
+### LottiTextField
+Single-line text input following the Lotti design system (labels, hints, prefixes, validation).
+
+### LottiTextArea
+Specialized multiline variant of `LottiTextField` for longer text input.
 
 ## Miscellaneous Widgets
 
@@ -181,6 +173,12 @@ Widget showing the count of flagged items with appropriate styling.
 ### MapWidget
 Interactive map display widget for location-based features.
 
+### RoundedButton
+Thin wrapper around `LottiSecondaryButton` exposing a label-plus-`onPressed` API.
+
+### ZoomWrapper
+Applies a `TextScaler` to its subtree based on a `scale` value (returns the child unchanged when `scale` is 1.0).
+
 ### TaskCounts
 Widget displaying multiple task count statistics.
 
@@ -190,7 +188,7 @@ Individual task count display component.
 ### SidebarTimerSection
 Inline panel surfaced in the desktop sidebar's `aboveSettings` slot whenever a time-recording session is active. Replaces the legacy bottom-anchored floating indicator on desktop.
 
-- Layout: title row (briefcase icon + task title) over a body row with timer icon, monospaced HH:MM:SS, and a circular stop button.
+- Layout: a text-only title row (task title) over a body row with a timer icon, the tabular HH:MM:SS duration, and a circular stop button.
 - Typography: Inter with `numericBadgeFontFeatures` (tabular figures, slashed zero, `cv02`/`cv03`/`cv04` open digits) so 4/6/9 stay legible at small sizes and digits do not breathe.
 - Interactions: tapping the body navigates to the running task (or the timer's journal entry, if not task-linked); tapping the stop button calls `TimeService.stop()`.
 - Idle state: collapses to `SizedBox.shrink` so the slot consumes no vertical space.
@@ -199,7 +197,7 @@ Inline panel surfaced in the desktop sidebar's `aboveSettings` slot whenever a t
 Inline panel surfaced in the desktop sidebar's `aboveSettings` slot whenever an audio recording is active and the recording modal is not visible. It sits above `SidebarTimerSection` and uses the same card radius, padding rhythm, elapsed-time typography, and circular stop affordance.
 
 - Layout: linked task/title fallback over a body row with an emphasized,
-  dBFS-reactive `AudioRecordingOrb`, monospaced HH:MM:SS, and a circular stop
+  dBFS-reactive `AudioRecordingOrb`, tabular HH:MM:SS, and a circular stop
   button.
 - Signal: reads `AudioRecorderState.dBFS`, which is fed by the `record` package amplitude stream for standard recording and by realtime PCM amplitude calculation for realtime recording. The same speech-weighted signal value drives the orb and the card frame's red border/shadow intensity.
 - Interactions: tapping the body reopens `AudioRecordingModal`; tapping the stop button calls `AudioRecorderController.stop()` or `stopRealtime()` based on the active recording mode.
@@ -208,37 +206,37 @@ Inline panel surfaced in the desktop sidebar's `aboveSettings` slot whenever an 
 ### TimeRecordingIndicator
 Visual indicator showing whether time recording is currently active. Used on **mobile** only — it sits in the bottom-nav overlay above the navigation bar. On desktop the running timer is rendered by `SidebarTimerSection` instead.
 
-- Typography: Uses `monoTabularStyle` with tabular figures to ensure the duration text does not jitter as digits change.
-- Dimensions: Matches width/height with the audio recording indicator to keep overlays consistent.
+- Typography: Uses `tabularFigureStyle` with tabular figures to ensure the duration text does not jitter as digits change.
+- Dimensions: Matches its height (`AudioRecordingIndicatorConstants.indicatorHeight`) with the audio recording indicator to keep overlays consistent.
 - Sizing: Font size aligns with `fontSizeMedium`.
 
 ### TimeSpanSegmentedControl
-Segmented control for selecting time spans (day, week, month, year).
+Segmented control for selecting a time span in days. The default segments are `[30, 90, 180, 365]`, rendered with labels like `30 days` (or `30d` on narrow widths).
 
 ## Modal Widgets
 
 Located in `/lib/widgets/modal/`
 
-### AnimatedModalCardItem
-Card item with animation support for use in modals.
-
 ### AnimatedModalItem
-Base class for animated modal items with common animation logic.
+Stateful modal item that applies press/hover animation logic to its child.
 
 ### AnimatedModalItemController
-Controller for managing animated modal item states and animations.
+`ChangeNotifier` controller for managing animated modal item state and animations.
 
-### AnimatedModalItemWithIcon
-Animated modal item that includes an icon with the content.
+### ModalSheetAction
+Generic (`ModalSheetAction<T>`) data class describing an action presented in a modal action sheet.
 
-### ModernModalActionItem
-Action item for modals following modern design principles.
+### ModalUtils
+Helper utilities for presenting modal sheets/dialogs.
 
-### ModernModalEntryTypeItem
-Modal item for selecting entry types with modern styling.
+### showConfirmationModal
+Function presenting a single-page confirmation modal with a customizable message, optional title, confirm/cancel labels, and a destructive flag. Returns a `Future<bool>` resolving to the user's choice.
 
-### ModernModalPromptItem
-Prompt item for modals with modern design aesthetics.
+### showModalActionSheet
+Generic function (`showModalActionSheet<T>`) presenting a bottom-sheet action list built from `ModalSheetAction<T>` entries. Returns the value of the selected action (`Future<T?>`).
+
+### SizedWoltDialogType
+Custom `WoltDialogType` that renders at a configurable target width (`preferredWidth`, shrinking to fit less the standard padding on narrower screens) with a screen-proportional max height (80% of available height, floored at 360).
 
 ## Navigation Bar Widgets
 
@@ -268,15 +266,12 @@ Complete filter component for entry types.
 ### FilterChoiceChip
 Generic choice chip for filter options.
 
-### SearchWidget
+### LottiSearchBar
 Main search widget with text input and search functionality.
 
 ## Selection Widgets
 
 Located in `/lib/widgets/selection/`
-
-### RadioSelectionIndicator
-Radio button style selection indicator for single-choice options.
 
 ### SelectionModalContent
 Content wrapper for selection modals with consistent styling.
@@ -293,27 +288,30 @@ Save button for confirming selections in modals.
 ### _DefaultSelectionIndicator
 Default selection indicator implementation (internal use).
 
-## Sync/Matrix Widgets
+### UnifiedToggle
+Unified toggle/switch component providing a single source of truth for selection behavior across the app. Supports `UnifiedToggleVariant` (`normal`, `warning`, `priority`, `archived`, `cupertino`), an optional custom active color, semantic labels, and an enabled/disabled state.
 
-Located in `/lib/widgets/sync/matrix/`
+### UnifiedToggleField
+`UnifiedToggle` with an integrated title/subtitle label for form-like contexts, matching the styling of existing form switch implementations.
 
-### DeviceCard
-Card displaying device information for sync settings.
+### UnifiedAiToggleField
+AI-specific toggle field matching the AI Settings design language (gradient container, label, optional description and icon).
 
-### IncomingVerificationModal
-Modal for handling incoming verification requests.
+## UI Widgets
 
-### IncomingVerificationWrapper
-Wrapper component for incoming verification flow.
+Located in `/lib/widgets/ui/`
 
-### StatusIndicator
-Visual indicator for sync/connection status.
+### EmptyStateWidget
+Reusable empty-state display with icon, title, and description.
 
-### VerificationEmojisRow
-Row displaying verification emojis for secure verification.
+### ErrorStateWidget
+Reusable error-state display supporting a full decorated container or a compact inline error bar.
 
-### VerificationModal
-Complete modal for the verification process.
+### FormBottomBar
+Standard bottom bar for forms with shadow, spacing, and left (typically destructive) and right (action) buttons.
+
+### LottiAnimatedCheckbox
+Animated checkbox with label, optional subtitle, proper touch targets, and disabled-state support.
 
 ## Usage Guidelines
 

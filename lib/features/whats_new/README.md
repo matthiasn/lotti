@@ -44,6 +44,8 @@ lib/features/whats_new/
 │   └── whats_new_controller.dart
 ├── ui/
 │   ├── whats_new_modal.dart
+│   ├── whats_new_hero_banner.dart      # part of whats_new_modal.dart
+│   ├── whats_new_navigation_footer.dart # part of whats_new_modal.dart
 │   └── whats_new_indicator.dart
 └── util/
     └── whats_new_markdown_parser.dart
@@ -66,7 +68,18 @@ whats-new/
 └── ...
 ```
 
-Each `index.json` entry maps to `WhatsNewRelease` and must provide:
+`index.json` is a top-level object with a `releases` array key. If that key is
+absent, `fetchIndex()` returns `null` and the feature shows nothing.
+
+```json
+{
+  "releases": [
+    { "version": "...", "date": "...", "title": "...", "folder": "..." }
+  ]
+}
+```
+
+Each entry in the `releases` array maps to `WhatsNewRelease` and must provide:
 
 - `version`
 - `date`
@@ -215,15 +228,16 @@ What stays local:
 
 ## Failure Model
 
-Failures degrade to "show nothing" rather than "break startup":
+Index and content fetch failures degrade to "show nothing" rather than "break startup":
 
 - timeout
 - network error
 - malformed `index.json`
 - unexpected response payloads
-- missing or broken images
 
 Exceptions are logged. The controller falls back to an empty `WhatsNewState`, and the indicator/modal simply have nothing to show.
+
+Image failures are handled separately at the UI layer and never reach the controller. A missing or failed banner image renders the `_BannerFallback` gradient (with an `auto_awesome` icon) instead, and banner/inline-image precaching failures are silently ignored. The release content still renders in full.
 
 ## Authoring Workflow
 

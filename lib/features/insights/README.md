@@ -12,8 +12,8 @@ entries with instantaneous (sub-200ms, measured ~5ms) range switching.
 ```mermaid
 flowchart LR
     DB[(journal table)] -->|"insightsTimeRows()\nslim 3-column query,\nno serialized blob"| REPO[InsightsRepository]
-    NOTIF[UpdateNotifications\nTEXT_ENTRY · TASK] --> BUCKETS
-    REPO --> BUCKETS["insightsBucketsProvider\nStreamProvider.family(windowStartDay)\nnotificationDrivenItemStream + cacheFor"]
+    NOTIF[UpdateNotifications\nTEXT_ENTRY · TASK · LINK_CHANGED · PRIVATE_FLAG_TOGGLED] --> BUCKETS
+    REPO --> BUCKETS["insightsBucketsProvider\nStreamProvider.family(InsightsWindow{startDay, endYear})\nnotificationDrivenItemStream + cacheFor"]
     BUCKETS --> PAGE[TimeAnalysisPage]
     RANGE[InsightsRangeController\npreset + custom, clock-injected] --> PAGE
     PREFS[InsightsPreferencesController\nfocus categories, SettingsDb JSON] --> PAGE
@@ -80,7 +80,7 @@ stateDiagram-v2
     Ready --> Ready: preset switch within W\n(zero DB, in-memory slice)
     Ready --> LoadingW2: range needs another year\n(new family instance W2)
     LoadingW2 --> Ready: buckets(W2)\nW stays cached (cacheFor 5min)
-    Ready --> Refetching: TEXT_ENTRY / TASK notification
+    Ready --> Refetching: entry/task/link/private notification
     Refetching --> Ready: equal data → no re-emit (no flash)\nchanged data → rebuild
 ```
 
@@ -112,7 +112,8 @@ stateDiagram-v2
 - Chart fills are **muted derivations** of the user-picked category colors
   (hue preserved, saturation/lightness clamped per theme brightness); the
   saturated original appears only in small swatches. Cumulative bands carry
-  lightened edge strokes so adjacent fills stay separable.
+  contrast edge strokes (lightened in dark theme, darkened in light theme) so
+  adjacent fills stay separable.
 - Tooltips read out every non-zero band for the hovered bucket, largest
   first, with the bucket total in the header.
 - The table is the precise lookup: swatch · category · total (`h:mm`, mono,

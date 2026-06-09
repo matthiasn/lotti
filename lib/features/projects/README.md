@@ -17,14 +17,14 @@ and scheduled digests instead of just acting as a nicer folder.
 
 ## Feature Flag
 
-The visible project experience is controlled by `enableProjects`.
+The visible project experience is controlled by `enableProjectsFlag`
+(config key `enable_projects`).
 
 When the flag is off:
 
 - no top-level projects tab
 - no category projects section
 - no task project chip
-- no project health header on tasks
 
 Routes may still exist, but the normal ways into the feature are hidden.
 
@@ -323,7 +323,7 @@ showed up when fast-scrolling long project task lists.
 
 - title in `bodySmall` with regular weight
 - optional agent-authored `oneLiner` subtitle in `caption` with low-emphasis text
-- a 4 px gap between title and subtitle, then a 16 px gap before metadata
+- a `step1` (2 px) gap between title and subtitle, then a `step4` (12 px) gap before metadata
 - metadata on the next line
 - duration text in `bodySmall`
 - status glyph tinted by task state
@@ -349,8 +349,11 @@ re-enter the page.
 Projects surface in:
 
 - category details via `CategoryProjectsSection`
-- task metadata via the `DesktopTaskHeaderConnector` project row, which opens `ProjectSelectionModalContent` through `ModalUtils.showSinglePageModal`
-- the tasks page via `ProjectHealthHeader`
+- task metadata via the `DesktopTaskHeaderConnector` project row, which renders
+  the linked project as a `DesktopTaskHeaderProject` crumb (project title with a
+  folder icon) and opens `ProjectSelectionModalContent` through
+  `ModalUtils.showSinglePageModal`. No project health is surfaced on the task
+  page.
 
 ## When the Project Agent Actually Wakes
 

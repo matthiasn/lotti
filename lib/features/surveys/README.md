@@ -112,7 +112,7 @@ That last part matters because the runner does not know anything survey-specific
 flowchart TD
   TaskResult["RPTaskResult.results"] --> Question["Question identifier"]
   Question --> Answer["results['answer']"]
-  Answer --> Value["choice.value"]
+  Answer --> Value["choice.firstOrNull?.value (List of RPChoice; RPImageChoice uses choice.value)"]
   Value --> Bucket["scoreDefinitions bucket"]
   Bucket --> Sum["sum values"]
   Sum --> SurveyData["SurveyData(calculatedScores, taskResult, scoreDefinitions)"]

@@ -57,31 +57,39 @@ So yes, Settings is thin. Just not spiritually pure.
 lib/features/settings/
 ├── constants/
 │   └── theming_settings_keys.dart
+├── state/
+│   └── zoom_controller.dart
+├── widgetbook/
+│   └── settings_widgetbook.dart
 └── ui/
     ├── confirmation_progress_modal.dart
     ├── pages/
     │   ├── settings_page.dart
+    │   ├── settings_root_page.dart
     │   ├── advanced/
     │   ├── dashboards/
     │   ├── habits/
     │   ├── measurables/
+    │   ├── outbox/
     │   ├── advanced_settings_page.dart
     │   ├── definitions_list_page.dart
     │   ├── definitions_page.dart
     │   ├── flags_page.dart
+    │   ├── form_text_field.dart
     │   ├── health_import_page.dart
     │   ├── sliver_box_adapter_page.dart
     │   └── theming_page.dart
     └── widgets/
         ├── dashboards/
         ├── form/
-        ├── habits/
-        └── measurables/
+        ├── entity_detail_card.dart
+        ├── settings_card.dart
+        └── settings_icon.dart
 ```
 
 The structure mirrors the actual role of the feature:
 
-- `pages/` contains both landing pages and a few editors
+- `pages/` contains both landing pages and a few editors; `settings_root_page.dart` forks between the mobile single page and the desktop tree-nav layout
 - `widgets/` keeps the settings area visually coherent
 - `constants/` is tiny and currently only exposes theming preference keys
 
@@ -89,7 +97,34 @@ The structure mirrors the actual role of the feature:
 
 The canonical route owner is [`lib/beamer/locations/settings_location.dart`](../../beamer/locations/settings_location.dart).
 
-The important implementation detail is that Settings builds *stacks*, not single pages. Parent pages stay in the Beamer stack for many subroutes.
+`SettingsLocation.buildPages` has a hard desktop/mobile fork keyed on
+`NavService.isDesktopMode`:
+
+```mermaid
+flowchart TD
+  Route["Incoming /settings/... path"] --> Location["SettingsLocation.buildPages"]
+  Location --> Fork{"NavService.isDesktopMode?"}
+  Fork -->|desktop| Desktop["Single BeamPage: SettingsRootPage<br/>(renders SettingsV2Page tree nav)<br/>+ desktopSelectedSettingsRoute notifier"]
+  Fork -->|mobile| MobileStack["Beamer page stack"]
+```
+
+### Desktop (Settings V2 master/detail)
+
+On desktop, `buildPages` pushes exactly **one** page —
+[`SettingsRootPage`](ui/pages/settings_root_page.dart), which renders
+[`SettingsV2Page`](../settings_v2/ui/pages/settings_v2_page.dart) (the
+tree-nav master/detail UI in the separate
+[`lib/features/settings_v2/`](../settings_v2/) feature). Instead of
+stacking pages, it stores the sub-route in
+`NavService.desktopSelectedSettingsRoute` and routes detail content into
+the right-hand pane via that `ValueNotifier`. The stack model and stack
+examples below apply to the mobile branch only.
+
+### Mobile (page stack)
+
+On mobile the important implementation detail is that Settings builds
+*stacks*, not single pages. Parent pages stay in the Beamer stack for many
+subroutes.
 
 ```mermaid
 flowchart TD
@@ -150,8 +185,9 @@ flowchart LR
   Definitions --> Dashboards["Dashboards"]
   Definitions --> Measurables["Measurables"]
 
-  Categories --> Projects["Project create/detail routes"]
+  Categories --> Projects["Project detail route (/settings/projects/:projectId)"]
   Sync --> MatrixMaint["Matrix maintenance"]
+  Sync --> NodeProfile["Node profile"]
   Sync --> Outbox["Outbox monitor"]
   Sync --> Conflicts["Conflicts page via /settings/advanced/conflicts"]
   Sync --> Stats["Sync stats"]
@@ -169,10 +205,10 @@ One slightly awkward but code-accurate detail: the Sync landing page links to co
 
 [`ui/pages/settings_page.dart`](ui/pages/settings_page.dart) is not a static list. It is assembled from live state:
 
-- `configFlagProvider(...)` gates Agents and What's New at the root level
+- `configFlagProvider(enableWhatsNewFlag)` gates What's New at the root level; the Agents tile is always shown
 - Habits and Dashboards gating moved into [`ui/pages/definitions_page.dart`](ui/pages/definitions_page.dart) — the root entry for Definitions is unconditional because Categories, Labels, and Measurables are always visible
-- `JournalDb.watchConfigFlag(enableMatrixFlag)` decides whether Sync is shown
-- the Agents tile overlays a pending ritual indicator
+- `configFlagProvider(enableMatrixFlag)` decides whether Sync is shown
+- the Agents tile overlays a pending ritual indicator (`RitualPendingIndicator`)
 - the What's New feature appears both as an app-bar action and as a settings card when enabled
 
 The landing page is therefore equal parts navigation and feature census.
@@ -312,7 +348,7 @@ Key facts:
 - the `/settings` landing page only shows Sync when `enableMatrixFlag` is on
 - [`lib/features/sync/ui/widgets/sync_feature_gate.dart`](../sync/ui/widgets/sync_feature_gate.dart) guards sync pages and redirects back to `/settings` if sync is disabled
 - the sync landing page is [`lib/features/sync/ui/sync_settings_page.dart`](../sync/ui/sync_settings_page.dart)
-- sync maintenance, outbox, stats, and backfill each get their own leaf routes
+- sync maintenance, node profile, outbox, stats, and backfill each get their own leaf routes
 
 This split keeps app-wide maintenance in Advanced and sync-specific maintenance with Sync, which is the correct kind of boring.
 
@@ -324,7 +360,7 @@ There are two common interaction patterns:
 
 ```mermaid
 flowchart LR
-  Card["Settings card tap"] --> Confirm["showConfirmationModal(...)"]
+  Card["Settings card tap"] --> Confirm["Single-step confirmation prompt"]
   Confirm --> Action["Immediate destructive action"]
 
   Card --> MultiStep["ConfirmationProgressModal.show(...)"]
@@ -334,11 +370,20 @@ flowchart LR
 
 ### Immediate confirmation flows
 
-Used for actions such as:
+These actions run a single confirmation prompt and then act immediately, but
+they do not all use the same confirmation widget:
 
-- deleting editor, agent, or sync databases
-- retrying or deleting outbox items
-- habit and measurable delete actions
+- `showConfirmationModal(...)` is used for deleting editor and agent databases
+  ([`ui/pages/advanced/maintenance_page.dart`](ui/pages/advanced/maintenance_page.dart)),
+  deleting the sync database
+  ([`lib/features/sync/ui/matrix_sync_maintenance_page.dart`](../sync/ui/matrix_sync_maintenance_page.dart)),
+  and retrying or deleting outbox items
+  ([`lib/features/sync/ui/pages/outbox/outbox_monitor_page.dart`](../sync/ui/pages/outbox/outbox_monitor_page.dart))
+- `showModalActionSheet(...)` with a destructive `ModalSheetAction` is used for
+  habit deletes
+  ([`ui/pages/habits/habit_details_page.dart`](ui/pages/habits/habit_details_page.dart))
+  and measurable deletes
+  ([`ui/pages/measurables/measurable_details_page.dart`](ui/pages/measurables/measurable_details_page.dart))
 
 ### Confirmation + progress flows
 
@@ -367,6 +412,7 @@ This is the route shape that currently matters in practice:
 - `/settings/measurables/...`
 - `/settings/sync`
 - `/settings/sync/matrix/maintenance`
+- `/settings/sync/node-profile`
 - `/settings/sync/outbox`
 - `/settings/sync/stats`
 - `/settings/sync/backfill`
@@ -380,7 +426,7 @@ This is the route shape that currently matters in practice:
 - `/settings/advanced/conflicts/...`
 - `/settings/advanced/maintenance`
 
-The notable oddball is `/settings/projects/...`: there is no top-level Settings tile for projects, but project create/detail routes still live under the settings namespace because category and project management meet there.
+The notable oddball is `/settings/projects/...`: there is no top-level Settings tile for projects, but the project **detail** route (`/settings/projects/:projectId`) still lives under the settings namespace because category and project management meet there. The project **create** flow does not — it lives under `ProjectsLocation` at `/projects/create`, and `SettingsLocation` explicitly excludes the reserved `create` slug so a stale `/settings/projects/create` deep link cannot render a detail page against a non-id slug.
 
 ## Notes For Future Changes
 

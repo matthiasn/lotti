@@ -11,7 +11,7 @@ If that permutation-invariance holds, the "log is the agent / convergent DAG"
 design is real. Foundation A is implemented: PR 3 added the storage adapter and
 shadow comparison, PR 4 uses `reconciledAgentState` as the wake-start read, PR 5
 uses the content-addressed capture/compaction helpers for wake memory, and PR 6
-uses `join_plan.dart` for flag-gated lazy fork healing.
+uses `join_plan.dart` for flag-gated eager wake-start fork healing.
 
 ## Files
 
@@ -25,7 +25,7 @@ uses `join_plan.dart` for flag-gated lazy fork healing.
 | `shadow_projection.dart` | `compareShadowProjection()` + `ShadowProjectionReport`/`Status` — non-throwing compare of the projection against the live head. |
 | `derived_agent_state.dart` | `deriveAgentState()` + `DerivedAgentState` — the storage-coupled full-state fold (kernel + watermarks + active slots); `compareDerivedAgentState()` + `DerivedStateReport` — full-state shadow compare (PR 4 B5); `reconcileAgentState()` — folds the log over the cached row for the wake-start read cutover (PR 4 B6). |
 | `content_digest.dart` | `ContentDigest.of()` — versioned (`sha256-v1:`) content-addressed digest over canonical JSON; the address for captured inputs, compaction artifacts, and join ids (PR 5 / ADR 0017 §6 / ADR 0020). |
-| `input_capture.dart` | `RenderedSource`/`CapturedPayload`/`CaptureReference`/`CaptureResult`; `captureSources()` + `reconcileCapture()` — fold a wake's rendered user content into deduplicated, content-addressed per-source captures (PR 5 / ADR 0020). |
+| `input_capture.dart` | `RenderedSource`/`CapturedPayload`/`CaptureReference`/`CaptureResult`/`CaptureDelta`; `captureSources()` (→ `CaptureResult`) + `reconcileCapture()` (→ `CaptureDelta`) — fold a wake's rendered user content into deduplicated, content-addressed per-source captures (PR 5 / ADR 0020). |
 | `input_frontier.dart` | `projectInputFrontier()` + `inputFrontierDigests()` — the active input frontier (latest-wins over `messagePayload` links and retraction markers). |
 | `input_events.dart` | `InputEvent` (+ `.inline`/`.inlineDeferred`), `EventPosition`, `InputEventLog`, `projectInputEvents()` — the append-only event-log read model: `messagePayload` links, observations, and retraction markers projected as one position-ordered stream. |
 | `decision_events.dart` | `decisionEventsFromLedger()` + `formatResolvedLedgerLine()` — resolved proposal verdicts projected as inline log events so they fold/interleave on the same substrate. |
@@ -200,8 +200,11 @@ Pure logic → Glados property tests (tagged `glados`) plus example/edge tests:
 - **Projection determinism & multi-head** — equal projection under any shuffle.
 - **Diagnostics** — well-formed DAGs yield none; injected inconsistencies and
   dangling parents are surfaced.
-- **Two-device convergence** (`projection_convergence_test.dart`) — the shared
-  harness reused by PRs 3–7.
+- **Two-device convergence** (`projection_convergence_test.dart`) — Glados
+  convergence property over the shared `projection_test_fixtures.dart`
+  generators (full-set convergence under independent shuffles) plus
+  partially-overlapping device-view examples (diverge while missing events, then
+  converge; disjoint partial views converge once unioned).
 - **Shadow compare** (`shadow_projection_test.dart`) — example statuses plus
   properties: projected heads equal the kernel heads, the status is the
   biconditional of `liveHeadId` vs the projected tips, and the report is
