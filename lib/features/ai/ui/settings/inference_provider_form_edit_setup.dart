@@ -47,10 +47,16 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
       final action = await performFtueSetupWorkflow(
         context: context,
         ref: ref,
-        providerType: widget.providerType,
+        // Drive the wizard from the persisted config's provider type (not the
+        // editable form state) so a type/config mismatch can't seed the wrong
+        // setup artifacts when the form was changed without saving.
+        providerType: config.inferenceProviderType,
         config: config,
         setupService: setupService,
-        providerName: _providerName(context),
+        providerName: aiProviderDisplayName(
+          type: config.inferenceProviderType,
+          messages: context.messages,
+        ),
         isMounted: () => mounted,
       );
 
@@ -59,6 +65,26 @@ class _AiSetupSectionState extends ConsumerState<_AiSetupSection> {
       // provider form they just re-ran the wizard from.
       if (action == AiProviderSetupResultAction.startUsingAi && mounted) {
         await popAiSettingsDetail(context);
+      }
+    } catch (error, stackTrace) {
+      // Mirror the save path (see handleSave in inference_provider_edit_page):
+      // forward the failure to the logging service and surface a toast instead
+      // of letting repository/workflow exceptions escape the button callback.
+      try {
+        getIt<DomainLogger>().error(
+          LogDomain.ai,
+          error,
+          stackTrace: stackTrace,
+          subDomain: 'INFERENCE_PROVIDER_EDIT_PAGE.runFtueSetup',
+        );
+      } catch (_) {
+        // LoggingService not available (e.g., in tests) — ignore.
+      }
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.commonError,
+        );
       }
     } finally {
       if (mounted) {

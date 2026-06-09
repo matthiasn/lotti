@@ -234,6 +234,7 @@ class _MonthHeader extends StatelessWidget {
                 geometry: geometry,
                 icon: Icons.chevron_left_rounded,
                 color: palette.accent,
+                tooltip: MaterialLocalizations.of(context).previousMonthTooltip,
                 onPressed: onPreviousPressed,
               ),
               SizedBox(width: context.designTokens.spacing.step1),
@@ -241,6 +242,7 @@ class _MonthHeader extends StatelessWidget {
                 geometry: geometry,
                 icon: Icons.chevron_right_rounded,
                 color: palette.accent,
+                tooltip: MaterialLocalizations.of(context).nextMonthTooltip,
                 onPressed: onNextPressed,
               ),
             ],
@@ -256,17 +258,20 @@ class _HeaderIconButton extends StatelessWidget {
     required this.geometry,
     required this.icon,
     required this.color,
+    required this.tooltip,
     this.onPressed,
   });
 
   final _TimeCalendarGeometry geometry;
   final IconData icon;
   final Color color;
+  final String tooltip;
   final VoidCallback? onPressed;
 
   @override
   Widget build(BuildContext context) {
     return IconButton(
+      tooltip: tooltip,
       padding: EdgeInsets.zero,
       constraints: BoxConstraints.tightFor(
         width: geometry.headerIconConstraint,
