@@ -353,7 +353,7 @@ List<PlannedBlock> _applyItem(
     case 'add_block':
       out.add(
         PlannedBlock(
-          id: 'block_${DayAgentPlanService._uuid.v4()}',
+          id: 'block_${_uuid.v4()}',
           categoryId: args['categoryId'] as String,
           startTime: _argDate(args, 'toStart')!,
           endTime: _argDate(args, 'toEnd')!,

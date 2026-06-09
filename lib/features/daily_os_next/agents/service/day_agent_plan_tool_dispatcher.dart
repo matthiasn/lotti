@@ -3,7 +3,8 @@ part of 'day_agent_plan_service.dart';
 /// Tool-call dispatch handlers of [DayAgentPlanService]; each translates
 /// raw tool arguments into the corresponding service call and wraps the
 /// result for the agent loop.
-extension DayAgentPlanToolDispatcher on DayAgentPlanService {
+mixin _DayAgentPlanToolDispatcher on _DayAgentPlanServiceBase {
+  @override
   Future<Map<String, Object?>> _draftDayPlanTool(
     String agentId,
     Map<String, dynamic> args,
@@ -30,6 +31,7 @@ extension DayAgentPlanToolDispatcher on DayAgentPlanService {
     return _planJson(plan);
   }
 
+  @override
   Future<Map<String, Object?>> _summarizeRecentPatternsTool(
     String agentId,
     Map<String, dynamic> args,
@@ -45,6 +47,7 @@ extension DayAgentPlanToolDispatcher on DayAgentPlanService {
     };
   }
 
+  @override
   Future<Map<String, Object?>> _proposePlanDiffTool({
     required String agentId,
     required String threadId,
@@ -72,6 +75,71 @@ extension DayAgentPlanToolDispatcher on DayAgentPlanService {
             'reason': changeSet.items[i].args['reason'],
           },
       ],
+    };
+  }
+
+  @override
+  Future<Map<String, Object?>> _acceptPlanDiffTool({
+    required String agentId,
+    required Map<String, dynamic> args,
+  }) async {
+    final changeSet = await acceptPlanDiff(
+      agentId: agentId,
+      changeSetId: _requiredString(args, 'changeSetId'),
+      itemIndices: _optionalIntList(args['itemIndices']),
+    );
+    return _resolutionSummary(changeSet);
+  }
+
+  @override
+  Future<Map<String, Object?>> _revertPlanDiffTool({
+    required String agentId,
+    required Map<String, dynamic> args,
+  }) async {
+    final changeSet = await revertPlanDiff(
+      agentId: agentId,
+      changeSetId: _requiredString(args, 'changeSetId'),
+      itemIndices: _optionalIntList(args['itemIndices']),
+    );
+    return _resolutionSummary(changeSet);
+  }
+
+  @override
+  Future<Map<String, Object?>> _commitDayTool({
+    required String agentId,
+    required Map<String, dynamic> args,
+  }) async {
+    final committedPlan = await commitDay(
+      agentId: agentId,
+      dayId: _requiredString(args, 'dayId'),
+    );
+    final status = committedPlan.data.status;
+    final committedAt = status is DayPlanStatusCommitted
+        ? status.committedAt
+        : null;
+    return <String, Object?>{
+      'planId': committedPlan.id,
+      'dayId': committedPlan.dayId,
+      'status': 'committed',
+      'committedAt': committedAt?.toIso8601String(),
+      'blockCount': committedPlan.data.plannedBlocks.length,
+    };
+  }
+
+  @override
+  Future<Map<String, Object?>> _uncommitDayTool({
+    required String agentId,
+    required Map<String, dynamic> args,
+  }) async {
+    final plan = await uncommitDay(
+      agentId: agentId,
+      dayId: _requiredString(args, 'dayId'),
+    );
+    return <String, Object?>{
+      'planId': plan.id,
+      'dayId': plan.dayId,
+      'status': 'draft',
+      'blockCount': plan.data.plannedBlocks.length,
     };
   }
 }

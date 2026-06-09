@@ -71,9 +71,7 @@ PlannedBlock _parsePlannedBlock({
     );
   }
   return PlannedBlock(
-    id:
-        _optionalString(data['id']) ??
-        'block_${DayAgentPlanService._uuid.v4()}',
+    id: _optionalString(data['id']) ?? 'block_${_uuid.v4()}',
     categoryId: categoryId,
     startTime: start,
     endTime: end,
