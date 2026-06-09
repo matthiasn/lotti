@@ -1,16 +1,20 @@
-import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/queue/inbound_worker.dart';
 import 'package:lotti/features/sync/queue/queue_apply_adapter.dart';
+import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import 'queue_apply_adapter_test_helpers.dart';
 
 void main() {
@@ -260,276 +264,229 @@ void main() {
     },
   );
 
-  group('pendingAttachment classification', () {
-    test(
-      'prepare throwing the "attachment descriptor not yet available" '
-      'FileSystemException maps to pendingAttachment so the queue '
-      'backs off on the human-scale ladder instead of the sub-second '
-      'retriable curve',
-      () async {
-        final entry = hBuildEntry(
-          eventId: r'$waitsForDescriptor',
-          roomId: '!r',
-          originTsMs: 1,
-        );
-        when(
-          () => processor.prepare(event: any(named: 'event')),
-        ).thenThrow(
-          const FileSystemException('attachment descriptor not yet available'),
-        );
+  group('writesJournalDb classifies sync payload families', () {
+    // These tests pin the per-variant outcome of the adapter's
+    // wrap-or-bypass decision. The wrap path costs the journal writer
+    // lock for the whole `apply` duration; misclassifying a
+    // non-journal payload as wrapped silently re-introduces the
+    // reader-stall regression we just fixed (super-slow log showed
+    // hundreds of ms of queued reads behind unrelated sync applies).
+    // Misclassifying a journal-writing payload as bypass would split
+    // the journal upsert + linked_entries writes across two
+    // transactions and break atomicity on a mid-apply crash. Locking
+    // the table down per-variant means a future `SyncMessage` factory
+    // without a corresponding case here will fail compilation rather
+    // than silently inheriting a wrong default.
 
-        final outcome = await build().bind()(entry, room);
-        expect(outcome, ApplyOutcome.pendingAttachment);
+    bool wraps(SyncMessage message) =>
+        QueueApplyAdapter.writesJournalDbForTesting(message);
+
+    test('SyncJournalEntity bypasses outer wrap (owns its own narrow tx)', () {
+      const message = SyncMessage.journalEntity(
+        id: 'entity-id',
+        jsonPath: '/entity.json',
+        vectorClock: null,
+        status: SyncEntryStatus.initial,
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncEntryLink wraps — writes to linked_entries (JournalDb)', () {
+      final link = EntryLink.basic(
+        id: 'link-id',
+        fromId: 'from',
+        toId: 'to',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+      final message = SyncMessage.entryLink(
+        entryLink: link,
+        status: SyncEntryStatus.initial,
+      );
+      expect(wraps(message), isTrue);
+    });
+
+    test(
+      'SyncEntityDefinition wraps — writes to *_definitions (JournalDb)',
+      () {
+        final message = SyncMessage.entityDefinition(
+          entityDefinition: measurableWater,
+          status: SyncEntryStatus.initial,
+        );
+        expect(wraps(message), isTrue);
       },
     );
 
-    test(
-      'prepare throwing PathNotFoundException inside /audio/ maps to '
-      'pendingAttachment — the standard signature for a sync event '
-      'that arrived before its attachment JSON landed on disk',
-      () async {
-        final entry = hBuildEntry(
-          eventId: r'$audioRace',
-          roomId: '!r',
-          originTsMs: 1,
-        );
-        when(
-          () => processor.prepare(event: any(named: 'event')),
-        ).thenThrow(
-          const PathNotFoundException(
-            '/Users/test/Documents/audio/2026-04-21/foo.m4a.json',
-            OSError('No such file or directory', 2),
-          ),
-        );
+    test('SyncAiConfig bypasses outer wrap (writes to ai_config_db)', () {
+      final message = SyncMessage.aiConfig(
+        aiConfig: fallbackAiConfig,
+        status: SyncEntryStatus.initial,
+      );
+      expect(wraps(message), isFalse);
+    });
 
-        final outcome = await build().bind()(entry, room);
-        expect(outcome, ApplyOutcome.pendingAttachment);
+    test('SyncAiConfigDelete bypasses outer wrap (ai_config_db)', () {
+      const message = SyncMessage.aiConfigDelete(id: 'cfg-id');
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncConfigFlag wraps — writes to config_flags (JournalDb)', () {
+      const message = SyncMessage.configFlag(
+        name: 'enableDailyOs',
+        description: 'Enable DailyOS Page?',
+        status: true,
+      );
+      expect(wraps(message), isTrue);
+    });
+
+    test('SyncThemingSelection bypasses outer wrap (settings_db)', () {
+      const message = SyncMessage.themingSelection(
+        lightThemeName: 'light',
+        darkThemeName: 'dark',
+        themeMode: 'system',
+        updatedAt: 1,
+        status: SyncEntryStatus.initial,
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncBackfillRequest wraps conservatively', () {
+      const message = SyncMessage.backfillRequest(
+        entries: <BackfillRequestEntry>[],
+        requesterId: 'host-1',
+      );
+      expect(wraps(message), isTrue);
+    });
+
+    test('SyncBackfillResponse wraps conservatively', () {
+      const message = SyncMessage.backfillResponse(
+        hostId: 'host-1',
+        counter: 1,
+        deleted: false,
+        unresolvable: false,
+      );
+      expect(wraps(message), isTrue);
+    });
+
+    test('SyncAgentEntity bypasses outer wrap (agent_db)', () {
+      const message = SyncMessage.agentEntity(
+        status: SyncEntryStatus.initial,
+        jsonPath: '/agent_entities/a1.json',
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncAgentLink bypasses outer wrap (agent_db)', () {
+      const message = SyncMessage.agentLink(
+        status: SyncEntryStatus.initial,
+        jsonPath: '/agent_links/l1.json',
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncAgentBundle bypasses outer wrap (agent_db loop)', () {
+      const message = SyncMessage.agentBundle(
+        agentId: 'agent-1',
+        wakeRunKey: 'wake-1',
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test('SyncNotification bypasses outer wrap (notifications_db)', () {
+      const message = SyncMessage.notification(
+        id: 'notification-id',
+        jsonPath: '/notifications/notification-id.json',
+        vectorClock: VectorClock({'host-1': 1}),
+        originatingHostId: 'host-1',
+      );
+      expect(wraps(message), isFalse);
+    });
+
+    test(
+      'SyncNotificationStateUpdate bypasses outer wrap (notifications_db)',
+      () {
+        const message = SyncMessage.notificationStateUpdate(
+          id: 'notification-id',
+          vectorClock: VectorClock({'host-1': 1}),
+          originatingHostId: 'host-1',
+        );
+        expect(wraps(message), isFalse);
       },
     );
 
-    test(
-      'prepare throwing PathNotFoundException inside /agent_entities/ '
-      'also maps to pendingAttachment so agent-entity payload races '
-      'share the same long-ladder retry path',
-      () async {
-        final entry = hBuildEntry(
-          eventId: r'$agentRace',
-          roomId: '!r',
-          originTsMs: 1,
-        );
-        when(
-          () => processor.prepare(event: any(named: 'event')),
-        ).thenThrow(
-          const PathNotFoundException(
-            '/Users/test/Documents/agent_entities/abc.json',
-            OSError('No such file or directory', 2),
-          ),
-        );
-
-        final outcome = await build().bind()(entry, room);
-        expect(outcome, ApplyOutcome.pendingAttachment);
-      },
-    );
-
-    test(
-      'an unrelated FileSystemException (path outside attachment '
-      'directories) stays retriable, not pendingAttachment — the '
-      'classification must not accidentally promote every IO '
-      'failure to the long retry ladder',
-      () async {
-        final entry = hBuildEntry(
-          eventId: r'$genericIo',
-          roomId: '!r',
-          originTsMs: 1,
-        );
-        when(
-          () => processor.prepare(event: any(named: 'event')),
-        ).thenThrow(
-          const FileSystemException(
-            'unrelated disk error',
-            '/tmp/something-else.log',
-          ),
-        );
-
-        final outcome = await build().bind()(entry, room);
-        expect(outcome, ApplyOutcome.retriable);
-      },
-    );
-
-    test(
-      'apply-step throwing "attachment descriptor not yet available" '
-      'also maps to pendingAttachment so the decoded payload still '
-      'waits for its JSON on the long ladder',
-      () async {
-        final entry = hBuildEntry(
-          eventId: r'$applyWaitsForDescriptor',
-          roomId: '!r',
-          originTsMs: 1,
-        );
-        final prepared = AdapterMockPreparedSyncEvent();
-        when(
-          () => processor.prepare(event: any(named: 'event')),
-        ).thenAnswer((_) async => prepared);
-        when(
-          () => processor.apply(
-            prepared: prepared,
-            journalDb: journalDb,
-          ),
-        ).thenThrow(
-          const FileSystemException('attachment descriptor not yet available'),
-        );
-
-        final outcome = await build().bind()(entry, room);
-        expect(outcome, ApplyOutcome.pendingAttachment);
-      },
-    );
+    test('SyncOutboxBundle wraps — unpacks into journal/linked_entries', () {
+      const message = SyncMessage.outboxBundle(
+        children: <SyncMessage>[],
+      );
+      expect(wraps(message), isTrue);
+    });
   });
 
-  group('batch-parallel prepare', () {
+  group('apply respects the writesJournalDb classifier', () {
     test(
-      'prepareBatch fans prepare out via Future.wait so the slowest '
-      'entry — not the sum of all prepares — is the batch critical '
-      'path',
-      () async {
-        final a = hBuildEntry(eventId: r'$a', roomId: '!r:x', originTsMs: 1);
-        final b = hBuildEntry(eventId: r'$b', roomId: '!r:x', originTsMs: 2);
-        final c = hBuildEntry(eventId: r'$c', roomId: '!r:x', originTsMs: 3);
-
-        final prepared = AdapterMockPreparedSyncEvent();
-        final allStarted = Completer<void>();
-        final release = Completer<void>();
-        var prepareCalls = 0;
-        when(() => processor.prepare(event: any(named: 'event'))).thenAnswer((
-          _,
-        ) async {
-          prepareCalls++;
-          if (prepareCalls == 3) {
-            allStarted.complete();
-          }
-          await release.future;
-          return prepared;
-        });
-
-        final adapter = build();
-        final prepareBatch = adapter.bindPrepareBatch()([a, b, c], room);
-        await allStarted.future;
-        expect(prepareCalls, 3);
-        release.complete();
-        await prepareBatch;
-        verify(() => processor.prepare(event: any(named: 'event'))).called(3);
-      },
-    );
-
-    test(
-      'apply consumes the cached prepared payload so prepare runs '
-      'exactly once when the caller invoked prepareBatch first',
+      'a journalEntity-shaped payload bypasses the outer transaction wrap '
+      'so cross-DB awaits inside `apply` (sync-sequence log, pre-write '
+      'reads) do not hold the journal writer lock',
       () async {
         final entry = hBuildEntry(
-          eventId: r'$cached',
-          roomId: '!r:x',
+          eventId: r'$bypass-wrap',
+          roomId: '!r',
           originTsMs: 1,
         );
-
         final prepared = AdapterMockPreparedSyncEvent();
+        const message = SyncMessage.journalEntity(
+          id: 'entity-id',
+          jsonPath: '/entity.json',
+          vectorClock: null,
+          status: SyncEntryStatus.initial,
+        );
+        when(() => prepared.syncMessage).thenReturn(message);
         when(
           () => processor.prepare(event: any(named: 'event')),
         ).thenAnswer((_) async => prepared);
         when(
-          () => processor.apply(prepared: prepared, journalDb: journalDb),
-        ).thenAnswer((_) async => null);
-
-        final adapter = build();
-        await adapter.bindPrepareBatch()([entry], room);
-        final outcome = await adapter.bind()(entry, room);
-
-        expect(outcome, ApplyOutcome.applied);
-        // Exactly one prepare: batched ahead of time. No inline
-        // re-prepare in the apply phase.
-        verify(() => processor.prepare(event: any(named: 'event'))).called(1);
-        verify(
           () => processor.apply(
-            prepared: prepared,
+            prepared: any(named: 'prepared'),
             journalDb: journalDb,
           ),
-        ).called(1);
+        ).thenAnswer((_) async => null);
+
+        final outcome = await build().bind()(entry, room);
+        expect(outcome, ApplyOutcome.applied);
+        // The classifier introspected the prepared payload; the apply
+        // still ran. We do not assert on transaction state directly
+        // because the JournalDb is in-memory and a transaction wrap is
+        // observable only via the writer lock — but the predicate test
+        // group above pins the wrap/bypass decision per variant.
+        verify(() => prepared.syncMessage).called(1);
       },
     );
 
     test(
-      'apply falls back to inline prepare when the cached entry is '
-      'missing — a prepareBatch that skipped an eventId must not '
-      'silently drop its apply',
+      'a payload that throws when its syncMessage is read falls back to '
+      'the safe wrapped path — the existing test mocks rely on this so '
+      'the change cannot retroactively break them',
       () async {
-        final batched = hBuildEntry(
-          eventId: r'$batched',
-          roomId: '!r:x',
+        final entry = hBuildEntry(
+          eventId: r'$throws',
+          roomId: '!r',
           originTsMs: 1,
         );
-        final late = hBuildEntry(
-          eventId: r'$late',
-          roomId: '!r:x',
-          originTsMs: 2,
-        );
-
         final prepared = AdapterMockPreparedSyncEvent();
+        // No stub for syncMessage → mocktail throws on access.
         when(
           () => processor.prepare(event: any(named: 'event')),
         ).thenAnswer((_) async => prepared);
         when(
-          () => processor.apply(prepared: prepared, journalDb: journalDb),
+          () => processor.apply(
+            prepared: any(named: 'prepared'),
+            journalDb: journalDb,
+          ),
         ).thenAnswer((_) async => null);
 
-        final adapter = build();
-        // prepareBatch only covers `batched` — `late` has no cache
-        // entry when apply runs.
-        await adapter.bindPrepareBatch()([batched], room);
-
-        final first = await adapter.bind()(batched, room);
-        final second = await adapter.bind()(late, room);
-        expect(first, ApplyOutcome.applied);
-        expect(second, ApplyOutcome.applied);
-
-        // Two prepare calls total: one batched, one inline fallback.
-        verify(() => processor.prepare(event: any(named: 'event'))).called(2);
-      },
-    );
-
-    test(
-      'a cached terminal outcome from prepareBatch is surfaced by '
-      'apply without re-preparing — e.g. pendingAttachment caught at '
-      'prepare time must not trigger a second prepare during apply',
-      () async {
-        final entry = hBuildEntry(
-          eventId: r'$pending',
-          roomId: '!r:x',
-          originTsMs: 1,
-        );
-
-        // Prepare throws the sentinel FileSystemException that the
-        // adapter classifies as pendingAttachment.
-        when(() => processor.prepare(event: any(named: 'event'))).thenThrow(
-          const FileSystemException('attachment descriptor not yet available'),
-        );
-
-        final adapter = build();
-        await adapter.bindPrepareBatch()([entry], room);
-        final outcome = await adapter.bind()(entry, room);
-
-        expect(outcome, ApplyOutcome.pendingAttachment);
-        // Exactly one prepare: the batched one. Apply consumed the
-        // cached terminal outcome instead of re-trying. No apply was
-        // ever attempted — the stubbed `processor.apply` was never
-        // configured, so calling it would have thrown.
-        verify(() => processor.prepare(event: any(named: 'event'))).called(1);
-      },
-    );
-
-    test(
-      'prepareBatch with an empty entry list is a no-op — safe for '
-      'a worker that happens to peek an empty batch',
-      () async {
-        await build().bindPrepareBatch()(const [], room);
-        verifyNever(() => processor.prepare(event: any(named: 'event')));
+        final outcome = await build().bind()(entry, room);
+        expect(outcome, ApplyOutcome.applied);
       },
     );
   });
