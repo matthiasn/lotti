@@ -91,7 +91,7 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
                 for (final observation in observations)
                   {
                     'createdAt': observation.createdAt.toIso8601String(),
-                    'text': DayAgentWorkflow._extractPayloadText(
+                    'text': _extractPayloadText(
                       observationPayloads[observation.contentEntryId],
                     ),
                   },
@@ -106,6 +106,29 @@ extension DayAgentContextBuilder on DayAgentWorkflow {
       // The volatile wall-clock is the trailing section.
       ..addText(DayAgentPromptTags.currentLocalTime, now.toIso8601String());
     return sections.build();
+  }
+
+  /// Loads the week context for a day-token wake. The service is fail-soft
+  /// already (load errors log and return null); this guard additionally
+  /// absorbs unexpected service bugs so lookback context can never kill a
+  /// wake. The wake's own [now] is passed through so the section's day
+  /// classification agrees with `current_local_time` across a midnight
+  /// straddle.
+  Future<WeekContext?> _weekContext({
+    required String agentId,
+    required DateTime planDate,
+    required DateTime now,
+  }) async {
+    try {
+      return await weekContextService?.buildForDay(
+        agentId: agentId,
+        planDate: planDate,
+        now: now,
+      );
+    } catch (e, s) {
+      _logError('failed to load week context', error: e, stackTrace: s);
+      return null;
+    }
   }
 
   /// Loads the planner's durable knowledge and renders the two-tier prompt
