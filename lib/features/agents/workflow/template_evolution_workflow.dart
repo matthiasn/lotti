@@ -138,6 +138,22 @@ class TemplateEvolutionWorkflow {
   @visibleForTesting
   final activeSessions = <String, ActiveEvolutionSession>{};
 
+  /// Start a new multi-turn evolution session for [templateId].
+  ///
+  /// Thin public entry point so the method stays part of the class interface
+  /// (mocks implement the class, not its extensions); the implementation lives
+  /// in [TemplateEvolutionSession.startSessionImpl]. See it for the full
+  /// contract and the [contextOverride] / [sessionNumberOverride] semantics.
+  Future<String?> startSession({
+    required String templateId,
+    EvolutionContext? contextOverride,
+    int? sessionNumberOverride,
+  }) => startSessionImpl(
+    templateId: templateId,
+    contextOverride: contextOverride,
+    sessionNumberOverride: sessionNumberOverride,
+  );
+
   /// Send a user message in an active evolution session.
   ///
   /// Returns the assistant's response, or `null` if the session is not found

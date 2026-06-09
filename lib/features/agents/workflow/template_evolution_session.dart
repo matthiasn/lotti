@@ -3,7 +3,7 @@ part of 'template_evolution_workflow.dart';
 /// Session bootstrap for [TemplateEvolutionWorkflow]: gathers context and
 /// opens a multi-turn evolution session. Split from the main file for size.
 extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
-  /// Start a new multi-turn evolution session for [templateId].
+  /// Implementation of [TemplateEvolutionWorkflow.startSession].
   ///
   /// Gathers all context (metrics, reports, observations, notes, versions),
   /// creates an [EvolutionSessionEntity], starts the conversation, and sends
@@ -13,7 +13,7 @@ extension TemplateEvolutionSession on TemplateEvolutionWorkflow {
   /// When [contextOverride] is provided, skips internal context building and
   /// uses the given [EvolutionContext] directly. This allows callers (e.g.,
   /// the improver ritual workflow) to inject enriched context.
-  Future<String?> startSession({
+  Future<String?> startSessionImpl({
     required String templateId,
     EvolutionContext? contextOverride,
     int? sessionNumberOverride,
