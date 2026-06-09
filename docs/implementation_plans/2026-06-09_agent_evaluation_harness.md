@@ -2,7 +2,8 @@
 
 - Date: 2026-06-09
 - ADR: [0029 — Tiered Agent Evaluation Harness](../adr/0029-agent-evaluation-harness.md)
-- Status: Phase 0 (scaffold + one working example) landed; later phases pending
+- Status: Phase 0 (scaffold + examples) landed; Phase 1 planner scripted bench
+  landed; task-agent bench + dataset growth + Phase 2 pending
 
 ## Goal
 
@@ -118,17 +119,37 @@ runs it through a `FixtureEvalTarget`, asserts the **Level 1** library both
 (over-capacity plan, hallucinated task id) — proving the assertions actually
 catch regressions, not just that a widget built.
 
-## Phase 1 — `ScriptedEvalTarget` + dataset (next)
+## Phase 1 — scripted bench over the real workflow
 
-- Implement DB seeding from `EvalScenario` reusing `makeTestCapture`,
-  `makeTestDayPlan`, `makeTestState`, `makeTestIdentity`, journal `Task`
-  insertion, and `testInferenceProfile`/`testInferenceProvider`.
-- Wrap a `ConversationRepository` subclass (generalise `_ConversationHarness`)
-  whose scripted tool calls are derived from the scenario's "golden" actions.
-- Run `DayAgentWorkflow.execute` / `TaskAgentWorkflow.execute`, then map persisted
-  entities (`DayPlanEntity.plannedBlocks`, `ChangeSetEntity.items`,
-  `AgentReportEntity`, observation messages, `WakeTokenUsageEntity`) into
-  `AgentRunOutput`.
+**Landed (planner drafting wake):**
+
+- `test/eval/harness/scripted_conversation_repository.dart` — a public
+  `ScriptedConversationRepository` (generalises the private `_ConversationHarness`)
+  that returns canned tool calls + a fixed `InferenceUsage`.
+- `test/eval/harness/planner_eval_bench.dart` — `PlannerEvalBench.runDraftingWake`
+  seeds an `EvalScenario` onto the centralized mocks (`makeTestIdentity` /
+  `makeTestState` / `makeTestTemplate*` / `testInferenceProfile`), runs the REAL
+  `DayAgentWorkflow.execute(...)` under `withClock`, and maps
+  `(WakeResult, scripted tool calls)` → `AgentRunOutput`.
+- `test/eval/scenarios/planner_workflow_eval_test.dart` — exercises the real
+  workflow end-to-end and grades the output with `runLevel1` (within-capacity
+  pass + over-capacity catch). Analyzer clean, green.
+
+This exercises the real orchestration (profile→provider resolution, conversation
+loop, real strategy tool dispatch, state reconciliation, persistence). Backend
+services (`planService`) are mocked, so in scripted mode the drafted blocks are
+caller-fixed — intended: Level 1 guards plumbing + invariants + the mapping;
+Level 2 supplies real model behavior.
+
+**Remaining:**
+
+- A task-agent bench (`TaskAgentWorkflow.execute`) mirroring the planner one.
+- `EvalTarget`-conforming wrappers (`ScriptedEvalTarget`) around the benches so
+  the runner treats scripted and live uniformly.
+- Optionally wire the real `DayAgentPlanService` so `draft_day_plan` produces a
+  persisted `DayPlanEntity` (non-circular block normalization) and map from
+  `DayPlanEntity.plannedBlocks` / `ChangeSetEntity.items` /
+  `WakeTokenUsageEntity`.
 - Grow `test/eval/scenarios/` into a real dataset (≥6 scenarios per agent),
   including LLM-*generated* scenarios reviewed by a human before commit.
 

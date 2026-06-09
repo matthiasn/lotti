@@ -25,7 +25,6 @@ const kFrontierProfile = EvalProfile(
   name: 'frontier-gemini',
   isLocal: false,
   modelId: 'gemini-thinking',
-  temperature: 0.7,
   maxCompletionTokens: 8192,
   tokenBudget: 200000,
 );

@@ -22,7 +22,6 @@ void main() {
     agentKind: AgentKind.planningAgent,
     appState: MockedAppState(
       now: today,
-      capacityMinutes: 480,
       categoryIds: const ['cat-work', 'cat-health', 'cat-admin'],
       tasks: [
         MockTask(

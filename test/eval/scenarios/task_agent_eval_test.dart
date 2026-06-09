@@ -35,10 +35,10 @@ void main() {
     ),
   );
 
-  AgentRunOutput goodOutput() => AgentRunOutput(
+  AgentRunOutput goodOutput() => const AgentRunOutput(
     success: true,
-    usage: const InferenceUsage(inputTokens: 1800, outputTokens: 320),
-    toolCalls: const [
+    usage: InferenceUsage(inputTokens: 1800, outputTokens: 320),
+    toolCalls: [
       ToolCallRecord(
         name: 'update_task_estimate',
         args: {'minutes': 90},
@@ -63,17 +63,17 @@ void main() {
         },
       ),
     ],
-    report: const AgentReportRecord(
+    report: AgentReportRecord(
       oneLiner: 'Groomed the release-notes task',
       tldr: 'Set a 90m estimate, marked GROOMED, added two checklist items.',
     ),
     turnCount: 1,
   );
 
-  AgentRunOutput badOutput() => AgentRunOutput(
+  AgentRunOutput badOutput() => const AgentRunOutput(
     success: true,
-    usage: const InferenceUsage(inputTokens: 1800, outputTokens: 320),
-    toolCalls: const [
+    usage: InferenceUsage(inputTokens: 1800, outputTokens: 320),
+    toolCalls: [
       ToolCallRecord(
         name: 'update_task_estimate',
         args: {'minutes': 5000}, // > 1440
