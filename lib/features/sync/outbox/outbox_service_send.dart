@@ -143,11 +143,11 @@ mixin _OutboxSend on _OutboxServiceBase {
   void _recordBackoff(Duration delay) {
     if (delay <= Duration.zero) return;
     final now = DateTime.now();
-    final candidate = now.add(delay);
-    final current = _nextSendAllowedAt;
-    if (current == null || candidate.isAfter(current)) {
-      _nextSendAllowedAt = candidate;
-    }
+    _nextSendAllowedAt = extendBackoffGate(
+      delay: delay,
+      current: _nextSendAllowedAt,
+      now: now,
+    );
     _scheduleBackoffAt(_nextSendAllowedAt!);
   }
 
@@ -167,18 +167,11 @@ mixin _OutboxSend on _OutboxServiceBase {
   }
 
   @visibleForTesting
-  Duration computeEnqueueDelay(Duration delay) {
-    final now = DateTime.now();
-    final nextAllowed = _nextSendAllowedAt;
-    var adjusted = delay;
-    if (adjusted < Duration.zero) {
-      adjusted = Duration.zero;
-    }
-    if (nextAllowed == null) return adjusted;
-    if (!nextAllowed.isAfter(now)) return adjusted;
-    final backoffDelay = nextAllowed.difference(now);
-    return backoffDelay > adjusted ? backoffDelay : adjusted;
-  }
+  Duration computeEnqueueDelay(Duration delay) => resolveEnqueueDelay(
+    requested: delay,
+    nextAllowedAt: _nextSendAllowedAt,
+    now: DateTime.now(),
+  );
 
   Future<bool> _drainOutbox() async {
     for (var pass = 0; pass < _maxDrainPasses; pass++) {

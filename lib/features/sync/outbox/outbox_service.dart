@@ -15,6 +15,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/outbox_processor.dart';
 import 'package:lotti/features/sync/outbox/outbox_repository.dart';
+import 'package:lotti/features/sync/outbox/outbox_scheduling.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
@@ -344,7 +345,7 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
 
       final jsonString = json.encode(messageToEnqueue);
       final jsonByteLength = utf8.encode(jsonString).length;
-      final priority = _priorityForMessage(messageToEnqueue);
+      final priority = priorityForMessage(messageToEnqueue);
       final commonFields = OutboxCompanion(
         status: Value(OutboxStatus.pending.index),
         message: Value(jsonString),
@@ -452,38 +453,6 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
       );
     }
   }
-
-  static int _priorityForMessage(SyncMessage message) {
-    return switch (message) {
-      SyncJournalEntity() => OutboxPriority.high.index,
-      SyncEntryLink() => OutboxPriority.high.index,
-      SyncBackfillRequest() => OutboxPriority.normal.index,
-      SyncBackfillResponse() => OutboxPriority.normal.index,
-      SyncAgentEntity() => OutboxPriority.normal.index,
-      SyncAgentLink() => OutboxPriority.normal.index,
-      SyncNotification() => OutboxPriority.normal.index,
-      SyncNotificationStateUpdate() => OutboxPriority.normal.index,
-      // Legacy wire variant — never enqueued locally; see enqueueMessage.
-      SyncAgentBundle() => OutboxPriority.normal.index,
-      SyncThemingSelection() => OutboxPriority.normal.index,
-      SyncEntityDefinition() => OutboxPriority.low.index,
-      SyncAiConfig() => OutboxPriority.low.index,
-      SyncAiConfigDelete() => OutboxPriority.low.index,
-      SyncConfigFlag() => OutboxPriority.normal.index,
-      // SyncOutboxBundle has no row-level priority — bundles are built at
-      // dequeue time and never enqueued. The dispatch switch in
-      // [enqueueMessage] is the single defensive guard for that invariant
-      // (one source of truth instead of two coupled `throw` arms).
-      SyncOutboxBundle() => OutboxPriority.normal.index,
-      // SyncSyncNodeProfile is a presence-style broadcast — low priority so
-      // it never queue-jumps journal writes.
-      SyncSyncNodeProfile() => OutboxPriority.low.index,
-    };
-  }
-
-  @visibleForTesting
-  static int priorityForMessageForTesting(SyncMessage message) =>
-      _priorityForMessage(message);
 
   /// Upper bound on how many items a single `sendNext` invocation will
   /// push through the processor in one runner pass. Raised from the
