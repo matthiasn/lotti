@@ -12,13 +12,22 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
-/// Service for managing soul documents — reusable personality blueprints that
-/// can be assigned to agent templates.
-///
-/// Follows the same entity → version → head pattern as
-/// [AgentTemplateService].
-class SoulDocumentService {
-  SoulDocumentService({
+part 'soul_document_service_versions.dart';
+part 'soul_document_service_templates.dart';
+
+const _uuid = Uuid();
+const _logTag = 'SoulDocumentService';
+
+void _requireNonBlank(String fieldName, String value) {
+  if (value.trim().isEmpty) {
+    throw ArgumentError.value(value, fieldName, 'must not be blank');
+  }
+}
+
+/// Holds the injected dependencies shared by [SoulDocumentService] and its
+/// method-group mixins (see the sibling part files).
+abstract class _SoulDocumentServiceBase {
+  _SoulDocumentServiceBase({
     required this.repository,
     required this.syncService,
   });
@@ -26,14 +35,23 @@ class SoulDocumentService {
   final AgentRepository repository;
   final AgentSyncService syncService;
 
-  static const _uuid = Uuid();
-  static const _logTag = 'SoulDocumentService';
+  // Cross-group method contracts so the version/template mixins (in the sibling
+  // part files) can call into implementations that live on the concrete service.
+  Future<SoulDocumentEntity?> getSoul(String soulId);
+  Future<SoulDocumentVersionEntity?> getActiveSoulVersion(String soulId);
+}
 
-  static void _requireNonBlank(String fieldName, String value) {
-    if (value.trim().isEmpty) {
-      throw ArgumentError.value(value, fieldName, 'must not be blank');
-    }
-  }
+/// Service for managing soul documents — reusable personality blueprints that
+/// can be assigned to agent templates.
+///
+/// Follows the same entity → version → head pattern as
+/// [AgentTemplateService].
+class SoulDocumentService extends _SoulDocumentServiceBase
+    with _SoulVersionOps, _SoulTemplateOps {
+  SoulDocumentService({
+    required super.repository,
+    required super.syncService,
+  });
 
   /// Create a new soul document with its initial version and head pointer.
   ///
@@ -109,92 +127,8 @@ class SoulDocumentService {
     });
   }
 
-  /// Create a new version of a soul document's personality directives.
-  ///
-  /// Archives **all** non-archived versions (not just the head-pointed one) to
-  /// ensure consistency after sync races or partial corruption, then creates
-  /// the new active version and updates the head pointer.
-  ///
-  /// Throws [ArgumentError] if required text fields are blank.
-  Future<SoulDocumentVersionEntity> createVersion({
-    required String soulId,
-    required String voiceDirective,
-    required String authoredBy,
-    String toneBounds = '',
-    String coachingStyle = '',
-    String antiSycophancyPolicy = '',
-    String? sourceSessionId,
-  }) async {
-    _requireNonBlank('voiceDirective', voiceDirective);
-    _requireNonBlank('authoredBy', authoredBy);
-
-    final now = clock.now();
-    final newVersionId = _uuid.v4();
-
-    return syncService.runInTransaction(() async {
-      final soul = await getSoul(soulId);
-      if (soul == null) {
-        throw StateError('Soul document $soulId not found');
-      }
-
-      final currentHead = await repository.getSoulDocumentHead(soulId);
-
-      // Archive ALL non-archived versions to ensure no stale active statuses
-      // survive sync races or partial corruption. Mirrors the template
-      // service's approach in AgentTemplateService.createVersion().
-      final allVersions = await getVersionHistory(soulId, limit: -1);
-      for (final version in allVersions) {
-        if (version.status != SoulDocumentVersionStatus.archived) {
-          await syncService.upsertEntity(
-            version.copyWith(status: SoulDocumentVersionStatus.archived),
-          );
-        }
-      }
-
-      final nextVersion = await repository.getNextSoulDocumentVersionNumber(
-        soulId,
-      );
-
-      final newVersion =
-          AgentDomainEntity.soulDocumentVersion(
-                id: newVersionId,
-                agentId: soulId,
-                version: nextVersion,
-                status: SoulDocumentVersionStatus.active,
-                authoredBy: authoredBy,
-                createdAt: now,
-                vectorClock: null,
-                voiceDirective: voiceDirective,
-                toneBounds: toneBounds,
-                coachingStyle: coachingStyle,
-                antiSycophancyPolicy: antiSycophancyPolicy,
-                sourceSessionId: sourceSessionId,
-                diffFromVersionId: currentHead?.versionId,
-              )
-              as SoulDocumentVersionEntity;
-      await syncService.upsertEntity(newVersion);
-
-      final headId = currentHead?.id ?? _uuid.v4();
-      final updatedHead = AgentDomainEntity.soulDocumentHead(
-        id: headId,
-        agentId: soulId,
-        versionId: newVersionId,
-        updatedAt: now,
-        vectorClock: null,
-      );
-      await syncService.upsertEntity(updatedHead);
-
-      developer.log(
-        'Created version $nextVersion for soul '
-        '${DomainLogger.sanitizeId(soulId)}',
-        name: _logTag,
-      );
-
-      return newVersion;
-    });
-  }
-
   /// Fetch a soul document by its ID.
+  @override
   Future<SoulDocumentEntity?> getSoul(String soulId) async {
     return repository.getSoulDocument(soulId);
   }
@@ -231,303 +165,9 @@ class SoulDocumentService {
     });
   }
 
-  /// Atomically update the soul display name and create a new version.
-  ///
-  /// Both writes happen in one transaction so neither is committed alone.
-  Future<SoulDocumentVersionEntity> updateSoulAndCreateVersion({
-    required String soulId,
-    required String displayName,
-    required String voiceDirective,
-    required String authoredBy,
-    String toneBounds = '',
-    String coachingStyle = '',
-    String antiSycophancyPolicy = '',
-  }) async {
-    final trimmedName = displayName.trim();
-    if (trimmedName.isEmpty) {
-      throw ArgumentError('displayName must not be blank');
-    }
-    _requireNonBlank('voiceDirective', voiceDirective);
-    _requireNonBlank('authoredBy', authoredBy);
-
-    final now = clock.now();
-    final newVersionId = _uuid.v4();
-
-    return syncService.runInTransaction(() async {
-      final soul = await getSoul(soulId);
-      if (soul == null) {
-        throw StateError('Soul document $soulId not found');
-      }
-
-      // Update display name if changed.
-      if (trimmedName != soul.displayName) {
-        final updated = soul.copyWith(
-          displayName: trimmedName,
-          updatedAt: now,
-        );
-        await syncService.upsertEntity(updated);
-      }
-
-      // Archive all non-archived versions.
-      final currentHead = await repository.getSoulDocumentHead(soulId);
-      final allVersions = await getVersionHistory(soulId, limit: -1);
-      for (final version in allVersions) {
-        if (version.status != SoulDocumentVersionStatus.archived) {
-          await syncService.upsertEntity(
-            version.copyWith(status: SoulDocumentVersionStatus.archived),
-          );
-        }
-      }
-
-      final nextVersion = await repository.getNextSoulDocumentVersionNumber(
-        soulId,
-      );
-
-      final newVersion =
-          AgentDomainEntity.soulDocumentVersion(
-                id: newVersionId,
-                agentId: soulId,
-                version: nextVersion,
-                status: SoulDocumentVersionStatus.active,
-                authoredBy: authoredBy,
-                createdAt: now,
-                vectorClock: null,
-                voiceDirective: voiceDirective,
-                toneBounds: toneBounds,
-                coachingStyle: coachingStyle,
-                antiSycophancyPolicy: antiSycophancyPolicy,
-                diffFromVersionId: currentHead?.versionId,
-              )
-              as SoulDocumentVersionEntity;
-      await syncService.upsertEntity(newVersion);
-
-      final headId = currentHead?.id ?? _uuid.v4();
-      final updatedHead = AgentDomainEntity.soulDocumentHead(
-        id: headId,
-        agentId: soulId,
-        versionId: newVersionId,
-        updatedAt: now,
-        vectorClock: null,
-      );
-      await syncService.upsertEntity(updatedHead);
-
-      developer.log(
-        'Updated soul ${DomainLogger.sanitizeId(soulId)} and created '
-        'version $nextVersion',
-        name: _logTag,
-      );
-
-      return newVersion;
-    });
-  }
-
   /// List all non-deleted soul documents.
   Future<List<SoulDocumentEntity>> getAllSouls() async {
     return repository.getAllSoulDocuments();
-  }
-
-  /// Fetch the active version for a soul document.
-  Future<SoulDocumentVersionEntity?> getActiveSoulVersion(
-    String soulId,
-  ) async {
-    return repository.getActiveSoulDocumentVersion(soulId);
-  }
-
-  /// Fetch version history for a soul document, newest first.
-  Future<List<SoulDocumentVersionEntity>> getVersionHistory(
-    String soulId, {
-    int limit = 5,
-  }) async {
-    return repository.getSoulDocumentVersions(soulId, limit: limit);
-  }
-
-  /// Roll back a soul document to a previous version.
-  ///
-  /// Archives all versions, reactivates the target, and moves the head
-  /// pointer. Does not delete any versions.
-  Future<void> rollbackToVersion({
-    required String soulId,
-    required String versionId,
-  }) async {
-    final now = clock.now();
-
-    await syncService.runInTransaction(() async {
-      final head = await repository.getSoulDocumentHead(soulId);
-      if (head == null) {
-        throw StateError('No head found for soul $soulId');
-      }
-
-      final versionEntity = await repository.getEntity(versionId);
-      final validVersion = versionEntity?.mapOrNull(
-        soulDocumentVersion: (v) => v.agentId == soulId ? v : null,
-      );
-      if (validVersion == null) {
-        throw StateError(
-          'No version $versionId found for soul $soulId',
-        );
-      }
-
-      final allVersions = await getVersionHistory(soulId, limit: -1);
-      for (final version in allVersions) {
-        if (version.status != SoulDocumentVersionStatus.archived) {
-          await syncService.upsertEntity(
-            version.copyWith(status: SoulDocumentVersionStatus.archived),
-          );
-        }
-      }
-
-      await syncService.upsertEntity(
-        validVersion.copyWith(status: SoulDocumentVersionStatus.active),
-      );
-
-      final updatedHead = head.copyWith(
-        versionId: versionId,
-        updatedAt: now,
-      );
-      await syncService.upsertEntity(updatedHead);
-    });
-
-    developer.log(
-      'Rolled back soul ${DomainLogger.sanitizeId(soulId)} to version '
-      '${DomainLogger.sanitizeId(versionId)}',
-      name: _logTag,
-    );
-  }
-
-  /// Assign a soul document to a template.
-  ///
-  /// Soft-deletes **all** existing soul assignment links for this template,
-  /// then creates a fresh link to [soulId]. This ensures exactly one active
-  /// assignment regardless of sync races or prior corruption.
-  ///
-  /// If the only existing link already points at [soulId] and no stale
-  /// parallel links exist, the method is a no-op.
-  Future<void> assignSoulToTemplate(
-    String templateId,
-    String soulId,
-  ) async {
-    final now = clock.now();
-
-    await syncService.runInTransaction(() async {
-      final existingLinks = await repository.getLinksFrom(
-        templateId,
-        type: AgentLinkTypes.soulAssignment,
-      );
-
-      // Only skip if the sole link already points at the requested soul.
-      // If there are multiple links (sync race residue), fall through to
-      // clean them all up.
-      if (existingLinks.length == 1 && existingLinks.first.toId == soulId) {
-        return;
-      }
-
-      for (final link in existingLinks) {
-        await syncService.upsertLink(link.softDeleted(now));
-      }
-
-      final link = AgentLink.soulAssignment(
-        id: _uuid.v4(),
-        fromId: templateId,
-        toId: soulId,
-        createdAt: now,
-        updatedAt: now,
-        vectorClock: null,
-      );
-      await syncService.upsertLink(link);
-    });
-
-    developer.log(
-      'Assigned soul ${DomainLogger.sanitizeId(soulId)} to template '
-      '${DomainLogger.sanitizeId(templateId)}',
-      name: _logTag,
-    );
-  }
-
-  /// Remove the soul assignment from a template.
-  Future<void> unassignSoul(String templateId) async {
-    final now = clock.now();
-
-    await syncService.runInTransaction(() async {
-      final links = await repository.getLinksFrom(
-        templateId,
-        type: AgentLinkTypes.soulAssignment,
-      );
-      for (final link in links) {
-        await syncService.upsertLink(link.softDeleted(now));
-      }
-    });
-
-    developer.log(
-      'Unassigned soul from template ${DomainLogger.sanitizeId(templateId)}',
-      name: _logTag,
-    );
-  }
-
-  /// Resolve the active soul version for a template by following the
-  /// assignment link → soul → head → version chain.
-  ///
-  /// When multiple assignment links exist (sync race residue), the most
-  /// recently created link is selected using the canonical
-  /// [AgentLinkSelection.orderedPrimaryFirst] tie-breaking strategy.
-  ///
-  /// Returns `null` if no soul is assigned or the chain is broken.
-  Future<SoulDocumentVersionEntity?> resolveActiveSoulForTemplate(
-    String templateId,
-  ) async {
-    final links = await repository.getLinksFrom(
-      templateId,
-      type: AgentLinkTypes.soulAssignment,
-    );
-    if (links.isEmpty) return null;
-
-    final soulId = links.orderedPrimaryFirst().first.toId;
-    return getActiveSoulVersion(soulId);
-  }
-
-  /// Resolve active soul versions for multiple templates in bulk.
-  ///
-  /// The result is keyed by template id. Templates with no active assignment or
-  /// a broken head/version chain are omitted.
-  Future<Map<String, SoulDocumentVersionEntity>> resolveActiveSoulsForTemplates(
-    Iterable<String> templateIds,
-  ) async {
-    final idList = templateIds.toSet().toList(growable: false);
-    if (idList.isEmpty) return {};
-
-    final linksByTemplateId = await repository.getLinksFromMultiple(
-      idList,
-      type: AgentLinkTypes.soulAssignment,
-    );
-
-    final soulIdByTemplateId = <String, String>{};
-    for (final entry in linksByTemplateId.entries) {
-      final links = entry.value;
-      if (links.isEmpty) continue;
-      soulIdByTemplateId[entry.key] = links.selectPrimary().toId;
-    }
-    if (soulIdByTemplateId.isEmpty) return {};
-
-    final versionsBySoulId = await repository
-        .getActiveSoulDocumentVersionsBySoulIds(
-          soulIdByTemplateId.values.toSet().toList(growable: false),
-        );
-    return {
-      for (final entry in soulIdByTemplateId.entries)
-        if (versionsBySoulId[entry.value]
-            case final SoulDocumentVersionEntity version)
-          entry.key: version,
-    };
-  }
-
-  /// Reverse lookup: find all templates that use a given soul document.
-  ///
-  /// Returns the template IDs (not full entities) for efficiency.
-  Future<List<String>> getTemplatesUsingSoul(String soulId) async {
-    final links = await repository.getLinksTo(
-      soulId,
-      type: AgentLinkTypes.soulAssignment,
-    );
-    return links.map((l) => l.fromId).toList();
   }
 
   /// Soft-delete a soul document and all its versions, head, and links.
