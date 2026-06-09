@@ -49,6 +49,8 @@ class BatchAddResult {
     required this.skipped,
     this.redundant = 0,
     this.redundantDetails = const [],
+    this.rejected = 0,
+    this.rejectedDetails = const [],
   });
 
   /// Number of valid items that were added.
@@ -63,6 +65,16 @@ class BatchAddResult {
   /// Human-readable descriptions of each suppressed redundant item,
   /// e.g. `'"Buy groceries" is already checked'`.
   final List<String> redundantDetails;
+
+  /// Number of items rejected because they reference an entity that does not
+  /// exist — a hallucinated id the model invented. Distinct from [redundant]
+  /// (a real but no-op change) and [skipped] (a malformed array element).
+  final int rejected;
+
+  /// Human-readable per-item rejection reasons, each naming the bad id so the
+  /// model can stop proposing it, e.g.
+  /// `'label "abc123" does not exist — do not invent ids'`.
+  final List<String> rejectedDetails;
 }
 
 /// Accumulates deferred tool calls during an agent wake and produces a

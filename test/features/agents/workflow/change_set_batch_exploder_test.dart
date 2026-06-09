@@ -353,6 +353,7 @@ class _GeneratedChecklistUpdateScenario {
     final kept = <_ExpectedChecklistUpdateItem>[];
     var skipped = 0;
     var redundant = 0;
+    var rejected = 0;
 
     for (final element in elements) {
       final value = element.value();
@@ -361,7 +362,20 @@ class _GeneratedChecklistUpdateScenario {
         continue;
       }
 
+      // Fail-closed existence gate (mirrors the exploder): an update without
+      // an id, or one whose id the resolver cannot find, is rejected before
+      // any redundancy/dedup consideration. The test resolver never throws,
+      // so a null resolvedState is always a clean not-found.
+      final itemId = element.itemId;
+      if (itemId == null) {
+        rejected++;
+        continue;
+      }
       final state = element.resolvedState;
+      if (state == null) {
+        rejected++;
+        continue;
+      }
       if (_isRedundant(value, state)) {
         redundant++;
         continue;
@@ -401,6 +415,7 @@ class _GeneratedChecklistUpdateScenario {
       added: kept.length,
       skipped: skipped,
       redundant: redundant,
+      rejected: rejected,
       kept: kept,
     );
   }
@@ -471,12 +486,14 @@ class _ExpectedChecklistUpdateBatch {
     required this.added,
     required this.skipped,
     required this.redundant,
+    required this.rejected,
     required this.kept,
   });
 
   final int added;
   final int skipped;
   final int redundant;
+  final int rejected;
   final List<_ExpectedChecklistUpdateItem> kept;
 }
 
@@ -882,34 +899,44 @@ void main() {
       );
     });
 
-    test('falls back to truncated ID when resolver returns null', () async {
-      final resolverBuilder = ChangeSetBuilder(
-        agentId: 'agent-001',
-        taskId: 'task-001',
-        threadId: 'thread-001',
-        runKey: 'run-key-001',
-        checklistItemStateResolver: (_) async => null,
-      );
+    test(
+      'rejects an update whose id a wired resolver cannot find (no raw-id '
+      'suggestion is queued)',
+      () async {
+        final resolverBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          checklistItemStateResolver: (_) async => null,
+        );
 
-      await resolverBuilder.addBatchItem(
-        toolName: 'update_checklist_items',
-        args: {
-          'items': [
-            {
-              'id': 'abcdefgh-1234-5678-9012-abcdefghijkl',
-              'isChecked': false,
-            },
-          ],
-        },
-        summaryPrefix: 'Checklist',
-      );
+        final result = await resolverBuilder.addBatchItem(
+          toolName: 'update_checklist_items',
+          args: {
+            'items': [
+              {
+                'id': 'abcdefgh-1234-5678-9012-abcdefghijkl',
+                'isChecked': false,
+              },
+            ],
+          },
+          summaryPrefix: 'Checklist',
+        );
 
-      expect(resolverBuilder.items, hasLength(1));
-      expect(
-        resolverBuilder.items.first.humanSummary,
-        'Uncheck item abcdefgh…',
-      );
-    });
+        // Hallucinated id: nothing is queued and the model is told the id is
+        // fake instead of the user seeing a raw-id suggestion.
+        expect(resolverBuilder.items, isEmpty);
+        expect(result.added, 0);
+        expect(result.rejected, 1);
+        expect(result.redundant, 0);
+        expect(result.rejectedDetails.single, contains('does not exist'));
+        expect(
+          result.rejectedDetails.single,
+          contains('abcdefgh-1234-5678-9012-abcdefghijkl'),
+        );
+      },
+    );
 
     test('falls back gracefully when resolver throws', () async {
       final resolverBuilder = ChangeSetBuilder(
@@ -1301,8 +1328,8 @@ void main() {
       );
     });
 
-    test('generates summary with ? when label ID is missing', () async {
-      await builder.addBatchItem(
+    test('rejects a label assignment that carries no id', () async {
+      final result = await builder.addBatchItem(
         toolName: 'assign_task_labels',
         args: {
           'labels': [
@@ -1312,11 +1339,81 @@ void main() {
         summaryPrefix: 'Label',
       );
 
+      // A label with no id is malformed and unappliable — rejected, not
+      // queued as an empty `"?"` suggestion.
+      expect(builder.items, isEmpty);
+      expect(result.added, 0);
+      expect(result.rejected, 1);
       expect(
-        builder.items[0].humanSummary,
-        'Assign label: "?" (high)',
+        result.rejectedDetails.single,
+        contains('missing a string "id"'),
       );
     });
+
+    test(
+      'rejects a label whose id a wired resolver cannot find',
+      () async {
+        final builderWithResolver = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          labelNameResolver: (id) async => id == 'real-label' ? 'Bug' : null,
+        );
+
+        final result = await builderWithResolver.addBatchItem(
+          toolName: 'assign_task_labels',
+          args: {
+            'labels': [
+              {'id': 'real-label', 'confidence': 'high'},
+              {'id': 'made-up-label-id', 'confidence': 'high'},
+            ],
+          },
+          summaryPrefix: 'Label',
+        );
+
+        // The real label queues; the invented one is rejected with feedback.
+        expect(result.added, 1);
+        expect(result.rejected, 1);
+        expect(builderWithResolver.items, hasLength(1));
+        expect(builderWithResolver.items.single.args['id'], 'real-label');
+        expect(
+          result.rejectedDetails.single,
+          contains('made-up-label-id'),
+        );
+        expect(result.rejectedDetails.single, contains('does not exist'));
+      },
+    );
+
+    test(
+      'trims incidental whitespace in a label id before validating',
+      () async {
+        final builderWithResolver = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          labelNameResolver: (id) async => id == 'label-1' ? 'Bug' : null,
+        );
+
+        final result = await builderWithResolver.addBatchItem(
+          toolName: 'assign_task_labels',
+          args: {
+            'labels': [
+              {'id': '  label-1  ', 'confidence': 'high'},
+            ],
+          },
+          summaryPrefix: 'Label',
+        );
+
+        // The padded id resolves (no false rejection) and the queued proposal
+        // carries the canonical id so it can be applied.
+        expect(result.added, 1);
+        expect(result.rejected, 0);
+        expect(builderWithResolver.items.single.args['id'], 'label-1');
+        expect(builderWithResolver.items.single.humanSummary, contains('Bug'));
+      },
+    );
   });
 
   group('addBatchItem redundancy filtering', () {
@@ -1528,7 +1625,7 @@ void main() {
       expect(result.redundant, 0);
     });
 
-    test('keeps item when resolver returns null (item not found)', () async {
+    test('rejects an update referencing a non-existent item id', () async {
       final resolverBuilder = ChangeSetBuilder(
         agentId: 'agent-001',
         taskId: 'task-001',
@@ -1547,9 +1644,41 @@ void main() {
         summaryPrefix: 'Checklist',
       );
 
-      expect(resolverBuilder.items, hasLength(1));
-      expect(result.added, 1);
+      // A clean not-found (resolver ran, returned null) is a hallucinated id.
+      expect(resolverBuilder.items, isEmpty);
+      expect(result.added, 0);
+      expect(result.rejected, 1);
       expect(result.redundant, 0);
+      expect(result.rejectedDetails.single, contains('item-unknown'));
+      expect(result.rejectedDetails.single, contains('does not exist'));
+    });
+
+    test('trims incidental whitespace in a checklist item id', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async => id == 'item-1'
+            ? (title: 'Real', isChecked: false, isArchived: null)
+            : null,
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': '  item-1  ', 'isChecked': true},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      // The padded id resolves (no false rejection) and the queued proposal
+      // carries the canonical id.
+      expect(result.added, 1);
+      expect(result.rejected, 0);
+      expect(resolverBuilder.items.single.args['id'], 'item-1');
     });
 
     test('keeps item when resolver throws (conservative)', () async {
@@ -1793,6 +1922,64 @@ void main() {
       expect(builder.items, hasLength(1));
       expect(builder.items.first.args.containsKey('targetTaskId'), isFalse);
     });
+
+    test(
+      'rejects a migrate item whose id a wired resolver cannot find',
+      () async {
+        final resolverBuilder = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          checklistItemStateResolver: (id) async => id == 'real-item'
+              ? (title: 'Real', isChecked: false, isArchived: null)
+              : null,
+        );
+
+        final result = await resolverBuilder.addBatchItem(
+          toolName: 'migrate_checklist_items',
+          args: {
+            'items': [
+              {'id': 'real-item', 'title': 'Real'},
+              {'id': 'ghost-item', 'title': 'Ghost'},
+            ],
+            'targetTaskId': 'target-001',
+          },
+          summaryPrefix: 'Migrate',
+        );
+
+        // Only the existing item migrates; the invented id is rejected.
+        expect(result.added, 1);
+        expect(result.rejected, 1);
+        expect(resolverBuilder.items, hasLength(1));
+        expect(resolverBuilder.items.single.args['id'], 'real-item');
+        expect(result.rejectedDetails.single, contains('ghost-item'));
+        expect(result.rejectedDetails.single, contains('does not exist'));
+      },
+    );
+
+    test('rejects a migrate item that carries no id', () async {
+      // The missing-id gate is structural (it fires without a resolver), so a
+      // migrate item with no id is rejected, not queued as unappliable.
+      final result = await builder.addBatchItem(
+        toolName: 'migrate_checklist_items',
+        args: {
+          'items': [
+            {'title': 'No id'},
+          ],
+          'targetTaskId': 'target-001',
+        },
+        summaryPrefix: 'Migrate',
+      );
+
+      expect(result.added, 0);
+      expect(result.rejected, 1);
+      expect(builder.items, isEmpty);
+      expect(
+        result.rejectedDetails.single,
+        contains('migrate_checklist_item is missing'),
+      );
+    });
   });
 
   // Properties: generated batch scenarios run through addBatchItem and the
@@ -1867,6 +2054,7 @@ void main() {
         expect(result.added, expected.added, reason: '$scenario');
         expect(result.skipped, expected.skipped, reason: '$scenario');
         expect(result.redundant, expected.redundant, reason: '$scenario');
+        expect(result.rejected, expected.rejected, reason: '$scenario');
         expect(generatedBuilder.items, hasLength(expected.added));
 
         for (var index = 0; index < expected.kept.length; index++) {

@@ -199,7 +199,20 @@ class ConversationManager {
 
     if (tailStart == 0 && !hadTruncationNotice) return;
 
-    final retainedTail = bodyMessages.skip(tailStart);
+    final retainedTail = bodyMessages.skip(tailStart).toList();
+    // The retained tail must not begin with an orphan `tool` message whose
+    // assistant tool_use parent was dropped by the trim above — strict
+    // providers reject a tool result that has no preceding tool call. Drop
+    // any such leading orphans so the tail starts on an assistant/user
+    // boundary. Trimming only ever runs from [addUserMessage], so the
+    // just-added user turn always survives at the tail end and this strip
+    // cannot empty the tail today; the guard below future-proofs against a
+    // caller that trims after a tool/assistant append.
+    while (retainedTail.isNotEmpty &&
+        retainedTail.first.role == ChatCompletionMessageRole.tool) {
+      retainedTail.removeAt(0);
+    }
+    if (retainedTail.isEmpty) return;
     final retainedMessages = [
       if (hasInitialSystem) _messages.first,
       const ChatCompletionMessage.system(content: _truncationNotice),

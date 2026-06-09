@@ -359,8 +359,24 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
   Future<String> _addToChangeSet(
     ChangeSetBuilder csBuilder,
     String toolName,
-    Map<String, dynamic> args,
+    Map<String, dynamic> rawArgs,
   ) async {
+    // Normalize incidental whitespace in the entity-reference id (entryId /
+    // timerId) so validation, the queued proposal, and apply all use the same
+    // canonical value — a model that pads a copied id must not be falsely
+    // rejected. (Label/checklist ids are normalized inside the exploder.)
+    final args = _normalizeEntityReferenceArgs(toolName, rawArgs);
+
+    // Fail-closed entity-reference validation for the non-batch deferred tools
+    // that reference an existing entity by id. A hallucinated id is rejected
+    // with model-facing feedback instead of being queued as a proposal that
+    // surfaces a raw id and cannot be applied. (Label/checklist batch tools are
+    // gated inside the exploder; metadata tools reference no foreign id.)
+    final referenceError = await _checkEntityReference(toolName, args);
+    if (referenceError != null) {
+      return referenceError;
+    }
+
     // Route create_follow_up_task to the dedicated builder method that
     // injects a placeholder ID and returns it for migrate_checklist_items.
     if (toolName == TaskAgentToolNames.createFollowUpTask) {
@@ -434,6 +450,88 @@ extension TaskAgentToolHandlers on TaskAgentStrategy {
     );
 
     return response;
+  }
+
+  /// Returns a model-facing error string when [toolName]'s arguments reference
+  /// an entity by id that cannot be looked up (a hallucinated id), or `null`
+  /// when the reference is valid, unvalidatable (no resolver wired), or the
+  /// resolver failed transiently (kept conservatively — we cannot prove the id
+  /// is fake). Only the id-referencing non-batch deferred tools are checked.
+  Future<String?> _checkEntityReference(
+    String toolName,
+    Map<String, dynamic> args,
+  ) async {
+    if (toolName == TaskAgentToolNames.updateTimeEntry) {
+      final resolver = resolveEditableTimeEntryIds;
+      if (resolver == null) return null;
+      final entryId = args['entryId'];
+      if (entryId is! String || entryId.isEmpty) {
+        return 'ERROR: update_time_entry requires a string "entryId" from the '
+            '"Editable Time Entries" section. No entry was queued.';
+      }
+      final Set<String> editableIds;
+      try {
+        editableIds = await resolver();
+      } catch (_) {
+        // Transient lookup failure — keep conservatively.
+        return null;
+      }
+      if (!editableIds.contains(entryId)) {
+        return 'ERROR: time entry "$entryId" is not an editable time entry for '
+            'this task. Only use entryId values listed in the "Editable Time '
+            'Entries" section; do not invent ids. No entry was queued.';
+      }
+    }
+
+    if (toolName == TaskAgentToolNames.updateRunningTimer) {
+      final resolver = resolveRunningTimerId;
+      if (resolver == null) return null;
+      final timerId = args['timerId'];
+      if (timerId is! String || timerId.isEmpty) {
+        return 'ERROR: update_running_timer requires a string "timerId". '
+            'No proposal was queued.';
+      }
+      final String? runningTimerId;
+      try {
+        runningTimerId = await resolver();
+      } catch (_) {
+        // Transient lookup failure — keep conservatively.
+        return null;
+      }
+      if (runningTimerId == null) {
+        return 'ERROR: no timer is currently running for this task, so '
+            'update_running_timer cannot be used. No proposal was queued.';
+      }
+      if (timerId != runningTimerId) {
+        return 'ERROR: timer "$timerId" is not the timer running for this task. '
+            'Use the timerId from the "Active Running Timer" section; do not '
+            'invent ids. No proposal was queued.';
+      }
+    }
+
+    return null;
+  }
+
+  /// Returns [args] with the entity-reference id for [toolName] trimmed of
+  /// incidental whitespace, so a model that pads a copied id (e.g. `"  e1  "`)
+  /// is not falsely rejected and the queued proposal carries the canonical id.
+  /// Tools that reference no foreign id, and non-string ids, pass through
+  /// unchanged.
+  static Map<String, dynamic> _normalizeEntityReferenceArgs(
+    String toolName,
+    Map<String, dynamic> args,
+  ) {
+    final key = switch (toolName) {
+      TaskAgentToolNames.updateTimeEntry => 'entryId',
+      TaskAgentToolNames.updateRunningTimer => 'timerId',
+      _ => null,
+    };
+    if (key == null) return args;
+    final value = args[key];
+    if (value is! String) return args;
+    final trimmed = value.trim();
+    if (trimmed == value) return args;
+    return {...args, key: trimmed};
   }
 
   /// Generate a human-readable summary for a single (non-batch) tool call.

@@ -319,9 +319,15 @@ extension TaskAgentContextBuilder on TaskAgentWorkflow {
 
         final linkedReport = reportByTaskId[linkedTaskId];
         if (linkedReport == null) {
+          // Static absence marker so the model can distinguish "no report
+          // published yet" from "no work" — and so it never has to infer
+          // either from missing fields. Static (not derived from createdAt),
+          // so it does not churn the prompt.
+          row['summaryStatus'] = 'none';
           continue;
         }
 
+        row['summaryStatus'] = 'present';
         row['taskAgentId'] = linkedReport.agentId;
         row['latestTaskAgentReportOneLiner'] = linkedReport.oneLiner;
         row['latestTaskAgentReportTldr'] = linkedReport.tldr;

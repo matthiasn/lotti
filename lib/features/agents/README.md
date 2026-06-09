@@ -39,18 +39,24 @@ Startup does this:
   - parent project context with the latest project-agent `oneLiner` and `tldr`
     (the full report body is omitted to keep wake prefill small) when the task
     belongs to a project
-  - related tasks in the same parent project, capped to a lightweight
-    sibling-task directory with stored task-agent `tldr` values only
   - linked task context
   - these blocks are ordered stable-first — label/correction context,
     parent-project and linked-task summaries, then current task context —
     followed by the volatile tail (current report, agent journal, proposal
     ledger, trigger tokens), so the stable header stays byte-identical across
     wakes and a prompt prefix cache can restore it instead of re-prefilling
-- Task agents also expose a read-only `get_related_task_details` tool for
-  on-demand drill-down into a sibling task that was included in the current
-  related-task directory. The tool is scoped to the current wake's allowlist;
-  it cannot browse arbitrary tasks or other projects.
+- Task agents *define* a read-only `get_related_task_details` tool for
+  on-demand drill-down into a sibling task in the same parent project, but it
+  is **currently disabled** (`enabled: false` in `task_agent_tool_definitions`,
+  the only such tool). `_buildToolDefinitions` filters out disabled tools, so it
+  is never advertised to the model, and `allowedRelatedTaskIds` is never wired
+  (it defaults to the empty set), so even a hallucinated call is rejected. No
+  related-task directory section is injected into the wake prompt today, so the
+  drill-down has no source to draw from. When enabled it would be scoped to the
+  wake's allowlist and same parent project (enforced by
+  `AiInputRepository.buildRelatedTaskDetailsJson`) and could not browse
+  arbitrary tasks. Re-enabling it (which requires building the directory section
+  and wiring the allowlist) or removing it is a deliberate follow-up.
 - Task-agent wakes pass the resolved profile's
   `thinkingModel?.geminiThinkingMode` (a `GeminiThinkingMode?`) into
   `CloudInferenceWrapper`. Thinking level is profile-driven; there is no
@@ -75,11 +81,10 @@ Startup does this:
 ```mermaid
 flowchart LR
   Task["Current task"] --> Wake["TaskAgentWorkflow wake"]
-  Project["Parent project"] --> Wake
-  Siblings["Sibling tasks in same project"] --> Directory["Related-task directory (max 50, stored TLDR only)"]
-  Directory --> Wake
-  Wake --> Drill["get_related_task_details"]
-  Drill --> FullSibling["Full sibling task JSON + latest task-agent report"]
+  Project["Parent project (oneLiner + tldr)"] --> Wake
+  Linked["Linked tasks (compact oneLiner/tldr)"] --> Wake
+  Wake -.->|disabled today| Drill["get_related_task_details<br/>(enabled: false)"]
+  Drill -.-> FullSibling["Full sibling task JSON + latest task-agent report"]
 ```
 
 ```mermaid

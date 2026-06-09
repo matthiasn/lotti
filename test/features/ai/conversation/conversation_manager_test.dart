@@ -198,12 +198,22 @@ class _GeneratedConversationModel {
 
     if (tailStart == 0 && !hadTruncationNotice) return;
 
+    final retainedTail = bodyRoles.skip(tailStart).toList();
+    // Mirror the real impl: the retained tail must not begin with an orphan
+    // `tool` role whose assistant parent was dropped, and an all-orphan strip
+    // aborts the trim rather than emitting a contentless history.
+    while (retainedTail.isNotEmpty &&
+        retainedTail.first == _GeneratedConversationRole.tool) {
+      retainedTail.removeAt(0);
+    }
+    if (retainedTail.isEmpty) return;
+
     roles
       ..clear()
       ..addAll([
         if (hasInitialSystem) _GeneratedConversationRole.system,
         _GeneratedConversationRole.truncationNotice,
-        ...bodyRoles.skip(tailStart),
+        ...retainedTail,
       ]);
   }
 }
@@ -420,6 +430,61 @@ void main() {
         expect(messages.length, greaterThan(10));
         expect(messages.length, lessThanOrEqualTo(50));
       });
+
+      test(
+        'drops leading orphan tool messages so the retained tail starts on a '
+        'valid boundary (asm-3)',
+        () {
+          // Body: u1, a1+tcA, toolA, a2+tcB, toolB — then a user message
+          // pushes past maxHistorySize and triggers the trim. The tail
+          // boundary lands on toolA, whose assistant parent (a1) is dropped.
+          final m =
+              ConversationManager(
+                  conversationId: 'orphan-trim',
+                  maxHistorySize: 5,
+                )
+                ..addUserMessage('u1')
+                ..addAssistantMessage(toolCalls: [_generatedToolCall('tcA')])
+                ..addToolResponse(toolCallId: 'tcA', response: 'ORPHAN_A')
+                ..addAssistantMessage(toolCalls: [_generatedToolCall('tcB')])
+                ..addToolResponse(toolCallId: 'tcB', response: 'KEPT_B')
+                ..addUserMessage('u2');
+
+          final messages = m.getMessagesForRequest();
+
+          // The orphaned tool result (its tool_use parent was trimmed) is gone.
+          expect(
+            messages.any(
+              (x) => x.content?.toString().contains('ORPHAN_A') ?? false,
+            ),
+            isFalse,
+          );
+          // …but the valid tool result (whose assistant parent survived) is
+          // kept — the strip is not over-eager.
+          expect(
+            messages.any(
+              (x) => x.content?.toString().contains('KEPT_B') ?? false,
+            ),
+            isTrue,
+          );
+
+          // Every surviving tool message is preceded by an assistant message —
+          // no orphan tool result remains.
+          for (var i = 0; i < messages.length; i++) {
+            if (messages[i].role == ChatCompletionMessageRole.tool) {
+              expect(
+                messages
+                    .sublist(0, i)
+                    .any((x) => x.role == ChatCompletionMessageRole.assistant),
+                isTrue,
+                reason: 'tool message at $i has no preceding assistant',
+              );
+            }
+          }
+
+          m.dispose();
+        },
+      );
     });
 
     group('addUserMessage', () {

@@ -161,6 +161,8 @@ ChatCompletionMessageToolCall _toolCall({
   ExecuteToolHandler? executeToolHandler,
   ChangeSetBuilder? builder,
   bool withChangeSetBuilder = true,
+  Future<Set<String>> Function()? resolveEditableTimeEntryIds,
+  Future<String?> Function()? resolveRunningTimerId,
 }) {
   const agentId = 'agent-001';
   const taskId = 'task-001';
@@ -198,6 +200,8 @@ ChatCompletionMessageToolCall _toolCall({
     resolveTaskMetadata: resolveTaskMetadata,
     resolveRelatedTaskDetails: resolveRelatedTaskDetails,
     allowedRelatedTaskIds: allowedRelatedTaskIds,
+    resolveEditableTimeEntryIds: resolveEditableTimeEntryIds,
+    resolveRunningTimerId: resolveRunningTimerId,
   );
 
   return (strategy: strategy, builder: csBuilder);
@@ -1508,6 +1512,308 @@ void main() {
         expect(obs.single.priority, ObservationPriority.routine);
         expect(obs.single.category, ObservationCategory.operational);
       });
+    });
+
+    group('entity-reference validation (time entry & timer)', () {
+      ChatCompletionMessageToolCall call(
+        String name,
+        Map<String, dynamic> args,
+      ) => ChatCompletionMessageToolCall(
+        id: 'call-1',
+        type: ChatCompletionMessageToolCallType.function,
+        function: ChatCompletionMessageFunctionCall(
+          name: name,
+          arguments: jsonEncode(args),
+        ),
+      );
+
+      test('queues update_time_entry when the entryId is editable', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveEditableTimeEntryIds: () async => {'entry-1', 'entry-2'},
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call('update_time_entry', {
+              'entryId': 'entry-1',
+              'summary': 'Worked on the API',
+            }),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, hasLength(1));
+        expect(bench.builder.items.single.toolName, 'update_time_entry');
+      });
+
+      test('rejects update_time_entry with a hallucinated entryId', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveEditableTimeEntryIds: () async => {'entry-1'},
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call('update_time_entry', {
+              'entryId': 'ghost-entry',
+              'summary': 'x',
+            }),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, isEmpty);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response: any(
+              named: 'response',
+              that: allOf(
+                contains('ghost-entry'),
+                contains('not an editable time entry'),
+              ),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test(
+        'keeps update_time_entry when the resolver throws (conservative)',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveEditableTimeEntryIds: () async => throw Exception('db down'),
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call('update_time_entry', {
+                'entryId': 'entry-x',
+                'summary': 'x',
+              }),
+            ],
+            manager: mockManager,
+          );
+
+          // Transient failure must not punish a possibly-valid id.
+          expect(bench.builder.items, hasLength(1));
+        },
+      );
+
+      test('does not validate update_time_entry without a resolver', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call('update_time_entry', {'entryId': 'any', 'summary': 'x'}),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, hasLength(1));
+      });
+
+      test(
+        'queues update_running_timer when the timerId matches the running '
+        'timer',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveRunningTimerId: () async => 'timer-1',
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call('update_running_timer', {
+                'timerId': 'timer-1',
+                'summary': 'Refactoring the parser',
+              }),
+            ],
+            manager: mockManager,
+          );
+
+          expect(bench.builder.items, hasLength(1));
+          expect(bench.builder.items.single.toolName, 'update_running_timer');
+        },
+      );
+
+      test(
+        'rejects update_running_timer with a non-matching timerId',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveRunningTimerId: () async => 'timer-1',
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call('update_running_timer', {
+                'timerId': 'timer-OTHER',
+                'summary': 'x',
+              }),
+            ],
+            manager: mockManager,
+          );
+
+          expect(bench.builder.items, isEmpty);
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-1',
+              response: any(
+                named: 'response',
+                that: contains('not the timer running for this task'),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test('rejects update_running_timer when no timer is running', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          resolveRunningTimerId: () async => null,
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            call('update_running_timer', {
+              'timerId': 'timer-1',
+              'summary': 'x',
+            }),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, isEmpty);
+        verify(
+          () => mockManager.addToolResponse(
+            toolCallId: 'call-1',
+            response: any(
+              named: 'response',
+              that: contains('no timer is currently running'),
+            ),
+          ),
+        ).called(1);
+      });
+
+      // A missing/blank entryId is structurally invalid and must be rejected
+      // before reaching the resolver (the `entryId is! String || isEmpty` arm).
+      for (final (label, args) in <(String, Map<String, dynamic>)>[
+        ('a missing', {'summary': 'x'}),
+        ('a blank', {'entryId': '', 'summary': 'x'}),
+      ]) {
+        test('rejects update_time_entry with $label entryId', () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveEditableTimeEntryIds: () async => {'entry-1'},
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [call('update_time_entry', args)],
+            manager: mockManager,
+          );
+
+          expect(bench.builder.items, isEmpty);
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-1',
+              response: any(
+                named: 'response',
+                that: contains('requires a string "entryId"'),
+              ),
+            ),
+          ).called(1);
+        });
+      }
+
+      for (final (label, args) in <(String, Map<String, dynamic>)>[
+        ('a missing', {'summary': 'x'}),
+        ('a blank', {'timerId': '', 'summary': 'x'}),
+      ]) {
+        test('rejects update_running_timer with $label timerId', () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveRunningTimerId: () async => 'timer-1',
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [call('update_running_timer', args)],
+            manager: mockManager,
+          );
+
+          expect(bench.builder.items, isEmpty);
+          verify(
+            () => mockManager.addToolResponse(
+              toolCallId: 'call-1',
+              response: any(
+                named: 'response',
+                that: contains('requires a string "timerId"'),
+              ),
+            ),
+          ).called(1);
+        });
+      }
+
+      test(
+        'trims whitespace in entryId before validating and queuing',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveEditableTimeEntryIds: () async => {'entry-1'},
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call('update_time_entry', {
+                'entryId': '  entry-1  ',
+                'summary': 'x',
+              }),
+            ],
+            manager: mockManager,
+          );
+
+          // Padded id is accepted (not falsely rejected) and queued canonically.
+          expect(bench.builder.items, hasLength(1));
+          expect(bench.builder.items.single.args['entryId'], 'entry-1');
+        },
+      );
+
+      test(
+        'trims whitespace in timerId before comparing and queuing',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveRunningTimerId: () async => 'timer-1',
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call('update_running_timer', {
+                'timerId': '  timer-1  ',
+                'summary': 'x',
+              }),
+            ],
+            manager: mockManager,
+          );
+
+          expect(bench.builder.items, hasLength(1));
+          expect(bench.builder.items.single.args['timerId'], 'timer-1');
+        },
+      );
     });
 
     group('deferred tools with changeSetBuilder', () {

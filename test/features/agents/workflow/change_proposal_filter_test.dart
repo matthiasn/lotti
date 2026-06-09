@@ -205,6 +205,50 @@ void main() {
       expect(response, isNot(contains('queued')));
       expect(response, contains('Skipped 2 redundant update(s)'));
     });
+
+    test('includes rejected info and a do-not-repeat instruction', () {
+      const result = BatchAddResult(
+        added: 1,
+        skipped: 0,
+        rejected: 1,
+        rejectedDetails: [
+          'label "ghost-id" does not exist — do not invent ids',
+        ],
+      );
+      final response = ChangeProposalFilter.formatBatchResponse(result);
+      expect(response, contains('1 item(s) queued'));
+      expect(response, contains('Rejected 1 item(s)'));
+      expect(response, contains('ghost-id'));
+      expect(response, contains('Do not propose these again'));
+    });
+
+    test('omits queued line when zero added but has rejected', () {
+      const result = BatchAddResult(
+        added: 0,
+        skipped: 0,
+        rejected: 2,
+        rejectedDetails: ['a does not exist', 'b does not exist'],
+      );
+      final response = ChangeProposalFilter.formatBatchResponse(result);
+      expect(response, isNot(contains('queued')));
+      expect(response, contains('Rejected 2 item(s)'));
+    });
+
+    test('shows queued, skipped, redundant, and rejected together', () {
+      const result = BatchAddResult(
+        added: 1,
+        skipped: 1,
+        redundant: 1,
+        redundantDetails: ['"Done" is already checked'],
+        rejected: 1,
+        rejectedDetails: ['item "x" does not exist'],
+      );
+      final response = ChangeProposalFilter.formatBatchResponse(result);
+      expect(response, contains('1 item(s) queued'));
+      expect(response, contains('1 malformed item(s) skipped'));
+      expect(response, contains('Skipped 1 redundant update(s)'));
+      expect(response, contains('Rejected 1 item(s)'));
+    });
   });
 
   group('ChangeProposalFilter.checkTaskMetadataRedundancy', () {

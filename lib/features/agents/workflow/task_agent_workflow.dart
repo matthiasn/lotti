@@ -629,6 +629,27 @@ class TaskAgentWorkflow {
             requestedTaskId: requestedTaskId,
           );
         },
+        // The completed entries that `update_time_entry` may target — the same
+        // set rendered in the "Editable Time Entries" prompt section. A
+        // referenced entryId outside this set is a hallucinated id.
+        resolveEditableTimeEntryIds: () async {
+          final timeService = getIt<TimeService>();
+          final runningId = timeService.getCurrent()?.meta.id;
+          final linked = await journalDb.getLinkedEntities(taskId);
+          return linked
+              .whereType<JournalEntry>()
+              .where((entry) => entry.meta.id != runningId)
+              .map((entry) => entry.meta.id)
+              .toSet();
+        },
+        // The id of the timer running for THIS task (mirrors the same-task
+        // branch of the "Active Running Timer" prompt section), or null.
+        resolveRunningTimerId: () async {
+          final timeService = getIt<TimeService>();
+          final current = timeService.getCurrent();
+          if (current is! JournalEntry) return null;
+          return timeService.linkedFrom?.id == taskId ? current.meta.id : null;
+        },
       );
 
       final tools = _buildToolDefinitions();

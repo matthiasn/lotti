@@ -79,11 +79,21 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
     var skipped = 0;
     var redundant = 0;
     final redundantDetails = <String>[];
+    var rejected = 0;
+    final rejectedDetails = <String>[];
     for (var element in array) {
       if (element is Map<String, dynamic>) {
         // Inject targetTaskId into a copy for migration items.
         if (targetTaskIdForMigration is String) {
           element = {...element, 'targetTaskId': targetTaskIdForMigration};
+        }
+        // Normalize incidental whitespace in the element id once, so the blank
+        // check, resolver lookup, dedup, and the queued proposal all use the
+        // same canonical value — a model that copies an id from context may
+        // pad it (e.g. "  item-1  "), which must not become a false rejection.
+        final rawElementId = element['id'];
+        if (rawElementId is String && rawElementId.trim() != rawElementId) {
+          element = {...element, 'id': rawElementId.trim()};
         }
         // Check for redundant add_checklist_item proposals (title already
         // exists on the task or was already proposed in this wake).
@@ -113,12 +123,76 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
           }
         }
 
+        // Fail-closed existence gate for labels. A label id is rejected when
+        // (a) it is missing/blank, or (b) a wired resolver runs cleanly and
+        // finds no such label — a hallucinated id the model invented. A
+        // transient resolver *error* is NOT a rejection: we cannot prove the
+        // id is fake, so the item is kept (the summary falls back to the id).
+        // Rejecting instead of queuing avoids surfacing a raw id as a
+        // suggestion. The resolved name is reused for the summary below.
+        String? resolvedLabelName;
+        if (isLabelBatch) {
+          final labelId = element['id'];
+          if (labelId is! String || labelId.isEmpty) {
+            rejected++;
+            rejectedDetails.add('label assignment is missing a string "id"');
+            continue;
+          }
+          if (labelNameResolver != null) {
+            final resolution = await _resolveLabelNameChecked(labelId);
+            if (!resolution.errored && resolution.name == null) {
+              rejected++;
+              rejectedDetails.add(
+                'label "$labelId" does not exist — only use label ids from '
+                'the "Available Labels" section; do not invent ids',
+              );
+              continue;
+            }
+            resolvedLabelName = resolution.name;
+          }
+        }
+
         // Resolve state once per item to avoid redundant DB lookups and
-        // duplicate error logging.
+        // duplicate error logging. `errored` distinguishes a transient
+        // resolver failure (keep conservatively) from a clean not-found
+        // (reject as a hallucinated id) below.
         final itemId = element['id'];
-        final resolvedState = itemId is String && !isLabelBatch
-            ? await _resolveState(itemId)
-            : null;
+        var resolveErrored = false;
+        ({String? title, bool? isChecked, bool? isArchived})? resolvedState;
+        if (itemId is String && !isLabelBatch) {
+          final resolution = await _resolveStateChecked(itemId);
+          resolveErrored = resolution.errored;
+          resolvedState = resolution.state;
+        }
+
+        // Fail-closed existence gate for updates/migrations that reference an
+        // existing checklist item by id. A missing id, or a wired resolver
+        // that runs cleanly and finds nothing, is rejected — queuing it would
+        // render as a raw id and could not be applied. A transient resolver
+        // error keeps the item (we cannot prove the id is fake).
+        // `add_checklist_item` carries no id and is exempt.
+        final referencesExistingItem =
+            singularToolName == TaskAgentToolNames.updateChecklistItem ||
+            singularToolName == TaskAgentToolNames.migrateChecklistItem;
+        if (referencesExistingItem) {
+          if (itemId is! String || itemId.isEmpty) {
+            rejected++;
+            rejectedDetails.add(
+              '$singularToolName is missing a checklist item "id"',
+            );
+            continue;
+          }
+          if (checklistItemStateResolver != null &&
+              !resolveErrored &&
+              resolvedState == null) {
+            rejected++;
+            rejectedDetails.add(
+              'checklist item "$itemId" does not exist — only reference ids '
+              'present in the task context; do not invent ids',
+            );
+            continue;
+          }
+        }
 
         // Check for redundant update_checklist_item proposals.
         final redundancyDetail = _checkRedundancy(
@@ -151,7 +225,7 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
         }
 
         final summary = isLabelBatch
-            ? await _generateLabelSummary(element)
+            ? _generateLabelSummary(element, resolvedName: resolvedLabelName)
             : _generateItemSummary(
                 singularToolName,
                 element,
@@ -213,6 +287,8 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
       skipped: skipped,
       redundant: redundant,
       redundantDetails: redundantDetails,
+      rejected: rejected,
+      rejectedDetails: rejectedDetails,
     );
   }
 
@@ -294,16 +370,25 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
     return '$prefix item';
   }
 
-  /// Resolve a checklist item's current state via the injected resolver.
+  /// Resolve a checklist item's current state via the injected resolver,
+  /// distinguishing a clean not-found from a transient resolver failure.
   ///
-  /// Returns `null` if no resolver is set or the item cannot be found.
-  Future<({String? title, bool? isChecked, bool? isArchived})?> _resolveState(
-    String itemId,
-  ) async {
+  /// - `errored: false, state: <value>` — resolver ran and found the item.
+  /// - `errored: false, state: null` — resolver ran and found nothing (the id
+  ///   does not exist), or no resolver is wired.
+  /// - `errored: true, state: null` — the resolver threw; the caller must keep
+  ///   the item conservatively rather than treat the id as fake.
+  Future<
+    ({
+      bool errored,
+      ({String? title, bool? isChecked, bool? isArchived})? state,
+    })
+  >
+  _resolveStateChecked(String itemId) async {
     final resolver = checklistItemStateResolver;
-    if (resolver == null) return null;
+    if (resolver == null) return (errored: false, state: null);
     try {
-      return await resolver(itemId);
+      return (errored: false, state: await resolver(itemId));
     } catch (e, s) {
       domainLogger?.error(
         LogDomain.agentWorkflow,
@@ -313,7 +398,7 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
             '${DomainLogger.sanitizeId(itemId)}',
         stackTrace: s,
       );
-      return null;
+      return (errored: true, state: null);
     }
   }
 
@@ -493,14 +578,20 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
   }
 
   /// Generate a human-readable summary for a single exploded label item.
-  Future<String> _generateLabelSummary(Map<String, dynamic> args) async {
+  ///
+  /// [resolvedName] is the label name resolved by the caller's existence gate.
+  /// It is null only on the no-resolver path or after a transient resolver
+  /// error, where the raw-id fallback is the best available display. The name
+  /// is never re-resolved here, so a clean not-found never reaches this method
+  /// (it was already rejected by the gate).
+  String _generateLabelSummary(
+    Map<String, dynamic> args, {
+    String? resolvedName,
+  }) {
     final labelId = args['id'];
     final confidence = args['confidence'];
-    final labelName = labelId is String
-        ? await _resolveLabelName(labelId)
-        : null;
     final display =
-        labelName ?? (labelId is String ? _truncateId(labelId) : '?');
+        resolvedName ?? (labelId is String ? _truncateId(labelId) : '?');
     final confidenceSuffix =
         confidence is String &&
             const ['very_high', 'high', 'medium', 'low'].contains(confidence)
@@ -509,12 +600,22 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
     return 'Assign label: "$display"$confidenceSuffix';
   }
 
-  /// Resolve a label's human-readable name via the injected resolver.
-  Future<String?> _resolveLabelName(String labelId) async {
+  /// Resolve a label's human-readable name via the injected resolver. Returns
+  /// null on a miss or a transient error; callers that must tell those apart
+  /// use [_resolveLabelNameChecked].
+  Future<String?> _resolveLabelName(String labelId) async =>
+      (await _resolveLabelNameChecked(labelId)).name;
+
+  /// Resolve a label name, distinguishing a clean not-found
+  /// (`errored: false, name: null`) from a transient resolver failure
+  /// (`errored: true`). See [_resolveStateChecked] for the same contract.
+  Future<({bool errored, String? name})> _resolveLabelNameChecked(
+    String labelId,
+  ) async {
     final resolver = labelNameResolver;
-    if (resolver == null) return null;
+    if (resolver == null) return (errored: false, name: null);
     try {
-      return await resolver(labelId);
+      return (errored: false, name: await resolver(labelId));
     } catch (e, s) {
       domainLogger?.error(
         LogDomain.agentWorkflow,
@@ -524,7 +625,7 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
             '${DomainLogger.sanitizeId(labelId)}',
         stackTrace: s,
       );
-      return null;
+      return (errored: true, name: null);
     }
   }
 

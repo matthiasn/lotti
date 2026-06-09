@@ -70,7 +70,16 @@ class ChangeProposalFilter {
   static String formatBatchResponse(BatchAddResult result) {
     final parts = <String>[];
 
-    if (result.added > 0 || (result.skipped == 0 && result.redundant == 0)) {
+    if (result.added > 0) {
+      parts.add(
+        'Proposal queued for user review '
+        '(${result.added} item(s) queued).',
+      );
+    } else if (result.skipped == 0 &&
+        result.redundant == 0 &&
+        result.rejected == 0) {
+      // Empty batch with nothing to explain — preserve the prior message so
+      // an empty array still reads as a (no-op) queued proposal.
       parts.add(
         'Proposal queued for user review '
         '(${result.added} item(s) queued).',
@@ -85,6 +94,15 @@ class ChangeProposalFilter {
       final details = result.redundantDetails.join('; ');
       parts.add(
         'Skipped ${result.redundant} redundant update(s): $details.',
+      );
+    }
+
+    if (result.rejected > 0) {
+      final details = result.rejectedDetails.join('; ');
+      parts.add(
+        'Rejected ${result.rejected} item(s) that reference entities which '
+        'do not exist (most likely invented ids): $details. '
+        'Do not propose these again.',
       );
     }
 

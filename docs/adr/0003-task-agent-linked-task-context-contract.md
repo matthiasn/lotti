@@ -69,5 +69,9 @@ flowchart LR
 
 ## Related
 
+- [ADR 0027: Wake Notification Propagation and Storm Prevention](./0027-wake-notification-propagation-and-storm-prevention.md)
+  — linked-task report bodies are refreshed at the dependent agent's *next* wake
+  (read-time), not pushed when a neighbor republishes; that wake is itself driven
+  by the cross-entity fan-out described there.
 - `lib/features/agents/workflow/task_agent_workflow.dart`
 - `lib/features/ai/repository/ai_input_repository.dart`
