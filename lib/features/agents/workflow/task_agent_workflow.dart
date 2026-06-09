@@ -64,6 +64,7 @@ export 'package:lotti/features/agents/workflow/wake_result.dart';
 part 'task_agent_context_builder.dart';
 part 'task_agent_persistence_helpers.dart';
 part 'task_agent_prompt_builder.dart';
+part 'task_agent_user_message_builder.dart';
 
 /// Assembles context, runs a conversation, and persists results for a single
 /// Task Agent wake cycle.
