@@ -1,4 +1,4 @@
-// Real-workflow Level 1 bench for the planning agent (ADR 0026, Phase 1).
+// Real-workflow Level 1 bench for the planning agent (ADR 0029, Phase 1).
 //
 // Drives the REAL `DayAgentWorkflow.execute(...)` for a drafting wake, seeded
 // from an `EvalScenario`, with the backend services mocked (as the existing

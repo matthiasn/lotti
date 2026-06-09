@@ -1,0 +1,60 @@
+// Scripted real-workflow implementation of the evaluation target seam.
+//
+// This file intentionally stays out of `eval_harness.dart`: it imports the
+// real workflow benches, and those benches depend on the centralized test mocks.
+
+import 'eval_models.dart';
+import 'eval_target.dart';
+import 'planner_eval_bench.dart';
+import 'task_agent_eval_bench.dart';
+
+/// Runs an eval scenario through the real workflow benches with scripted model
+/// behaviour.
+class ScriptedEvalTarget implements EvalTarget {
+  /// Creates a target that resolves scripted model behaviour per scenario.
+  ScriptedEvalTarget(this.behaviorFor, {this.profileName = 'scripted'});
+
+  /// Creates a target backed by a side map keyed by `EvalScenario.id`.
+  ///
+  /// Keeping the scripted behaviour outside `EvalScenario` preserves the plain
+  /// JSON scenario model and avoids pulling bench/mock dependencies into the
+  /// pure harness barrel.
+  factory ScriptedEvalTarget.fromMap(
+    Map<String, ScriptedAgentBehavior> behaviors, {
+    String profileName = 'scripted',
+  }) {
+    final scriptedBehaviors = Map<String, ScriptedAgentBehavior>.unmodifiable(
+      behaviors,
+    );
+    return ScriptedEvalTarget(
+      (scenario) {
+        final behavior = scriptedBehaviors[scenario.id];
+        if (behavior == null) {
+          throw StateError(
+            'No scripted behavior registered for "${scenario.id}"',
+          );
+        }
+        return behavior;
+      },
+      profileName: profileName,
+    );
+  }
+
+  /// Resolves the scripted model behaviour for a scenario.
+  final ScriptedAgentBehavior Function(EvalScenario scenario) behaviorFor;
+
+  @override
+  final String profileName;
+
+  @override
+  Future<AgentRunOutput> run(EvalScenario scenario, EvalProfile _) async {
+    final behavior = behaviorFor(scenario);
+    return switch (scenario.agentKind) {
+      AgentKind.planningAgent => PlannerEvalBench.runDraftingWake(
+        scenario,
+        behavior,
+      ),
+      AgentKind.taskAgent => TaskAgentEvalBench.runWake(scenario, behavior),
+    };
+  }
+}

@@ -1,4 +1,4 @@
-// Canonical model profiles for Level 2 evaluation (ADR 0026).
+// Canonical model profiles for Level 2 evaluation (ADR 0029).
 //
 // `modelId` is an `AiConfigModel` id resolved at run time via
 // `resolveInferenceProvider` (ADR 0008); the placeholders below are wired to

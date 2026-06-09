@@ -1,4 +1,4 @@
-// Trace persistence for the evaluation harness (ADR 0026).
+// Trace persistence for the evaluation harness (ADR 0029).
 //
 // The Level 2 runner writes one `<scenario>__<profile>.trace.json` per run under
 // `eval/runs/<runId>/`. The Claude Code judge (eval/grade_run.md) writes a

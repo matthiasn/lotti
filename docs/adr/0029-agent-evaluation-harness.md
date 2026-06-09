@@ -1,4 +1,4 @@
-# ADR 0026: Tiered Agent Evaluation Harness
+# ADR 0029: Tiered Agent Evaluation Harness
 
 - Status: Proposed
 - Date: 2026-06-09
@@ -184,7 +184,7 @@ read from the recorded `InferenceUsage` and tool-call list).
 
 ### 6. Where things live
 
-- `docs/adr/0026-*` (this), `docs/implementation_plans/2026-06-09_agent_evaluation_harness.md`.
+- `docs/adr/0027-*` (this), `docs/implementation_plans/2026-06-09_agent_evaluation_harness.md`.
 - `eval/` (repo root, non-build): `README.md`, `prompts/`, `grade_run.md`,
   `run_level2.sh`, and `runs/` (git-ignored artifacts).
 - `test/eval/harness/` (Dart support library, mirrors `test/mocks`,

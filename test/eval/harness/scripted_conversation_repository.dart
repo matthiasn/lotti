@@ -1,4 +1,4 @@
-// A scripted ConversationRepository for the eval harness (ADR 0026).
+// A scripted ConversationRepository for the eval harness (ADR 0029).
 //
 // Generalises the private `_ConversationHarness` used in
 // test/features/daily_os_next/agents/workflow/day_agent_workflow_test.dart so

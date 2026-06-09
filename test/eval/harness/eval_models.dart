@@ -1,4 +1,4 @@
-// Data models for the tiered agent evaluation harness (ADR 0026).
+// Data models for the tiered agent evaluation harness (ADR 0029).
 //
 // These are plain, JSON-serialisable value objects with NO dependency on the
 // app's entity types, so the eval dataset is easy to author, diff, and review.

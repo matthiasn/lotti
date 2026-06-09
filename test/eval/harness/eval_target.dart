@@ -1,4 +1,4 @@
-// The execution seam for the evaluation harness (ADR 0026).
+// The execution seam for the evaluation harness (ADR 0029).
 //
 // An `EvalTarget` turns a scenario + profile into an `AgentRunOutput`. The same
 // scenario is graded by every target so Level 1 (scripted) and Level 2 (live)

@@ -1,4 +1,4 @@
-// Working Level 1 example for the task agent (ADR 0026).
+// Working Level 1 example for the task agent (ADR 0029).
 //
 // Exercises the task-agent assertion suite on a good wake and on a regression
 // (forbidden DONE status, out-of-range estimate, >3 labels, duplicate checklist

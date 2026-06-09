@@ -1,4 +1,4 @@
-// Aggregates traces + verdicts into a per-profile summary (ADR 0026).
+// Aggregates traces + verdicts into a per-profile summary (ADR 0029).
 //
 // Pure (no IO) so it is unit-testable. The `run_level2.sh` reporter step loads
 // traces via `TraceWriter.readTraces` and passes them here.

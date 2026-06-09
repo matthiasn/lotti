@@ -1,4 +1,4 @@
-// Working Level 1 example for the planning agent (ADR 0026).
+// Working Level 1 example for the planning agent (ADR 0029).
 //
 // Demonstrates the full scenario -> output -> assertions -> trace -> reporter
 // pipeline with a `FixtureEvalTarget`, and proves the assertions actually catch

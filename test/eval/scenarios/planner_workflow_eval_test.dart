@@ -12,7 +12,8 @@ import 'package:lotti/features/ai/model/inference_usage.dart';
 
 import '../../helpers/fallbacks.dart';
 import '../harness/eval_harness.dart';
-import '../harness/planner_eval_bench.dart';
+import '../harness/planner_eval_bench.dart' show ScriptedAgentBehavior;
+import '../harness/scripted_eval_target.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -102,7 +103,10 @@ void main() {
       );
 
       final scenario = scenarioWith(appState);
-      final output = await PlannerEvalBench.runDraftingWake(scenario, behavior);
+      final output = await ScriptedEvalTarget.fromMap(
+        {scenario.id: behavior},
+        profileName: kFrontierProfile.name,
+      ).run(scenario, kFrontierProfile);
 
       // The real workflow ran end-to-end.
       expect(output.success, isTrue, reason: output.error);
@@ -151,7 +155,10 @@ void main() {
       );
 
       final scenario = scenarioWith(appState);
-      final output = await PlannerEvalBench.runDraftingWake(scenario, behavior);
+      final output = await ScriptedEvalTarget.fromMap(
+        {scenario.id: behavior},
+        profileName: kFrontierProfile.name,
+      ).run(scenario, kFrontierProfile);
 
       // Workflow plumbing succeeded — over-capacity is a quality gate, not a
       // crash.

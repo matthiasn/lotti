@@ -1,4 +1,4 @@
-// Level 1 assertion library for the agent evaluation harness (ADR 0026).
+// Level 1 assertion library for the agent evaluation harness (ADR 0029).
 //
 // Pure, deterministic checks over an `AgentRunOutput`. Each returns an
 // `EvalCheck` so the SAME functions can run inside fast Level 1 tests (as

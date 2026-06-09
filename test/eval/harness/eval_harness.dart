@@ -1,4 +1,4 @@
-// Barrel export for the tiered agent evaluation harness (ADR 0026).
+// Barrel export for the tiered agent evaluation harness (ADR 0029).
 //
 // Import from scenario/test files with a relative path, e.g. from
 // test/eval/scenarios/*: import '../harness/eval_harness.dart';

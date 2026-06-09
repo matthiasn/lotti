@@ -210,5 +210,5 @@ logs/
 
 .claude/projects/
 
-# Agent evaluation harness run artifacts (ADR 0026)
+# Agent evaluation harness run artifacts (ADR 0027)
 /eval/runs/

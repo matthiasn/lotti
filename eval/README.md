@@ -81,6 +81,11 @@ optional hard expectations) under `test/eval/scenarios/`. No codegen. The same
 scenario feeds Level 1 and Level 2 so they never drift. Scenarios may be drafted
 by an LLM, but must be human-reviewed before commit.
 
+For scripted Level 1 workflow runs, keep the golden `ScriptedAgentBehavior`
+outside the scenario in a side map keyed by `scenario.id`, then pass it through
+`ScriptedEvalTarget.fromMap({...})`. That keeps `EvalScenario` JSON-serializable
+and keeps the pure harness barrel free of bench/mock imports.
+
 > Level 2 executes the real workflows, which need the Flutter test binding, so
 > the live runner is a tagged `flutter test` entrypoint — not a plain
-> `dart run` script. See ADR 0026 for why.
+> `dart run` script. See ADR 0029 for why.
