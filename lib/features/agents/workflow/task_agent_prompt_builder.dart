@@ -235,7 +235,7 @@ The report MUST NOT contain:
 Use `record_observations` for ALL internal notes. Observations are private
 and never shown to the user. They persist as your memory across wakes.''';
 
-  /// Parent-project context guidance for task agents.
+  /// Parent-project and linked-task context guidance for task agents.
   static const taskAgentScaffoldProjectContext = '''
 
 
@@ -252,6 +252,22 @@ Use this as high-level planning context:
 - look for project-level dependencies or risks that change what matters next
 - prefer direct evidence from the current task when it conflicts with older,
   broader project context
+
+## Linked Tasks
+
+When this task links to or from other tasks, the wake payload includes a
+`Linked Tasks` JSON block with two arrays:
+- `linked_from`: child tasks that reference THIS task (typically subtasks).
+- `linked_to`: parent tasks that THIS task references (typically epics).
+
+Each row carries the linked task's metadata and, when a report exists, a compact
+summary of that task's own agent report (`latestTaskAgentReportTldr`,
+`latestTaskAgentReportOneLiner`, `latestTaskAgentReportCreatedAt`). Treat
+`latestTaskAgentReportCreatedAt` as the summary's age and prefer the current
+task's own evidence when a linked summary looks stale. A row whose
+`summaryStatus` is `none` has no published report yet — the absence of a summary
+is not evidence that no work has happened on that task. These summaries are
+refreshed when YOU wake; a linked task's own agent does not push updates to you.
 ''';
 
   /// Trailing scaffold: tool usage guidelines and important constraints.
@@ -264,6 +280,11 @@ Use this as high-level planning context:
   estimate, language, labels), check the current value in the task context. If
   the value is already what you would set, do NOT call the tool. Every
   unnecessary tool call wastes a turn and clutters the audit log.
+- **One call per tool**: most deferred tools — title, status, priority, due
+  date, estimate, language, and the time-entry / running-timer tools — may be
+  queued at most ONCE per wake; a second call to the same tool is rejected. Only
+  the checklist/label batch tools and `create_follow_up_task` may be called more
+  than once.
 - **Duplicate checklist items**: when the checklist contains two items that
   mean the same thing, propose archiving the redundant one via
   `update_checklist_items` with `isArchived: true` (keep the better-phrased
@@ -443,12 +464,16 @@ to keep the user-facing suggestion list clean and trustworthy:
     final buffer = StringBuffer();
 
     // Ordering is by volatility, least-volatile first, so provider prefix
-    // caches survive consecutive wakes: label / correction context,
-    // parent-project + linked-task summaries (all rare-change), then the
-    // compacted task log (append-only between folds), then the volatile tail
-    // (task-state JSON with its ticking timeSpent, timer, report, journal,
-    // ledger, trigger tokens). One flipped byte voids the cache for every
-    // byte after it, so nothing per-wake-mutable may precede the log.
+    // caches survive consecutive wakes. The stable header is label / correction
+    // context (rare-change, user-gated) then the compacted task log
+    // (append-only between folds), which ends the prefix. Everything that
+    // changes more often than the log lives in the volatile tail below:
+    // the task-state JSON (ticking timeSpent), the parent-project and
+    // linked-task summaries (which embed OTHER agents' reports and so change
+    // out-of-band with this task's wakes — see ADR 0027), timer, ledger,
+    // attention, observations, and trigger tokens. One flipped byte voids the
+    // cache for every byte after it, so nothing that changes more often than
+    // the log may precede it. (This matches the project agent's ordering.)
 
     // Inject label context and correction examples.
     try {
@@ -479,24 +504,6 @@ to keep the user-facing suggestion list clean and trustworthy:
         stackTrace: s,
       );
       // Non-fatal: continue without context.
-    }
-
-    if (projectContextJson.isNotEmpty && projectContextJson != '{}') {
-      buffer
-        ..writeln('## Parent Project Context')
-        ..writeln('```json')
-        ..writeln(projectContextJson)
-        ..writeln('```')
-        ..writeln();
-    }
-
-    if (linkedTasksJson.isNotEmpty && linkedTasksJson != '{}') {
-      buffer
-        ..writeln('## Linked Tasks')
-        ..writeln('```json')
-        ..writeln(linkedTasksJson)
-        ..writeln('```')
-        ..writeln();
     }
 
     final useCompactedLog =
@@ -530,6 +537,30 @@ to keep the user-facing suggestion list clean and trustworthy:
 
     // --- Volatile tail: changes most across wakes, so it follows the stable
     // header above to keep that header byte-identical and prefix-cacheable. ---
+
+    // Parent-project and linked-task summaries embed OTHER agents' latest
+    // reports (their oneLiner / tldr / createdAt), which change out-of-band
+    // with this task's wakes (ADR 0027). They live here in the volatile tail —
+    // never in the stable prefix — so a neighbor's republish cannot void this
+    // task's warm log/prefix cache. Placed ahead of the ticking task-state so
+    // they remain cacheable within the tail on wakes where no neighbor changed.
+    if (projectContextJson.isNotEmpty && projectContextJson != '{}') {
+      buffer
+        ..writeln('## Parent Project Context')
+        ..writeln('```json')
+        ..writeln(projectContextJson)
+        ..writeln('```')
+        ..writeln();
+    }
+
+    if (linkedTasksJson.isNotEmpty && linkedTasksJson != '{}') {
+      buffer
+        ..writeln('## Linked Tasks')
+        ..writeln('```json')
+        ..writeln(linkedTasksJson)
+        ..writeln('```')
+        ..writeln();
+    }
 
     if (useCompactedLog) {
       buffer

@@ -80,6 +80,8 @@ class TaskAgentStrategy extends ConversationStrategy {
     this.resolveTaskMetadata,
     this.resolveRelatedTaskDetails,
     this.allowedRelatedTaskIds = const <String>{},
+    this.resolveEditableTimeEntryIds,
+    this.resolveRunningTimerId,
   });
 
   /// The [AgentToolExecutor] that wraps handler calls with enforcement and
@@ -136,6 +138,18 @@ class TaskAgentStrategy extends ConversationStrategy {
 
   /// Allowlist of sibling task IDs exposed in the current wake payload.
   final Set<String> allowedRelatedTaskIds;
+
+  /// Optional resolver for the set of completed time-entry ids linked to this
+  /// task — the only ids `update_time_entry` may target. When provided, an
+  /// `entryId` outside this set is rejected as a hallucinated id rather than
+  /// queued as a proposal that could not be applied. A transient resolver
+  /// failure keeps the proposal (we cannot prove the id is fake).
+  final Future<Set<String>> Function()? resolveEditableTimeEntryIds;
+
+  /// Optional resolver for the id of the timer currently running for THIS
+  /// task, or null when no such timer is running. When provided,
+  /// `update_running_timer` is rejected unless its `timerId` matches.
+  final Future<String?> Function()? resolveRunningTimerId;
 
   String? _reportContent;
   String? _reportTldr;

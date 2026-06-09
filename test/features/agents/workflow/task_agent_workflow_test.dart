@@ -1020,6 +1020,20 @@ void main() {
           capturedSystemMessage,
           contains('## Parent Project Context'),
         );
+        // Linked-tasks legend (graph-3): the from/to directionality is
+        // explained so the model can read it, and the freshness marker
+        // (graph-5) is documented.
+        expect(capturedSystemMessage, contains('## Linked Tasks'));
+        expect(
+          capturedSystemMessage,
+          contains('`linked_from`: child tasks that reference THIS task'),
+        );
+        expect(capturedSystemMessage, contains('summaryStatus'));
+        // The enforced single-use contract is surfaced up front (sp-3).
+        expect(
+          capturedSystemMessage,
+          contains('queued at most ONCE per wake'),
+        );
         // Related-tasks scaffold is disabled to reduce context pollution.
         expect(
           capturedSystemMessage,
@@ -3219,6 +3233,8 @@ void main() {
           expect(message, contains('## Linked Tasks'));
           expect(message, contains('Related'));
           expect(message, contains('latestTaskAgentReportTldr'));
+          // A resolved report is marked present (graph-5 freshness marker).
+          expect(message, contains('"summaryStatus": "present"'));
           // Compact summary is embedded…
           expect(
             message,
@@ -3353,6 +3369,9 @@ void main() {
           expect(message, contains('Related'));
           // No report enrichment happened because the lookup failed.
           expect(message, isNot(contains('latestTaskAgentReportTldr')));
+          // …and the row is marked as having no published report (graph-5),
+          // so the model can tell "no report" apart from "no work".
+          expect(message, contains('"summaryStatus": "none"'));
         },
       );
 
@@ -5114,15 +5133,24 @@ void main() {
         },
       );
 
-      test('update_checklist_items with missing id is deferred', () async {
-        // Items with missing id are still valid Maps and get deferred.
-        // Validation happens at confirmation time.
+      test('update_checklist_items with a missing id is rejected', () async {
+        // A checklist update without an id cannot be applied, so it is
+        // rejected at queue time (not deferred to confirmation) with
+        // model-facing feedback — never surfaced as a raw-id suggestion.
         final result = await executeWithToolCallOnRealTask(
           'update_checklist_items',
           '{"items":[{"isChecked":true}]}',
         );
         expect(result.success, isTrue);
-        verifyDeferredToolResponse(mockConversationManager);
+        verify(
+          () => mockConversationManager.addToolResponse(
+            toolCallId: 'tc-1',
+            response: any(
+              named: 'response',
+              that: contains('missing a checklist item "id"'),
+            ),
+          ),
+        ).called(1);
       });
 
       test('update_task_estimate accepts numeric string minutes', () async {
@@ -7043,6 +7071,154 @@ void main() {
             .trimRight();
         expect(logBlock(secondPrompt), startsWith(logBlock(firstPrompt)));
         expect(logBlock(secondPrompt), contains('second note'));
+      });
+
+      test('a neighbor report change leaves the stable prefix byte-identical '
+          '(parent/linked summaries live in the volatile tail)', () async {
+        // asm-2 / ADR 0027: the parent-project and linked-task blocks embed
+        // OTHER agents' reports, which change out-of-band with this task's
+        // wakes. They must sit AFTER the task log so a neighbor's republish
+        // cannot void this task's warm prefix cache. Here the log is held
+        // constant and only the parent-project report changes between wakes.
+        const noteContent = {'entryType': 'text', 'text': 'stable note'};
+        final noteDigest = ContentDigest.of(noteContent);
+
+        when(() => mockSyncService.repository).thenReturn(mockAgentRepository);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.system,
+          ),
+        ).thenAnswer((_) async => []);
+        when(
+          () => mockAgentRepository.getMessagesByKind(
+            agentId,
+            AgentMessageKind.summary,
+          ),
+        ).thenAnswer((_) async => []);
+        when(() => mockAgentRepository.getLinksFrom(agentId)).thenAnswer(
+          (_) async => <AgentLink>[
+            AgentLink.messagePayload(
+              id: 'pl-1',
+              fromId: agentId,
+              toId: noteDigest,
+              createdAt: DateTime(2024, 6, 2),
+              updatedAt: DateTime(2024, 6, 2),
+              vectorClock: null,
+              contentEntryId: 'e1',
+              sourceCreatedAt: DateTime(2024, 6),
+            ),
+          ],
+        );
+        when(() => mockAgentRepository.getEntity(noteDigest)).thenAnswer(
+          (_) async => AgentDomainEntity.agentMessagePayload(
+            id: noteDigest,
+            agentId: agentId,
+            createdAt: DateTime(2024, 6, 2),
+            vectorClock: null,
+            content: noteContent,
+          ),
+        );
+        when(
+          () => mockAiInputRepository.buildTaskStateMarkdown(taskId),
+        ).thenAnswer((_) async => '- Title: Slim header');
+
+        stubFullExecutePath(
+          mockAgentRepository: mockAgentRepository,
+          mockAiInputRepository: mockAiInputRepository,
+          mockAiConfigRepository: mockAiConfigRepository,
+          mockConversationManager: mockConversationManager,
+          testAgentState: testAgentState,
+          geminiModel: geminiModel,
+          geminiProvider: geminiProvider,
+          agentId: agentId,
+          taskId: taskId,
+        );
+
+        // The parent-project agent republishes between the two wakes — its
+        // tldr and createdAt change, simulating out-of-band neighbor activity.
+        var projectWake = 0;
+        when(
+          () => mockAiInputRepository.buildProjectContextJsonForTask(taskId),
+        ).thenAnswer((_) async {
+          projectWake++;
+          return jsonEncode({
+            'projectId': 'proj-1',
+            'latestProjectAgentReport': {
+              'tldr': 'Project tldr v$projectWake',
+              'createdAt': '2024-06-0${projectWake}T00:00:00.000',
+            },
+          });
+        });
+
+        final workflow = createTestWorkflow(
+          agentRepository: mockAgentRepository,
+          conversationRepository: mockConversationRepository,
+          aiInputRepository: mockAiInputRepository,
+          aiConfigRepository: mockAiConfigRepository,
+          journalDb: mockJournalDb,
+          cloudInferenceRepository: mockCloudInferenceRepository,
+          journalRepository: mockJournalRepository,
+          checklistRepository: mockChecklistRepository,
+          labelsRepository: mockLabelsRepository,
+          syncService: mockSyncService,
+          templateService: mockTemplateService,
+          inputCaptureService: _RecordingCaptureService(),
+          logSummarizer: stubLogSummarizer(),
+        );
+
+        final sentMessages = <String>[];
+        mockConversationRepository
+          ..maxDelegateCalls = 4
+          ..sendMessageDelegate =
+              ({
+                required conversationId,
+                required message,
+                required model,
+                required provider,
+                required inferenceRepo,
+                tools,
+                toolChoice,
+                temperature = 0.7,
+                strategy,
+              }) async {
+                sentMessages.add(message);
+                return null;
+              };
+
+        final firstResult = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: runKey,
+          triggerTokens: {},
+          threadId: threadId,
+        );
+        expect(firstResult.success, isTrue);
+        String lastPrompt() =>
+            sentMessages.lastWhere((m) => m.contains('## Task Log'));
+        final firstPrompt = lastPrompt();
+
+        final secondResult = await workflow.execute(
+          agentIdentity: testAgentIdentity,
+          runKey: 'run-key-2',
+          triggerTokens: {},
+          threadId: threadId,
+        );
+        expect(secondResult.success, isTrue);
+        final secondPrompt = lastPrompt();
+
+        // The neighbor report changed, yet everything up to the task log is
+        // byte-identical — the warm prefix cache survives.
+        String head(String s) => s.substring(0, s.indexOf('## Task Log'));
+        expect(head(secondPrompt), head(firstPrompt));
+
+        // The parent-project block lives in the volatile tail (after the log)
+        // and reflects the changed neighbor report.
+        expect(
+          secondPrompt.indexOf('## Parent Project Context'),
+          greaterThan(secondPrompt.indexOf('## Task Log')),
+        );
+        expect(firstPrompt, contains('Project tldr v1'));
+        expect(secondPrompt, contains('Project tldr v2'));
       });
     });
   });

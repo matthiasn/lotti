@@ -32,6 +32,75 @@ fail-closed pass over every task-agent tool so a **hallucinated entity ID** can
 never be queued as a suggestion or surfaced as raw-ID text — see the next
 section.
 
+## Implementation status (2026-06-09)
+
+Implemented in the working tree (analyzer clean; touched test files green):
+
+- **Priority fix (#0) — DONE.** Fail-closed entity-reference validation across
+  the exploder (labels, checklist update/migrate) and the strategy (time-entry
+  `entryId`, running-timer `timerId`). Hallucinated ids are rejected with
+  model-facing feedback via a new `BatchAddResult.rejected` bucket /
+  `_checkEntityReference`; raw ids are never surfaced. A clean not-found rejects;
+  a transient resolver error keeps conservatively. Covered by exploder /
+  filter / strategy / workflow tests.
+- **asm-2 — DONE.** Parent-project and linked-task JSON moved below `## Task Log`
+  into the volatile tail (mirrors the project agent). Regression test asserts a
+  neighbor report change leaves the pre-log prefix byte-identical.
+- **graph-3 / graph-5 — DONE.** `linked_from`/`linked_to` legend + a static
+  `summaryStatus: present|none` marker and a `createdAt`-age sentence (no
+  time-relative stale flag in the prefix).
+- **sp-3 — DONE.** The enforced single-use contract is stated up front.
+- **graph-1 — DONE (docs).** Captured in
+  [ADR 0027](../adr/0027-wake-notification-propagation-and-storm-prevention.md),
+  cross-linked from ADR 0002/0003.
+- **asm-3 — DONE.** `ConversationManager._trimHistoryIfNeeded` drops leading
+  orphan `tool` messages so a trimmed tail starts on a valid boundary.
+
+Decisions / deferrals (with reasons):
+
+- **graph-2 — reconciled as docs, not delete/enable.** Re-enabling the drill-down
+  needs a "related-tasks directory" prompt section that does not exist (a feature,
+  not a reconciliation); deleting a feature-flagged-with-tests integration is a
+  product call. The README was the actual defect (it claimed a live capability)
+  and is now accurate (tool documented as disabled). Enable-vs-delete is a
+  deliberate follow-up.
+- **sp-1 broad scaffold reorder + pd-3/sp-2 aggressive prose dedup — DEFERRED.**
+  The review rated the behavioral gain unproven and flagged regression risk in
+  naive dedup (distinct content hides in near-duplicate prose). The safe,
+  additive parts (single-use line, legend, freshness) were done instead.
+- **asm-4 (open-proposal dedup + trigger-token enrichment) — DEFERRED.** The
+  compacted-mode ledger/guard duplication is a deliberate, tested design (unified
+  ledger + high-salience guard, the #3276 fix); open proposals are usually 0–1, so
+  the payoff is marginal and removing it would churn tested behavior. The
+  trigger-token enrichment risks the N+1 lookup pattern the codebase fights.
+- **xfer-2/3 (per-task durable knowledge) — NOT BUILT (per plan).** The plan's
+  own recommendation is "measure first; start with the cheap surfacing fixes; do
+  not build a store yet."
+
+### Adversarial review of the diff
+
+The hardening diff went through a multi-agent adversarial review (round 1: 30
+agents — one skeptical reviewer per dimension, each finding independently
+verified by a refuting skeptic) followed by an inline adversarial self-review of
+the resulting fixes (round 2).
+
+- **Verdict: no confirmed bug or regression.** All four invariants (prefix
+  byte-stability, ADR 0020 head/tail reconstruction, convergence, error-vs-
+  not-found) were verified preserved — several with explicit tests. The
+  must-fix list was empty.
+- **Applied from the review:** corrected the single-use scaffold line to match
+  the runtime guard (it also single-uses the time-entry/timer tools); a
+  defensive empty-tail guard in `_trimHistoryIfNeeded`; and fail-closed branch
+  coverage for missing/blank `entryId` (`update_time_entry`), missing/blank
+  `timerId` (`update_running_timer`), and the `migrate_checklist_item`
+  missing-id gate, plus a positive "valid pair survives" assertion on the
+  orphan-trim test.
+- **Deferred follow-up:** the editable-time-entry-id / running-timer-id
+  computation is duplicated between the prompt-builder sections and the
+  workflow's resolver closures (parity verified byte-exact today, but only by
+  inspection). A shared helper consumed by both would make parity hold by
+  construction — worth doing if these sections are touched again.
+
 ## How this plan was produced
 
 An adversarial multi-agent review (find → independently refute → synthesize) ran
