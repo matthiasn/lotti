@@ -11,7 +11,6 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/projection/decision_events.dart';
@@ -35,6 +34,7 @@ import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_source_renderer.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
+import 'package:lotti/features/agents/workflow/wake_output_writer.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 import 'package:lotti/features/ai/conversation/conversation_manager.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -66,7 +66,6 @@ part 'task_agent_persistence_helpers.dart';
 part 'task_agent_prompt_builder.dart';
 part 'task_agent_user_message_builder.dart';
 part 'task_agent_execute.dart';
-part 'task_agent_persist_outputs.dart';
 
 /// Assembles context, runs a conversation, and persists results for a single
 /// Task Agent wake cycle.

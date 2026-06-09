@@ -519,23 +519,27 @@ extension TaskAgentExecute on TaskAgentWorkflow {
 
       final observations = strategy.extractObservations();
 
-      final reportToEmbed = await _persistWakeOutputs(
-        strategy: strategy,
-        reportContent: reportContent,
-        reportTldr: reportTldr,
-        reportOneLiner: reportOneLiner,
-        observations: observations,
-        retractionService: retractionService,
-        changeSetBuilder: changeSetBuilder,
-        ledger: ledger,
-        pendingSets: pendingSets,
-        state: state,
-        taskId: taskId,
-        agentId: agentId,
-        threadId: threadId,
-        runKey: runKey,
-        now: now,
-      );
+      final reportToEmbed =
+          await WakeOutputWriter(
+            syncService: syncService,
+            agentRepository: agentRepository,
+          ).persist(
+            strategy: strategy,
+            reportContent: reportContent,
+            reportTldr: reportTldr,
+            reportOneLiner: reportOneLiner,
+            observations: observations,
+            retractionService: retractionService,
+            changeSetBuilder: changeSetBuilder,
+            ledger: ledger,
+            pendingSets: pendingSets,
+            state: state,
+            taskId: taskId,
+            agentId: agentId,
+            threadId: threadId,
+            runKey: runKey,
+            now: now,
+          );
 
       // 9b. Embed the report for vector search (fire-and-forget).
       // Runs after the transaction commits so we never embed rolled-back data.

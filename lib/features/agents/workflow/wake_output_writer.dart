@@ -1,20 +1,64 @@
-part of 'task_agent_workflow.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger.dart';
+import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
+import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/workflow/change_set_builder.dart';
+import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
+import 'package:uuid/uuid.dart';
 
-/// Transactional persistence of a wake cycle’s outputs (thought, report,
+/// Report details captured inside the wake transaction and returned to the
+/// caller for post-commit embedding. Carries the freshly written report's id
+/// and content, the task it belongs to, and the report this one supersedes (if
+/// any) so the embedding pipeline can replace the prior vector.
+typedef WakeReportToEmbed = ({
+  String reportId,
+  String reportContent,
+  String taskId,
+  String? previousReportId,
+});
+
+/// Transactional persistence of a wake cycle's outputs (thought, report,
 /// observations, staged retractions, deferred change set, agent state and the
-/// wake-completed milestone) for [TaskAgentWorkflow]. Extracted from
-/// [TaskAgentExecute.executeImpl] to keep that file under the size limit.
-/// Returns the report details to embed post-commit, if a report was written.
-extension TaskAgentPersistOutputs on TaskAgentWorkflow {
-  Future<
-    ({
-      String reportId,
-      String reportContent,
-      String taskId,
-      String? previousReportId,
-    })?
-  >
-  _persistWakeOutputs({
+/// wake-completed milestone).
+///
+/// Extracted from the Task Agent workflow into a standalone, independently
+/// testable collaborator. It depends only on an [AgentSyncService] for all
+/// sync-aware writes and an [AgentRepository] for the single read it needs
+/// (the current report head). Everything else a wake produced — the strategy,
+/// report fields, observations, retraction/change-set collaborators, the
+/// proposal ledger, the agent state, and the run identity — is passed in as
+/// data to [persist].
+class WakeOutputWriter {
+  /// Creates a writer bound to the sync write service and agent repository.
+  ///
+  /// [uuid] is injectable so tests can pin generated ids; production passes the
+  /// default `const Uuid()`.
+  WakeOutputWriter({
+    required AgentSyncService syncService,
+    required AgentRepository agentRepository,
+    Uuid uuid = const Uuid(),
+  }) : _sync = syncService,
+       _repo = agentRepository,
+       _idGen = uuid;
+
+  final AgentSyncService _sync;
+  final AgentRepository _repo;
+  final Uuid _idGen;
+
+  /// Persists all of a single wake's outputs atomically.
+  ///
+  /// Runs inside [AgentSyncService.runInTransaction] so the agent state
+  /// revision is only bumped if every output (thought, report, observations,
+  /// retractions, deferred change set, milestone) is written successfully.
+  ///
+  /// Returns the report details to embed post-commit, or `null` if no report
+  /// was written this wake (an empty [reportContent]).
+  Future<WakeReportToEmbed?> persist({
     required TaskAgentStrategy strategy,
     required String reportContent,
     required String? reportTldr,
@@ -33,20 +77,14 @@ extension TaskAgentPersistOutputs on TaskAgentWorkflow {
   }) async {
     // Collects report details inside the transaction for post-commit
     // embedding. Declared outside so it survives the transaction scope.
-    ({
-      String reportId,
-      String reportContent,
-      String taskId,
-      String? previousReportId,
-    })?
-    reportToEmbed;
+    WakeReportToEmbed? reportToEmbed;
 
-    await syncService.runInTransaction(() async {
+    await _sync.runInTransaction(() async {
       // 8. Persist the final assistant response as a thought message.
       final thoughtText = strategy.finalResponse;
       if (thoughtText != null) {
-        final thoughtPayloadId = TaskAgentWorkflow._uuid.v4();
-        await syncService.upsertEntity(
+        final thoughtPayloadId = _idGen.v4();
+        await _sync.upsertEntity(
           AgentDomainEntity.agentMessagePayload(
             id: thoughtPayloadId,
             agentId: agentId,
@@ -55,9 +93,9 @@ extension TaskAgentPersistOutputs on TaskAgentWorkflow {
             content: <String, Object?>{'text': thoughtText},
           ),
         );
-        await syncService.upsertEntity(
+        await _sync.upsertEntity(
           AgentDomainEntity.agentMessage(
-            id: TaskAgentWorkflow._uuid.v4(),
+            id: _idGen.v4(),
             agentId: agentId,
             threadId: threadId,
             kind: AgentMessageKind.thought,
@@ -71,9 +109,9 @@ extension TaskAgentPersistOutputs on TaskAgentWorkflow {
 
       // 9. Extract and persist updated report (from update_report tool call).
       if (reportContent.isNotEmpty) {
-        final reportId = TaskAgentWorkflow._uuid.v4();
+        final reportId = _idGen.v4();
 
-        await syncService.upsertEntity(
+        await _sync.upsertEntity(
           AgentDomainEntity.agentReport(
             id: reportId,
             agentId: agentId,
@@ -88,13 +126,13 @@ extension TaskAgentPersistOutputs on TaskAgentWorkflow {
         );
 
         // Update the report head pointer.
-        final existingHead = await agentRepository.getReportHead(
+        final existingHead = await _repo.getReportHead(
           agentId,
           AgentReportScopes.current,
         );
-        final headId = existingHead?.id ?? TaskAgentWorkflow._uuid.v4();
+        final headId = existingHead?.id ?? _idGen.v4();
 
-        await syncService.upsertEntity(
+        await _sync.upsertEntity(
           AgentDomainEntity.agentReportHead(
             id: headId,
             agentId: agentId,
@@ -116,8 +154,8 @@ extension TaskAgentPersistOutputs on TaskAgentWorkflow {
 
       // 10. Persist new observation notes (agentJournal entries).
       for (final observation in observations) {
-        final payloadId = TaskAgentWorkflow._uuid.v4();
-        await syncService.upsertEntity(
+        final payloadId = _idGen.v4();
+        await _sync.upsertEntity(
           AgentDomainEntity.agentMessagePayload(
             id: payloadId,
             agentId: agentId,
@@ -131,9 +169,9 @@ extension TaskAgentPersistOutputs on TaskAgentWorkflow {
           ),
         );
 
-        await syncService.upsertEntity(
+        await _sync.upsertEntity(
           AgentDomainEntity.agentMessage(
-            id: TaskAgentWorkflow._uuid.v4(),
+            id: _idGen.v4(),
             agentId: agentId,
             threadId: threadId,
             kind: AgentMessageKind.observation,
@@ -190,15 +228,15 @@ extension TaskAgentPersistOutputs on TaskAgentWorkflow {
       };
 
       await changeSetBuilder.build(
-        syncService,
+        _sync,
         existingPendingSets: pendingSets,
         rejectedFingerprints: rejectedFingerprints,
         rejectedDisplayKeys: rejectedDisplayKeys,
       );
 
       // 11. Persist state.
-      final hostId = await syncService.localHost();
-      await syncService.upsertEntity(
+      final hostId = await _sync.localHost();
+      await _sync.upsertEntity(
         state.copyWith(
           lastWakeAt: now,
           updatedAt: now,
@@ -210,7 +248,7 @@ extension TaskAgentPersistOutputs on TaskAgentWorkflow {
       // 12. Event-source the `lastWakeAt` watermark: emit a milestone marker
       // whose createdAt the projection folds as the watermark (PR 4, B2). The
       // cached row above stays the read source until the cutover (B6).
-      await syncService.appendMilestone(
+      await _sync.appendMilestone(
         agentId: agentId,
         milestone: AgentMilestone.wakeCompleted,
         createdAt: now,

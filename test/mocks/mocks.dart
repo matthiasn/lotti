@@ -40,13 +40,16 @@ import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/project_agent_service.dart';
 import 'package:lotti/features/agents/service/project_recommendation_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
+import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/improver_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/project_agent_workflow.dart';
+import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/agents/workflow/task_tool_dispatcher.dart';
 import 'package:lotti/features/agents/workflow/template_evolution_workflow.dart';
@@ -843,6 +846,20 @@ class MockAgentRepository extends Mock implements AgentRepository {
 }
 
 class MockAgentService extends Mock implements AgentService {}
+
+/// Mock of the wake conversation strategy, for unit-testing collaborators that
+/// only read its outputs (final response, staged retractions, etc.) rather than
+/// driving a real conversation.
+class MockTaskAgentStrategy extends Mock implements TaskAgentStrategy {}
+
+/// Mock of the staged-retraction applier (the wake commits retractions and new
+/// proposals in one transaction via [SuggestionRetractionService.applyStaged]).
+class MockSuggestionRetractionService extends Mock
+    implements SuggestionRetractionService {}
+
+/// Mock of the deferred change-set builder. Stub [ChangeSetBuilder.build] and
+/// [ChangeSetBuilder.proposedFingerprints] when exercising wake persistence.
+class MockChangeSetBuilder extends Mock implements ChangeSetBuilder {}
 
 class MockAgentSyncService extends Mock implements AgentSyncService {
   @override
