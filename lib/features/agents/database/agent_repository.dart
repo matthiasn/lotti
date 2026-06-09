@@ -75,8 +75,10 @@ class AttentionPlanningInputs {
 /// and written directly without an intermediate domain conversion.
 
 abstract class _AgentRepositoryBase {
-  _AgentRepositoryBase(this._db, {DomainLogger? domainLogger})
-    : _domainLogger = domainLogger;
+  // Positional field formal (not named) because a named parameter cannot be a
+  // private initializing formal in Dart; the public named API lives on the
+  // concrete [AgentRepository], which forwards to this base.
+  _AgentRepositoryBase(this._db, this._domainLogger);
 
   final AgentDatabase _db;
   final DomainLogger? _domainLogger;
@@ -184,7 +186,7 @@ class AgentRepository extends _AgentRepositoryBase
         _AgentRepoEvolution,
         _AgentRepoLinks {
   AgentRepository(AgentDatabase db, {DomainLogger? domainLogger})
-    : super(db, domainLogger: domainLogger);
+    : super(db, domainLogger);
 
   /// Test-only seam for `_sqliteInClauseChunks` — the pure dedup-and-chunk
   /// iterator that guards every batched `IN (...)` query against SQLite's

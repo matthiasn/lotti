@@ -259,7 +259,7 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
   /// Rebuild the local attention claim indexes from the synced source tables.
   ///
   /// This is for migrations, repair, and diagnostics. Planner reads must use
-  /// [getAttentionClaimsForWindow], not a source-table scan.
+  /// `getAttentionClaimsForWindow`, not a source-table scan.
   @override
   Future<void> rebuildAttentionClaimProjectionImpl() async {
     await _db.transaction(() async {
@@ -288,7 +288,7 @@ mixin _AgentAttentionProjection on _AgentRepositoryBase {
   /// Rebuild the local standing agreement index from synced source rows.
   ///
   /// This is for migrations, repair, and diagnostics. Planner reads must use
-  /// [getStandingAgreementsForWindow], not a source-table scan.
+  /// `getStandingAgreementsForWindow`, not a source-table scan.
   @override
   Future<void> rebuildStandingAgreementProjectionImpl() async {
     await _db.transaction(() async {

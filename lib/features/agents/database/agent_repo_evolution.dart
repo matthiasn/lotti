@@ -297,7 +297,7 @@ mixin _AgentRepoEvolution on _AgentRepositoryBase {
     return results.take(limit).toList();
   }
 
-  /// See [AgentProposalLedger].
+  /// See `AgentProposalLedger`.
   Future<ProposalLedger> getProposalLedger(
     String agentId, {
     required String taskId,

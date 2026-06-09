@@ -205,7 +205,7 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
     return metas;
   }
 
-  /// See [AgentAttentionProjection].
+  /// See `AgentAttentionProjection`.
   Future<List<AttentionRequestEntity>> getAttentionClaimsForWindow({
     required DateTime start,
     required DateTime end,
@@ -223,7 +223,7 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
     limit: limit,
   );
 
-  /// See [AgentAttentionProjection].
+  /// See `AgentAttentionProjection`.
   Future<List<AttentionRequestEntity>> getAttentionClaimsForTarget({
     required String targetKind,
     required String targetId,
@@ -241,7 +241,7 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
     limit: limit,
   );
 
-  /// See [AgentAttentionProjection].
+  /// See `AgentAttentionProjection`.
   Future<AttentionPlanningInputs> getAttentionPlanningInputsForWindow({
     required DateTime start,
     required DateTime end,
@@ -267,7 +267,7 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
     agreementLimit: agreementLimit,
   );
 
-  /// See [AgentAttentionProjection].
+  /// See `AgentAttentionProjection`.
   Future<List<StandingAgreementEntity>> getStandingAgreementsForWindow({
     required DateTime start,
     required DateTime end,
@@ -284,11 +284,11 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
     limit: limit,
   );
 
-  /// See [AgentAttentionProjection].
+  /// See `AgentAttentionProjection`.
   Future<void> rebuildAttentionClaimProjection() =>
       rebuildAttentionClaimProjectionImpl();
 
-  /// See [AgentAttentionProjection].
+  /// See `AgentAttentionProjection`.
   Future<void> rebuildStandingAgreementProjection() =>
       rebuildStandingAgreementProjectionImpl();
 
@@ -388,10 +388,10 @@ mixin _AgentRepoCore on _AgentRepositoryBase {
 
   /// Batch-resolve the active [SoulDocumentVersionEntity] for each soul id.
   ///
-  /// Mirrors [getActiveSoulDocumentVersion] but avoids the head lookup +
+  /// Mirrors `getActiveSoulDocumentVersion` but avoids the head lookup +
   /// version lookup pair per soul when a caller is hydrating a list view.
   /// The head row per soul follows the same newest-first query order as
-  /// [getSoulDocumentHead], with that filtering performed by SQL.
+  /// `getSoulDocumentHead`, with that filtering performed by SQL.
   Future<Map<String, SoulDocumentVersionEntity>>
   getActiveSoulDocumentVersionsBySoulIds(List<String> soulIds) async {
     final versionIdsBySoulId = <String, String>{};

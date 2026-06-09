@@ -26,15 +26,15 @@ const int _lastSentCounterCacheCapacity = 2048;
 const _cacheTtl = Duration(minutes: 5);
 
 abstract class _SyncSequenceLogServiceBase {
-  _SyncSequenceLogServiceBase({
-    required SyncDatabase syncDatabase,
-    required VectorClockService vectorClockService,
-    required DomainLogger loggingService,
-    DomainLogger? domainLogger,
-  }) : _syncDatabase = syncDatabase,
-       _vectorClockService = vectorClockService,
-       _loggingService = loggingService,
-       _domainLogger = domainLogger;
+  // Positional field formals (not named) because a named parameter cannot be a
+  // private initializing formal in Dart; the public named API lives on the
+  // concrete [SyncSequenceLogService], which forwards to this base.
+  _SyncSequenceLogServiceBase(
+    this._syncDatabase,
+    this._vectorClockService,
+    this._loggingService,
+    this._domainLogger,
+  );
 
   final SyncDatabase _syncDatabase;
   final VectorClockService _vectorClockService;
@@ -198,9 +198,14 @@ class SyncSequenceLogService extends _SyncSequenceLogServiceBase
         _SyncSeq3,
         _SyncSeq4 {
   SyncSequenceLogService({
-    required super.syncDatabase,
-    required super.vectorClockService,
-    required super.loggingService,
-    super.domainLogger,
-  });
+    required SyncDatabase syncDatabase,
+    required VectorClockService vectorClockService,
+    required DomainLogger loggingService,
+    DomainLogger? domainLogger,
+  }) : super(
+         syncDatabase,
+         vectorClockService,
+         loggingService,
+         domainLogger,
+       );
 }

@@ -42,6 +42,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
   /// superseded outbox entries and the current vector clock. The current vector
   /// clock is ignored when pre-marking covered counters to avoid suppressing
   /// genuine gap detection for the payload itself.
+  @override
   Future<List<({String hostId, int counter})>> recordReceivedEntry({
     required String entryId,
     required VectorClock vectorClock,
@@ -501,7 +502,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
   /// For non-deleted responses: stores the entryId as a "hint" mapping
   /// (hostId, counter) → entryId. The actual status update to "backfilled"
   /// happens only when we verify the entry exists locally - either via
-  /// [verifyAndMarkBackfilled] or when the entry arrives via normal sync.
+  /// `verifyAndMarkBackfilled` or when the entry arrives via normal sync.
   ///
   /// This two-phase approach ensures we don't mark entries as backfilled
   /// until we actually have the data locally.
@@ -527,7 +528,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
   /// [SyncDatabase.recordOwnUnresolvableSequenceCounter] so the check and
   /// mutation happen in one database transaction.
   ///
-  /// Not wired through [handleBackfillResponse] because that is the handler
+  /// Not wired through `handleBackfillResponse` because that is the handler
   /// for INCOMING responses, and own-host broadcasts never flow through it
   /// on the originator — self-echoes are suppressed in the Matrix pipeline.
   /// Going through the receiver handler on the sender side would misrepresent
@@ -557,7 +558,7 @@ mixin _SyncSeq2 on _SyncSequenceLogServiceBase {
   ///
   /// Rows returned from [reservedCountersForHost] are diagnostic only and must
   /// not be automatically converted via [markOwnCounterUnresolvable]. A crash
-  /// can happen after the payload commits but before [recordSentEntry]
+  /// can happen after the payload commits but before `recordSentEntry`
   /// replaces the `reserved` row, so treating plain reservations as
   /// unresolvable could burn a real payload mapping. Only rows in
   /// [SyncSequenceStatus.burnPending] carry the "released without payload"

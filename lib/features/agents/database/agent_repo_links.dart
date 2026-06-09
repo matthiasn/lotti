@@ -300,7 +300,7 @@ mixin _AgentRepoLinks on _AgentRepositoryBase {
   /// rows. This is deliberate — status transitions are emitted from runtime
   /// paths (timeouts, error handlers, shutdown hooks) that may race run-log
   /// cleanup, and a late transition for a vanished run must not crash the
-  /// caller. Contrast with [updateWakeRunTemplate], which throws
+  /// caller. Contrast with `updateWakeRunTemplate`, which throws
   /// [StateError] because template resolution happens once, early, where a
   /// missing row indicates a real bug.
   Future<void> updateWakeRunStatus(
@@ -418,7 +418,7 @@ mixin _AgentRepoLinks on _AgentRepositoryBase {
   /// Fetch token usage records for all instances of [templateId].
   ///
   /// Uses a SQL JOIN via `template_assignment` links — same pattern as
-  /// [getRecentReportsByTemplate].
+  /// `getRecentReportsByTemplate`.
   Future<List<WakeTokenUsageEntity>> getTokenUsageForTemplate(
     String templateId, {
     int limit = 10000,
