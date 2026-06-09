@@ -174,7 +174,6 @@ dev_dependencies:
   url_launcher_platform_interface: any
   very_good_analysis: ^10.2.0
 
-  share_plus_platform_interface: any
 flutter_launcher_icons:
   android: true
   ios: true
