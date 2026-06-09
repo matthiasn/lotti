@@ -3,7 +3,7 @@ part of 'agent_repository.dart';
 /// Proposal-ledger assembly of [AgentRepository] — the heaviest single
 /// query in the repository. The class keeps a thin delegator so mocks
 /// keep intercepting the public method.
-extension AgentProposalLedger on AgentRepository {
+mixin _AgentProposalLedger on _AgentRepositoryBase {
   /// Build a [ProposalLedger] for [taskId] under [agentId] — every
   /// [ChangeItem] the agent has ever produced for this task, annotated with
   /// its current lifecycle status and (if resolved) who resolved it.
@@ -23,6 +23,7 @@ extension AgentProposalLedger on AgentRepository {
   /// are capped at [resolvedLimit] most-recent decisions to keep the LLM
   /// prompt bounded. Historical rows with a resolved parent but a stale
   /// embedded pending item and no decision are filtered out entirely.
+  @override
   Future<ProposalLedger> getProposalLedgerImpl(
     String agentId, {
     required String taskId,
@@ -39,14 +40,14 @@ extension AgentProposalLedger on AgentRepository {
       _db
           .getPendingChangeSetsForAgent(
             agentId,
-            changeSetFetchLimit * AgentRepository._overFetchMultiplier,
+            changeSetFetchLimit * _overFetchMultiplier,
           )
           .get(),
       _db.getChangeSetsForAgent(agentId, changeSetFetchLimit).get(),
       _db
           .getRecentDecisionsForAgent(
             agentId,
-            resolvedLimit * AgentRepository._overFetchMultiplier,
+            resolvedLimit * _overFetchMultiplier,
           )
           .get(),
     ]);
@@ -173,56 +174,55 @@ extension AgentProposalLedger on AgentRepository {
       pendingSets: sanitizedPendingSets,
     );
   }
+}
 
-  /// Test-only seam for [_isPendingLike] — pure enum predicate.
-  @visibleForTesting
-  static bool debugIsPendingLike(ChangeSetStatus status) =>
-      _isPendingLike(status);
+/// Test-only seam for [_isPendingLike] — pure enum predicate.
+@visibleForTesting
+bool debugIsPendingLike(ChangeSetStatus status) => _isPendingLike(status);
 
-  /// Test-only seam for [_effectiveLedgerStatus] — the pure status
-  /// state-machine that getProposalLedger applies per item.
-  @visibleForTesting
-  static ChangeItemStatus debugEffectiveLedgerStatus({
-    required bool setIsActive,
-    required ChangeItem item,
-    required ChangeDecisionEntity? decision,
-  }) => _effectiveLedgerStatus(
-    setIsActive: setIsActive,
-    item: item,
-    decision: decision,
-  );
+/// Test-only seam for [_effectiveLedgerStatus] — the pure status
+/// state-machine that getProposalLedger applies per item.
+@visibleForTesting
+ChangeItemStatus debugEffectiveLedgerStatus({
+  required bool setIsActive,
+  required ChangeItem item,
+  required ChangeDecisionEntity? decision,
+}) => _effectiveLedgerStatus(
+  setIsActive: setIsActive,
+  item: item,
+  decision: decision,
+);
 
-  static bool _isPendingLike(ChangeSetStatus status) {
-    return status == ChangeSetStatus.pending ||
-        status == ChangeSetStatus.partiallyResolved;
+bool _isPendingLike(ChangeSetStatus status) {
+  return status == ChangeSetStatus.pending ||
+      status == ChangeSetStatus.partiallyResolved;
+}
+
+ChangeItemStatus _effectiveLedgerStatus({
+  required bool setIsActive,
+  required ChangeItem item,
+  required ChangeDecisionEntity? decision,
+}) {
+  if (item.status != ChangeItemStatus.pending) return item.status;
+
+  final verdict = decision?.verdict;
+  if (verdict == null) return item.status;
+
+  // Confirmation decisions are written before dispatch. If dispatch later
+  // fails, the item is deliberately reverted to pending so the user can
+  // retry. Rejection, deferral, and retraction have no dispatch retry path,
+  // so their decisions close stale embedded pending items.
+  if (setIsActive && verdict == ChangeDecisionVerdict.confirmed) {
+    return item.status;
   }
+  return _statusForDecision(verdict);
+}
 
-  static ChangeItemStatus _effectiveLedgerStatus({
-    required bool setIsActive,
-    required ChangeItem item,
-    required ChangeDecisionEntity? decision,
-  }) {
-    if (item.status != ChangeItemStatus.pending) return item.status;
-
-    final verdict = decision?.verdict;
-    if (verdict == null) return item.status;
-
-    // Confirmation decisions are written before dispatch. If dispatch later
-    // fails, the item is deliberately reverted to pending so the user can
-    // retry. Rejection, deferral, and retraction have no dispatch retry path,
-    // so their decisions close stale embedded pending items.
-    if (setIsActive && verdict == ChangeDecisionVerdict.confirmed) {
-      return item.status;
-    }
-    return _statusForDecision(verdict);
-  }
-
-  static ChangeItemStatus _statusForDecision(ChangeDecisionVerdict verdict) {
-    return switch (verdict) {
-      ChangeDecisionVerdict.confirmed => ChangeItemStatus.confirmed,
-      ChangeDecisionVerdict.rejected => ChangeItemStatus.rejected,
-      ChangeDecisionVerdict.deferred => ChangeItemStatus.deferred,
-      ChangeDecisionVerdict.retracted => ChangeItemStatus.retracted,
-    };
-  }
+ChangeItemStatus _statusForDecision(ChangeDecisionVerdict verdict) {
+  return switch (verdict) {
+    ChangeDecisionVerdict.confirmed => ChangeItemStatus.confirmed,
+    ChangeDecisionVerdict.rejected => ChangeItemStatus.rejected,
+    ChangeDecisionVerdict.deferred => ChangeItemStatus.deferred,
+    ChangeDecisionVerdict.retracted => ChangeItemStatus.retracted,
+  };
 }

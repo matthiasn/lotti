@@ -477,7 +477,7 @@ void main() {
       };
       for (final status in ChangeSetStatus.values) {
         expect(
-          AgentProposalLedger.debugIsPendingLike(status),
+          debugIsPendingLike(status),
           expected[status],
           reason: '$status',
         );
@@ -528,7 +528,7 @@ void main() {
               }
 
               expect(
-                AgentProposalLedger.debugEffectiveLedgerStatus(
+                debugEffectiveLedgerStatus(
                   setIsActive: setIsActive,
                   item: item,
                   decision: decision,
