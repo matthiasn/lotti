@@ -138,7 +138,9 @@ Runtime behavior:
   `submit_capture`, `parse_capture_to_items`, `match_to_corpus`,
   `link_capture_phrase_to_task`, `break_capture_link`,
   `surface_pending_decisions`, `apply_triage`, and
-  `create_task_from_phrase`.
+  `create_task_from_phrase`. `apply_triage` and `create_task_from_phrase`
+  both enforce the planner identity's category allow-list: the planner
+  cannot close, re-date, or create tasks outside its configured categories.
 - `submit_capture` persists a `CaptureEntity` and enqueues a manual wake with a
   `capture_submitted:<captureId>` trigger token.
 - The selected local plan date lives in `dailyOsNextSelectedDateProvider`
@@ -304,15 +306,17 @@ stateDiagram-v2
   direction (graph traversal from a capture to every plan it produced) and is
   written in the same transaction. Treat the field as canonical and the link
   as derived — do not mutate one without the other.
-- `DayAgentPlanService` also owns `commit_day` / `uncommit_day`: `commit_day`
+- `DayAgentPlanService` also owns `commitDay` / `uncommitDay`: `commitDay`
   flips `DayPlanStatus.draft → committed` and walks every drafted block to
   `PlannedBlockState.committed` (the agent shifts to shepherding; further edits
-  need an explicit refine); `uncommit_day` reverses it, leaving
+  need an explicit refine); `uncommitDay` reverses it, leaving
   `inProgress`/`completed`/`dropped` blocks untouched. Both are **idempotent**.
   Committing is a **user** action, driven from the Commit surface
-  (`ui/pages/commit_page.dart` → `RealDayAgent.commitDay`); the same tools are
-  also reachable through the LLM tool dispatcher, but the system prompt steers
-  the agent not to commit/uncommit autonomously (like `accept_diff`/`revert_diff`).
+  (`ui/pages/commit_page.dart` → `RealDayAgent.commitDay`). These verdicts —
+  like `acceptPlanDiff`/`revertPlanDiff` — are **structurally unreachable from
+  the model**: they have no LLM tool definitions and the plan-tool dispatcher
+  rejects their old wire names as unknown (ADR 0006; the user confirms, the
+  model only proposes).
 - For today's plan, `draft_day_plan` rejects new drafted `ai` or `manual`
   blocks whose start is before `currentLocalTime`. It still accepts earlier
   blocks when their state is `inProgress`, `completed`, or `dropped`, because
@@ -447,9 +451,12 @@ stateDiagram-v2
   by their day.
 - Durable knowledge ("memorize what I tell you", ADR 0022 Decisions 9–10) is a
   separate, **compaction-exempt** store: `propose_knowledge` writes a
-  `PlannerKnowledgeEntity` (`source: userStated` lands `confirmed`,
-  `agentInferred` lands `proposed`); `DayAgentKnowledgeService` also exposes
-  confirm / retract / edit. The active "Head" set is a pure projection over the
+  `PlannerKnowledgeEntity` that always lands `proposed` — the model-attested
+  `source` (`userStated`/`agentInferred`) is provenance only and never
+  confirms, because capture transcripts flow into the prompt and a
+  self-attested "the user said this" would let transcript content write
+  straight into durable memory. The user gates entries through the panel:
+  `DayAgentKnowledgeService` exposes confirm / retract / edit. The active "Head" set is a pure projection over the
   entries (`activePlannerKnowledge` — most-recent confirmed per `key`,
   recency-wins, a retraction resurfaces the prior entry); there is no second
   Head entity. Knowledge is injected into every wake as a compact hook index
@@ -502,11 +509,11 @@ stateDiagram-v2
   DraftedPlan --> PatternCards: summarize_recent_patterns
   DraftedPlan --> RefineCaptured: enqueueRefineWake
   RefineCaptured --> PendingDiff: propose_plan_diff
-  PendingDiff --> PendingDiff: accept_diff(itemIndices)
-  PendingDiff --> PendingDiff: revert_diff(itemIndices)
+  PendingDiff --> PendingDiff: acceptPlanDiff(itemIndices) — user verdict, UI only
+  PendingDiff --> PendingDiff: revertPlanDiff(itemIndices) — user verdict, UI only
   PendingDiff --> DraftedPlan: all items resolved
-  DraftedPlan --> Committed: commit_day (user, via Commit surface)
-  Committed --> DraftedPlan: uncommit_day
+  DraftedPlan --> Committed: commitDay — user, via Commit surface
+  Committed --> DraftedPlan: uncommitDay — user, UI only
 ```
 
 The Day view is a projection over one `DraftPlan` rather than a second planner

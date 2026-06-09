@@ -109,7 +109,7 @@ class DayAgentCaptureService {
         DayAgentToolNames.breakCaptureLink => await _breakLinkTool(args),
         DayAgentToolNames.surfacePendingDecisions =>
           await _surfacePendingDecisionsTool(agentId, args),
-        DayAgentToolNames.applyTriage => await _applyTriageTool(args),
+        DayAgentToolNames.applyTriage => await _applyTriageTool(agentId, args),
         DayAgentToolNames.createTaskFromPhrase =>
           await _createTaskFromPhraseTool(
             agentId: agentId,
@@ -351,10 +351,16 @@ class DayAgentCaptureService {
   /// Applies one reconcile triage action to a task;
   /// see [DayAgentTriageService].
   Future<Task> applyTriage({
+    required String agentId,
     required String taskId,
     required String action,
     DateTime? deferTo,
-  }) => applyTriageImpl(taskId: taskId, action: action, deferTo: deferTo);
+  }) => applyTriageImpl(
+    agentId: agentId,
+    taskId: taskId,
+    action: action,
+    deferTo: deferTo,
+  );
 
   /// Links a parsed capture item to an existing task.
   Future<ParsedItemEntity> linkCapturePhraseToTask({
@@ -502,9 +508,11 @@ class DayAgentCaptureService {
   }
 
   Future<Map<String, Object?>> _applyTriageTool(
+    String agentId,
     Map<String, dynamic> args,
   ) async {
     final task = await applyTriage(
+      agentId: agentId,
       taskId: _requiredString(args, 'taskId'),
       action: _requiredString(args, 'action'),
       deferTo: _optionalDateTime(args['deferTo']),

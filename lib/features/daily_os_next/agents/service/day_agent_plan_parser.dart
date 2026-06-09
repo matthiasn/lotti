@@ -266,28 +266,6 @@ String _dayIdFromPlanEntityId(String planEntityId) {
   return planEntityId;
 }
 
-List<int>? _optionalIntList(Object? raw) {
-  if (raw == null) return null;
-  if (raw is! List) {
-    throw const DayAgentCaptureException('itemIndices must be an array');
-  }
-  final out = <int>[];
-  for (final value in raw) {
-    if (value is int) {
-      out.add(value);
-      continue;
-    }
-    if (value is num && value % 1 == 0) {
-      out.add(value.toInt());
-      continue;
-    }
-    throw const DayAgentCaptureException(
-      'itemIndices entries must be integers',
-    );
-  }
-  return out;
-}
-
 List<int> _selectIndices({
   required List<int>? itemIndices,
   required int itemCount,

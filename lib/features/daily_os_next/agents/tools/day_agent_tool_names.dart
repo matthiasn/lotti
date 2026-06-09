@@ -42,18 +42,6 @@ abstract final class DayAgentToolNames {
   /// Proposes a structured plan diff (`moved`/`added`/`dropped` blocks).
   static const proposePlanDiff = 'propose_plan_diff';
 
-  /// Applies a proposed plan diff to the live plan entity.
-  static const acceptDiff = 'accept_diff';
-
-  /// Retracts a proposed plan diff without mutating the plan entity.
-  static const revertDiff = 'revert_diff';
-
-  /// Commits the day's draft plan; agent shifts from drafting to shepherding.
-  static const commitDay = 'commit_day';
-
-  /// Reverts a committed day plan back to draft so it can be edited again.
-  static const uncommitDay = 'uncommit_day';
-
   /// Proposes a durable planner-knowledge entry ("memorize what I tell you").
   static const proposeKnowledge = 'propose_knowledge';
 
@@ -80,16 +68,16 @@ abstract final class DayAgentToolNames {
     createTaskFromPhrase,
   };
 
-  /// Plan-mutation tools delegated to the plan service (draft + refine +
-  /// commit/uncommit).
+  /// Plan-mutation tools delegated to the plan service (draft + refine).
+  ///
+  /// Deliberately excludes the user-verdict actions (accept/revert diff,
+  /// commit/uncommit day): those are the user's decisions per ADR 0006 and
+  /// must stay structurally unreachable from the model. The UI invokes the
+  /// corresponding `DayAgentPlanService` methods directly.
   static const planTools = <String>{
     draftDayPlan,
     summarizeRecentPatterns,
     proposePlanDiff,
-    acceptDiff,
-    revertDiff,
-    commitDay,
-    uncommitDay,
   };
 
   /// Tools that require workflow-level handling instead of local strategy state.

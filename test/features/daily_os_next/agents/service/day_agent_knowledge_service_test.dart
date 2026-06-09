@@ -79,7 +79,12 @@ void main() {
   });
 
   group('propose', () {
-    test('a user-stated instruction is confirmed immediately', () async {
+    test('model-attested userStated lands proposed — never auto-confirms '
+        '(ADR 0022 D10)', () async {
+      // The source is a model attestation, not a user action: capture
+      // transcripts flow into the prompt, so auto-confirming would let
+      // transcript content write straight into durable memory. Only the
+      // panel confirm() flow may confirm.
       final entry = await withClock(
         Clock.fixed(now),
         () => service.propose(
@@ -91,8 +96,10 @@ void main() {
         ),
       );
 
-      expect(entry.status, KnowledgeStatus.confirmed);
-      expect(entry.confirmedAt, now);
+      expect(entry.status, KnowledgeStatus.proposed);
+      expect(entry.confirmedAt, isNull);
+      // The attested source survives as provenance for the panel.
+      expect(entry.source, KnowledgeSource.userStated);
       expect(entry.supersedesId, isNull);
       expect(upserts.single, isA<PlannerKnowledgeEntity>());
       expect(changed, [agentId]);
@@ -215,7 +222,8 @@ void main() {
       expect(result.output, contains('non-empty string'));
     });
 
-    test('persists a confirmed entry for a userStated source', () async {
+    test('persists a proposed entry for a userStated source — the tool path '
+        'never auto-confirms (ADR 0022 D10)', () async {
       final result = await service.executeTool(
         agentId: agentId,
         toolName: DayAgentToolNames.proposeKnowledge,
@@ -228,7 +236,9 @@ void main() {
       );
       expect(result.success, isTrue);
       final stored = upserts.single as PlannerKnowledgeEntity;
-      expect(stored.status, KnowledgeStatus.confirmed);
+      expect(stored.status, KnowledgeStatus.proposed);
+      expect(stored.confirmedAt, isNull);
+      expect(stored.source, KnowledgeSource.userStated);
       expect(stored.key, 'deep-work');
     });
 
@@ -395,25 +405,32 @@ void main() {
   });
 
   group('end-to-end recency supersession', () {
-    test('propose X then not-X yields not-X as the active head', () async {
-      // Stateful fake: getEntitiesByAgentId reflects what propose upserts, so
-      // the second propose supersedes the first by recency.
-      final store = <PlannerKnowledgeEntity>[];
+    test('propose X, confirm, then propose + confirm not-X yields not-X as '
+        'the active head', () async {
+      // Stateful fake keyed by id: upserts replace, getEntitiesByAgentId and
+      // getEntity reflect the store. Nothing auto-confirms (ADR 0022 D10), so
+      // each proposal needs the user's panel confirm before it joins the
+      // active Head set and can be superseded by recency.
+      final store = <String, AgentDomainEntity>{};
       when(() => syncService.upsertEntity(any())).thenAnswer((
         invocation,
       ) async {
-        store.add(
-          invocation.positionalArguments.single as PlannerKnowledgeEntity,
-        );
+        final entity =
+            invocation.positionalArguments.single as AgentDomainEntity;
+        store[entity.id] = entity;
       });
       when(
         () => repository.getEntitiesByAgentId(
           agentId,
           type: AgentEntityTypes.plannerKnowledge,
         ),
-      ).thenAnswer((_) async => List.of(store));
+      ).thenAnswer((_) async => store.values.toList());
+      when(() => repository.getEntity(any())).thenAnswer(
+        (invocation) async =>
+            store[invocation.positionalArguments.single as String],
+      );
 
-      await withClock(
+      final first = await withClock(
         Clock.fixed(DateTime(2026, 5, 20)),
         () => service.propose(
           agentId: agentId,
@@ -423,6 +440,13 @@ void main() {
           source: KnowledgeSource.userStated,
         ),
       );
+      // Nothing is active until the user confirms in the panel.
+      expect(await service.activeFor(agentId), isEmpty);
+      await withClock(
+        Clock.fixed(DateTime(2026, 5, 21)),
+        () => service.confirm(first.id),
+      );
+
       final second = await withClock(
         Clock.fixed(DateTime(2026, 5, 24)),
         () => service.propose(
@@ -433,9 +457,14 @@ void main() {
           source: KnowledgeSource.userStated,
         ),
       );
+      // The second entry records the confirmed first as superseded
+      // provenance.
+      expect(second.supersedesId, first.id);
+      await withClock(
+        Clock.fixed(DateTime(2026, 5, 25)),
+        () => service.confirm(second.id),
+      );
 
-      // The second entry records the first as superseded provenance.
-      expect(second.supersedesId, isNotNull);
       final active = await service.activeFor(agentId);
       expect(active, hasLength(1));
       expect(active.single.statementText, 'Never before 10:00.');

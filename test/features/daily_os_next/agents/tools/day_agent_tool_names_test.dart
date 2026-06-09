@@ -18,10 +18,6 @@ void main() {
       DayAgentToolNames.draftDayPlan,
       DayAgentToolNames.summarizeRecentPatterns,
       DayAgentToolNames.proposePlanDiff,
-      DayAgentToolNames.acceptDiff,
-      DayAgentToolNames.revertDiff,
-      DayAgentToolNames.commitDay,
-      DayAgentToolNames.uncommitDay,
       DayAgentToolNames.proposeKnowledge,
     ];
 
@@ -41,10 +37,6 @@ void main() {
         'draft_day_plan',
         'summarize_recent_patterns',
         'propose_plan_diff',
-        'accept_diff',
-        'revert_diff',
-        'commit_day',
-        'uncommit_day',
         'propose_knowledge',
       ]);
     });
@@ -92,10 +84,6 @@ void main() {
           DayAgentToolNames.draftDayPlan,
           DayAgentToolNames.summarizeRecentPatterns,
           DayAgentToolNames.proposePlanDiff,
-          DayAgentToolNames.acceptDiff,
-          DayAgentToolNames.revertDiff,
-          DayAgentToolNames.commitDay,
-          DayAgentToolNames.uncommitDay,
         },
       );
       expect(
@@ -152,22 +140,6 @@ void main() {
         isTrue,
       );
       expect(
-        DayAgentToolNames.isPlanTool(DayAgentToolNames.acceptDiff),
-        isTrue,
-      );
-      expect(
-        DayAgentToolNames.isPlanTool(DayAgentToolNames.revertDiff),
-        isTrue,
-      );
-      expect(
-        DayAgentToolNames.isPlanTool(DayAgentToolNames.commitDay),
-        isTrue,
-      );
-      expect(
-        DayAgentToolNames.isPlanTool(DayAgentToolNames.uncommitDay),
-        isTrue,
-      );
-      expect(
         DayAgentToolNames.isPlanTool(DayAgentToolNames.submitCapture),
         isFalse,
       );
@@ -191,10 +163,6 @@ void main() {
         DayAgentToolNames.draftDayPlan: (false, true, false, false),
         DayAgentToolNames.summarizeRecentPatterns: (false, true, false, false),
         DayAgentToolNames.proposePlanDiff: (false, true, false, false),
-        DayAgentToolNames.acceptDiff: (false, true, false, false),
-        DayAgentToolNames.revertDiff: (false, true, false, false),
-        DayAgentToolNames.commitDay: (false, true, false, false),
-        DayAgentToolNames.uncommitDay: (false, true, false, false),
       };
 
       for (final MapEntry(key: name, value: (capture, plan, wake, search))
@@ -227,6 +195,29 @@ void main() {
           reason: '$name workflowHandler',
         );
       }
+    });
+
+    test('user-verdict tool names stay structurally unreachable from the model '
+        '(ADR 0006)', () {
+      // accept_diff / revert_diff / commit_day / uncommit_day are the user's
+      // verdicts per ADR 0006: the UI invokes the corresponding
+      // DayAgentPlanService methods directly, and the model must never see
+      // them as tools. String literals are used deliberately — the constants
+      // were removed, and this test guards against their reintroduction.
+      const userVerdicts = <String>{
+        'accept_diff',
+        'revert_diff',
+        'commit_day',
+        'uncommit_day',
+      };
+      expect(
+        DayAgentToolNames.planTools.intersection(userVerdicts),
+        isEmpty,
+      );
+      expect(
+        DayAgentToolNames.workflowHandlerTools.intersection(userVerdicts),
+        isEmpty,
+      );
     });
   });
 }

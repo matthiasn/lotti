@@ -163,6 +163,24 @@ const seedDirectiveChangelog = <SeedDirectiveChange>[
         '`taskId`; use that id on the matching `draft_day_plan` block so '
         'Daily OS agenda rows open the backing task.',
   ),
+  SeedDirectiveChange(
+    date: '2026-06-09',
+    kind: AgentTemplateKind.dayAgent,
+    description:
+        '`accept_diff`, `revert_diff`, `commit_day`, and `uncommit_day` were '
+        'removed from the tool set: diff verdicts and commit state are the '
+        "user's decisions, applied through the UI only (ADR 0006). Do not "
+        'claim to have applied a diff or changed commit state.',
+  ),
+  SeedDirectiveChange(
+    date: '2026-06-09',
+    kind: AgentTemplateKind.dayAgent,
+    description:
+        '`propose_knowledge` no longer confirms `userStated` entries '
+        "immediately: every proposal awaits the user's confirmation in the "
+        'knowledge panel before becoming durable. `source` is provenance '
+        'only. Do not claim something is durably memorized until confirmed.',
+  ),
 ];
 
 // ── Task Agent: General Directive ──────────────────────────────────────────

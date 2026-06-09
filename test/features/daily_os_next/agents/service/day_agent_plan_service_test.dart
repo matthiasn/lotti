@@ -3320,42 +3320,6 @@ void main() {
           );
         },
       );
-
-      test('executeTool returns JSON for commit_day', () async {
-        seedPlan();
-        final later = _now.add(const Duration(hours: 1));
-        final result = await withClock(Clock.fixed(later), () {
-          return createService().executeTool(
-            agentId: _agentId,
-            threadId: _threadId,
-            runKey: _runKey,
-            toolName: DayAgentToolNames.commitDay,
-            args: {'dayId': _dayId},
-          );
-        });
-
-        expect(result.success, isTrue);
-        final data = jsonDecode(result.output) as Map<String, dynamic>;
-        expect(data['planId'], 'day_agent_plan:$_dayId');
-        expect(data['dayId'], _dayId);
-        expect(data['status'], 'committed');
-        expect(data['blockCount'], 2);
-        expect(data['committedAt'], later.toIso8601String());
-      });
-
-      test('executeTool surfaces commit failures as tool errors', () async {
-        // No plan seeded; commit_day should fail.
-        final result = await createService().executeTool(
-          agentId: _agentId,
-          threadId: _threadId,
-          runKey: _runKey,
-          toolName: DayAgentToolNames.commitDay,
-          args: {'dayId': _dayId},
-        );
-
-        expect(result.success, isFalse);
-        expect(result.output, contains('no draft plan'));
-      });
     });
 
     group('uncommitDay', () {
@@ -3529,28 +3493,6 @@ void main() {
           expect(upsertedEntities, isEmpty);
         },
       );
-
-      test('executeTool returns JSON for uncommit_day', () async {
-        seedPlan(
-          status: DayPlanStatus.committed(
-            committedAt: DateTime(2026, 5, 25, 11),
-          ),
-        );
-
-        final result = await createService().executeTool(
-          agentId: _agentId,
-          threadId: _threadId,
-          runKey: _runKey,
-          toolName: DayAgentToolNames.uncommitDay,
-          args: {'dayId': _dayId},
-        );
-
-        expect(result.success, isTrue);
-        final data = jsonDecode(result.output) as Map<String, dynamic>;
-        expect(data['planId'], 'day_agent_plan:$_dayId');
-        expect(data['status'], 'draft');
-        expect(data['blockCount'], 1);
-      });
     });
 
     group('executeTool dispatch for refine', () {
@@ -3592,224 +3534,42 @@ void main() {
       });
 
       test(
-        'executeTool returns JSON for accept_diff and revert_diff',
+        'executeTool rejects the user-verdict tool names as unknown '
+        '(ADR 0006)',
         () async {
-          final plan = seedPlan();
-          final changeSet =
-              AgentDomainEntity.changeSet(
-                    id: 'plan_diff:dispatch-1',
-                    agentId: _agentId,
-                    taskId: plan.id,
-                    threadId: _threadId,
-                    runKey: _runKey,
-                    status: ChangeSetStatus.pending,
-                    items: [
-                      ChangeItem(
-                        toolName: 'add_block',
-                        humanSummary: 'Add "Walk"',
-                        args: <String, dynamic>{
-                          'toStart': DateTime(
-                            2026,
-                            5,
-                            25,
-                            14,
-                          ).toIso8601String(),
-                          'toEnd': DateTime(
-                            2026,
-                            5,
-                            25,
-                            14,
-                            30,
-                          ).toIso8601String(),
-                          'title': 'Walk',
-                          'categoryId': 'life',
-                        },
-                      ),
-                    ],
-                    createdAt: _now,
-                    vectorClock: null,
-                  )
-                  as ChangeSetEntity;
-          agentEntities[changeSet.id] = changeSet;
-
-          final acceptResult = await createService().executeTool(
-            agentId: _agentId,
-            threadId: _threadId,
-            runKey: _runKey,
-            toolName: DayAgentToolNames.acceptDiff,
-            args: {'changeSetId': changeSet.id},
-          );
-          expect(acceptResult.success, isTrue);
-          final acceptData =
-              jsonDecode(acceptResult.output) as Map<String, dynamic>;
-          expect(acceptData['status'], 'resolved');
-          expect(acceptData['confirmedCount'], 1);
-
-          // Seed a fresh pending change set to exercise revert.
-          final revertSet =
-              AgentDomainEntity.changeSet(
-                    id: 'plan_diff:dispatch-2',
-                    agentId: _agentId,
-                    taskId: plan.id,
-                    threadId: _threadId,
-                    runKey: _runKey,
-                    status: ChangeSetStatus.pending,
-                    items: [
-                      ChangeItem(
-                        toolName: 'add_block',
-                        humanSummary: 'Add "Stretch"',
-                        args: <String, dynamic>{
-                          'toStart': DateTime(
-                            2026,
-                            5,
-                            25,
-                            15,
-                          ).toIso8601String(),
-                          'toEnd': DateTime(
-                            2026,
-                            5,
-                            25,
-                            15,
-                            15,
-                          ).toIso8601String(),
-                          'title': 'Stretch',
-                          'categoryId': 'life',
-                        },
-                      ),
-                    ],
-                    createdAt: _now,
-                    vectorClock: null,
-                  )
-                  as ChangeSetEntity;
-          agentEntities[revertSet.id] = revertSet;
-          final revertResult = await createService().executeTool(
-            agentId: _agentId,
-            threadId: _threadId,
-            runKey: _runKey,
-            toolName: DayAgentToolNames.revertDiff,
-            args: {'changeSetId': revertSet.id},
-          );
-          expect(revertResult.success, isTrue);
-          final revertData =
-              jsonDecode(revertResult.output) as Map<String, dynamic>;
-          expect(revertData['status'], 'resolved');
-          expect(revertData['rejectedCount'], 1);
+          // accept_diff / revert_diff / commit_day / uncommit_day were
+          // removed from the model-visible tool set; the service methods
+          // stay UI-only. Even a model hallucinating the old names must get
+          // a failure, never a dispatch. String literals are deliberate —
+          // the constants are gone.
+          for (final verdict in const [
+            'accept_diff',
+            'revert_diff',
+            'commit_day',
+            'uncommit_day',
+          ]) {
+            final result = await createService().executeTool(
+              agentId: _agentId,
+              threadId: _threadId,
+              runKey: _runKey,
+              toolName: verdict,
+              args: const {},
+            );
+            expect(result.success, isFalse, reason: verdict);
+            expect(result.output, contains('unknown tool'), reason: verdict);
+          }
         },
       );
 
       test(
-        'executeTool parses itemIndices including integral doubles',
-        () async {
-          final plan = seedPlan();
-          final changeSet =
-              AgentDomainEntity.changeSet(
-                    id: 'plan_diff:indices-1',
-                    agentId: _agentId,
-                    taskId: plan.id,
-                    threadId: _threadId,
-                    runKey: _runKey,
-                    status: ChangeSetStatus.pending,
-                    items: [
-                      const ChangeItem(
-                        toolName: 'add_block',
-                        humanSummary: 'a',
-                        args: <String, dynamic>{
-                          'action': 'added',
-                          'reason': 'r',
-                          'categoryId': 'life',
-                          'title': 'A',
-                          'toStart': '2026-05-25T14:00:00.000',
-                          'toEnd': '2026-05-25T14:30:00.000',
-                        },
-                      ),
-                      const ChangeItem(
-                        toolName: 'add_block',
-                        humanSummary: 'b',
-                        args: <String, dynamic>{
-                          'action': 'added',
-                          'reason': 'r',
-                          'categoryId': 'life',
-                          'title': 'B',
-                          'toStart': '2026-05-25T15:00:00.000',
-                          'toEnd': '2026-05-25T15:30:00.000',
-                        },
-                      ),
-                    ],
-                    createdAt: _now,
-                    vectorClock: null,
-                  )
-                  as ChangeSetEntity;
-          agentEntities[changeSet.id] = changeSet;
-
-          final result = await createService().executeTool(
-            agentId: _agentId,
-            threadId: _threadId,
-            runKey: _runKey,
-            toolName: DayAgentToolNames.acceptDiff,
-            args: {
-              'changeSetId': changeSet.id,
-              // Integral double mixed with int — both should parse as ints.
-              'itemIndices': const [0, 1.0],
-            },
-          );
-          expect(result.success, isTrue);
-          final data = jsonDecode(result.output) as Map<String, dynamic>;
-          expect(data['confirmedCount'], 2);
-        },
-      );
-
-      test('executeTool rejects non-list itemIndices', () async {
-        final plan = seedPlan();
-        final changeSet =
-            AgentDomainEntity.changeSet(
-                  id: 'plan_diff:indices-2',
-                  agentId: _agentId,
-                  taskId: plan.id,
-                  threadId: _threadId,
-                  runKey: _runKey,
-                  status: ChangeSetStatus.pending,
-                  items: const [
-                    ChangeItem(
-                      toolName: 'add_block',
-                      humanSummary: 'a',
-                      args: <String, dynamic>{
-                        'action': 'added',
-                        'reason': 'r',
-                        'categoryId': 'life',
-                        'title': 'A',
-                        'toStart': '2026-05-25T14:00:00.000',
-                        'toEnd': '2026-05-25T14:30:00.000',
-                      },
-                    ),
-                  ],
-                  createdAt: _now,
-                  vectorClock: null,
-                )
-                as ChangeSetEntity;
-        agentEntities[changeSet.id] = changeSet;
-
-        final result = await createService().executeTool(
-          agentId: _agentId,
-          threadId: _threadId,
-          runKey: _runKey,
-          toolName: DayAgentToolNames.acceptDiff,
-          args: {
-            'changeSetId': changeSet.id,
-            'itemIndices': 'not-a-list',
-          },
-        );
-        expect(result.success, isFalse);
-        expect(result.output, contains('itemIndices must be an array'));
-      });
-
-      test(
-        'executeTool resolution summary counts deferred + retained pending',
+        'acceptPlanDiff with an empty itemIndices selection retains pending '
+        'and leaves deferred / retracted items untouched',
         () async {
           final plan = seedPlan();
           // Seed a change set that includes a pending item, a deferred
-          // item, and a retracted item. Accepting only index 0 leaves
-          // the rest in their original (non-pending) states; the
-          // _resolutionSummary walks all statuses.
+          // item, and a retracted item. Accepting nothing leaves the
+          // pending one pending; deferred/retracted are untouched by
+          // design.
           final changeSet =
               AgentDomainEntity.changeSet(
                     id: 'plan_diff:summary-1',
@@ -3850,74 +3610,16 @@ void main() {
                   as ChangeSetEntity;
           agentEntities[changeSet.id] = changeSet;
 
-          // Accept nothing (itemIndices: []) so the pending one stays
-          // pending; deferred/retracted are untouched by design.
-          final result = await createService().executeTool(
+          final updated = await createService().acceptPlanDiff(
             agentId: _agentId,
-            threadId: _threadId,
-            runKey: _runKey,
-            toolName: DayAgentToolNames.acceptDiff,
-            args: {
-              'changeSetId': changeSet.id,
-              'itemIndices': const <int>[],
-            },
+            changeSetId: changeSet.id,
+            itemIndices: const <int>[],
           );
-          expect(result.success, isTrue);
-          final data = jsonDecode(result.output) as Map<String, dynamic>;
-          expect(data['pendingCount'], 1);
-          expect(data['confirmedCount'], 0);
-          expect(data['rejectedCount'], 0);
-          expect(data['status'], 'partiallyResolved');
-        },
-      );
 
-      test(
-        'executeTool rejects fractional itemIndices entries',
-        () async {
-          final plan = seedPlan();
-          final changeSet =
-              AgentDomainEntity.changeSet(
-                    id: 'plan_diff:indices-3',
-                    agentId: _agentId,
-                    taskId: plan.id,
-                    threadId: _threadId,
-                    runKey: _runKey,
-                    status: ChangeSetStatus.pending,
-                    items: const [
-                      ChangeItem(
-                        toolName: 'add_block',
-                        humanSummary: 'a',
-                        args: <String, dynamic>{
-                          'action': 'added',
-                          'reason': 'r',
-                          'categoryId': 'life',
-                          'title': 'A',
-                          'toStart': '2026-05-25T14:00:00.000',
-                          'toEnd': '2026-05-25T14:30:00.000',
-                        },
-                      ),
-                    ],
-                    createdAt: _now,
-                    vectorClock: null,
-                  )
-                  as ChangeSetEntity;
-          agentEntities[changeSet.id] = changeSet;
-
-          final result = await createService().executeTool(
-            agentId: _agentId,
-            threadId: _threadId,
-            runKey: _runKey,
-            toolName: DayAgentToolNames.acceptDiff,
-            args: {
-              'changeSetId': changeSet.id,
-              'itemIndices': const [0.5],
-            },
-          );
-          expect(result.success, isFalse);
-          expect(
-            result.output,
-            contains('itemIndices entries must be integers'),
-          );
+          expect(updated.items[0].status, ChangeItemStatus.pending);
+          expect(updated.items[1].status, ChangeItemStatus.deferred);
+          expect(updated.items[2].status, ChangeItemStatus.retracted);
+          expect(updated.status, ChangeSetStatus.partiallyResolved);
         },
       );
     });

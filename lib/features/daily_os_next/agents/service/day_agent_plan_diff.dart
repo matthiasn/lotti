@@ -3,32 +3,6 @@ part of 'day_agent_plan_service.dart';
 // Plan-diff machinery: change parsing, validation, application, and the
 // snapshot/change model types.
 
-Map<String, Object?> _resolutionSummary(ChangeSetEntity changeSet) {
-  var confirmed = 0;
-  var rejected = 0;
-  var pending = 0;
-  for (final item in changeSet.items) {
-    switch (item.status) {
-      case ChangeItemStatus.confirmed:
-        confirmed++;
-      case ChangeItemStatus.rejected:
-        rejected++;
-      case ChangeItemStatus.pending:
-        pending++;
-      case ChangeItemStatus.deferred:
-      case ChangeItemStatus.retracted:
-        break;
-    }
-  }
-  return {
-    'changeSetId': changeSet.id,
-    'status': changeSet.status.name,
-    'confirmedCount': confirmed,
-    'rejectedCount': rejected,
-    'pendingCount': pending,
-  };
-}
-
 _DiffChange _parseDiffChange({
   required Object? raw,
   required DayPlanEntity plan,

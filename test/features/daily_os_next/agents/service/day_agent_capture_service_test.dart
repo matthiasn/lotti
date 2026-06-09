@@ -716,7 +716,11 @@ void main() {
       });
 
       final task = await withClock(Clock.fixed(_now), () {
-        return createService().applyTriage(taskId: 'task-1', action: 'done');
+        return createService().applyTriage(
+          agentId: _agentId,
+          taskId: 'task-1',
+          action: 'done',
+        );
       });
 
       expect(task.data.status, isA<TaskDone>());
@@ -732,7 +736,11 @@ void main() {
       );
 
       await expectLater(
-        createService().applyTriage(taskId: 'task-1', action: 'defer'),
+        createService().applyTriage(
+          agentId: _agentId,
+          taskId: 'task-1',
+          action: 'defer',
+        ),
         throwsA(isA<DayAgentCaptureException>()),
       );
     });
@@ -748,7 +756,11 @@ void main() {
       );
 
       await expectLater(
-        createService().applyTriage(taskId: 'task-1', action: 'today'),
+        createService().applyTriage(
+          agentId: _agentId,
+          taskId: 'task-1',
+          action: 'today',
+        ),
         throwsA(isA<DayAgentCaptureException>()),
       );
     });
@@ -1363,14 +1375,22 @@ void main() {
       );
 
       await expectLater(
-        createService().applyTriage(taskId: 'task-1', action: 'mystery'),
+        createService().applyTriage(
+          agentId: _agentId,
+          taskId: 'task-1',
+          action: 'mystery',
+        ),
         throwsA(isA<DayAgentCaptureException>()),
       );
     });
 
     test('applyTriage throws when the task is missing', () async {
       await expectLater(
-        createService().applyTriage(taskId: 'task-missing', action: 'today'),
+        createService().applyTriage(
+          agentId: _agentId,
+          taskId: 'task-missing',
+          action: 'today',
+        ),
         throwsA(isA<DayAgentCaptureException>()),
       );
     });
@@ -1384,6 +1404,7 @@ void main() {
 
       final task = await withClock(Clock.fixed(_now), () {
         return createService().applyTriage(
+          agentId: _agentId,
           taskId: 'task-1',
           action: 'today',
         );
@@ -1436,6 +1457,7 @@ void main() {
 
         final task = await withClock(Clock.fixed(_now), () {
           return createService().applyTriage(
+            agentId: _agentId,
             taskId: entry.key,
             action: 'today',
           );
@@ -1456,12 +1478,20 @@ void main() {
       final service = createService();
 
       final inProgress = await withClock(Clock.fixed(_now), () {
-        return service.applyTriage(taskId: 'task-1', action: 'do_now');
+        return service.applyTriage(
+          agentId: _agentId,
+          taskId: 'task-1',
+          action: 'do_now',
+        );
       });
       expect(inProgress.data.status, isA<TaskInProgress>());
 
       final dropped = await withClock(Clock.fixed(_now), () {
-        return service.applyTriage(taskId: 'task-1', action: 'drop');
+        return service.applyTriage(
+          agentId: _agentId,
+          taskId: 'task-1',
+          action: 'drop',
+        );
       });
       expect(dropped.data.status, isA<TaskRejected>());
     });
@@ -1475,6 +1505,7 @@ void main() {
 
       final task = await withClock(Clock.fixed(_now), () {
         return createService().applyTriage(
+          agentId: _agentId,
           taskId: 'task-1',
           action: 'defer',
           deferTo: DateTime(2026, 6, 1, 10),
@@ -1483,6 +1514,68 @@ void main() {
 
       expect(task.data.due, DateTime(2026, 6, 1, 23, 59, 59, 999));
     });
+
+    test(
+      'applyTriage rejects a task outside the allowed categories without '
+      'writing',
+      () async {
+        // The default identity allows {'work'} only; triage mutates task
+        // status / due dates, so a planner must not reach tasks outside
+        // its configured scope.
+        journalEntities['task-home'] = _task(
+          id: 'task-home',
+          title: 'Tidy kitchen',
+          status: _openStatus(),
+          categoryId: 'home',
+        );
+
+        await expectLater(
+          createService().applyTriage(
+            agentId: _agentId,
+            taskId: 'task-home',
+            action: 'done',
+          ),
+          throwsA(
+            isA<DayAgentCaptureException>().having(
+              (e) => e.message,
+              'message',
+              contains('outside the allowed categories'),
+            ),
+          ),
+        );
+        verifyNever(() => journalRepository.updateJournalEntity(any()));
+      },
+    );
+
+    test(
+      'applyTriage allows any category when the identity allow-list is empty',
+      () async {
+        // Empty allowedCategoryIds means "allow all" — same semantics as the
+        // capture-side _categoryAllowed gate.
+        agentEntities[_agentId] = makeTestIdentity(
+          id: _agentId,
+          agentId: _agentId,
+          kind: AgentKinds.dayAgent,
+        );
+        journalEntities['task-home'] = _task(
+          id: 'task-home',
+          title: 'Tidy kitchen',
+          status: _openStatus(),
+          categoryId: 'home',
+        );
+
+        final task = await withClock(Clock.fixed(_now), () {
+          return createService().applyTriage(
+            agentId: _agentId,
+            taskId: 'task-home',
+            action: 'done',
+          );
+        });
+
+        expect(task.data.status, isA<TaskDone>());
+        verify(() => journalRepository.updateJournalEntity(any())).called(1);
+      },
+    );
 
     test('buildTaskCorpusSnapshot excludes closed tasks', () async {
       final open = _task(
@@ -1962,6 +2055,7 @@ void main() {
 
         final task = await withClock(Clock.fixed(_now), () {
           return createService().applyTriage(
+            agentId: _agentId,
             taskId: 'task-1',
             action: 'defer',
             deferTo: DateTime.utc(2026, 6, 10, 8),
