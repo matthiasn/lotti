@@ -35,6 +35,8 @@ import 'package:meta/meta.dart';
 import 'package:path/path.dart' as p;
 
 part 'outbox_enqueue_dispatch.dart';
+part 'outbox_enqueue_dispatch_links.dart';
+part 'outbox_enqueue_dispatch_agents.dart';
 
 class OutboxService {
   OutboxService({
