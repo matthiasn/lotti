@@ -5,7 +5,8 @@ part of 'persistence_logic.dart';
 /// Implementation bodies live here; the class keeps thin delegators so
 /// mocktail mocks of [PersistenceLogic] still intercept every public
 /// method (extension methods cannot be mocked).
-extension PersistenceCreateOps on PersistenceLogic {
+mixin _PersistenceCreateOps on _PersistenceLogicBase {
+  @override
   Future<QuantitativeEntry?> createQuantitativeEntryImpl(
     QuantitativeData data,
   ) async {
@@ -35,6 +36,7 @@ extension PersistenceCreateOps on PersistenceLogic {
     return null;
   }
 
+  @override
   Future<WorkoutEntry?> createWorkoutEntryImpl(WorkoutData data) async {
     try {
       final workout = WorkoutEntry(
@@ -64,6 +66,7 @@ extension PersistenceCreateOps on PersistenceLogic {
     return null;
   }
 
+  @override
   Future<bool> createSurveyEntryImpl({
     required SurveyData data,
     String? linkedId,
@@ -91,6 +94,7 @@ extension PersistenceCreateOps on PersistenceLogic {
     return true;
   }
 
+  @override
   Future<MeasurementEntry?> createMeasurementEntryImpl({
     required MeasurementData data,
     required bool private,
@@ -136,6 +140,7 @@ extension PersistenceCreateOps on PersistenceLogic {
     return null;
   }
 
+  @override
   Future<HabitCompletionEntry?> createHabitCompletionEntryImpl({
     required HabitCompletionData data,
     required HabitDefinition? habitDefinition,
@@ -190,6 +195,7 @@ extension PersistenceCreateOps on PersistenceLogic {
     return null;
   }
 
+  @override
   Future<Task?> createTaskEntryImpl({
     required TaskData data,
     required EntryText entryText,
@@ -224,6 +230,7 @@ extension PersistenceCreateOps on PersistenceLogic {
     return null;
   }
 
+  @override
   Future<AiResponseEntry?> createAiResponseEntryImpl({
     required AiResponseData data,
     DateTime? dateFrom,
@@ -261,6 +268,7 @@ extension PersistenceCreateOps on PersistenceLogic {
     return null;
   }
 
+  @override
   Future<JournalEvent?> createEventEntryImpl({
     required EventData data,
     required EntryText entryText,

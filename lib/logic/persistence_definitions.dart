@@ -2,7 +2,8 @@ part of 'persistence_logic.dart';
 
 /// Entity/dashboard definition and config-flag operations of
 /// [PersistenceLogic]; same delegator pattern as the create part.
-extension PersistenceDefinitionOps on PersistenceLogic {
+mixin _PersistenceDefinitionOps on _PersistenceLogicBase {
+  @override
   Future<int> upsertEntityDefinitionImpl(
     EntityDefinition entityDefinition,
   ) async {
@@ -26,6 +27,7 @@ extension PersistenceDefinitionOps on PersistenceLogic {
     return linesAffected;
   }
 
+  @override
   Future<int> upsertDashboardDefinitionImpl(
     DashboardDefinition dashboard,
   ) async {
@@ -47,6 +49,7 @@ extension PersistenceDefinitionOps on PersistenceLogic {
     return linesAffected;
   }
 
+  @override
   Future<void> setConfigFlagImpl(ConfigFlag configFlag) async {
     final previous = await _journalDb.getConfigFlagByName(configFlag.name);
     await _journalDb.upsertConfigFlag(configFlag);
@@ -64,6 +67,7 @@ extension PersistenceDefinitionOps on PersistenceLogic {
     }
   }
 
+  @override
   Future<int> deleteDashboardDefinitionImpl(
     DashboardDefinition dashboard,
   ) async {

@@ -2,7 +2,8 @@ part of 'persistence_logic.dart';
 
 /// Entry-update operations of [PersistenceLogic]; same delegator pattern
 /// as the create part so mocks keep intercepting the public methods.
-extension PersistenceUpdateOps on PersistenceLogic {
+mixin _PersistenceUpdateOps on _PersistenceLogicBase {
+  @override
   Future<bool> updateJournalEntityTextImpl(
     String journalEntityId,
     EntryText entryText,
@@ -84,6 +85,7 @@ extension PersistenceUpdateOps on PersistenceLogic {
     return true;
   }
 
+  @override
   Future<bool> updateJournalEntryImpl({
     required String journalEntityId,
     EntryText? entryText,
@@ -124,6 +126,7 @@ extension PersistenceUpdateOps on PersistenceLogic {
     }
   }
 
+  @override
   Future<bool> updateTaskImpl({
     required String journalEntityId,
     required TaskData taskData,
@@ -174,6 +177,7 @@ extension PersistenceUpdateOps on PersistenceLogic {
     return true;
   }
 
+  @override
   Future<bool> updateEventImpl({
     required String journalEntityId,
     required EventData data,
