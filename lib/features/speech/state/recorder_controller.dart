@@ -1,6 +1,4 @@
 import 'dart:async';
-import 'dart:collection';
-import 'dart:math' as math;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -15,12 +13,12 @@ import 'package:lotti/features/speech/repository/audio_recorder_repository.dart'
 import 'package:lotti/features/speech/repository/speech_repository.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
+import 'package:lotti/features/speech/state/vu_meter.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/portals/portal_service.dart';
 import 'package:lotti/utils/file_utils.dart';
-import 'package:meta/meta.dart';
 import 'package:record/record.dart' as rec;
 import 'package:record/record.dart' show Amplitude;
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -30,12 +28,6 @@ part 'recorder_controller_realtime.dart';
 
 /// Interval in milliseconds for amplitude updates from the recorder.
 const intervalMs = 20;
-
-/// Default window size for VU meter RMS calculation in milliseconds
-const defaultVuWindowMs = 300;
-
-/// Reference level where 0 VU = -18 dBFS
-const double vuReferenceLevelDbfs = -18;
 
 /// Main controller for audio recording functionality.
 ///
@@ -76,12 +68,11 @@ class AudioRecorderController extends _$AudioRecorderController
   // ignore: use_late_for_private_fields_and_variables
   String? _realtimeProviderName;
 
-  /// Circular buffer for storing dBFS samples for RMS calculation
+  /// Sliding-window VU meter driving the live level display.
   @override
-  final Queue<double> _dbfsBuffer = Queue<double>();
-
-  /// Number of samples to keep in the buffer
-  int get _bufferSize => defaultVuWindowMs ~/ intervalMs;
+  final VuMeter _vuMeter = VuMeter(
+    windowSamples: defaultVuWindowMs ~/ intervalMs,
+  );
 
   /// Initializes the controller with dependencies and sets up amplitude monitoring.
   ///
@@ -100,7 +91,7 @@ class AudioRecorderController extends _$AudioRecorderController
 
     _amplitudeSub = _recorderRepository.amplitudeStream.listen((Amplitude amp) {
       final dBFS = amp.current;
-      final vu = _calculateVu(dBFS);
+      final vu = _vuMeter.addSample(dBFS);
 
       state = state.copyWith(
         progress: Duration(
@@ -163,49 +154,6 @@ class AudioRecorderController extends _$AudioRecorderController
       );
     }
     // No state updates needed - we start in stopped state
-  }
-
-  /// Test-only seam for the VU math — operates on this instance's sliding
-  /// RMS buffer, so consecutive calls model consecutive amplitude samples.
-  @visibleForTesting
-  double debugCalculateVu(double dBFS) => _calculateVu(dBFS);
-
-  /// Calculates VU value from dBFS using RMS over a sliding window
-  @override
-  double _calculateVu(double dBFS) {
-    // Add new sample to buffer
-    _dbfsBuffer.addLast(dBFS);
-
-    // Remove old samples if buffer exceeds window size
-    while (_dbfsBuffer.length > _bufferSize) {
-      _dbfsBuffer.removeFirst();
-    }
-
-    // If buffer is empty or has very few samples, return a low VU value
-    if (_dbfsBuffer.isEmpty) return -20;
-
-    // Convert dBFS values to linear scale for RMS calculation
-    double sumOfSquares = 0;
-    for (final dbfs in _dbfsBuffer) {
-      // Convert dBFS to linear amplitude (0 dBFS = 1.0)
-      final linear = math.pow(10, dbfs / 20).toDouble();
-      sumOfSquares += linear * linear;
-    }
-
-    // Calculate RMS
-    final rms = math.sqrt(sumOfSquares / _dbfsBuffer.length);
-
-    // Convert RMS back to dB
-    // Formula: 20 * log10(rms) where math.log is natural log (ln)
-    // So: 20 * ln(rms) / ln(10) = 20 * log10(rms)
-    final rmsDb = 20 * (math.log(rms) / math.ln10);
-
-    // Apply VU reference level: 0 VU = -18 dBFS
-    // So VU in dB = dBFS - (-18) = dBFS + 18
-    final vuDb = rmsDb - vuReferenceLevelDbfs;
-
-    // Clamp to reasonable VU meter range (-20 to +3 VU)
-    return vuDb.clamp(-20.0, 3.0);
   }
 
   /// Starts a new recording or toggles the current recording state.
@@ -272,7 +220,7 @@ class AudioRecorderController extends _$AudioRecorderController
     try {
       await _recorderRepository.stopRecording();
       _audioNote = _audioNote?.copyWith(duration: state.progress);
-      _dbfsBuffer.clear(); // Clear the buffer when stopping
+      _vuMeter.reset();
 
       // Preserve the inference preferences before resetting state
       final enableSpeechRecognition = state.enableSpeechRecognition;
@@ -319,7 +267,7 @@ class AudioRecorderController extends _$AudioRecorderController
         subDomain: 'recorder_controller',
       );
       // Ensure state is updated even if an error occurs during stop/save
-      _dbfsBuffer.clear();
+      _vuMeter.reset();
       state = state.copyWith(
         status: AudioRecorderStatus.stopped,
         progress: Duration.zero,

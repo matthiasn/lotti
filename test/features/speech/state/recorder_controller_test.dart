@@ -8,7 +8,6 @@ import 'dart:typed_data';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/audio_note.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -2436,82 +2435,6 @@ void main() {
 
       final result = testContainer.read(realtimeAvailableProvider);
       expect(result.value, isFalse);
-    });
-  });
-
-  group('debugCalculateVu — Glados properties', () {
-    glados.Glados<List<int>>(
-      glados.ListAnys(glados.any).listWithLengthInRange(
-        1,
-        25,
-        glados.IntAnys(glados.any).intInRange(0, 160),
-      ),
-      glados.ExploreConfig(numRuns: 120),
-    ).test(
-      'every output stays clamped to [-20, 3] for any dBFS sequence',
-      (seeds) {
-        final localContainer = ProviderContainer(
-          overrides: [
-            audioRecorderRepositoryProvider.overrideWithValue(
-              mockAudioRecorderRepository,
-            ),
-          ],
-        );
-        try {
-          final controller = localContainer.read(
-            audioRecorderControllerProvider.notifier,
-          );
-          for (final seed in seeds) {
-            final vu = controller.debugCalculateVu(-seed.toDouble());
-            expect(vu, greaterThanOrEqualTo(-20.0), reason: 'dBFS=-$seed');
-            expect(vu, lessThanOrEqualTo(3.0), reason: 'dBFS=-$seed');
-          }
-        } finally {
-          localContainer.dispose();
-        }
-      },
-      tags: 'glados',
-    );
-
-    test('a silence-only buffer clamps to the -20 floor', () {
-      final localContainer = ProviderContainer(
-        overrides: [
-          audioRecorderRepositoryProvider.overrideWithValue(
-            mockAudioRecorderRepository,
-          ),
-        ],
-      );
-      addTearDown(localContainer.dispose);
-      final controller = localContainer.read(
-        audioRecorderControllerProvider.notifier,
-      );
-
-      double? vu;
-      for (var i = 0; i < 20; i++) {
-        vu = controller.debugCalculateVu(-160);
-      }
-      expect(vu, -20.0);
-    });
-
-    test('a 0 dBFS-only buffer clamps to the +3 ceiling', () {
-      final localContainer = ProviderContainer(
-        overrides: [
-          audioRecorderRepositoryProvider.overrideWithValue(
-            mockAudioRecorderRepository,
-          ),
-        ],
-      );
-      addTearDown(localContainer.dispose);
-      final controller = localContainer.read(
-        audioRecorderControllerProvider.notifier,
-      );
-
-      // RMS of constant 0 dBFS is 0 dB; +18 VU reference clamps to +3.
-      double? vu;
-      for (var i = 0; i < 20; i++) {
-        vu = controller.debugCalculateVu(0);
-      }
-      expect(vu, 3.0);
     });
   });
 }

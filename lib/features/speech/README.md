@@ -76,7 +76,9 @@ Standard recording goes through `AudioRecorderRepository`, which wraps the
 `AudioRecorderController` sits above that repository and adds:
 
 - Riverpod state for recording UI
-- VU calculation from dBFS samples
+- VU calculation from dBFS samples via the standalone
+  [`VuMeter`](./state/vu_meter.dart) (a self-contained sliding-window RMS→VU
+  unit, unit-tested directly in `vu_meter_test.dart`)
 - live dBFS exposure for the modal VU meter, the speech-weighted desktop
   sidebar orb, and the mobile recording pill
 - linked-entry and category context

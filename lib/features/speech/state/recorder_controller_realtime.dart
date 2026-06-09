@@ -7,7 +7,7 @@ mixin _AudioRecorderRealtime on _$AudioRecorderController {
   DomainLogger get _loggingService;
   String? get _categoryId;
   bool get _disposed;
-  Queue<double> get _dbfsBuffer;
+  VuMeter get _vuMeter;
   String? get _linkedId;
   set _linkedId(String? value);
   rec.AudioRecorder? get _realtimeRecorder;
@@ -20,7 +20,6 @@ mixin _AudioRecorderRealtime on _$AudioRecorderController {
   set _realtimeModelName(String? value);
   String? get _realtimeProviderName;
   set _realtimeProviderName(String? value);
-  double _calculateVu(double dBFS);
 
   /// Starts a realtime recording session using PCM streaming + WebSocket
   /// transcription via [RealtimeTranscriptionService].
@@ -75,7 +74,7 @@ mixin _AudioRecorderRealtime on _$AudioRecorderController {
         if (_disposed) return;
         final startTime = _realtimeStartTime;
         if (startTime == null) return;
-        final vu = _calculateVu(dbfs);
+        final vu = _vuMeter.addSample(dbfs);
         state = state.copyWith(
           progress: DateTime.now().difference(startTime),
           dBFS: dbfs,
@@ -180,7 +179,7 @@ mixin _AudioRecorderRealtime on _$AudioRecorderController {
       // Preserve inference preferences before resetting state
       final enableSpeechRecognition = state.enableSpeechRecognition;
 
-      _dbfsBuffer.clear();
+      _vuMeter.reset();
       state = AudioRecorderState(
         status: AudioRecorderStatus.stopped,
         dBFS: -160,
@@ -248,7 +247,7 @@ mixin _AudioRecorderRealtime on _$AudioRecorderController {
         stackTrace: stackTrace,
         subDomain: 'stopRealtime',
       );
-      _dbfsBuffer.clear();
+      _vuMeter.reset();
       await _cleanupRealtime();
       try {
         await ref.read(realtimeTranscriptionServiceProvider).dispose();
@@ -277,7 +276,7 @@ mixin _AudioRecorderRealtime on _$AudioRecorderController {
       await ref.read(realtimeTranscriptionServiceProvider).dispose();
       ref.invalidate(realtimeTranscriptionServiceProvider);
 
-      _dbfsBuffer.clear();
+      _vuMeter.reset();
       state = state.copyWith(
         status: AudioRecorderStatus.stopped,
         progress: Duration.zero,
