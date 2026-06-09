@@ -30,7 +30,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
           'No soul assigned to template '
           '${DomainLogger.sanitizeId(active.templateId)} — '
           'cannot approve soul proposal',
-          name: TemplateEvolutionWorkflow._logTag,
+          name: _logTag,
         );
         return null;
       }
@@ -67,7 +67,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
         'Approved soul proposal for session '
         '${DomainLogger.sanitizeId(sessionId)} → '
         'soul version v${newVersion.version}',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
       );
 
       return newVersion;
@@ -75,7 +75,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       developer.log(
         'approveSoulProposal failed for session '
         '${DomainLogger.sanitizeId(sessionId)}',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
         error: e.runtimeType,
         stackTrace: s,
       );
@@ -95,7 +95,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       developer.log(
         'Rejected soul proposal for session '
         '${DomainLogger.sanitizeId(sessionId)}',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
       );
     }
   }
@@ -114,7 +114,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       developer.log(
         'soulDocumentService, templateService, and syncService are '
         'required for soul sessions',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
       );
       return null;
     }
@@ -123,7 +123,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
     if (getActiveSessionForSoul(soulId) != null) {
       developer.log(
         'Session already active for soul ${DomainLogger.sanitizeId(soulId)}',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
       );
       return null;
     }
@@ -133,7 +133,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
     if (soul == null) {
       developer.log(
         'Soul ${DomainLogger.sanitizeId(soulId)} not found',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
       );
       return null;
     }
@@ -142,7 +142,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
     if (currentVersion == null) {
       developer.log(
         'No active version for soul ${DomainLogger.sanitizeId(soulId)}',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
       );
       return null;
     }
@@ -166,7 +166,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       developer.log(
         'No templates using soul ${DomainLogger.sanitizeId(soulId)} — '
         'cannot determine model',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
       );
       return null;
     }
@@ -174,20 +174,20 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
     final inferenceSlot = await resolveInferenceProviderWithModel(
       modelId: modelId,
       aiConfigRepository: this.aiConfigRepository,
-      logTag: TemplateEvolutionWorkflow._logTag,
+      logTag: _logTag,
     );
     if (inferenceSlot == null) {
       developer.log(
         'Cannot resolve provider for soul-session model '
         '(modelIdLength=${modelId.length})',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
       );
       return null;
     }
     final provider = inferenceSlot.provider;
     final geminiThinkingMode = inferenceSlot.model.geminiThinkingMode;
 
-    final sessionId = TemplateEvolutionWorkflow._uuid.v4();
+    final sessionId = _uuid.v4();
     try {
       // Abandon stale sessions for this soul.
       await _abandonStaleActiveSessions(
@@ -213,7 +213,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
           developer.log(
             'Feedback aggregation failed for soul '
             '${DomainLogger.sanitizeId(soulId)}',
-            name: TemplateEvolutionWorkflow._logTag,
+            name: _logTag,
             error: e.runtimeType,
             stackTrace: s,
           );
@@ -310,7 +310,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
     } catch (e, s) {
       developer.log(
         'Failed to start soul session',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
         error: e.runtimeType,
         stackTrace: s,
       );
@@ -337,7 +337,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       developer.log(
         'No soul proposal to approve for '
         '${DomainLogger.sanitizeId(sessionId)}',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
       );
       return null;
     }
@@ -351,7 +351,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       if (currentVersion == null) {
         developer.log(
           'No active soul version for ${DomainLogger.sanitizeId(soulId)}',
-          name: TemplateEvolutionWorkflow._logTag,
+          name: _logTag,
         );
         return null;
       }
@@ -430,7 +430,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
         developer.log(
           'onSessionCompleted failed for soul session '
           '${DomainLogger.sanitizeId(sessionId)}',
-          name: TemplateEvolutionWorkflow._logTag,
+          name: _logTag,
           error: e.runtimeType,
           stackTrace: s,
         );
@@ -439,7 +439,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       developer.log(
         'Completed soul session ${DomainLogger.sanitizeId(sessionId)} → '
         'version v${newVersion.version}',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
       );
 
       return newVersion;
@@ -447,7 +447,7 @@ extension SoulEvolutionWorkflow on TemplateEvolutionWorkflow {
       developer.log(
         'completeSoulSession failed for '
         '${DomainLogger.sanitizeId(sessionId)}',
-        name: TemplateEvolutionWorkflow._logTag,
+        name: _logTag,
         error: e.runtimeType,
         stackTrace: s,
       );
