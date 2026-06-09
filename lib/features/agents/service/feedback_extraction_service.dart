@@ -1,6 +1,7 @@
 import 'dart:developer' as developer show log;
 
 import 'package:clock/clock.dart';
+import 'package:lotti/features/agents/classifier/feedback_text_classifier.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -9,10 +10,8 @@ import 'package:lotti/features/agents/model/classified_feedback.dart';
 import 'package:lotti/features/agents/model/improver_slot_keys.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
-import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:meta/meta.dart';
 
 part 'feedback_extraction_classifiers.dart';
 
@@ -43,10 +42,6 @@ class FeedbackExtractionService {
   final AgentTemplateService templateService;
   final SoulDocumentService? soulDocumentService;
 
-  /// Inclusive date-range check shared by all extraction stages.
-  static bool _isInWindow(DateTime dt, DateTime since, DateTime until) =>
-      !dt.isBefore(since) && !dt.isAfter(until);
-
   /// Extract and classify feedback for a template within a time window.
   ///
   /// Scans observations, decisions, and reports from all instances of
@@ -64,7 +59,7 @@ class FeedbackExtractionService {
     }
     final items = <ClassifiedFeedbackItem>[];
 
-    bool inWindow(DateTime dt) => _isInWindow(dt, since, effectiveUntil);
+    bool inWindow(DateTime dt) => isInWindow(dt, since, effectiveUntil);
 
     // 1. Classify decisions (single template-level query with SQL filter).
     final allDecisions = await agentRepository.getRecentDecisionsForTemplate(
@@ -259,83 +254,8 @@ class FeedbackExtractionService {
     ChangeDecisionEntity decision,
   ) =>
       decision.verdict == ChangeDecisionVerdict.rejected &&
-      _isChecklistTool(decision.toolName) &&
-      !_decisionHasExplanatoryContext(decision);
-
-  static bool _isChecklistTool(String toolName) => switch (toolName) {
-    TaskAgentToolNames.addChecklistItem ||
-    TaskAgentToolNames.addMultipleChecklistItems ||
-    TaskAgentToolNames.updateChecklistItem ||
-    TaskAgentToolNames.updateChecklistItems ||
-    TaskAgentToolNames.migrateChecklistItem ||
-    TaskAgentToolNames.migrateChecklistItems => true,
-    _ => false,
-  };
-
-  static bool _decisionHasExplanatoryContext(ChangeDecisionEntity decision) {
-    if (_isMeaningfulSignalText(decision.rejectionReason)) return true;
-    return argsContainExplanatoryContext(decision.args);
-  }
-
-  @visibleForTesting
-  static bool argsContainExplanatoryContext(Map<String, dynamic>? args) {
-    if (args == null || args.isEmpty) return false;
-
-    const explanatoryKeys = {
-      'reason',
-      'rejectionreason',
-      'note',
-      'notes',
-      'comment',
-      'comments',
-      'feedback',
-      'explanation',
-      'why',
-    };
-
-    // Normalize keys by lowercasing and stripping separators so that
-    // variants like `rejection_reason`, `rejection-reason`, and
-    // `rejectionReason` all match the allowlist entry `rejectionreason`.
-    String normalizeKey(String key) =>
-        key.toLowerCase().replaceAll(RegExp('[_-]'), '');
-
-    bool containsContext(Object? value, {String? key}) {
-      final isExplanatoryKey =
-          key != null && explanatoryKeys.contains(normalizeKey(key));
-      if (value is String) {
-        return isExplanatoryKey && _isMeaningfulSignalText(value);
-      }
-      if (value is Map) {
-        return value.entries.any(
-          (entry) {
-            final entryKey = entry.key.toString();
-            // If the parent key is explanatory, propagate it so nested
-            // string values are still recognized as having explanatory
-            // context (e.g. {'feedback': {'text': 'too early'}}).
-            final effectiveKey =
-                explanatoryKeys.contains(normalizeKey(entryKey))
-                ? entryKey
-                : (isExplanatoryKey ? key : entryKey);
-            return containsContext(entry.value, key: effectiveKey);
-          },
-        );
-      }
-      if (value is Iterable) {
-        return value.any((entry) => containsContext(entry, key: key));
-      }
-      return false;
-    }
-
-    return args.entries.any(
-      (entry) => containsContext(entry.value, key: entry.key),
-    );
-  }
-
-  static bool _isMeaningfulSignalText(String? value) {
-    if (value == null) return false;
-    final normalized = value.trim();
-    return normalized.isNotEmpty && normalized.length >= 4;
-  }
+      isChecklistTool(decision.toolName) &&
+      !decisionHasExplanatoryContext(decision);
 
   /// Build a human-readable detail string for a decision.
   ///
@@ -449,98 +369,6 @@ class FeedbackExtractionService {
       ObservationCategory.operational => FeedbackCategory.general,
     };
   }
-
-  /// Keyword-based heuristic for classifying text sentiment.
-  ///
-  /// Scans the lowercase text for positive and negative indicator words/phrases
-  /// and returns the dominant sentiment. Returns [FeedbackSentiment.neutral]
-  /// when signals are balanced or absent.
-  @visibleForTesting
-  static FeedbackSentiment classifyTextSentiment(String text) {
-    final lower = text.toLowerCase();
-
-    var positiveScore = 0;
-    var negativeScore = 0;
-
-    for (final keyword in positiveSentimentKeywords) {
-      if (lower.contains(keyword)) positiveScore++;
-    }
-    for (final keyword in negativeSentimentKeywords) {
-      if (lower.contains(keyword)) negativeScore++;
-    }
-
-    if (positiveScore > negativeScore) return FeedbackSentiment.positive;
-    if (negativeScore > positiveScore) return FeedbackSentiment.negative;
-    return FeedbackSentiment.neutral;
-  }
-
-  @visibleForTesting
-  static const positiveSentimentKeywords = [
-    'success',
-    'completed',
-    'approved',
-    'confirmed',
-    'improved',
-    'resolved',
-    'fixed',
-    'accomplished',
-    'achieved',
-    'excellent',
-    'good',
-    'great',
-    'well done',
-    'on track',
-    'progress',
-    'ahead of schedule',
-    'passed',
-    'accepted',
-    'positive',
-    'helpful',
-    'efficient',
-    'effective',
-    'reliable',
-    'consistent',
-    'satisfied',
-    'exceeded',
-    'upgraded',
-    'optimized',
-    'stable',
-  ];
-
-  @visibleForTesting
-  static const negativeSentimentKeywords = [
-    'fail',
-    'error',
-    'issue',
-    'problem',
-    'bug',
-    'crash',
-    'reject',
-    'declined',
-    'timeout',
-    'timed out',
-    'slow',
-    'degraded',
-    'broken',
-    'missing',
-    'incorrect',
-    'wrong',
-    'bad',
-    'poor',
-    'unstable',
-    'regression',
-    'overdue',
-    'behind schedule',
-    'abandoned',
-    'blocked',
-    'stale',
-    'negative',
-    'inconsistent',
-    'unreliable',
-    'warning',
-    'critical',
-    'severe',
-  ];
 
   /// Extract and aggregate feedback across ALL templates sharing a soul.
   ///

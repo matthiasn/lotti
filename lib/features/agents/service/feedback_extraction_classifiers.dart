@@ -88,7 +88,7 @@ extension FeedbackExtractionClassifiers on FeedbackExtractionService {
 
     for (final result in results) {
       final windowSessions = result.sessions.where(
-        (s) => FeedbackExtractionService._isInWindow(s.createdAt, since, until),
+        (s) => isInWindow(s.createdAt, since, until),
       );
 
       for (final session in windowSessions) {
@@ -97,7 +97,7 @@ extension FeedbackExtractionClassifiers on FeedbackExtractionService {
 
       // Directive churn detection: count template versions created in window.
       final windowVersions = result.versions.where(
-        (v) => FeedbackExtractionService._isInWindow(v.createdAt, since, until),
+        (v) => isInWindow(v.createdAt, since, until),
       );
       final versionCount = windowVersions.length;
       if (versionCount > ImproverSlotDefaults.maxDirectiveChurnVersions) {
