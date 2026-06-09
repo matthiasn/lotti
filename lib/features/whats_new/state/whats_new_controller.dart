@@ -7,7 +7,7 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/consts.dart';
-import 'package:meta/meta.dart';
+import 'package:lotti/utils/version_utils.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -112,32 +112,6 @@ class WhatsNewController extends _$WhatsNewController {
       );
       return const WhatsNewState();
     }
-  }
-
-  /// Returns true if [releaseVersion] is newer than [installedVersion].
-  ///
-  /// Compares semantic version strings like "0.9.804" vs "0.9.802".
-  /// Static and public-for-tests so the comparison can be exercised
-  /// directly (it gates which releases are shown).
-  @visibleForTesting
-  static bool isNewerVersion(String releaseVersion, String installedVersion) {
-    final releaseParts = releaseVersion.split('.').map(int.tryParse).toList();
-    final installedParts = installedVersion
-        .split('.')
-        .map(int.tryParse)
-        .toList();
-
-    // Compare each part of the version
-    for (var i = 0; i < releaseParts.length && i < installedParts.length; i++) {
-      final release = releaseParts[i] ?? 0;
-      final installed = installedParts[i] ?? 0;
-
-      if (release > installed) return true;
-      if (release < installed) return false;
-    }
-
-    // If all compared parts are equal, check if release has more parts
-    return releaseParts.length > installedParts.length;
   }
 
   /// Checks if the user has seen a specific release version.

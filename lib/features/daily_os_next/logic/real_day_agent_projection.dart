@@ -36,7 +36,7 @@ extension RealDayAgentProjection on RealDayAgent {
       category: category,
       reason: reason,
       overdueByDays: reason == PendingItemReason.overdue && item.due != null
-          ? _daysBetween(item.due!, selectedDay)
+          ? daysBetween(item.due!, selectedDay)
           : null,
       referenceDate: selectedDay == today ? null : selectedDay,
     );
@@ -111,19 +111,6 @@ extension RealDayAgentProjection on RealDayAgent {
   @visibleForTesting
   DayAgentCategory debugProjectCategory(CategoryDefinition def) =>
       _projectCategory(def);
-
-  /// Test seam for [_daysBetween] — calendar-day difference.
-  @visibleForTesting
-  int debugDaysBetween(DateTime from, DateTime to) => _daysBetween(from, to);
-
-  int _daysBetween(DateTime from, DateTime to) {
-    // UTC dates: local DateTime.difference().inDays truncates across DST
-    // spring-forward (a 23-hour day), under-counting by one. UTC days are
-    // uniformly 24h — same pattern as daysAtNoonForRange in daily_os.
-    final fromDay = DateTime.utc(from.year, from.month, from.day);
-    final toDay = DateTime.utc(to.year, to.month, to.day);
-    return toDay.difference(fromDay).inDays;
-  }
 
   Future<DraftPlan> _projectDayPlan(
     DayPlanEntity entity,

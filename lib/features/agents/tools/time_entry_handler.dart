@@ -4,10 +4,10 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/util/agent_datetime_utils.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:meta/meta.dart';
 
 /// Creates a time tracking journal entry linked to the source task.
 ///
@@ -110,7 +110,7 @@ class TimeEntryHandler {
 
     final isRunningTimer = !hasEndTime;
     if (isRunningTimer) {
-      if (!_isSameDay(startTime, now)) {
+      if (!isSameDay(startTime, now)) {
         return const ToolExecutionResult(
           success: false,
           output: "Error: startTime must be today's date",
@@ -234,12 +234,4 @@ class TimeEntryHandler {
       mutatedEntityId: createdId,
     );
   }
-
-  static bool _isSameDay(DateTime a, DateTime b) {
-    return a.year == b.year && a.month == b.month && a.day == b.day;
-  }
-
-  /// Test seam for the same-day predicate — pure date math.
-  @visibleForTesting
-  static bool debugIsSameDay(DateTime a, DateTime b) => _isSameDay(a, b);
 }
