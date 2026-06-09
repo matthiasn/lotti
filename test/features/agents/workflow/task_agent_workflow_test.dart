@@ -5153,6 +5153,121 @@ void main() {
         ).called(1);
       });
 
+      test(
+        'update_time_entry drives the real editable-time-entry resolver '
+        'closure and accepts a listed entry',
+        () async {
+          // Exercises TaskAgentWorkflow.resolveEditableTimeEntryIds end to end:
+          // the running timer for THIS task is excluded, leaving the historical
+          // linked entry as the only editable id.
+          final timeService = getIt<TimeService>();
+          final running = _makeLinkedTimeEntry(
+            id: 'running-entry',
+            dateFrom: DateTime(2024, 6, 14, 10),
+            dateTo: DateTime(2024, 6, 14, 10, 5),
+            text: 'active',
+          );
+          final historical = _makeLinkedTimeEntry(
+            id: 'historical-entry',
+            dateFrom: DateTime(2024, 6, 13, 10),
+            dateTo: DateTime(2024, 6, 13, 11),
+            text: 'past work',
+          );
+          await timeService.start(running, _makeTask(taskId));
+          addTearDown(timeService.stop);
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => [running, historical]);
+
+          final result = await executeWithToolCallOnRealTask(
+            'update_time_entry',
+            '{"entryId":"historical-entry","summary":"Refined"}',
+          );
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('recorded successfully'),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'update_time_entry rejects an id the real resolver closure does not '
+        'list (running timer excluded)',
+        () async {
+          final timeService = getIt<TimeService>();
+          final running = _makeLinkedTimeEntry(
+            id: 'running-entry',
+            dateFrom: DateTime(2024, 6, 14, 10),
+            dateTo: DateTime(2024, 6, 14, 10, 5),
+            text: 'active',
+          );
+          await timeService.start(running, _makeTask(taskId));
+          addTearDown(timeService.stop);
+          // Only the running entry is linked, and it is excluded from the
+          // editable set — so any entryId is rejected as not editable.
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => [running]);
+
+          final result = await executeWithToolCallOnRealTask(
+            'update_time_entry',
+            '{"entryId":"running-entry","summary":"x"}',
+          );
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('not an editable time entry'),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
+      test(
+        'update_running_timer drives the real running-timer resolver closure '
+        'and accepts the running timer id',
+        () async {
+          // Exercises TaskAgentWorkflow.resolveRunningTimerId: the timer is for
+          // THIS task, so its id is the only accepted timerId.
+          final timeService = getIt<TimeService>();
+          final running = _makeLinkedTimeEntry(
+            id: 'running-entry',
+            dateFrom: DateTime(2024, 6, 14, 10),
+            dateTo: DateTime(2024, 6, 14, 10, 5),
+            text: 'active',
+          );
+          await timeService.start(running, _makeTask(taskId));
+          addTearDown(timeService.stop);
+
+          final result = await executeWithToolCallOnRealTask(
+            'update_running_timer',
+            '{"timerId":"running-entry","summary":"Refactoring"}',
+          );
+
+          expect(result.success, isTrue);
+          verify(
+            () => mockConversationManager.addToolResponse(
+              toolCallId: 'tc-1',
+              response: any(
+                named: 'response',
+                that: contains('recorded successfully'),
+              ),
+            ),
+          ).called(1);
+        },
+      );
+
       test('update_task_estimate accepts numeric string minutes', () async {
         when(
           () => mockJournalRepository.updateJournalEntity(any()),

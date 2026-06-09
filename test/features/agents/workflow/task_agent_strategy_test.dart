@@ -1765,6 +1765,55 @@ void main() {
           ).called(1);
         });
       }
+
+      test(
+        'trims whitespace in entryId before validating and queuing',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveEditableTimeEntryIds: () async => {'entry-1'},
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call('update_time_entry', {
+                'entryId': '  entry-1  ',
+                'summary': 'x',
+              }),
+            ],
+            manager: mockManager,
+          );
+
+          // Padded id is accepted (not falsely rejected) and queued canonically.
+          expect(bench.builder.items, hasLength(1));
+          expect(bench.builder.items.single.args['entryId'], 'entry-1');
+        },
+      );
+
+      test(
+        'trims whitespace in timerId before comparing and queuing',
+        () async {
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveRunningTimerId: () async => 'timer-1',
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              call('update_running_timer', {
+                'timerId': '  timer-1  ',
+                'summary': 'x',
+              }),
+            ],
+            manager: mockManager,
+          );
+
+          expect(bench.builder.items, hasLength(1));
+          expect(bench.builder.items.single.args['timerId'], 'timer-1');
+        },
+      );
     });
 
     group('deferred tools with changeSetBuilder', () {

@@ -87,6 +87,14 @@ extension ChangeSetBatchExplosion on ChangeSetBuilder {
         if (targetTaskIdForMigration is String) {
           element = {...element, 'targetTaskId': targetTaskIdForMigration};
         }
+        // Normalize incidental whitespace in the element id once, so the blank
+        // check, resolver lookup, dedup, and the queued proposal all use the
+        // same canonical value — a model that copies an id from context may
+        // pad it (e.g. "  item-1  "), which must not become a false rejection.
+        final rawElementId = element['id'];
+        if (rawElementId is String && rawElementId.trim() != rawElementId) {
+          element = {...element, 'id': rawElementId.trim()};
+        }
         // Check for redundant add_checklist_item proposals (title already
         // exists on the task or was already proposed in this wake).
         if (existingTitles != null) {

@@ -1384,6 +1384,36 @@ void main() {
         expect(result.rejectedDetails.single, contains('does not exist'));
       },
     );
+
+    test(
+      'trims incidental whitespace in a label id before validating',
+      () async {
+        final builderWithResolver = ChangeSetBuilder(
+          agentId: 'agent-001',
+          taskId: 'task-001',
+          threadId: 'thread-001',
+          runKey: 'run-key-001',
+          labelNameResolver: (id) async => id == 'label-1' ? 'Bug' : null,
+        );
+
+        final result = await builderWithResolver.addBatchItem(
+          toolName: 'assign_task_labels',
+          args: {
+            'labels': [
+              {'id': '  label-1  ', 'confidence': 'high'},
+            ],
+          },
+          summaryPrefix: 'Label',
+        );
+
+        // The padded id resolves (no false rejection) and the queued proposal
+        // carries the canonical id so it can be applied.
+        expect(result.added, 1);
+        expect(result.rejected, 0);
+        expect(builderWithResolver.items.single.args['id'], 'label-1');
+        expect(builderWithResolver.items.single.humanSummary, contains('Bug'));
+      },
+    );
   });
 
   group('addBatchItem redundancy filtering', () {
@@ -1621,6 +1651,34 @@ void main() {
       expect(result.redundant, 0);
       expect(result.rejectedDetails.single, contains('item-unknown'));
       expect(result.rejectedDetails.single, contains('does not exist'));
+    });
+
+    test('trims incidental whitespace in a checklist item id', () async {
+      final resolverBuilder = ChangeSetBuilder(
+        agentId: 'agent-001',
+        taskId: 'task-001',
+        threadId: 'thread-001',
+        runKey: 'run-key-001',
+        checklistItemStateResolver: (id) async => id == 'item-1'
+            ? (title: 'Real', isChecked: false, isArchived: null)
+            : null,
+      );
+
+      final result = await resolverBuilder.addBatchItem(
+        toolName: 'update_checklist_items',
+        args: {
+          'items': [
+            {'id': '  item-1  ', 'isChecked': true},
+          ],
+        },
+        summaryPrefix: 'Checklist',
+      );
+
+      // The padded id resolves (no false rejection) and the queued proposal
+      // carries the canonical id.
+      expect(result.added, 1);
+      expect(result.rejected, 0);
+      expect(resolverBuilder.items.single.args['id'], 'item-1');
     });
 
     test('keeps item when resolver throws (conservative)', () async {
