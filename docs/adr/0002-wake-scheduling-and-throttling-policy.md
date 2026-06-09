@@ -74,6 +74,9 @@ sequenceDiagram
 
 ## Related
 
+- [ADR 0027: Wake Notification Propagation and Storm Prevention](./0027-wake-notification-propagation-and-storm-prevention.md)
+  — the origin-routing model and cross-entity fan-out that decide *which* write
+  reaches this throttle path, and on behalf of which agents.
 - `lib/features/agents/wake/wake_orchestrator.dart`
 - `lib/features/agents/wake/wake_queue.dart`
 - `lib/features/agents/wake/run_key_factory.dart`
