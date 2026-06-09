@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
@@ -196,9 +197,9 @@ class ChangeSetBuilder {
     }
 
     if (toolName == TaskAgentToolNames.updateRunningTimer) {
-      final timerId = _runningTimerIdFromArgs(args);
+      final timerId = runningTimerIdFromArgs(args);
       _items.removeWhere(
-        (item) => _isRunningTimerUpdateForTimer(item, timerId),
+        (item) => isRunningTimerUpdateForTimer(item, timerId),
       );
     }
 
@@ -273,7 +274,7 @@ class ChangeSetBuilder {
         return freshEntity is ChangeSetEntity ? freshEntity : cs;
       }),
     );
-    final proposedRunningTimerIds = _runningTimerIds(_items);
+    final proposedRunningTimerIds = runningTimerIds(_items);
 
     // Extract items from existing change sets that should block a new
     // identical proposal. Confirmed items were applied; retracted items
@@ -284,13 +285,13 @@ class ChangeSetBuilder {
         for (final item in cs.items)
           if (item.status != ChangeItemStatus.confirmed &&
               item.status != ChangeItemStatus.retracted &&
-              !(_isRunningTimerUpdate(item) &&
+              !(isRunningTimerUpdate(item) &&
                   item.status == ChangeItemStatus.pending &&
-                  proposedRunningTimerIds.contains(_runningTimerId(item))))
+                  proposedRunningTimerIds.contains(runningTimerId(item))))
             item,
     ];
 
-    final deduped = _deduplicateItems(
+    final deduped = deduplicateItems(
       _items,
       existingItems,
       rejectedFingerprints: rejectedFingerprints,
@@ -298,9 +299,9 @@ class ChangeSetBuilder {
     );
     if (deduped.isEmpty) return null;
 
-    final dedupedRunningTimerIds = _runningTimerIds(deduped);
+    final dedupedRunningTimerIds = runningTimerIds(deduped);
     final supersededRunningTimerItems = dedupedRunningTimerIds.isNotEmpty
-        ? _locatePendingRunningTimerUpdates(
+        ? locatePendingRunningTimerUpdates(
             freshExistingSets,
             dedupedRunningTimerIds,
           )
@@ -309,7 +310,7 @@ class ChangeSetBuilder {
           >[];
     final currentExistingSets = supersededRunningTimerItems.isEmpty
         ? freshExistingSets
-        : _markItemsRetracted(
+        : markItemsRetracted(
             freshExistingSets,
             supersededRunningTimerItems,
           );
