@@ -5,6 +5,7 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/design_system/components/navigation/sidebar_month_calendar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/utils/device_region.dart';
 
 /// Desktop-sidebar month calendar wired to the Daily OS Next state:
 /// plan-day dots come from [dailyOsPlanDaysProvider]; tapping a day
@@ -52,6 +53,11 @@ class _DailyOsSidebarCalendarState
     }
     final markedDays =
         ref.watch(dailyOsPlanDaysProvider(_month)).value ?? const <DateTime>{};
+    // Week-start follows the device region (US → Sunday, Europe → Monday),
+    // resolved natively because macOS hides the region from Flutter's locale
+    // APIs. Defaults to Monday while the async lookup resolves.
+    final firstDayOfWeekIndex =
+        ref.watch(firstDayOfWeekIndexProvider).value ?? (DateTime.monday % 7);
 
     // Indent to the nav rows' inner content padding so the month title
     // lines up with the destination icons instead of hugging the
@@ -70,6 +76,7 @@ class _DailyOsSidebarCalendarState
         today: clock.now(),
         selectedDay: selectedDay,
         markedDays: markedDays,
+        firstDayOfWeekIndex: firstDayOfWeekIndex,
         onPreviousMonth: () => _shiftMonth(-1),
         onNextMonth: () => _shiftMonth(1),
         onDaySelected: ref

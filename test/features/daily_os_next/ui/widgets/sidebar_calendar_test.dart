@@ -6,6 +6,7 @@ import 'package:lotti/features/daily_os_next/state/day_agent_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
 import 'package:lotti/features/design_system/components/navigation/sidebar_month_calendar.dart';
+import 'package:lotti/utils/device_region.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -14,6 +15,7 @@ void main() {
     Widget wrap({
       Set<DateTime> planDays = const {},
       List<DateTime>? requestedMonths,
+      int firstDayOfWeekIndex = 1,
     }) {
       return ProviderScope(
         overrides: [
@@ -21,6 +23,9 @@ void main() {
             requestedMonths?.add(month);
             return planDays;
           }),
+          firstDayOfWeekIndexProvider.overrideWith(
+            (ref) async => firstDayOfWeekIndex,
+          ),
         ],
         child: makeTestableWidget2(
           const Material(
@@ -56,6 +61,22 @@ void main() {
             find.byType(SidebarMonthCalendar),
           );
           expect(calendar.markedDays, {DateTime(2026, 5, 13)});
+        });
+      },
+    );
+
+    testWidgets(
+      'feeds the region-derived first weekday into the month calendar',
+      (tester) async {
+        await withClock(Clock.fixed(DateTime(2026, 5, 24, 9)), () async {
+          // A US device resolves to a Sunday-first week (index 0).
+          await tester.pumpWidget(wrap(firstDayOfWeekIndex: 0));
+          await tester.pump();
+
+          final calendar = tester.widget<SidebarMonthCalendar>(
+            find.byType(SidebarMonthCalendar),
+          );
+          expect(calendar.firstDayOfWeekIndex, 0);
         });
       },
     );

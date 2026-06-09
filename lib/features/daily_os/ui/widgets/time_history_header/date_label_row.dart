@@ -10,6 +10,8 @@ import 'package:lotti/features/daily_os/ui/widgets/time_history_header/status_in
 import 'package:lotti/features/daily_os/ui/widgets/time_history_header/today_button.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
+import 'package:lotti/utils/device_region.dart';
+import 'package:lotti/utils/first_day_of_week_picker.dart';
 
 /// Date label row at the bottom of the header.
 class DateLabelRow extends ConsumerWidget {
@@ -110,11 +112,16 @@ class DateLabelRow extends ConsumerWidget {
     WidgetRef ref,
     DateTime currentDate,
   ) async {
+    final firstDayOfWeekIndex = await ref.read(
+      firstDayOfWeekIndexProvider.future,
+    );
+    if (!context.mounted) return;
     final picked = await showDatePicker(
       context: context,
       initialDate: currentDate,
       firstDate: DateTime(2020),
       lastDate: DateTime(2100),
+      builder: firstDayOfWeekPickerBuilder(firstDayOfWeekIndex),
     );
 
     if (picked != null) {
