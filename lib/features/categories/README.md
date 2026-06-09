@@ -52,26 +52,34 @@ Two read paths matter here:
 ```text
 lib/features/categories/
 ├── domain/
-│   └── category_icon.dart
+│   └── category_icon.dart            # part: category_icon_data.dart, category_icon_names.dart
 ├── repository/
 │   └── categories_repository.dart
 ├── state/
-│   ├── categories_list_controller.dart
+│   ├── categories_list_controller.dart   # only the categoriesStreamProvider
 │   ├── category_details_controller.dart
 │   └── category_task_count_provider.dart
 └── ui/
     ├── pages/
     │   ├── categories_list_page.dart
+    │   ├── category_details_form_sections.dart
     │   └── category_details_page.dart
     └── widgets/
+        ├── category_color_icon.dart
+        ├── category_color_picker.dart
+        ├── category_correction_examples.dart
         ├── category_create_modal.dart
         ├── category_field.dart
-        ├── category_selection_modal_content.dart
-        ├── category_color_picker.dart
+        ├── category_icon_compact.dart
+        ├── category_icon_display.dart
         ├── category_icon_picker.dart
         ├── category_language_dropdown.dart
+        ├── category_name_field.dart
+        ├── category_selection_icon_button.dart
+        ├── category_selection_modal_content.dart
         ├── category_speech_dictionary.dart
-        └── category_correction_examples.dart
+        ├── category_switch_tiles.dart
+        └── category_type_card.dart
 ```
 
 ## Data Model
@@ -118,7 +126,7 @@ The cache matters because several category consumers need synchronous access:
 
 ### Categories list
 
-`CategoriesListPage` currently watches `categoriesStreamProvider` directly. The page does not use `CategoriesListController`, even though the controller exists and has its own tests.
+`CategoriesListPage` watches `categoriesStreamProvider` (defined in `categories_list_controller.dart`) directly. There is no separate list controller class; that file only declares the `StreamProvider`.
 
 The list page behavior is:
 

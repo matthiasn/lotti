@@ -2,4 +2,5 @@
 export 'ai_form_section.dart';
 export 'ai_text_field.dart';
 
-// Note: ai_switch_field.dart is deprecated, use UnifiedAiToggleField from unified_toggle.dart instead
+// Note: the former ai_switch_field.dart has been removed; use UnifiedAiToggleField
+// from package:lotti/widgets/selection/unified_toggle.dart instead.

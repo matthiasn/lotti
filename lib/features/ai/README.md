@@ -7,18 +7,18 @@ The `ai` feature contains the shared AI plumbing used by manual prompts, skill-d
 Two startup paths shape the feature:
 
 - `aiConfigInitialization` always runs and seeds default inference profiles plus known models.
-- `agentInitialization` runs only when the agents flag is enabled and then seeds templates and upgrades default profiles with skill assignments.
+- `agentInitialization` also always runs (it is not gated by any flag); it seeds templates and upgrades default profiles with skill assignments.
 
 Skills do **not** participate in seeding — they live as code in `skills/built_in_skills.dart` and are read from `skillRegistryProvider` at runtime. The DB-backed `SkillSeedingService` was removed; a future skill-management feature will introduce a separate per-user override layer rather than re-introducing seeding.
 
 ```mermaid
 flowchart TD
   Start["App start"] --> AIInit["aiConfigInitialization"]
-  AIInit --> SeedProfiles["ProfileSeedingService.seedDefaults()"]
   AIInit --> BackfillModels["ModelPrepopulationService.backfillNewModels()"]
+  AIInit --> SeedProfiles["ProfileSeedingService.seedDefaults()"]
+  AIInit --> UpgradeProfilesAI["ProfileSeedingService.upgradeExisting()"]
 
-  Flag{"enableAgents?"} -->|no| Skip["Agent runtime stays offline"]
-  Flag -->|yes| AgentInit["agentInitialization"]
+  Start --> AgentInit["agentInitialization"]
   AgentInit --> SeedTemplates["AgentTemplateService.seedDefaults()"]
   AgentInit --> SeedProfilesAgain["ProfileSeedingService.seedDefaults()"]
   AgentInit --> UpgradeProfiles["ProfileSeedingService.upgradeExisting()"]
@@ -93,9 +93,9 @@ There are two entry styles:
 Today the automatic path is narrower than the direct one:
 
 - automatic: `tryTranscribe()` and `tryAnalyzeImage()`
-- direct: transcription, image analysis, prompt generation, and image generation
+- direct: transcription, image analysis, prompt generation, image-prompt generation, and image generation
 
-`imagePromptGeneration` is seeded as a skill, but `triggerSkillProvider` does not execute it yet.
+`promptGeneration` and `imagePromptGeneration` share the same dispatch arm in `triggerSkillProvider`: both route to `runner.runPromptGeneration()`, whose `runPromptGenerationImpl` derives the persisted response type from `skill.skillType.toResponseType` so the same runner serves both skill types.
 
 ```mermaid
 flowchart TD
@@ -204,9 +204,10 @@ available on that device.
 
 Gemini-backed transcription uses the OpenAI-compatible audio chat-completions
 path in `CloudInferenceRepository.generateWithAudio`. Gemini audio requests set
-`reasoning_effort: low`, which the Gemini compatibility layer maps to low
-thinking, while non-Gemini transcription providers leave reasoning effort
-unset.
+`reasoning_effort` only when the provider is Gemini and the model is a Gemini-3
+variant (`GeminiThinkingConfig.isGemini3(model)`); it defaults to `low` unless a
+per-invocation thinking mode is passed. Non-Gemini transcription providers (and
+non-Gemini-3 Gemini models) leave reasoning effort unset.
 
 The direct `AudioTranscriptionService` path used by Daily OS capture/refine
 prefers Mistral's non-realtime Voxtral transcription model over MLX Qwen when
@@ -282,9 +283,9 @@ The seeded task-context skills (`Transcribe (Task Context)`, `Analyze Image (Tas
 
 ### Per-Invocation Model Overrides
 
-Skill types with a per-invocation override slot (today: transcription and image-analysis) open the same `InferenceModelPickerModal` before firing `triggerSkillProvider`, so the user can route a single voice note or photo to any modality-capable model without editing the inference profile. The flow is one parameterised path — the variant table `_modelOverrideConfigs` in `unified_ai_skills_modal.dart` plugs in the per-slot modality filter, profile-slot accessor, and l10n strings. Adding a third per-invocation override slot is a one-line entry in that map plus a corresponding `_resolveOverrideTarget` call on the runner.
+Skill types with a per-invocation override slot (today: transcription, image analysis, prompt generation, and image-prompt generation) open the same `InferenceModelPickerModal` before firing `triggerSkillProvider`, so the user can route a single voice note, photo, or prompt-generation run to any modality-capable model without editing the inference profile. The flow is one parameterised path — the variant table `_modelOverrideConfigs` in `unified_ai_skills_modal.dart` (four entries: `transcription`, `imageAnalysis`, `promptGeneration`, `imagePromptGeneration`) plugs in the per-slot modality filter, profile-slot accessor, and l10n strings. Adding another per-invocation override slot is a one-line entry in that map plus a corresponding `_resolveOverrideTarget` call on the runner.
 
-The user's choice threads through as the optional `overrideModelId` field on `TriggerSkillParams`. `SkillInferenceRunner` dispatches on `skill.skillType` and forwards `overrideModelId` to `runTranscription` or `runImageAnalysis`; each one calls its per-slot resolver (`_resolveTranscriptionTarget` / `_resolveImageAnalysisTarget`), which delegates to the shared `_resolveOverrideTarget` helper. Both resolvers return an `_InferenceTarget` record of `(AiConfigInferenceProvider?, String?)` — preferring the override when it resolves to a real `AiConfigModel` + parent `AiConfigInferenceProvider`, falling back to the profile slot (with a warning log keyed by `_OverrideSlotKind`) otherwise.
+The user's choice threads through as the optional `overrideModelId` field on `TriggerSkillParams`. `SkillInferenceRunner` dispatches on `skill.skillType` and forwards `overrideModelId` to `runTranscription`, `runImageAnalysis`, or `runPromptGeneration` (the last serves both `promptGeneration` and `imagePromptGeneration`); each one calls its per-slot resolver (`_resolveTranscriptionTarget` / `_resolveImageAnalysisTarget` / `_resolvePromptGenerationTarget`), which delegates to the shared `_resolveOverrideTarget` helper. Each resolver returns an `_InferenceTarget` record of `(AiConfigInferenceProvider? provider, String? modelId, AiConfigModel? model)` — the `model` field carries the resolved `AiConfigModel` row so per-model settings (e.g. Gemini thinking mode) survive resolution — preferring the override when it resolves to a real `AiConfigModel` + parent `AiConfigInferenceProvider`, falling back to the profile slot (with a warning log keyed by `_OverrideSlotKind`) otherwise.
 
 Three short-circuits keep the common case one-tap, applied identically across slot kinds:
 
@@ -294,7 +295,7 @@ Three short-circuits keep the common case one-tap, applied identically across sl
 
 ```mermaid
 stateDiagram-v2
-  [*] --> SkillTap: tap transcription / image-analysis skill in popup
+  [*] --> SkillTap: tap transcription / image-analysis / prompt-generation skill in popup
   SkillTap --> ResolveProfile: resolve profile (task or category)
   ResolveProfile --> LoadModels: read AiConfigModel list via repository
   LoadModels --> ComputeDefault: variant.slotAccessor(profile)\n→ AiConfigModel.id
@@ -311,12 +312,12 @@ stateDiagram-v2
   PickedDefault --> FireTrigger: overrideModelId = null
   PickedOther --> FireTrigger: overrideModelId = picked id
   FireTrigger --> Dispatch: triggerSkillProvider routes by skill.skillType
-  Dispatch --> Runner: runTranscription / runImageAnalysis(overrideModelId)
+  Dispatch --> Runner: runTranscription / runImageAnalysis / runPromptGeneration(overrideModelId)
   Runner --> ResolveTarget: _resolveOverrideTarget(override)
   ResolveTarget --> OverrideOk: override resolves to AiConfigModel + provider
   ResolveTarget --> FallBack: override null / stale model / missing parent provider
-  OverrideOk --> Inference: generateWithAudio / generateWithImages\n(override model + provider)
-  FallBack --> Inference: generateWithAudio / generateWithImages\n(profile slot)
+  OverrideOk --> Inference: generateWithAudio / generateWithImages / generate\n(override model + provider)
+  FallBack --> Inference: generateWithAudio / generateWithImages / generate\n(profile slot)
   Inference --> [*]
 ```
 
@@ -481,8 +482,8 @@ macOS**: the Swift file compiles without the MLX package and returns
 register the plugin at all. The Dart channel short-circuits every method when
 `Platform.isMacOS` is false — `getModelStatus` returns
 `MlxAudioModelStatus.unsupported`, mutation methods (`installModel`,
-`transcribeFile`, `startRealtimeTranscription`, `speakText`) throw
-`PlatformException(code: 'UNSUPPORTED')`, no-op methods (`stopSpeaking`,
+`transcribeFile`, `transcribeBase64Audio`, `startRealtimeTranscription`,
+`speakText`) throw `PlatformException(code: 'UNSUPPORTED')`, no-op methods (`stopSpeaking`,
 `appendRealtimePcm`, `stopRealtimeTranscription`,
 `cancelRealtimeTranscription`) silently return, and the event streams emit
 nothing. The FTUE provider picker hides the MLX Audio tile on non-macOS, the
@@ -589,12 +590,14 @@ Grounded implementation notes:
 - `Anthropic Claude`
 - `Local (Ollama)`
 - `Local Power (Ollama)`
+- `Local Gemma 4 (Ollama)`
+- `Local Gemma 4 Power (Ollama)`
 
 Operational details from the seeded definitions:
 
-- the two local profiles are `desktopOnly`
-- `Local (Ollama)` ships with image-analysis automation but no transcription slot
-- `Local Power (Ollama)` currently ships with no default skill assignments
+- the four local (Ollama) profiles are `desktopOnly`
+- `Local (Ollama)` and `Local Gemma 4 (Ollama)` ship with image-analysis automation but no transcription slot
+- `Local Power (Ollama)` and `Local Gemma 4 Power (Ollama)` currently ship with no default skill assignments
 
 `seedDefaults()` is **strictly seed-on-create**: it looks up each profile by its well-known ID and writes only when the row is missing. Freshly seeded profiles write `AiConfigModel.id` slot values when the corresponding model rows exist. Once a profile exists, the seeder never overwrites user-edited names, descriptions, flags, or skill assignments.
 
@@ -629,7 +632,6 @@ The prompt-generation and image-generation skills accept any text-bearing entry 
 
 - The prompt system and the skill/profile system still coexist. Both are active in the codebase.
 - Automatic profile-driven handling currently covers only transcription and image analysis.
-- `imagePromptGeneration` is seeded but not wired for execution in `triggerSkillProvider`.
 - Image generation is currently implemented only for Gemini and Alibaba providers.
 - Data residency is not enforced by code. Most request destinations are whatever `baseUrl` is configured on the selected provider; MLX Audio is the exception and stays inside the app process when supported.
 - MLX Audio model inference ships only on macOS. The iOS / Android / Linux / Windows builds report every model as unsupported; mobile recordings rely on the synced-audio auto-trigger to reach an MLX-capable desktop.
@@ -651,6 +653,6 @@ If you are tracing the feature in code, start here:
 - `repository/cloud_inference_repository.dart`
 - `service/embedding_service.dart`
 - `repository/vector_search_repository.dart`
-- `ui/settings/` for provider/model/prompt/profile/skill editors
+- `ui/settings/` for provider and model editors; `ui/` for the inference-profile editors (`inference_profile_form.dart`, `inference_profile_detail_page.dart`, `inference_profile_page.dart`). Skills are code-only (`skills/built_in_skills.dart`); there is no prompt or skill editor page.
 
 For the lifecycle layer that sits above this plumbing, continue with [../agents/README.md](../agents/README.md).

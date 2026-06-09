@@ -29,9 +29,9 @@ flowchart LR
 
   Room --> QueueCoord["QueuePipelineCoordinator"]
   QueueCoord --> Bridge["BridgeCoordinator (catch-up via /messages on limited=true)"]
-  QueueCoord --> Queue["InboundEventQueue (Drift-backed)"]
+  QueueCoord --> Queue["InboundQueue (Drift-backed)"]
   Bridge --> Queue
-  Queue --> Worker["InboundWorker (per-room drain, batch ≤ 20)"]
+  Queue --> Worker["InboundWorker (per-room drain, one entry per batch)"]
   Worker --> Apply["QueueApplyAdapter → SyncEventProcessor"]
   Apply --> Stores["JournalDb / AgentRepository / SettingsDb"]
   Apply --> Sequence["SyncSequenceLogService"]
@@ -96,12 +96,15 @@ Current message families in `model/sync_message.dart`:
 - `outboxBundle`
 - `syncNodeProfile`
 
-Sequence-tracked payloads are narrower:
+Sequence-tracked payloads are narrower (the six members of
+`SyncSequencePayloadType`):
 
 - `journalEntity`
 - `entryLink`
 - `agentEntity`
 - `agentLink`
+- `notification`
+- `notificationStateUpdate`
 
 > The `agentBundle` wire variant still exists in [sync_message.dart][sync-message]
 > so messages from peers that predate the wake-bundle removal continue to parse,
@@ -179,7 +182,7 @@ sequenceDiagram
   Apply->>Notif: notify({audioId}, fromSync: true)
   Notif-->>Listener: batched set after 1 s
   Listener->>Disp: maybeDispatch(audioId)
-  Disp->>Disp: eligibility (15 checks; see §below)
+  Disp->>Disp: eligibility (see steps below)
   Disp->>Runner: runTranscription(audioEntryId, automationResult, linkedTaskId)
   Runner-->>Disp: transcript appended to entity (or runner returns silently)
   Disp->>Disp: reload entity, verify transcripts grew
@@ -216,7 +219,9 @@ For each id received from the listener, in order:
 12. Find the profile's automated transcription `SkillAssignment` (where
     `automate: true` AND `skill.skillType == transcription`). Skip if none —
     **no fallback** to `_tryDirectTranscriptionFallback`'s rank-ordered
-    cloud-capable scan.
+    cloud-capable scan. Also skip if the profile owns **more than one** such
+    skill (ambiguous — their context policies could differ silently),
+    mirroring `ProfileAutomationService._tryAutomateSkillType`.
 13. Build `ResolvedProfile` via `ProfileResolver.resolveByProfileId` +
     `AutomationResult(handled: true, ...)`.
 14. Call `skillInferenceRunner.runTranscription(audioEntryId, ...)` inside a
@@ -571,18 +576,22 @@ Receivers reverse the path inside
 4. Hand the reconstructed children list to `OutboxBundleUnpacker.prepare`,
    which dispatches each through the existing per-type prepare path.
 
-The manifest is rejected if:
+The receiver drops the manifest (`null` returned) if:
 
 - the `version` field is absent or unequal to
-  `SyncTuning.outboxBundleManifestVersion`,
-- the `entries` array is missing, or
-- the post-gzip size exceeds `SyncTuning.outboxBundleMaxBytes` (8 MiB).
+  `SyncTuning.outboxBundleManifestVersion`, or
+- the `entries` array is missing.
 
-In each case the bundle is dropped (`null` returned) and
-`OutboxRepository.markRetryBatch` re-queues every row for the next pass.
-Outbox rows stay pending until they are acknowledged as sent, so a failed
-manifest send simply re-bundles from outbox state on the next drain — no
-on-disk artifact survives across attempts.
+The receiver has no outbox rows to re-queue, so a dropped manifest simply
+surfaces its missing children via the per-(host, counter) backfill path.
+
+The post-gzip size cap (`SyncTuning.outboxBundleMaxBytes`, 8 MiB) is a
+**send-side** guard: `MatrixMessageSender._sendOutboxBundlePayload` returns
+`null` when the gzipped manifest exceeds it, and that null return is what
+triggers `OutboxRepository.markRetryBatch` to re-queue every row for the
+next pass. Outbox rows stay pending until they are acknowledged as sent, so
+a failed manifest send simply re-bundles from outbox state on the next drain
+— no on-disk artifact survives across attempts.
 
 ```mermaid
 sequenceDiagram
@@ -607,9 +616,10 @@ sequenceDiagram
 
 `OutboxProcessor` then:
 
-1. atomically claims the highest-priority pending head (`pending` → `sending`) via
-   `OutboxRepository.claim()`, so in-flight merges fall through to a fresh
-   pending row instead of overwriting the claimed row
+1. atomically claims the highest-priority pending rows (`pending` → `sending`) via
+   `OutboxRepository.claimNextBatch(maxSize: SyncTuning.outboxBundleMaxSize)`, so
+   in-flight merges fall through to a fresh pending row instead of overwriting a
+   claimed row (a single-row batch routes through the per-row send)
 2. sends the claimed payload through `MatrixService`
 3. marks it sent, retryable, or errored in `sync_db`
 4. probes `hasMorePending()` to decide immediate continuation
@@ -636,7 +646,7 @@ sequenceDiagram
   Outbox->>Outbox: merge/enrich covered clocks
   Outbox->>Repo: persist pending row
   Outbox->>Proc: nudge runner
-  Proc->>Repo: claim() [CAS pending→sending]
+  Proc->>Repo: claimNextBatch() [CAS pending→sending]
   Proc->>Matrix: sendMatrixMsg(syncMessage)
   alt send succeeds
     Proc->>Repo: markSent()
@@ -646,7 +656,7 @@ sequenceDiagram
   end
 ```
 
-The `claim()` step is a CAS from `pending` to `sending` on the row. Any
+The claim step is a per-row CAS from `pending` to `sending`. Any
 merge that fires while the send is in flight runs
 `updateOutboxMessage(... WHERE status = pending)` and gets
 `affectedRows = 0`, so the merged content spills into a fresh pending
@@ -673,13 +683,22 @@ The important runtime rules are:
   for live ingestion and to `Client.onSync` for catch-up triggers
 - live events are routed through `PendingDecryptionPen` so pre-decryption
   ciphertext never lands in `inbound_event_queue.raw_json`, then enqueued via
-  `InboundEventQueue.enqueueLive`
-- on `timeline.limited == true`, `BridgeCoordinator` walks `/messages` back to
-  the per-room marker stored in `queue_markers` and feeds events through the
-  same enqueue path
-- `InboundWorker` drains each room in batches of up to 20 (gated by
-  `UserActivityGate`), prepares events in parallel via `QueueApplyAdapter`, and
-  applies them through `SyncEventProcessor` inside a single `JournalDb.transaction`
+  `InboundQueue.enqueueLive`
+- on `timeline.limited == true`, `BridgeCoordinator` runs an anchored
+  **forward** catch-up walk via `CatchUpStrategy.collectForwardForBootstrap`
+  (anchored on the per-room `last_applied_event_id` marker in `queue_markers`),
+  falling back to a timestamp-bounded **backward** walk
+  (`collectHistoryForBootstrap`) only for fresh clients with no anchor or when
+  the anchor is unresolvable, and feeds events through the same enqueue path
+  with `producer=bootstrap`
+- `InboundWorker` drains each room one entry per batch
+  (`SyncTuning.inboundWorkerBatchSize = 1`, gated by `UserActivityGate`) — the
+  worker was deliberately dropped from 20 to 1 (PR #3038) because dequeue-time
+  outbox bundling already packs up to `outboxBundleMaxSize` children into one
+  queue entry. `QueueApplyAdapter` still exposes a parallel `prepareBatch` hook
+  (`Future.wait`), but with batch size 1 there is one entry to prepare per pass.
+  Each entry's apply runs inside its own `JournalDb.transaction` (only for
+  payload families that write to JournalDb tables)
 - `event_id` UNIQUE on the queue table is the sole cross-producer dedupe
   primitive; `lease_until` is a durable worker lease that survives crashes
 - per-room markers in `queue_markers` advance only after a successful slice
@@ -703,14 +722,14 @@ decompressed before the file is written to the local documents directory.
 The `relativePath` in the event is still the logical target path, unchanged
 by the encoding.
 
-Receivers decode this header unconditionally, so the receive path is
-forward-compatible with senders that later opt in. On the send side, gzip
-compression is gated by the `use_compressed_json_attachments` config flag
-(off by default) and only applies when the attachment's `relativePath` ends
-in `.json`, since media files are already compressed and would not benefit.
-When the flag is on, the uploaded file name gains a `.gz` suffix and the
-event content includes the encoding header; otherwise bytes are sent
-verbatim with no header and no suffix.
+Receivers decode this header unconditionally. On the send side, gzip
+compression is applied unconditionally to any attachment whose `relativePath`
+ends in `.json` (the only gate is `relativePath.toLowerCase().endsWith('.json')`
+in `MatrixMessageSender`); media files are sent verbatim since they are already
+compressed and would not benefit. For a `.json` attachment the uploaded file
+name gains a `.gz` suffix and the event content includes the
+`com.lotti.encoding: gzip` header; for other files bytes are sent verbatim with
+no header and no suffix.
 
 ```mermaid
 flowchart TD
@@ -729,7 +748,7 @@ flowchart TD
 
 The queue pipeline is the sole receive path. `MatrixStreamSignalBinder` is
 retained only for the `sync.limited` Phase-0 diagnostic; ingestion is owned
-by `QueuePipelineCoordinator` → `BridgeCoordinator` → `InboundEventQueue` →
+by `QueuePipelineCoordinator` → `BridgeCoordinator` → `InboundQueue` →
 `InboundWorker` → `QueueApplyAdapter`.
 
 Components (all under `lib/features/sync/queue/`):
@@ -743,9 +762,13 @@ Components (all under `lib/features/sync/queue/`):
   detections coalesce into one `onMissingEntriesDetected` emission — the
   F1 concern from the design review. Honours `UserActivityGate`.
 - **`BridgeCoordinator`** — subscribes to `Client.onSync` and, on any
-  joined room's `timeline.limited == true`, walks `/messages` back to the
-  stored marker via `CatchUpStrategy.collectEventsForCatchUp`, feeding
-  the result to `enqueueBatch` with `producer=bridge`. Single-flight.
+  joined room's `timeline.limited == true`, runs a catch-up walk anchored on
+  the per-room marker in `queue_markers`: an anchored **forward** walk via
+  `CatchUpStrategy.collectForwardForBootstrap` when `last_applied_event_id` is
+  set (the preferred path), falling back to a timestamp-bounded **backward**
+  walk via `collectHistoryForBootstrap` for fresh clients or an unresolvable
+  anchor. Walked events are appended via `InboundQueue.appendBootstrapPage`,
+  i.e. enqueued with `producer=bootstrap`. Single-flight.
 - **`PendingDecryptionPen`** — LRU holding pen for Megolm-encrypted events
   that arrive before their session key. The worker re-resolves them via
   `room.getEventById` on every drain iteration; only fully-decrypted
@@ -756,8 +779,11 @@ Components (all under `lib/features/sync/queue/`):
   Per-batch parallel prepare: `bindPrepareBatch()` returns a hook the
   worker invokes with the whole batch before the per-entry apply loop.
   Prepare is I/O-bound (attachment downloads, gzip decode, JSON
-  decode) so fanning out via `Future.wait` collapses the critical
-  path to the slowest entry instead of the sum. Prepared payloads are
+  decode) so fanning out via `Future.wait` would collapse the critical
+  path to the slowest entry instead of the sum — but with the current
+  `inboundWorkerBatchSize = 1` each batch holds one entry, so the
+  fan-out has nothing to parallelise at runtime; the hook stays in place
+  for batch sizes > 1. Prepared payloads are
   cached by `eventId` and consumed one-at-a-time by the apply phase;
   terminal outcomes (permanentSkip, pendingAttachment, retriable)
   caught at prepare time also survive in the cache so apply surfaces
@@ -781,7 +807,7 @@ stateDiagram-v2
     [*] --> Stopped
     Stopped --> Starting: coordinator.start()
     Starting --> Running: marker seeded · stranded rows pruned · worker + bridge started
-    Running --> Running: live event → pen? yes: hold / no: enqueueLive<br/>worker drains K≤20 / batch
+    Running --> Running: live event → pen? yes: hold / no: enqueueLive<br/>worker drains one entry per batch
     Running --> Draining: coordinator.stop(drainFirst: true)
     Draining --> Stopped: coordinator.drainUntilEmpty()<br/>(loops worker.drainToCompletion until queue empty or timeout)
     Running --> Stopped: coordinator.stop(drainFirst: false)
@@ -793,7 +819,7 @@ stateDiagram-v2
 flowchart TD
     Tick["Worker tick"] --> Gate["activityGate.waitUntilIdle"]
     Gate --> Flush["Pen.flushInto(queue, room)"]
-    Flush --> Peek["queue.peekBatchReady(maxBatch=20)"]
+    Flush --> Peek["queue.peekBatchReady(maxBatch=inboundWorkerBatchSize=1)"]
     Peek --> Empty{"batch empty?"}
     Empty -->|yes| Wait["wait for depthChanges or 5s tick"]
     Wait --> Tick
@@ -801,7 +827,7 @@ flowchart TD
     Window --> PrepareAll["adapter.prepareBatch (Future.wait)"]
     PrepareAll --> Apply["SyncEventProcessor.apply per entry<br/>(cached prepared payload)"]
     Apply --> Outcome{"outcome"}
-    Outcome -->|applied| Commit["queue.commitApplied<br/>(delete + marker advance if monotonic)"]
+    Outcome -->|applied| Commit["queue.commitApplied<br/>(status→applied, ledger row retained;<br/>marker advance if monotonic)"]
     Outcome -->|retriable/missingBase| Retry["scheduleRetry with backoff"]
     Outcome -->|decryptionPending| DecryptRetry["scheduleRetry (short backoff)"]
     Outcome -->|permanentSkip| Skip["markSkipped"]
@@ -817,38 +843,56 @@ flowchart TD
 
 ### Marker advancement is monotonic (F2)
 
-`commitApplied` reads the existing `queue_markers` row and only advances
-`last_applied_ts` / `last_applied_event_id` when
-`TimelineEventOrdering.isNewer` returns true — so an out-of-order apply
-(live event at ts=100 applied first, then a bridge event at ts=60 from
-the same burst) cannot regress the stored marker.
+`commitApplied` delegates to `_advanceMarkerIfNewer`, which reads the
+existing `queue_markers` row and advances `last_applied_ts` /
+`last_applied_event_id` only when a clamped candidate timestamp strictly
+beats the stored `last_applied_ts` (`clampedCandidateTs > storedTs`, with
+the durable `event_id` as a tiebreak only when both sides are durable).
+The candidate is clamped against the oldest still-active row for the room,
+so the marker never crosses an unapplied gap. It deliberately does **not**
+use `TimelineEventOrdering.isNewer`, because `isNewer` treats a null stored
+event id as "no marker" even when the marker carries a non-zero timestamp.
+The net effect: an out-of-order apply (live event at ts=100 applied first,
+then a bridge event at ts=60 from the same burst) cannot regress the
+stored marker.
 
-### UI (flag-gated on `backfill_settings_page.dart`)
+### UI (`backfill_settings_page.dart`)
 
-- `QueueDepthCard` — subscribes to `InboundQueue.depthChanges`, shows
-  total + per-producer breakdown + empty-state message.
-- `FetchAllHistoryDialog` — drives
-  `QueuePipelineCoordinator.collectHistory` with an in-dialog cancel
-  button and page-by-page progress.
+- `_QueueDepthScope` (inside `BackfillSettingsBody`) — subscribes to
+  `InboundQueue.depthChanges` (with a one-shot `queue.stats()` seed) and
+  rebuilds `_StatusRow` with the latest total / per-producer breakdown /
+  abandoned count.
+- `_AdvancedRecoveryGroup` (`backfill_settings_recovery.dart`) — manual
+  recovery actions that drive `QueuePipelineCoordinator.triggerBridge()`
+  (kick catch-up), `InboundQueue` retry of skipped rows, and the
+  reset/retire-stuck backfill controls.
+
+`QueuePipelineCoordinator.collectHistory` exists on the coordinator but is
+not wired into any production UI; it is exercised only by tests.
 
 ### Observability
 
-Pipeline-tagged log lines let a log analyzer compare apply rates:
+The queue pipeline tags each committed apply with a pipeline-marked log line
+a log analyzer can use to track apply rates:
 
-- Queue pipeline: `queue.commit pipeline=queue eventId=... originTs=... markerAdvanced=...`
-- Legacy pipeline: `marker.local id=... ts=... pipeline=legacy`
+- `queue.commit pipeline=queue eventId=... originTs=... markerAdvanced=...`
+  (emitted by `InboundQueue.commitApplied`)
 
-The Phase-2 ±15% gate compares event/sec rates between the two.
+The queue pipeline is now the sole receive path, so there is no second
+(legacy) pipeline to compare against — the historical Phase-2 ±15% dual-pipeline
+comparison no longer applies.
 
 ### Sidebar activity indicator (D4a)
 
 `SyncActivitySignaler` (`state/sync_activity_signaler.dart`) is a
 broadcast pulse emitter wired into the two committal chokepoints:
 
-- **TX** — `DatabaseOutboxRepository.markSent` and `markSentBatch` pulse
-  one event per row that actually transitioned to `status=sent`.
-- **RX** — `InboundQueue.commitApplied` pulses one event per row that
-  flipped to `status=applied`.
+- **TX** — `DatabaseOutboxRepository.markSent` pulses once per single-row
+  send; `markSentBatch` pulses once for the whole batch (one
+  `pulseTx()` after the bulk `markOutboxItemsSent`, not one per row), and
+  both pulse unconditionally rather than gated on the transitioned-row count.
+- **RX** — `InboundQueue.commitApplied` pulses once per applied row
+  (it commits one entry at a time).
 
 The signaler is registered as a `getIt` singleton and exposed to the UI
 via `syncActivityTxPulsesProvider` / `syncActivityRxPulsesProvider`.
@@ -976,9 +1020,10 @@ That code has a real lifecycle in `actor/sync_actor.dart`:
 stateDiagram-v2
   [*] --> Uninitialized
   Uninitialized --> Initializing: init
-  Initializing --> Idle: init succeeds
-  Idle --> Syncing: startSync
+  Initializing --> Syncing: init succeeds (enables backgroundSync, starts sync stream)
+  Initializing --> Uninitialized: init fails (resources cleaned up)
   Syncing --> Idle: stopSync
+  Idle --> Syncing: startSync
   Idle --> Stopping: stop
   Syncing --> Stopping: stop
   Stopping --> Disposed: cleanup complete

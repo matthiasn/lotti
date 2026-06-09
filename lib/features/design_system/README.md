@@ -47,23 +47,27 @@ lib/features/design_system/
 │   ├── task_filters/
 │   ├── task_list_items/
 │   └── ...
+├── state/
+│   └── pane_width_controller.dart
 ├── theme/
+│   ├── breakpoints.dart
 │   ├── design_system_theme.dart
 │   ├── design_tokens.dart
+│   ├── typography_helpers.dart
 │   └── generated/
 │       └── design_tokens.g.dart
 ├── utils/
 │   └── disabled_overlay.dart
-├── widgetbook/
-└── design_system.dart
+└── widgetbook/
 ```
 
 ### Practical Reading Guide
 
 - `theme/` is the token and theming layer
 - `components/` is the widget implementation layer
+- `state/` holds the sidebar pane-width controller
 - `widgetbook/` is the preview and review layer
-- `design_system.dart` is the curated public barrel, not an export of every DS-adjacent file in the tree
+- there is no single barrel file; tokens come from `theme/design_tokens.dart`, the standalone theme from `theme/design_system_theme.dart`, and components are imported directly from their own paths
 
 ## Token Model
 
@@ -176,8 +180,7 @@ Representative composite or feature-shaped components:
 
 - task filters
 - task list items
-- navigation tab bar, floating bottom-navigation shell, and shell-aware FAB
-  clearance wrapper
+- navigation tab bar (`components/navigation/`)
 - desktop navigation sidebar with a collapsible icon-only state and a
   resizable divider that disables drag input while the sidebar is
   collapsed, preserving the previous expanded width so re-expanding
@@ -213,21 +216,20 @@ That mix is intentional. The current DS is not only a box of atoms; it also incl
 
 ## Public Surface
 
-The main barrel is:
+There is no single curated barrel file. The only `export` in the feature is in
+`theme/design_tokens.dart`, which re-exports the generated tokens
+(`export 'generated/design_tokens.g.dart';`). Consumers import the entry points
+they need directly:
 
 ```dart
-import 'package:lotti/features/design_system/design_system.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 ```
 
-That barrel exports:
-
-- `DesignSystemTheme`
-- token access via `design_tokens.dart`
-- a curated set of shared components
-
-It does not currently export every file under `components/`. Some specialized modules, including task-filter and navigation-related widgets, are still imported directly from their own paths.
-
-So the barrel is a public surface, but not yet the entire surface.
+- `theme/design_tokens.dart` provides token access (`context.designTokens`) and
+  re-exports the generated `DsTokens` types
+- `theme/design_system_theme.dart` provides the standalone `DesignSystemTheme`
+- components are imported directly from their own paths under `components/`
 
 ## Component Patterns
 
@@ -243,7 +245,10 @@ The floating bottom navigation shell is an app-level overlay, not a normal
 `Scaffold.bottomNavigationBar`. That means any screen-level floating action
 button or status overlay that hugs the bottom edge needs explicit clearance.
 
-The current contract is:
+The shell itself (`DesignSystemBottomNavigationBar`) and its FAB clearance
+wrapper (`DesignSystemBottomNavigationFabPadding`) live outside this feature, in
+`lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart`; they are only
+exercised through the DS widgetbook. The current contract is:
 
 - `DesignSystemBottomNavigationBar.occupiedHeight(context)` defines how much
   vertical space the shell consumes, including safe-area inset
@@ -271,13 +276,18 @@ This is not universal policy machinery hidden somewhere central. It is encoded d
 
 The design system preview surface lives inside the shared `lib/widgetbook.dart` app.
 
-Important nuance: Widgetbook is not DS-only. The top-level app includes folders for:
+Important nuance: Widgetbook is not DS-only. The top-level app registers folders for:
 
+- AI
 - Design System
 - My Daily
+- Set Time Blocks
 - Projects
+- Settings
+- Checklist
+- Insights
 - Tasks
-- a few standalone task widgets
+- a `Task Widgets` folder with a few standalone task widgets
 
 The design-system folder itself is built by `buildDesignSystemWidgetbookFolder()` in `widgetbook/design_system_button_widgetbook.dart`, which acts as the registry for DS component stories and sorts them alphabetically.
 

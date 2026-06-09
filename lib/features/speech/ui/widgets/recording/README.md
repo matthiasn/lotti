@@ -13,7 +13,7 @@ The `AnalogVuMeter` is a custom-drawn widget that displays audio levels in real-
 **Features:**
 - Needle animation showing current audio level
 - Peak hold indicator that tracks maximum levels
-- Clip LED indicator that lights up when audio is too loud (>90% of scale)
+- Clip LED indicator that lights up when audio is too loud (instantaneous dBFS > -3 dBFS)
 - Non-linear scale matching traditional VU meter response (-20 to +3 dB)
 - Dark/light theme support
 
@@ -22,7 +22,7 @@ The `AnalogVuMeter` is a custom-drawn widget that displays audio levels in real-
 AnalogVuMeter(
   vu: vuLevel,           // -20 to +3 VU range (RMS-based)
   dBFS: dBFSLevel,       // Instantaneous dBFS for clipping detection
-  size: 400,             // Width (height is automatically size * 0.5)
+  size: 400,             // Width (height is automatically size * 0.4)
   colorScheme: theme.colorScheme,
 )
 ```
@@ -33,8 +33,9 @@ The main recording interface presented as a modal bottom sheet.
 
 **Features:**
 - Displays the VU meter for visual audio feedback
-- Shows recording duration in MM:SS format
-- Language selector for transcription
+- Shows recording duration in H:MM:SS format
+- Standard/Realtime transcription mode toggle (shown when realtime transcription
+  is available and recording has not started)
 - Record/Stop button with recording status indicator
 - Integrates with Riverpod state management via `AudioRecorderController`
 - Automatically pauses any playing audio when recording starts
@@ -115,7 +116,7 @@ The VU meter consists of several visual elements:
    - Falls back to current level, not zero
 
 4. **Clip LED**: Red indicator for signal clipping
-   - Triggers when level > 90% of scale
+   - Triggers when instantaneous dBFS > -3 dBFS
    - Glowing effect when active
    - "PEAK" label below
 
@@ -156,8 +157,8 @@ The VU meter uses RMS (Root Mean Square) calculation to display average signal l
    - Clipping detection uses instantaneous dBFS (> -3 dBFS)
 
 5. **Rolling Average Window:**
-   - Default: 300ms (30 samples at 10ms intervals)
-   - Configurable between 100-1000ms
+   - Fixed: 300ms (15 samples at 20ms intervals), set by the
+     `defaultVuWindowMs` constant in `recorder_controller.dart`
    - Provides smooth, stable meter movement
    - Reduces nervousness from transient peaks
 
@@ -183,13 +184,12 @@ This creates the characteristic VU meter appearance where:
 All components have comprehensive test coverage:
 
 - **VU Meter Tests**: Animation, sizing, theme handling, painter logic
-- **Modal Tests**: User interactions, state management, language selection
+- **Modal Tests**: User interactions, state management, recording mode toggle
 - **Indicator Tests**: Visibility states, duration display
 
 Run tests with:
 ```bash
-flutter test test/features/speech/ui/widgets/
-flutter test test/widgets/audio/
+flutter test test/features/speech/ui/widgets/recording/
 ```
 
 ## State Management

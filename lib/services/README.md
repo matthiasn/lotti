@@ -34,14 +34,20 @@ per domain (plus the master logging switch and the slow-query switch).
   (`enabledDomains`), populated from config flags by `domainLoggerProvider`;
 - always logs `error(LogDomain, Object, {message, stackTrace, subDomain})` —
   errors are never silently swallowed;
-- delegates to `LoggingService` for the general + per-domain files;
-- writes a per-domain file at `{documentsDir}/logs/{domain}-YYYY-MM-DD.log`
-  (`sync` routes to the shared `sync-*.log` instead).
+- delegates to `LoggingService` for the general (`lotti-*.log`), shared
+  `sync-*.log`, and full `error-*.log` files;
+- writes the non-sync per-domain files itself at
+  `{documentsDir}/logs/{domain}-YYYY-MM-DD.log` (`sync` routes to the shared
+  `sync-*.log` via `LoggingService` instead of a per-domain file).
 
 `domainLoggerProvider` (in `features/agents/state/agent_providers.dart`) wires
 each `LogDomain`'s config flag into `enabledDomains` via `ref.listen`, so toggling
-a domain mutates the set in place without rebuilding dependents. It is watched at
-app startup from `beamer_app.dart`, independent of the agents feature flag.
+a domain mutates the set in place without rebuilding dependents. It is constructed
+transitively at app startup via the agent-init chain: `lib/beamer/beamer_app.dart`
+listens to `agentInitializationProvider`, which watches agent providers (e.g.
+`agentRepositoryProvider`) that `ref.watch(domainLoggerProvider)`. (For ad-hoc
+error logging, `beamer_app.dart` also calls `getIt<DomainLogger>()` directly,
+since `main.dart` registers the `DomainLogger` GetIt singleton at boot.)
 
 Callers must treat `log` messages as **telemetry, not content** — never include
 task titles, notes, prompt text, model output, or other user-authored content.
@@ -54,8 +60,9 @@ place (and shared safely):
 - **`error-YYYY-MM-DD.log`** — owned by `LoggingService`. Every exception and
   every error-level event is mirrored here in **full** (raw message + stack).
 - **`error-safe-YYYY-MM-DD.log`** — owned by `DomainLogger.error`. Records the
-  error's **runtime type only** (never the raw exception string), so it is safe
-  to share without leaking user-authored content.
+  developer-supplied `message` plus the error's **runtime type**
+  (`'<message> (errorType=<Type>)'`), but never the raw exception string or the
+  stack trace, so it is safe to share without leaking user-authored content.
 
 Under normal operation both stay empty.
 
@@ -67,19 +74,22 @@ flowchart TD
   Gate -- no --> Drop["(dropped: info only)"]
   Gate -- yes --> LS[LoggingService.captureEvent]
   DL -->|"always"| LSE[LoggingService.captureException]
-  DL -->|"per-domain / sync file"| PD["{domain}-*.log / sync-*.log"]
-  DL -->|"type-only"| SAFE["error-safe-*.log"]
-  LS --> GEN["lotti-*.log (+ sync-*.log for sync)"]
+  DL -->|"non-sync only"| PD["{domain}-*.log"]
+  DL -->|"message + errorType"| SAFE["error-safe-*.log"]
+  LS --> GEN["lotti-*.log (general)"]
+  LS -->|"sync domain"| SYNC["sync-*.log (sync info + sync errors)"]
   LS -->|"error level"| ERR["error-*.log (full)"]
   LSE --> GEN
+  LSE -->|"sync domain"| SYNC
   LSE --> ERR
 ```
 
 ## Migration status
 
-`DomainLogger` is the standard going forward; all agent/sync/persistence code
-that previously used the string-based `LogDomains` constants now uses the
-`LogDomain` enum. A backlog of direct `LoggingService.captureEvent/Exception`
-call sites in older feature code is being migrated to `DomainLogger`
-incrementally — `LoggingService` remains a valid sink in the meantime. See
+The migration to `DomainLogger` is **complete**. All former direct
+`LoggingService.captureEvent/captureException` call sites across feature, agent,
+sync, and persistence code now route through `DomainLogger`; the only remaining
+callers of `LoggingService.captureEvent/captureException` are inside
+`DomainLogger` itself (`domain_logging.dart`). `LoggingService` is retained
+solely as the low-level file sink that `DomainLogger` owns. See
 `docs/implementation_plans/2026-05-30_logging_domainlogger_migration.md`.

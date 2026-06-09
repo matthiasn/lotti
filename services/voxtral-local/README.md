@@ -6,7 +6,7 @@ Local speech transcription service using Mistral AI's Voxtral model with OpenAI-
 
 - **30-minute transcription support** - Much longer than Whisper's typical limits
 - **9 languages** with automatic detection - English, Spanish, French, Portuguese, Hindi, German, Dutch, Italian, Arabic
-- **OpenAI-compatible API** - Drop-in replacement for existing transcription workflows
+- **OpenAI-inspired JSON API** - Accepts base64-encoded audio in a JSON body (not OpenAI's multipart upload); returns a custom `{text, model, language}` shape
 - **Local inference** - No cloud dependencies, all processing on your machine
 - **Apache 2.0 license** - Fully open source, no HuggingFace token required
 
@@ -19,9 +19,9 @@ Local speech transcription service using Mistral AI's Voxtral model with OpenAI-
   - CPU: Works but slower
 
 ### Software
-- Python 3.9+
-- PyTorch 2.1+
-- FFmpeg (for audio format conversion)
+- Python 3.9–3.13 (mistral-common requires Python < 3.14; `start_server.sh` refuses to start on 3.14+)
+- PyTorch 2.2+
+- FFmpeg (optional; used only for `m4a`/unknown formats, falls back to librosa when absent)
 
 ## Installation
 
@@ -92,6 +92,30 @@ curl -X POST http://localhost:11344/v1/chat/completions \
 | `/v1/models/pull` | POST | Download model |
 | `/v1/models/load` | POST | Load model into memory |
 
+## Model Lifecycle
+
+The model moves through two independent dimensions: whether its files are downloaded to the local cache (`is_model_available()`, true when the cache holds `*.safetensors`) and whether weights are loaded in memory (`is_model_loaded()`, true when `model is not None`). Both are surfaced by `/health` as `model_available` and `model_loaded`.
+
+Downloads run through `download_model()`, which streams progress with a `status` that transitions through `checking` → (`cached` | `downloading` → `complete`), or `error` on failure. Loading is lazy: the first transcription request (`/v1/audio/transcriptions` or `/v1/chat/completions`) loads the model automatically if it is available but not yet loaded; `/v1/models/load` loads it explicitly. If a request arrives when the model is not downloaded, the service returns 404 pointing at `/v1/models/pull`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> NotDownloaded
+
+    NotDownloaded --> Checking: POST /v1/models/pull
+    Checking --> Available: cached (files already present)
+    Checking --> Downloading: not cached
+    Downloading --> Available: complete
+    Downloading --> NotDownloaded: error
+
+    Available --> Loaded: POST /v1/models/load\nor first transcription request (lazy load)
+    Loaded --> Loaded: subsequent requests reuse loaded model
+
+    NotDownloaded --> NotDownloaded: transcription request → 404 (download first)
+```
+
+The download status enum in code is `idle` (initial) / `checking` / `cached` / `downloading` / `complete` / `error`; `idle` is the pre-pull resting state.
+
 ## Configuration
 
 Environment variables (set in `.env`):
@@ -103,7 +127,7 @@ Environment variables (set in `.env`):
 | `VOXTRAL_MODEL_ID` | mistralai/Voxtral-Mini-3B-2507 | Model to use |
 | `VOXTRAL_DEVICE` | auto | Device (auto, cuda, mps, cpu) |
 | `MAX_AUDIO_SIZE_MB` | 100 | Max audio file size |
-| `AUDIO_CHUNK_SIZE_SECONDS` | 300 | Chunk size for long audio (5 min default) |
+| `AUDIO_CHUNK_SIZE_SECONDS` | 300 | Chunk size for long audio (code default is 300s/5 min; the shipped `.env.example` overrides this to 60) |
 
 ## Performance
 
@@ -150,7 +174,6 @@ Pre-built binaries for Linux and macOS are available in [GitHub Releases](https:
 | Platform | Architecture | Filename |
 |----------|--------------|----------|
 | Linux | x64 | `voxtral_server-linux-x64.tar.gz` |
-| macOS | Intel (x64) | `voxtral_server-macos-x64.tar.gz` |
 | macOS | Apple Silicon (ARM64) | `voxtral_server-macos-arm64.tar.gz` |
 
 Download and extract:
@@ -158,10 +181,6 @@ Download and extract:
 ```bash
 # Linux (x64)
 tar -xzvf voxtral_server-linux-x64.tar.gz
-./voxtral_server
-
-# macOS Intel
-tar -xzvf voxtral_server-macos-x64.tar.gz
 ./voxtral_server
 
 # macOS Apple Silicon (M1/M2/M3/M4)

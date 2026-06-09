@@ -49,9 +49,10 @@ sequenceDiagram
 
   User->>Service: captureCorrection(categoryId, before, after)
   Service->>Service: normalize text
-  Service->>Service: reject no-op / trivial / duplicate changes
+  Service->>Service: reject no-op / trivial changes
   Service->>Repo: load category
   Repo-->>Service: category
+  Service->>Service: reject duplicate (vs category.correctionExamples)
   Service->>Notifier: setPending(pending, onSave)
   Notifier-->>User: pending correction visible with undo
   alt user cancels
@@ -59,23 +60,33 @@ sequenceDiagram
     Notifier->>Notifier: clear pending state
   else timer expires
     Notifier->>Service: onSave()
-    Service->>Repo: update category correctionExamples
+    Service->>Repo: re-fetch category
+    Repo-->>Service: latest category (or null)
+    alt category not found or pair now duplicate
+      Service->>Service: log + abort (no update)
+    else still valid
+      Service->>Repo: update category correctionExamples
+    end
     Notifier->>Notifier: clear pending state
   end
 ```
 
 ## Pending-Correction State Machine
 
-This lifecycle is explicit in code.
+`CorrectionCaptureNotifier.state` is typed `PendingCorrection?`, so the notifier
+itself is binary: `null` (Idle) or a non-null `PendingCorrection` (Pending). The
+save phase is a transient step inside the timer callback — while `await onSave()`
+runs, `state` is still the same pending value and is only set to `null` after the
+await completes (whether the save succeeds or throws). There is no represented
+`Saving` state.
 
 ```mermaid
 stateDiagram-v2
   [*] --> Idle
   Idle --> Pending: setPending(...)
   Pending --> Idle: cancel()
-  Pending --> Saving: timer expires
-  Saving --> Idle: save completes
-  Saving --> Idle: save fails and state cleared
+  Pending --> Idle: timer expires, await onSave() completes (state cleared)
+  Pending --> Idle: timer expires, onSave() throws (logged, state still cleared)
 ```
 
 The save delay is currently `kCorrectionSaveDelay = 5 seconds`.
@@ -99,12 +110,12 @@ That is a good fit for the problem:
 
 - checklist wording often depends on context
 - categories already provide the semantic grouping
-- prompt-building layers can later consume category-specific examples
+- prompt-building layers already consume category-specific examples (see Relationship to Other Features)
 
 ## Relationship to Other Features
 
 - `tasks` owns checklist UI, drag/drop, and item orchestration
 - `categories` owns the category entities this feature updates
-- `ai` and agentic flows can later consume the stored correction examples as guidance
+- `ai` and agentic flows already consume the stored correction examples as guidance: the AI prompt builder resolves them into the `{{correction_examples}}` placeholder for audio transcription (`PromptBuilderHelper._buildCorrectionExamplesPromptText`), and the agent task prompt builder injects them via `CorrectionExamplesBuilder.buildContext`
 
 This feature is intentionally narrow today, but it does a useful job: it turns "the user fixed the wording" into structured signal instead of throwing that knowledge away.

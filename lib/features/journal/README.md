@@ -154,11 +154,12 @@ sequenceDiagram
   Ctl->>Draft: saveTempState(...)
   Draft-->>Ctl: unsaved stream -> dirty
   UI->>Ctl: save(...)
-  alt Task
+  opt entry is Task
     Ctl->>Persist: updateTask(...)
-  else JournalEvent
+  end
+  alt entry is JournalEvent
     Ctl->>Persist: updateEvent(...)
-  else Other journal entity
+  else not a JournalEvent (includes Task and everything else)
     Ctl->>Persist: updateJournalEntityText(...)
   end
   Persist-->>Notify: affected IDs
@@ -166,13 +167,14 @@ sequenceDiagram
   Ctl-->>UI: saved state + haptic feedback
 ```
 
-The branching is intentionally boring:
+The branching uses two independent `if` blocks rather than one exclusive switch:
 
-- tasks save through `updateTask`
-- events save through `updateEvent`
-- everything else uses `updateJournalEntityText`
+- a `Task` is persisted via `updateTask` (its own `if (entry is Task)` block, with no `else`)
+- the second block is `if (entry is JournalEvent) updateEvent else updateJournalEntityText`
 
-That is a good thing. The controller is not trying to invent a second write model on top of the persistence layer.
+Because a `Task` is not a `JournalEvent`, it falls into the trailing `else` as well, so a task save performs two persistence writes: `updateTask` for the task data and `updateJournalEntityText` for the editor text. Events save through `updateEvent` only; every other entity type saves through `updateJournalEntityText` only.
+
+The controller is not trying to invent a second write model on top of the persistence layer.
 
 A few detail-level behaviors are worth calling out because they are easy to miss:
 
@@ -183,7 +185,7 @@ A few detail-level behaviors are worth calling out because they are easy to miss
 
 ## Browse Surface
 
-[`infinite_journal_page.dart`](ui/pages/infinite_journal_page.dart) is the shared browse page used for both the journal tab and the tasks tab.
+[`infinite_journal_page.dart`](ui/pages/infinite_journal_page.dart) is the journal-tab browse page. It is hardcoded to `journalPageControllerProvider(false)` (`showTasks=false`) and is wired only into the journal route. The tasks tab has its own page widget, `TasksTabPage` in the tasks feature (`lib/features/tasks/ui/pages/tasks_tab_page.dart`), which watches `journalPageControllerProvider(true)`. What is shared between the two tabs is the controller (`JournalPageController`, keyed by `showTasks`), not the page widget.
 
 Its job is mostly composition. The heavy lifting sits in [`journal_page_controller.dart`](state/journal_page_controller.dart).
 
@@ -222,9 +224,10 @@ flowchart TD
 
 When a visible browse page already has rows on screen, the controller now
 replaces the currently loaded page window only after the refreshed pages
-resolve. That avoids the `PagingController.reset()` path that would otherwise
-clear the list immediately and produce a visible desktop flicker during saves
-or live updates, while still allowing regrouping when task ordering changes.
+resolve. That avoids the `PagingController.refresh()..fetchNextPage()` path that
+would otherwise clear the list immediately and produce a visible desktop flicker
+during saves or live updates, while still allowing regrouping when task ordering
+changes.
 For the normal offset-based path, those already-loaded pages are refreshed in
 parallel; the slower sequential reload is kept only for post-filtered task
 queries where project or agent filters consume raw rows before returning a
@@ -273,15 +276,15 @@ When those are active, the controller fetches raw task pages from `JournalDb`, f
 
 That is a small implementation detail with a large bug-prevention payoff.
 
-### Sorting Constraint
+### Sorting
 
-Due-date sorting is also a practical compromise:
+Due-date sorting is done in SQL, not in memory:
 
-- due dates are stored inside serialized task data rather than an indexed DB column
-- tasks are therefore fetched in a simpler DB order and sorted by due date in memory
-- ordering is correct within each loaded page, but not guaranteed globally across page boundaries
+- the v41 migration backfilled a denormalized `due_at` column for every task with a non-null `data.due`, regardless of status
+- the partial `idx_journal_tasks_due_open` index covers the open-task subset; closed tasks stream from the priority/date task indexes
+- `JournalQueryRunner` routes `TaskSortOption.byDueDate` to `JournalDb.getTasksSortedByDueDate`, a raw SQL query that orders by `CASE WHEN due_at IS NULL THEN 1 ELSE 0 END, due_at ASC, date_from DESC` with `LIMIT`/`OFFSET`
 
-That is the current behavior.
+Because the ordering happens in the database against the indexed column, results are globally stable across page boundaries. The static in-memory `JournalQueryRunner.sortByDueDate` helper still exists but is exercised only by tests, not by the live query path.
 
 ## Linked Entries, Focus, and Highlighting
 
@@ -312,7 +315,7 @@ The important runtime details are:
 - outgoing links are fetched from `JournalRepository.getLinksFromId(...)`
 - hidden links can be included or excluded without changing the rest of the page
 - the Filter & Sort modal can narrow the outgoing list to flagged entries only (`meta.flag == EntryFlag.import`); the check runs per row in `LinkedEntriesWidget` against the watched entry, so flagging or unflagging an entry updates the filtered list reactively
-- outgoing links are ordered by the linked entity's editable `dateFrom`, not by link creation time
+- outgoing links are ordered by the linked entity's editable `dateFrom`, not by link creation time, with a user-selectable direction (newest-first / oldest-first) via `LinkedEntriesSortController`, exposed as sort pills in the linked-entries Filter & Sort modal (links whose target has not yet resolved fall back to `link.createdAt`)
 - `LinkedEntriesWithTimer` only reacts to active timer entry ID changes, not every timer tick
 - `HighlightScrollMixin` retries scroll-to-entry until the target widget is actually mounted, then applies a temporary highlight pulse
 
@@ -394,7 +397,6 @@ That is normal for this feature. It is the app's entry hub. Quiet side effects w
 - the journal feature owns the shared surface, not every per-entity widget
 - browse state for journal and tasks still lives in one controller because the underlying pagination and search substrate is shared
 - vector search depends on the embedding stack being available and only runs as a first-page search mode
-- due-date sorting is page-local rather than globally stable across all pages
 - some cross-feature behaviors, especially AI, ratings, tasks, and speech, are layered onto journal surfaces rather than reimplemented elsewhere
 
 ## Relationship To Other Features

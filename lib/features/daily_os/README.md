@@ -19,7 +19,7 @@ At runtime, the feature owns:
 
 1. the selected date plus lightweight Daily OS UI-coordination state
 2. lazy day-plan reads and persisted mutations
-3. unified day aggregation for timeline, budget cards, summary stats, and rating linkage
+3. unified day aggregation for timeline, budget cards, and summary stats
 4. time-history header aggregation and backward paging
 5. per-category task-card view preferences
 6. category highlighting, timeline folding, active-focus helpers, and running-timer indicators
@@ -76,7 +76,7 @@ That separation matters because the UI does not build its day model by stitching
 
 ## Day-Plan Lifecycle
 
-The day plan itself has an explicit status machine in `DayPlanStatus`:
+The day plan itself has an explicit status machine in `DayPlanStatus`. The diagram below covers the subset of transitions that Daily OS drives:
 
 ```mermaid
 stateDiagram-v2
@@ -91,6 +91,8 @@ Those are real code-backed states:
 - `draft`
 - `agreed`
 - `needsReview`
+
+`DayPlanStatus` defines a fourth state, `committed` (`DayPlanStatusCommitted`), with a documented one-way `Draft -> Committed` transition. That state is driven by the `daily_os_next` day-agent, not by Daily OS, so it is out of scope for the Daily OS mutation paths above.
 
 This matters because the Daily OS page is not just an editor. It has a lightweight commitment model:
 
@@ -169,6 +171,7 @@ The controller surface includes mutations such as:
 
 - `agreeToPlan()`
 - `markComplete()`
+- `setPlannedBlocks(...)`
 - `addPlannedBlock(...)`
 - `updatePlannedBlock(...)`
 - `removePlannedBlock(...)`
@@ -176,7 +179,7 @@ The controller surface includes mutations such as:
 - `unpinTask(...)`
 - `setDayLabel(...)`
 
-Today's page wiring uses `agreeToPlan()` and the planned-block mutation paths directly. The rest are still part of the persisted day-plan API, even if they are not all surfaced from the current page widgets.
+Today's page wiring uses `agreeToPlan()` and the planned-block mutation paths directly. `setPlannedBlocks(...)` is the batch planned-block save used by `SetTimeBlocksPage`. The rest are still part of the persisted day-plan API, even if they are not all surfaced from the current page widgets.
 
 All of them eventually go through `_mutateDayPlan(...)` and `_saveDayPlan(...)`.
 
@@ -184,7 +187,7 @@ All of them eventually go through `_mutateDayPlan(...)` and `_saveDayPlan(...)`.
 flowchart TD
   Mutate["User action"] --> Transform["_mutateDayPlan(...)"]
   Transform --> Review{"was plan agreed and does change require review?"}
-  Review -->|yes| NeedsReview["transitionToNeedsReviewIfAgreed(...)"]
+  Review -->|yes| NeedsReview["_transitionToNeedsReviewIfAgreed(...)"]
   Review -->|no| Updated["updated plan data"]
   NeedsReview --> Save["DayPlanRepository.save(...)"]
   Updated --> Save
@@ -218,6 +221,7 @@ stateDiagram-v2
   [*] --> AllCollapsed
   AllCollapsed --> RegionExpanded: toggleFoldRegion(startHour)
   RegionExpanded --> RegionExpanded: toggleFoldRegion(...)
+  RegionExpanded --> AllCollapsed: toggleFoldRegion(last expanded region)
   RegionExpanded --> AllCollapsed: resetFoldState()
 ```
 
@@ -250,7 +254,7 @@ This is a good example of the feature doing real derived-data work rather than j
 
 ## Task View Preferences
 
-`TaskViewPreference` stores a per-category preference for how tasks appear in time-budget cards:
+`TaskViewPreference` is the notifier that stores a per-category preference for how tasks appear in time-budget cards. The stored value is a `TaskViewMode` enum:
 
 - `list`
 - `grid`
@@ -267,7 +271,7 @@ That preference is persisted in `SettingsDb` under a category-specific key, whic
 ## Relationship to Other Features
 
 - `journal` and `tasks` provide the underlying entries, task metadata, and linked work
-- `ratings` contributes same-day rating linkage in the unified data model
+- `ratings` are deliberately excluded when resolving a time entry's parent: `RatingEntry` parents are skipped in link resolution and treated as non-navigation targets in the timeline, so they never contribute a category or navigation target to the day model
 - `categories` define the buckets that budgets and planned blocks are grouped by
 - `user_activity` is used elsewhere to avoid background processing while the user is active; Daily OS itself is mostly a presentation-and-planning layer
 

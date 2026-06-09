@@ -155,11 +155,12 @@ For labels it uses this fallback chain:
 2. Catalog lookup for the current locale
 3. Raw `dimension.key`
 
-For segmented values it uses this fallback chain:
+For segmented values, `_resolveSegmentedLabel` resolves the display text along one of two paths:
 
-1. Stored `optionLabels` and `optionValues`
-2. Catalog lookup
-3. Percentage fallback such as `37%`
+- If stored `optionLabels` are present, it maps `dimension.value` to a label via `findOptionLabel` (using stored `optionValues` when available). If the value matches no stored label, `findOptionLabel` returns a percentage such as `37%`. The catalog is never consulted on this path.
+- If there are no stored `optionLabels`, it falls back to a catalog lookup and returns the matching option label.
+
+If neither path yields a label (no stored `optionLabels` and no catalog match), `_resolveSegmentedLabel` returns null and the dimension renders as a `LinearProgressIndicator` progress bar instead of categorical text.
 
 The summary always exposes the modal action. If the catalog is known, reopening is effectively editing. If the catalog is unknown, reopening still works, but only in read-only mode.
 
@@ -203,7 +204,7 @@ There are two deliberate cleanup paths:
 ## Integration Points Outside `features/ratings`
 
 - [`duration_widget.dart`](../journal/ui/widgets/entry_details/duration_widget.dart) triggers the post-session prompt flow
-- [`modern_action_items.dart`](../journal/ui/widgets/entry_details/header/modern_action_items.dart) adds a menu action that says either "Rate session" or "View rating"
+- [`modern_advanced_action_items.dart`](../journal/ui/widgets/entry_details/header/modern_advanced_action_items.dart) defines `ModernRateSessionItem`, the menu action that says either "Rate session" or "View rating" (this file is a `part of` `modern_action_items.dart`)
 - [`entry_details_widget.dart`](../journal/ui/widgets/entry_details_widget.dart) renders `RatingSummary` for `RatingEntry`
 
 The prompt button and action-menu entry are both gated by the `enable_session_ratings` config flag.

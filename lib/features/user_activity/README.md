@@ -52,7 +52,6 @@ The feature is intentionally minimal:
 and exposes:
 
 - `updateActivity()`
-- `msSinceLastActivity`
 - `dispose()`
 
 That is all it needs to do. It is a timestamp emitter, not an analytics platform.
@@ -63,7 +62,8 @@ That is all it needs to do. It is a timestamp emitter, not an analytics platform
 
 ```mermaid
 stateDiagram-v2
-  [*] --> Idle: no recent activity
+  [*] --> Idle: no recent activity (elapsed >= idleThreshold)
+  [*] --> Busy: recent activity (elapsed < idleThreshold)
   Idle --> Busy: activity event
   Busy --> Busy: more activity events reset timer
   Busy --> Idle: idleThreshold elapses
@@ -97,13 +97,13 @@ This is why the feature exists at all: it gives background systems a clean way t
 
 ## Where It Is Used
 
-The clearest consumer today is the sync outbox path, which waits for idle before pushing outbound work. Other UI surfaces also call `updateActivity()` while the user scrolls or interacts.
+There are two consumers today, both in `sync`. The outbox path (`OutboxService`) calls `waitUntilIdle()` before pushing outbound work, and the inbound queue worker (`InboundWorker`) calls `waitUntilIdle()` before draining so inbound apply does not fight the user's writes. Other UI surfaces also call `updateActivity()` while the user scrolls or interacts.
 
 That means this feature quietly influences perceived app smoothness without ever getting a flashy page of its own.
 
 ## Relationship to Other Features
 
-- `sync` uses the gate to avoid sending aggressively while the user is active
+- `sync` uses the gate to defer both outbound sending (outbox) and inbound apply (queue worker) while the user is active
 - pages such as dashboards and task details report activity into the service
 
 This is a very small feature, but it is a good example of useful infrastructure: boring, explicit, and capable of preventing a surprising amount of bad timing.

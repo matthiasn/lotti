@@ -1,6 +1,6 @@
 # Credits Service
 
-A ledger-based service for managing user credits using TigerBeetle as the database backend.
+A ledger-based service for managing user credits. Balances and transfers are held in TigerBeetle (the ledger), while a user registry and a transaction history are persisted in two SQLite databases under `data/`.
 
 ## Overview
 
@@ -22,15 +22,20 @@ src/
 │   ├── exceptions.py       # Custom exceptions
 │   └── constants.py        # Constants
 ├── services/               # Business logic implementations
-│   ├── tigerbeetle_client.py    # TigerBeetle client
-│   ├── account_service.py       # Account management
-│   ├── balance_service.py       # Balance queries
-│   └── billing_service.py       # Top-up and billing
+│   ├── tigerbeetle_client.py        # TigerBeetle client
+│   ├── account_service.py           # Account management
+│   ├── balance_service.py           # Balance queries
+│   ├── billing_service.py           # Top-up and billing
+│   ├── user_registry_service.py     # SQLite-backed user registry (data/user_registry.db)
+│   └── transaction_log_service.py   # SQLite-backed transaction log (data/transaction_log.db)
 ├── api/                    # HTTP API layer
 │   └── routes.py           # FastAPI routes
 ├── container.py            # Dependency injection
 └── main.py                 # Application entry point
 ```
+
+API-key authentication is enforced by `APIKeyAuthMiddleware`, sourced from the
+shared `services/shared/auth` package and registered in `main.py`.
 
 ## Requirements
 
@@ -65,14 +70,38 @@ This will start:
 
 ### 4. Test the API
 
-Health check:
+Every endpoint requires authentication (see [Authentication](#authentication)).
+With `API_KEYS=dev-key` configured, the health check is:
+
 ```bash
-curl http://localhost:8001/api/v1/health
+curl http://localhost:8001/api/v1/health \
+  -H "Authorization: Bearer dev-key"
 ```
+
+## Authentication
+
+All requests are gated by `APIKeyAuthMiddleware` (registered in `main.py`,
+implemented in `services/shared/auth/middleware.py`). Each request must carry an
+`Authorization: Bearer <api_key>` header.
+
+- API keys come from the `API_KEYS` environment variable (comma-separated). If
+  `API_KEYS` is unset, every **non-admin** authenticated request is rejected
+  (`503` once a Bearer header is present); admin endpoints are still reachable
+  with a valid `ADMIN_API_KEYS` key, because the admin-path check runs before the
+  regular-key check.
+- Missing `Authorization` header → `401`; malformed header → `401`; unknown key → `403`.
+- Admin endpoints under `/api/v1/users` require a key from `ADMIN_API_KEYS`
+  (comma-separated). If `ADMIN_API_KEYS` is unset, those endpoints return `503`;
+  a non-admin key returns `403`.
+- The middleware's exempt-path list (`/health`, `/docs`, `/openapi.json`,
+  `/redoc`) is matched against the full request path. Because the router is
+  mounted under `/api/v1`, the live health path is `/api/v1/health`, which is
+  **not** exempt and therefore also requires an `Authorization` header.
 
 ## API Endpoints
 
-All endpoints are under `/api/v1` prefix.
+All endpoints are under the `/api/v1` prefix and require an
+`Authorization: Bearer <api_key>` header (see [Authentication](#authentication)).
 
 ### Create Account
 
@@ -149,6 +178,80 @@ Response:
 }
 ```
 
+### List Users (admin)
+
+Requires an admin key (`ADMIN_API_KEYS`). Pagination params: `page` (default 1)
+and `page_size` (default 20, clamped to 1–100).
+
+```bash
+GET /api/v1/users?page=1&page_size=20
+```
+
+Response:
+```json
+{
+  "users": [
+    {
+      "user_id": "john@example.com",
+      "display_name": null,
+      "created_at": "2025-01-01T00:00:00+00:00",
+      "balance": 99.75
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "page_size": 20
+}
+```
+
+### Get User (admin)
+
+Requires an admin key. Returns `404` if the user is not registered.
+
+```bash
+GET /api/v1/users/{user_id}
+```
+
+Response:
+```json
+{
+  "user_id": "john@example.com",
+  "display_name": null,
+  "created_at": "2025-01-01T00:00:00+00:00",
+  "balance": 99.75
+}
+```
+
+### Get Transactions (admin)
+
+Requires an admin key. Returns the user's top-up/bill history (recorded by the
+SQLite transaction log) with `page`/`page_size` pagination. Returns `404` if the
+user is not registered.
+
+```bash
+GET /api/v1/users/{user_id}/transactions?page=1&page_size=20
+```
+
+Response:
+```json
+{
+  "transactions": [
+    {
+      "id": 1,
+      "user_id": "john@example.com",
+      "type": "bill",
+      "amount": 0.25,
+      "description": "Gemini API call",
+      "balance_after": 99.75,
+      "created_at": "2025-01-01T00:00:00+00:00"
+    }
+  ],
+  "total": 1,
+  "page": 1,
+  "page_size": 20
+}
+```
+
 ## Development
 
 ### Run tests
@@ -217,7 +320,9 @@ make test-integration
 | `TIGERBEETLE_PORT` | `3000` | TigerBeetle port |
 | `PORT` | `8001` | Service port |
 | `LOG_LEVEL` | `INFO` | Logging level |
-| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000` | Comma-separated list of allowed CORS origins |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:3000,http://localhost:5173` | Comma-separated list of allowed CORS origins |
+| `API_KEYS` | _(empty)_ | Comma-separated API keys. Required: when empty, every non-admin request is rejected with `503` (admin endpoints still work with a valid `ADMIN_API_KEYS` key) |
+| `ADMIN_API_KEYS` | _(empty)_ | Comma-separated admin API keys required for the `/api/v1/users*` endpoints |
 
 ## Docker Commands
 
@@ -260,7 +365,6 @@ Phase 2 will add:
 - Proxy functionality for AI provider calls (Gemini, OpenAI, Anthropic)
 - Automatic billing based on API usage
 - Multiple currency support
-- Transaction history
 - Usage analytics
 
 ## Contributing

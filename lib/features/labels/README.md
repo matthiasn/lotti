@@ -18,7 +18,7 @@ At runtime, the feature owns:
 5. reusable label display and modal-opening helpers
 6. task-side AI assignment validation, suppression, and add-only persistence
 
-It does not own every concrete label UI surface. The shared modal helper lives here, but the main task picker and task wrapper live under `features/tasks`.
+It does not own every concrete label UI surface. The shared modal helper lives here, but the main task picker and the desktop task header surface live under `features/tasks`.
 
 ## Directory Shape
 
@@ -47,15 +47,16 @@ lib/features/labels/
 │       └── label_selection_modal_utils.dart
 └── utils/
     ├── assigned_labels_util.dart
-    └── label_tool_parsing.dart
+    ├── label_tool_parsing.dart
+    └── labels_normalization.dart
 ```
 
 Important label-adjacent files outside this folder:
 
 - `lib/features/tasks/ui/labels/label_selection_modal_content.dart`
-- `lib/features/tasks/ui/labels/task_labels_wrapper.dart`
+- `lib/features/tasks/ui/header/desktop_task_header_meta.dart`
 - `lib/features/agents/tools/task_label_handler.dart`
-- `lib/features/ai/repository/unified_ai_inference_repository.dart`
+- `lib/features/ai/repository/unified_ai_tool_call_processor.dart` (the `UnifiedAiToolCallProcessor` extension, `part of unified_ai_inference_repository.dart`)
 
 ## Runtime Architecture
 
@@ -149,7 +150,7 @@ Assignment writes are stricter than a generic chip picker:
 
 - `addLabels()` appends only missing IDs
 - `removeLabel()` removes one label ID
-- `setLabels()` replaces the full set, resolves only existing non-deleted labels, dedupes the result, and stores IDs sorted by label name
+- `setLabels()` replaces the full set, resolves each ID first against the `EntitiesCacheService` cache (which retains soft-deleted definitions, so cached deleted labels are kept) and otherwise against the DB where only non-deleted definitions are accepted, dedupes the result, and stores IDs sorted by label name
 
 For tasks, assignment writes also update suppression:
 
@@ -224,20 +225,19 @@ That last rule matters because route-backed editing and bottom-sheet quick-creat
 
 The list page is the label-management surface in Settings. It provides:
 
-- search by name or description
+- search by name or description (substring match)
 - usage counts
-- route-based creation when a search query has no exact match
+- route-based creation when a search query matches no existing label (the filtered list is empty)
 - navigation into per-label details
 - a create FAB that is lifted above the shared bottom-navigation shell
 
-Rows show more than the chip itself:
+Each row shows:
 
-- label preview
-- raw hex color
-- private badge when applicable
-- scoped category pills
-- description preview
-- usage count
+- a leading colored dot
+- the label name
+- one subtitle that is the description when present, otherwise the usage count
+- a private lock icon when the label is private
+- a trailing chevron into details
 
 ### `LabelDetailsPage`
 
@@ -258,7 +258,7 @@ The main pieces are:
 - `EntryLabelsDisplay` for showing assigned chips on generic entry surfaces
 - `LabelSelectionModalUtils` for opening the shared modal shell and sticky action bar
 - `LabelSelectionSliverContent` in `features/tasks` for the actual selectable list
-- `DesktopTaskHeader` in `features/tasks` for the task-specific "Add Label" / assigned-label surface — assigned labels render as outlined chips with a leading color dot and the same long-press description dialog; the "Add Label" placeholder chip opens the selector when no labels are assigned
+- `DesktopTaskHeader` in `features/tasks` for the task-specific "Add Label" / assigned-label surface — assigned labels render as filled `DsPill` chips (`DsPillVariant.filled`) with a leading color dot and the same long-press description dialog; the "Add Label" placeholder chip opens the selector when no labels are assigned
 
 `LabelChip` itself is intentionally modest: neutral chip chrome, a colored dot, and a tooltip that prefers the description over the bare name.
 
@@ -327,7 +327,7 @@ flowchart LR
 There are two practical entry points:
 
 - `TaskLabelHandler` builds label context for agent prompts and can process structured task-tool arguments directly
-- `UnifiedAiInferenceRepository` parses tool-call arguments during inference execution and delegates the real decision to `LabelAssignmentProcessor`
+- `UnifiedAiInferenceRepository` (specifically its `UnifiedAiToolCallProcessor` part-file extension, via `processToolCalls` → `processToolCallsImpl`) parses tool-call arguments during inference execution and delegates the real decision to `LabelAssignmentProcessor`
 
 ### Guardrails
 

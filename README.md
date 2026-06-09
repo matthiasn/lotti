@@ -86,11 +86,11 @@ The result is an assistant that *evolves*. You're not configuring a tool — you
 
 ### Where the agentic layer is today, and where it's going
 
-The current focus is on **task agents** and their evolution: agents that watch tasks in your realm, reason about them, and have tools to interact with you and propose changes — new checklist items, status updates, suggested edits — every one of which still requires your approval before it lands in the user database.
+The current focus is on **task agents** and their evolution: agents that watch tasks in your realm, reason about them, and have tools to interact with you and propose changes — new checklist items, status updates, suggested edits — every one of which still requires your approval before it lands in the user database. A **long‑lived day‑planning agent** also ships today (see ADR 0022): it wakes on a cadence and on relevant changes to propose how a day should be shaped given what's on your plate and what you've said matters.
 
 Next agent types on the roadmap:
 
-- **Day and week planners** — agents that propose how a day or week should be shaped given what's on your plate and what you've said matters.
+- **Week planners** — agents that propose how a week should be shaped, extending the day‑planning loop to a longer horizon.
 - **Long‑term commitment monitors** — agents that watch the things you said you'd care about over months, not days, and surface drift before it becomes a problem.
 - **Effort‑against‑goals balancers** — agents that look at where your time and energy actually went and weigh that against what you said you wanted.
 
@@ -123,7 +123,7 @@ Locally available today:
 
 When you do opt into a cloud provider, Lotti uses **your own API keys**, and your data is shared only for that specific inference call — there is no Lotti backend in the middle holding your data. For users who want options beyond US frontier cloud, **European‑hosted, no‑retention, GDPR‑compliant providers** are supported, and **Chinese providers** (Qwen via Alibaba, for instance) also work well — pick the jurisdiction and the price/performance point that fits  your specific needs.
 
-**Image generation isn't local yet.** Cover‑art generation currently goes through a cloud provider (Nano Banana Pro on Gemini, OpenAI, or Qwen — see [Visual journaling](#visual-journaling-cover-art-for-your-life)). A reliable, local Python‑based image‑generation service following the same pattern as our local Voxtral integration is one of the **few areas where outside contributions are actively wanted** — see [Contributing](#contributing).
+**Image generation isn't local yet.** Cover‑art generation currently goes through a cloud provider (Nano Banana Pro on Gemini, or Qwen/Wan via Alibaba — see [Visual journaling](#visual-journaling-cover-art-for-your-life)). A reliable, local Python‑based image‑generation service following the same pattern as our local Voxtral integration is one of the **few areas where outside contributions are actively wanted** — see [Contributing](#contributing).
 
 ---
 
@@ -143,7 +143,7 @@ This is where agent state lives: agent definitions, memories, wake cycle history
 
 The split between the two databases has one practical consequence: **anything an agent suggests must be approved by you before it lands in the user database.** Agents propose. You dispose.
 
-There is exactly one narrow exception: **if a task has no title at all, an agent may set the initial title automatically.** Any subsequent edit to that title — or to anything else — requires your explicit approval.
+There are two narrow exceptions, both for fields that are still empty on a task: **if a task has no title yet, an agent may set the initial title automatically, and if it has no language yet, an agent may set the initial language automatically.** Any subsequent edit to either — or to anything else — requires your explicit approval.
 
 ```mermaid
 flowchart LR
@@ -159,7 +159,7 @@ flowchart LR
     end
     A --> W --> S
     S -->|requires user approval| T
-    S -.->|exception: initial title only| T
+    S -.->|exception: initial title & language only| T
 ```
 
 The reason this matters: the rule isn't enforced by being careful in prompts, it's enforced by the storage layout. Agent‑authored content sits in a different file on disk and reaches the user database only through a code path that requires your approval. Even a misbehaving agent can't bypass that — it has nowhere to write.
@@ -171,7 +171,7 @@ The reason this matters: the rule isn't enforced by being careful in prompts, it
 Beyond the agentic layer, the logbook side covers:
 
 ### Tracking
-- **Tasks** — full lifecycle (open, groomed, in progress, blocked, done, rejected), with priorities, due dates, labels, projects, and cover art
+- **Tasks** — full lifecycle (open, groomed, in progress, blocked, on hold, done, rejected), with priorities, due dates, labels, projects, and cover art
 - **Audio recordings** — captured locally, transcribed by Whisper, Voxtral, or your chosen cloud model
 - **Time tracking** — recorded against tasks and projects
 - **Journal entries** — written reflections and documentation
@@ -180,7 +180,7 @@ Beyond the agentic layer, the logbook side covers:
 - **Custom metrics** — track anything that matters to you
 
 ### AI‑augmented workflows
-- **Smart summaries** of tasks and categories
+- **Smart summaries** of tasks
 - **Audio → checklist** conversion of rambling voice notes
 - **Image cover art** for tasks and journal entries
 - **Context recap** when you return to a task after a break
@@ -217,7 +217,7 @@ You hold the record button, talk for as long as you want, and stop. Lotti transc
 
 Cover art for tasks isn't decoration — it's a *visual index of what your day/week/month was actually about*.
 
-Each task can have an AI‑generated image, created with **Nano Banana Pro (Gemini)**, **OpenAI**, or **Qwen** (whichever you've configured). You're the one who guides the art, and you keep the result. Years from now, when you look back at "what was I doing in May 2026?", you don't have to read a wall of text — you will be able to scroll an Instagram‑style grid of cover art and the texture of that period of your life comes back at a glance.
+Each task can have an AI‑generated image, created with **Nano Banana Pro (Gemini)** or **Qwen/Wan (Alibaba)** (whichever you've configured). You're the one who guides the art, and you keep the result. Years from now, when you look back at "what was I doing in May 2026?", you don't have to read a wall of text — you will be able to scroll an Instagram‑style grid of cover art and the texture of that period of your life comes back at a glance.
 
 This is one of the strongest arguments for keeping a logbook like this open‑source and yours: a subscription‑based product gives you a "download my data" button at best, but no tool to make that data meaningful afterward. Lotti's cover art belongs to you, in a database you can read, in a file format that will outlive any of us (JSON stored in SQLite).
 
@@ -251,11 +251,11 @@ The application is in active daily use. The agentic layer is real, working, and 
 
 ## Getting Started
 
-Three short walkthroughs live alongside the README. Pick the one that matches what you want to do:
+Pick the guide that matches what you want to do:
 
 - 🤖 [Set up AI — local (Ollama) or cloud (Gemini Flash)](GETTING_STARTED.md) — the fastest way to a working agent
-- ✅ [Create your first task with cover art](docs/manual/getting-started-task-with-image.md) — the basic everyday workflow
-- 🔄 [Set up sync between your devices via the Matrix provisioner](docs/manual/getting-started-sync.md) — when you have more than one device
+- ✅ [Basic task management](docs/BASIC_TASK_MANAGEMENT.md) — the everyday voice‑to‑checklist workflow
+- 📖 [Manual](docs/MANUAL.md) — how to use Lotti
 
 For developers:
 
@@ -320,7 +320,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the formal version.
 
 - [Getting Started with AI](GETTING_STARTED.md) — set up local Ollama or cloud Gemini
 - [Manual](docs/MANUAL.md) — how to use Lotti
-- [`docs/manual/`](docs/manual/) — focused getting‑started walkthroughs
 - [Basic Task Management](docs/BASIC_TASK_MANAGEMENT.md) — voice‑to‑checklist workflow
 - [Architecture](docs/ARCHITECTURE.md) — technical design
 - [Background](docs/BACKGROUND.md) — the story behind the project
@@ -345,7 +344,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for the formal version.
 1. **Your data is yours.** The user database is the system of record. No company should own your thoughts and experiences — and definitely not behind a subscription that expires.
 2. **AI as a tool, not a service.** Use AI capabilities without subscriptions or vendor lock‑in. As local models improve, more of the experience moves on‑device — but cloud stays a first‑class, à‑la‑carte option for the categories where you've decided it's fine and useful.
 3. **Privacy by design.** Choose exactly what to share, when, and with whom. The architecture, not the marketing copy, enforces the privacy story.
-4. **Human‑in‑the‑loop.** Agents propose, you dispose. Every change to the system of record passes through you (with one narrow, documented exception).
+4. **Human‑in‑the‑loop.** Agents propose, you dispose. Every change to the system of record passes through you (with two narrow, documented exceptions — the initial title and initial language of an otherwise empty task).
 5. **Agents you can shape.** Mission, soul, report directive, grievances, 1‑on‑1s — agents are collaborators you tune over time, not appliances you configure once.
 
 ---
