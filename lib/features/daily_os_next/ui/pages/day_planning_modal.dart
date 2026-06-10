@@ -294,9 +294,10 @@ class _CaptureStepBarState extends ConsumerState<_CaptureStepBar> {
         // One honest action while working: a quiet Cancel that discards the
         // in-flight transcription (controller reset). The thinking shader on
         // the bar's top edge carries the busy signal.
+        // No leading ✕ glyph: the modal's close button already shows one,
+        // and two ✕ affordances in one viewport read as competing exits.
         actions = _layoutBarPills(context, [
           DsGlassPill(
-            icon: Icons.close_rounded,
             label: messages.cancelButton,
             fillColor: tokens.colors.surface.focusPressed,
             onTap: () => ref.read(captureControllerProvider.notifier).reset(),

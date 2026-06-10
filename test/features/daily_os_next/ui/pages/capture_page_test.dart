@@ -698,8 +698,13 @@ void main() {
         );
         await tester.pump();
 
-        final tokens = tester.element(find.byType(CapturePage)).designTokens;
+        // On a squeezed viewport the transcript zone yields height so the
+        // orb and its caption stay fully above the fold (the anchored
+        // layout's priority); the live text itself must stay rendered and
+        // on screen.
+        expect(tester.takeException(), isNull);
         expect(find.text(liveTranscript), findsOneWidget);
+        expect(tester.getTopLeft(find.text(liveTranscript)).dy, greaterThan(0));
         expect(
           tester
               .getSize(
@@ -708,9 +713,12 @@ void main() {
                 ),
               )
               .height,
-          greaterThanOrEqualTo(tokens.typography.lineHeight.bodyMedium * 3),
+          greaterThan(0),
         );
-        expect(tester.getTopLeft(find.text(liveTranscript)).dy, greaterThan(0));
+        final messages = tester.element(find.byType(CapturePage)).messages;
+        final caption = find.text(messages.dailyOsNextCaptureListeningStatus);
+        expect(caption, findsOneWidget);
+        expect(tester.getBottomLeft(caption).dy, lessThanOrEqualTo(568));
       },
     );
 

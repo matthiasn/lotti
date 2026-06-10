@@ -132,32 +132,54 @@ class DraftingModalContent extends StatelessWidget {
     final tokens = context.designTokens;
     final isDrafting = state.phase == DraftingPhase.drafting;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(tokens.spacing.step6),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              SizedBox(height: tokens.spacing.step6),
-              Text(
-                context.messages.dailyOsNextDraftingHeader,
-                textAlign: TextAlign.center,
-                style: calmDisplayStyle(tokens),
-              ),
-              SizedBox(height: tokens.spacing.step6),
-              AiThinkingShaderPresence(
-                isRunning: isDrafting,
-                height: 44,
-                indicatorKey: DraftingModalContent.thinkingShaderKey,
-              ),
-              SizedBox(height: tokens.spacing.step5),
-              DraftingStatusTicker(active: isDrafting),
-              SizedBox(height: tokens.spacing.step8),
-              if (state.learningCards != null)
-                LearningCardsColumn(cards: state.learningCards!),
-            ],
+    // Content scrolling past the sheet edge dissolves over the last ~36px
+    // instead of being razor-cut at full brightness.
+    return ShaderMask(
+      shaderCallback: (bounds) {
+        final ramp = bounds.height <= 0
+            ? 0.06
+            : (36.0 / bounds.height).clamp(0.04, 0.3);
+        return LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
+          stops: [0, ramp],
+        ).createShader(bounds);
+      },
+      child: SingleChildScrollView(
+        // Extra bottom padding so the last learning-card line clears the
+        // fade band when scrolled to the end.
+        padding: EdgeInsets.fromLTRB(
+          tokens.spacing.step6,
+          tokens.spacing.step6,
+          tokens.spacing.step6,
+          tokens.spacing.step10,
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: _contentMaxWidth),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                SizedBox(height: tokens.spacing.step6),
+                Text(
+                  context.messages.dailyOsNextDraftingHeader,
+                  textAlign: TextAlign.center,
+                  style: calmDisplayStyle(tokens),
+                ),
+                SizedBox(height: tokens.spacing.step6),
+                AiThinkingShaderPresence(
+                  isRunning: isDrafting,
+                  height: 44,
+                  indicatorKey: DraftingModalContent.thinkingShaderKey,
+                ),
+                SizedBox(height: tokens.spacing.step5),
+                DraftingStatusTicker(active: isDrafting),
+                SizedBox(height: tokens.spacing.step8),
+                if (state.learningCards != null)
+                  LearningCardsColumn(cards: state.learningCards!),
+              ],
+            ),
           ),
         ),
       ),

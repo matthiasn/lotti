@@ -128,7 +128,7 @@ class _SpokenPhraseLine extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return Text(
-      '"$phrase"',
+      '“$phrase”',
       style: tokens.typography.styles.body.bodySmall.copyWith(
         color: tokens.colors.text.mediumEmphasis,
         fontStyle: FontStyle.italic,

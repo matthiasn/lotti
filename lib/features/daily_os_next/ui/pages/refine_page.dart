@@ -108,7 +108,9 @@ class RefineModalContent extends ConsumerWidget {
   String _caption(BuildContext context, RefinePhase phase) {
     final messages = context.messages;
     return switch (phase) {
-      RefinePhase.idle => messages.dailyOsNextRefineStatusIdle,
+      // Same platform-aware hint as Capture's orb, so the wording matches
+      // across the two voice surfaces.
+      RefinePhase.idle => voiceIdleHint(context),
       RefinePhase.listening => messages.dailyOsNextRefineStatusListening,
       RefinePhase.reviewing => messages.dailyOsNextCaptureCaptured,
       RefinePhase.thinking => messages.dailyOsNextRefineStatusThinking,
@@ -364,8 +366,11 @@ class _PlanRow extends StatelessWidget {
         SizedBox(width: tokens.spacing.step3),
         Text(
           '${timeFormat.format(block.start)}–${timeFormat.format(block.end)}',
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.lowEmphasis,
+          // Mono digits so the time column stays aligned across rows.
+          style: monoMetaStyle(
+            tokens,
+            tokens.colors,
+            base: tokens.typography.styles.body.bodySmall,
           ),
         ),
         SizedBox(width: tokens.spacing.step3),

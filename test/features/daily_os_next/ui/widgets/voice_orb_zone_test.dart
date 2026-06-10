@@ -95,7 +95,7 @@ void main() {
     expect(find.byType(LiveWaveform), findsNothing);
   });
 
-  testWidgets('caption renders with the given color and a forced strut', (
+  testWidgets('caption renders with the given color on one line', (
     tester,
   ) async {
     const color = Color(0xFF2BA184);
@@ -103,7 +103,9 @@ void main() {
 
     final caption = tester.widget<Text>(find.text('Listening…'));
     expect(caption.style?.color, color);
-    expect(caption.strutStyle?.forceStrutHeight, isTrue);
+    // No forced strut — an unscaled strut would clip descenders at large
+    // accessibility text sizes; stability comes from the shared style.
+    expect(caption.strutStyle, isNull);
     expect(caption.maxLines, 1);
   });
 

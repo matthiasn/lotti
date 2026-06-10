@@ -168,9 +168,14 @@ class DsGlassPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
-    // Disabled pills drop any solid fill for the translucent glass treatment
-    // and dim the foreground, so they read as non-actionable.
-    final effectiveFill = enabled ? fillColor : null;
+    // Disabled pills keep the caller's fill but dimmed, so they read as a
+    // quieter version of themselves rather than swapping to the bright
+    // translucent slab (which out-shines enabled secondaries in dark
+    // theme). Pills without a fill fall back to the translucent glass
+    // treatment as before.
+    final effectiveFill = enabled
+        ? fillColor
+        : fillColor?.withValues(alpha: fillColor!.a * 0.45);
     final isTranslucent = effectiveFill == null;
     final foreground = enabled
         ? (foregroundColor ?? tokens.colors.text.highEmphasis)

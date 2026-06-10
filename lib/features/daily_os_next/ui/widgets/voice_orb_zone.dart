@@ -3,6 +3,22 @@ import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/live_waveform.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/voice_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+
+/// Resolves the idle orb hint for the current input modality: "Tap to
+/// talk" on touch platforms, "Click to talk" on pointer-first desktops.
+/// Shared by the Capture and Refine surfaces so the wording can't drift.
+String voiceIdleHint(BuildContext context) {
+  final messages = context.messages;
+  return switch (Theme.of(context).platform) {
+    TargetPlatform.linux ||
+    TargetPlatform.macOS ||
+    TargetPlatform.windows => messages.dailyOsNextCaptureIdleClick,
+    TargetPlatform.android ||
+    TargetPlatform.iOS ||
+    TargetPlatform.fuchsia => messages.dailyOsNextCaptureIdleTalk,
+  };
+}
 
 /// Fixed-height block hosting the waveform slot, the voice orb, and a
 /// one-line status caption — the shared bottom anatomy of the Capture and
@@ -86,15 +102,15 @@ class VoiceOrbZone extends StatelessWidget {
           onTap: onTap,
         ),
         SizedBox(height: tokens.spacing.step5),
+        // One shared style across phases keeps the (scaled) line height —
+        // and therefore the orb position — identical in every state. No
+        // forced strut: an unscaled strut clips descenders at large
+        // accessibility text sizes.
         Text(
           caption,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
-          strutStyle: StrutStyle.fromTextStyle(
-            captionStyle,
-            forceStrutHeight: true,
-          ),
           style: captionStyle,
         ),
       ],
@@ -129,12 +145,22 @@ class LiveTranscriptView extends StatelessWidget {
     );
 
     return ShaderMask(
-      shaderCallback: (bounds) => const LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
-        stops: [0, 0.22],
-      ).createShader(bounds),
+      // The dissolve ramp must cover at least one full (scaled) text line,
+      // or a line gets sliced flat instead of fading out.
+      shaderCallback: (bounds) {
+        final lineHeight = MediaQuery.textScalerOf(context).scale(
+          tokens.typography.lineHeight.bodyMedium,
+        );
+        final ramp = bounds.height <= 0
+            ? 0.22
+            : ((lineHeight * 1.4) / bounds.height).clamp(0.12, 0.5);
+        return LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
+          stops: [0, ramp],
+        ).createShader(bounds);
+      },
       child: SizedBox.expand(
         key: viewportKey,
         child: SingleChildScrollView(

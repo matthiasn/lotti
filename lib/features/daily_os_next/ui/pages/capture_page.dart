@@ -212,19 +212,21 @@ class _CaptureFlowBody extends ConsumerWidget {
   final DateTime? forDate;
   final bool showInlineAdvanceCta;
 
-  /// Minimum body height the anchored skeleton needs: the text-driven parts
-  /// (header, caption, a 3-line transcript minimum) scale with the ambient
-  /// text scaler; the orb zone and gaps are fixed chrome. On viewports
-  /// shorter than this the body keeps the minimum height and scrolls
-  /// instead of overflowing — phones in portrait never hit this; tiny or
-  /// heavily split windows degrade gracefully.
+  /// Minimum body height the anchored skeleton needs before it falls back
+  /// to scrolling: only the *fixed* parts count (header, orb zone, gaps,
+  /// caption — the text-driven ones scaled by the ambient text scaler).
+  /// The transcript zone is deliberately excluded: under mild squeeze it
+  /// shrinks toward zero so the orb and caption stay fully visible above
+  /// the fold, which beats pushing the bottom-anchored caption under the
+  /// fold by a few scrollable pixels. Phones in portrait never hit the
+  /// fallback; tiny or heavily split windows degrade to scrolling.
   static double _minBodyHeightFor(
     BuildContext context, {
     required bool withFooterSlot,
   }) {
     final scale = MediaQuery.textScalerOf(context).scale(100) / 100;
     const fixedChrome = 288.0;
-    const textDriven = 184.0;
+    const textDriven = 112.0;
     const footerSlot = 64.0;
     return fixedChrome +
         textDriven * scale +
@@ -570,7 +572,7 @@ class _OrbZone extends StatelessWidget {
     final messages = context.messages;
     final (caption, captionColor) = switch (state.phase) {
       CapturePhase.idle || CapturePhase.error => (
-        _idleHint(context),
+        voiceIdleHint(context),
         tokens.colors.text.lowEmphasis,
       ),
       CapturePhase.listening => (
@@ -596,20 +598,6 @@ class _OrbZone extends StatelessWidget {
       dbfs: state.dbfs,
       onTap: onTap,
     );
-  }
-
-  /// "Tap to talk" on touch platforms, "Click to talk" on pointer-first
-  /// desktops.
-  String _idleHint(BuildContext context) {
-    final messages = context.messages;
-    return switch (Theme.of(context).platform) {
-      TargetPlatform.linux ||
-      TargetPlatform.macOS ||
-      TargetPlatform.windows => messages.dailyOsNextCaptureIdleClick,
-      TargetPlatform.android ||
-      TargetPlatform.iOS ||
-      TargetPlatform.fuchsia => messages.dailyOsNextCaptureIdleTalk,
-    };
   }
 
   String _voiceButtonLabel(BuildContext context, CapturePhase phase) {
