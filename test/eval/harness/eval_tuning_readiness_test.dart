@@ -76,6 +76,31 @@ void main() {
     );
   });
 
+  test('rejects cascade wake traces as tuning-ready evidence', () {
+    final scenario = taskWorkflowChecklistTranscriptCascadeScenario;
+    final report = EvalTuningReadiness.assess(
+      traces: [
+        _trace(
+          scenario: scenario,
+          profile: localSmall,
+          judged: false,
+          cascadeWake: EvalTraceCascadeWake(
+            cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+            wakeIndex: 0,
+            wakeCount: scenario.appState.taskLogEntries.length,
+          ),
+        ),
+      ],
+      scenarios: [scenario],
+      profiles: const [localSmall],
+    );
+
+    expect(
+      report.failures,
+      contains('cascade wake traces are not tuning-ready evidence: 1'),
+    );
+  });
+
   test('model-class tuning policy rejects cherry-picked evidence', () {
     final traces = [
       _trace(
@@ -1598,6 +1623,7 @@ EvalTrace _trace({
   bool level1Passed = true,
   String calibrationSetVersion = 'uncalibrated',
   bool modelIdentityVisible = false,
+  EvalTraceCascadeWake? cascadeWake,
 }) {
   return EvalTrace(
     runId: 'readiness-run',
@@ -1605,6 +1631,7 @@ EvalTrace _trace({
     profile: profile,
     provenance: EvalProvenance.capture(scenario: scenario, profile: profile),
     trialIndex: trialIndex,
+    cascadeWake: cascadeWake,
     output: const AgentRunOutput(
       success: true,
       usage: InferenceUsage(inputTokens: 100, outputTokens: 50),

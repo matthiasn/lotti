@@ -354,6 +354,15 @@ abstract final class EvalTuningReadiness {
       failures: failures,
     );
     _validateProfileCoverage(profiles, policy, evidence, failures);
+    final cascadeTraceCount = traces
+        .where((trace) => trace.isCascadeWake)
+        .length;
+    if (cascadeTraceCount > 0) {
+      failures.add(
+        'cascade wake traces are not tuning-ready evidence: '
+        '$cascadeTraceCount',
+      );
+    }
 
     final expectedKeys = _expectedTraceKeys(scenarios, profiles);
     final traceKeys = traces.map(_traceKey).toList(growable: false);
@@ -1632,11 +1641,22 @@ abstract final class EvalTuningReadiness {
     };
   }
 
-  static String _traceKey(EvalTrace trace) =>
-      _key(trace.scenario.id, trace.profile.name, trace.trialIndex);
+  static String _traceKey(EvalTrace trace) => _key(
+    trace.scenario.id,
+    trace.profile.name,
+    trace.trialIndex,
+    cascadeWake: trace.cascadeWake,
+  );
 
-  static String _key(String scenarioId, String profileName, int trialIndex) =>
-      '$scenarioId::$profileName::trial-$trialIndex';
+  static String _key(
+    String scenarioId,
+    String profileName,
+    int trialIndex, {
+    EvalTraceCascadeWake? cascadeWake,
+  }) {
+    final suffix = cascadeWake == null ? '' : '::${cascadeWake.keySuffix}';
+    return '$scenarioId::$profileName::trial-$trialIndex$suffix';
+  }
 
   static Set<String> _duplicates(Iterable<String> values) {
     final seen = <String>{};

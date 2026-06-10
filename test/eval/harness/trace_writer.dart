@@ -45,10 +45,16 @@ class TraceWriter {
     required String scenarioId,
     required String profileName,
     int trialIndex = 0,
+    EvalTraceCascadeWake? cascadeWake,
   }) {
     return File(
       '${runDir(runId)}/'
-      '${_stemFromParts(scenarioId, profileName, trialIndex)}.trace.json',
+      '${_stemFromParts(
+        scenarioId,
+        profileName,
+        trialIndex,
+        cascadeWake,
+      )}.trace.json',
     );
   }
 
@@ -86,6 +92,7 @@ class TraceWriter {
       scenarioId: trace.scenario.id,
       profileName: trace.profile.name,
       trialIndex: trace.trialIndex,
+      cascadeWake: trace.cascadeWake,
     );
     final verdictFile = verdictFileForTrace(file);
     if (file.existsSync() && !overwrite) {
@@ -143,7 +150,9 @@ class TraceWriter {
         if (scenarioOrder != 0) return scenarioOrder;
         final profileOrder = a.profile.name.compareTo(b.profile.name);
         if (profileOrder != 0) return profileOrder;
-        return a.trialIndex.compareTo(b.trialIndex);
+        final trialOrder = a.trialIndex.compareTo(b.trialIndex);
+        if (trialOrder != 0) return trialOrder;
+        return _cascadeSortKey(a).compareTo(_cascadeSortKey(b));
       },
     );
     return traces;
@@ -246,10 +255,17 @@ class TraceWriter {
     String scenarioId,
     String profileName,
     int trialIndex,
+    EvalTraceCascadeWake? cascadeWake,
   ) {
     final base = '${_safe(scenarioId)}__${_safe(profileName)}';
-    if (trialIndex == 0) return base;
-    return '${base}__trial-$trialIndex';
+    final parts = <String>[base];
+    if (trialIndex != 0) parts.add('trial-$trialIndex');
+    if (cascadeWake != null) {
+      parts
+        ..add('cascade-${_safe(cascadeWake.cascadeId)}')
+        ..add('wake-${cascadeWake.wakeIndex}');
+    }
+    return parts.join('__');
   }
 
   String _safe(String value) =>
@@ -272,5 +288,12 @@ class TraceWriter {
   Map<String, dynamic> _traceJson(EvalTrace trace) {
     final json = trace.toJson()..remove('verdict');
     return json;
+  }
+
+  String _cascadeSortKey(EvalTrace trace) {
+    final cascadeWake = trace.cascadeWake;
+    if (cascadeWake == null) return '';
+    return '${cascadeWake.cascadeId}\n'
+        '${cascadeWake.wakeIndex.toString().padLeft(12, '0')}';
   }
 }

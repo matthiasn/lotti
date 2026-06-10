@@ -174,19 +174,21 @@ before persistence or batching transforms them.
 Current active slice adds scenario-authored cascade wake oracles:
 `EvalExpectations.cascadeWakes` scopes raw tool-call and durable-state
 expectations to a specific wake inside a same-task transcript cascade. The
-live task cascade runner now enforces those wake-specific expectations
-generically instead of hard-coding one checklist example. The intended hard
-gate boundary is structured behavior: estimate, priority, due date, labels,
-checklist updates, and persisted proposals. Generated reports and summaries are
-still read into `AgentRunOutput.report`, trace JSON, and judge inputs, but
-free-text quality should be judged by LLM/human comparative review and quorum
-rather than brittle Level 1 string assertions.
+live task cascade runner writes those wake-specific checks into each
+`EvalTrace.level1Checks`, so the trace JSON is the source of truth for wake
+success/failure. Trace schema 10 adds optional `EvalTraceCascadeWake` metadata
+(`cascadeId`, `wakeIndex`, `wakeCount`); real `trialIndex` remains the repeated
+trial index, and wake identity is added to trace filenames, verifier keys, and
+calibration keys. Reporter and tuning-readiness code now exclude cascade wake
+traces from repeated-trial reliability and promotion evidence while still
+rendering provider request/cache diagnostics. The intended hard-gate boundary is
+structured behavior: estimate, priority, due date, labels, checklist updates,
+and persisted proposals. Generated reports and summaries are still read into
+`AgentRunOutput.report`, trace JSON, and judge inputs, but free-text quality
+should be judged by LLM/human comparative review and quorum rather than brittle
+Level 1 string assertions.
 Known limitation: the current cascade live runner is still a sidecar smoke
-entrypoint and writes one trace per wake using `trialIndex` as the wake index.
-Do not use those traces as repeated-trial reliability or promotion evidence.
-The next harness-hardening slice should add first-class cascade/wake trace
-semantics to `EvalMatrixRunner` while preserving real `trialIndex` for repeated
-trials.
+entrypoint rather than part of the main `EvalMatrixRunner` run path.
 Current active slice adds provider response-side provenance: the real
 `ConversationRepository` stream loop records authoritative provider-reported
 model ids, system fingerprints, provider names, and service tiers when exposed,
@@ -649,8 +651,9 @@ test/eval/scenarios/
   externalSourceLabel?, protectedHoldout, protectedScenarioIds,
   protectedHoldoutScenarioIds }`
 - `EvalRunManifest { schemaVersion=1, runId, traceSchemaVersion, targetName, targetKind, createdAt, command, scenarioSetDigest, profileSetDigest, promptDigest, toolSchemaDigest, codeRevision, gitDirty, dirtyDiffDigest?, envPresence, scenarioCatalogEvidence?, manifestDigest? }`
-- `EvalTrace { schemaVersion=9, runId, scenario, profile, provenance, output,`
-  `trialIndex, level1Checks, verdict? }`
+- `EvalTrace { schemaVersion=10, runId, scenario, profile, provenance, output,`
+  `trialIndex, cascadeWake?, level1Checks, verdict? }`
+- `EvalTraceCascadeWake { cascadeId, wakeIndex, wakeCount }`
 - `JudgeVerdict { schemaVersion=1, traceDigest?, judge,`
   `goalAttainment(1-5), quality(1-5), efficiency(1-5), pass, rationale, issues }`
 
@@ -731,7 +734,8 @@ catch regressions, not just that a widget built.
   Level 1 tests and future runners, with uniqueness and JSON round-trip tests.
 - `TraceWriter` now refuses accidental trace overwrites, rejects embedded
   verdicts, binds sibling verdicts to `sha256:` trace digests, and supports
-  `trialIndex` stems for repeated runs.
+  `trialIndex` stems for repeated runs plus cascade wake stems when a trace has
+  `EvalTraceCascadeWake` metadata.
 - `EvalMatrixRunner` executes the full `scenario × profile × trialIndex` matrix,
   recomputes Level 1 checks, writes one trace per cell, keeps trace read order
   deterministic, and records target exceptions as failed traces so matrix cells
@@ -740,11 +744,14 @@ catch regressions, not just that a widget built.
   rejects trace-embedded scenario/profile payload drift from the canonical
   catalog, recomputes Level 1 checks from the canonical scenario/profile,
   validates `output.resolvedModel` against `output.providerDecision`, and
-  validates verdict score/pass consistency.
+  validates verdict score/pass consistency. For cascade sidecar traces it
+  expects one wake trace per authored task-log wake while preserving real
+  repeated-trial identity.
 - `EvalReporter` reports both per-trace pass rates and per-scenario `pass^k`
   reliability across repeated trials, so model-class tuning can distinguish
   occasional success from consistent behavior. It also reports
-  split/model-class/primary-capability denominators.
+  split/model-class/primary-capability denominators. Cascade wake traces are
+  excluded from reliability and promotion denominators and kept as diagnostics.
 - `test/eval/scenarios/planner_workflow_eval_test.dart` and
   `task_agent_workflow_eval_test.dart` — exercise each real workflow end-to-end
   through `ScriptedEvalTarget` and grade with `runLevel1` (good-path pass + a

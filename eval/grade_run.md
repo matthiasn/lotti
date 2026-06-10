@@ -24,7 +24,8 @@ committed fixtures.
 ## Inputs
 
 - `<runsRoot>/<runId>/*.trace.json` — one `EvalTrace` per
-  `(scenario, profile, trialIndex)`, written by the Level 2 runner.
+  `(scenario, profile, trialIndex)`, or per explicit `cascadeWake` inside that
+  trial for cascade sidecar runs, written by the Level 2 runner.
 - `eval/prompts/judge_system.md` — the judge persona + output contract.
 - `eval/prompts/rubric_task_agent.md` / `rubric_planning_agent.md` — anchors.
 
@@ -83,9 +84,9 @@ committed fixtures.
 - Be specific and skeptical. The point of the eval is to find real problems
   before users do, not to confirm the agent is fine.
 - Keep verdicts reproducible: the verdict file plus the trace file are the audit
-  record for that `(scenario, profile, trialIndex)` at that `runId`. The verdict
-  must name the judge runner/model, prompt digest, judge calibration set version,
-  and whether profile/model identity was visible.
+  record for that `(scenario, profile, trialIndex[, cascadeWake])` at that
+  `runId`. The verdict must name the judge runner/model, prompt digest, judge
+  calibration set version, and whether profile/model identity was visible.
 - Keep exact provider/model identity hidden for blinded comparison exports when
   possible. If the judge saw exact model identity, set
   `judge.modelIdentityVisible: true`; calibration reports count those verdicts

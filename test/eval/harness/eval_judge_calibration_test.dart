@@ -20,6 +20,30 @@ void main() {
     tokenBudget: 3000,
   );
 
+  test('trace keys include cascade wake identity', () {
+    final key = EvalTraceKey.fromTrace(
+      _trace(
+        scenario: taskWorkflowChecklistTranscriptCascadeScenario,
+        profile: frontierProfile,
+        trialIndex: 2,
+        cascadeWake: const EvalTraceCascadeWake(
+          cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+          wakeIndex: 1,
+          wakeCount: 3,
+        ),
+      ),
+    );
+    final roundTripped = EvalTraceKey.fromJson(key.toJson());
+
+    expect(
+      key.id,
+      'task_workflow_checklist_transcript_cascade::frontier-calibration::'
+      'trial-2::cascade-task-log::wake-1-of-3',
+    );
+    expect(roundTripped.id, key.id);
+    expect(roundTripped.cascadeWake?.wakeIndex, 1);
+  });
+
   test('reports judge agreement and calibration coverage gaps', () {
     final traces = [
       _trace(
@@ -1262,12 +1286,16 @@ EvalTrace _trace({
   required EvalScenario scenario,
   required EvalProfile profile,
   JudgeVerdict? verdict,
+  int trialIndex = 0,
+  EvalTraceCascadeWake? cascadeWake,
 }) {
   return EvalTrace(
     runId: 'run-1',
     scenario: scenario,
     profile: profile,
     provenance: EvalProvenance.capture(scenario: scenario, profile: profile),
+    trialIndex: trialIndex,
+    cascadeWake: cascadeWake,
     output: const AgentRunOutput(
       success: true,
       usage: InferenceUsage(inputTokens: 100, outputTokens: 50),

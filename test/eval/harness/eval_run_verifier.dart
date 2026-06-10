@@ -44,7 +44,15 @@ abstract final class EvalRunVerifier {
     JudgeCalibrationReport? calibrationReport,
   }) {
     final errors = <String>[];
-    final expectedKeys = _expectedKeys(scenarios, profiles);
+    final cascadeScenarioIds = {
+      for (final trace in traces)
+        if (trace.isCascadeWake) trace.scenario.id,
+    };
+    final expectedKeys = _expectedKeys(
+      scenarios,
+      profiles,
+      cascadeScenarioIds: cascadeScenarioIds,
+    );
     final scenarioById = {
       for (final scenario in scenarios) scenario.id: scenario,
     };
@@ -127,6 +135,7 @@ abstract final class EvalRunVerifier {
         errors.add('$key has runId ${trace.runId}, expected $runId');
       }
       final profileBinding = bindingByProfileName[trace.profile.name];
+      _validateCascadeWake(trace, key, errors);
       _validateWorkflowRun(trace, key, errors);
       _validateRuntimePrompt(trace, key, errors);
       _validateModelInvocations(
@@ -211,8 +220,9 @@ abstract final class EvalRunVerifier {
 
   static Set<String> _expectedKeys(
     List<EvalScenario> scenarios,
-    List<EvalProfile> profiles,
-  ) {
+    List<EvalProfile> profiles, {
+    required Set<String> cascadeScenarioIds,
+  }) {
     return {
       for (final scenario in scenarios)
         for (final profile in profiles)
@@ -221,7 +231,25 @@ abstract final class EvalRunVerifier {
             trialIndex < profile.trialCount;
             trialIndex++
           )
-            _key(scenario.id, profile.name, trialIndex),
+            if (cascadeScenarioIds.contains(scenario.id) &&
+                scenario.appState.taskLogEntries.isNotEmpty)
+              for (
+                var wakeIndex = 0;
+                wakeIndex < scenario.appState.taskLogEntries.length;
+                wakeIndex++
+              )
+                _key(
+                  scenario.id,
+                  profile.name,
+                  trialIndex,
+                  cascadeWake: EvalTraceCascadeWake(
+                    cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+                    wakeIndex: wakeIndex,
+                    wakeCount: scenario.appState.taskLogEntries.length,
+                  ),
+                )
+            else
+              _key(scenario.id, profile.name, trialIndex),
     };
   }
 
@@ -1918,11 +1946,7 @@ abstract final class EvalRunVerifier {
     required EvalScenario scenario,
     required EvalProfile profile,
   }) {
-    final recomputed = runLevel1(
-      scenario,
-      trace.output,
-      profile: profile,
-    );
+    final recomputed = _recomputeLevel1(trace, scenario, profile);
     final actual = trace.level1Checks;
     final duplicateNames = _duplicates(actual.map((c) => c.name).toList());
     for (final name in duplicateNames) {
@@ -1959,11 +1983,100 @@ abstract final class EvalRunVerifier {
     return recomputed;
   }
 
-  static String _traceKey(EvalTrace trace) =>
-      _key(trace.scenario.id, trace.profile.name, trace.trialIndex);
+  static List<EvalCheck> _recomputeLevel1(
+    EvalTrace trace,
+    EvalScenario scenario,
+    EvalProfile profile,
+  ) {
+    final cascadeWake = trace.cascadeWake;
+    if (cascadeWake == null) {
+      return runLevel1(
+        scenario,
+        trace.output,
+        profile: profile,
+      );
+    }
+    ExpectedCascadeWakeState? expectedWake;
+    for (final candidate in scenario.expectations.cascadeWakes) {
+      if (candidate.wakeIndex == cascadeWake.wakeIndex) {
+        if (expectedWake != null) {
+          return [
+            EvalCheck.fail(
+              'cascade_wake_expectation',
+              'multiple cascade wake expectations for wake '
+                  '${cascadeWake.wakeIndex}',
+            ),
+          ];
+        }
+        expectedWake = candidate;
+      }
+    }
+    if (expectedWake == null) {
+      return [
+        ...runLevel1(scenario, trace.output, profile: profile),
+        EvalCheck.fail(
+          'cascade_wake_expectation',
+          'no cascade wake expectation for wake ${cascadeWake.wakeIndex}',
+        ),
+      ];
+    }
+    return runCascadeWakeLevel1(
+      scenario,
+      trace.output,
+      expectedWake,
+      profile: profile,
+    );
+  }
 
-  static String _key(String scenarioId, String profileName, int trialIndex) =>
-      '$scenarioId::$profileName::trial-$trialIndex';
+  static void _validateCascadeWake(
+    EvalTrace trace,
+    String key,
+    List<String> errors,
+  ) {
+    final cascadeWake = trace.cascadeWake;
+    if (cascadeWake == null) return;
+    if (cascadeWake.cascadeId.trim().isEmpty) {
+      errors.add('$key cascadeWake.cascadeId is empty');
+    }
+    if (cascadeWake.wakeCount < 1) {
+      errors.add('$key cascadeWake.wakeCount must be at least 1');
+    }
+    if (cascadeWake.wakeIndex < 0) {
+      errors.add('$key cascadeWake.wakeIndex is negative');
+    }
+    if (cascadeWake.wakeIndex >= cascadeWake.wakeCount) {
+      errors.add(
+        '$key cascadeWake.wakeIndex ${cascadeWake.wakeIndex} is outside '
+        'wakeCount ${cascadeWake.wakeCount}',
+      );
+    }
+    final taskLogWakeCount = trace.scenario.appState.taskLogEntries.length;
+    if (taskLogWakeCount == 0) {
+      errors.add('$key cascadeWake requires appState.taskLogEntries');
+    } else if (cascadeWake.wakeCount != taskLogWakeCount) {
+      errors.add(
+        '$key cascadeWake.wakeCount ${cascadeWake.wakeCount} does not match '
+        'appState.taskLogEntries $taskLogWakeCount',
+      );
+    }
+  }
+
+  static String _traceKey(EvalTrace trace) => _key(
+    trace.scenario.id,
+    trace.profile.name,
+    trace.trialIndex,
+    cascadeWake: trace.cascadeWake,
+  );
+
+  static String _key(
+    String scenarioId,
+    String profileName,
+    int trialIndex, {
+    EvalTraceCascadeWake? cascadeWake,
+  }) {
+    final suffix = cascadeWake == null ? '' : '::${cascadeWake.keySuffix}';
+    return '$scenarioId::$profileName::trial-$trialIndex$suffix';
+  }
 
   static String _stripSuffix(String value, String suffix) =>
       value.substring(0, value.length - suffix.length);

@@ -429,7 +429,16 @@ class _ProviderRequestStabilityBucket {
 
 String _traceKey(EvalTrace trace) =>
     '${trace.runId}\n${trace.scenario.id}\n${trace.profile.name}\n'
-    '${trace.trialIndex}';
+    '${trace.trialIndex}\n${trace.cascadeWake?.keySuffix ?? 'direct'}';
+
+List<EvalTrace> _nonCascadeTraces(List<EvalTrace> traces) =>
+    traces.where((trace) => !trace.isCascadeWake).toList(growable: false);
+
+int _expectedProviderTraceCount(EvalTrace trace) {
+  final cascadeWake = trace.cascadeWake;
+  if (cascadeWake == null) return trace.profile.trialCount;
+  return trace.profile.trialCount * cascadeWake.wakeCount;
+}
 
 List<int> _sortedInts(Set<int> values) {
   final sorted = values.toList()..sort();
@@ -783,8 +792,9 @@ abstract final class EvalReporter {
 
   /// One [ProfileSummary] per distinct profile, sorted by profile name.
   static List<ProfileSummary> summarize(List<EvalTrace> traces) {
+    final scoringTraces = _nonCascadeTraces(traces);
     final byProfile = <String, List<EvalTrace>>{};
-    for (final trace in traces) {
+    for (final trace in scoringTraces) {
       byProfile.putIfAbsent(trace.profile.name, () => <EvalTrace>[]).add(trace);
     }
     final summaries = <ProfileSummary>[];
@@ -862,7 +872,7 @@ abstract final class EvalReporter {
                 invocationIndex: request.invocationIndex,
                 requestIndex: request.requestIndex,
                 turnIndex: request.turnIndex,
-                expectedTrialCount: trace.profile.trialCount,
+                expectedTrialCount: _expectedProviderTraceCount(trace),
               ),
             )
             .add(trace, request);
@@ -918,7 +928,7 @@ abstract final class EvalReporter {
         ProviderUsageCacheSummary(
           scenarioId: first.scenario.id,
           profileName: first.profile.name,
-          expectedTrialCount: first.profile.trialCount,
+          expectedTrialCount: _expectedProviderTraceCount(first),
           traceCount: group.length,
           inputTokenTraceCount: inputTokenTraceCount,
           cachedInputTokenTraceCount: cachedInputTokenTraceCount,
@@ -941,39 +951,51 @@ abstract final class EvalReporter {
     List<EvalTrace> traces, {
     EvalReportContext? context,
   }) {
+    if (traces.isEmpty && context == null) return 'No traces to report.';
+    final cascadeTraceCount = traces
+        .where((trace) => trace.isCascadeWake)
+        .length;
     final summaries = summarize(traces);
     final sliceSummaries = summarizeBySlice(traces, context: context);
-    if (summaries.isEmpty && sliceSummaries.isEmpty) {
-      return 'No traces to report.';
-    }
     final buffer = StringBuffer()
-      ..writeln('Eval summary (${traces.length} traces)')
-      ..writeln(
-        'profile           L1 pass   L1 pass^k  scn  complete  traces  '
-        'mean tok   judged  judged%  judge pass  judge pass^k  '
-        'goal / qual / eff',
-      )
-      ..writeln(
-        '----------------  --------  ---------  ---  --------  ------  '
-        '---------  ------  -------  ----------  ------------  '
-        '-----------------',
-      );
-    for (final s in summaries) {
+      ..writeln('Eval summary (${traces.length} traces)');
+    if (cascadeTraceCount > 0) {
       buffer.writeln(
-        '${s.profileName.padRight(16)}  '
-        '${_pct(s.level1PassRate).padLeft(8)}  '
-        '${_pct(s.level1ReliableScenarioRate).padLeft(9)}  '
-        '${s.scenarioCount.toString().padLeft(3)}  '
-        '${s.completeScenarioCount.toString().padLeft(8)}  '
-        '${s.traceCount.toString().padLeft(6)}  '
-        '${s.meanTotalTokens.round().toString().padLeft(9)}  '
-        '${s.judgedCount.toString().padLeft(6)}  '
-        '${_pct(s.traceCount == 0 ? 0 : s.judgedCount / s.traceCount).padLeft(7)}  '
-        '${_pct(s.judgePassRate).padLeft(10)}   '
-        '${_pct(s.judgeReliableScenarioRate).padLeft(11)}  '
-        '${_one(s.meanGoalAttainment)} / ${_one(s.meanQuality)} / '
-        '${_one(s.meanEfficiency)}',
+        'cascade wake traces excluded from reliability and promotion: '
+        '$cascadeTraceCount',
       );
+    }
+    if (summaries.isEmpty) {
+      buffer.writeln('No non-cascade traces for reliability summary.');
+    } else {
+      buffer
+        ..writeln(
+          'profile           L1 pass   L1 pass^k  scn  complete  traces  '
+          'mean tok   judged  judged%  judge pass  judge pass^k  '
+          'goal / qual / eff',
+        )
+        ..writeln(
+          '----------------  --------  ---------  ---  --------  ------  '
+          '---------  ------  -------  ----------  ------------  '
+          '-----------------',
+        );
+      for (final s in summaries) {
+        buffer.writeln(
+          '${s.profileName.padRight(16)}  '
+          '${_pct(s.level1PassRate).padLeft(8)}  '
+          '${_pct(s.level1ReliableScenarioRate).padLeft(9)}  '
+          '${s.scenarioCount.toString().padLeft(3)}  '
+          '${s.completeScenarioCount.toString().padLeft(8)}  '
+          '${s.traceCount.toString().padLeft(6)}  '
+          '${s.meanTotalTokens.round().toString().padLeft(9)}  '
+          '${s.judgedCount.toString().padLeft(6)}  '
+          '${_pct(s.traceCount == 0 ? 0 : s.judgedCount / s.traceCount).padLeft(7)}  '
+          '${_pct(s.judgePassRate).padLeft(10)}   '
+          '${_pct(s.judgeReliableScenarioRate).padLeft(11)}  '
+          '${_one(s.meanGoalAttainment)} / ${_one(s.meanQuality)} / '
+          '${_one(s.meanEfficiency)}',
+        );
+      }
     }
     final requestSummaries = summarizeProviderRequestStability(traces);
     if (requestSummaries.isNotEmpty) {
@@ -1161,6 +1183,15 @@ abstract final class EvalReporter {
     final rejected = <String>[];
     final inconclusive = <String>[];
     final warnings = <String>[];
+    final cascadeTraceCount = traces
+        .where((trace) => trace.isCascadeWake)
+        .length;
+    if (cascadeTraceCount > 0) {
+      warnings.add(
+        'ignored $cascadeTraceCount cascade wake trace(s) for promotion',
+      );
+    }
+    final promotionTraces = _nonCascadeTraces(traces);
     if (policy.requireTuningReadiness) {
       if (readinessReport == null) {
         blocked.add('promotion blocked: tuning-readiness report is required');
@@ -1175,7 +1206,7 @@ abstract final class EvalReporter {
       );
     }
 
-    final byProfile = _byProfile(traces);
+    final byProfile = _byProfile(promotionTraces);
     final candidateScenarios = byProfile[policy.candidateProfileName];
     final baselineScenarios = byProfile[policy.baselineProfileName];
     if (candidateScenarios == null) {
@@ -1663,7 +1694,8 @@ abstract final class EvalReporter {
 
   /// Pairwise comparisons for every profile pair, sorted by profile name.
   static List<ProfilePairComparison> compareProfiles(List<EvalTrace> traces) {
-    final byProfile = _byProfile(traces);
+    final comparisonTraces = _nonCascadeTraces(traces);
+    final byProfile = _byProfile(comparisonTraces);
     final profileNames = byProfile.keys.toList()..sort();
     if (profileNames.length < 2) return const [];
 
@@ -1695,8 +1727,9 @@ abstract final class EvalReporter {
   static List<CapabilitySummary> summarizeByCapability(
     List<EvalTrace> traces,
   ) {
+    final scoringTraces = _nonCascadeTraces(traces);
     final byKey = <String, List<EvalTrace>>{};
-    for (final trace in traces) {
+    for (final trace in scoringTraces) {
       final capabilityId = trace.scenario.metadata.primaryCapabilityId;
       if (capabilityId == null) continue;
       byKey
@@ -1756,8 +1789,9 @@ abstract final class EvalReporter {
     List<EvalTrace> traces, {
     EvalReportContext? context,
   }) {
+    final scoringTraces = _nonCascadeTraces(traces);
     final byKey = <String, List<EvalTrace>>{};
-    for (final trace in traces) {
+    for (final trace in scoringTraces) {
       final capabilityId = trace.scenario.metadata.primaryCapabilityId;
       if (capabilityId == null) continue;
       byKey

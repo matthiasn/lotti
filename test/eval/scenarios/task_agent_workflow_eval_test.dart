@@ -333,9 +333,16 @@ void main() {
       );
 
       final userMessagesByWake = <int, String>{};
+      const context = EvalTargetRunContext(
+        runId: 'cascade-scripted-run',
+        scenarioId: 'task_workflow_checklist_transcript_cascade',
+        profileName: 'frontier-reasoning',
+        trialIndex: 2,
+      );
       final outputs = await TaskAgentEvalBench.runCascade(
         cascadeScenario,
         kFrontierProfile,
+        context: context,
         wakes: [
           TaskAgentEvalCascadeWake(
             taskLogEntries: [
@@ -416,6 +423,10 @@ void main() {
       expect(outputs, hasLength(2));
       expect(outputs[0].success, isTrue, reason: outputs[0].error);
       expect(outputs[1].success, isTrue, reason: outputs[1].error);
+      expect(outputs[0].workflowRun?.matrixCellId, context.cellId);
+      expect(outputs[1].workflowRun?.matrixCellId, context.cellId);
+      expect(outputs[0].workflowRun?.runKey, contains(':wake-0'));
+      expect(outputs[1].workflowRun?.runKey, contains(':wake-1'));
       expect(outputs[0].toolNames, [
         'update_task_estimate',
         'update_report',

@@ -77,30 +77,42 @@ class EvalTraceKey {
     required this.scenarioId,
     required this.profileName,
     required this.trialIndex,
+    this.cascadeWake,
   });
 
   factory EvalTraceKey.fromTrace(EvalTrace trace) => EvalTraceKey(
     scenarioId: trace.scenario.id,
     profileName: trace.profile.name,
     trialIndex: trace.trialIndex,
+    cascadeWake: trace.cascadeWake,
   );
 
   factory EvalTraceKey.fromJson(Map<String, dynamic> json) => EvalTraceKey(
     scenarioId: json['scenarioId'] as String,
     profileName: json['profileName'] as String,
     trialIndex: (json['trialIndex'] as num).toInt(),
+    cascadeWake: json['cascadeWake'] == null
+        ? null
+        : EvalTraceCascadeWake.fromJson(
+            json['cascadeWake'] as Map<String, dynamic>,
+          ),
   );
 
   final String scenarioId;
   final String profileName;
   final int trialIndex;
+  final EvalTraceCascadeWake? cascadeWake;
 
-  String get id => '$scenarioId::$profileName::trial-$trialIndex';
+  String get id {
+    final suffix = cascadeWake == null ? '' : '::${cascadeWake!.keySuffix}';
+    return '$scenarioId::$profileName::trial-$trialIndex$suffix';
+  }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
     'scenarioId': scenarioId,
     'profileName': profileName,
     'trialIndex': trialIndex,
+    if (cascadeWake != null) 'cascadeWake': cascadeWake!.toJson(),
   };
 }
 

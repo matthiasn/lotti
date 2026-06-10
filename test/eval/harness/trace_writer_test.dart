@@ -176,6 +176,63 @@ void main() {
     await writer.writeManifest(manifest, overwrite: true);
   });
 
+  test('writes cascade wake traces with distinct artifact names', () async {
+    final dir = await Directory.systemTemp.createTemp('lotti-cascade-trace-');
+    addTearDown(() async {
+      if (dir.existsSync()) await dir.delete(recursive: true);
+    });
+
+    final writer = TraceWriter(runsRoot: dir.path);
+    final wake1 = await writer.writeTrace(
+      _validTrace(
+        'cascade-run',
+        cascadeWake: const EvalTraceCascadeWake(
+          cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+          wakeIndex: 1,
+          wakeCount: 3,
+        ),
+      ),
+    );
+    final wake0 = await writer.writeTrace(
+      _validTrace(
+        'cascade-run',
+        cascadeWake: const EvalTraceCascadeWake(
+          cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+          wakeIndex: 0,
+          wakeCount: 3,
+        ),
+      ),
+    );
+
+    expect(
+      wake0.path,
+      endsWith(
+        'task_release_notes__frontier-fast__cascade-task-log__wake-0'
+        '.trace.json',
+      ),
+    );
+    expect(
+      wake1.path,
+      endsWith(
+        'task_release_notes__frontier-fast__cascade-task-log__wake-1'
+        '.trace.json',
+      ),
+    );
+    expect(
+      writer.verdictFileForTrace(wake1).path,
+      endsWith('__cascade-task-log__wake-1.verdict.json'),
+    );
+
+    final traces = await writer.readTraces('cascade-run');
+
+    expect(traces.map((trace) => trace.cascadeWake?.wakeIndex), [0, 1]);
+    expect(traces.map((trace) => trace.trialIndex), [0, 0]);
+    expect(
+      traces.first.cascadeWake?.cascadeId,
+      EvalTraceCascadeWake.taskLogCascadeId,
+    );
+  });
+
   test('readRun accepts traces bound to the run manifest', () async {
     final dir = await Directory.systemTemp.createTemp(
       'lotti-trace-bound-manifest-',
@@ -372,6 +429,7 @@ EvalRunManifest _validManifest(String runId) =>
 EvalTrace _validTrace(
   String runId, {
   String manifestDigest = EvalProvenance.unboundManifestDigest,
+  EvalTraceCascadeWake? cascadeWake,
 }) => EvalTrace(
   runId: runId,
   scenario: taskReleaseNotesScenario,
@@ -381,6 +439,7 @@ EvalTrace _validTrace(
     profile: kFrontierFastProfile,
     manifestDigest: manifestDigest,
   ),
+  cascadeWake: cascadeWake,
   output: const AgentRunOutput(
     success: true,
     usage: InferenceUsage(inputTokens: 10, outputTokens: 5),

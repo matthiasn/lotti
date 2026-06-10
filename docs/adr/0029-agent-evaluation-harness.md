@@ -247,7 +247,9 @@ invariant is flagged even before the judge looks at quality.
 
 `EvalMatrixRunner` writes `<runsRoot>/<runId>/manifest.json` first, then one
 `EvalTrace` JSON per `(scenario, profile, trialIndex)` under
-`<runsRoot>/<runId>/`. The manifest records the target name/kind, trace schema
+`<runsRoot>/<runId>/`. Cascade sidecar runners may write one trace per wake,
+but those traces carry explicit `cascadeWake` metadata while preserving the real
+`trialIndex`. The manifest records the target name/kind, trace schema
 version, sanitized command/environment-key presence, git revision, dirty-state
 digest, scenario/profile set digests, prompt/rubric digest, tool-schema digest,
 `profileExecutionBindings`/`profileBindingSetDigest`, and a non-secret
@@ -261,11 +263,13 @@ editing Dart code. Scenario catalog evidence binds the run to the merged
 public-plus-external scenario set via `scenarioSetDigest`, external catalog
 digest/id/basename/counts when present, the protected-holdout assertion, and
 protected holdout scenario ids; it intentionally avoids absolute local paths or
-raw scenario text. Trace schema 8 includes a `provenance` block with deterministic
-`sha256:` digests for the embedded scenario payload, profile payload, eval
-prompt/rubric files, tool schema, code revision, and the manifest hash that
-binds the trace to the run-level artifact set, plus model-invocation and
-provider-request records for workflow-backed traces. A Claude Code script
+raw scenario text. Trace schema 10 includes a `provenance` block with
+deterministic `sha256:` digests for the embedded scenario payload, profile
+payload, eval prompt/rubric files, tool schema, code revision, and the manifest
+hash that binds the trace to the run-level artifact set, plus optional
+`cascadeWake { cascadeId, wakeIndex, wakeCount }`, model-invocation,
+provider-request, and provider-response records for workflow-backed traces.
+A Claude Code script
 (`eval/grade_run.md`) loads each trace, applies the agent-specific rubric
 (`eval/prompts/rubric_*.md`), and writes a
 `JudgeVerdict { schemaVersion, traceDigest, judge, goalAttainment, quality,
@@ -313,7 +317,10 @@ Observed-only `EvalReporter.render(traces)` remains available for ad hoc
 debugging. `pass^k` is counted only for scenario groups with exact trial indexes
 `0..trialCount-1`, and missing verdicts keep judge reliability at zero. Profile
 and capability rendered rows show scenario, complete-scenario, trace,
-judged-trace, judged-coverage, and `pass^k` denominators next to trace pass rates.
+judged-trace, judged-coverage, and `pass^k` denominators next to trace pass
+rates. Cascade wake traces are diagnostic by default: reporters exclude them
+from repeated-trial reliability and promotion evidence, while provider
+request/cache diagnostics still render them.
 Summary Wilson 95% confidence intervals cluster repeated trials at the scenario
 or scenario-profile-cell level by default; explicit trace-level intervals remain
 available only as diagnostics. Paired profile comparisons report Level 1/judge
@@ -443,7 +450,8 @@ graded traces. The human gold-label `version` is separate from
 `judgeCalibrationSetVersion`, which records the `judge.calibrationSetVersion`
 expected on the verdicts being audited; this allows the first gold set to audit
 explicitly `uncalibrated` judge verdicts without pretending the judge was already
-calibrated. Labels key by `(scenarioId, profileName, trialIndex)`, bind the
+calibrated. Labels key by `(scenarioId, profileName, trialIndex)` plus optional
+`cascadeWake` identity, bind the
 reviewed artifact to `scenarioDigest`, `profileDigest`, and optionally
 `JudgeVerdict.traceDigest` plus an optional digest of the parsed `JudgeVerdict`
 JSON when constructed in memory; completed calibration files require both

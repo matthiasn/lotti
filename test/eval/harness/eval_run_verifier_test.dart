@@ -60,6 +60,115 @@ void main() {
     );
   });
 
+  test('verifies cascade wake traces without treating wakes as trials', () {
+    const cascadeProfile = EvalProfile(
+      name: 'cascade-profile',
+      isLocal: false,
+      modelClass: EvalModelClass.frontierFast,
+      modelId: 'verifier-model',
+      tokenBudget: 10000,
+    );
+    final scenario = _cascadeScenarioWithId('task_log_cascade_verifier');
+    final output = _outputFor(cascadeProfile);
+    final traces = [
+      for (final expectedWake in scenario.expectations.cascadeWakes)
+        _trace(
+          scenario: scenario,
+          profile: cascadeProfile,
+          output: output,
+          level1Checks: runCascadeWakeLevel1(
+            scenario,
+            output,
+            expectedWake,
+            profile: cascadeProfile,
+          ),
+          cascadeWake: EvalTraceCascadeWake(
+            cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+            wakeIndex: expectedWake.wakeIndex,
+            wakeCount: scenario.appState.taskLogEntries.length,
+          ),
+        ),
+    ];
+
+    final passing = _verify(
+      runId: 'run-1',
+      traces: traces,
+      scenarios: [scenario],
+      profiles: const [cascadeProfile],
+    );
+    final missingWake = _verify(
+      runId: 'run-1',
+      traces: traces.take(2).toList(),
+      scenarios: [scenario],
+      profiles: const [cascadeProfile],
+    );
+
+    expect(passing.errors, isEmpty);
+    expect(
+      missingWake.errors,
+      contains(
+        'missing trace for '
+        'task_log_cascade_verifier::cascade-profile::'
+        'trial-0::cascade-task-log::wake-2-of-3',
+      ),
+    );
+  });
+
+  test('does not force normal task-log scenarios into cascade mode', () {
+    const cascadeProfile = EvalProfile(
+      name: 'cascade-profile',
+      isLocal: false,
+      modelClass: EvalModelClass.frontierFast,
+      modelId: 'verifier-model',
+      tokenBudget: 10000,
+    );
+    final cascadeScenario = _cascadeScenarioWithId(
+      'task_log_cascade_verifier',
+    );
+    final normalScenario = _taskLogScenarioWithId('normal_task_log_verifier');
+    final manifest = _manifestFor(
+      scenarios: [cascadeScenario, normalScenario],
+      profiles: const [cascadeProfile],
+    );
+    final output = _outputFor(cascadeProfile);
+    final traces = [
+      for (final expectedWake in cascadeScenario.expectations.cascadeWakes)
+        _trace(
+          scenario: cascadeScenario,
+          profile: cascadeProfile,
+          manifest: manifest,
+          output: output,
+          level1Checks: runCascadeWakeLevel1(
+            cascadeScenario,
+            output,
+            expectedWake,
+            profile: cascadeProfile,
+          ),
+          cascadeWake: EvalTraceCascadeWake(
+            cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+            wakeIndex: expectedWake.wakeIndex,
+            wakeCount: cascadeScenario.appState.taskLogEntries.length,
+          ),
+        ),
+      _trace(
+        scenario: normalScenario,
+        profile: cascadeProfile,
+        manifest: manifest,
+        output: output,
+      ),
+    ];
+
+    final verification = _verify(
+      runId: 'run-1',
+      traces: traces,
+      scenarios: [cascadeScenario, normalScenario],
+      profiles: const [cascadeProfile],
+      manifest: manifest,
+    );
+
+    expect(verification.errors, isEmpty);
+  });
+
   test('rejects duplicated trace keys and wrong run ids', () {
     final checks = runLevel1(scenario, _outputFor(profile), profile: profile);
     final trace = _trace(
@@ -2483,6 +2592,89 @@ EvalScenario _scenarioWithId(String id) {
   return EvalScenario.fromJson(json);
 }
 
+EvalScenario _cascadeScenarioWithId(String id) {
+  final base = _taskLogScenarioWithId(id);
+  return EvalScenario(
+    id: base.id,
+    title: base.title,
+    agentKind: base.agentKind,
+    appState: base.appState,
+    userInput: base.userInput,
+    metadata: base.metadata,
+    expectations: const EvalExpectations(
+      cascadeWakes: [
+        ExpectedCascadeWakeState(
+          wakeIndex: 0,
+          durableState: ExpectedDurableState(
+            reportContains: {'release-notes task is ready'},
+          ),
+        ),
+        ExpectedCascadeWakeState(
+          wakeIndex: 1,
+          durableState: ExpectedDurableState(
+            reportContains: {'release-notes task is ready'},
+          ),
+        ),
+        ExpectedCascadeWakeState(
+          wakeIndex: 2,
+          durableState: ExpectedDurableState(
+            reportContains: {'release-notes task is ready'},
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
+EvalScenario _taskLogScenarioWithId(String id) {
+  return EvalScenario(
+    id: id,
+    title: 'Task-log verifier scenario',
+    agentKind: AgentKind.taskAgent,
+    appState: MockedAppState(
+      now: DateTime(2026, 6, 10, 12),
+      categoryIds: const ['cat-001'],
+      categories: [kEvalWorkCategory],
+      tasks: const [
+        MockTask(
+          id: 'task-log-verifier',
+          title: 'Prepare release notes',
+          status: 'IN PROGRESS',
+          categoryId: 'cat-001',
+        ),
+      ],
+      taskLogEntries: [
+        MockTaskLogEntry(
+          id: '$id-log-0',
+          taskId: 'task-log-verifier',
+          transcript: 'First release-notes update.',
+          createdAt: DateTime(2026, 6, 10, 10),
+        ),
+        MockTaskLogEntry(
+          id: '$id-log-1',
+          taskId: 'task-log-verifier',
+          transcript: 'Second release-notes update.',
+          createdAt: DateTime(2026, 6, 10, 10, 30),
+        ),
+        MockTaskLogEntry(
+          id: '$id-log-2',
+          taskId: 'task-log-verifier',
+          transcript: 'Third release-notes update.',
+          createdAt: DateTime(2026, 6, 10, 11),
+        ),
+      ],
+    ),
+    userInput: const UserInput(
+      transcript: 'Review the linked release-notes task log.',
+      triggerTokens: {'decided_task:task-log-verifier'},
+    ),
+    metadata: const EvalScenarioMetadata(
+      capabilityIds: ['task.checklist.transcriptcascade'],
+      tags: {'task', 'task-log'},
+    ),
+  );
+}
+
 EvalScenarioCatalogEvidence _protectedEvidence({
   required List<EvalScenario> scenarios,
   required List<String> protectedHoldoutScenarioIds,
@@ -2602,6 +2794,7 @@ EvalTrace _trace({
   List<EvalCheck>? level1Checks,
   EvalRunManifest? manifest,
   JudgeVerdict? verdict,
+  EvalTraceCascadeWake? cascadeWake,
 }) {
   final traceOutput = output ?? _outputFor(profile);
   final traceManifest =
@@ -2618,6 +2811,7 @@ EvalTrace _trace({
     profile: profile,
     provenance: provenance,
     trialIndex: trialIndex,
+    cascadeWake: cascadeWake,
     output: traceOutput,
     level1Checks:
         level1Checks ?? runLevel1(scenario, traceOutput, profile: profile),

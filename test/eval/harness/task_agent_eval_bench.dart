@@ -145,12 +145,6 @@ abstract final class TaskAgentEvalBench {
     final threadId = _threadIdFor(context);
     for (var wakeIndex = 0; wakeIndex < wakes.length; wakeIndex++) {
       final wake = wakes[wakeIndex];
-      final wakeContext = EvalTargetRunContext(
-        runId: context.runId,
-        scenarioId: context.scenarioId,
-        profileName: context.profileName,
-        trialIndex: context.trialIndex + wakeIndex,
-      );
       session.addTaskLogEntries(wake.taskLogEntries);
       outputs.add(
         await session.runWake(
@@ -158,7 +152,7 @@ abstract final class TaskAgentEvalBench {
           context: context,
           runKeyOverride: '$baseRunKey:wake-$wakeIndex',
           threadIdOverride: threadId,
-          matrixCellIdOverride: wakeContext.cellId,
+          matrixCellIdOverride: context.cellId,
           onUserMessage: onUserMessage == null
               ? null
               : (message) => onUserMessage(wakeIndex, message),

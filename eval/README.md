@@ -117,11 +117,13 @@ optional secondary capability ids, a split (`development`, `holdout`, or
 `canary`), source, adversarial flag, tags, and optional digest-bound human
 review metadata. Review metadata is intentionally non-secret: status, reviewer,
 review time, rationale, optional source provenance, and a `subjectDigest` over
-the scenario JSON with the review block omitted. `EvalTrace.schemaVersion` 9
+the scenario JSON with the review block omitted. `EvalTrace.schemaVersion` 10
 includes a provenance block with canonical scenario/profile hashes, eval
 prompt/rubric hash, tool-schema hash, code revision, and the run manifest hash,
-plus model-invocation, provider-request, and provider-response records for
-workflow-backed traces.
+plus optional `cascadeWake { cascadeId, wakeIndex, wakeCount }`,
+model-invocation, provider-request, and provider-response records for
+workflow-backed traces. Cascade wake traces preserve real `trialIndex`; wake
+identity is separate metadata.
 Real workflow benches also record runtime prompt/tool fingerprints as `sha256:`
 digests in `output.runtimePrompt` without storing prompt text.
 Planning scenarios may seed submitted captures, parsed capture items, existing
@@ -327,6 +329,8 @@ performance, and human calibration labels are checked later by `report`.
 1. `run` executes each scenario against each profile/model class through the
    shared `EvalMatrixRunner`, writes `<runsRoot>/<runId>/manifest.json` first,
    then writes one manifest-bound trace per `(scenario, profile, trialIndex)`.
+   Cascade sidecar runners write one trace per wake with explicit `cascadeWake`
+   metadata rather than overloading `trialIndex`.
    The manifest records the target name/kind, trace schema version, command,
    git revision/dirty-state digest, sanitized environment-key presence, and
    scenario/profile/prompt/tool-schema set digests, plus
@@ -407,9 +411,10 @@ performance, and human calibration labels are checked later by `report`.
 5. `calibrate` first performs the same manifest/catalog verification as
    `report`, then loads a human-label JSON file through `EVAL_CALIBRATION` and
    compares the run's `JudgeVerdict`s against those labels. Calibration labels
-   key into `(scenarioId, profileName, trialIndex)`, bind the reviewed artifact
-   to `scenarioDigest`, `profileDigest`, and the verdict's `traceDigest`, bind
-   the reviewed verdict through `verdictDigest`, and record
+   key into `(scenarioId, profileName, trialIndex)` plus optional
+   `cascadeWake` identity, bind the reviewed artifact to `scenarioDigest`,
+   `profileDigest`, and the verdict's `traceDigest`, bind the reviewed verdict
+   through `verdictDigest`, and record
    inclusive human score bands plus expected pass. Completed calibration files
    must carry non-empty reviewer provenance (`labeler`, `rationale`, terminal
    `adjudicationStatus`, and `labelerCount >= 1`) and are blocked inside the
@@ -459,9 +464,12 @@ they come from the verified catalog/profile matrix, so a completely missing
 profile, scenario, split, or capability still appears as zero-trace coverage.
 Summary Wilson 95% confidence intervals cluster repeated trials at the scenario
 or scenario-profile-cell level by default; explicit trace-level estimates remain
-available only as diagnostics. Paired profile comparisons report Level 1 /
-judge pass deltas only over scenarios where both profiles have a complete trial
-set. Profile-only, missing-verdict, and incomplete/ambiguous scenario groups are
+available only as diagnostics. Cascade wake traces are also diagnostics by
+default: reports exclude them from reliability and promotion evidence while
+still rendering provider request/cache diagnostics. Paired profile comparisons
+report Level 1 / judge pass deltas only over scenarios where both profiles have
+a complete trial set. Profile-only, missing-verdict, and incomplete/ambiguous
+scenario groups are
 counted separately so the comparison cannot silently overstate coverage. The
 rendered table marks zero-overlap pairs as `not comparable` and pairs with fewer
 than eight paired scenarios as `low n`.

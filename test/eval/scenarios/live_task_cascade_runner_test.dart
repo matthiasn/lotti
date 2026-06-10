@@ -3,9 +3,8 @@
 // Runs selected task-agent scenarios as same-task cascades: each
 // `appState.taskLogEntries` item is appended before one wake, while reports,
 // observations, and proposals persist across wakes. This is a sidecar live
-// runner for cascade smoke evidence. It emits one trace per wake, using
-// trialIndex as the wake index, so these traces must not be interpreted as
-// repeated-trial reliability or promotion evidence.
+// runner for cascade smoke evidence. It emits one trace per wake with explicit
+// cascadeWake metadata while preserving trialIndex for real repeated trials.
 
 @Tags(['eval-live'])
 library;
@@ -14,6 +13,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/inference_usage.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -27,6 +27,7 @@ import '../harness/live_eval_target.dart';
 import '../harness/observing_conversation_repository.dart';
 import '../harness/task_agent_eval_bench.dart';
 import 'eval_scenario_catalog.dart';
+import 'eval_scenarios.dart';
 
 const _runId = String.fromEnvironment('EVAL_RUN');
 const _scenarioCatalogPath = String.fromEnvironment(
@@ -59,6 +60,30 @@ void main() {
 
   tearDownAll(tearDownTestGetIt);
 
+  test('maps cascade wake-specific checks into trace Level 1 checks', () {
+    const output = AgentRunOutput(
+      success: true,
+      usage: InferenceUsage.empty,
+      report: AgentReportRecord(
+        oneLiner: 'No checklist update.',
+        tldr: 'No checklist update.',
+      ),
+    );
+
+    final checks = _cascadeWakeLevel1Checks(
+      scenario: taskWorkflowChecklistTranscriptCascadeScenario,
+      profile: kFrontierProfile,
+      wakeIndex: 1,
+      output: output,
+    );
+    final expectedToolCalls = checks.singleWhere(
+      (check) => check.name == 'expected_tool_calls',
+    );
+
+    expect(expectedToolCalls.passed, isFalse);
+    expect(expectedToolCalls.detail, contains('update_checklist_items'));
+  });
+
   test(
     'produces live task-agent cascade traces',
     () async {
@@ -72,10 +97,7 @@ void main() {
       );
       _validateCascadeScenarios(catalog.scenarios);
       final wakeCount = catalog.scenarios.first.appState.taskLogEntries.length;
-      final profiles = [
-        for (final profile in rawProfiles)
-          _profileWithTrialCount(profile, wakeCount),
-      ];
+      final profiles = rawProfiles;
       final runsRoot = _runsRoot();
       _guardProtectedTraceOutput(catalog, runsRoot);
       final writer = TraceWriter(runsRoot: runsRoot);
@@ -93,7 +115,7 @@ void main() {
         profiles: profiles,
         scenarioCatalogEvidence: catalog.evidence,
         profileExecutionBindings: [
-          for (final profile in rawProfiles)
+          for (final profile in profiles)
             settings.profileBindingConfigFor(profile).toExecutionBinding(),
         ],
       );
@@ -114,55 +136,77 @@ void main() {
           profileIndex++
         ) {
           final profile = profiles[profileIndex];
-          final rawProfile = rawProfiles[profileIndex];
-          final context = EvalTargetRunContext(
-            runId: _runId,
-            scenarioId: scenario.id,
-            profileName: profile.name,
-            trialIndex: 0,
-          );
-          final outputs = await TaskAgentEvalBench.runCascade(
-            scenario,
-            rawProfile,
-            context: context,
-            seedScenarioTaskLogEntries: false,
-            wakes: [
-              for (final entry in scenario.appState.taskLogEntries)
-                TaskAgentEvalCascadeWake(taskLogEntries: [entry]),
-            ],
-            conversationRepositoryForWake: (_) =>
-                ObservingConversationRepository(),
-            cloudInferenceRepositoryOverride: cloudInferenceRepository,
-            profileConfigOverride: settings.profileConfigFor(rawProfile),
-            providerEnvPresence: settings.envPresenceForProfile(rawProfile),
-          );
-          cascadeExpectationErrors.addAll(
-            _cascadeWakeExpectationErrors(
-              scenario: scenario,
-              profile: profile,
-              outputs: outputs,
-            ),
-          );
-          for (var wakeIndex = 0; wakeIndex < outputs.length; wakeIndex++) {
-            final trace = EvalTrace(
+          for (
+            var trialIndex = 0;
+            trialIndex < profile.trialCount;
+            trialIndex++
+          ) {
+            final context = EvalTargetRunContext(
               runId: _runId,
-              scenario: scenario,
-              profile: profile,
-              provenance: EvalProvenance.capture(
+              scenarioId: scenario.id,
+              profileName: profile.name,
+              trialIndex: trialIndex,
+            );
+            final outputs = await TaskAgentEvalBench.runCascade(
+              scenario,
+              profile,
+              context: context,
+              seedScenarioTaskLogEntries: false,
+              wakes: [
+                for (final entry in scenario.appState.taskLogEntries)
+                  TaskAgentEvalCascadeWake(taskLogEntries: [entry]),
+              ],
+              conversationRepositoryForWake: (_) =>
+                  ObservingConversationRepository(),
+              cloudInferenceRepositoryOverride: cloudInferenceRepository,
+              profileConfigOverride: settings.profileConfigFor(profile),
+              providerEnvPresence: settings.envPresenceForProfile(profile),
+            );
+            cascadeExpectationErrors.addAll(
+              _missingCascadeOutputErrors(
                 scenario: scenario,
                 profile: profile,
-                manifestDigest: manifestDigest,
-              ),
-              trialIndex: wakeIndex,
-              output: outputs[wakeIndex],
-              level1Checks: runLevel1(
-                scenario,
-                outputs[wakeIndex],
-                profile: profile,
+                trialIndex: trialIndex,
+                outputCount: outputs.length,
               ),
             );
-            await writer.writeTrace(trace);
-            traces.add(trace);
+            for (var wakeIndex = 0; wakeIndex < outputs.length; wakeIndex++) {
+              final level1Checks = _cascadeWakeLevel1Checks(
+                scenario: scenario,
+                profile: profile,
+                wakeIndex: wakeIndex,
+                output: outputs[wakeIndex],
+              );
+              cascadeExpectationErrors.addAll(
+                _failedCheckErrors(
+                  scenario: scenario,
+                  profile: profile,
+                  trialIndex: trialIndex,
+                  wakeIndex: wakeIndex,
+                  checks: level1Checks,
+                ),
+              );
+              final trace = EvalTrace(
+                runId: _runId,
+                scenario: scenario,
+                profile: profile,
+                provenance: EvalProvenance.capture(
+                  scenario: scenario,
+                  profile: profile,
+                  manifestDigest: manifestDigest,
+                ),
+                trialIndex: trialIndex,
+                cascadeWake: EvalTraceCascadeWake(
+                  cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+                  wakeIndex: wakeIndex,
+                  wakeCount: wakeCount,
+                ),
+                output: outputs[wakeIndex],
+                level1Checks: level1Checks,
+              );
+              await writer.writeTrace(trace);
+              traces.add(trace);
+            }
           }
         }
       }
@@ -185,7 +229,14 @@ void main() {
       expect(manifestFile.existsSync(), isTrue);
       expect(
         traces,
-        hasLength(catalog.scenarios.length * profiles.length * wakeCount),
+        hasLength(
+          catalog.scenarios.length *
+              profiles.fold<int>(
+                0,
+                (sum, profile) => sum + profile.trialCount,
+              ) *
+              wakeCount,
+        ),
       );
     },
     timeout: const Timeout(Duration(minutes: 45)),
@@ -193,33 +244,69 @@ void main() {
   );
 }
 
-List<String> _cascadeWakeExpectationErrors({
+List<EvalCheck> _cascadeWakeLevel1Checks({
   required EvalScenario scenario,
   required EvalProfile profile,
-  required List<AgentRunOutput> outputs,
+  required int wakeIndex,
+  required AgentRunOutput output,
 }) {
-  final errors = <String>[];
-  final label = '${scenario.id}::${profile.name}';
-  for (final expectedWake in scenario.expectations.cascadeWakes) {
-    final wakeIndex = expectedWake.wakeIndex;
-    if (wakeIndex < 0 || wakeIndex >= outputs.length) {
-      errors.add('$label wake $wakeIndex has no output');
-      continue;
-    }
-    final checks = runCascadeWakeLevel1(
-      scenario,
-      outputs[wakeIndex],
-      expectedWake,
-      profile: profile,
-    );
-    for (final check in checks.where((check) => !check.passed)) {
-      errors.add(
-        '$label wake $wakeIndex ${check.name}: ${check.detail}',
-      );
+  ExpectedCascadeWakeState? expectedWake;
+  for (final candidate in scenario.expectations.cascadeWakes) {
+    if (candidate.wakeIndex == wakeIndex) {
+      if (expectedWake != null) {
+        return [
+          EvalCheck.fail(
+            'cascade_wake_expectation',
+            'multiple cascade wake expectations for wake $wakeIndex',
+          ),
+        ];
+      }
+      expectedWake = candidate;
     }
   }
+  if (expectedWake == null) {
+    return [
+      ...runLevel1(scenario, output, profile: profile),
+      EvalCheck.fail(
+        'cascade_wake_expectation',
+        'no cascade wake expectation for wake $wakeIndex',
+      ),
+    ];
+  }
+  return runCascadeWakeLevel1(
+    scenario,
+    output,
+    expectedWake,
+    profile: profile,
+  );
+}
 
-  return errors;
+List<String> _missingCascadeOutputErrors({
+  required EvalScenario scenario,
+  required EvalProfile profile,
+  required int trialIndex,
+  required int outputCount,
+}) {
+  final label = '${scenario.id}::${profile.name}::trial-$trialIndex';
+  return [
+    for (final expectedWake in scenario.expectations.cascadeWakes)
+      if (expectedWake.wakeIndex < 0 || expectedWake.wakeIndex >= outputCount)
+        '$label wake ${expectedWake.wakeIndex} has no output',
+  ];
+}
+
+List<String> _failedCheckErrors({
+  required EvalScenario scenario,
+  required EvalProfile profile,
+  required int trialIndex,
+  required int wakeIndex,
+  required List<EvalCheck> checks,
+}) {
+  final label = '${scenario.id}::${profile.name}::trial-$trialIndex';
+  return [
+    for (final check in checks.where((check) => !check.passed))
+      '$label wake $wakeIndex ${check.name}: ${check.detail}',
+  ];
 }
 
 Object? _liveRunnerSkip(LiveEvalSettings settings) {
@@ -258,22 +345,6 @@ void _validateCascadeScenarios(List<EvalScenario> scenarios) {
     );
   }
 }
-
-EvalProfile _profileWithTrialCount(EvalProfile profile, int trialCount) =>
-    EvalProfile(
-      name: profile.name,
-      isLocal: profile.isLocal,
-      modelClass: profile.modelClass,
-      modelId: profile.modelId,
-      temperature: profile.temperature,
-      maxCompletionTokens: profile.maxCompletionTokens,
-      tokenBudget: profile.tokenBudget,
-      trialCount: trialCount,
-      inputTokenCostMicros: profile.inputTokenCostMicros,
-      outputTokenCostMicros: profile.outputTokenCostMicros,
-      cachedInputTokenCostMicros: profile.cachedInputTokenCostMicros,
-      thoughtsTokenCostMicros: profile.thoughtsTokenCostMicros,
-    );
 
 EvalProfileCatalog _loadProfileCatalog() {
   return EvalProfileCatalogLoader.fromEnvironment(

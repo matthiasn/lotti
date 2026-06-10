@@ -175,6 +175,52 @@ void main() {
     expect(rendered, contains('no'));
   });
 
+  test('excludes cascade wake traces from reliability summaries', () {
+    final scenario = taskWorkflowChecklistTranscriptCascadeScenario;
+    final traces = [
+      for (
+        var wakeIndex = 0;
+        wakeIndex < scenario.appState.taskLogEntries.length;
+        wakeIndex++
+      )
+        _trace(
+          scenario: scenario,
+          profile: profile,
+          cascadeWake: EvalTraceCascadeWake(
+            cascadeId: EvalTraceCascadeWake.taskLogCascadeId,
+            wakeIndex: wakeIndex,
+            wakeCount: scenario.appState.taskLogEntries.length,
+          ),
+          providerRequests: [
+            _providerRequest(),
+          ],
+        ),
+    ];
+
+    final rendered = EvalReporter.render(traces);
+    final requestSummary = EvalReporter.summarizeProviderRequestStability(
+      traces,
+    ).single;
+    final usageSummary = EvalReporter.summarizeProviderUsageCache(
+      traces,
+    ).single;
+
+    expect(EvalReporter.summarize(traces), isEmpty);
+    expect(EvalReporter.summarizeByCapability(traces), isEmpty);
+    expect(EvalReporter.compareProfiles(traces), isEmpty);
+    expect(
+      rendered,
+      contains(
+        'cascade wake traces excluded from reliability and promotion: 3',
+      ),
+    );
+    expect(rendered, contains('No non-cascade traces'));
+    expect(requestSummary.expectedTrialCount, 9);
+    expect(requestSummary.traceCount, 3);
+    expect(usageSummary.expectedTrialCount, 9);
+    expect(usageSummary.traceCount, 3);
+  });
+
   test('separates provider request stability by continuation turn', () {
     final traces = [
       _trace(
@@ -2308,6 +2354,7 @@ EvalTrace _trace({
   int? thoughtsTokens,
   List<ProviderRequestRecord> providerRequests =
       const <ProviderRequestRecord>[],
+  EvalTraceCascadeWake? cascadeWake,
 }) {
   return EvalTrace(
     runId: 'run-1',
@@ -2315,6 +2362,7 @@ EvalTrace _trace({
     profile: profile,
     provenance: EvalProvenance.capture(scenario: scenario, profile: profile),
     trialIndex: trialIndex,
+    cascadeWake: cascadeWake,
     output: AgentRunOutput(
       success: true,
       usage: InferenceUsage(

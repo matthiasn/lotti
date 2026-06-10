@@ -3347,6 +3347,36 @@ String? _optionalDigest(Map<String, dynamic> json, String key) {
 bool _isDigest(String value) =>
     RegExp(r'^sha256:[0-9a-f]{64}$').hasMatch(value);
 
+/// Identifies one wake inside a multi-wake cascade trace sequence.
+class EvalTraceCascadeWake {
+  const EvalTraceCascadeWake({
+    required this.cascadeId,
+    required this.wakeIndex,
+    required this.wakeCount,
+  });
+
+  factory EvalTraceCascadeWake.fromJson(Map<String, dynamic> json) =>
+      EvalTraceCascadeWake(
+        cascadeId: _requiredNonEmptyString(json, 'cascadeId'),
+        wakeIndex: (json['wakeIndex'] as num).toInt(),
+        wakeCount: (json['wakeCount'] as num).toInt(),
+      );
+
+  static const taskLogCascadeId = 'task-log';
+
+  final String cascadeId;
+  final int wakeIndex;
+  final int wakeCount;
+
+  String get keySuffix => 'cascade-$cascadeId::wake-$wakeIndex-of-$wakeCount';
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'cascadeId': cascadeId,
+    'wakeIndex': wakeIndex,
+    'wakeCount': wakeCount,
+  };
+}
+
 /// The artifact persisted per `(scenario, profile)` and handed to the judge.
 class EvalTrace {
   const EvalTrace({
@@ -3356,6 +3386,7 @@ class EvalTrace {
     required this.provenance,
     required this.output,
     this.trialIndex = 0,
+    this.cascadeWake,
     this.level1Checks = const <EvalCheck>[],
     this.verdict,
   });
@@ -3371,6 +3402,11 @@ class EvalTrace {
     return EvalTrace(
       runId: json['runId'] as String,
       trialIndex: (json['trialIndex'] as num?)?.toInt() ?? 0,
+      cascadeWake: json['cascadeWake'] == null
+          ? null
+          : EvalTraceCascadeWake.fromJson(
+              json['cascadeWake'] as Map<String, dynamic>,
+            ),
       scenario: EvalScenario.fromJson(json['scenario'] as Map<String, dynamic>),
       profile: EvalProfile.fromJson(json['profile'] as Map<String, dynamic>),
       provenance: EvalTraceProvenance.fromJson(
@@ -3386,10 +3422,11 @@ class EvalTrace {
     );
   }
 
-  static const schemaVersion = 9;
+  static const schemaVersion = 10;
 
   final String runId;
   final int trialIndex;
+  final EvalTraceCascadeWake? cascadeWake;
   final EvalScenario scenario;
   final EvalProfile profile;
   final EvalTraceProvenance provenance;
@@ -3400,6 +3437,8 @@ class EvalTrace {
   /// Whether every Level 1 check passed.
   bool get level1Passed => level1Checks.every((c) => c.passed);
 
+  bool get isCascadeWake => cascadeWake != null;
+
   EvalTrace withVerdict(JudgeVerdict v) => EvalTrace(
     runId: runId,
     scenario: scenario,
@@ -3407,6 +3446,7 @@ class EvalTrace {
     provenance: provenance,
     output: output,
     trialIndex: trialIndex,
+    cascadeWake: cascadeWake,
     level1Checks: level1Checks,
     verdict: v,
   );
@@ -3415,6 +3455,7 @@ class EvalTrace {
     'schemaVersion': schemaVersion,
     'runId': runId,
     'trialIndex': trialIndex,
+    if (cascadeWake != null) 'cascadeWake': cascadeWake!.toJson(),
     'scenario': scenario.toJson(),
     'profile': profile.toJson(),
     'provenance': provenance.toJson(),
