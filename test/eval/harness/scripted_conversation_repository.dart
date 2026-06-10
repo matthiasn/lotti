@@ -71,6 +71,10 @@ class ScriptedConversationRepository extends ConversationRepository
       const <ProviderRequestRecord>[];
 
   @override
+  List<ProviderResponseRecord> get providerResponses =>
+      const <ProviderResponseRecord>[];
+
+  @override
   String createConversation({String? systemMessage, int maxTurns = 20}) {
     createdConversationCount++;
     lastSystemMessage = systemMessage;

@@ -154,7 +154,9 @@ environment-key presence, workflow run/thread provenance, observed
 `ConversationRepository.sendMessage` model invocations with provider/model,
 tool, forced-tool, and runtime prompt/tool fingerprints as hashes, observed
 provider requests inside those sends with message/tool-schema hashes and
-turn/request indexes, persisted planner capacity when available,
+turn/request indexes, observed provider responses with provider-reported model
+ids/fingerprints/provider names/service tiers where authoritative and explicit
+unavailable reasons otherwise, persisted planner capacity when available,
 `InferenceUsage`, turn count, wall-clock). The grader and the assertions never
 know which target ran.
 
@@ -281,7 +283,10 @@ recorded model invocations, validates every recorded provider request against
 both the trace's `providerDecision`, its owning `ModelInvocationRecord`, and the
 manifest profile binding, checks effective request temperature against the
 current `ConversationRepository` policy (`openAi` -> `1.0`, other provider
-types -> profile temperature), and validates resolved model provenance against
+types -> profile temperature), requires one provider response metadata record
+per live provider request, rejects provider-reported response model drift
+against the request and manifest binding, requires response models for OpenAI,
+Mistral, and Ollama traces, and validates resolved model provenance against
 both the trace's `providerDecision` and the manifest profile binding. These
 checks include provider id/type, provider-native model id, endpoint origin, and
 base URL digest. The provider decision must match the canonical profile

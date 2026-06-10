@@ -149,10 +149,17 @@ against the manifest binding so a profile label cannot silently drift to a
 different actual provider/model/endpoint between runs. It also adds
 `EVAL_PROFILES` JSON loading for live run, verify, report, calibration
 templates, and promotion config so local/frontier profile matrices can be
-changed from the command line instead of by editing Dart code. Remaining known
-gap: the harness binds requested provider/model/endpoint and request metadata;
-it does not yet capture provider response-side model aliases/fingerprints where
-providers expose them.
+changed from the command line instead of by editing Dart code.
+Current active slice adds provider response-side provenance: the real
+`ConversationRepository` stream loop records authoritative provider-reported
+model ids, system fingerprints, provider names, and service tiers when exposed,
+or an explicit unavailable reason when the provider/adapter does not expose
+authoritative response identity. Gemini native chunks are intentionally marked
+response-model unavailable because their normalized `model` field is currently
+adapter-synthesized from the request model. `EvalRunVerifier` now requires one
+provider response metadata record per live provider request, rejects response
+model drift against request/manifest binding, and requires response models for
+OpenAI, Mistral, and Ollama traces.
 Previous active slice adds a scenario-catalog preflight for private
 `EVAL_SCENARIOS` catalogs before expensive live runs. The slice also raises
 default Level 2 profiles to three trials so the planned run can satisfy
@@ -393,8 +400,9 @@ test/eval/scenarios/                     # dataset + Level 1 example tests
   checks, validates workflow run/thread provenance when a target records it,
   validates resolved model/provider provenance against `EvalProfile`, validates
   recorded model invocations and provider requests against `providerDecision`
-  and the owning model invocation, requires provider request provenance for live
-  traces with recorded model invocations, and validates
+  and the owning model invocation, requires provider request and response
+  provenance for live traces with recorded model invocations, rejects response
+  model drift where providers report model identity, and validates
   the judge score/pass contract plus judge runner/model, prompt digest,
   calibration set version, profile visibility, and run-level consistency so one
   report cannot average mixed judge models or calibration regimes.
@@ -406,7 +414,7 @@ test/eval/scenarios/                     # dataset + Level 1 example tests
   `sourceDigest` provenance is required before synthetic or protected scenarios
   count as tuning-ready evidence. Stale review digests are catalog validation
   failures. `EvalTrace.schemaVersion` is
-  now 8 and
+  now 9 and
   includes `provenance` (`manifestDigest`, `scenarioDigest`, `profileDigest`,
   eval prompt/rubric digest, tool-schema digest, code revision). Level 2 runs
   write `manifest.json` first; `TraceWriter.readRun` requires that manifest,
@@ -588,6 +596,9 @@ test/eval/scenarios/
   `providerModelId, providerId, providerType, messageDigest, messageCount,`
   `toolSchemaDigest, toolCount, toolNames, forcedToolName?, temperature,`
   `thoughtSignatureCount }`
+- `ProviderResponseRecord { invocationIndex, requestIndex, turnIndex,`
+  `providerType, chunkCount, responseModelIds, systemFingerprints,`
+  `providerNames, serviceTiers, responseModelUnavailableReason? }`
 - `EvalProfile { name, isLocal, modelClass, modelId, temperature,
   maxCompletionTokens?, tokenBudget, trialCount, inputTokenCostMicros?,
   outputTokenCostMicros?, cachedInputTokenCostMicros?,
@@ -600,7 +611,7 @@ test/eval/scenarios/
   externalSourceLabel?, protectedHoldout, protectedScenarioIds,
   protectedHoldoutScenarioIds }`
 - `EvalRunManifest { schemaVersion=1, runId, traceSchemaVersion, targetName, targetKind, createdAt, command, scenarioSetDigest, profileSetDigest, promptDigest, toolSchemaDigest, codeRevision, gitDirty, dirtyDiffDigest?, envPresence, scenarioCatalogEvidence?, manifestDigest? }`
-- `EvalTrace { schemaVersion=8, runId, scenario, profile, provenance, output,`
+- `EvalTrace { schemaVersion=9, runId, scenario, profile, provenance, output,`
   `trialIndex, level1Checks, verdict? }`
 - `JudgeVerdict { schemaVersion=1, traceDigest?, judge,`
   `goalAttainment(1-5), quality(1-5), efficiency(1-5), pass, rationale, issues }`

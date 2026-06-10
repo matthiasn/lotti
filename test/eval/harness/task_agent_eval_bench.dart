@@ -319,6 +319,7 @@ abstract final class TaskAgentEvalBench {
             ),
       modelInvocations: observer?.modelInvocations ?? const [],
       providerRequests: observer?.providerRequests ?? const [],
+      providerResponses: observer?.providerResponses ?? const [],
       mutatedEntryIds: result.mutatedEntries.keys.toSet(),
       turnCount:
           observer?.sendMessageCount ??

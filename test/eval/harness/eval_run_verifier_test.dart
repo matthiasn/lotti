@@ -868,6 +868,225 @@ void main() {
     },
   );
 
+  test('rejects missing provider response provenance for live traces', () {
+    final prompt = _runtimePrompt('live-response-missing');
+    final profileConfig = evalProfileConfig(profile);
+    final request = ProviderRequestRecord(
+      invocationIndex: 0,
+      requestIndex: 0,
+      turnIndex: 1,
+      providerModelId: profileConfig.providerModelId,
+      providerId: profileConfig.providerId,
+      providerType: profileConfig.providerType,
+      providerEndpointOrigin: profileConfig.providerEndpointOrigin,
+      providerBaseUrlDigest: profileConfig.providerBaseUrlDigest,
+      messageDigest: EvalProvenance.digestText('messages'),
+      messageCount: 2,
+      toolSchemaDigest: prompt.toolSchemaDigest!,
+      toolCount: 1,
+      toolNames: const ['update_report'],
+      forcedToolName: 'update_report',
+      temperature: profile.temperature,
+      thoughtSignatureCount: 0,
+    );
+    final output = _outputFor(
+      profile,
+      runtimePrompt: prompt,
+      modelInvocations: [
+        _modelInvocation(profile, runtimePrompt: prompt),
+      ],
+      providerRequests: [request],
+      providerResponses: const [],
+      turnCount: 1,
+    );
+    final manifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+      targetKind: 'live',
+    );
+    final trace = _trace(
+      scenario: scenario,
+      profile: profile,
+      output: output,
+      manifest: manifest,
+    );
+
+    final verification = _verify(
+      runId: 'run-1',
+      traces: [trace],
+      scenarios: [scenario],
+      profiles: [profile],
+      manifest: manifest,
+    );
+
+    expect(
+      verification.errors,
+      contains(
+        'task_release_notes::verifier-profile::trial-0 '
+        'missing provider response provenance for live trace',
+      ),
+    );
+    expect(
+      verification.errors,
+      contains(
+        'task_release_notes::verifier-profile::trial-0 providerResponses '
+        'missing response evidence for providerRequests[0]',
+      ),
+    );
+  });
+
+  test('rejects provider response model drift from live binding', () {
+    const liveProviderModelId = 'gpt-5-mini-live-eval';
+    final liveProfileConfig = evalProfileConfig(
+      profile,
+      providerOverride: const EvalProfileProviderOverride(
+        providerType: InferenceProviderType.openAi,
+        providerModelId: liveProviderModelId,
+        providerId: 'live-openai-provider',
+        apiKey: 'test-key',
+      ),
+    );
+    final manifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+      targetKind: 'live',
+      profileExecutionBindings: [liveProfileConfig.toExecutionBinding()],
+    );
+    final prompt = _runtimePrompt('live-response-drift');
+    final request = ProviderRequestRecord(
+      invocationIndex: 0,
+      requestIndex: 0,
+      turnIndex: 1,
+      providerModelId: liveProfileConfig.providerModelId,
+      providerId: liveProfileConfig.providerId,
+      providerType: liveProfileConfig.providerType,
+      providerEndpointOrigin: liveProfileConfig.providerEndpointOrigin,
+      providerBaseUrlDigest: liveProfileConfig.providerBaseUrlDigest,
+      messageDigest: EvalProvenance.digestText('messages'),
+      messageCount: 2,
+      toolSchemaDigest: prompt.toolSchemaDigest!,
+      toolCount: 1,
+      toolNames: const ['update_report'],
+      forcedToolName: 'update_report',
+      temperature: 1,
+      thoughtSignatureCount: 0,
+    );
+    final output = _outputFor(
+      profile,
+      profileConfigOverride: liveProfileConfig,
+      runtimePrompt: prompt,
+      modelInvocations: [
+        _modelInvocation(
+          profile,
+          runtimePrompt: prompt,
+          profileConfigOverride: liveProfileConfig,
+        ),
+      ],
+      providerRequests: [request],
+      providerResponses: [
+        _providerResponseFor(
+          request,
+          responseModelIds: const ['gpt-5-full-drift'],
+        ),
+      ],
+      turnCount: 1,
+    );
+    final trace = _trace(
+      scenario: scenario,
+      profile: profile,
+      output: output,
+      manifest: manifest,
+    );
+
+    final verification = _verify(
+      runId: 'run-1',
+      traces: [trace],
+      scenarios: [scenario],
+      profiles: [profile],
+      manifest: manifest,
+    );
+
+    expect(
+      verification.errors,
+      contains(
+        'task_release_notes::verifier-profile::trial-0 '
+        'providerResponses[0] responseModelId is gpt-5-full-drift, expected '
+        'providerRequests[0].providerModelId $liveProviderModelId',
+      ),
+    );
+    expect(
+      verification.errors,
+      contains(
+        'task_release_notes::verifier-profile::trial-0 '
+        'providerResponses[0] responseModelId is gpt-5-full-drift, expected '
+        'manifest binding $liveProviderModelId',
+      ),
+    );
+  });
+
+  test('accepts explicit Gemini response model unavailable evidence', () {
+    final profileConfig = evalProfileConfig(profile);
+    final manifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+      targetKind: 'live',
+      profileExecutionBindings: [profileConfig.toExecutionBinding()],
+    );
+    final prompt = _runtimePrompt('gemini-response-unavailable');
+    final request = ProviderRequestRecord(
+      invocationIndex: 0,
+      requestIndex: 0,
+      turnIndex: 1,
+      providerModelId: profileConfig.providerModelId,
+      providerId: profileConfig.providerId,
+      providerType: InferenceProviderType.gemini.name,
+      providerEndpointOrigin: profileConfig.providerEndpointOrigin,
+      providerBaseUrlDigest: profileConfig.providerBaseUrlDigest,
+      messageDigest: EvalProvenance.digestText('messages'),
+      messageCount: 2,
+      toolSchemaDigest: prompt.toolSchemaDigest!,
+      toolCount: 1,
+      toolNames: const ['update_report'],
+      forcedToolName: 'update_report',
+      temperature: profile.temperature,
+      thoughtSignatureCount: 0,
+    );
+    final output = _outputFor(
+      profile,
+      runtimePrompt: prompt,
+      modelInvocations: [
+        _modelInvocation(profile, runtimePrompt: prompt),
+      ],
+      providerRequests: [request],
+      providerResponses: [
+        _providerResponseFor(
+          request,
+          responseModelIds: const [],
+          systemFingerprints: const [],
+          responseModelUnavailableReason:
+              'gemini_native_response_model_not_authoritative',
+        ),
+      ],
+      turnCount: 1,
+    );
+    final trace = _trace(
+      scenario: scenario,
+      profile: profile,
+      output: output,
+      manifest: manifest,
+    );
+
+    final verification = _verify(
+      runId: 'run-1',
+      traces: [trace],
+      scenarios: [scenario],
+      profiles: [profile],
+      manifest: manifest,
+    );
+
+    expect(verification.errors, isEmpty);
+  });
+
   test('rejects provider request evidence missing an invocation', () {
     final firstPrompt = _runtimePrompt('first-request');
     final finalPrompt = _runtimePrompt('final-request');
@@ -2185,6 +2404,7 @@ AgentRunOutput _outputFor(
   RuntimePromptRecord? runtimePrompt,
   List<ModelInvocationRecord> modelInvocations = const [],
   List<ProviderRequestRecord> providerRequests = const [],
+  List<ProviderResponseRecord>? providerResponses,
   EvalProfileConfig? profileConfigOverride,
   bool includeResolvedModel = true,
   bool includeProviderDecision = true,
@@ -2217,7 +2437,28 @@ AgentRunOutput _outputFor(
     runtimePrompt: runtimePrompt,
     modelInvocations: modelInvocations,
     providerRequests: providerRequests,
+    providerResponses:
+        providerResponses ??
+        providerRequests.map(_providerResponseFor).toList(),
     turnCount: turnCount,
+  );
+}
+
+ProviderResponseRecord _providerResponseFor(
+  ProviderRequestRecord request, {
+  List<String>? responseModelIds,
+  List<String> systemFingerprints = const ['fp-eval'],
+  String? responseModelUnavailableReason,
+}) {
+  return ProviderResponseRecord(
+    invocationIndex: request.invocationIndex,
+    requestIndex: request.requestIndex,
+    turnIndex: request.turnIndex,
+    providerType: request.providerType,
+    chunkCount: 1,
+    responseModelIds: responseModelIds ?? [request.providerModelId],
+    systemFingerprints: systemFingerprints,
+    responseModelUnavailableReason: responseModelUnavailableReason,
   );
 }
 

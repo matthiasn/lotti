@@ -25,6 +25,7 @@ abstract interface class EvalConversationObserver {
   AiConfigInferenceProvider? get lastProvider;
   List<ModelInvocationRecord> get modelInvocations;
   List<ProviderRequestRecord> get providerRequests;
+  List<ProviderResponseRecord> get providerResponses;
 }
 
 class ObservingConversationRepository extends ConversationRepository
@@ -51,6 +52,8 @@ class ObservingConversationRepository extends ConversationRepository
       <ModelInvocationRecord>[];
   final List<ProviderRequestRecord> _providerRequests =
       <ProviderRequestRecord>[];
+  final List<ProviderResponseRecord> _providerResponses =
+      <ProviderResponseRecord>[];
   int? _activeInvocationIndex;
 
   @override
@@ -60,6 +63,10 @@ class ObservingConversationRepository extends ConversationRepository
   @override
   List<ProviderRequestRecord> get providerRequests =>
       List.unmodifiable(_providerRequests);
+
+  @override
+  List<ProviderResponseRecord> get providerResponses =>
+      List.unmodifiable(_providerResponses);
 
   @override
   String createConversation({String? systemMessage, int maxTurns = 20}) {
@@ -143,6 +150,24 @@ class ObservingConversationRepository extends ConversationRepository
         forcedToolName: request.forcedToolName,
         temperature: request.temperature,
         thoughtSignatureCount: request.thoughtSignatureCount,
+      ),
+    );
+  }
+
+  @override
+  void observeProviderResponse(ConversationProviderResponse response) {
+    _providerResponses.add(
+      ProviderResponseRecord(
+        invocationIndex: _activeInvocationIndex ?? -1,
+        requestIndex: response.requestIndex,
+        turnIndex: response.turnIndex,
+        providerType: response.providerType,
+        chunkCount: response.chunkCount,
+        responseModelIds: response.responseModelIds,
+        systemFingerprints: response.systemFingerprints,
+        providerNames: response.providerNames,
+        serviceTiers: response.serviceTiers,
+        responseModelUnavailableReason: response.responseModelUnavailableReason,
       ),
     );
   }

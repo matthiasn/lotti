@@ -432,6 +432,7 @@ abstract final class PlannerEvalBench {
             ),
       modelInvocations: observer?.modelInvocations ?? const [],
       providerRequests: observer?.providerRequests ?? const [],
+      providerResponses: observer?.providerResponses ?? const [],
       mutatedEntryIds: result.mutatedEntries.keys.toSet(),
       turnCount: observer?.sendMessageCount ?? 0,
     );

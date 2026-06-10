@@ -2162,6 +2162,77 @@ class ProviderRequestRecord {
   };
 }
 
+/// Provider stream metadata observed for one provider request.
+///
+/// Response identity is kept separate from request identity so eval reports can
+/// tell the difference between "we asked for this model" and "the provider
+/// reported this model back." Lists are used because a malformed stream can
+/// report inconsistent metadata across chunks; the verifier rejects that.
+class ProviderResponseRecord {
+  const ProviderResponseRecord({
+    required this.invocationIndex,
+    required this.requestIndex,
+    required this.turnIndex,
+    required this.providerType,
+    required this.chunkCount,
+    this.responseModelIds = const <String>[],
+    this.systemFingerprints = const <String>[],
+    this.providerNames = const <String>[],
+    this.serviceTiers = const <String>[],
+    this.responseModelUnavailableReason,
+  });
+
+  factory ProviderResponseRecord.fromJson(Map<String, dynamic> json) =>
+      ProviderResponseRecord(
+        invocationIndex: (json['invocationIndex'] as num).toInt(),
+        requestIndex: (json['requestIndex'] as num).toInt(),
+        turnIndex: (json['turnIndex'] as num).toInt(),
+        providerType: json['providerType'] as String,
+        chunkCount: (json['chunkCount'] as num?)?.toInt() ?? 0,
+        responseModelIds:
+            ((json['responseModelIds'] as List<dynamic>?) ?? const [])
+                .map((e) => e as String)
+                .toList(),
+        systemFingerprints:
+            ((json['systemFingerprints'] as List<dynamic>?) ?? const [])
+                .map((e) => e as String)
+                .toList(),
+        providerNames: ((json['providerNames'] as List<dynamic>?) ?? const [])
+            .map((e) => e as String)
+            .toList(),
+        serviceTiers: ((json['serviceTiers'] as List<dynamic>?) ?? const [])
+            .map((e) => e as String)
+            .toList(),
+        responseModelUnavailableReason:
+            json['responseModelUnavailableReason'] as String?,
+      );
+
+  final int invocationIndex;
+  final int requestIndex;
+  final int turnIndex;
+  final String providerType;
+  final int chunkCount;
+  final List<String> responseModelIds;
+  final List<String> systemFingerprints;
+  final List<String> providerNames;
+  final List<String> serviceTiers;
+  final String? responseModelUnavailableReason;
+
+  Map<String, dynamic> toJson() => <String, dynamic>{
+    'invocationIndex': invocationIndex,
+    'requestIndex': requestIndex,
+    'turnIndex': turnIndex,
+    'providerType': providerType,
+    'chunkCount': chunkCount,
+    'responseModelIds': responseModelIds,
+    'systemFingerprints': systemFingerprints,
+    'providerNames': providerNames,
+    'serviceTiers': serviceTiers,
+    if (responseModelUnavailableReason != null)
+      'responseModelUnavailableReason': responseModelUnavailableReason,
+  };
+}
+
 /// The normalised output of one agent wake — the unit both the Level 1
 /// assertions and the Claude Code judge evaluate. Produced identically by the
 /// scripted and live targets.
@@ -2184,6 +2255,7 @@ class AgentRunOutput {
     this.runtimePrompt,
     this.modelInvocations = const <ModelInvocationRecord>[],
     this.providerRequests = const <ProviderRequestRecord>[],
+    this.providerResponses = const <ProviderResponseRecord>[],
     this.mutatedEntryIds = const <String>{},
     this.turnCount = 0,
     this.wallClockMs = 0,
@@ -2258,6 +2330,14 @@ class AgentRunOutput {
           ),
         )
         .toList(),
+    providerResponses:
+        ((json['providerResponses'] as List<dynamic>?) ?? const [])
+            .map(
+              (e) => ProviderResponseRecord.fromJson(
+                e as Map<String, dynamic>,
+              ),
+            )
+            .toList(),
     mutatedEntryIds: ((json['mutatedEntryIds'] as List<dynamic>?) ?? const [])
         .map((e) => e as String)
         .toSet(),
@@ -2282,6 +2362,7 @@ class AgentRunOutput {
   final RuntimePromptRecord? runtimePrompt;
   final List<ModelInvocationRecord> modelInvocations;
   final List<ProviderRequestRecord> providerRequests;
+  final List<ProviderResponseRecord> providerResponses;
   final Set<String> mutatedEntryIds;
   final int turnCount;
   final int wallClockMs;
@@ -2309,6 +2390,7 @@ class AgentRunOutput {
     if (runtimePrompt != null) 'runtimePrompt': runtimePrompt!.toJson(),
     'modelInvocations': modelInvocations.map((i) => i.toJson()).toList(),
     'providerRequests': providerRequests.map((r) => r.toJson()).toList(),
+    'providerResponses': providerResponses.map((r) => r.toJson()).toList(),
     'mutatedEntryIds': (mutatedEntryIds.toList()..sort()),
     'turnCount': turnCount,
     'wallClockMs': wallClockMs,
@@ -3074,7 +3156,7 @@ class EvalTrace {
     );
   }
 
-  static const schemaVersion = 8;
+  static const schemaVersion = 9;
 
   final String runId;
   final int trialIndex;

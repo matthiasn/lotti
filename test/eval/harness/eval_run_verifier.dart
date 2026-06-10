@@ -135,17 +135,25 @@ abstract final class EvalRunVerifier {
         errors,
         profileBinding: profileBinding,
       );
+      final requireLiveProviderEvidence =
+          manifest?.targetKind == 'live' &&
+          trace.output.providerDecision != null &&
+          trace.output.resolvedModel != null &&
+          trace.output.modelInvocations.isNotEmpty;
       _validateProviderRequests(
         trace,
         key,
         errors,
         profile: canonicalProfile ?? trace.profile,
         profileBinding: profileBinding,
-        requireForLive:
-            manifest?.targetKind == 'live' &&
-            trace.output.providerDecision != null &&
-            trace.output.resolvedModel != null &&
-            trace.output.modelInvocations.isNotEmpty,
+        requireForLive: requireLiveProviderEvidence,
+      );
+      _validateProviderResponses(
+        trace,
+        key,
+        errors,
+        profileBinding: profileBinding,
+        requireForLive: requireLiveProviderEvidence,
       );
       _validateCatalogPayloads(
         trace: trace,
@@ -1128,6 +1136,229 @@ abstract final class EvalRunVerifier {
         );
       }
     }
+  }
+
+  static void _validateProviderResponses(
+    EvalTrace trace,
+    String key,
+    List<String> errors, {
+    required bool requireForLive,
+    EvalProfileExecutionBinding? profileBinding,
+  }) {
+    final responses = trace.output.providerResponses;
+    final requests = trace.output.providerRequests;
+    if (requireForLive && requests.isNotEmpty && responses.isEmpty) {
+      errors.add('$key missing provider response provenance for live trace');
+      for (var index = 0; index < requests.length; index++) {
+        errors.add(
+          '$key providerResponses missing response evidence for '
+          'providerRequests[$index]',
+        );
+      }
+    }
+    if (responses.isEmpty) return;
+
+    final requestByKey = <String, ProviderRequestRecord>{};
+    final requestLabels = <String, String>{};
+    for (var index = 0; index < requests.length; index++) {
+      final request = requests[index];
+      final requestKey = _providerRequestKey(
+        request.invocationIndex,
+        request.requestIndex,
+      );
+      requestByKey[requestKey] = request;
+      requestLabels[requestKey] = 'providerRequests[$index]';
+    }
+
+    final responseKeys = <String>[];
+    final responseByKey = <String, ProviderResponseRecord>{};
+    for (var index = 0; index < responses.length; index++) {
+      final response = responses[index];
+      final label = '$key providerResponses[$index]';
+      final responseKey = _providerRequestKey(
+        response.invocationIndex,
+        response.requestIndex,
+      );
+      responseKeys.add(responseKey);
+      responseByKey[responseKey] = response;
+
+      if (response.invocationIndex < 0) {
+        errors.add('$label invocationIndex must not be negative');
+      }
+      if (response.requestIndex < 0) {
+        errors.add('$label requestIndex must not be negative');
+      }
+      if (response.turnIndex < 0) {
+        errors.add('$label turnIndex must not be negative');
+      }
+      if (response.providerType.trim().isEmpty) {
+        errors.add('$label providerType is empty');
+      } else {
+        _validateProviderType(
+          response.providerType,
+          '$label providerType',
+          errors,
+        );
+      }
+      if (response.chunkCount < 0) {
+        errors.add('$label chunkCount must not be negative');
+      }
+
+      final request = requestByKey[responseKey];
+      if (request == null) {
+        errors.add(
+          '$label has no matching provider request for invocationIndex '
+          '${response.invocationIndex} requestIndex ${response.requestIndex}',
+        );
+      } else {
+        _validateProviderResponseMatchesRequest(
+          response: response,
+          request: request,
+          requestLabel: requestLabels[responseKey]!,
+          label: label,
+          errors: errors,
+        );
+      }
+
+      _validateResponseMetadataList(
+        response.responseModelIds,
+        '$label responseModelIds',
+        errors,
+      );
+      _validateResponseMetadataList(
+        response.systemFingerprints,
+        '$label systemFingerprints',
+        errors,
+      );
+      _validateResponseMetadataList(
+        response.providerNames,
+        '$label providerNames',
+        errors,
+      );
+      _validateResponseMetadataList(
+        response.serviceTiers,
+        '$label serviceTiers',
+        errors,
+      );
+
+      final responseModelCount = response.responseModelIds.length;
+      if (responseModelCount > 1) {
+        errors.add(
+          '$label responseModelIds are inconsistent: '
+          '${response.responseModelIds}',
+        );
+      } else if (responseModelCount == 1) {
+        final responseModelId = response.responseModelIds.single;
+        if (response.responseModelUnavailableReason != null) {
+          errors.add(
+            '$label responseModelUnavailableReason is set despite '
+            'responseModelIds being present',
+          );
+        }
+        if (request != null && responseModelId != request.providerModelId) {
+          errors.add(
+            '$label responseModelId is $responseModelId, expected '
+            '${requestLabels[responseKey]}.providerModelId '
+            '${request.providerModelId}',
+          );
+        }
+        if (profileBinding != null &&
+            responseModelId != profileBinding.providerModelId) {
+          errors.add(
+            '$label responseModelId is $responseModelId, expected manifest '
+            'binding ${profileBinding.providerModelId}',
+          );
+        }
+      } else {
+        final unavailableReason = response.responseModelUnavailableReason;
+        if (unavailableReason == null || unavailableReason.trim().isEmpty) {
+          errors.add(
+            '$label responseModelUnavailableReason is required when '
+            'responseModelIds is empty',
+          );
+        }
+        if (requireForLive &&
+            _requiresProviderReportedResponseModel(response.providerType)) {
+          errors.add(
+            '$label missing provider-reported response model for providerType '
+            '${response.providerType}',
+          );
+        }
+      }
+
+      if (response.systemFingerprints.length > 1) {
+        errors.add(
+          '$label systemFingerprints are inconsistent: '
+          '${response.systemFingerprints}',
+        );
+      }
+    }
+
+    for (final duplicate in _duplicates(responseKeys)) {
+      errors.add('$key duplicate providerResponses entry for $duplicate');
+    }
+
+    if (requireForLive) {
+      for (var index = 0; index < requests.length; index++) {
+        final request = requests[index];
+        final requestKey = _providerRequestKey(
+          request.invocationIndex,
+          request.requestIndex,
+        );
+        if (!responseByKey.containsKey(requestKey)) {
+          errors.add(
+            '$key providerResponses missing response evidence for '
+            'providerRequests[$index]',
+          );
+        }
+      }
+    }
+  }
+
+  static String _providerRequestKey(int invocationIndex, int requestIndex) =>
+      'invocation:$invocationIndex/request:$requestIndex';
+
+  static void _validateProviderResponseMatchesRequest({
+    required ProviderResponseRecord response,
+    required ProviderRequestRecord request,
+    required String requestLabel,
+    required String label,
+    required List<String> errors,
+  }) {
+    if (response.turnIndex != request.turnIndex) {
+      errors.add(
+        '$label turnIndex is ${response.turnIndex}, expected '
+        '$requestLabel.turnIndex ${request.turnIndex}',
+      );
+    }
+    if (response.providerType != request.providerType) {
+      errors.add(
+        '$label providerType is ${response.providerType}, expected '
+        '$requestLabel.providerType ${request.providerType}',
+      );
+    }
+  }
+
+  static void _validateResponseMetadataList(
+    List<String> values,
+    String label,
+    List<String> errors,
+  ) {
+    for (final value in values) {
+      if (value.trim().isEmpty) {
+        errors.add('$label contains an empty value');
+      }
+    }
+    for (final duplicate in _duplicates(values)) {
+      errors.add('$label contains duplicate value $duplicate');
+    }
+  }
+
+  static bool _requiresProviderReportedResponseModel(String providerType) {
+    final parsed = _providerTypeByName(providerType);
+    return parsed == InferenceProviderType.openAi ||
+        parsed == InferenceProviderType.mistral ||
+        parsed == InferenceProviderType.ollama;
   }
 
   static double _expectedProviderRequestTemperature({

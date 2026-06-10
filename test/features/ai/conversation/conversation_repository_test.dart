@@ -21,10 +21,16 @@ class FakeConversationManager extends Fake implements ConversationManager {}
 
 class _RequestObservingConversationRepository extends ConversationRepository {
   final requests = <ConversationProviderRequest>[];
+  final responses = <ConversationProviderResponse>[];
 
   @override
   void observeProviderRequest(ConversationProviderRequest request) {
     requests.add(request);
+  }
+
+  @override
+  void observeProviderResponse(ConversationProviderResponse response) {
+    responses.add(response);
   }
 }
 
@@ -1528,6 +1534,8 @@ void main() {
               return Stream.fromIterable([
                 const CreateChatCompletionStreamResponse(
                   id: 'resp-1',
+                  model: 'test-model',
+                  systemFingerprint: 'fp-1',
                   choices: [
                     ChatCompletionStreamResponseChoice(
                       index: 0,
@@ -1630,6 +1638,8 @@ void main() {
               return Stream.fromIterable([
                 const CreateChatCompletionStreamResponse(
                   id: 'resp-1',
+                  model: 'test-model',
+                  systemFingerprint: 'fp-1',
                   choices: [
                     ChatCompletionStreamResponseChoice(
                       index: 0,
@@ -1657,6 +1667,8 @@ void main() {
             return Stream.fromIterable([
               const CreateChatCompletionStreamResponse(
                 id: 'resp-2',
+                model: 'test-model',
+                systemFingerprint: 'fp-2',
                 choices: [
                   ChatCompletionStreamResponseChoice(
                     index: 0,
@@ -1698,6 +1710,7 @@ void main() {
           );
 
           expect(observingRepository.requests, hasLength(2));
+          expect(observingRepository.responses, hasLength(2));
           expect(
             observingRepository.requests.map((request) => request.requestIndex),
             [0, 1],
@@ -1719,6 +1732,30 @@ void main() {
               (request) => request.providerModelId,
             ),
             ['test-model', 'test-model'],
+          );
+          expect(
+            observingRepository.responses.map(
+              (response) => response.responseModelIds,
+            ),
+            [
+              ['test-model'],
+              ['test-model'],
+            ],
+          );
+          expect(
+            observingRepository.responses.map(
+              (response) => response.systemFingerprints,
+            ),
+            [
+              ['fp-1'],
+              ['fp-2'],
+            ],
+          );
+          expect(
+            observingRepository.responses.map(
+              (response) => response.responseModelUnavailableReason,
+            ),
+            [null, null],
           );
           expect(
             observingRepository.requests.map((request) => request.toolNames),
@@ -1748,6 +1785,52 @@ void main() {
           expect(
             observingRepository.requests.toString(),
             isNot(contains('Multi-turn')),
+          );
+        },
+      );
+
+      test(
+        'does not treat synthetic Gemini chunk model as response identity',
+        () async {
+          final observingRepository = _RequestObservingConversationRepository();
+          final observedConversationId = observingRepository.createConversation(
+            systemMessage: 'System instructions',
+          );
+          _stubGenerateText(mockOllamaRepo).thenAnswer(
+            (_) => Stream.fromIterable([
+              const CreateChatCompletionStreamResponse(
+                id: 'gemini-resp',
+                model: 'requested-gemini-model',
+                choices: [
+                  ChatCompletionStreamResponseChoice(
+                    index: 0,
+                    delta: ChatCompletionStreamResponseDelta(content: 'Done'),
+                  ),
+                ],
+                object: 'chat.completion.chunk',
+                created: 1700000000,
+              ),
+            ]),
+          );
+
+          await observingRepository.sendMessage(
+            conversationId: observedConversationId,
+            message: 'Hello',
+            model: 'requested-gemini-model',
+            provider: provider.copyWith(
+              inferenceProviderType: InferenceProviderType.gemini,
+            ),
+            inferenceRepo: mockOllamaRepo,
+          );
+
+          expect(observingRepository.responses, hasLength(1));
+          expect(
+            observingRepository.responses.single.responseModelIds,
+            isEmpty,
+          );
+          expect(
+            observingRepository.responses.single.responseModelUnavailableReason,
+            'gemini_native_response_model_not_authoritative',
           );
         },
       );

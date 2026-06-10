@@ -49,10 +49,14 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   ///
   /// Uses [DateTime.now().microsecondsSinceEpoch] for the id so chunks
   /// emitted within the same millisecond still receive distinct ids.
-  static CreateChatCompletionStreamResponse _contentChunk(String content) {
+  static CreateChatCompletionStreamResponse _contentChunk(
+    String content, {
+    String? model,
+  }) {
     final now = DateTime.now();
     return CreateChatCompletionStreamResponse(
       id: '$ollamaResponseIdPrefix${now.microsecondsSinceEpoch}',
+      model: model,
       choices: [
         ChatCompletionStreamResponseChoice(
           delta: ChatCompletionStreamResponseDelta(content: content),
@@ -355,6 +359,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
 
         try {
           final json = jsonDecode(chunk) as Map<String, dynamic>;
+          final responseModel = _nonEmptyString(json['model']);
 
           // Cast message once to avoid dynamic calls
           final message = json['message'] as Map<String, dynamic>?;
@@ -376,7 +381,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
               if (thinking.isNotEmpty) {
                 final prefix = inThinking ? '' : '<think>';
                 inThinking = true;
-                yield _contentChunk('$prefix$thinking');
+                yield _contentChunk('$prefix$thinking', model: responseModel);
               }
             }
 
@@ -389,7 +394,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
                 message['tool_calls'] != null || message['content'] != null;
             if (inThinking && hasOutput) {
               inThinking = false;
-              yield _contentChunk('</think>');
+              yield _contentChunk('</think>', model: responseModel);
             }
 
             if (message['tool_calls'] != null) {
@@ -466,6 +471,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
               final toolNow = DateTime.now();
               yield CreateChatCompletionStreamResponse(
                 id: '$ollamaResponseIdPrefix${toolNow.microsecondsSinceEpoch}',
+                model: responseModel,
                 choices: [
                   ChatCompletionStreamResponseChoice(
                     delta: ChatCompletionStreamResponseDelta.fromJson({
@@ -483,6 +489,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
               final contentNow = DateTime.now();
               yield CreateChatCompletionStreamResponse(
                 id: '$ollamaResponseIdPrefix${contentNow.microsecondsSinceEpoch}',
+                model: responseModel,
                 choices: [
                   ChatCompletionStreamResponseChoice(
                     delta: ChatCompletionStreamResponseDelta(
@@ -501,7 +508,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
           // Safety: close any unclosed thinking block before finishing.
           if (json['done'] == true && inThinking) {
             inThinking = false;
-            yield _contentChunk('</think>');
+            yield _contentChunk('</think>', model: responseModel);
           }
           if (json['done'] == true) {
             developer.log(
@@ -518,6 +525,7 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
               final usageNow = DateTime.now();
               yield CreateChatCompletionStreamResponse(
                 id: '$ollamaResponseIdPrefix${usageNow.microsecondsSinceEpoch}',
+                model: responseModel,
                 choices: const [],
                 object: 'chat.completion.chunk',
                 created: usageNow.millisecondsSinceEpoch ~/ 1000,
@@ -649,6 +657,11 @@ class OllamaInferenceRepository implements InferenceRepositoryInterface {
   /// [OllamaModelManagement.warmUpModelImpl] (mockable class member).
   Future<void> warmUpModel(String modelName, String baseUrl) =>
       warmUpModelImpl(modelName, baseUrl);
+}
+
+String? _nonEmptyString(Object? value) {
+  final text = value is String ? value.trim() : null;
+  return text == null || text.isEmpty ? null : text;
 }
 
 /// Exception thrown when a model is not installed

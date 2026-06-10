@@ -64,6 +64,37 @@ class ConversationProviderRequest {
   final int thoughtSignatureCount;
 }
 
+/// Non-secret snapshot of response metadata reported by the provider stream for
+/// one provider request inside [ConversationRepository.sendMessage].
+///
+/// This intentionally captures provider-reported identity only. Provider
+/// adapters may normalize stream chunks for conversation handling, so
+/// [responseModelIds] must stay empty when the adapter only knows the requested
+/// model and the provider did not return an authoritative response model.
+class ConversationProviderResponse {
+  const ConversationProviderResponse({
+    required this.requestIndex,
+    required this.turnIndex,
+    required this.providerType,
+    required this.chunkCount,
+    required this.responseModelIds,
+    required this.systemFingerprints,
+    required this.providerNames,
+    required this.serviceTiers,
+    this.responseModelUnavailableReason,
+  });
+
+  final int requestIndex;
+  final int turnIndex;
+  final String providerType;
+  final int chunkCount;
+  final List<String> responseModelIds;
+  final List<String> systemFingerprints;
+  final List<String> providerNames;
+  final List<String> serviceTiers;
+  final String? responseModelUnavailableReason;
+}
+
 @visibleForTesting
 String? stripThinkBlocks(String? content) {
   if (content == null) return null;
@@ -244,6 +275,13 @@ class ConversationRepository extends _$ConversationRepository {
   @protected
   void observeProviderRequest(ConversationProviderRequest request) {}
 
+  /// Hook for eval/test observers that need response-level provenance.
+  ///
+  /// The default implementation is intentionally a no-op so production behavior
+  /// remains unchanged unless a subclass opts in.
+  @protected
+  void observeProviderResponse(ConversationProviderResponse response) {}
+
   /// Send a message in a conversation.
   ///
   /// When [toolChoice] is supplied it overrides the provider default (`auto`)
@@ -304,9 +342,10 @@ class ConversationRepository extends _$ConversationRepository {
         // Create signature collector for this turn (Gemini 3 multi-turn support)
         final signatureCollector = ThoughtSignatureCollector();
         final turnIndex = manager.turnCount;
+        final providerRequestIndexForTurn = providerRequestIndex++;
         observeProviderRequest(
           ConversationProviderRequest(
-            requestIndex: providerRequestIndex++,
+            requestIndex: providerRequestIndexForTurn,
             turnIndex: turnIndex,
             providerModelId: model,
             providerId: provider.id,
@@ -351,9 +390,34 @@ class ConversationRepository extends _$ConversationRepository {
         // Use StringBuffer for each tool call to safely accumulate arguments
         // This prevents JSON corruption when chunks are split mid-character or arrive out of order
         final toolCallArgumentBuffers = <String, StringBuffer>{};
+        final responseModelIds = <String>{};
+        final systemFingerprints = <String>{};
+        final providerNames = <String>{};
+        final serviceTiers = <String>{};
+        var responseChunkCount = 0;
         InferenceUsage? turnUsage;
 
         await for (final response in stream) {
+          responseChunkCount++;
+          final responseModelId = _authoritativeResponseModelId(
+            response,
+            provider.inferenceProviderType,
+          );
+          if (responseModelId != null) {
+            responseModelIds.add(responseModelId);
+          }
+          final systemFingerprint = _nonEmpty(response.systemFingerprint);
+          if (systemFingerprint != null) {
+            systemFingerprints.add(systemFingerprint);
+          }
+          final providerName = _nonEmpty(response.provider);
+          if (providerName != null) {
+            providerNames.add(providerName);
+          }
+          final serviceTier = _nonEmpty(response.serviceTier?.name);
+          if (serviceTier != null) {
+            serviceTiers.add(serviceTier);
+          }
           // Capture usage from the response (typically on the final chunk).
           if (response.usage != null) {
             final u = response.usage!;
@@ -391,6 +455,23 @@ class ConversationRepository extends _$ConversationRepository {
             }
           }
         }
+        observeProviderResponse(
+          ConversationProviderResponse(
+            requestIndex: providerRequestIndexForTurn,
+            turnIndex: turnIndex,
+            providerType: provider.inferenceProviderType.name,
+            chunkCount: responseChunkCount,
+            responseModelIds: _sorted(responseModelIds),
+            systemFingerprints: _sorted(systemFingerprints),
+            providerNames: _sorted(providerNames),
+            serviceTiers: _sorted(serviceTiers),
+            responseModelUnavailableReason: responseModelIds.isEmpty
+                ? _responseModelUnavailableReason(
+                    provider.inferenceProviderType,
+                  )
+                : null,
+          ),
+        );
 
         // Accumulate token usage from this turn.
         if (turnUsage != null) {
@@ -491,6 +572,28 @@ class ConversationRepository extends _$ConversationRepository {
 
 String _digestJson(Object? value) =>
     'sha256:${sha256.convert(utf8.encode(jsonEncode(_canonicalize(value))))}';
+
+String? _authoritativeResponseModelId(
+  CreateChatCompletionStreamResponse response,
+  InferenceProviderType providerType,
+) {
+  // Gemini chunks are currently synthesized by the native adapter from the
+  // requested model id, not from provider-returned response metadata.
+  if (providerType == InferenceProviderType.gemini) return null;
+  return _nonEmpty(response.model);
+}
+
+String _responseModelUnavailableReason(InferenceProviderType providerType) =>
+    providerType == InferenceProviderType.gemini
+    ? 'gemini_native_response_model_not_authoritative'
+    : '${providerType.name}_response_model_unavailable';
+
+List<String> _sorted(Set<String> values) => values.toList()..sort();
+
+String? _nonEmpty(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
+}
 
 Object? _canonicalize(Object? value) {
   if (value is Map) {

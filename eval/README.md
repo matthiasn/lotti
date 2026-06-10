@@ -95,6 +95,13 @@ no raw prompt text or API keys. Live traces also record `providerRequests` for
 each internal provider request inside `sendMessage`, including continuation
 requests after tool calls, with message/tool-schema hashes, structural counts,
 provider/model ids, turn indexes, tool names, and forced tool choice.
+`providerResponses` records the corresponding provider-stream metadata:
+provider-reported model ids when the adapter has authoritative response
+metadata, system fingerprints/provider names/service tiers when exposed, and an
+explicit unavailable reason otherwise. Gemini native chunks are recorded as
+response-model unavailable today because their normalized `model` field is
+adapter-synthesized from the requested model rather than provider-returned
+identity.
 Failed target exceptions are serialized as failed traces, but the runner
 redacts obvious API keys, bearer tokens, private local paths, and prompt-like
 payload fields before writing `output.error`.
@@ -103,10 +110,11 @@ optional secondary capability ids, a split (`development`, `holdout`, or
 `canary`), source, adversarial flag, tags, and optional digest-bound human
 review metadata. Review metadata is intentionally non-secret: status, reviewer,
 review time, rationale, optional source provenance, and a `subjectDigest` over
-the scenario JSON with the review block omitted. `EvalTrace.schemaVersion` 8
+the scenario JSON with the review block omitted. `EvalTrace.schemaVersion` 9
 includes a provenance block with canonical scenario/profile hashes, eval
 prompt/rubric hash, tool-schema hash, code revision, and the run manifest hash,
-plus model-invocation and provider-request records for workflow-backed traces.
+plus model-invocation, provider-request, and provider-response records for
+workflow-backed traces.
 Real workflow benches also record runtime prompt/tool fingerprints as `sha256:`
 digests in `output.runtimePrompt` without storing prompt text.
 Planning scenarios may seed submitted captures, parsed capture items, existing
@@ -284,8 +292,11 @@ performance, and human calibration labels are checked later by `report`.
    recorded provider requests against both `providerDecision` and the owning
    model invocation, including effective request temperature against the current
    `ConversationRepository` policy (`openAi` -> `1.0`, other provider types ->
-   profile temperature), validates resolved model/provider provenance against
-   both `providerDecision` and the manifest-bound profile execution binding,
+   profile temperature), requires one provider response metadata record per live
+   provider request, rejects response model drift when a provider-reported model
+   is available, requires response models for OpenAI, Mistral, and Ollama live
+   traces, validates resolved model/provider provenance against both
+   `providerDecision` and the manifest-bound profile execution binding,
    validates model invocations and provider requests against that same binding,
    including endpoint origin and base URL digest,
    rejects selected decoy/legacy provider rows, validates scenario governance
