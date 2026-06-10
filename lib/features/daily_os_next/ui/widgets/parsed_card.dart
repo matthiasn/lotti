@@ -313,7 +313,7 @@ class _TimeAnchorChip extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.flag_rounded,
+          Icons.outlined_flag_rounded,
           size: 12,
           color: tokens.colors.text.mediumEmphasis,
         ),

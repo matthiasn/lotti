@@ -79,8 +79,15 @@ class RefineModalContent extends ConsumerWidget {
           ),
           child: Column(
             children: [
-              _RefineHeadline(phase: state.phase),
-              SizedBox(height: tokens.spacing.step4),
+              if (MediaQuery.textScalerOf(context).scale(100) < 180) ...[
+                // Reserved eyebrow slot mirrors the capture header anatomy
+                // so the headline baseline sits at the same height on
+                // every step.
+                Text(' ', style: calmGreetingStyle(tokens)),
+                SizedBox(height: tokens.spacing.step3),
+                _RefineHeadline(phase: state.phase),
+                SizedBox(height: tokens.spacing.step4),
+              ],
               Expanded(
                 child: _RefineZone(draft: draft, state: state),
               ),
@@ -122,11 +129,13 @@ class RefineModalContent extends ConsumerWidget {
   }
 
   Color _captionColor(DsTokens tokens, RefinePhase phase) {
+    // Captions are status, not actions — they stay muted so accent color
+    // keeps meaning "tappable".
     return switch (phase) {
       RefinePhase.listening ||
       RefinePhase.reviewing ||
-      RefinePhase.thinking => tokens.colors.interactive.enabled,
-      RefinePhase.accepted => tokens.colors.alert.success.defaultColor,
+      RefinePhase.thinking ||
+      RefinePhase.accepted => tokens.colors.text.mediumEmphasis,
       RefinePhase.idle ||
       RefinePhase.diffReady => tokens.colors.text.lowEmphasis,
     };
@@ -261,10 +270,9 @@ class _RefineZone extends ConsumerWidget {
           ),
         );
       case RefinePhase.reviewing:
-        zone = Align(
-          alignment: Alignment.topCenter,
+        zone = Center(
           child: SingleChildScrollView(
-            padding: EdgeInsets.only(top: tokens.spacing.step6),
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step6),
             child: _TranscriptReview(
               draft: draft,
               transcript: state.transcript,
@@ -273,10 +281,9 @@ class _RefineZone extends ConsumerWidget {
         );
       case RefinePhase.diffReady:
         final diff = state.diff;
-        zone = Align(
-          alignment: Alignment.topCenter,
+        zone = Center(
           child: SingleChildScrollView(
-            padding: EdgeInsets.only(top: tokens.spacing.step6),
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -322,10 +329,9 @@ class _CurrentPlanList extends StatelessWidget {
     final locale = Localizations.localeOf(context).toString();
     final timeFormat = DateFormat.Hm(locale);
 
-    return Align(
-      alignment: Alignment.topCenter,
+    return Center(
       child: SingleChildScrollView(
-        padding: EdgeInsets.only(top: tokens.spacing.step6),
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step6),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

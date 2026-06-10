@@ -162,6 +162,10 @@ class DraftingModalContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 SizedBox(height: tokens.spacing.step6),
+                // Reserved eyebrow slot keeps the headline baseline at the
+                // same height as the other steps.
+                Text(' ', style: calmGreetingStyle(tokens)),
+                SizedBox(height: tokens.spacing.step3),
                 Text(
                   context.messages.dailyOsNextDraftingHeader,
                   textAlign: TextAlign.center,

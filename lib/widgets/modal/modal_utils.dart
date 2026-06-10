@@ -233,13 +233,14 @@ class ModalUtils {
     bool showCloseButton = true,
     void Function()? onTapBack,
     double? navBarHeight,
+    Color? backgroundColor,
   }) {
     final colorScheme = context.colorScheme;
 
     return SliverWoltModalSheetPage(
       scrollController: scrollController,
       stickyActionBar: stickyActionBar,
-      backgroundColor: getModalBackgroundColor(context),
+      backgroundColor: backgroundColor ?? getModalBackgroundColor(context),
       hasSabGradient: false,
       useSafeArea: true,
       resizeToAvoidBottomInset: true,

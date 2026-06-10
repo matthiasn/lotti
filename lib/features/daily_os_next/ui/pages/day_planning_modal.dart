@@ -120,12 +120,16 @@ const double _barClearance = 112;
 /// glass action bar below it. Slightly undershooting is fine (a little
 /// breathing room above the bar); overshooting would push the
 /// bottom-anchored orb under the bar.
-double _stepViewportHeight(BuildContext context) {
+double _stepViewportHeight(BuildContext context, {bool hasBar = true}) {
   final size = MediaQuery.sizeOf(context);
   final isBottomSheet = size.width < WoltModalConfig.pageBreakpoint;
   // Bottom sheets keep a visible sliver of the underlying page above the
-  // sheet; the side sheet starts at the window's top edge.
-  final chrome = isBottomSheet ? 250.0 : 180.0;
+  // sheet; the side sheet starts at the window's top edge. Steps without a
+  // sticky bar (Drafting) reclaim its allowance so their content reaches
+  // the sheet edge instead of stopping short of it.
+  final chrome = isBottomSheet
+      ? (hasBar ? 250.0 : 170.0)
+      : (hasBar ? 180.0 : 100.0);
   return math.max(420, size.height - chrome);
 }
 
@@ -154,7 +158,7 @@ Widget _layoutBarPills(BuildContext context, List<Widget> pills) {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (var i = 0; i < pills.length; i++) ...[
-          if (i > 0) SizedBox(height: tokens.spacing.step2),
+          if (i > 0) SizedBox(height: tokens.spacing.step3),
           pills[i],
         ],
       ],
@@ -164,7 +168,7 @@ Widget _layoutBarPills(BuildContext context, List<Widget> pills) {
     mainAxisAlignment: wide ? MainAxisAlignment.end : MainAxisAlignment.start,
     children: [
       for (var i = 0; i < pills.length; i++) ...[
-        if (i > 0) SizedBox(width: tokens.spacing.step2),
+        if (i > 0) SizedBox(width: tokens.spacing.step3),
         if (wide) pills[i] else Expanded(child: pills[i]),
       ],
     ],
@@ -179,6 +183,7 @@ SliverWoltModalSheetPage _captureStepPage(
 ) {
   return ModalUtils.sliverModalSheetPage(
     context: context,
+    backgroundColor: context.designTokens.colors.background.level01,
     slivers: [
       SliverToBoxAdapter(
         child: SizedBox(
@@ -340,6 +345,7 @@ SliverWoltModalSheetPage _reconcileStepPage(
   final params = ReconcileParams(captureId: captureId, dayDate: day);
   return ModalUtils.sliverModalSheetPage(
     context: context,
+    backgroundColor: context.designTokens.colors.background.level01,
     onTapBack: onBack,
     slivers: [
       SliverToBoxAdapter(child: _ReconcileStepContent(params: params)),
@@ -468,12 +474,13 @@ SliverWoltModalSheetPage _draftingStepPage(
   // shader — a bar would be a dead strip duplicating that signal.
   return ModalUtils.sliverModalSheetPage(
     context: context,
+    backgroundColor: context.designTokens.colors.background.level01,
     onTapBack: onBack,
     showCloseButton: false,
     slivers: [
       SliverToBoxAdapter(
         child: SizedBox(
-          height: _stepViewportHeight(context),
+          height: _stepViewportHeight(context, hasBar: false),
           child: _DraftingStepContent(params: params, day: day),
         ),
       ),
@@ -555,6 +562,7 @@ SliverWoltModalSheetPage _refineStepPage(
   // the nav bar reads as a double header.
   return ModalUtils.sliverModalSheetPage(
     context: context,
+    backgroundColor: context.designTokens.colors.background.level01,
     slivers: [
       // Same anchored voice template as Capture: a bounded viewport pins
       // the orb above the sticky bar while the refine zone breathes.

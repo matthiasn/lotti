@@ -215,10 +215,19 @@ class _CaptureFlowBody extends ConsumerWidget {
     final tokens = context.designTokens;
     final notifier = ref.read(captureControllerProvider.notifier);
 
+    // At very large accessibility text the headline can no longer share a
+    // pocket-phone viewport with the orb; remove it from layout entirely
+    // (never height-clip it — a partially visible glyph reads as a
+    // rendering defect) and let the zone + orb carry the screen.
+    final textScale = MediaQuery.textScalerOf(context).scale(100) / 100;
+    final showHeader = textScale < 1.8;
+
     final body = Column(
       children: [
-        _CaptureHeader(phase: state.phase, forDate: forDate),
-        SizedBox(height: tokens.spacing.step4),
+        if (showHeader) ...[
+          _CaptureHeader(phase: state.phase, forDate: forDate),
+          SizedBox(height: tokens.spacing.step4),
+        ],
         Expanded(
           child: _TranscriptZone(state: state, notifier: notifier),
         ),
@@ -246,13 +255,35 @@ class _CaptureFlowBody extends ConsumerWidget {
     // cannot start the flow).
     return LayoutBuilder(
       builder: (context, constraints) {
-        return SingleChildScrollView(
+        Widget scroll = SingleChildScrollView(
           reverse: true,
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: IntrinsicHeight(child: body),
           ),
         );
+        if (!showHeader) {
+          // Under squeeze the reverse scroll can cut content at the top
+          // edge; dissolve it instead of slicing glyphs mid-x-height.
+          scroll = ShaderMask(
+            shaderCallback: (bounds) {
+              final lineHeight = MediaQuery.textScalerOf(
+                context,
+              ).scale(tokens.typography.lineHeight.bodyMedium);
+              final ramp = bounds.height <= 0
+                  ? 0.08
+                  : ((lineHeight * 1.2) / bounds.height).clamp(0.05, 0.3);
+              return LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
+                stops: [0, ramp],
+              ).createShader(bounds);
+            },
+            child: scroll,
+          );
+        }
+        return scroll;
       },
     );
   }
@@ -492,10 +523,9 @@ class _TranscriptZone extends StatelessWidget {
         // Static content sits directly under the headline — pooling the
         // flexible slack between question and content read as a dead band;
         // the slack now lives between content and orb instead.
-        return Align(
-          alignment: Alignment.topCenter,
+        return Center(
           child: Padding(
-            padding: EdgeInsets.only(top: tokens.spacing.step6),
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step6),
             child: Text(
               context.messages.dailyOsNextCaptureIdleExample,
               textAlign: TextAlign.center,
@@ -521,10 +551,9 @@ class _TranscriptZone extends StatelessWidget {
           ),
         );
       case CapturePhase.captured:
-        return Align(
-          alignment: Alignment.topCenter,
+        return Center(
           child: SingleChildScrollView(
-            padding: EdgeInsets.only(top: tokens.spacing.step6),
+            padding: EdgeInsets.symmetric(vertical: tokens.spacing.step6),
             child: TranscriptEditor(
               fieldKey: const Key('daily_os_capture_transcript_editor'),
               transcript: state.transcript,
@@ -534,8 +563,7 @@ class _TranscriptZone extends StatelessWidget {
           ),
         );
       case CapturePhase.error:
-        return Align(
-          alignment: Alignment.topCenter,
+        return Center(
           child: Text(
             _captureErrorMessage(context, state.error) ??
                 context.messages.dailyOsNextCaptureIdleHint,
@@ -572,7 +600,7 @@ class _OrbZone extends StatelessWidget {
       ),
       CapturePhase.listening => (
         messages.dailyOsNextCaptureListeningStatus,
-        tokens.colors.interactive.enabled,
+        tokens.colors.text.mediumEmphasis,
       ),
       CapturePhase.transcribing => (
         messages.dailyOsNextCaptureTranscribing,
@@ -580,7 +608,7 @@ class _OrbZone extends StatelessWidget {
       ),
       CapturePhase.captured => (
         messages.dailyOsNextCaptureCaptured,
-        tokens.colors.interactive.enabled,
+        tokens.colors.text.mediumEmphasis,
       ),
     };
 

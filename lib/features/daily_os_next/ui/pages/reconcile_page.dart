@@ -378,10 +378,18 @@ class ReconcileModalContent extends StatelessWidget {
           // one header spine across pages.
           final header = Padding(
             padding: EdgeInsets.only(bottom: tokens.spacing.step6),
-            child: Text(
-              context.messages.dailyOsNextReconcileHeadline,
-              textAlign: TextAlign.center,
-              style: calmDisplayStyle(tokens),
+            child: Column(
+              children: [
+                // Reserved eyebrow slot keeps the headline baseline at the
+                // same height as the other steps.
+                Text(' ', style: calmGreetingStyle(tokens)),
+                SizedBox(height: tokens.spacing.step3),
+                Text(
+                  context.messages.dailyOsNextReconcileHeadline,
+                  textAlign: TextAlign.center,
+                  style: calmDisplayStyle(tokens),
+                ),
+              ],
             ),
           );
           if (!isWide) {
