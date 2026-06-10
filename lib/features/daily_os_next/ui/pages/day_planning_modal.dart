@@ -550,9 +550,11 @@ SliverWoltModalSheetPage _refineStepPage(
   BuildContext context,
   DraftPlan draft,
 ) {
+  // No top-bar title: like the other steps, the conversational body
+  // headline ("What should change?") is the only title — a second label in
+  // the nav bar reads as a double header.
   return ModalUtils.sliverModalSheetPage(
     context: context,
-    title: context.messages.dailyOsNextRefineTitle,
     slivers: [
       // Same anchored voice template as Capture: a bounded viewport pins
       // the orb above the sticky bar while the refine zone breathes.

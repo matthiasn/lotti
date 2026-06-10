@@ -736,7 +736,10 @@ void main() {
 
         expect(find.byType(DayPage), findsOneWidget);
         expect(find.byType(RefineModalContent), findsOneWidget);
-        expect(find.text(messages.dailyOsNextRefineTitle), findsOneWidget);
+        expect(
+          find.text(messages.dailyOsNextRefineHeadlineIdle),
+          findsOneWidget,
+        );
       },
     );
 

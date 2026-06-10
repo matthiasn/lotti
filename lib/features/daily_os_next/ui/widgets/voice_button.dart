@@ -7,9 +7,9 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// Circular voice button that anchors the capture surfaces.
 ///
 /// Visual states, driven by [CapturePhase]:
-/// - **idle / error** — solid teal gradient circle + mic glyph, resting
+/// - **idle / error** — solid teal disc + mic glyph, resting
 ///   concentric frames.
-/// - **listening** — gradient wrapped by the dBFS-driven tension-loop
+/// - **listening** — the disc wrapped by the dBFS-driven tension-loop
 ///   shader; glyph becomes a stop square (tap = stop recording).
 /// - **transcribing** — dimmed button while the recording is converted to
 ///   text; tapping is a no-op at the controller level.
@@ -17,7 +17,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 ///
 /// The button is deliberately "alive": presses scale the core down and
 /// release it with a slight overshoot, the ink ripple is painted *above*
-/// the gradient so it is actually visible, and glyph changes cross-fade.
+/// the fill so it is actually visible, and glyph changes cross-fade.
 ///
 /// Pure presentation. The parent calls [onTap] which delegates to
 /// `CaptureController.toggle()`.
@@ -137,7 +137,6 @@ class _VoiceButtonState extends State<VoiceButton> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final teal = tokens.colors.interactive.enabled;
-    final tealDeep = tokens.colors.interactive.hover;
     final onTeal = tokens.colors.text.onInteractiveAlert;
     final size = widget.size;
     final fieldSize = VoiceButton.fieldSizeFor(size);
@@ -161,15 +160,15 @@ class _VoiceButtonState extends State<VoiceButton> {
           )
         : BoxDecoration(
             shape: BoxShape.circle,
-            gradient: RadialGradient(
-              colors: [teal, tealDeep],
-              stops: const [0.2, 1.0],
-            ),
+            // Flat brand disc — the one gradient in the system read as a
+            // different material from everything else, especially in the
+            // light theme.
+            color: teal,
             boxShadow: const [
               BoxShadow(
-                color: Color(0x33000000),
-                blurRadius: 18,
-                offset: Offset(0, 8),
+                color: Color(0x24000000),
+                blurRadius: 14,
+                offset: Offset(0, 6),
               ),
             ],
           );
@@ -224,7 +223,7 @@ class _VoiceButtonState extends State<VoiceButton> {
               ),
             // Press feedback: scale down while held, release with a soft
             // overshoot — paired with a visible ink ripple painted above
-            // the gradient (via [Ink]), so a tap never reads as dead.
+            // the fill (via [Ink]), so a tap never reads as dead.
             AnimatedScale(
               key: VoiceButton.pressScaleKey,
               scale: _pressed ? VoiceButton.pressedScale : 1.0,

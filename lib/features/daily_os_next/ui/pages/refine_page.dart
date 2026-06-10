@@ -262,9 +262,9 @@ class _RefineZone extends ConsumerWidget {
         );
       case RefinePhase.reviewing:
         zone = Align(
-          alignment: Alignment.bottomCenter,
+          alignment: Alignment.topCenter,
           child: SingleChildScrollView(
-            reverse: true,
+            padding: EdgeInsets.only(top: tokens.spacing.step6),
             child: _TranscriptReview(
               draft: draft,
               transcript: state.transcript,
@@ -274,9 +274,9 @@ class _RefineZone extends ConsumerWidget {
       case RefinePhase.diffReady:
         final diff = state.diff;
         zone = Align(
-          alignment: Alignment.bottomCenter,
+          alignment: Alignment.topCenter,
           child: SingleChildScrollView(
-            reverse: true,
+            padding: EdgeInsets.only(top: tokens.spacing.step6),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
@@ -309,8 +309,7 @@ class _RefineZone extends ConsumerWidget {
 }
 
 /// Read-only summary of the plan being refined — what the user is about to
-/// talk about. Bottom-aligned so the rows sit right above the orb, mirroring
-/// where the spoken words will land.
+/// talk about, sitting directly under the headline that asks about it.
 class _CurrentPlanList extends StatelessWidget {
   const _CurrentPlanList({required this.plan});
 
@@ -324,9 +323,9 @@ class _CurrentPlanList extends StatelessWidget {
     final timeFormat = DateFormat.Hm(locale);
 
     return Align(
-      alignment: Alignment.bottomCenter,
+      alignment: Alignment.topCenter,
       child: SingleChildScrollView(
-        reverse: true,
+        padding: EdgeInsets.only(top: tokens.spacing.step6),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

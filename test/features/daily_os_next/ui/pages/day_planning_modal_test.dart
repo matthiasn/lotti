@@ -489,7 +489,7 @@ void main() {
   });
 
   group('showDayPlanningModal — adapt (refine)', () {
-    testWidgets('opens the Refine step with its title, body and glass bar', (
+    testWidgets('opens the Refine step with its headline, body and glass bar', (
       tester,
     ) async {
       final draft = DraftPlan.emptyForDay(DateTime(2024, 3, 15));
@@ -523,7 +523,13 @@ void main() {
       final messages = _l10n(tester);
       expect(find.byType(RefineModalContent), findsOneWidget);
       expect(find.byType(DayPlanningGlassActionBar), findsOneWidget);
-      expect(find.text(messages.dailyOsNextRefineTitle), findsWidgets);
+      // The conversational body headline is the step's only title — no
+      // duplicate nav-bar label.
+      expect(
+        find.text(messages.dailyOsNextRefineHeadlineIdle),
+        findsOneWidget,
+      );
+      expect(find.text(messages.dailyOsNextRefineTitle), findsNothing);
     });
   });
 

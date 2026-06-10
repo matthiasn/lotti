@@ -305,22 +305,26 @@ class _TimeAnchorChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final warning = tokens.colors.alert.warning.defaultColor;
-    return Container(
-      decoration: BoxDecoration(
-        color: warning.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(tokens.radii.s),
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: tokens.spacing.step2,
-        vertical: 2,
-      ),
-      child: Text(
-        anchor,
-        style: tokens.typography.styles.others.caption.copyWith(
-          color: warning,
+    // One metadata grammar: tinted pills are reserved for the category,
+    // bare icon+text for passive attributes, and orange for exactly one
+    // semantic — uncertainty. A deadline is an attribute, not a warning,
+    // so it reads like the estimate (slightly stronger emphasis).
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          Icons.flag_rounded,
+          size: 12,
+          color: tokens.colors.text.mediumEmphasis,
         ),
-      ),
+        SizedBox(width: tokens.spacing.step1),
+        Text(
+          anchor,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+        ),
+      ],
     );
   }
 }

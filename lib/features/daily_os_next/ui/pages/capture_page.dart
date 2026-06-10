@@ -489,14 +489,20 @@ class _TranscriptZone extends StatelessWidget {
 
     switch (state.phase) {
       case CapturePhase.idle:
+        // Static content sits directly under the headline — pooling the
+        // flexible slack between question and content read as a dead band;
+        // the slack now lives between content and orb instead.
         return Align(
-          alignment: Alignment.bottomCenter,
-          child: Text(
-            context.messages.dailyOsNextCaptureIdleExample,
-            textAlign: TextAlign.center,
-            style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.55),
-              fontStyle: FontStyle.italic,
+          alignment: Alignment.topCenter,
+          child: Padding(
+            padding: EdgeInsets.only(top: tokens.spacing.step6),
+            child: Text(
+              context.messages.dailyOsNextCaptureIdleExample,
+              textAlign: TextAlign.center,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.lowEmphasis.withValues(alpha: 0.55),
+                fontStyle: FontStyle.italic,
+              ),
             ),
           ),
         );
@@ -516,9 +522,9 @@ class _TranscriptZone extends StatelessWidget {
         );
       case CapturePhase.captured:
         return Align(
-          alignment: Alignment.bottomCenter,
+          alignment: Alignment.topCenter,
           child: SingleChildScrollView(
-            reverse: true,
+            padding: EdgeInsets.only(top: tokens.spacing.step6),
             child: TranscriptEditor(
               fieldKey: const Key('daily_os_capture_transcript_editor'),
               transcript: state.transcript,
@@ -529,7 +535,7 @@ class _TranscriptZone extends StatelessWidget {
         );
       case CapturePhase.error:
         return Align(
-          alignment: Alignment.bottomCenter,
+          alignment: Alignment.topCenter,
           child: Text(
             _captureErrorMessage(context, state.error) ??
                 context.messages.dailyOsNextCaptureIdleHint,

@@ -136,40 +136,60 @@ class LiveTranscriptView extends StatelessWidget {
   final String text;
   final Color color;
 
+  /// Above roughly this many characters the live text is read as a block
+  /// of prose, not a caption — switch from centered to start-aligned and
+  /// cap the visible viewport so it never becomes a full-screen text wall.
+  static const int _proseThreshold = 90;
+
+  /// Maximum visible transcript lines; older lines dissolve under the fade.
+  static const double _maxVisibleLines = 6;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     if (text.isEmpty) return const SizedBox.expand();
+    final isProse = text.length > _proseThreshold;
     final style = tokens.typography.styles.body.bodyMedium.copyWith(
       color: color,
     );
+    final lineHeight = MediaQuery.textScalerOf(
+      context,
+    ).scale(tokens.typography.lineHeight.bodyMedium);
 
-    return ShaderMask(
-      // The dissolve ramp must cover at least one full (scaled) text line,
-      // or a line gets sliced flat instead of fading out.
-      shaderCallback: (bounds) {
-        final lineHeight = MediaQuery.textScalerOf(context).scale(
-          tokens.typography.lineHeight.bodyMedium,
-        );
-        final ramp = bounds.height <= 0
-            ? 0.22
-            : ((lineHeight * 1.4) / bounds.height).clamp(0.12, 0.5);
-        return LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
-          stops: [0, ramp],
-        ).createShader(bounds);
-      },
-      child: SizedBox.expand(
-        key: viewportKey,
-        child: SingleChildScrollView(
-          reverse: true,
-          physics: const NeverScrollableScrollPhysics(),
-          child: Text(
-            text,
-            textAlign: TextAlign.center,
-            style: style,
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: lineHeight * _maxVisibleLines,
+        ),
+        // The mask wraps the capped text box itself so the dissolve sits on
+        // the oldest visible line; the ramp covers at least one full
+        // (scaled) text line, or that line gets sliced flat instead of
+        // fading out.
+        child: ShaderMask(
+          shaderCallback: (bounds) {
+            final ramp = bounds.height <= 0
+                ? 0.22
+                : ((lineHeight * 1.4) / bounds.height).clamp(0.12, 0.5);
+            return LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: const [Color(0x00FFFFFF), Color(0xFFFFFFFF)],
+              stops: [0, ramp],
+            ).createShader(bounds);
+          },
+          child: SizedBox(
+            key: viewportKey,
+            width: double.infinity,
+            child: SingleChildScrollView(
+              reverse: true,
+              physics: const NeverScrollableScrollPhysics(),
+              child: Text(
+                text,
+                textAlign: isProse ? TextAlign.start : TextAlign.center,
+                style: style,
+              ),
+            ),
           ),
         ),
       ),
