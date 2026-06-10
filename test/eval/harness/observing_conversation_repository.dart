@@ -163,7 +163,9 @@ class ObservingConversationRepository extends ConversationRepository
         turnIndex: response.turnIndex,
         providerType: response.providerType,
         chunkCount: response.chunkCount,
-        responseModelIds: response.responseModelIds,
+        responseModelIds: _authoritativeResponseModelIds(
+          response.responseModelIds,
+        ),
         systemFingerprints: response.systemFingerprints,
         providerNames: response.providerNames,
         serviceTiers: response.serviceTiers,
@@ -196,3 +198,8 @@ String? _forcedToolName(ChatCompletionToolChoiceOption? toolChoice) {
     tool: (choice) => choice.value.function.name,
   );
 }
+
+List<String> _authoritativeResponseModelIds(List<String> responseModelIds) => [
+  for (final modelId in responseModelIds)
+    if (modelId.trim().toLowerCase() != 'keepalive') modelId,
+];

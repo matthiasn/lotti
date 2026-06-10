@@ -1241,14 +1241,17 @@ abstract final class EvalRunVerifier {
         errors,
       );
 
-      final responseModelCount = response.responseModelIds.length;
+      final responseModelIds = _authoritativeResponseModelIds(
+        response.responseModelIds,
+      );
+      final responseModelCount = responseModelIds.length;
       if (responseModelCount > 1) {
         errors.add(
           '$label responseModelIds are inconsistent: '
-          '${response.responseModelIds}',
+          '$responseModelIds',
         );
       } else if (responseModelCount == 1) {
-        final responseModelId = response.responseModelIds.single;
+        final responseModelId = responseModelIds.single;
         if (response.responseModelUnavailableReason != null) {
           errors.add(
             '$label responseModelUnavailableReason is set despite '
@@ -1338,6 +1341,13 @@ abstract final class EvalRunVerifier {
       );
     }
   }
+
+  static List<String> _authoritativeResponseModelIds(
+    List<String> responseModelIds,
+  ) => [
+    for (final modelId in responseModelIds)
+      if (modelId.trim().toLowerCase() != 'keepalive') modelId,
+  ];
 
   static void _validateResponseMetadataList(
     List<String> values,

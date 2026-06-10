@@ -1024,6 +1024,80 @@ void main() {
     );
   });
 
+  test('ignores OpenAI-compatible keepalive response model sentinels', () {
+    const liveProviderModelId = 'Qwen3.6-35B-A3B-4bit';
+    final liveProfileConfig = evalProfileConfig(
+      profile,
+      providerOverride: const EvalProfileProviderOverride(
+        providerType: InferenceProviderType.openAi,
+        providerModelId: liveProviderModelId,
+        providerId: 'live-openai-provider',
+        apiKey: 'test-key',
+      ),
+    );
+    final manifest = _manifestFor(
+      scenarios: [scenario],
+      profiles: [profile],
+      targetKind: 'live',
+      profileExecutionBindings: [liveProfileConfig.toExecutionBinding()],
+    );
+    final prompt = _runtimePrompt('live-response-keepalive');
+    final request = ProviderRequestRecord(
+      invocationIndex: 0,
+      requestIndex: 0,
+      turnIndex: 1,
+      providerModelId: liveProfileConfig.providerModelId,
+      providerId: liveProfileConfig.providerId,
+      providerType: liveProfileConfig.providerType,
+      providerEndpointOrigin: liveProfileConfig.providerEndpointOrigin,
+      providerBaseUrlDigest: liveProfileConfig.providerBaseUrlDigest,
+      messageDigest: EvalProvenance.digestText('messages'),
+      messageCount: 2,
+      toolSchemaDigest: prompt.toolSchemaDigest!,
+      toolCount: 1,
+      toolNames: const ['update_report'],
+      forcedToolName: 'update_report',
+      temperature: 1,
+      thoughtSignatureCount: 0,
+    );
+    final output = _outputFor(
+      profile,
+      profileConfigOverride: liveProfileConfig,
+      runtimePrompt: prompt,
+      modelInvocations: [
+        _modelInvocation(
+          profile,
+          runtimePrompt: prompt,
+          profileConfigOverride: liveProfileConfig,
+        ),
+      ],
+      providerRequests: [request],
+      providerResponses: [
+        _providerResponseFor(
+          request,
+          responseModelIds: const [liveProviderModelId, 'keepalive'],
+        ),
+      ],
+      turnCount: 1,
+    );
+    final trace = _trace(
+      scenario: scenario,
+      profile: profile,
+      output: output,
+      manifest: manifest,
+    );
+
+    final verification = _verify(
+      runId: 'run-1',
+      traces: [trace],
+      scenarios: [scenario],
+      profiles: [profile],
+      manifest: manifest,
+    );
+
+    expect(verification.errors, isEmpty);
+  });
+
   test('accepts explicit Gemini response model unavailable evidence', () {
     final profileConfig = evalProfileConfig(profile);
     final manifest = _manifestFor(

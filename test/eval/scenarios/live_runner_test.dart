@@ -11,7 +11,13 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/time_service.dart';
 
+import '../../helpers/fallbacks.dart';
+import '../../mocks/mocks.dart' show MockPersistenceLogic;
+import '../../widget_test_utils.dart';
 import '../harness/eval_harness.dart';
 import '../harness/live_eval_target.dart';
 import 'eval_scenario_catalog.dart';
@@ -34,6 +40,19 @@ const _promotionPlanPath = String.fromEnvironment('EVAL_PROMOTION_PLAN');
 
 void main() {
   final settings = LiveEvalSettings.fromEnvironment(Platform.environment);
+
+  setUpAll(() async {
+    registerAllFallbackValues();
+    await setUpTestGetIt(
+      additionalSetup: () {
+        getIt
+          ..registerSingleton<PersistenceLogic>(MockPersistenceLogic())
+          ..registerSingleton<TimeService>(TimeService());
+      },
+    );
+  });
+
+  tearDownAll(tearDownTestGetIt);
 
   test(
     'produces complete live trace matrix',
